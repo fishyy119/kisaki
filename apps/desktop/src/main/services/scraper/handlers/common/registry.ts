@@ -31,46 +31,42 @@ export function assertProviderContract<TProvider extends RegisteredScraperProvid
   allowedCapabilities: ReadonlySet<ScraperCapability>
 ): void {
   if (typeof provider.id !== 'string' || !provider.id.trim()) {
-    throw new Error('[Scraper] Provider id is required')
+    throw new Error('Provider id is required')
   }
 
   if (typeof provider.name !== 'string' || !provider.name.trim()) {
-    throw new Error(`[Scraper] Provider name is required (${provider.id})`)
+    throw new Error(`Provider name is required (${provider.id})`)
   }
 
   if (typeof provider.externalIdSource !== 'string' || !provider.externalIdSource.trim()) {
-    throw new Error(`[Scraper] Provider '${provider.id}' externalIdSource is required`)
+    throw new Error(`Provider '${provider.id}' externalIdSource is required`)
   }
 
   if (!Array.isArray(provider.capabilities) || provider.capabilities.length === 0) {
-    throw new Error(`[Scraper] Provider '${provider.id}' capabilities must be a non-empty array`)
+    throw new Error(`Provider '${provider.id}' capabilities must be a non-empty array`)
   }
 
   const declared = new Set<ScraperCapability>()
   for (const capability of provider.capabilities) {
     if (!allowedCapabilities.has(capability)) {
-      throw new Error(
-        `[Scraper] Provider '${provider.id}' declares invalid capability: ${capability}`
-      )
+      throw new Error(`Provider '${provider.id}' declares invalid capability: ${capability}`)
     }
 
     if (declared.has(capability)) {
-      throw new Error(
-        `[Scraper] Provider '${provider.id}' declares duplicate capability: ${capability}`
-      )
+      throw new Error(`Provider '${provider.id}' declares duplicate capability: ${capability}`)
     }
 
     declared.add(capability)
   }
 
   if (!declared.has('search')) {
-    throw new Error(`[Scraper] Provider '${provider.id}' must declare 'search' capability`)
+    throw new Error(`Provider '${provider.id}' must declare 'search' capability`)
   }
 
   for (const methodName of ['search', 'resolve', 'openSession']) {
     if (!hasMethod(provider, methodName)) {
       throw new Error(
-        `[Scraper] Provider '${provider.id}' must implement '${methodName}' for the session-based runtime`
+        `Provider '${provider.id}' must implement '${methodName}' for the session-based runtime`
       )
     }
   }
@@ -90,9 +86,7 @@ export function createProviderRegistry<TProvider extends RegisteredScraperProvid
 
       const existing = providers.get(provider.id)
       if (existing) {
-        throw new Error(
-          `[Scraper] Provider '${provider.id}' is already registered by '${existing.name}'`
-        )
+        throw new Error(`Provider '${provider.id}' is already registered by '${existing.name}'`)
       }
 
       providers.set(provider.id, provider)

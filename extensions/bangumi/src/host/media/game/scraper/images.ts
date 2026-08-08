@@ -1,5 +1,6 @@
 import type { BangumiClient } from '../../../api/client'
 import type { BangumiSubject, BangumiSubjectRelation } from '../../../api/types'
+import { isCancellationError } from '../../../utils/errors'
 import { omitUndefined } from '../../../utils/object'
 import { extractImageUrls } from './format/images'
 import { dedupeUrls } from './format/urls'
@@ -7,14 +8,20 @@ import type { BangumiSubjectImageVariants } from './types'
 
 export async function fetchSubjectImageVariants(
   client: BangumiClient,
-  subjectId: number
+  subjectId: number,
+  signal?: AbortSignal
 ): Promise<BangumiSubjectImageVariants> {
-  const [large, common, small, grid] = await Promise.all([
-    client.getSubjectImageUrl(subjectId, 'large').catch(() => undefined),
-    client.getSubjectImageUrl(subjectId, 'common').catch(() => undefined),
-    client.getSubjectImageUrl(subjectId, 'small').catch(() => undefined),
-    client.getSubjectImageUrl(subjectId, 'grid').catch(() => undefined)
-  ])
+  const [large, common, small, grid] = await Promise.all(
+    (['large', 'common', 'small', 'grid'] as const).map((type) =>
+      client.getSubjectImageUrl(subjectId, type, { signal }).catch((error: unknown) => {
+        if (isCancellationError(error)) {
+          throw error
+        }
+
+        return undefined
+      })
+    )
+  )
 
   return omitUndefined({ large, common, small, grid })
 }

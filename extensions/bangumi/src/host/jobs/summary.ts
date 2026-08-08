@@ -68,13 +68,6 @@ export function toDisplayError(error: unknown): {
   return { code: 'bangumi_error', message: m().errors.jobFailed }
 }
 
-export function isCancellationError(error: unknown): boolean {
-  return (
-    (error instanceof BangumiExtensionError && error.code === 'job_cancelled') ||
-    (error instanceof Error && error.name === 'AbortError')
-  )
-}
-
 function normalizeCounters(counters: Record<string, number> | undefined): Record<string, number> {
   const normalized: Record<string, number> = {}
   for (const [key, value] of Object.entries(counters ?? {})) {

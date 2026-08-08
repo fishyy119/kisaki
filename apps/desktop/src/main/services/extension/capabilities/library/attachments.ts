@@ -20,6 +20,7 @@ import { eq } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { characters, collections, companies, games, persons } from '@shared/db'
 import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/contracts/attachment'
+import type { TableName } from '@shared/db/table-names'
 import type { DbService } from '@main/services/db'
 import { assertInsideAnyRoot } from '../../shared/path-confinement'
 
@@ -32,7 +33,7 @@ interface AttachmentSlotConfigBase {
   entityType: LibraryAttachmentOwnerType
   slot: LibraryAttachmentKind
   table: AttachmentTableWithId
-  tableName: string
+  tableName: TableName
 }
 
 interface SingleAttachmentSlotConfig extends AttachmentSlotConfigBase {
@@ -294,7 +295,7 @@ export class ExtensionLibraryAttachmentStore {
   private async toAttachment(
     entity: LibraryAttachment['entity'],
     slot: LibraryAttachmentKind,
-    tableName: string,
+    tableName: TableName,
     fileName: string
   ): Promise<LibraryAttachment> {
     const filePath = this.options.db.attachment.getPath(tableName, entity.id, fileName)

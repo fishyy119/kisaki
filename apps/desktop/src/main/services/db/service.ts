@@ -17,10 +17,12 @@ import { mkdir } from 'node:fs/promises'
 import { pathExists } from '@main/utils/fs'
 import path from 'node:path'
 import { createLogger } from '@main/log'
+import { eq } from 'drizzle-orm'
 import * as schema from '@shared/db/schema'
-import { settings } from '@shared/db/schema'
+import { settings, tags } from '@shared/db/schema'
+import { normalizeKeyText } from '@shared/identity'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import { AttachmentStore } from './attachment'
+import { AttachmentStore, requireStorageTable } from './attachment'
 import { ThumbnailStore } from './thumbnail'
 import { DbEntityDeleteHelper, DbEntityFinderHelper, DbEntityMergeCoordinator } from './helper'
 import { FtsStore } from './fts'
@@ -28,6 +30,7 @@ import { TriggerStore, dropAllTriggers } from './trigger'
 import { DbChangeFeed } from './feed'
 import { createDbHooks } from './hooks'
 import { registerDbIpc } from './ipc'
+import { SettingsStore } from './settings'
 import { SqlExecutor } from './sql'
 
 const log = createLogger('Db')
@@ -66,6 +69,7 @@ export class DbService implements IService {
   entityMerge!: DbEntityMergeCoordinator
   fts!: FtsStore
   sql!: SqlExecutor
+  settings!: SettingsStore
   private trigger!: TriggerStore
   private feed!: DbChangeFeed
 
@@ -82,9 +86,9 @@ export class DbService implements IService {
     this.sqlite.pragma('journal_mode = WAL')
     this.client = drizzle(this.sqlite, { schema })
 
-    // All triggers are runtime-owned and recreated below; drop them before
-    // migrations so ALTER TABLE never fails on trigger column references and
-    // migration writes never fire emit_db_change before it is registered.
+    // Persisted triggers are runtime-owned (FTS sync, plus change triggers from
+    // versions that persisted them); drop them before migrations so ALTER TABLE
+    // never fails on trigger column references.
     dropAllTriggers(this.sqlite)
 
     // Run migrations
@@ -92,9 +96,8 @@ export class DbService implements IService {
 
     const ipc = container.get('ipc')
 
-    // Initialize the change feed and SQLite triggers.
-    // IMPORTANT: Must register emit_db_change function BEFORE any DB writes
-    // because triggers persist in SQLite and may already exist from previous runs
+    // Initialize the change feed and SQLite change capture before any DB write,
+    // so no change escapes the outbox.
     this.feed = new DbChangeFeed(this.sqlite, {
       hooks: this.hooks,
       sendToRenderer: (changes) => ipc.send('db:changed', changes),
@@ -120,9 +123,12 @@ export class DbService implements IService {
     this.entityMerge = new DbEntityMergeCoordinator(this.client, this.attachment, this.hooks, ipc)
     this.fts = new FtsStore(this.sqlite)
     this.sql = new SqlExecutor(this.sqlite)
+    this.settings = new SettingsStore(this.client)
 
     // Initialize FTS5 tables and triggers
     this.fts.init()
+
+    this.backfillTagNormalizedNames()
 
     // Setup attachment:// protocol handler
     this.setupAttachmentProtocol()
@@ -145,25 +151,62 @@ export class DbService implements IService {
     })
   }
 
+  /**
+   * Fills `tags.normalized_name` for rows written before the column existed.
+   * Normalization is NFKC + case folding, which SQLite cannot express, so the
+   * backfill runs in JS. Every tag name must carry identity; rows whose name
+   * normalizes to '' are unsupported and deleted with their links. Idempotent:
+   * only rows with an empty normalized name are touched.
+   */
+  private backfillTagNormalizedNames(): void {
+    const pending = this.client
+      .select({ id: tags.id, name: tags.name })
+      .from(tags)
+      .where(eq(tags.normalizedName, ''))
+      .all()
+
+    if (pending.length === 0) return
+
+    let removed = 0
+    this.client.transaction((tx) => {
+      for (const tag of pending) {
+        if (normalizeKeyText(tag.name)) {
+          tx.update(tags).set({ normalizedName: tag.name }).where(eq(tags.id, tag.id)).run()
+        } else {
+          tx.delete(tags).where(eq(tags.id, tag.id)).run()
+          removed++
+        }
+      }
+    })
+
+    log.info('Backfilled tag normalized names.', { filled: pending.length - removed, removed })
+  }
+
   private setupAttachmentProtocol(): void {
     protocol.handle('attachment', async (request) => {
+      // Parse URL: attachment://tableName/rowId/fileName?w=240&h=320
+      const url = new URL(request.url)
+      const pathParts = url.pathname.split('/').filter(Boolean)
+
+      if (pathParts.length !== 2) {
+        return new Response('Invalid attachment path', { status: 400 })
+      }
+
+      const [rowId, fileName] = pathParts
+
+      // URL segments are untrusted; the store validates them and confines the
+      // result to the storage root.
+      let fileDir: string
+      let filePath: string
       try {
-        // Parse URL: attachment://tableName/rowId/fileName?w=240&h=320
-        const url = new URL(request.url)
-        const tableName = url.hostname
-        const pathParts = url.pathname.split('/').filter(Boolean)
+        const tableName = requireStorageTable(url.hostname)
+        fileDir = this.attachment.getRowDir(tableName, rowId)
+        filePath = this.attachment.getPath(tableName, rowId, fileName)
+      } catch {
+        return new Response('Invalid attachment path', { status: 400 })
+      }
 
-        if (pathParts.length < 2) {
-          return new Response('Invalid attachment path', { status: 400 })
-        }
-
-        const rowId = pathParts[0]
-        const fileName = pathParts.slice(1).join('/')
-
-        // Build file path
-        const fileDir = path.join(this.storageDir, tableName, rowId)
-        const filePath = path.join(fileDir, fileName)
-
+      try {
         if (!(await pathExists(filePath))) {
           return new Response('Attachment not found', { status: 404 })
         }
@@ -198,12 +241,27 @@ export class DbService implements IService {
   }
 
   async dispose(): Promise<void> {
+    this.deliverPendingChanges()
+    this.trigger?.dispose()
     this.feed?.dispose()
     this.attachment?.dispose()
     this.thumbnail?.dispose()
     if (this.sqlite) {
       this.sqlite.close()
       log.info('Database connection closed')
+    }
+  }
+
+  /**
+   * Delivers changes captured just before shutdown, so row deletions still
+   * reach attachment cleanup instead of being dropped with the debounce timer.
+   */
+  private deliverPendingChanges(): void {
+    try {
+      this.trigger?.drain()
+      this.feed?.flush()
+    } catch (error) {
+      log.warn('Failed to deliver pending database changes on shutdown.', error)
     }
   }
 }

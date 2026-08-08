@@ -75,6 +75,25 @@ Contribution `icon` fields use the shared `ContributionIcon` contract from `shar
 is declared. The renderer renders both forms as currentColor masks, so custom icon files should be
 monochrome silhouettes.
 
+## Scraper Provider Contracts
+
+- `search`, `resolve`, and `openSession` take the invocation-scoped
+  `ScraperProviderContext` (`{ locale, signal }`) as their last parameter. Add new invocation-scoped
+  inputs to that context instead of appending parameters.
+- `ctx.signal` is the host's cancellation request. Forward it to every network call the invocation
+  makes and let `AbortError` propagate; extension cancellation is best-effort, so the host also
+  aborts the session's own controller when it disposes the session.
+- Slot presence in `session.get(slots)` is authoritative. Omit a slot the provider cannot answer
+  (unsupported, target not found, enrichment failed) and return an empty collection only when the
+  source states the entity has none. The host reads an omitted slot as unknown and an empty
+  collection as a real emptiness that the replace policy may use to clear stored data.
+
+## Ingest Capability Shape
+
+Each ingest entry point exposes two explicit methods instead of a task-run flag: `fromScraper(...)`
+runs inline and resolves with the ingest result, while `startFromScraper(...)` creates a
+user-visible task run attributed to the extension and resolves with `IngestTaskRunStart`.
+
 ## Naming Suffixes
 
 Use suffixes by API layer. Contribution contracts are intentionally more uniform than capability

@@ -113,11 +113,12 @@ useIpc('library:entity-merged', (_e, event) => {
 
 ## Db Change Feed
 
-SQLite triggers produce `RawDbChange` records (row snapshots stay in the main process). The
-`DbChangeFeed` (`services/db/feed/`) debounces and groups them, then fans out to three outlets:
+SQLite triggers append changes to a transactional outbox that is drained after commit, producing
+`RawDbChange` records (row snapshots stay in the main process). The `DbChangeFeed`
+(`services/db/feed/`) debounces and groups them, then fans out to three outlets:
 
 1. **`db:changed` IPC push** - batched `DbChangeSummary[]` (`{ operation, table, id, occurredAt }`,
-   no row snapshots) for renderer query invalidation.
+   no row snapshots) for renderer query invalidation, chunked so bulk writes stay deliverable.
 2. **`library.changed` module hook** - entity-grouped change summaries with facet-level diffs,
    dispatched on `DbService.hooks` for main-process subscribers and the extension hooks point.
 3. **Settings projection** - `settings` table changes dispatch `settingsChanged` on `DbService.hooks`.

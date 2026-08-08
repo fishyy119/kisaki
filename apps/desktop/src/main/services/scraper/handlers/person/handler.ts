@@ -4,6 +4,7 @@
 
 import { eq } from 'drizzle-orm'
 import { createLogger } from '@main/log'
+import { isAbortError } from '@main/utils/async'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '@shared/db/schema'
 import { scraperProfiles, type ScraperProfile } from '@shared/db/schema'
@@ -41,7 +42,7 @@ import type {
 } from './provider'
 import type { PersonScraperImageResult, PersonScraperImageSlot, PersonScraperResult } from './types'
 import type { ScraperMediaHooks } from '../../hooks'
-import type { SlotResult } from '../../types'
+import type { ScraperInvocationOptions, SlotResult } from '../../types'
 
 const log = createLogger('Scraper')
 
@@ -54,18 +55,6 @@ function hasValidPersonInfoData(
   strategy: SlotStrategy
 ): boolean {
   return strategy !== 'first' || (typeof data.name === 'string' && data.name.trim().length > 0)
-}
-
-function hasValidPersonSlotData<S extends PersonScraperSlot>(
-  slot: S,
-  data: PersonSessionResultMap[S],
-  strategy: SlotStrategy
-): boolean {
-  if (slot === 'info') {
-    return hasValidPersonInfoData(data as PersonSessionResultMap['info'], strategy)
-  }
-
-  return Array.isArray(data) && data.length > 0
 }
 
 export class PersonScraperHandler {
@@ -97,7 +86,7 @@ export class PersonScraperHandler {
   }
 
   getProviderInfo(providerId: string): PersonScraperProviderInfo {
-    const provider = this.getSearchProvider(providerId)
+    const provider = this.requireProvider(providerId)
     return {
       id: provider.id,
       name: provider.name,
@@ -106,10 +95,17 @@ export class PersonScraperHandler {
     }
   }
 
-  async search(profileId: string, query: string): Promise<PersonSearchResult[]> {
+  async search(
+    profileId: string,
+    query: string,
+    options: ScraperInvocationOptions = {}
+  ): Promise<PersonSearchResult[]> {
     const profile = this.loadProfile(profileId)
-    const provider = this.getSearchProvider(profile.searchProviderId)
-    const results = await provider.search(query, this.getProfileLocale(profile))
+    const provider = this.requireProvider(profile.searchProviderId)
+    const results = await provider.search(query, {
+      locale: this.getProfileLocale(profile),
+      signal: options.signal
+    })
     return this.hooks.searched.transform(
       results.map((result) =>
         ensureProviderExternalId(result, provider.externalIdSource, result.id)
@@ -117,7 +113,11 @@ export class PersonScraperHandler {
     )
   }
 
-  async scrape(profileId: string, rawLookup: ScraperLookup): Promise<ScrapedPersonBundle | null> {
+  async scrape(
+    profileId: string,
+    rawLookup: ScraperLookup,
+    options: ScraperInvocationOptions = {}
+  ): Promise<ScrapedPersonBundle | null> {
     const lookup = await this.hooks.lookup.transform(rawLookup)
     const profile = this.loadProfile(profileId)
 
@@ -127,7 +127,7 @@ export class PersonScraperHandler {
     }
 
     const resolveLocale = this.getResolveLocale(runtimeProfile, lookup)
-    const searchProvider = this.getSearchProvider(runtimeProfile.searchProviderId)
+    const searchProvider = this.requireProvider(runtimeProfile.searchProviderId)
     const plan = buildExecutionPlan<PersonScraperSlot>({
       slotConfigs: runtimeProfile.slotConfigs,
       resolveLocale: (entry) => this.getFetchLocale(runtimeProfile, entry)
@@ -141,12 +141,13 @@ export class PersonScraperHandler {
     >()
 
     try {
+      const resolveCtx = { locale: resolveLocale, signal: options.signal }
       const { target: searchTarget, canonicalLookup } = await resolveSearchProviderTarget({
         state,
         providerId: searchProvider.id,
         provider: searchProvider,
         lookup,
-        locale: resolveLocale,
+        ctx: resolveCtx,
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })
 
@@ -162,7 +163,7 @@ export class PersonScraperHandler {
 
         const provider = this.providers.get(providerId)
         if (!provider) {
-          log.warn('Provider not available.', { providerId: providerId })
+          log.warn('Provider not available.', { mediaType: 'person', providerId: providerId })
           return null
         }
 
@@ -175,13 +176,14 @@ export class PersonScraperHandler {
           providerId,
           provider,
           lookup: canonicalLookup,
-          locale: resolveLocale
+          ctx: resolveCtx
         })
       }
 
       const results = (await executeScraperPlan({
         state,
         plan,
+        signal: options.signal,
         getProvider: (providerId) => this.providers.get(providerId),
         resolveProviderTarget: resolveProviderId,
         collectResolvedIdentity: ({ providerId, target }) =>
@@ -205,16 +207,18 @@ export class PersonScraperHandler {
   async getProviderImages(
     providerId: string,
     lookup: ScraperLookup,
-    imageType: PersonScraperImageSlot
+    imageType: PersonScraperImageSlot,
+    options: ScraperInvocationOptions = {}
   ): Promise<string[]> {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      log.warn('Person provider not available.', { providerId: providerId })
+      log.warn('Provider not available.', { mediaType: 'person', providerId: providerId })
       return []
     }
 
     if (!provider.capabilities.includes(imageType)) {
-      log.warn('Person provider does not support image slot.', {
+      log.warn('Provider does not support image slot.', {
+        mediaType: 'person',
         providerId: providerId,
         imageType: imageType
       })
@@ -239,6 +243,7 @@ export class PersonScraperHandler {
       const results = (await executeScraperPlan({
         state,
         plan,
+        signal: options.signal,
         getProvider: (candidateProviderId) => this.providers.get(candidateProviderId),
         resolveProviderTarget: async (candidateProviderId) => {
           if (candidateProviderId !== providerId) {
@@ -250,7 +255,7 @@ export class PersonScraperHandler {
             providerId,
             provider,
             lookup,
-            locale
+            ctx: { locale, signal: options.signal }
           })
         },
         buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
@@ -260,7 +265,15 @@ export class PersonScraperHandler {
 
       return mergePersonScraperImages([...results], 'enrich')
     } catch (error) {
-      log.warn('Provider request failed.', error, { providerId: providerId, imageType: imageType })
+      if (isAbortError(error)) {
+        throw error
+      }
+
+      log.warn('Provider request failed.', error, {
+        mediaType: 'person',
+        providerId: providerId,
+        imageType: imageType
+      })
       return []
     } finally {
       await state.dispose()
@@ -288,7 +301,9 @@ export class PersonScraperHandler {
         : null
     }
 
-    if (!hasValidPersonSlotData(entry.slot, data, entry.strategy)) {
+    // A collection slot the provider answered is authoritative, so an empty
+    // array is kept as an authoritative empty instead of a missing answer.
+    if (!Array.isArray(data)) {
       return null
     }
 
@@ -324,9 +339,9 @@ export class PersonScraperHandler {
     return profile
   }
 
-  private getSearchProvider(providerId: string): PersonScraperProvider {
+  private requireProvider(providerId: string): PersonScraperProvider {
     const provider = this.providers.get(providerId)
-    if (!provider || !provider.capabilities.includes('search')) {
+    if (!provider) {
       throw new Error(`Provider not found: ${providerId}`)
     }
     return provider

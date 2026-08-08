@@ -20,11 +20,10 @@ import type { BangumiJobPreviewGroup } from '../../shared/settings'
 import {
   createBangumiJobSummary,
   createJobError,
-  isCancellationError,
   type BangumiJobError,
   type BangumiJobSummary
 } from './summary'
-import { BangumiExtensionError } from '../utils/errors'
+import { BangumiExtensionError, isCancellationError } from '../utils/errors'
 import { m } from '../i18n'
 
 /**

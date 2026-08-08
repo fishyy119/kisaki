@@ -1,22 +1,14 @@
-export type PendingAssetTask =
-  | {
-      type: 'game'
-      gameId: string
-      field: 'coverFile' | 'backdropFile' | 'logoFile' | 'iconFile'
-      url: string
-    }
-  | {
-      type: 'person'
-      personId: string
-      url: string
-    }
-  | {
-      type: 'company'
-      companyId: string
-      url: string
-    }
-  | {
-      type: 'character'
-      characterId: string
-      url: string
-    }
+import type { TableName } from '@shared/db/table-names'
+
+/**
+ * A media file that still has to be downloaded after its row was committed.
+ *
+ * Assets are deliberately deferred past the transaction: downloads are async
+ * and must not hold a write transaction open.
+ */
+export interface PendingAssetTask {
+  table: TableName
+  rowId: string
+  field: string
+  url: string
+}

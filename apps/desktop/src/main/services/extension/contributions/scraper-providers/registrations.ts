@@ -1,5 +1,16 @@
-import type { ContentLocale } from '@shared/i18n'
+/**
+ * Host-side adapter that presents an extension provider as a scraper provider.
+ *
+ * Cancellation is cooperative and best-effort: aborting stops the main process
+ * from waiting on in-flight RPC calls and from dispatching new ones, but the
+ * host keeps running whatever it already started because the RPC protocol has
+ * no per-call cancel message. Session close is therefore never signal-bound —
+ * it is the only way an abandoned session gets released on the host.
+ */
+
+import { createAbortError } from '@main/utils/async'
 import type { ScraperLookup } from '@shared/scraper'
+import type { ScraperProviderContext } from '@main/services/scraper'
 import type { ExtensionContributionPointOptions } from '../types'
 import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
 import { getScraperRpcMethod } from './descriptors'
@@ -15,7 +26,7 @@ export function createProviderAdapter(
     name: registration.provider.name,
     externalIdSource: registration.provider.externalIdSource,
     capabilities: [...registration.provider.capabilities],
-    async search(query: string, locale?: ContentLocale) {
+    async search(query: string, ctx: ScraperProviderContext) {
       const response = await requestScraperHost<{ results: readonly unknown[] }>(
         options,
         domain,
@@ -25,24 +36,31 @@ export function createProviderAdapter(
           mediaType: domain.mediaType,
           providerId: registration.provider.id,
           query,
-          locale
-        }
+          locale: ctx.locale
+        },
+        { signal: ctx.signal }
       )
 
       return response.results
     },
-    async resolve(lookup: ScraperLookup, locale: ContentLocale) {
-      const response = await requestScraperHost<{ target: unknown }>(options, domain, 'resolve', {
-        runtimeHandle: registration.owner.runtimeHandle,
-        mediaType: domain.mediaType,
-        providerId: registration.provider.id,
-        lookup,
-        locale
-      })
+    async resolve(lookup: ScraperLookup, ctx: ScraperProviderContext) {
+      const response = await requestScraperHost<{ target: unknown }>(
+        options,
+        domain,
+        'resolve',
+        {
+          runtimeHandle: registration.owner.runtimeHandle,
+          mediaType: domain.mediaType,
+          providerId: registration.provider.id,
+          lookup,
+          locale: ctx.locale
+        },
+        { signal: ctx.signal }
+      )
 
       return response.target
     },
-    async openSession(target: unknown, locale: ContentLocale) {
+    async openSession(target: unknown, ctx: ScraperProviderContext) {
       const response = await requestScraperHost<{ sessionId: string }>(
         options,
         domain,
@@ -52,11 +70,12 @@ export function createProviderAdapter(
           mediaType: domain.mediaType,
           providerId: registration.provider.id,
           target,
-          locale
-        }
+          locale: ctx.locale
+        },
+        { signal: ctx.signal }
       )
 
-      return createSessionAdapter(options, registration, domain, response.sessionId)
+      return createSessionAdapter(options, registration, domain, response.sessionId, ctx.signal)
     }
   }
 }
@@ -65,7 +84,8 @@ function createSessionAdapter(
   options: ExtensionContributionPointOptions,
   registration: ScraperRegistration,
   domain: ScraperDomain,
-  sessionId: string
+  sessionId: string,
+  signal: AbortSignal | undefined
 ): unknown {
   return {
     async get(slots: readonly string[]) {
@@ -79,7 +99,8 @@ function createSessionAdapter(
           providerId: registration.provider.id,
           sessionId,
           slots
-        }
+        },
+        { signal }
       )
 
       return response.result
@@ -95,7 +116,7 @@ function createSessionAdapter(
           providerId: registration.provider.id,
           sessionId
         },
-        EXTENSION_CLEANUP_TIMEOUT_MS
+        { timeoutMs: EXTENSION_CLEANUP_TIMEOUT_MS }
       )
     }
   }
@@ -106,14 +127,29 @@ async function requestScraperHost<TResponse>(
   domain: ScraperDomain,
   action: 'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close',
   params: Record<string, unknown>,
-  timeoutMs?: number
+  request: { signal?: AbortSignal; timeoutMs?: number } = {}
 ): Promise<TResponse> {
-  const requestOptions = timeoutMs === undefined ? undefined : { timeoutMs }
-  const response = await options.requestHost(
-    getScraperRpcMethod(domain, action),
-    params as never,
-    requestOptions
-  )
+  const { signal, timeoutMs } = request
+  if (signal?.aborted) {
+    throw createAbortError()
+  }
 
-  return response as TResponse
+  try {
+    const response = await options.requestHost(
+      getScraperRpcMethod(domain, action),
+      params as never,
+      { signal, timeoutMs }
+    )
+
+    return response as TResponse
+  } catch (error) {
+    // The RPC channel reports an aborted call as an unavailable host error; the
+    // scraper pipeline has to see a cancellation so it abandons the invocation
+    // instead of recording a provider failure.
+    if (signal?.aborted) {
+      throw createAbortError()
+    }
+
+    throw error
+  }
 }

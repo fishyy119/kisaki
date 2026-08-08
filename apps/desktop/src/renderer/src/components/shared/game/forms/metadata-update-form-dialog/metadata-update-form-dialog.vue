@@ -86,6 +86,7 @@ const SURFACE_LABELS = computed<Record<GameUpdateSurface, string>>(() => ({
   person: m.value.library.entities.person,
   company: m.value.library.entities.company,
   character: m.value.library.entities.character,
+  characterPerson: m.value.library.fields.characterPersons,
   covers: m.value.library.fields.covers,
   backdrops: m.value.library.fields.backdrops,
   logos: m.value.library.fields.logos,

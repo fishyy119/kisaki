@@ -20,7 +20,7 @@ export function buildEntityFieldPatch(
     case 'game':
       applyFirst(patch, target, source, 'releaseDate')
       patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
-      patch.totalDuration = (target.totalDuration ?? 0) + (source.totalDuration ?? 0)
+      patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
       applyFirst(patch, target, source, 'savePath')
       applyFirst(patch, target, source, 'launcherPath')
       applyFirst(patch, target, source, 'monitorPath')
@@ -99,14 +99,13 @@ function hasValue(value: unknown): boolean {
   return true
 }
 
-function mergeRelatedSites(
-  targetSites: RelatedSite[] | null | undefined,
-  sourceSites: RelatedSite[] | null | undefined
-): RelatedSite[] {
+// Rows arrive through the column's lenient read parser, so the array shape is
+// trusted; only presence needs checking.
+function mergeRelatedSites(targetSites: unknown, sourceSites: unknown): RelatedSite[] {
   const merged: RelatedSite[] = []
   const seen = new Set<string>()
 
-  for (const site of [...(targetSites ?? []), ...(sourceSites ?? [])]) {
+  for (const site of [...toRelatedSites(targetSites), ...toRelatedSites(sourceSites)]) {
     if (!site?.url) continue
     const key = normalizeKeyText(site.url)
     if (!key || seen.has(key)) continue
@@ -115,6 +114,14 @@ function mergeRelatedSites(
   }
 
   return merged
+}
+
+function toRelatedSites(value: unknown): RelatedSite[] {
+  return Array.isArray(value) ? (value as RelatedSite[]) : []
+}
+
+function toDuration(value: unknown): number {
+  return typeof value === 'number' ? value : 0
 }
 
 function earliestDateValue(a: unknown, b: unknown): unknown {

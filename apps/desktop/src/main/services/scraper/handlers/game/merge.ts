@@ -18,6 +18,7 @@ import {
   applyStrategy,
   buildScrapedEntityAliasKeys,
   filterBySlot,
+  foldCollectionResults,
   mergeCharacterMetadataFields,
   mergeCompanyMetadataFields,
   mergePersonMetadataFields,
@@ -194,7 +195,9 @@ function mergeInfo(
     }
     if (!metadata.description && info.description) metadata.description = info.description
 
-    if (info.relatedSites?.length) {
+    // Presence is authority: a provider that reports no sites at all keeps the
+    // collection empty instead of leaving it unknown.
+    if (info.relatedSites) {
       metadata.relatedSites = applyStrategy(
         metadata.relatedSites,
         info.relatedSites,
@@ -212,15 +215,9 @@ function mergeTags(
   results: GameScraperTagsResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-
-    metadata.tags = applyStrategy(metadata.tags, result.data, strategy, (tag) => tag.name)
-
-    if (strategy === 'first' && metadata.tags?.length) break
-  }
+  metadata.tags = foldCollectionResults(results, strategy, (merged, result) =>
+    applyStrategy(merged, result.data, strategy, (tag) => tag.name)
+  )
 }
 
 function mergeCharacters(
@@ -228,21 +225,15 @@ function mergeCharacters(
   results: GameScraperCharactersResult[],
   options: RelationCollectionMergeOptions
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-
-    metadata.characters = applyEntityCollectionStrategy(
-      metadata.characters,
+  metadata.characters = foldCollectionResults(results, options.strategy, (merged, result) =>
+    applyEntityCollectionStrategy(
+      merged,
       result.data,
       options,
       (character) => buildScrapedEntityAliasKeys(character, { includeCompactFallbackKeys: true }),
       (existing, incoming) => mergeGameCharacter(existing, incoming, options)
     )
-
-    if (options.strategy === 'first' && metadata.characters?.length) break
-  }
+  )
 }
 
 function mergePersons(
@@ -250,13 +241,9 @@ function mergePersons(
   results: GameScraperPersonsResult[],
   options: RelationCollectionMergeOptions
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-
-    metadata.persons = applyEntityCollectionStrategy(
-      metadata.persons,
+  metadata.persons = foldCollectionResults(results, options.strategy, (merged, result) =>
+    applyEntityCollectionStrategy(
+      merged,
       result.data,
       options,
       (person) =>
@@ -266,9 +253,7 @@ function mergePersons(
         }),
       mergeGamePerson
     )
-
-    if (options.strategy === 'first' && metadata.persons?.length) break
-  }
+  )
 }
 
 function mergeCompanies(
@@ -276,13 +261,9 @@ function mergeCompanies(
   results: GameScraperCompaniesResult[],
   options: RelationCollectionMergeOptions
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-
-    metadata.companies = applyEntityCollectionStrategy(
-      metadata.companies,
+  metadata.companies = foldCollectionResults(results, options.strategy, (merged, result) =>
+    applyEntityCollectionStrategy(
+      merged,
       result.data,
       options,
       (company) =>
@@ -292,9 +273,7 @@ function mergeCompanies(
         }),
       mergeGameCompany
     )
-
-    if (options.strategy === 'first' && metadata.companies?.length) break
-  }
+  )
 }
 
 type ImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons'
@@ -305,15 +284,9 @@ function mergeImages(
   results: GameScraperImageResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-
-    metadata[slot] = applyImageStrategy(metadata[slot], result.data, strategy)
-
-    if (strategy === 'first' && metadata[slot]?.length) break
-  }
+  metadata[slot] = foldCollectionResults(results, strategy, (merged, result) =>
+    applyImageStrategy(merged, result.data, strategy)
+  )
 }
 
 function finalize(partial: Partial<ScrapedGameMetadata>): ScrapedGameMetadata | null {
@@ -324,8 +297,8 @@ function finalize(partial: Partial<ScrapedGameMetadata>): ScrapedGameMetadata | 
     name: partial.name,
     originalName: partial.originalName,
     releaseDate: partial.releaseDate,
-    description: partial.description ?? '',
-    relatedSites: partial.relatedSites ?? [],
+    description: partial.description,
+    relatedSites: partial.relatedSites,
     tags: partial.tags,
     persons: partial.persons,
     characters: partial.characters,
@@ -341,10 +314,12 @@ function finalize(partial: Partial<ScrapedGameMetadata>): ScrapedGameMetadata | 
  * Convert merged scraper metadata into a scraper fact bundle.
  */
 export function toScrapedGameBundle(metadata: ScrapedGameMetadata): ScrapedGameBundle {
+  // Slot presence, not slot content, decides what the bundle claims to know: an
+  // empty collection is an authoritative "none", a missing key is "unknown".
   const relationFacts: ScrapedGameBundle['relationFacts'] = {}
-  if (metadata.persons?.length) relationFacts.gamePerson = metadata.persons
-  if (metadata.companies?.length) relationFacts.gameCompany = metadata.companies
-  if (metadata.characters?.length) relationFacts.gameCharacter = metadata.characters
+  if (metadata.persons) relationFacts.gamePerson = metadata.persons
+  if (metadata.companies) relationFacts.gameCompany = metadata.companies
+  if (metadata.characters) relationFacts.gameCharacter = metadata.characters
 
   const characterPersonFacts = metadata.characters?.flatMap((character) =>
     (character.persons ?? []).map((personFact) => ({
@@ -369,15 +344,15 @@ export function toScrapedGameBundle(metadata: ScrapedGameMetadata): ScrapedGameB
       }
     }))
   )
-  if (characterPersonFacts?.length) {
+  if (characterPersonFacts) {
     relationFacts.characterPerson = characterPersonFacts
   }
 
   const mediaCandidates: ScrapedGameBundle['mediaCandidates'] = {}
-  if (metadata.covers?.length) mediaCandidates.coverUrls = metadata.covers
-  if (metadata.backdrops?.length) mediaCandidates.backdropUrls = metadata.backdrops
-  if (metadata.logos?.length) mediaCandidates.logoUrls = metadata.logos
-  if (metadata.icons?.length) mediaCandidates.iconUrls = metadata.icons
+  if (metadata.covers) mediaCandidates.coverUrls = metadata.covers
+  if (metadata.backdrops) mediaCandidates.backdropUrls = metadata.backdrops
+  if (metadata.logos) mediaCandidates.logoUrls = metadata.logos
+  if (metadata.icons) mediaCandidates.iconUrls = metadata.icons
 
   return {
     identity: metadata.identity,

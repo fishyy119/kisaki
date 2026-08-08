@@ -9,12 +9,11 @@ import {
   type IngestAddGameFromScraperOptions,
   type IngestAddGameFromScraperResult,
   type IngestGameUpdateFromScraperInput,
-  type IngestGameUpdateFromScraperOptions,
   type IngestUpdateResult,
   type ScraperLookup
 } from '@kisaki3/extension-api'
 import type { IngestService } from '@main/services/ingest'
-import type { TaskRunInitiator } from '@shared/task-run'
+import type { TaskRunInitiator, TaskRunStartResult } from '@shared/task-run'
 import type { ScraperLookup as AppScraperLookup } from '@shared/scraper'
 import type { GameUpdateRequest } from '@shared/ingest/update'
 import type {
@@ -37,41 +36,40 @@ export class ExtensionIngestCapabilityProvider {
     options?: IngestAddGameFromScraperOptions,
     signal?: AbortSignal
   ): Promise<IngestAddGameFromScraperResult> {
+    this.requireRuntime(runtimeHandle)
+    readNonEmptyString(profileId, 'ingest profileId')
+    const result = await this.options.ingest.add.game.addFromScraper(
+      profileId,
+      toAppScraperLookup(lookup),
+      { ...toAppAddGameFromScraperOptions(options), signal }
+    )
+    return toPublicIngestAddGameFromScraperResult(result)
+  }
+
+  startAddGameFromScraper(
+    runtimeHandle: string,
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddGameFromScraperOptions
+  ): TaskRunStartResult {
     const metadata = this.requireRuntime(runtimeHandle)
     readNonEmptyString(profileId, 'ingest profileId')
-    const appOptions = toAppAddGameFromScraperOptions(options)
-    const result =
-      options?.taskRun === false
-        ? await this.options.ingest.add.game.addFromScraper(profileId, toAppScraperLookup(lookup), {
-            ...appOptions,
-            signal
-          })
-        : await this.options.ingest.add.game.addFromScraperWithTaskRun(
-            profileId,
-            toAppScraperLookup(lookup),
-            {
-              ...appOptions,
-              taskRunInitiator: createExtensionTaskRunInitiator(metadata)
-            }
-          )
-    return toPublicIngestAddGameFromScraperResult(result)
+    return this.options.ingest.add.game.startAddFromScraper(profileId, toAppScraperLookup(lookup), {
+      ...toAppAddGameFromScraperOptions(options),
+      taskRunInitiator: createExtensionTaskRunInitiator(metadata)
+    })
   }
 
   async updateGameFromScraper(
     runtimeHandle: string,
     input: IngestGameUpdateFromScraperInput,
-    options?: IngestGameUpdateFromScraperOptions,
     signal?: AbortSignal
   ): Promise<IngestUpdateResult> {
-    const metadata = this.requireRuntime(runtimeHandle)
-    validateUpdateOptions(options)
-    const request = toAppGameUpdateRequest(input)
-    const result =
-      options?.taskRun === false
-        ? await this.options.ingest.update.game.updateFromScraper(request, { signal })
-        : await this.options.ingest.update.game.updateFromScraperWithTaskRun(request, {
-            taskRunInitiator: createExtensionTaskRunInitiator(metadata)
-          })
+    this.requireRuntime(runtimeHandle)
+    const result = await this.options.ingest.update.game.updateFromScraper(
+      toAppGameUpdateRequest(input),
+      { signal }
+    )
 
     return {
       warnings: result.warnings?.map((warning) => ({
@@ -79,6 +77,16 @@ export class ExtensionIngestCapabilityProvider {
         message: warning.message
       }))
     }
+  }
+
+  startUpdateGameFromScraper(
+    runtimeHandle: string,
+    input: IngestGameUpdateFromScraperInput
+  ): TaskRunStartResult {
+    const metadata = this.requireRuntime(runtimeHandle)
+    return this.options.ingest.update.game.startUpdateFromScraper(toAppGameUpdateRequest(input), {
+      taskRunInitiator: createExtensionTaskRunInitiator(metadata)
+    })
   }
 
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {
@@ -108,10 +116,6 @@ function toAppAddGameFromScraperOptions(
     }
   }
 
-  if (options.taskRun !== undefined && typeof options.taskRun !== 'boolean') {
-    throw createValidationError('ingest add options.taskRun must be a boolean.')
-  }
-
   return {
     gameDirPath: readOptionalNonEmptyString(options.gameDirPath, 'ingest add options.gameDirPath'),
     gameFilePath: readOptionalNonEmptyString(
@@ -125,12 +129,7 @@ function toAppAddGameFromScraperOptions(
   }
 }
 
-const ADD_GAME_OPTION_KEYS = new Set<string>([
-  'gameDirPath',
-  'gameFilePath',
-  'targetCollectionId',
-  'taskRun'
-])
+const ADD_GAME_OPTION_KEYS = new Set<string>(['gameDirPath', 'gameFilePath', 'targetCollectionId'])
 
 function createExtensionTaskRunInitiator(metadata: ExtensionRuntimeMetadata): TaskRunInitiator {
   return {
@@ -235,26 +234,6 @@ function readUpdateSurfaces(value: unknown): GameUpdateSurface[] {
 
     return surface as GameUpdateSurface
   })
-}
-
-function validateUpdateOptions(options: IngestGameUpdateFromScraperOptions | undefined): void {
-  if (options === undefined) {
-    return
-  }
-
-  if (!isPlainRecord(options)) {
-    throw createValidationError('ingest update options must be an object.')
-  }
-
-  for (const key of Object.keys(options)) {
-    if (key !== 'taskRun') {
-      throw createValidationError(`ingest update options contain an unknown field "${key}".`)
-    }
-  }
-
-  if (options.taskRun !== undefined && typeof options.taskRun !== 'boolean') {
-    throw createValidationError('ingest update options.taskRun must be a boolean.')
-  }
 }
 
 function readEnum<T extends string>(value: unknown, allowed: readonly T[], label: string): T {

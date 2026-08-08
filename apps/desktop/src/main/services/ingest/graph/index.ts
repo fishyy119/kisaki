@@ -18,6 +18,7 @@ export type {
   IngestGameCompanyLink,
   IngestGameCompanyNode,
   IngestGameGraph,
+  IngestGameGraphLinks,
   IngestGameNode,
   IngestGamePersonLink,
   IngestGamePersonNode,

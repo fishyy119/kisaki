@@ -6,27 +6,30 @@
  * All methods accept an optional DbContext parameter to work within transactions.
  */
 
-import { eq, and } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import * as schema from '@shared/db/schema'
 import {
   persons,
   companies,
   characters,
   games,
-  tags,
-  personExternalIds,
-  companyExternalIds,
-  characterExternalIds,
-  gameExternalIds,
   type Person,
   type Company,
   type Character,
-  type Game,
-  type Tag
+  type Game
 } from '@shared/db/schema'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import type { DbContext } from '../types'
+import type { DbContext, DbQueryContext } from '../types'
+import {
+  characterExternalIdLink,
+  companyExternalIdLink,
+  findExternalIdOwners,
+  gameExternalIdLink,
+  personExternalIdLink,
+  type ExternalIdLinkTable
+} from './external-id'
 
 export class DbEntityFinderHelper {
   constructor(private db: BetterSQLite3Database<typeof schema>) {}
@@ -39,99 +42,33 @@ export class DbEntityFinderHelper {
   }
 
   findExistingPerson(params: { externalIds?: ExternalId[] }, ctx?: DbContext): Person | undefined {
-    const db = this.getDb(ctx)
-
-    for (const extId of normalizeExternalIds(params.externalIds)) {
-      const [row] = db
-        .select()
-        .from(personExternalIds)
-        .where(
-          and(
-            eq(personExternalIds.source, extId.source),
-            eq(personExternalIds.externalId, extId.id)
-          )
-        )
-        .limit(1)
-        .all()
-
-      if (row) {
-        const [person] = db
-          .select()
-          .from(persons)
-          .where(eq(persons.id, row.personId))
-          .limit(1)
-          .all()
-        if (person) return person
-      }
-    }
-
-    return undefined
+    return this.findByExternalIds<Person>(
+      { entityTable: persons, idColumn: persons.id, link: personExternalIdLink },
+      params.externalIds,
+      ctx
+    )
   }
 
   findExistingCompany(
     params: { externalIds?: ExternalId[] },
     ctx?: DbContext
   ): Company | undefined {
-    const db = this.getDb(ctx)
-
-    for (const extId of normalizeExternalIds(params.externalIds)) {
-      const [row] = db
-        .select()
-        .from(companyExternalIds)
-        .where(
-          and(
-            eq(companyExternalIds.source, extId.source),
-            eq(companyExternalIds.externalId, extId.id)
-          )
-        )
-        .limit(1)
-        .all()
-
-      if (row) {
-        const [company] = db
-          .select()
-          .from(companies)
-          .where(eq(companies.id, row.companyId))
-          .limit(1)
-          .all()
-        if (company) return company
-      }
-    }
-
-    return undefined
+    return this.findByExternalIds<Company>(
+      { entityTable: companies, idColumn: companies.id, link: companyExternalIdLink },
+      params.externalIds,
+      ctx
+    )
   }
 
   findExistingCharacter(
     params: { externalIds?: ExternalId[] },
     ctx?: DbContext
   ): Character | undefined {
-    const db = this.getDb(ctx)
-
-    for (const extId of normalizeExternalIds(params.externalIds)) {
-      const [row] = db
-        .select()
-        .from(characterExternalIds)
-        .where(
-          and(
-            eq(characterExternalIds.source, extId.source),
-            eq(characterExternalIds.externalId, extId.id)
-          )
-        )
-        .limit(1)
-        .all()
-
-      if (row) {
-        const [character] = db
-          .select()
-          .from(characters)
-          .where(eq(characters.id, row.characterId))
-          .limit(1)
-          .all()
-        if (character) return character
-      }
-    }
-
-    return undefined
+    return this.findByExternalIds<Character>(
+      { entityTable: characters, idColumn: characters.id, link: characterExternalIdLink },
+      params.externalIds,
+      ctx
+    )
   }
 
   findExistingGame(
@@ -140,7 +77,7 @@ export class DbEntityFinderHelper {
   ): Game | undefined {
     const db = this.getDb(ctx)
 
-    // First check by path (most specific)
+    // The install directory is the most specific identity a local game has.
     if (params.path) {
       const [result] = db
         .select()
@@ -152,42 +89,38 @@ export class DbEntityFinderHelper {
       if (result) return result
     }
 
-    for (const extId of normalizeExternalIds(params.externalIds)) {
-      const [row] = db
-        .select()
-        .from(gameExternalIds)
-        .where(
-          and(eq(gameExternalIds.source, extId.source), eq(gameExternalIds.externalId, extId.id))
-        )
-        .limit(1)
-        .all()
+    return this.findByExternalIds<Game>(
+      { entityTable: games, idColumn: games.id, link: gameExternalIdLink },
+      params.externalIds,
+      ctx
+    )
+  }
 
-      if (row) {
-        const [game] = db.select().from(games).where(eq(games.id, row.gameId)).limit(1).all()
-        if (game) return game
+  /**
+   * Resolve the first entity owning any of the given external IDs.
+   * Parameterized by schema facts only, so every entity with an external-ID
+   * link table shares one implementation.
+   */
+  private findByExternalIds<TRow>(
+    target: { entityTable: SQLiteTable; idColumn: AnySQLiteColumn; link: ExternalIdLinkTable },
+    externalIds: ExternalId[] | undefined,
+    ctx?: DbContext
+  ): TRow | undefined {
+    const db = this.getDb(ctx)
+
+    for (const externalId of normalizeExternalIds(externalIds)) {
+      for (const ownerId of findExternalIdOwners(db, target.link, externalId)) {
+        const [row] = (db as DbQueryContext)
+          .select()
+          .from(target.entityTable)
+          .where(eq(target.idColumn, ownerId))
+          .limit(1)
+          .all() as TRow[]
+
+        if (row) return row
       }
     }
 
     return undefined
-  }
-
-  getAppSettings() {
-    const settingsData = this.db.query.settings.findFirst().sync()
-    if (!settingsData) {
-      throw new Error('Settings not found in database')
-    }
-    return settingsData
-  }
-
-  /**
-   * Find existing tag by name
-   */
-  findExistingTag(params: { name: string }, ctx?: DbContext): Tag | undefined {
-    const db = this.getDb(ctx)
-    if (!params.name) return undefined
-
-    const [result] = db.select().from(tags).where(eq(tags.name, params.name)).limit(1).all()
-
-    return result
   }
 }

@@ -98,15 +98,3 @@ export function parseFilterState(value: unknown): FilterState {
   }
   return { match, conditions }
 }
-
-/**
- * Validates the structural shape produced by the app itself (write boundary).
- * Value-level cleanup (dropped no-op conditions) is left to parseFilterState.
- */
-export function matchesFilterStateShape(value: unknown): value is FilterState {
-  return (
-    matchesPlainObject(value) &&
-    (value.match === 'all' || value.match === 'any') &&
-    Array.isArray(value.conditions)
-  )
-}

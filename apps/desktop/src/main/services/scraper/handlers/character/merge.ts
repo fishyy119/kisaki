@@ -13,6 +13,7 @@ import {
   applyImageStrategy,
   applyStrategy,
   filterBySlot,
+  foldCollectionResults,
   mergeCharacterPersons,
   mergeScrapedIdentities,
   sortByRank,
@@ -124,7 +125,9 @@ function mergeInfo(
     if (!metadata.cup && info.cup) metadata.cup = info.cup
     if (!metadata.description && info.description) metadata.description = info.description
 
-    if (info.relatedSites?.length) {
+    // Presence is authority: a provider that reports no sites at all keeps the
+    // collection empty instead of leaving it unknown.
+    if (info.relatedSites) {
       metadata.relatedSites = applyStrategy(
         metadata.relatedSites,
         info.relatedSites,
@@ -142,13 +145,9 @@ function mergeTags(
   results: CharacterScraperTagsResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-    metadata.tags = applyStrategy(metadata.tags, result.data, strategy, (t) => t.name)
-    if (strategy === 'first' && metadata.tags?.length) break
-  }
+  metadata.tags = foldCollectionResults(results, strategy, (merged, result) =>
+    applyStrategy(merged, result.data, strategy, (t) => t.name)
+  )
 }
 
 function mergePersons(
@@ -156,13 +155,12 @@ function mergePersons(
   results: CharacterScraperPersonsResult[],
   options: RelationCollectionMergeOptions
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-    metadata.persons = mergeCharacterPersons(metadata.persons, result.data, options)
-    if (options.strategy === 'first' && metadata.persons?.length) break
-  }
+  metadata.persons = foldCollectionResults(
+    results,
+    options.strategy,
+    // Both sides are present inside the fold, so the merge always yields a collection.
+    (merged, result) => mergeCharacterPersons(merged, result.data, options) ?? merged
+  )
 }
 
 function mergePhotos(
@@ -170,13 +168,9 @@ function mergePhotos(
   results: CharacterScraperPhotosResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-    metadata.photos = applyImageStrategy(metadata.photos, result.data, strategy)
-    if (strategy === 'first' && metadata.photos?.length) break
-  }
+  metadata.photos = foldCollectionResults(results, strategy, (merged, result) =>
+    applyImageStrategy(merged, result.data, strategy)
+  )
 }
 
 function finalize(partial: Partial<ScrapedCharacterMetadata>): ScrapedCharacterMetadata | null {
@@ -196,8 +190,8 @@ function finalize(partial: Partial<ScrapedCharacterMetadata>): ScrapedCharacterM
     waist: partial.waist,
     hips: partial.hips,
     cup: partial.cup,
-    description: partial.description ?? '',
-    relatedSites: partial.relatedSites ?? [],
+    description: partial.description,
+    relatedSites: partial.relatedSites,
     tags: partial.tags,
     persons: partial.persons,
     photos: partial.photos
@@ -229,15 +223,9 @@ export function toScrapedCharacterBundle(
       relatedSites: metadata.relatedSites,
       tags: metadata.tags
     },
-    relationFacts: metadata.persons?.length
-      ? {
-          characterPerson: metadata.persons
-        }
-      : undefined,
-    mediaCandidates: metadata.photos?.length
-      ? {
-          photoUrls: metadata.photos
-        }
-      : undefined
+    // Slot presence, not slot content: an empty array is an authoritative
+    // "none", a missing key is "unknown".
+    relationFacts: metadata.persons ? { characterPerson: metadata.persons } : undefined,
+    mediaCandidates: metadata.photos ? { photoUrls: metadata.photos } : undefined
   }
 }

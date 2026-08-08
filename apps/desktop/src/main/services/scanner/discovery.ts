@@ -98,7 +98,7 @@ export class ScannerDiscovery {
     entityDepth: number,
     rules: NameExtractionRule[]
   ): Promise<ExtractionTestResult[]> {
-    const settingsData = this.dbService.entityFinder.getAppSettings()
+    const settingsData = this.dbService.settings.get()
     const entities = await this.scanForEntities(scannerPath, {
       entityDepth,
       ignoredNames: settingsData.scannerIgnoredNames,

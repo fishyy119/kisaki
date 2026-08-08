@@ -1,12 +1,17 @@
 /**
  * Attachment Store
  *
- * Handles file attachment storage with mutex protection for concurrent access.
+ * Owns the on-disk attachment layout (`<storage>/<table>/<row>/<file>`) and all
+ * reads and writes into it, with mutex protection for concurrent access.
+ *
+ * Table names, row ids and file names reach this module from IPC, the
+ * `attachment://` protocol and extension hosts, so every path segment is
+ * validated and every resolved path is confined to the storage root.
  */
 
 import { Mutex } from 'async-mutex'
-import { eq, getTableName, is } from 'drizzle-orm'
-import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core'
+import { eq, getTableColumns, getTableName, is } from 'drizzle-orm'
+import { SQLiteTable, getTableConfig, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { nanoid } from 'nanoid'
 import { fileTypeFromBuffer } from 'file-type'
@@ -23,6 +28,43 @@ import type { TableName } from '@shared/db/table-names'
 import * as schema from '@shared/db/schema'
 
 const log = createLogger('Db')
+
+const STORAGE_TABLE_NAMES: ReadonlySet<string> = new Set(
+  Object.values(schema).flatMap((value) => (is(value, SQLiteTable) ? [getTableName(value)] : []))
+)
+
+/** Rejects table names that are not backed by a schema table. */
+export function requireStorageTable(tableName: string): TableName {
+  if (!STORAGE_TABLE_NAMES.has(tableName)) {
+    throw new Error(`Unknown attachment table: ${tableName}`)
+  }
+  return tableName as TableName
+}
+
+/** Id column of a schema table; every attachment-bearing table has one. */
+function requireIdColumn(table: SQLiteTable): AnySQLiteColumn {
+  const column = getTableColumns(table).id
+  if (!column) {
+    throw new Error(`Table ${getTableConfig(table).name} has no id column.`)
+  }
+  return column
+}
+
+/** Rejects anything that is not a single, literal path segment. */
+function requireSafePathSegment(value: string, label: string): string {
+  if (
+    !value ||
+    value === '.' ||
+    value === '..' ||
+    value.includes('/') ||
+    value.includes('\\') ||
+    value.includes('\0') ||
+    value !== path.basename(value)
+  ) {
+    throw new Error(`Invalid attachment ${label}: ${value}`)
+  }
+  return value
+}
 
 /**
  * Attachment storage manager.
@@ -57,25 +99,18 @@ export class AttachmentStore {
     input: AttachmentInput,
     signal?: AbortSignal
   ): Promise<string> {
-    const tableName = getTableConfig(table).name
-    const lockKey = this.getRowLockKey(tableName, String(rowId))
-    const mutex = this.getMutex(lockKey)
+    const { fileDir, lockKey, mutex } = this.lockRow(table, rowId)
 
     return await mutex.runExclusive(async () => {
       try {
         throwIfAborted(signal)
         const record = this.getRow(table, rowId)
-        const fileDir = path.join(this.storageDir, tableName, String(rowId))
 
         const oldFileName = record[field as string] as string | null | undefined
         const { fileName, filePath } = await this.writeNewFile(fileDir, input, signal)
         try {
           throwIfAborted(signal)
-          this.db
-            .update(table)
-            .set({ [field]: fileName } as any)
-            .where(eq((table as any).id, rowId))
-            .run()
+          this.updateRowField(table, rowId, field, fileName)
         } catch (error) {
           await this.deleteFile(fileDir, fileName, { bestEffort: true })
           throw error
@@ -102,9 +137,7 @@ export class AttachmentStore {
     rowId: string,
     field: FileColumns<TTable>
   ): Promise<void> {
-    const tableName = getTableConfig(table).name
-    const lockKey = this.getRowLockKey(tableName, String(rowId))
-    const mutex = this.getMutex(lockKey)
+    const { fileDir, lockKey, mutex } = this.lockRow(table, rowId)
 
     return await mutex.runExclusive(async () => {
       try {
@@ -112,12 +145,7 @@ export class AttachmentStore {
         const fileName = record[field as string] as string | null | undefined
         if (!fileName) return
 
-        const fileDir = path.join(this.storageDir, tableName, String(rowId))
-        this.db
-          .update(table)
-          .set({ [field]: null } as any)
-          .where(eq((table as any).id, rowId))
-          .run()
+        this.updateRowField(table, rowId, field, null)
 
         this.scheduleDeleteFile(fileDir, fileName, `clearFile:${lockKey}`)
       } catch (error) {
@@ -138,15 +166,12 @@ export class AttachmentStore {
     input: AttachmentInput,
     signal?: AbortSignal
   ): Promise<string> {
-    const tableName = getTableConfig(table).name
-    const lockKey = this.getRowLockKey(tableName, String(rowId))
-    const mutex = this.getMutex(lockKey)
+    const { fileDir, lockKey, mutex } = this.lockRow(table, rowId)
 
     return await mutex.runExclusive(async () => {
       try {
         throwIfAborted(signal)
         const record = this.getRow(table, rowId)
-        const fileDir = path.join(this.storageDir, tableName, String(rowId))
 
         const { fileName, filePath } = await this.writeNewFile(fileDir, input, signal)
         const current = this.coerceStringArray(record[field as string])
@@ -154,11 +179,7 @@ export class AttachmentStore {
 
         try {
           throwIfAborted(signal)
-          this.db
-            .update(table)
-            .set({ [field]: updated } as any)
-            .where(eq((table as any).id, rowId))
-            .run()
+          this.updateRowField(table, rowId, field, updated)
         } catch (error) {
           await this.deleteFile(fileDir, fileName, { bestEffort: true })
           throw error
@@ -183,9 +204,7 @@ export class AttachmentStore {
     field: FilesColumns<TTable>,
     fileName: string
   ): Promise<void> {
-    const tableName = getTableConfig(table).name
-    const lockKey = this.getRowLockKey(tableName, String(rowId))
-    const mutex = this.getMutex(lockKey)
+    const { fileDir, lockKey, mutex } = this.lockRow(table, rowId)
 
     return await mutex.runExclusive(async () => {
       try {
@@ -194,12 +213,7 @@ export class AttachmentStore {
         const updated = current.filter((f) => f !== fileName)
         if (updated.length === current.length) return
 
-        const fileDir = path.join(this.storageDir, tableName, String(rowId))
-        this.db
-          .update(table)
-          .set({ [field]: updated } as any)
-          .where(eq((table as any).id, rowId))
-          .run()
+        this.updateRowField(table, rowId, field, updated)
 
         this.scheduleDeleteFile(fileDir, fileName, `removeFile:${lockKey}`)
       } catch (error) {
@@ -217,9 +231,7 @@ export class AttachmentStore {
     rowId: string,
     field: FilesColumns<TTable>
   ): Promise<string[]> {
-    const tableName = getTableConfig(table).name
-    const lockKey = this.getRowLockKey(tableName, String(rowId))
-    const mutex = this.getMutex(lockKey)
+    const { mutex } = this.lockRow(table, rowId)
 
     return await mutex.runExclusive(async () => {
       const record = this.getRow(table, rowId)
@@ -235,21 +247,14 @@ export class AttachmentStore {
     rowId: string,
     field: FilesColumns<TTable>
   ): Promise<void> {
-    const tableName = getTableConfig(table).name
-    const lockKey = this.getRowLockKey(tableName, String(rowId))
-    const mutex = this.getMutex(lockKey)
+    const { fileDir, lockKey, mutex } = this.lockRow(table, rowId)
 
     return await mutex.runExclusive(async () => {
       try {
         const record = this.getRow(table, rowId)
-        const fileDir = path.join(this.storageDir, tableName, String(rowId))
         const current = this.coerceStringArray(record[field as string])
 
-        this.db
-          .update(table)
-          .set({ [field]: [] } as any)
-          .where(eq((table as any).id, rowId))
-          .run()
+        this.updateRowField(table, rowId, field, [])
 
         for (const fileName of current) {
           this.scheduleDeleteFile(fileDir, fileName, `clearFiles:${lockKey}`)
@@ -313,23 +318,22 @@ export class AttachmentStore {
   }
 
   async copyFileBetweenRows(
-    tableName: string,
+    tableName: TableName,
     fromRowId: string,
     toRowId: string,
     fileName: string
   ): Promise<string> {
-    this.assertSafeFileName(fileName)
+    const fromPath = this.getPath(tableName, fromRowId, fileName)
+    const toDir = this.getRowDir(tableName, toRowId)
 
-    const lockKey = this.getRowLockKey(tableName, String(toRowId))
+    const lockKey = this.getRowLockKey(tableName, toRowId)
     const mutex = this.getMutex(lockKey)
 
     return await mutex.runExclusive(async () => {
-      const fromPath = this.getPath(tableName, String(fromRowId), fileName)
       if (!(await pathExists(fromPath))) {
         throw new Error('Attachment file not found.')
       }
 
-      const toDir = path.join(this.storageDir, tableName, String(toRowId))
       await mkdir(toDir, { recursive: true })
 
       const copiedFileName = await this.createCopiedFileName(toDir, fileName)
@@ -339,12 +343,12 @@ export class AttachmentStore {
     })
   }
 
-  async cleanupRowFiles(tableName: string, rowId: string, fileNames: string[]): Promise<void> {
-    const lockKey = this.getRowLockKey(tableName, String(rowId))
+  async cleanupRowFiles(tableName: TableName, rowId: string, fileNames: string[]): Promise<void> {
+    const fileDir = this.getRowDir(tableName, rowId)
+    const lockKey = this.getRowLockKey(tableName, rowId)
     const mutex = this.getMutex(lockKey)
 
     return await mutex.runExclusive(async () => {
-      const fileDir = path.join(this.storageDir, tableName, String(rowId))
       for (const fileName of fileNames) {
         await this.deleteFile(fileDir, fileName, { bestEffort: true })
       }
@@ -353,14 +357,14 @@ export class AttachmentStore {
 
   /**
    * Cleanup storage directory for a deleted row.
-   * Intended to be called from db.deleted event listeners.
+   * Owned by the committed-change feed; deletion events are the only trigger.
    */
-  async cleanupRow(tableName: string, rowId: string): Promise<void> {
-    const lockKey = this.getRowLockKey(tableName, String(rowId))
+  async cleanupRow(tableName: TableName, rowId: string): Promise<void> {
+    const fileDir = this.getRowDir(tableName, rowId)
+    const lockKey = this.getRowLockKey(tableName, rowId)
     const mutex = this.getMutex(lockKey)
 
     return await mutex.runExclusive(async () => {
-      const fileDir = path.join(this.storageDir, tableName, String(rowId))
       if (!(await pathExists(fileDir))) return
 
       try {
@@ -373,10 +377,22 @@ export class AttachmentStore {
   }
 
   /**
-   * Get absolute path to attachment file.
+   * Absolute path to a row's storage directory.
+   * @throws When the table is unknown or the row id is not a safe path segment.
    */
-  getPath(tableName: string, rowId: string, fileName: string): string {
-    return path.join(this.storageDir, tableName, rowId, fileName)
+  getRowDir(tableName: TableName, rowId: string): string {
+    const table = requireStorageTable(tableName)
+    requireSafePathSegment(rowId, 'row id')
+    return this.requireInsideStorage(path.join(this.storageDir, table, rowId))
+  }
+
+  /**
+   * Absolute path to an attachment file.
+   * @throws When the table, row id or file name is not a safe path segment.
+   */
+  getPath(tableName: TableName, rowId: string, fileName: string): string {
+    requireSafePathSegment(fileName, 'file name')
+    return this.requireInsideStorage(path.join(this.getRowDir(tableName, rowId), fileName))
   }
 
   /**
@@ -388,6 +404,30 @@ export class AttachmentStore {
     }
     this.mutexMap.clear()
     this.mutexLastUsed.clear()
+  }
+
+  /** Validated row directory plus the mutex guarding that row. */
+  private lockRow(
+    table: SQLiteTable,
+    rowId: string
+  ): { fileDir: string; lockKey: string; mutex: Mutex } {
+    const tableName = requireStorageTable(getTableConfig(table).name)
+    const lockKey = this.getRowLockKey(tableName, rowId)
+    return {
+      fileDir: this.getRowDir(tableName, rowId),
+      lockKey,
+      mutex: this.getMutex(lockKey)
+    }
+  }
+
+  /** Last line of defence: no resolved path may leave the storage root. */
+  private requireInsideStorage(target: string): string {
+    const root = path.resolve(this.storageDir)
+    const resolved = path.resolve(target)
+    if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+      throw new Error('Attachment path escapes the storage root.')
+    }
+    return resolved
   }
 
   private getMutex(key: string): Mutex {
@@ -403,8 +443,9 @@ export class AttachmentStore {
   }
 
   private getSchemaTableByName(tableName: TableName): SQLiteTable {
+    const name = requireStorageTable(tableName)
     for (const value of Object.values(schema)) {
-      if (is(value, SQLiteTable) && getTableName(value) === tableName) {
+      if (is(value, SQLiteTable) && getTableName(value) === name) {
         return value
       }
     }
@@ -467,20 +508,26 @@ export class AttachmentStore {
     }, CLEANUP_INTERVAL)
   }
 
-  private getRow<TTable extends SQLiteTable>(
-    table: TTable,
-    rowId: string
-  ): Record<string, unknown> {
+  private getRow(table: SQLiteTable, rowId: string): Record<string, unknown> {
     const record = this.db
       .select()
       .from(table)
-      .where(eq((table as any).id, rowId))
+      .where(eq(requireIdColumn(table), rowId))
       .get()
 
     if (!record) {
       throw new Error(`Row not found: ${getTableConfig(table).name}:${rowId}`)
     }
-    return record as unknown as Record<string, unknown>
+    return record as Record<string, unknown>
+  }
+
+  /** Writes one column picked at runtime, so the dynamic key stays in one place. */
+  private updateRowField(table: SQLiteTable, rowId: string, field: string, value: unknown): void {
+    this.db
+      .update(table)
+      .set({ [field]: value })
+      .where(eq(requireIdColumn(table), rowId))
+      .run()
   }
 
   private async writeNewFile(
@@ -649,8 +696,8 @@ export class AttachmentStore {
     fileName: string,
     options?: { bestEffort?: boolean; maxRetries?: number; retryDelayMs?: number }
   ): Promise<boolean> {
-    this.assertSafeFileName(fileName)
-    const filePath = path.join(fileDir, fileName)
+    requireSafePathSegment(fileName, 'file name')
+    const filePath = this.requireInsideStorage(path.join(fileDir, fileName))
 
     const maxRetries = options?.maxRetries ?? 0
     const retryDelay = options?.retryDelayMs ?? 0
@@ -670,12 +717,6 @@ export class AttachmentStore {
 
     await this.thumbnailStore.delete(filePath, fileDir)
     return true
-  }
-
-  private assertSafeFileName(fileName: string): void {
-    if (fileName !== path.basename(fileName) || fileName.includes('/') || fileName.includes('\\')) {
-      throw new Error(`Invalid fileName: ${fileName}`)
-    }
   }
 
   private coerceStringArray(value: unknown): string[] {

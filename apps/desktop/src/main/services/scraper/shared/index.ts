@@ -1,3 +1,4 @@
+export { createProviderHttpError, type ProviderHttpFailure } from './errors'
 export {
   createProviderIdentity,
   ensureProviderExternalId,
@@ -10,6 +11,7 @@ export {
   applyStrategy,
   buildScrapedEntityAliasKeys,
   filterBySlot,
+  foldCollectionResults,
   mergeCharacterMetadataFields,
   mergeCharacterPersons,
   mergeCompanyMetadataFields,

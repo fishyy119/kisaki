@@ -2,7 +2,7 @@ import { formatScopedCollectionType } from '../media/labels'
 import type { BangumiMediaScope } from '../media/scopes'
 import { readBangumiSubjectId } from '../media/game/mapping'
 import { m } from '../i18n'
-import { BangumiExtensionError } from '../utils/errors'
+import { BangumiExtensionError, isCancellationError } from '../utils/errors'
 import { omitUndefined } from '../utils/object'
 import type { SyncItemResult } from '../sync/engine'
 import type { BangumiChangedItemsSyncArgs, BangumiFullSyncArgs } from './args'
@@ -15,7 +15,6 @@ import {
 import { createPreviewGroup } from './presentation'
 import type { BangumiJobPreviewGroup, BangumiJobPreviewRow } from '../../shared/settings'
 import type { BangumiJobSummary } from './summary'
-import { isCancellationError } from './summary'
 
 interface CollectedFullSync {
   scope: BangumiMediaScope

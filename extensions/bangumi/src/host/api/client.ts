@@ -31,7 +31,7 @@ import type {
 } from './types'
 import type { BangumiSettingsV1 } from '../config/schema'
 import { BANGUMI_API_BASE_URL, BANGUMI_SUBJECT_TYPE_GAME } from '../utils/constants'
-import { BangumiExtensionError } from '../utils/errors'
+import { BangumiExtensionError, isCancellationError } from '../utils/errors'
 import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 import type { TokenService } from '../auth/token-service'
@@ -139,58 +139,88 @@ export class BangumiClient {
     })
   }
 
-  async getSubjectPersons(subjectId: number): Promise<BangumiRelatedPerson[]> {
+  async getSubjectPersons(
+    subjectId: number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiRelatedPerson[]> {
     return this.request<BangumiRelatedPerson[]>('GET', `/v0/subjects/${subjectId}/persons`, {
-      auth: 'optional'
+      auth: 'optional',
+      signal: options.signal
     })
   }
 
-  async getSubjectCharacters(subjectId: number): Promise<BangumiRelatedCharacter[]> {
+  async getSubjectCharacters(
+    subjectId: number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiRelatedCharacter[]> {
     return this.request<BangumiRelatedCharacter[]>('GET', `/v0/subjects/${subjectId}/characters`, {
-      auth: 'optional'
+      auth: 'optional',
+      signal: options.signal
     })
   }
 
-  async getSubjectRelations(subjectId: number): Promise<BangumiSubjectRelation[]> {
+  async getSubjectRelations(
+    subjectId: number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiSubjectRelation[]> {
     return this.request<BangumiSubjectRelation[]>('GET', `/v0/subjects/${subjectId}/subjects`, {
-      auth: 'optional'
+      auth: 'optional',
+      signal: options.signal
     })
   }
 
-  async getCharacterById(characterId: number): Promise<BangumiCharacterDetail> {
+  async getCharacterById(
+    characterId: number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiCharacterDetail> {
     return this.request<BangumiCharacterDetail>('GET', `/v0/characters/${characterId}`, {
-      auth: 'optional'
+      auth: 'optional',
+      signal: options.signal
     })
   }
 
-  async getCharacterPersons(characterId: number): Promise<BangumiCharacterPerson[]> {
+  async getCharacterPersons(
+    characterId: number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiCharacterPerson[]> {
     return this.request<BangumiCharacterPerson[]>('GET', `/v0/characters/${characterId}/persons`, {
-      auth: 'optional'
+      auth: 'optional',
+      signal: options.signal
     })
   }
 
-  async getPersonById(personId: number): Promise<BangumiPersonDetail> {
+  async getPersonById(
+    personId: number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiPersonDetail> {
     return this.request<BangumiPersonDetail>('GET', `/v0/persons/${personId}`, {
-      auth: 'optional'
+      auth: 'optional',
+      signal: options.signal
     })
   }
 
-  async getSubjectImageUrl(subjectId: number, type: BangumiImageType): Promise<string | undefined> {
-    return this.requestRedirectUrl(`/v0/subjects/${subjectId}/image`, { type })
+  async getSubjectImageUrl(
+    subjectId: number,
+    type: BangumiImageType,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<string | undefined> {
+    return this.requestRedirectUrl(`/v0/subjects/${subjectId}/image`, { type }, options.signal)
   }
 
   async getCharacterImageUrl(
     characterId: number,
-    type: BangumiEntityImageType
+    type: BangumiEntityImageType,
+    options: Pick<RequestOptions, 'signal'> = {}
   ): Promise<string | undefined> {
-    return this.requestRedirectUrl(`/v0/characters/${characterId}/image`, { type })
+    return this.requestRedirectUrl(`/v0/characters/${characterId}/image`, { type }, options.signal)
   }
 
   async getPersonImageUrl(
     personId: number,
-    type: BangumiEntityImageType
+    type: BangumiEntityImageType,
+    options: Pick<RequestOptions, 'signal'> = {}
   ): Promise<string | undefined> {
-    return this.requestRedirectUrl(`/v0/persons/${personId}/image`, { type })
+    return this.requestRedirectUrl(`/v0/persons/${personId}/image`, { type }, options.signal)
   }
 
   async getUserCollections(
@@ -305,17 +335,24 @@ export class BangumiClient {
 
   private async requestRedirectUrl(
     pathname: string,
-    query: Record<string, string | number | boolean>
+    query: Record<string, string | number | boolean>,
+    signal?: AbortSignal
   ): Promise<string | undefined> {
     try {
       const response = await this.send<Uint8Array>('GET', pathname, {
         query,
         auth: 'optional',
-        responseType: 'arrayBuffer'
+        responseType: 'arrayBuffer',
+        signal
       })
 
       return response.url?.trim() || undefined
     } catch (error) {
+      // A missing image is expected; a cancellation is not an absent image.
+      if (isCancellationError(error)) {
+        throw error
+      }
+
       this.logger?.debug('Bangumi image redirect lookup failed.', toSafeErrorLog(error))
       return undefined
     }

@@ -9,6 +9,7 @@
  */
 
 import type { NetworkService } from '@main/services/network'
+import { createProviderHttpError } from '../../../../shared'
 import { normalizeYmgalId } from './format'
 import type {
   YmgalApiResponse,
@@ -29,6 +30,7 @@ const RATE_LIMIT_KEY = 'ymgal'
 // Docs explicitly ask developers to avoid concurrent bursts.
 const RATE_LIMIT_CONFIG = { maxRequests: 3, windowMs: 1000 }
 
+const BASE_URL = 'https://www.ymgal.games'
 const PUBLIC_CLIENT_ID = 'ymgal'
 const PUBLIC_CLIENT_SECRET = 'luna0327'
 const TOKEN_SCOPE = 'public'
@@ -49,37 +51,59 @@ export function isYmgalApiError(error: unknown): error is YmgalApiError {
   return error instanceof YmgalApiError
 }
 
+/** Credentials and access token shared by every bound client view. */
+interface YmgalClientState {
+  network: NetworkService
+  clientId?: string
+  clientSecret?: string
+  rateLimitRegistered: boolean
+  accessToken: string | null
+  tokenExpiry: number
+}
+
 export class YmgalClient {
-  private readonly baseUrl = 'https://www.ymgal.games'
-  private rateLimitRegistered = false
-
-  private accessToken: string | null = null
-  private tokenExpiry = 0
-  private tokenPromise: Promise<string> | null = null
-
-  constructor(
-    private readonly network: NetworkService,
-    private readonly clientId?: string,
-    private readonly clientSecret?: string
+  private constructor(
+    private readonly state: YmgalClientState,
+    private readonly signal?: AbortSignal
   ) {}
 
+  static create(network: NetworkService, clientId?: string, clientSecret?: string): YmgalClient {
+    return new YmgalClient({
+      network,
+      clientId,
+      clientSecret,
+      rateLimitRegistered: false,
+      accessToken: null,
+      tokenExpiry: 0
+    })
+  }
+
+  /**
+   * View bound to one invocation's cancellation scope. Shared state stays
+   * shared, so every request a provider makes for that invocation is
+   * cancellable without the call sites carrying a signal.
+   */
+  withSignal(signal: AbortSignal | undefined): YmgalClient {
+    return new YmgalClient(this.state, signal)
+  }
+
   private ensureRateLimitRegistered(): void {
-    if (!this.rateLimitRegistered) {
-      this.network.rateLimits.register(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
-      this.rateLimitRegistered = true
+    if (!this.state.rateLimitRegistered) {
+      this.state.network.rateLimits.register(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
+      this.state.rateLimitRegistered = true
     }
   }
 
   private resolveClientId(): string {
-    return this.clientId?.trim() || PUBLIC_CLIENT_ID
+    return this.state.clientId?.trim() || PUBLIC_CLIENT_ID
   }
 
   private resolveClientSecret(): string {
-    return this.clientSecret?.trim() || PUBLIC_CLIENT_SECRET
+    return this.state.clientSecret?.trim() || PUBLIC_CLIENT_SECRET
   }
 
   private buildUrl(pathname: string, query?: Record<string, QueryValue>): string {
-    const url = new URL(pathname, this.baseUrl)
+    const url = new URL(pathname, BASE_URL)
 
     if (query) {
       for (const [key, value] of Object.entries(query)) {
@@ -99,27 +123,19 @@ export class YmgalClient {
     }
   }
 
+  /**
+   * Only the token value is cached, never the in-flight request: sharing the
+   * promise would let one invocation's cancellation reject another's await.
+   */
   private async getAccessToken(forceRefresh = false): Promise<string> {
     this.ensureRateLimitRegistered()
 
     const now = Date.now()
-    if (!forceRefresh && this.accessToken && this.tokenExpiry > now + 30_000) {
-      return this.accessToken
+    if (!forceRefresh && this.state.accessToken && this.state.tokenExpiry > now + 30_000) {
+      return this.state.accessToken
     }
 
-    if (!forceRefresh && this.tokenPromise) {
-      return this.tokenPromise
-    }
-
-    this.tokenPromise = this.fetchAccessToken().finally(() => {
-      this.tokenPromise = null
-    })
-
-    return this.tokenPromise
-  }
-
-  private async fetchAccessToken(): Promise<string> {
-    const response = await this.network.request.fetch(
+    const response = await this.state.network.request.fetch(
       this.buildUrl('/oauth/token', {
         grant_type: 'client_credentials',
         client_id: this.resolveClientId(),
@@ -128,15 +144,13 @@ export class YmgalClient {
       }),
       {
         method: 'GET',
-        rateLimitKey: RATE_LIMIT_KEY
+        rateLimitKey: RATE_LIMIT_KEY,
+        signal: this.signal
       }
     )
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => '')
-      throw new Error(
-        `YMGal OAuth failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`
-      )
+      throw createProviderHttpError('YMGal', 'OAuth', response)
     }
 
     const tokenResponse = (await response.json()) as YmgalTokenResponse
@@ -148,8 +162,8 @@ export class YmgalClient {
     const expiresIn = Number(tokenResponse.expires_in)
     const expiresMs = Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn * 1000 : 3_600_000
 
-    this.accessToken = accessToken
-    this.tokenExpiry = Date.now() + expiresMs
+    this.state.accessToken = accessToken
+    this.state.tokenExpiry = Date.now() + expiresMs
     return accessToken
   }
 
@@ -161,24 +175,22 @@ export class YmgalClient {
     this.ensureRateLimitRegistered()
     const token = await this.getAccessToken()
 
-    const response = await this.network.request.fetch(this.buildUrl(pathname, query), {
+    const response = await this.state.network.request.fetch(this.buildUrl(pathname, query), {
       method: 'GET',
       headers: this.buildApiHeaders(token),
-      rateLimitKey: RATE_LIMIT_KEY
+      rateLimitKey: RATE_LIMIT_KEY,
+      signal: this.signal
     })
 
     if (response.status === 401 && retryOnUnauthorized) {
-      this.accessToken = null
-      this.tokenExpiry = 0
+      this.state.accessToken = null
+      this.state.tokenExpiry = 0
       await this.getAccessToken(true)
       return this.requestData<T>(pathname, query, false)
     }
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => '')
-      throw new Error(
-        `YMGal API request failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`
-      )
+      throw createProviderHttpError('YMGal', 'API request', response)
     }
 
     const payload = (await response.json()) as YmgalApiResponse<T>
@@ -270,22 +282,6 @@ export class YmgalClient {
   async getOrganizationGames(orgId: string): Promise<YmgalOrgGameItem[]> {
     return this.requestData<YmgalOrgGameItem[]>('/open/archive/game', {
       orgId: normalizeYmgalId(orgId, 'YMGal organization id')
-    })
-  }
-
-  async getGamesByReleaseDateRange(
-    releaseStartDate: string,
-    releaseEndDate: string
-  ): Promise<YmgalOrgGameItem[]> {
-    return this.requestData<YmgalOrgGameItem[]>('/open/archive/game', {
-      releaseStartDate: releaseStartDate.trim(),
-      releaseEndDate: releaseEndDate.trim()
-    })
-  }
-
-  async getRandomGames(num = 5): Promise<YmgalOrgGameItem[]> {
-    return this.requestData<YmgalOrgGameItem[]>('/open/archive/random-game', {
-      num: Math.max(1, Math.min(Math.floor(num), 10))
     })
   }
 }

@@ -1,12 +1,11 @@
 import { net } from 'electron'
+import { assertNotAborted, linkAbortSignal } from '@main/utils/async'
 import type { FetchOptions } from '@shared/network'
 import type { NetworkRateLimitGate } from './rate-limits'
 import {
-  assertNotAborted,
   DEFAULT_NETWORK_RETRY_COUNT,
   DEFAULT_NETWORK_TIMEOUT_MS,
-  executeWithNetworkRetry,
-  linkAbortSignal
+  executeWithNetworkRetry
 } from './shared'
 
 export interface NetworkRequestClientOptions {
@@ -31,8 +30,10 @@ export class NetworkRequestClient {
       signal
     } = options
 
+    assertNotAborted(signal)
+
     if (rateLimitKey) {
-      await this.options.rateLimits.waitForSlot(rateLimitKey)
+      await this.options.rateLimits.waitForSlot(rateLimitKey, signal)
     }
 
     const fetchOptions: RequestInit = {

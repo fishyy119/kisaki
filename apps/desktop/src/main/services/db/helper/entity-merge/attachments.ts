@@ -1,4 +1,5 @@
 import type { AllEntityType } from '@shared/common'
+import type { TableName } from '@shared/db/table-names'
 import type { SaveBackup } from '@shared/db/contracts/json'
 import type { AttachmentStore } from '../../attachment'
 import { shouldUseSourceValue } from './fields'
@@ -24,8 +25,9 @@ export async function stageEntityAttachments(
     }
 
     for (const field of getSingleFileFields(entityType)) {
-      if (shouldUseSourceValue(target[field], source[field])) {
-        patch[field] = await copyFile(source[field])
+      const sourceFile = source[field]
+      if (typeof sourceFile === 'string' && shouldUseSourceValue(target[field], sourceFile)) {
+        patch[field] = await copyFile(sourceFile)
       }
     }
 
@@ -67,7 +69,7 @@ export async function cleanupStagedMergeFiles(
   attachment: AttachmentStore,
   stagedFiles: StagedMergeFile[]
 ): Promise<void> {
-  const byRow = new Map<string, { tableName: string; rowId: string; fileNames: string[] }>()
+  const byRow = new Map<string, { tableName: TableName; rowId: string; fileNames: string[] }>()
   for (const stagedFile of stagedFiles) {
     const key = `${stagedFile.tableName}\0${stagedFile.rowId}`
     const item = byRow.get(key) ?? {
@@ -84,7 +86,7 @@ export async function cleanupStagedMergeFiles(
   }
 }
 
-function getEntityTableName(entityType: AllEntityType): string {
+function getEntityTableName(entityType: AllEntityType): TableName {
   switch (entityType) {
     case 'game':
       return 'games'
@@ -120,7 +122,7 @@ function getSingleFileFields(entityType: AllEntityType): string[] {
 
 async function copyFiles(
   attachment: AttachmentStore,
-  tableName: string,
+  tableName: TableName,
   sourceId: string,
   targetId: string,
   fileNames: unknown,
@@ -145,7 +147,7 @@ async function copyFiles(
 
 async function mergeSaveBackups(
   attachment: AttachmentStore,
-  tableName: string,
+  tableName: TableName,
   targetId: string,
   sourceId: string,
   targetBackups: unknown,

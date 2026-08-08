@@ -18,7 +18,7 @@ export {
 } from './batch'
 export { flushPendingAssets } from './assets'
 export type { PendingAssetTask } from './assets'
-export { throwIfIngestAborted } from './types'
+export { isIngestCancellation, throwIfIngestAborted } from './abort'
 export type { IngestOperationOptions } from './types'
 export {
   buildCharacterGraph,

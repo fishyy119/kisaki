@@ -1,4 +1,4 @@
-import type { DbContext, DbService } from '@main/services/db'
+import { resolveTagId, type DbContext, type DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type {
   IngestAddPersonFromScraperOptions,
@@ -12,14 +12,14 @@ import {
   personExternalIds,
   personTagLinks,
   persons,
-  tags,
   type NewCollectionPersonLink,
   type NewPerson
 } from '@shared/db'
 import type { IngestPersonGraph, IngestPersonNode } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { pickFirstAssetUrl, type PersistPersonGraphResult } from './types'
-import { reportIngestProgress, type IngestOperationOptions } from '../types'
+import { reportIngestProgress } from '../progress'
+import type { IngestOperationOptions } from '../types'
 
 type PersonPersistOptions = IngestAddPersonFromScraperOptions &
   Pick<IngestOperationOptions, 'signal' | 'onProgress'>
@@ -117,20 +117,15 @@ export class PersonIngestPersistHandler {
     for (let i = 0; i < (core.tags?.length ?? 0); i++) {
       const tagData = core.tags![i]
 
-      tx.insert(tags)
-        .values({ name: tagData.name, isNsfw: tagData.isNsfw })
-        .onConflictDoNothing()
-        .run()
-
-      const existingTag = this.dbService.entityFinder.findExistingTag({ name: tagData.name }, tx)
-      if (!existingTag) {
+      const tagId = resolveTagId(tx, tagData)
+      if (!tagId) {
         continue
       }
 
       tx.insert(personTagLinks)
         .values({
           personId,
-          tagId: existingTag.id,
+          tagId,
           isSpoiler: tagData.isSpoiler || false,
           note: tagData.note || null,
           orderInPerson: i,
@@ -142,7 +137,7 @@ export class PersonIngestPersistHandler {
     const pendingAssets: PendingAssetTask[] = []
     const photoUrl = pickFirstAssetUrl(node.photoUrls)
     if (photoUrl) {
-      pendingAssets.push({ type: 'person', personId, url: photoUrl })
+      pendingAssets.push({ table: 'persons', rowId: personId, field: 'photoFile', url: photoUrl })
     }
 
     this.addToCollection(tx, personId, targetCollectionId)
@@ -189,8 +184,16 @@ export class PersonIngestPersistHandler {
     result: PersistPersonGraphResult,
     warnings: IngestWarning[]
   ): IngestAddPersonFromScraperResult {
-    const { pendingAssets, ...publicResult } = result
-    void pendingAssets
-    return warnings.length > 0 ? { ...publicResult, warnings } : publicResult
+    const publicResult: IngestAddPersonFromScraperResult = {
+      personId: result.personId,
+      isNew: result.isNew
+    }
+    if (result.existingReason) {
+      publicResult.existingReason = result.existingReason
+    }
+    if (warnings.length > 0) {
+      publicResult.warnings = warnings
+    }
+    return publicResult
   }
 }

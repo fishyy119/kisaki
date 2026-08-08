@@ -7,6 +7,7 @@
  * - https://www.ymgal.games/developer
  */
 
+import { isAbortError } from '@main/utils/async'
 import type { GameScraperSlot } from '@shared/db'
 import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
@@ -20,7 +21,7 @@ import type {
   ScrapedGamePersonFact,
   ScraperLookup
 } from '@shared/scraper'
-import type { ScraperProviderDeps } from '../../../../types'
+import type { ScraperProviderContext, ScraperProviderDeps } from '../../../../types'
 import type {
   GameResolvedTarget,
   GameScraperProvider,
@@ -92,17 +93,18 @@ export class YmgalProvider implements GameScraperProvider {
     this.helper = deps.helper
     const clientId = import.meta.env.VITE_YMGAL_API_CLIENT_ID?.trim()
     const clientSecret = import.meta.env.VITE_YMGAL_API_CLIENT_SECRET?.trim()
-    this.client = new YmgalClient(deps.network, clientId || undefined, clientSecret || undefined)
+    this.client = YmgalClient.create(deps.network, clientId || undefined, clientSecret || undefined)
   }
 
   // ===========================================================================
   // Search
   // ===========================================================================
 
-  public async search(query: string, locale?: ContentLocale): Promise<GameSearchResult[]> {
+  public async search(query: string, ctx: ScraperProviderContext): Promise<GameSearchResult[]> {
     const keyword = query.trim()
     if (!keyword) return []
 
+    const client = this.client.withSignal(ctx.signal)
     const ordered: GameSearchResult[] = []
     const seen = new Set<string>()
 
@@ -112,14 +114,14 @@ export class YmgalProvider implements GameScraperProvider {
       ordered.push(result)
     }
 
-    const accurate = await this.client.searchGameAccurate(keyword, 70)
+    const accurate = await client.searchGameAccurate(keyword, 70)
     if (accurate?.game) {
-      push(this.mapGameSearchResult(accurate.game, locale))
+      push(this.mapGameSearchResult(accurate.game, ctx.locale))
     }
 
-    const page = await this.client.searchGameList(keyword, 1, 20)
+    const page = await client.searchGameList(keyword, 1, 20)
     for (const item of page.result ?? []) {
-      push(this.mapSearchListItem(item, locale))
+      push(this.mapSearchListItem(item, ctx.locale))
     }
 
     return ordered.slice(0, 25)
@@ -127,14 +129,14 @@ export class YmgalProvider implements GameScraperProvider {
 
   public async resolve(
     lookup: ScraperLookup,
-    locale: ContentLocale
+    ctx: ScraperProviderContext
   ): Promise<GameResolvedTarget | null> {
     const knownTarget = this.resolveKnownTarget(lookup)
     if (knownTarget) {
       return knownTarget
     }
 
-    const first = (await this.search(lookup.name, locale))[0]
+    const first = (await this.search(lookup.name, ctx))[0]
     return first
       ? this.helper.target.createResolvedTarget(first.id, first.originalName, {
           externalIds: first.externalIds
@@ -144,10 +146,12 @@ export class YmgalProvider implements GameScraperProvider {
 
   public async openSession(
     target: GameResolvedTarget,
-    locale: ContentLocale
+    ctx: ScraperProviderContext
   ): Promise<GameScraperSession> {
+    const locale = ctx.locale
+    const client = this.client.withSignal(ctx.signal)
     const gameId = normalizeYmgalId(target.id, 'YMGal game id')
-    const getArchive = this.memoizeTask(() => this.client.getGameArchive(gameId))
+    const getArchive = this.memoizeTask(() => client.getGameArchive(gameId))
     const getIdentity = this.memoizeTask(async () => {
       const archive = await getArchive()
       return this.buildIdentity(archive.game)
@@ -157,7 +161,7 @@ export class YmgalProvider implements GameScraperProvider {
       const characterIds = this.collectIds(
         (archive.game.characters ?? []).map((relation) => relation.cid)
       )
-      return this.fetchCharacterDetails(characterIds)
+      return this.fetchCharacterDetails(client, characterIds)
     })
     const getPersonDetails = this.memoizeTask(async () => {
       const archive = await getArchive()
@@ -167,7 +171,7 @@ export class YmgalProvider implements GameScraperProvider {
         ...staffEntries.map((staff) => staff.pid),
         ...characterEntries.map((relation) => relation.cvId)
       ])
-      return this.fetchPersonDetails(personIds)
+      return this.fetchPersonDetails(client, personIds)
     })
     const getOrganizationResources = this.memoizeTask(
       async (): Promise<YmgalOrganizationResources> => {
@@ -177,14 +181,20 @@ export class YmgalProvider implements GameScraperProvider {
           return { relatedGames: [] }
         }
 
+        // The developer archive and its game list are optional enrichment, but a
+        // cancellation is not a missing archive and must not be absorbed here.
         let organization: YmgalOrganization | undefined
         try {
-          organization = await this.client.getOrganizationArchive(developerId)
-        } catch {
+          organization = await client.getOrganizationArchive(developerId)
+        } catch (error) {
+          if (isAbortError(error)) throw error
           organization = undefined
         }
 
-        const relatedGames = await this.client.getOrganizationGames(developerId).catch(() => [])
+        const relatedGames = await client.getOrganizationGames(developerId).catch((error) => {
+          if (isAbortError(error)) throw error
+          return []
+        })
 
         return {
           developerId,
@@ -629,26 +639,36 @@ export class YmgalProvider implements GameScraperProvider {
     return Object.values(mapping).find((item) => toYmgalId(item.pid) === personId)
   }
 
-  private async fetchCharacterDetails(ids: string[]): Promise<Map<string, YmgalCharacter>> {
+  /** Missing archives are skipped; a cancellation stops the whole walk. */
+  private async fetchCharacterDetails(
+    client: YmgalClient,
+    ids: string[]
+  ): Promise<Map<string, YmgalCharacter>> {
     const map = new Map<string, YmgalCharacter>()
     for (const characterId of ids) {
       try {
-        const detail = await this.client.getCharacterArchive(characterId)
+        const detail = await client.getCharacterArchive(characterId)
         map.set(characterId, detail)
-      } catch {
+      } catch (error) {
+        if (isAbortError(error)) throw error
         continue
       }
     }
     return map
   }
 
-  private async fetchPersonDetails(ids: string[]): Promise<Map<string, YmgalPerson>> {
+  /** Missing archives are skipped; a cancellation stops the whole walk. */
+  private async fetchPersonDetails(
+    client: YmgalClient,
+    ids: string[]
+  ): Promise<Map<string, YmgalPerson>> {
     const map = new Map<string, YmgalPerson>()
     for (const personId of ids) {
       try {
-        const detail = await this.client.getPersonArchive(personId)
+        const detail = await client.getPersonArchive(personId)
         map.set(personId, detail)
-      } catch {
+      } catch (error) {
+        if (isAbortError(error)) throw error
         continue
       }
     }

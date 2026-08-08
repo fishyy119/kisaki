@@ -178,6 +178,24 @@ Applies to boundaries that re-enter previously persisted or foreign data: custom
   the documented safe default (for example an empty filter) so user data files always open.
 - Write paths stay strict: `toDriver` / `assertValid*` throw on invalid values so the app never
   persists garbage it produced itself.
+
+### Strict Write = Round-Trip Integrity
+
+`toDriver` may accept a value only if reading it back through this column's lenient parser yields an
+equivalent value. The cheapest compliant implementation is: parse the input with the read-side total
+parser to get its canonical form, throw when that form is not equivalent to the input, and persist
+the canonical form.
+
+- No silent repair: never persist a parse result that differs materially from the input. The caller
+  asked to store something the column cannot represent, and that is a bug to surface, not to patch.
+- No under-validation: nested garbage must not reach storage. A value that reads back as the safe
+  default is silent data loss wearing the shape of success.
+- Benign normalization is allowed: key order, dropping `undefined`, trimming to a canonical
+  representation — anything where the written and requested values are equivalent.
+- Reuse the read-side parser on the write path. Do not maintain a parallel `assertValid*` tree that
+  can drift from what reads accept.
+- Each column then holds a testable property: `read(write(value))` equals `value` for every accepted
+  value.
 - The read-side default is not a backward-compatibility shim; it exists for corrupt or foreign
   bytes regardless of history. Do not add shape recognition for retired formats — retired shapes
   fall into the same "unrecognized -> default" bucket.

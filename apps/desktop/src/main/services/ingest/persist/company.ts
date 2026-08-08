@@ -1,4 +1,4 @@
-import type { DbContext, DbService } from '@main/services/db'
+import { resolveTagId, type DbContext, type DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type {
   IngestAddCompanyFromScraperOptions,
@@ -12,14 +12,14 @@ import {
   companies,
   companyExternalIds,
   companyTagLinks,
-  tags,
   type NewCollectionCompanyLink,
   type NewCompany
 } from '@shared/db'
 import type { IngestCompanyGraph, IngestCompanyNode } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { pickFirstAssetUrl, type PersistCompanyGraphResult } from './types'
-import { reportIngestProgress, type IngestOperationOptions } from '../types'
+import { reportIngestProgress } from '../progress'
+import type { IngestOperationOptions } from '../types'
 
 type CompanyPersistOptions = IngestAddCompanyFromScraperOptions &
   Pick<IngestOperationOptions, 'signal' | 'onProgress'>
@@ -115,20 +115,15 @@ export class CompanyIngestPersistHandler {
     for (let i = 0; i < (core.tags?.length ?? 0); i++) {
       const tagData = core.tags![i]
 
-      tx.insert(tags)
-        .values({ name: tagData.name, isNsfw: tagData.isNsfw })
-        .onConflictDoNothing()
-        .run()
-
-      const existingTag = this.dbService.entityFinder.findExistingTag({ name: tagData.name }, tx)
-      if (!existingTag) {
+      const tagId = resolveTagId(tx, tagData)
+      if (!tagId) {
         continue
       }
 
       tx.insert(companyTagLinks)
         .values({
           companyId,
-          tagId: existingTag.id,
+          tagId,
           isSpoiler: tagData.isSpoiler || false,
           note: tagData.note || null,
           orderInCompany: i,
@@ -140,7 +135,7 @@ export class CompanyIngestPersistHandler {
     const pendingAssets: PendingAssetTask[] = []
     const logoUrl = pickFirstAssetUrl(node.logoUrls)
     if (logoUrl) {
-      pendingAssets.push({ type: 'company', companyId, url: logoUrl })
+      pendingAssets.push({ table: 'companies', rowId: companyId, field: 'logoFile', url: logoUrl })
     }
 
     this.addToCollection(tx, companyId, targetCollectionId)
@@ -187,8 +182,16 @@ export class CompanyIngestPersistHandler {
     result: PersistCompanyGraphResult,
     warnings: IngestWarning[]
   ): IngestAddCompanyFromScraperResult {
-    const { pendingAssets, ...publicResult } = result
-    void pendingAssets
-    return warnings.length > 0 ? { ...publicResult, warnings } : publicResult
+    const publicResult: IngestAddCompanyFromScraperResult = {
+      companyId: result.companyId,
+      isNew: result.isNew
+    }
+    if (result.existingReason) {
+      publicResult.existingReason = result.existingReason
+    }
+    if (warnings.length > 0) {
+      publicResult.warnings = warnings
+    }
+    return publicResult
   }
 }

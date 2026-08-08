@@ -1,52 +1,9 @@
 import type { PartialDate } from '@shared/db'
+import { normalizePartialDate } from '@shared/db/columns/partial-date'
 
-const PARTIAL_DATE_KEYS = new Set(['year', 'month', 'day'])
-
-function isInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value)
-}
-
-function normalizePartialDate(value: PartialDate | null | undefined): PartialDate | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return undefined
-  }
-
-  const record = value as Record<string, unknown>
-  const keys = Object.keys(record)
-
-  if (keys.length === 0) {
-    return undefined
-  }
-
-  if (keys.some((key) => !PARTIAL_DATE_KEYS.has(key))) {
-    return undefined
-  }
-
-  const hasYear = 'year' in record
-  const hasMonth = 'month' in record
-  const hasDay = 'day' in record
-
-  if (hasYear && hasDay && !hasMonth) {
-    return undefined
-  }
-
-  if (hasYear && !isInteger(record.year)) {
-    return undefined
-  }
-
-  if (hasMonth && !isInteger(record.month)) {
-    return undefined
-  }
-
-  if (hasDay && !isInteger(record.day)) {
-    return undefined
-  }
-
-  const normalized: PartialDate = {}
-  if (record.year !== undefined) normalized.year = record.year as number
-  if (record.month !== undefined) normalized.month = record.month as number
-  if (record.day !== undefined) normalized.day = record.day as number
-  return normalized
+/** Scraped components only become a date when they satisfy the stored contract. */
+function toPartialDate(components: PartialDate): PartialDate | undefined {
+  return normalizePartialDate(components) ?? undefined
 }
 
 /** Parse scraper date text into PartialDate. */
@@ -71,9 +28,9 @@ export function parsePartialDate(input: string | null | undefined): PartialDate 
     const month = Number(fullMatch[2])
     const day = Number(fullMatch[3])
     if (year >= 3000) {
-      return normalizePartialDate({ month, day })
+      return toPartialDate({ month, day })
     }
-    return normalizePartialDate({ year, month, day })
+    return toPartialDate({ year, month, day })
   }
 
   const yearMonthMatch = value.match(/^(\d{4})[-/.](\d{1,2})$/)
@@ -83,7 +40,7 @@ export function parsePartialDate(input: string | null | undefined): PartialDate 
     if (year >= 3000) {
       return undefined
     }
-    return normalizePartialDate({ year, month })
+    return toPartialDate({ year, month })
   }
 
   const yearOnlyMatch = value.match(/^(\d{4})$/)
@@ -92,14 +49,14 @@ export function parsePartialDate(input: string | null | undefined): PartialDate 
     if (year >= 3000) {
       return undefined
     }
-    return normalizePartialDate({ year })
+    return toPartialDate({ year })
   }
 
   const monthDayMatch = value.match(/^(\d{1,2})[-/.](\d{1,2})$/)
   if (monthDayMatch) {
     const month = Number(monthDayMatch[1])
     const day = Number(monthDayMatch[2])
-    return normalizePartialDate({ month, day })
+    return toPartialDate({ month, day })
   }
 
   return undefined

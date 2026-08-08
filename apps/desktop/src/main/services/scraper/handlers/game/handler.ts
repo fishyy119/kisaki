@@ -4,6 +4,7 @@
 
 import { eq } from 'drizzle-orm'
 import { createLogger } from '@main/log'
+import { isAbortError } from '@main/utils/async'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '@shared/db/schema'
 import { scraperProfiles, type ScraperProfile } from '@shared/db/schema'
@@ -42,7 +43,7 @@ import type {
 } from './provider'
 import type { GameScraperImageResult, GameScraperResult } from './types'
 import type { ScraperMediaHooks } from '../../hooks'
-import type { SlotResult } from '../../types'
+import type { ScraperInvocationOptions, SlotResult } from '../../types'
 
 const log = createLogger('Scraper')
 
@@ -52,18 +53,6 @@ const GAME_ALLOWED_CAPABILITIES = new Set(['search', ...GAME_SCRAPER_SLOTS] as c
 
 function hasValidGameInfoData(data: GameSessionResultMap['info'], strategy: SlotStrategy): boolean {
   return strategy !== 'first' || (typeof data.name === 'string' && data.name.trim().length > 0)
-}
-
-function hasValidGameSlotData<S extends GameScraperSlot>(
-  slot: S,
-  data: GameSessionResultMap[S],
-  strategy: SlotStrategy
-): boolean {
-  if (slot === 'info') {
-    return hasValidGameInfoData(data as GameSessionResultMap['info'], strategy)
-  }
-
-  return Array.isArray(data) && data.length > 0
 }
 
 export class GameScraperHandler {
@@ -95,7 +84,7 @@ export class GameScraperHandler {
   }
 
   getProviderInfo(providerId: string): GameScraperProviderInfo {
-    const provider = this.getSearchProvider(providerId)
+    const provider = this.requireProvider(providerId)
     return {
       id: provider.id,
       name: provider.name,
@@ -104,10 +93,17 @@ export class GameScraperHandler {
     }
   }
 
-  async search(profileId: string, query: string): Promise<GameSearchResult[]> {
+  async search(
+    profileId: string,
+    query: string,
+    options: ScraperInvocationOptions = {}
+  ): Promise<GameSearchResult[]> {
     const profile = this.loadProfile(profileId)
-    const provider = this.getSearchProvider(profile.searchProviderId)
-    const results = await provider.search(query, this.getProfileLocale(profile))
+    const provider = this.requireProvider(profile.searchProviderId)
+    const results = await provider.search(query, {
+      locale: this.getProfileLocale(profile),
+      signal: options.signal
+    })
     return this.hooks.searched.transform(
       results.map((result) =>
         ensureProviderExternalId(result, provider.externalIdSource, result.id)
@@ -115,7 +111,11 @@ export class GameScraperHandler {
     )
   }
 
-  async scrape(profileId: string, rawLookup: ScraperLookup): Promise<ScrapedGameBundle | null> {
+  async scrape(
+    profileId: string,
+    rawLookup: ScraperLookup,
+    options: ScraperInvocationOptions = {}
+  ): Promise<ScrapedGameBundle | null> {
     const lookup = await this.hooks.lookup.transform(rawLookup)
     const profile = this.loadProfile(profileId)
 
@@ -125,7 +125,7 @@ export class GameScraperHandler {
     }
 
     const resolveLocale = this.getResolveLocale(runtimeProfile, lookup)
-    const searchProvider = this.getSearchProvider(runtimeProfile.searchProviderId)
+    const searchProvider = this.requireProvider(runtimeProfile.searchProviderId)
     const plan = buildExecutionPlan<GameScraperSlot>({
       slotConfigs: runtimeProfile.slotConfigs,
       resolveLocale: (entry) => this.getFetchLocale(runtimeProfile, entry)
@@ -139,12 +139,13 @@ export class GameScraperHandler {
     >()
 
     try {
+      const resolveCtx = { locale: resolveLocale, signal: options.signal }
       const { target: searchTarget, canonicalLookup } = await resolveSearchProviderTarget({
         state,
         providerId: searchProvider.id,
         provider: searchProvider,
         lookup,
-        locale: resolveLocale,
+        ctx: resolveCtx,
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })
 
@@ -160,7 +161,7 @@ export class GameScraperHandler {
 
         const provider = this.providers.get(providerId)
         if (!provider) {
-          log.warn('Provider not available.', { providerId: providerId })
+          log.warn('Provider not available.', { mediaType: 'game', providerId: providerId })
           return null
         }
 
@@ -173,13 +174,14 @@ export class GameScraperHandler {
           providerId,
           provider,
           lookup: canonicalLookup,
-          locale: resolveLocale
+          ctx: resolveCtx
         })
       }
 
       const results = (await executeScraperPlan({
         state,
         plan,
+        signal: options.signal,
         getProvider: (providerId) => this.providers.get(providerId),
         resolveProviderTarget: resolveProviderId,
         collectResolvedIdentity: ({ providerId, target }) =>
@@ -203,16 +205,18 @@ export class GameScraperHandler {
   async getProviderImages(
     providerId: string,
     lookup: ScraperLookup,
-    imageType: GameImageSlot
+    imageType: GameImageSlot,
+    options: ScraperInvocationOptions = {}
   ): Promise<string[]> {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      log.warn('Provider not available.', { providerId: providerId })
+      log.warn('Provider not available.', { mediaType: 'game', providerId: providerId })
       return []
     }
 
     if (!provider.capabilities.includes(imageType)) {
       log.warn('Provider does not support image slot.', {
+        mediaType: 'game',
         providerId: providerId,
         imageType: imageType
       })
@@ -237,6 +241,7 @@ export class GameScraperHandler {
       const results = (await executeScraperPlan({
         state,
         plan,
+        signal: options.signal,
         getProvider: (candidateProviderId) => this.providers.get(candidateProviderId),
         resolveProviderTarget: async (candidateProviderId) => {
           if (candidateProviderId !== providerId) {
@@ -248,7 +253,7 @@ export class GameScraperHandler {
             providerId,
             provider,
             lookup,
-            locale
+            ctx: { locale, signal: options.signal }
           })
         },
         buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
@@ -258,7 +263,15 @@ export class GameScraperHandler {
 
       return mergeGameScraperImages([...results], 'enrich')
     } catch (error) {
-      log.warn('Provider request failed.', error, { providerId: providerId, imageType: imageType })
+      if (isAbortError(error)) {
+        throw error
+      }
+
+      log.warn('Provider request failed.', error, {
+        mediaType: 'game',
+        providerId: providerId,
+        imageType: imageType
+      })
       return []
     } finally {
       await state.dispose()
@@ -286,7 +299,9 @@ export class GameScraperHandler {
         : null
     }
 
-    if (!hasValidGameSlotData(entry.slot, data, entry.strategy)) {
+    // A collection slot the provider answered is authoritative, so an empty
+    // array is kept as an authoritative empty instead of a missing answer.
+    if (!Array.isArray(data)) {
       return null
     }
 
@@ -322,9 +337,9 @@ export class GameScraperHandler {
     return profile
   }
 
-  private getSearchProvider(providerId: string): GameScraperProvider {
+  private requireProvider(providerId: string): GameScraperProvider {
     const provider = this.providers.get(providerId)
-    if (!provider || !provider.capabilities.includes('search')) {
+    if (!provider) {
       throw new Error(`Provider not found: ${providerId}`)
     }
     return provider

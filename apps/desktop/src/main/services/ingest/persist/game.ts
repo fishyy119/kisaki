@@ -1,4 +1,4 @@
-import type { DbContext, DbService } from '@main/services/db'
+import { resolveTagId, type DbContext, type DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type {
   IngestAddGameFromScraperOptions,
@@ -16,7 +16,6 @@ import {
   gamePersonLinks,
   games,
   gameTagLinks,
-  tags,
   type NewCharacterPersonLink,
   type NewCollectionGameLink,
   type NewGame,
@@ -33,107 +32,16 @@ import type {
   IngestGamePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
+import { requireOwnerIdentity, requirePersistedId, resolveOrderedLinks } from './links'
 import type { PersistGameGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
 import type { CompanyIngestPersistHandler } from './company'
 import type { CharacterIngestPersistHandler } from './character'
-import { reportIngestProgress, type IngestOperationOptions } from '../types'
+import { reportIngestProgress } from '../progress'
+import type { IngestOperationOptions } from '../types'
 
 type GamePersistOptions = IngestAddGameFromScraperOptions &
   Pick<IngestOperationOptions, 'signal' | 'onProgress'>
-
-function assertOrderValue(value: number, field: string): void {
-  if (!Number.isInteger(value) || value < 0) {
-    throw new Error(`[IngestPersist] Invalid ${field}: expected a non-negative integer`)
-  }
-}
-
-function assertOptionalNote(note: string | undefined): void {
-  if (note !== undefined && typeof note !== 'string') {
-    throw new Error('[IngestPersist] Invalid note: expected a string when provided')
-  }
-}
-
-function assertGamePersonLink(link: IngestGamePersonLink): void {
-  if (typeof link.isSpoiler !== 'boolean') {
-    throw new Error('[IngestPersist] Missing required relation field: isSpoiler')
-  }
-
-  assertOrderValue(link.orderInGame, 'orderInGame')
-  assertOrderValue(link.orderInPerson, 'orderInPerson')
-  assertOptionalNote(link.note)
-}
-
-function assertGameCompanyLink(link: IngestGameCompanyLink): void {
-  if (typeof link.isSpoiler !== 'boolean') {
-    throw new Error('[IngestPersist] Missing required relation field: isSpoiler')
-  }
-
-  assertOrderValue(link.orderInGame, 'orderInGame')
-  assertOrderValue(link.orderInCompany, 'orderInCompany')
-  assertOptionalNote(link.note)
-}
-
-function assertGameCharacterLink(link: IngestGameCharacterLink): void {
-  if (typeof link.isSpoiler !== 'boolean') {
-    throw new Error('[IngestPersist] Missing required relation field: isSpoiler')
-  }
-
-  assertOrderValue(link.orderInGame, 'orderInGame')
-  assertOrderValue(link.orderInCharacter, 'orderInCharacter')
-  assertOptionalNote(link.note)
-}
-
-function assertCharacterPersonLink(link: IngestGameCharacterPersonLink): void {
-  if (typeof link.isSpoiler !== 'boolean') {
-    throw new Error('[IngestPersist] Missing required relation field: isSpoiler')
-  }
-
-  assertOrderValue(link.orderInCharacter, 'orderInCharacter')
-  assertOrderValue(link.orderInPerson, 'orderInPerson')
-  assertOptionalNote(link.note)
-}
-
-interface ResolvedRelationState {
-  isSpoiler: boolean
-  note?: string
-}
-
-interface ResolvedGamePersonLink extends ResolvedRelationState {
-  personId: string
-  type: IngestGamePersonLink['type']
-}
-
-interface ResolvedGameCompanyLink extends ResolvedRelationState {
-  companyId: string
-  type: IngestGameCompanyLink['type']
-}
-
-interface ResolvedGameCharacterLink extends ResolvedRelationState {
-  characterId: string
-  type: IngestGameCharacterLink['type']
-}
-
-interface ResolvedCharacterPersonLink extends ResolvedRelationState {
-  characterId: string
-  personId: string
-  type: IngestGameCharacterPersonLink['type']
-}
-
-function mergeResolvedRelation<T extends ResolvedRelationState>(
-  map: Map<string, T>,
-  key: string,
-  next: T
-): void {
-  const existing = map.get(key)
-  if (!existing) {
-    map.set(key, next)
-    return
-  }
-
-  existing.isSpoiler = existing.isSpoiler || next.isSpoiler
-  existing.note = existing.note ?? next.note
-}
 
 function resolveGamePersonLinks(params: {
   gameId: string
@@ -142,47 +50,31 @@ function resolveGamePersonLinks(params: {
   personIdByIdentity: Map<string, string>
 }): NewGamePersonLink[] {
   const { gameId, gameIdentityKey, links, personIdByIdentity } = params
-  const resolved = new Map<string, ResolvedGamePersonLink>()
 
-  for (const linkInput of links) {
-    assertGamePersonLink(linkInput)
-
-    if (linkInput.gameIdentityKey !== gameIdentityKey) {
-      throw new Error(
-        `[IngestPersist] Game-person link references unexpected game identity: ${linkInput.gameIdentityKey}`
-      )
-    }
-
-    const personId = personIdByIdentity.get(linkInput.personIdentityKey)
-    if (!personId) {
-      throw new Error(
-        `[IngestPersist] Missing persisted person for identity: ${linkInput.personIdentityKey}`
-      )
-    }
-
-    mergeResolvedRelation(resolved, `${personId}:${linkInput.type}`, {
-      personId,
-      type: linkInput.type,
-      isSpoiler: linkInput.isSpoiler,
-      note: linkInput.note
-    })
-  }
-
-  const personOrderCounters = new Map<string, number>()
-
-  return [...resolved.values()].map((link, orderInGame) => {
-    const orderInPerson = personOrderCounters.get(link.personId) ?? 0
-    personOrderCounters.set(link.personId, orderInPerson + 1)
-
-    return {
+  return resolveOrderedLinks({
+    links,
+    resolve: (link) => {
+      requireOwnerIdentity(link.gameIdentityKey, gameIdentityKey, 'game')
+      const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
+      return {
+        key: `${personId}:${link.type}`,
+        value: {
+          personId,
+          type: link.type,
+          isSpoiler: link.isSpoiler,
+          note: link.note
+        }
+      }
+    },
+    buildRow: (link, orderInGame, counters) => ({
       gameId,
       personId: link.personId,
       type: link.type,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInGame,
-      orderInPerson
-    }
+      orderInPerson: counters.next('person', link.personId)
+    })
   })
 }
 
@@ -193,47 +85,31 @@ function resolveGameCompanyLinks(params: {
   companyIdByIdentity: Map<string, string>
 }): NewGameCompanyLink[] {
   const { gameId, gameIdentityKey, links, companyIdByIdentity } = params
-  const resolved = new Map<string, ResolvedGameCompanyLink>()
 
-  for (const linkInput of links) {
-    assertGameCompanyLink(linkInput)
-
-    if (linkInput.gameIdentityKey !== gameIdentityKey) {
-      throw new Error(
-        `[IngestPersist] Game-company link references unexpected game identity: ${linkInput.gameIdentityKey}`
-      )
-    }
-
-    const companyId = companyIdByIdentity.get(linkInput.companyIdentityKey)
-    if (!companyId) {
-      throw new Error(
-        `[IngestPersist] Missing persisted company for identity: ${linkInput.companyIdentityKey}`
-      )
-    }
-
-    mergeResolvedRelation(resolved, `${companyId}:${linkInput.type}`, {
-      companyId,
-      type: linkInput.type,
-      isSpoiler: linkInput.isSpoiler,
-      note: linkInput.note
-    })
-  }
-
-  const companyOrderCounters = new Map<string, number>()
-
-  return [...resolved.values()].map((link, orderInGame) => {
-    const orderInCompany = companyOrderCounters.get(link.companyId) ?? 0
-    companyOrderCounters.set(link.companyId, orderInCompany + 1)
-
-    return {
+  return resolveOrderedLinks({
+    links,
+    resolve: (link) => {
+      requireOwnerIdentity(link.gameIdentityKey, gameIdentityKey, 'game')
+      const companyId = requirePersistedId(companyIdByIdentity, link.companyIdentityKey, 'company')
+      return {
+        key: `${companyId}:${link.type}`,
+        value: {
+          companyId,
+          type: link.type,
+          isSpoiler: link.isSpoiler,
+          note: link.note
+        }
+      }
+    },
+    buildRow: (link, orderInGame, counters) => ({
       gameId,
       companyId: link.companyId,
       type: link.type,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInGame,
-      orderInCompany
-    }
+      orderInCompany: counters.next('company', link.companyId)
+    })
   })
 }
 
@@ -244,47 +120,35 @@ function resolveGameCharacterLinks(params: {
   characterIdByIdentity: Map<string, string>
 }): NewGameCharacterLink[] {
   const { gameId, gameIdentityKey, links, characterIdByIdentity } = params
-  const resolved = new Map<string, ResolvedGameCharacterLink>()
 
-  for (const linkInput of links) {
-    assertGameCharacterLink(linkInput)
-
-    if (linkInput.gameIdentityKey !== gameIdentityKey) {
-      throw new Error(
-        `[IngestPersist] Game-character link references unexpected game identity: ${linkInput.gameIdentityKey}`
+  return resolveOrderedLinks({
+    links,
+    resolve: (link) => {
+      requireOwnerIdentity(link.gameIdentityKey, gameIdentityKey, 'game')
+      const characterId = requirePersistedId(
+        characterIdByIdentity,
+        link.characterIdentityKey,
+        'character'
       )
-    }
-
-    const characterId = characterIdByIdentity.get(linkInput.characterIdentityKey)
-    if (!characterId) {
-      throw new Error(
-        `[IngestPersist] Missing persisted character for identity: ${linkInput.characterIdentityKey}`
-      )
-    }
-
-    mergeResolvedRelation(resolved, `${characterId}:${linkInput.type}`, {
-      characterId,
-      type: linkInput.type,
-      isSpoiler: linkInput.isSpoiler,
-      note: linkInput.note
-    })
-  }
-
-  const characterOrderCounters = new Map<string, number>()
-
-  return [...resolved.values()].map((link, orderInGame) => {
-    const orderInCharacter = characterOrderCounters.get(link.characterId) ?? 0
-    characterOrderCounters.set(link.characterId, orderInCharacter + 1)
-
-    return {
+      return {
+        key: `${characterId}:${link.type}`,
+        value: {
+          characterId,
+          type: link.type,
+          isSpoiler: link.isSpoiler,
+          note: link.note
+        }
+      }
+    },
+    buildRow: (link, orderInGame, counters) => ({
       gameId,
       characterId: link.characterId,
       type: link.type,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInGame,
-      orderInCharacter
-    }
+      orderInCharacter: counters.next('character', link.characterId)
+    })
   })
 }
 
@@ -294,53 +158,36 @@ function resolveCharacterPersonLinks(params: {
   personIdByIdentity: Map<string, string>
 }): NewCharacterPersonLink[] {
   const { links, characterIdByIdentity, personIdByIdentity } = params
-  const resolved = new Map<string, ResolvedCharacterPersonLink>()
 
-  for (const linkInput of links) {
-    assertCharacterPersonLink(linkInput)
-
-    const characterId = characterIdByIdentity.get(linkInput.characterIdentityKey)
-    if (!characterId) {
-      throw new Error(
-        `[IngestPersist] Missing persisted character for identity: ${linkInput.characterIdentityKey}`
+  return resolveOrderedLinks({
+    links,
+    resolve: (link) => {
+      const characterId = requirePersistedId(
+        characterIdByIdentity,
+        link.characterIdentityKey,
+        'character'
       )
-    }
-
-    const personId = personIdByIdentity.get(linkInput.personIdentityKey)
-    if (!personId) {
-      throw new Error(
-        `[IngestPersist] Missing persisted person for identity: ${linkInput.personIdentityKey}`
-      )
-    }
-
-    mergeResolvedRelation(resolved, `${characterId}:${personId}:${linkInput.type}`, {
-      characterId,
-      personId,
-      type: linkInput.type,
-      isSpoiler: linkInput.isSpoiler,
-      note: linkInput.note
-    })
-  }
-
-  const characterOrderCounters = new Map<string, number>()
-  const personOrderCounters = new Map<string, number>()
-
-  return [...resolved.values()].map((link) => {
-    const orderInCharacter = characterOrderCounters.get(link.characterId) ?? 0
-    characterOrderCounters.set(link.characterId, orderInCharacter + 1)
-
-    const orderInPerson = personOrderCounters.get(link.personId) ?? 0
-    personOrderCounters.set(link.personId, orderInPerson + 1)
-
-    return {
+      const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
+      return {
+        key: `${characterId}:${personId}:${link.type}`,
+        value: {
+          characterId,
+          personId,
+          type: link.type,
+          isSpoiler: link.isSpoiler,
+          note: link.note
+        }
+      }
+    },
+    buildRow: (link, _index, counters) => ({
       characterId: link.characterId,
       personId: link.personId,
       type: link.type,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
-      orderInCharacter,
-      orderInPerson
-    }
+      orderInCharacter: counters.next('character', link.characterId),
+      orderInPerson: counters.next('person', link.personId)
+    })
   })
 }
 
@@ -428,7 +275,7 @@ export class GameIngestPersistHandler {
     for (const identityKey of requiredPersonIdentities) {
       const personNode = personByIdentity.get(identityKey)
       if (!personNode) {
-        throw new Error(`[IngestPersist] Missing person node for identity: ${identityKey}`)
+        throw new Error(`Missing person node for identity: ${identityKey}`)
       }
 
       const personResult = this.personPersist.persistPersonNodeInternal(personNode, tx)
@@ -440,7 +287,7 @@ export class GameIngestPersistHandler {
     for (const identityKey of requiredCompanyIdentities) {
       const companyNode = companyByIdentity.get(identityKey)
       if (!companyNode) {
-        throw new Error(`[IngestPersist] Missing company node for identity: ${identityKey}`)
+        throw new Error(`Missing company node for identity: ${identityKey}`)
       }
 
       const companyResult = this.companyPersist.persistCompanyNodeInternal(companyNode, tx)
@@ -452,7 +299,7 @@ export class GameIngestPersistHandler {
     for (const identityKey of requiredCharacterIdentities) {
       const characterNode = characterByIdentity.get(identityKey)
       if (!characterNode) {
-        throw new Error(`[IngestPersist] Missing character node for identity: ${identityKey}`)
+        throw new Error(`Missing character node for identity: ${identityKey}`)
       }
 
       const characterResult = this.characterPersist.persistCharacterNodeInternal(characterNode, tx)
@@ -606,20 +453,15 @@ export class GameIngestPersistHandler {
 
     for (let i = 0; i < metadataTags.length; i++) {
       const tagData = metadataTags[i]
-      tx.insert(tags)
-        .values({ name: tagData.name, isNsfw: tagData.isNsfw })
-        .onConflictDoNothing()
-        .run()
-
-      const existingTag = this.dbService.entityFinder.findExistingTag({ name: tagData.name }, tx)
-      if (!existingTag) {
+      const tagId = resolveTagId(tx, tagData)
+      if (!tagId) {
         continue
       }
 
       tx.insert(gameTagLinks)
         .values({
           gameId,
-          tagId: existingTag.id,
+          tagId,
           isSpoiler: tagData.isSpoiler || false,
           note: tagData.note || null,
           orderInGame: i,
@@ -647,25 +489,17 @@ export class GameIngestPersistHandler {
     gameId: string,
     media: IngestGameGraph['media']
   ): void {
-    if (media.coverUrl) {
-      pendingAssets.push({ type: 'game', gameId, field: 'coverFile', url: media.coverUrl })
-    }
+    const byField: Array<[string, string | undefined]> = [
+      ['coverFile', media.coverUrl],
+      ['backdropFile', media.backdropUrl],
+      ['logoFile', media.logoUrl],
+      ['iconFile', media.iconUrl]
+    ]
 
-    if (media.backdropUrl) {
-      pendingAssets.push({
-        type: 'game',
-        gameId,
-        field: 'backdropFile',
-        url: media.backdropUrl
-      })
-    }
-
-    if (media.logoUrl) {
-      pendingAssets.push({ type: 'game', gameId, field: 'logoFile', url: media.logoUrl })
-    }
-
-    if (media.iconUrl) {
-      pendingAssets.push({ type: 'game', gameId, field: 'iconFile', url: media.iconUrl })
+    for (const [field, url] of byField) {
+      if (url) {
+        pendingAssets.push({ table: 'games', rowId: gameId, field, url })
+      }
     }
   }
 
@@ -673,8 +507,16 @@ export class GameIngestPersistHandler {
     result: PersistGameGraphResult,
     warnings: IngestWarning[]
   ): IngestAddGameFromScraperResult {
-    const { pendingAssets, ...publicResult } = result
-    void pendingAssets
-    return warnings.length > 0 ? { ...publicResult, warnings } : publicResult
+    const publicResult: IngestAddGameFromScraperResult = {
+      gameId: result.gameId,
+      isNew: result.isNew
+    }
+    if (result.existingReason) {
+      publicResult.existingReason = result.existingReason
+    }
+    if (warnings.length > 0) {
+      publicResult.warnings = warnings
+    }
+    return publicResult
   }
 }

@@ -8,7 +8,15 @@ function matchesInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value)
 }
 
-function matchesPartialDate(value: unknown): value is PartialDate {
+function matchesRange(value: unknown, min: number, max: number): boolean {
+  return matchesInteger(value) && value >= min && value <= max
+}
+
+/**
+ * Contract check for a partial date: at least one component, no foreign keys,
+ * integers within calendar ranges, and no day without a month.
+ */
+export function matchesPartialDate(value: unknown): value is PartialDate {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false
   }
@@ -36,18 +44,21 @@ function matchesPartialDate(value: unknown): value is PartialDate {
     return false
   }
 
-  if (hasMonth && !matchesInteger(record.month)) {
+  // Calendar ranges only; day-in-month validity is not enforced because partial
+  // dates routinely carry a day without a month-defining year.
+  if (hasMonth && !matchesRange(record.month, 1, 12)) {
     return false
   }
 
-  if (hasDay && !matchesInteger(record.day)) {
+  if (hasDay && !matchesRange(record.day, 1, 31)) {
     return false
   }
 
   return true
 }
 
-function normalizePartialDate(value: PartialDate | null | undefined): PartialDate | null {
+/** Canonical form of a partial date, or null when the value is not one. */
+export function normalizePartialDate(value: unknown): PartialDate | null {
   if (!matchesPartialDate(value)) {
     return null
   }

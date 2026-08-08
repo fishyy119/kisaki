@@ -1,3 +1,4 @@
+import { isAbortError } from '@main/utils/async'
 import {
   isTaskRunCancellation,
   type TaskRunHandle,
@@ -393,8 +394,4 @@ function finishTaskRunFromError(
   }
 
   run.fail(error)
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError'
 }

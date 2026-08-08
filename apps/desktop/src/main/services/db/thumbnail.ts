@@ -15,6 +15,18 @@ import type { ThumbnailFit, ThumbnailOptions } from './types'
 
 const log = createLogger('Db')
 
+/** Guards against absurd allocations from a crafted `attachment://` URL. */
+const MAX_THUMBNAIL_DIMENSION = 4096
+
+function parseDimension(value: string | null): number | undefined {
+  if (!value) return undefined
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_THUMBNAIL_DIMENSION) {
+    return undefined
+  }
+  return parsed
+}
+
 /**
  * Thumbnail generation and caching manager.
  * Generates WebP thumbnails with various resize modes including smart crop.
@@ -115,27 +127,29 @@ export class ThumbnailStore {
   }
 
   /**
-   * Parse thumbnail options from URL search params.
+   * Parse thumbnail options from untrusted URL search params.
+   * Out-of-range or non-numeric dimensions are ignored rather than clamped, so
+   * a malformed request falls back to the original file instead of rendering an
+   * unrelated size. Returns null when no usable dimension is requested.
    */
   parseOptions(searchParams: URLSearchParams): ThumbnailOptions | null {
-    const width = searchParams.get('w') || searchParams.get('width')
-    const height = searchParams.get('h') || searchParams.get('height')
+    const width = parseDimension(searchParams.get('w') ?? searchParams.get('width'))
+    const height = parseDimension(searchParams.get('h') ?? searchParams.get('height'))
 
-    if (!width && !height) return null
+    if (width === undefined && height === undefined) return null
 
     const options: ThumbnailOptions = {}
-
-    if (width) options.width = parseInt(width, 10)
-    if (height) options.height = parseInt(height, 10)
+    if (width !== undefined) options.width = width
+    if (height !== undefined) options.height = height
 
     const fit = searchParams.get('fit') as ThumbnailFit
     if (fit && ['cover', 'contain', 'fill', 'inside', 'outside', 'smart'].includes(fit)) {
       options.fit = fit
     }
 
-    const quality = searchParams.get('q') || searchParams.get('quality')
-    if (quality) {
-      options.quality = Math.min(100, Math.max(1, parseInt(quality, 10)))
+    const quality = parseInt(searchParams.get('q') ?? searchParams.get('quality') ?? '', 10)
+    if (Number.isFinite(quality)) {
+      options.quality = Math.min(100, Math.max(1, quality))
     }
 
     return options

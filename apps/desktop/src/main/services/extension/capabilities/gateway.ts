@@ -204,14 +204,21 @@ export class ExtensionCapabilityGateway {
       })
     )
     rpc.handleHostRequest(
+      'capabilities.ingest.game.add.startFromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }) => ({
+        start: this.ingest.startAddGameFromScraper(runtimeHandle, profileId, lookup, options)
+      })
+    )
+    rpc.handleHostRequest(
       'capabilities.ingest.game.update.fromScraper',
-      async ({ runtimeHandle, input, options }, context) => ({
-        result: await this.ingest.updateGameFromScraper(
-          runtimeHandle,
-          input,
-          options,
-          context.signal
-        )
+      async ({ runtimeHandle, input }, context) => ({
+        result: await this.ingest.updateGameFromScraper(runtimeHandle, input, context.signal)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.game.update.startFromScraper',
+      async ({ runtimeHandle, input }) => ({
+        start: this.ingest.startUpdateGameFromScraper(runtimeHandle, input)
       })
     )
 

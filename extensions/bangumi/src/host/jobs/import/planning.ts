@@ -2,7 +2,7 @@ import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import
 import { m } from '../../i18n'
 import type { BangumiMediaScope } from '../../media/scopes'
 import type { LocalCollectionTarget, LocalMediaAdapter } from '../../media/types'
-import { BangumiExtensionError } from '../../utils/errors'
+import { BangumiExtensionError, isCancellationError } from '../../utils/errors'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'
 import type { JobStateController } from '../context'
 import { buildCollectionLocalUpdatePlan, hasCollectionLocalChanges } from './local'
@@ -13,7 +13,6 @@ import type {
   IndexImportOperation
 } from './model'
 import { createIndexCollectionPatchPreviewChange } from './preview'
-import { isCancellationError } from '../summary'
 
 export function emptyCollectedCollectionImport(scope: BangumiMediaScope) {
   return {

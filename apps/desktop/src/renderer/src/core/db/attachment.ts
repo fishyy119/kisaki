@@ -108,11 +108,6 @@ export const attachment = {
     if (!result.success) throw new Error('Failed to clear attachment files.')
   },
 
-  async cleanupRow(tableName: TableName, rowId: string): Promise<void> {
-    const result = await ipcManager.invoke('db:attachment-cleanup-row', tableName, rowId)
-    if (!result.success) throw new Error('Failed to clean attachment row.')
-  },
-
   async getPath(tableName: TableName, rowId: string, fileName: string): Promise<string> {
     const result = await ipcManager.invoke('db:attachment-get-path', tableName, rowId, fileName)
     if (!result.success) throw new Error('Failed to get attachment path.')

@@ -3,7 +3,6 @@ import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
-import { isTaskRunCancellation } from '@main/services/task-run'
 import type { IngestPersistHandlers } from '../persist'
 import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { flushPendingAssets } from '../assets'
@@ -21,15 +20,13 @@ import { applyCharacterPlan } from './apply'
 import { loadCharacterCurrent } from './current'
 import { buildCharacterIncoming } from './incoming'
 import { buildCharacterPlan } from './plan'
+import { CHARACTER_RELATION_LINKS, createRelationDegradeWarnings } from './relation-links'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
-import {
-  reportIngestProgress,
-  throwIfIngestAborted,
-  type IngestOperationOptions,
-  type IngestTaskRunOptions
-} from '../types'
+import { reportIngestProgress } from '../progress'
+import { isIngestCancellation, throwIfIngestAborted } from '../abort'
+import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
 import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 const log = createLogger('Ingest')
@@ -105,7 +102,9 @@ export class CharacterUpdateHandler {
       phase: 'scraping',
       label: this.i18nService.messages.ingest.update.scrapingMetadata({ entity: 'character' })
     })
-    const bundle = await this.scraperService.character.scrape(request.profileId, lookup)
+    const bundle = await this.scraperService.character.scrape(request.profileId, lookup, {
+      signal: options?.signal
+    })
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
@@ -116,15 +115,6 @@ export class CharacterUpdateHandler {
       selection.relationSurfaces.length > 0 && bundle
         ? buildCharacterGraph(bundle, lookup)
         : undefined
-    const current = loadCharacterCurrent(this.dbService.client, request.rootId, selection)
-    const plan = buildCharacterPlan({
-      current,
-      incoming,
-      relationGraph,
-      selection,
-      policy
-    })
-
     throwIfIngestAborted(options?.signal)
     await requireIngestAllowed(this.hooks.updating, {
       entityId: request.rootId,
@@ -136,9 +126,22 @@ export class CharacterUpdateHandler {
       phase: 'writing',
       label: this.i18nService.messages.ingest.update.writing({ entity: 'character' })
     })
-    const applyResult = this.dbService.client.transaction((tx) =>
-      applyCharacterPlan(tx, request.rootId, plan, this.persistHandlers)
-    )
+    // Read, plan and apply share one synchronous transaction: planning against a
+    // snapshot taken outside it would overwrite concurrent edits.
+    const { applyResult, degradedRelationLinks } = this.dbService.client.transaction((tx) => {
+      const current = loadCharacterCurrent(tx, request.rootId, selection)
+      const plan = buildCharacterPlan({
+        current,
+        incoming,
+        relationGraph,
+        selection,
+        policy
+      })
+      return {
+        applyResult: applyCharacterPlan(tx, request.rootId, plan, this.persistHandlers),
+        degradedRelationLinks: plan.degradedRelationLinks
+      }
+    })
 
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
@@ -146,11 +149,18 @@ export class CharacterUpdateHandler {
         label: this.i18nService.messages.ingest.persist.savingMedia({ entity: 'character' })
       })
     }
-    const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
-      signal: options?.signal
-    })
+    const warnings = [
+      ...createRelationDegradeWarnings({
+        links: CHARACTER_RELATION_LINKS,
+        degraded: degradedRelationLinks,
+        preservedRows: applyResult.preservedRelationRows
+      }),
+      ...(await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
+        signal: options?.signal
+      }))
+    ]
     if (warnings.length > 0) {
-      log.warn('Character update completed with asset warnings.', {
+      log.warn('Character update completed with warnings.', {
         warningsItemsText: warnings.map((warning) => warning.message).join(' | ')
       })
     }
@@ -178,7 +188,6 @@ export class CharacterUpdateHandler {
         signal: run.context.signal,
         onProgress: (update) => run.context.report(update)
       })
-      run.context.throwIfCancelled()
       run.complete({
         title: this.i18nService.messages.ingest.update.completedTitle({ entity: 'character' }),
         summary: this.i18nService.messages.ingest.update.completedSummary({ entity: 'character' }),
@@ -193,7 +202,7 @@ export class CharacterUpdateHandler {
         warnings: toTaskRunWarnings(result.warnings)
       })
     } catch (error) {
-      if (isTaskRunCancellation(error)) {
+      if (isIngestCancellation(error)) {
         run.cancel({
           summary: this.i18nService.messages.ingest.update.cancelledSummary({ entity: 'character' })
         })

@@ -4,6 +4,9 @@ import type { LibraryEntityTopic } from '@shared/library'
 
 export const FEED_DEBOUNCE_MS = 25
 
+/** Upper bound on summaries per `db:changed` push, so bulk writes stay deliverable. */
+export const FEED_PUSH_CHUNK_SIZE = 2000
+
 export type ConfiguredEntityTopic = Exclude<LibraryEntityTopic, 'game'>
 
 export interface EntityGroup {

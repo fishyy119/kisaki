@@ -17,21 +17,25 @@ import {
 } from './images'
 import { buildGameIdentity, buildGameInfo, buildGameTags } from './info'
 import { buildGameCompanies, buildGamePersons, fetchPersonDetails } from './people'
+import { isCancellationError } from '../../../utils/errors'
 import type { BangumiGameSessionLoaders } from './types'
 
 interface BangumiGameSessionOptions {
   client: BangumiClient
   target: IdResolvedTarget
   locale: ContentLocale
+  /** Aborted when the invocation that opened this session gives up. */
+  signal?: AbortSignal | undefined
 }
 
 export function createBangumiGameSession({
   client,
   target,
-  locale
+  locale,
+  signal
 }: BangumiGameSessionOptions): GameScraperSession {
   const subjectId = parseBangumiId(target.id)
-  const loaders = createSessionLoaders(client, subjectId)
+  const loaders = createSessionLoaders(client, subjectId, signal)
   const getIdentity = memoizeTask(() => buildGameIdentity(loaders.getSubject))
   const slotTasks = new Map<GameScraperSlot, Promise<unknown>>()
 
@@ -60,9 +64,13 @@ export function createBangumiGameSession({
   }
 }
 
-function createSessionLoaders(client: BangumiClient, subjectId: number): BangumiGameSessionLoaders {
+function createSessionLoaders(
+  client: BangumiClient,
+  subjectId: number,
+  signal: AbortSignal | undefined
+): BangumiGameSessionLoaders {
   const getSubject = memoizeTask(async () => {
-    const subject = await client.getSubject(subjectId)
+    const subject = await client.getSubject(subjectId, { signal })
 
     if (subject.type !== BANGUMI_SUBJECT_TYPE_GAME) {
       throw new Error(`Bangumi subject is not a game: ${subject.id}`)
@@ -70,31 +78,41 @@ function createSessionLoaders(client: BangumiClient, subjectId: number): Bangumi
 
     return subject
   })
-  const getSubjectPersons = memoizeTask(() => client.getSubjectPersons(subjectId))
-  const getSubjectCharacters = memoizeTask(() => client.getSubjectCharacters(subjectId))
+  const getSubjectPersons = memoizeTask(() => client.getSubjectPersons(subjectId, { signal }))
+  const getSubjectCharacters = memoizeTask(() => client.getSubjectCharacters(subjectId, { signal }))
   const getSubjectRelations = memoizeTask(async () => {
-    return client.getSubjectRelations(subjectId).catch(() => [])
+    return client.getSubjectRelations(subjectId, { signal }).catch((error: unknown) => {
+      if (isCancellationError(error)) {
+        throw error
+      }
+
+      return []
+    })
   })
   const getPersonDetails = memoizeTask(async () => {
     const relatedPersons = await getSubjectPersons()
     const uniqueIds = [...new Set(relatedPersons.map((person) => person.id))]
-    return fetchPersonDetails(client, uniqueIds)
+    return fetchPersonDetails(client, uniqueIds, signal)
   })
   const getCharacterDetails = memoizeTask(async () => {
     const relatedCharacters = await getSubjectCharacters()
     return fetchCharacterDetails(
       client,
-      relatedCharacters.map((character) => character.id)
+      relatedCharacters.map((character) => character.id),
+      signal
     )
   })
   const getCharacterPersons = memoizeTask(async () => {
     const relatedCharacters = await getSubjectCharacters()
     return fetchCharacterPersons(
       client,
-      relatedCharacters.map((character) => character.id)
+      relatedCharacters.map((character) => character.id),
+      signal
     )
   })
-  const getSubjectImageVariants = memoizeTask(() => fetchSubjectImageVariants(client, subjectId))
+  const getSubjectImageVariants = memoizeTask(() =>
+    fetchSubjectImageVariants(client, subjectId, signal)
+  )
 
   return {
     getSubject,

@@ -23,27 +23,17 @@ import {
   projectEntityChanges,
   projectGameChanges
 } from './entities'
-import { FEED_DEBOUNCE_MS, type ConfiguredEntityTopic, type EntityGroup } from './types'
+import {
+  FEED_DEBOUNCE_MS,
+  FEED_PUSH_CHUNK_SIZE,
+  type ConfiguredEntityTopic,
+  type EntityGroup
+} from './types'
+import { SETTINGS_PROJECTIONS, type SettingsColumnProjection } from './settings'
 import { stringValue } from './shared/normalization'
 import { dedupeTargets } from './shared/targets'
 
 const log = createLogger('Db')
-const SETTINGS_COLUMN_KEYS: Record<string, string> = {
-  ui_locale: 'uiLocale',
-  main_window_close_action: 'mainWindowCloseAction',
-  scanner_ignored_names: 'scannerIgnoredNames',
-  scanner_start_at_open: 'scannerStartAtOpen',
-  scanner_parallel_count: 'scannerParallelCount',
-  scanner_ingest_mode: 'scannerIngestMode',
-  updater_auto_check: 'updaterAutoCheck',
-  updater_allow_prerelease: 'updaterAllowPrerelease'
-}
-const BOOLEAN_SETTINGS = new Set([
-  'scanner_start_at_open',
-  'updater_auto_check',
-  'updater_allow_prerelease'
-])
-const JSON_SETTINGS = new Set(['scanner_ignored_names'])
 
 export interface DbChangeFeedOptions {
   hooks: DbHooks
@@ -96,15 +86,16 @@ export class DbChangeFeed {
     this.pendingSummaries = []
   }
 
-  private flush(): void {
+  /** Delivers buffered changes immediately instead of waiting out the debounce. */
+  flush(): void {
     const groups = [...this.groups.values()]
     const summaries = this.pendingSummaries
     this.groups.clear()
     this.pendingSummaries = []
     this.flushTimer = null
 
-    if (summaries.length > 0) {
-      this.options.sendToRenderer(summaries)
+    for (let start = 0; start < summaries.length; start += FEED_PUSH_CHUNK_SIZE) {
+      this.options.sendToRenderer(summaries.slice(start, start + FEED_PUSH_CHUNK_SIZE))
     }
 
     const changes: LibraryEntityChangeSummary[] = []
@@ -157,14 +148,14 @@ export class DbChangeFeed {
       return
     }
 
-    for (const [column, setting] of Object.entries(SETTINGS_COLUMN_KEYS)) {
-      const oldValue = normalizeSettingValue(column, change.old[column])
-      const nextValue = normalizeSettingValue(column, change.next[column])
+    for (const projection of SETTINGS_PROJECTIONS) {
+      const oldValue = projectSettingValue(projection, change.old[projection.column])
+      const nextValue = projectSettingValue(projection, change.next[projection.column])
       if (settingValuesEqual(oldValue, nextValue)) {
         continue
       }
 
-      this.options.hooks.settingsChanged.dispatch({ setting, value: nextValue })
+      this.options.hooks.settingsChanged.dispatch({ setting: projection.setting, value: nextValue })
     }
   }
 
@@ -261,28 +252,12 @@ export class DbChangeFeed {
   }
 }
 
-function normalizeSettingValue(column: string, value: unknown): unknown {
-  if (value === undefined) {
-    return undefined
+function projectSettingValue(projection: SettingsColumnProjection, value: unknown): unknown {
+  if (value === undefined || value === null) {
+    return value
   }
 
-  if (value === null) {
-    return null
-  }
-
-  if (BOOLEAN_SETTINGS.has(column)) {
-    return value === true || value === 1 || value === '1'
-  }
-
-  if (JSON_SETTINGS.has(column) && typeof value === 'string') {
-    try {
-      return JSON.parse(value)
-    } catch {
-      return value
-    }
-  }
-
-  return value
+  return projection.fromDriver(value)
 }
 
 function settingValuesEqual(left: unknown, right: unknown): boolean {
@@ -290,7 +265,7 @@ function settingValuesEqual(left: unknown, right: unknown): boolean {
     return true
   }
 
-  if (Array.isArray(left) || Array.isArray(right)) {
+  if (typeof left === 'object' || typeof right === 'object') {
     return JSON.stringify(left) === JSON.stringify(right)
   }
 

@@ -1,6 +1,6 @@
 import { eq, inArray } from 'drizzle-orm'
 import { gameNotes, gameSessions } from '@shared/db'
-import type { DbContext } from '../../types'
+import type { DbContext, DbQueryContext, DbWriteContext } from '../../types'
 import type { RelationMergeConfig, MergeRow } from './types'
 
 export function mergeRelationRows(
@@ -10,7 +10,7 @@ export function mergeRelationRows(
   sourceId: string,
   now: Date
 ): number {
-  const rows = (db as any)
+  const rows = (db as DbQueryContext)
     .select()
     .from(config.table)
     .where(inArray(config.mergeColumn, [targetId, sourceId]))
@@ -50,12 +50,12 @@ export function mergeRelationRows(
     })
   }
 
-  ;(db as any)
+  ;(db as DbWriteContext)
     .delete(config.table)
     .where(inArray(config.mergeColumn, [targetId, sourceId]))
     .run()
   if (finalRows.length > 0) {
-    ;(db as any).insert(config.table).values(finalRows).run()
+    ;(db as DbWriteContext).insert(config.table).values(finalRows).run()
   }
 
   return sourceCount
@@ -67,14 +67,14 @@ export function mergeGameSessions(
   sourceId: string,
   now: Date
 ): number {
-  const rows = (db as any)
+  const rows = (db as DbQueryContext)
     .select({ id: gameSessions.id })
     .from(gameSessions)
     .where(eq(gameSessions.gameId, sourceId))
-    .all() as { id: string }[]
+    .all()
   if (rows.length === 0) return 0
-  ;(db as any)
-    .update(gameSessions)
+
+  db.update(gameSessions)
     .set({ gameId: targetId, updatedAt: now })
     .where(eq(gameSessions.gameId, sourceId))
     .run()
@@ -87,30 +87,26 @@ export function mergeGameNotes(
   sourceId: string,
   now: Date
 ): number {
-  const rows = (db as any)
+  const rows = db
     .select()
     .from(gameNotes)
     .where(inArray(gameNotes.gameId, [targetId, sourceId]))
-    .all() as MergeRow[]
+    .all()
 
   const targetRows = rows.filter((row) => row.gameId === targetId)
   const sourceRows = rows
     .filter((row) => row.gameId === sourceId)
-    .sort((a, b) => compareRelationRows(a, b, 'orderInGame'))
+    .sort((a, b) => a.orderInGame - b.orderInGame || toTime(a.createdAt) - toTime(b.createdAt))
   if (sourceRows.length === 0) return 0
 
   const usedNames = new Set(targetRows.map((row) => row.name))
-  let nextOrder =
-    targetRows.reduce(
-      (max, row) => Math.max(max, typeof row.orderInGame === 'number' ? row.orderInGame : -1),
-      -1
-    ) + 1
+  let nextOrder = targetRows.reduce((max, row) => Math.max(max, row.orderInGame), -1) + 1
 
   for (const note of sourceRows) {
     const name = createMergedNoteName(note.name, usedNames)
     usedNames.add(name)
-    ;(db as any)
-      .update(gameNotes)
+
+    db.update(gameNotes)
       .set({
         gameId: targetId,
         name,

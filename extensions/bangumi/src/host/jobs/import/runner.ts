@@ -5,7 +5,7 @@ import { IndexReader } from '../../import/index-reader'
 import { ImportPlanner } from '../../import/planner'
 import type { BangumiMediaScope } from '../../media/scopes'
 import type { LocalMediaAdapter } from '../../media/types'
-import { BangumiExtensionError } from '../../utils/errors'
+import { BangumiExtensionError, isCancellationError } from '../../utils/errors'
 import { omitUndefined } from '../../utils/object'
 import { createImportSuppressTtlMs } from '../../sync/suppressor'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'
@@ -53,7 +53,6 @@ import {
   recordRemoteOnlyIndexPreview
 } from './preview'
 import type { BangumiJobSummary } from '../summary'
-import { isCancellationError } from '../summary'
 
 export class ImportJobRunner {
   private readonly collectionReader: CollectionReader

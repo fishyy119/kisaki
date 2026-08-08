@@ -1,4 +1,5 @@
 import type { CharacterPlanContext, CharacterUpdatePlan } from '../types'
+import { CHARACTER_RELATION_LINKS, resolveRelationLinks } from '../relation-links'
 import {
   areExternalIdsEqual,
   areRelatedSitesEqual,
@@ -13,10 +14,16 @@ import { shouldApplyMediaUpdate, shouldApplyScalarUpdate } from '../shared/polic
 
 export function buildCharacterPlan(context: CharacterPlanContext): CharacterUpdatePlan {
   const { current, incoming, relationGraph, selection, policy } = context
+  const relations = resolveRelationLinks({
+    links: CHARACTER_RELATION_LINKS,
+    selectedSurfaces: selection.relationSurfaces,
+    availability: incoming.availability,
+    mode: policy.collectionUpdate
+  })
   const plan: CharacterUpdatePlan = {
     patch: {},
-    collectionMode: policy.collectionUpdate,
-    selectedRelationSurfaces: [...selection.relationSurfaces]
+    relationLinks: relations.links,
+    degradedRelationLinks: relations.degraded
   }
 
   for (const surface of selection.coreSurfaces) {
@@ -90,10 +97,7 @@ export function buildCharacterPlan(context: CharacterPlanContext): CharacterUpda
     }
   }
 
-  if (
-    selection.relationSurfaces.some((surface) => incoming.availability.surfaces.has(surface)) &&
-    relationGraph
-  ) {
+  if (Object.keys(relations.links).length > 0 && relationGraph) {
     plan.relationGraph = relationGraph
   }
 

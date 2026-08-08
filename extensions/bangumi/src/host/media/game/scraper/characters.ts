@@ -11,6 +11,7 @@ import type {
   BangumiRelatedCharacter
 } from '../../../api/types'
 import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../../../utils/constants'
+import { isCancellationError } from '../../../utils/errors'
 import { omitUndefined } from '../../../utils/object'
 import { dedupeTags } from './format/dedupe'
 import { toPartialDateFromParts } from './format/dates'
@@ -62,21 +63,26 @@ export async function buildGameCharacters({
 
 export async function fetchCharacterDetails(
   client: BangumiClient,
-  ids: number[]
+  ids: number[],
+  signal?: AbortSignal
 ): Promise<Map<number, BangumiCharacterDetail>> {
   const results = await Promise.all(
     ids.map(async (characterId) => {
       try {
-        const detail = await client.getCharacterById(characterId)
+        const detail = await client.getCharacterById(characterId, { signal })
         if (extractImageUrls(detail.images).length === 0) {
-          const fallbackImage = await client.getCharacterImageUrl(characterId, 'large')
+          const fallbackImage = await client.getCharacterImageUrl(characterId, 'large', { signal })
           if (fallbackImage) {
             detail.images = { ...(detail.images ?? {}), large: fallbackImage }
           }
         }
 
         return [characterId, detail] as const
-      } catch {
+      } catch (error) {
+        if (isCancellationError(error)) {
+          throw error
+        }
+
         return null
       }
     })
@@ -89,13 +95,18 @@ export async function fetchCharacterDetails(
 
 export async function fetchCharacterPersons(
   client: BangumiClient,
-  ids: number[]
+  ids: number[],
+  signal?: AbortSignal
 ): Promise<Map<number, BangumiCharacterPerson[]>> {
   const results = await Promise.all(
     ids.map(async (characterId) => {
       try {
-        return [characterId, await client.getCharacterPersons(characterId)] as const
-      } catch {
+        return [characterId, await client.getCharacterPersons(characterId, { signal })] as const
+      } catch (error) {
+        if (isCancellationError(error)) {
+          throw error
+        }
+
         return null
       }
     })

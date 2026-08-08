@@ -20,6 +20,7 @@ export const GAME_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'person', group: 'relation', cardinality: 'collection' },
   { key: 'company', group: 'relation', cardinality: 'collection' },
   { key: 'character', group: 'relation', cardinality: 'collection' },
+  { key: 'characterPerson', group: 'relation', cardinality: 'collection' },
   { key: 'covers', group: 'media', cardinality: 'singular' },
   { key: 'backdrops', group: 'media', cardinality: 'singular' },
   { key: 'logos', group: 'media', cardinality: 'singular' },

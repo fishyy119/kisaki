@@ -4,14 +4,17 @@
 
 import type { CompanyScraperSlot } from '@shared/db'
 import type { Tag } from '@shared/metadata'
-import type { ContentLocale } from '@shared/i18n'
 import type {
   CompanySearchResult,
   ScrapedCompanyInfo,
   ScraperCapability,
   ScraperLookup
 } from '@shared/scraper'
-import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
+import {
+  type BaseScraperSession,
+  type IdResolvedTarget,
+  type ScraperProviderContext
+} from '../../types'
 
 export type CompanyResolvedTarget = IdResolvedTarget
 
@@ -29,7 +32,10 @@ export interface CompanyScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, locale?: ContentLocale): Promise<CompanySearchResult[]>
-  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<CompanyResolvedTarget | null>
-  openSession(target: CompanyResolvedTarget, locale: ContentLocale): Promise<CompanyScraperSession>
+  search(query: string, ctx: ScraperProviderContext): Promise<CompanySearchResult[]>
+  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<CompanyResolvedTarget | null>
+  openSession(
+    target: CompanyResolvedTarget,
+    ctx: ScraperProviderContext
+  ): Promise<CompanyScraperSession>
 }

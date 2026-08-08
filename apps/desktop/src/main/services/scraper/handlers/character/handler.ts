@@ -4,6 +4,7 @@
 
 import { eq } from 'drizzle-orm'
 import { createLogger } from '@main/log'
+import { isAbortError } from '@main/utils/async'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '@shared/db/schema'
 import { scraperProfiles, type ScraperProfile } from '@shared/db/schema'
@@ -45,7 +46,7 @@ import type {
   CharacterScraperResult
 } from './types'
 import type { ScraperMediaHooks } from '../../hooks'
-import type { SlotResult } from '../../types'
+import type { ScraperInvocationOptions, SlotResult } from '../../types'
 
 const log = createLogger('Scraper')
 
@@ -58,18 +59,6 @@ function hasValidCharacterInfoData(
   strategy: SlotStrategy
 ): boolean {
   return strategy !== 'first' || (typeof data.name === 'string' && data.name.trim().length > 0)
-}
-
-function hasValidCharacterSlotData<S extends CharacterScraperSlot>(
-  slot: S,
-  data: CharacterSessionResultMap[S],
-  strategy: SlotStrategy
-): boolean {
-  if (slot === 'info') {
-    return hasValidCharacterInfoData(data as CharacterSessionResultMap['info'], strategy)
-  }
-
-  return Array.isArray(data) && data.length > 0
 }
 
 export class CharacterScraperHandler {
@@ -103,7 +92,7 @@ export class CharacterScraperHandler {
   }
 
   getProviderInfo(providerId: string): CharacterScraperProviderInfo {
-    const provider = this.getSearchProvider(providerId)
+    const provider = this.requireProvider(providerId)
     return {
       id: provider.id,
       name: provider.name,
@@ -112,10 +101,17 @@ export class CharacterScraperHandler {
     }
   }
 
-  async search(profileId: string, query: string): Promise<CharacterSearchResult[]> {
+  async search(
+    profileId: string,
+    query: string,
+    options: ScraperInvocationOptions = {}
+  ): Promise<CharacterSearchResult[]> {
     const profile = this.loadProfile(profileId)
-    const provider = this.getSearchProvider(profile.searchProviderId)
-    const results = await provider.search(query, this.getProfileLocale(profile))
+    const provider = this.requireProvider(profile.searchProviderId)
+    const results = await provider.search(query, {
+      locale: this.getProfileLocale(profile),
+      signal: options.signal
+    })
     return this.hooks.searched.transform(
       results.map((result) =>
         ensureProviderExternalId(result, provider.externalIdSource, result.id)
@@ -125,7 +121,8 @@ export class CharacterScraperHandler {
 
   async scrape(
     profileId: string,
-    rawLookup: ScraperLookup
+    rawLookup: ScraperLookup,
+    options: ScraperInvocationOptions = {}
   ): Promise<ScrapedCharacterBundle | null> {
     const lookup = await this.hooks.lookup.transform(rawLookup)
     const profile = this.loadProfile(profileId)
@@ -140,7 +137,7 @@ export class CharacterScraperHandler {
     }
 
     const resolveLocale = this.getResolveLocale(runtimeProfile, lookup)
-    const searchProvider = this.getSearchProvider(runtimeProfile.searchProviderId)
+    const searchProvider = this.requireProvider(runtimeProfile.searchProviderId)
     const plan = buildExecutionPlan<CharacterScraperSlot>({
       slotConfigs: runtimeProfile.slotConfigs,
       resolveLocale: (entry) => this.getFetchLocale(runtimeProfile, entry)
@@ -154,12 +151,13 @@ export class CharacterScraperHandler {
     >()
 
     try {
+      const resolveCtx = { locale: resolveLocale, signal: options.signal }
       const { target: searchTarget, canonicalLookup } = await resolveSearchProviderTarget({
         state,
         providerId: searchProvider.id,
         provider: searchProvider,
         lookup,
-        locale: resolveLocale,
+        ctx: resolveCtx,
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })
 
@@ -175,7 +173,7 @@ export class CharacterScraperHandler {
 
         const provider = this.providers.get(providerId)
         if (!provider) {
-          log.warn('Provider not available.', { providerId: providerId })
+          log.warn('Provider not available.', { mediaType: 'character', providerId: providerId })
           return null
         }
 
@@ -188,13 +186,14 @@ export class CharacterScraperHandler {
           providerId,
           provider,
           lookup: canonicalLookup,
-          locale: resolveLocale
+          ctx: resolveCtx
         })
       }
 
       const results = (await executeScraperPlan({
         state,
         plan,
+        signal: options.signal,
         getProvider: (providerId) => this.providers.get(providerId),
         resolveProviderTarget: resolveProviderId,
         collectResolvedIdentity: ({ providerId, target }) =>
@@ -218,16 +217,18 @@ export class CharacterScraperHandler {
   async getProviderImages(
     providerId: string,
     lookup: ScraperLookup,
-    imageType: CharacterScraperImageSlot
+    imageType: CharacterScraperImageSlot,
+    options: ScraperInvocationOptions = {}
   ): Promise<string[]> {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      log.warn('Character provider not available.', { providerId: providerId })
+      log.warn('Provider not available.', { mediaType: 'character', providerId: providerId })
       return []
     }
 
     if (!provider.capabilities.includes(imageType)) {
-      log.warn('Character provider does not support image slot.', {
+      log.warn('Provider does not support image slot.', {
+        mediaType: 'character',
         providerId: providerId,
         imageType: imageType
       })
@@ -252,6 +253,7 @@ export class CharacterScraperHandler {
       const results = (await executeScraperPlan({
         state,
         plan,
+        signal: options.signal,
         getProvider: (candidateProviderId) => this.providers.get(candidateProviderId),
         resolveProviderTarget: async (candidateProviderId) => {
           if (candidateProviderId !== providerId) {
@@ -263,7 +265,7 @@ export class CharacterScraperHandler {
             providerId,
             provider,
             lookup,
-            locale
+            ctx: { locale, signal: options.signal }
           })
         },
         buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
@@ -273,7 +275,15 @@ export class CharacterScraperHandler {
 
       return mergeCharacterScraperImages([...results], 'enrich')
     } catch (error) {
-      log.warn('Provider request failed.', error, { providerId: providerId, imageType: imageType })
+      if (isAbortError(error)) {
+        throw error
+      }
+
+      log.warn('Provider request failed.', error, {
+        mediaType: 'character',
+        providerId: providerId,
+        imageType: imageType
+      })
       return []
     } finally {
       await state.dispose()
@@ -301,7 +311,9 @@ export class CharacterScraperHandler {
         : null
     }
 
-    if (!hasValidCharacterSlotData(entry.slot, data, entry.strategy)) {
+    // A collection slot the provider answered is authoritative, so an empty
+    // array is kept as an authoritative empty instead of a missing answer.
+    if (!Array.isArray(data)) {
       return null
     }
 
@@ -337,9 +349,9 @@ export class CharacterScraperHandler {
     return profile
   }
 
-  private getSearchProvider(providerId: string): CharacterScraperProvider {
+  private requireProvider(providerId: string): CharacterScraperProvider {
     const provider = this.providers.get(providerId)
-    if (!provider || !provider.capabilities.includes('search')) {
+    if (!provider) {
       throw new Error(`Provider not found: ${providerId}`)
     }
     return provider

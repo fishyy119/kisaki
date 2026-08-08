@@ -52,19 +52,37 @@ function areRelationRowsEqual<TType extends string>(
   })
 }
 
+interface RelationRowPlan<TType extends string> {
+  /** Rows to persist, or `undefined` when the stored rows already stand. */
+  rows?: OrderedRelationRow<TType>[]
+  /** Stored rows absent from the incoming set, which `replace` would have deleted. */
+  preservedRowCount: number
+}
+
+/**
+ * Resolve stored relation rows against the authoritative incoming ones.
+ * `replace` makes the stored set equal the incoming one, so empty incoming rows
+ * clear the relation; `merge` only adds, so empty incoming rows change nothing.
+ */
 function buildFinalRelationRows<TType extends string>(
   current: OrderedRelationRow<TType>[],
   incoming: OrderedRelationRow<TType>[],
   collectionMode: IngestUpdatePolicy['collectionUpdate']
-): OrderedRelationRow<TType>[] | undefined {
-  if (incoming.length === 0) return undefined
-
+): RelationRowPlan<TType> {
   if (collectionMode === 'replace') {
-    return incoming.map((row) => ({
-      ...row,
-      note: normalizeRelationNote(row.note)
-    }))
+    return {
+      rows: incoming.map((row) => ({
+        ...row,
+        note: normalizeRelationNote(row.note)
+      })),
+      preservedRowCount: 0
+    }
   }
+
+  const incomingKeys = new Set(incoming.map(relationRowKey))
+  const preservedRowCount = current.filter((row) => !incomingKeys.has(relationRowKey(row))).length
+
+  if (incoming.length === 0) return { preservedRowCount }
 
   const merged = current.map((row) => ({
     ...row,
@@ -92,7 +110,7 @@ function buildFinalRelationRows<TType extends string>(
     }
   }
 
-  return merged
+  return { rows: merged, preservedRowCount }
 }
 
 function loadCharacterPersonRows(
@@ -340,13 +358,14 @@ export function resolveCharacterNodes(
   return { idByIdentity, pendingAssets }
 }
 
+/** Applies the rows and returns how many stored rows a `replace` would have deleted. */
 export function applyCharacterPersonRows(params: {
   tx: DbContext
   characterId: string
   links: ReadonlyArray<IngestCharacterGraph['links'][number]>
   collectionMode: IngestUpdatePolicy['collectionUpdate']
   personIdByIdentity: ReadonlyMap<string, string>
-}): void {
+}): number {
   const { tx, characterId, links, collectionMode, personIdByIdentity } = params
 
   const incomingRows: OrderedRelationRow<CharacterPersonType>[] = links
@@ -364,21 +383,22 @@ export function applyCharacterPersonRows(params: {
     .filter((row): row is OrderedRelationRow<CharacterPersonType> => row !== null)
 
   const currentRows = loadCharacterPersonRows(tx, characterId)
-  const nextRows = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
-  if (!nextRows || areRelationRowsEqual(currentRows, nextRows)) {
-    return
+  const rowPlan = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
+  if (rowPlan.rows && !areRelationRowsEqual(currentRows, rowPlan.rows)) {
+    replaceCharacterPersonRows(tx, characterId, rowPlan.rows)
   }
 
-  replaceCharacterPersonRows(tx, characterId, nextRows)
+  return rowPlan.preservedRowCount
 }
 
+/** Applies the rows and returns how many stored rows a `replace` would have deleted. */
 export function applyGamePersonRows(params: {
   tx: DbContext
   gameId: string
   links: ReadonlyArray<IngestGameGraph['links']['gamePerson'][number]>
   collectionMode: IngestUpdatePolicy['collectionUpdate']
   personIdByIdentity: ReadonlyMap<string, string>
-}): void {
+}): number {
   const { tx, gameId, links, collectionMode, personIdByIdentity } = params
 
   const incomingRows: OrderedRelationRow<GamePersonType>[] = links
@@ -396,21 +416,22 @@ export function applyGamePersonRows(params: {
     .filter((row): row is OrderedRelationRow<GamePersonType> => row !== null)
 
   const currentRows = loadGamePersonRows(tx, gameId)
-  const nextRows = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
-  if (!nextRows || areRelationRowsEqual(currentRows, nextRows)) {
-    return
+  const rowPlan = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
+  if (rowPlan.rows && !areRelationRowsEqual(currentRows, rowPlan.rows)) {
+    replaceGamePersonRows(tx, gameId, rowPlan.rows)
   }
 
-  replaceGamePersonRows(tx, gameId, nextRows)
+  return rowPlan.preservedRowCount
 }
 
+/** Applies the rows and returns how many stored rows a `replace` would have deleted. */
 export function applyGameCompanyRows(params: {
   tx: DbContext
   gameId: string
   links: ReadonlyArray<IngestGameGraph['links']['gameCompany'][number]>
   collectionMode: IngestUpdatePolicy['collectionUpdate']
   companyIdByIdentity: ReadonlyMap<string, string>
-}): void {
+}): number {
   const { tx, gameId, links, collectionMode, companyIdByIdentity } = params
 
   const incomingRows: OrderedRelationRow<GameCompanyType>[] = links
@@ -428,21 +449,22 @@ export function applyGameCompanyRows(params: {
     .filter((row): row is OrderedRelationRow<GameCompanyType> => row !== null)
 
   const currentRows = loadGameCompanyRows(tx, gameId)
-  const nextRows = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
-  if (!nextRows || areRelationRowsEqual(currentRows, nextRows)) {
-    return
+  const rowPlan = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
+  if (rowPlan.rows && !areRelationRowsEqual(currentRows, rowPlan.rows)) {
+    replaceGameCompanyRows(tx, gameId, rowPlan.rows)
   }
 
-  replaceGameCompanyRows(tx, gameId, nextRows)
+  return rowPlan.preservedRowCount
 }
 
+/** Applies the rows and returns how many stored rows a `replace` would have deleted. */
 export function applyGameCharacterRows(params: {
   tx: DbContext
   gameId: string
   links: ReadonlyArray<IngestGameGraph['links']['gameCharacter'][number]>
   collectionMode: IngestUpdatePolicy['collectionUpdate']
   characterIdByIdentity: ReadonlyMap<string, string>
-}): void {
+}): number {
   const { tx, gameId, links, collectionMode, characterIdByIdentity } = params
 
   const incomingRows: OrderedRelationRow<GameCharacterType>[] = links
@@ -460,10 +482,10 @@ export function applyGameCharacterRows(params: {
     .filter((row): row is OrderedRelationRow<GameCharacterType> => row !== null)
 
   const currentRows = loadGameCharacterRows(tx, gameId)
-  const nextRows = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
-  if (!nextRows || areRelationRowsEqual(currentRows, nextRows)) {
-    return
+  const rowPlan = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
+  if (rowPlan.rows && !areRelationRowsEqual(currentRows, rowPlan.rows)) {
+    replaceGameCharacterRows(tx, gameId, rowPlan.rows)
   }
 
-  replaceGameCharacterRows(tx, gameId, nextRows)
+  return rowPlan.preservedRowCount
 }

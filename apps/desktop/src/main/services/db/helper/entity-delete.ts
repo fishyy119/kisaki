@@ -7,6 +7,7 @@
 
 import { inArray } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import type { AllEntityType } from '@shared/common'
 import type {
   EntityDeletePreview,
@@ -353,16 +354,11 @@ export class DbEntityDeleteHelper {
     return [...new Set(ids.filter((id): id is string => Boolean(id)))]
   }
 
-  /**
-   * Query distinct target IDs from a junction table.
-   *
-   * Drizzle column typing becomes highly dynamic here, so the table/column
-   * parameters are intentionally kept loose inside this low-level helper.
-   */
+  /** Query distinct target IDs from a junction table given its schema facts. */
   private selectDistinctIds(
-    table: any,
-    sourceColumn: any,
-    targetColumn: any,
+    table: SQLiteTable,
+    sourceColumn: AnySQLiteColumn,
+    targetColumn: AnySQLiteColumn,
     sourceIds: string[]
   ): Set<string> {
     if (sourceIds.length === 0) return new Set()
@@ -373,10 +369,6 @@ export class DbEntityDeleteHelper {
       .where(inArray(sourceColumn, sourceIds))
       .all()
 
-    return new Set(
-      rows
-        .map((row: { id: string | null | undefined }) => row.id)
-        .filter((id): id is string => Boolean(id))
-    )
+    return new Set(rows.flatMap((row) => (typeof row.id === 'string' && row.id ? [row.id] : [])))
   }
 }

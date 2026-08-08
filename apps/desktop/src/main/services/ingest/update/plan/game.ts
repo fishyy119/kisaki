@@ -1,4 +1,5 @@
 import type { GamePlanContext, GameUpdatePlan } from '../types'
+import { GAME_RELATION_LINKS, resolveRelationLinks } from '../relation-links'
 import {
   areExternalIdsEqual,
   areRelatedSitesEqual,
@@ -13,10 +14,16 @@ import { shouldApplyMediaUpdate, shouldApplyScalarUpdate } from '../shared/polic
 
 export function buildGamePlan(context: GamePlanContext): GameUpdatePlan {
   const { current, incoming, relationGraph, selection, policy } = context
+  const relations = resolveRelationLinks({
+    links: GAME_RELATION_LINKS,
+    selectedSurfaces: selection.relationSurfaces,
+    availability: incoming.availability,
+    mode: policy.collectionUpdate
+  })
   const plan: GameUpdatePlan = {
     patch: {},
-    collectionMode: policy.collectionUpdate,
-    selectedRelationSurfaces: [...selection.relationSurfaces]
+    relationLinks: relations.links,
+    degradedRelationLinks: relations.degraded
   }
 
   for (const surface of selection.coreSurfaces) {
@@ -105,10 +112,7 @@ export function buildGamePlan(context: GamePlanContext): GameUpdatePlan {
     }
   }
 
-  if (
-    selection.relationSurfaces.some((surface) => incoming.availability.surfaces.has(surface)) &&
-    relationGraph
-  ) {
+  if (Object.keys(relations.links).length > 0 && relationGraph) {
     plan.relationGraph = relationGraph
   }
 

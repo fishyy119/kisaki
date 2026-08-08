@@ -15,7 +15,7 @@ import type {
   IngestAddGameFromScraperOptions,
   IngestAddGameFromScraperResult,
   IngestGameUpdateFromScraperInput,
-  IngestGameUpdateFromScraperOptions,
+  IngestTaskRunStart,
   IngestUpdateResult
 } from '../capabilities/ingest'
 import type {
@@ -137,7 +137,6 @@ export interface IngestGameAddFromScraperRequest extends ExtensionScopedRpcParam
 
 export interface IngestGameUpdateFromScraperRequest extends ExtensionScopedRpcParams {
   input: IngestGameUpdateFromScraperInput
-  options?: IngestGameUpdateFromScraperOptions
 }
 
 export interface LibraryGraphRpcRequest extends ExtensionScopedRpcParams {
@@ -355,9 +354,17 @@ export type HostToMainCapabilityRpcRequestMap = {
     IngestGameAddFromScraperRequest,
     { result: IngestAddGameFromScraperResult }
   >
+  'capabilities.ingest.game.add.startFromScraper': RpcMethodDefinition<
+    IngestGameAddFromScraperRequest,
+    { start: IngestTaskRunStart }
+  >
   'capabilities.ingest.game.update.fromScraper': RpcMethodDefinition<
     IngestGameUpdateFromScraperRequest,
     { result: IngestUpdateResult }
+  >
+  'capabilities.ingest.game.update.startFromScraper': RpcMethodDefinition<
+    IngestGameUpdateFromScraperRequest,
+    { start: IngestTaskRunStart }
   >
   'capabilities.commands.list': RpcMethodDefinition<
     ExtensionScopedRpcParams,

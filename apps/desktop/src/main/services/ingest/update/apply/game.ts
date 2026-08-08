@@ -1,18 +1,15 @@
-import { eq, inArray } from 'drizzle-orm'
-import type { DbContext } from '@main/services/db'
+import { eq } from 'drizzle-orm'
+import {
+  gameExternalIdLink,
+  requireExternalIdsAvailable,
+  resolveTagId,
+  type DbContext
+} from '@main/services/db'
 import { IngestPersistHandlers } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
-import {
-  gameExternalIds,
-  gameTagLinks,
-  games,
-  tags,
-  type NewGame,
-  type NewGameTagLink
-} from '@shared/db'
+import { gameExternalIds, gameTagLinks, games, type NewGame, type NewGameTagLink } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import type { GameUpdatePlan, UpdateApplyResult } from '../types'
-import { ensureGameExternalIdsAvailable, findExistingTagId } from '../shared/availability'
+import type { GameRelationLink, GameUpdatePlan, UpdateRelationApplyResult } from '../types'
 import {
   applyCharacterPersonRows,
   applyGameCharacterRows,
@@ -41,23 +38,11 @@ function replaceGameExternalIds(tx: DbContext, gameId: string, externalIds: Exte
 
 function replaceGameTags(tx: DbContext, gameId: string, nextTags: GameUpdatePlan['tags']): void {
   tx.delete(gameTagLinks).where(eq(gameTagLinks.gameId, gameId)).run()
-  if (!nextTags || nextTags.length === 0) return
-
-  const tagNames = [...new Set(nextTags.map((tag) => tag.name))]
-  const existingRows = tx.select().from(tags).where(inArray(tags.name, tagNames)).all()
-  const existingByName = new Map(existingRows.map((row) => [row.name, row.id]))
-
-  for (const tag of nextTags) {
-    if (existingByName.has(tag.name)) continue
-    tx.insert(tags)
-      .values({ name: tag.name, isNsfw: tag.isNsfw ?? false })
-      .onConflictDoNothing()
-      .run()
-  }
+  if (!nextTags?.length) return
 
   const linkValues: NewGameTagLink[] = []
   nextTags.forEach((tag, index) => {
-    const tagId = existingByName.get(tag.name) ?? findExistingTagId(tx, tag.name)
+    const tagId = resolveTagId(tx, tag)
     if (!tagId) return
 
     linkValues.push({
@@ -80,44 +65,47 @@ function applyGameRelationGraph(
   gameId: string,
   plan: GameUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): PendingAssetTask[] {
+): UpdateRelationApplyResult<GameRelationLink> {
   const relationGraph = plan.relationGraph
   if (!relationGraph) {
-    return []
+    return { pendingAssets: [], preservedRelationRows: {} }
   }
 
-  const selected = new Set(plan.selectedRelationSurfaces)
+  const { gamePerson, gameCompany, gameCharacter, characterPerson } = plan.relationLinks
 
   const personIdentityKeys = new Set<string>()
-  if (selected.has('person')) {
+  if (gamePerson) {
     for (const link of relationGraph.links.gamePerson) {
       personIdentityKeys.add(link.personIdentityKey)
     }
   }
-  if (selected.has('character')) {
+  if (characterPerson) {
     for (const link of relationGraph.links.characterPerson) {
       personIdentityKeys.add(link.personIdentityKey)
     }
   }
 
   const companyIdentityKeys = new Set<string>()
-  if (selected.has('company')) {
+  if (gameCompany) {
     for (const link of relationGraph.links.gameCompany) {
       companyIdentityKeys.add(link.companyIdentityKey)
     }
   }
 
   const characterIdentityKeys = new Set<string>()
-  if (selected.has('character')) {
+  if (gameCharacter) {
     for (const link of relationGraph.links.gameCharacter) {
       characterIdentityKeys.add(link.characterIdentityKey)
     }
+  }
+  if (characterPerson) {
     for (const link of relationGraph.links.characterPerson) {
       characterIdentityKeys.add(link.characterIdentityKey)
     }
   }
 
   const pendingAssets: PendingAssetTask[] = []
+  const preservedRelationRows: Partial<Record<GameRelationLink, number>> = {}
 
   const personResolution =
     personIdentityKeys.size > 0
@@ -149,35 +137,37 @@ function applyGameRelationGraph(
       : { idByIdentity: new Map<string, string>(), pendingAssets: [] }
   pendingAssets.push(...characterResolution.pendingAssets)
 
-  if (selected.has('person')) {
-    applyGamePersonRows({
+  if (gamePerson) {
+    preservedRelationRows.gamePerson = applyGamePersonRows({
       tx,
       gameId,
       links: relationGraph.links.gamePerson,
-      collectionMode: plan.collectionMode,
+      collectionMode: gamePerson,
       personIdByIdentity: personResolution.idByIdentity
     })
   }
 
-  if (selected.has('company')) {
-    applyGameCompanyRows({
+  if (gameCompany) {
+    preservedRelationRows.gameCompany = applyGameCompanyRows({
       tx,
       gameId,
       links: relationGraph.links.gameCompany,
-      collectionMode: plan.collectionMode,
+      collectionMode: gameCompany,
       companyIdByIdentity: companyResolution.idByIdentity
     })
   }
 
-  if (selected.has('character')) {
-    applyGameCharacterRows({
+  if (gameCharacter) {
+    preservedRelationRows.gameCharacter = applyGameCharacterRows({
       tx,
       gameId,
       links: relationGraph.links.gameCharacter,
-      collectionMode: plan.collectionMode,
+      collectionMode: gameCharacter,
       characterIdByIdentity: characterResolution.idByIdentity
     })
+  }
 
+  if (characterPerson) {
     const linksByCharacterId = new Map<string, typeof relationGraph.links.characterPerson>()
     for (const link of relationGraph.links.characterPerson) {
       const characterId = characterResolution.idByIdentity.get(link.characterIdentityKey)
@@ -188,18 +178,20 @@ function applyGameRelationGraph(
       linksByCharacterId.set(characterId, links)
     }
 
+    let preserved = 0
     for (const [characterId, links] of linksByCharacterId) {
-      applyCharacterPersonRows({
+      preserved += applyCharacterPersonRows({
         tx,
         characterId,
         links,
-        collectionMode: plan.collectionMode,
+        collectionMode: characterPerson,
         personIdByIdentity: personResolution.idByIdentity
       })
     }
+    preservedRelationRows.characterPerson = preserved
   }
 
-  return pendingAssets
+  return { pendingAssets, preservedRelationRows }
 }
 
 export function applyGamePlan(
@@ -207,9 +199,9 @@ export function applyGamePlan(
   gameId: string,
   plan: GameUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): UpdateApplyResult {
+): UpdateRelationApplyResult<GameRelationLink> {
   if (plan.externalIds) {
-    ensureGameExternalIdsAvailable(tx, gameId, plan.externalIds)
+    requireExternalIdsAvailable(tx, gameExternalIdLink, [gameId], plan.externalIds)
     replaceGameExternalIds(tx, gameId, plan.externalIds)
   }
 
@@ -224,22 +216,18 @@ export function applyGamePlan(
       .run()
   }
 
-  const pendingAssets: PendingAssetTask[] = [
-    ...(plan.coverUrl
-      ? [{ type: 'game' as const, gameId, field: 'coverFile' as const, url: plan.coverUrl }]
-      : []),
-    ...(plan.backdropUrl
-      ? [{ type: 'game' as const, gameId, field: 'backdropFile' as const, url: plan.backdropUrl }]
-      : []),
-    ...(plan.logoUrl
-      ? [{ type: 'game' as const, gameId, field: 'logoFile' as const, url: plan.logoUrl }]
-      : []),
-    ...(plan.iconUrl
-      ? [{ type: 'game' as const, gameId, field: 'iconFile' as const, url: plan.iconUrl }]
-      : [])
+  const plannedMedia: Array<[string, string | undefined]> = [
+    ['coverFile', plan.coverUrl],
+    ['backdropFile', plan.backdropUrl],
+    ['logoFile', plan.logoUrl],
+    ['iconFile', plan.iconUrl]
   ]
+  const pendingAssets: PendingAssetTask[] = plannedMedia
+    .filter(([, url]) => Boolean(url))
+    .map(([field, url]) => ({ table: 'games', rowId: gameId, field, url: url as string }))
 
-  pendingAssets.push(...applyGameRelationGraph(tx, gameId, plan, persistHandlers))
+  const relations = applyGameRelationGraph(tx, gameId, plan, persistHandlers)
+  pendingAssets.push(...relations.pendingAssets)
 
-  return { pendingAssets }
+  return { pendingAssets, preservedRelationRows: relations.preservedRelationRows }
 }

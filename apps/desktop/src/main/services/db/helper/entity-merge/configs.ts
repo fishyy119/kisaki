@@ -1,6 +1,5 @@
 import {
   characters,
-  characterExternalIds,
   characterPersonLinks,
   characterTagLinks,
   collectionCharacterLinks,
@@ -9,56 +8,47 @@ import {
   collectionPersonLinks,
   collections,
   companies,
-  companyExternalIds,
   companyTagLinks,
   gameCharacterLinks,
   gameCompanyLinks,
-  gameExternalIds,
   gamePersonLinks,
   games,
   gameTagLinks,
-  personExternalIds,
   persons,
   personTagLinks,
   tags
 } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
+import {
+  characterExternalIdLink,
+  companyExternalIdLink,
+  gameExternalIdLink,
+  personExternalIdLink
+} from '../external-id'
 import type { EntityMergeConfig, ExternalIdMergeConfig, RelationMergeConfig } from './types'
 
 const gameExternalIdConfig: ExternalIdMergeConfig = {
-  table: gameExternalIds,
+  link: gameExternalIdLink,
   entityIdField: 'gameId',
-  entityIdColumn: gameExternalIds.gameId,
-  orderField: 'orderInGame',
-  sourceColumn: gameExternalIds.source,
-  externalIdColumn: gameExternalIds.externalId
+  orderField: 'orderInGame'
 }
 
 const personExternalIdConfig: ExternalIdMergeConfig = {
-  table: personExternalIds,
+  link: personExternalIdLink,
   entityIdField: 'personId',
-  entityIdColumn: personExternalIds.personId,
-  orderField: 'orderInPerson',
-  sourceColumn: personExternalIds.source,
-  externalIdColumn: personExternalIds.externalId
+  orderField: 'orderInPerson'
 }
 
 const companyExternalIdConfig: ExternalIdMergeConfig = {
-  table: companyExternalIds,
+  link: companyExternalIdLink,
   entityIdField: 'companyId',
-  entityIdColumn: companyExternalIds.companyId,
-  orderField: 'orderInCompany',
-  sourceColumn: companyExternalIds.source,
-  externalIdColumn: companyExternalIds.externalId
+  orderField: 'orderInCompany'
 }
 
 const characterExternalIdConfig: ExternalIdMergeConfig = {
-  table: characterExternalIds,
+  link: characterExternalIdLink,
   entityIdField: 'characterId',
-  entityIdColumn: characterExternalIds.characterId,
-  orderField: 'orderInCharacter',
-  sourceColumn: characterExternalIds.source,
-  externalIdColumn: characterExternalIds.externalId
+  orderField: 'orderInCharacter'
 }
 
 function relation(config: RelationMergeConfig): RelationMergeConfig {
@@ -70,7 +60,6 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
     entityType: 'game',
     table: games,
     idColumn: games.id,
-    tableName: 'games',
     externalIds: gameExternalIdConfig,
     relations: [
       relation({
@@ -122,7 +111,6 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
     entityType: 'character',
     table: characters,
     idColumn: characters.id,
-    tableName: 'characters',
     externalIds: characterExternalIdConfig,
     relations: [
       relation({
@@ -165,7 +153,6 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
     entityType: 'person',
     table: persons,
     idColumn: persons.id,
-    tableName: 'persons',
     externalIds: personExternalIdConfig,
     relations: [
       relation({
@@ -208,7 +195,6 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
     entityType: 'company',
     table: companies,
     idColumn: companies.id,
-    tableName: 'companies',
     externalIds: companyExternalIdConfig,
     relations: [
       relation({
@@ -242,7 +228,6 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
     entityType: 'collection',
     table: collections,
     idColumn: collections.id,
-    tableName: 'collections',
     relations: [
       relation({
         table: collectionGameLinks,
@@ -282,7 +267,6 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
     entityType: 'tag',
     table: tags,
     idColumn: tags.id,
-    tableName: 'tags',
     relations: [
       relation({
         table: gameTagLinks,

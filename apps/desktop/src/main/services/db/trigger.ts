@@ -1,11 +1,15 @@
 /**
- * SQLite Trigger Store
+ * SQLite change capture.
  *
- * Captures row-level insert/update/delete changes via SQLite AFTER triggers
- * and feeds them into the db change feed. Uses better-sqlite3's custom
- * function registration to bridge SQL triggers with JavaScript.
+ * Row-level insert/update/delete changes are captured by AFTER triggers that
+ * append to a transactional outbox, and are only delivered to the change feed
+ * once no transaction is open. A rolled back transaction discards its outbox
+ * rows with the rest of its writes, so consumers never observe changes that
+ * were undone.
  *
- * Table names are automatically inferred from the Drizzle schema.
+ * Triggers and the outbox are TEMP objects: they belong to this connection,
+ * never persist, and are rebuilt on every start. Tracked tables come from the
+ * Drizzle schema.
  */
 
 import type Database from 'better-sqlite3'
@@ -17,6 +21,24 @@ import type { TableName } from '@shared/db/table-names'
 import type { RawDbChange, RawDbChangeOperation } from '@shared/db/changes'
 
 const log = createLogger('Db')
+
+const OUTBOX_TABLE = 'db_change_outbox'
+
+/** Epoch milliseconds, matching `Date.now()` precision. */
+const OCCURRED_AT_MS = `CAST((julianday('now') - 2440587.5) * 86400000.0 AS INTEGER)`
+
+/** Delay before re-checking an open transaction, so drains never spin. */
+const DRAIN_RETRY_MS = 10
+
+interface OutboxRow {
+  seq: number
+  operation: string
+  table_name: string
+  row_id: string
+  old_json: string | null
+  next_json: string | null
+  occurred_at: number
+}
 
 /**
  * Extract all table names from Drizzle schema.
@@ -35,12 +57,10 @@ function getTrackedTables(): string[] {
 /**
  * Drops every persisted trigger in the database.
  *
- * Must run before schema migrations. All triggers in this database are
- * runtime-owned (change feed and FTS sync) and recreated during
- * `DbService.init`, but their persisted bodies snapshot table columns and
- * call `emit_db_change`. Dropping them first keeps ALTER TABLE migrations
- * from failing on trigger column references and keeps migration writes from
- * firing triggers before the emit function is registered.
+ * Must run before schema migrations. Persisted triggers are runtime-owned (FTS
+ * sync, plus change triggers left by older versions that persisted them), and
+ * their bodies snapshot table columns. Dropping them first keeps ALTER TABLE
+ * migrations from failing on trigger column references.
  */
 export function dropAllTriggers(sqlite: Database.Database): void {
   const rows = sqlite
@@ -52,56 +72,130 @@ export function dropAllTriggers(sqlite: Database.Database): void {
 }
 
 export class TriggerStore {
-  private trackedTables: string[]
+  private readonly trackedTables: string[]
+  private drainScheduled = false
+  private retryTimer: NodeJS.Timeout | null = null
+  private disposed = false
 
   constructor(
-    private sqlite: Database.Database,
-    private sink: (change: RawDbChange) => void
+    private readonly sqlite: Database.Database,
+    private readonly sink: (change: RawDbChange) => void
   ) {
     this.trackedTables = getTrackedTables()
   }
 
   init(): void {
-    this.registerEmitFunction()
+    this.createOutbox()
+    this.registerSignalFunction()
     this.createTriggers()
     log.info('Initialized with triggers for', this.trackedTables.length, 'tables')
   }
 
   /**
-   * Register the emit_db_change function that triggers can call.
-   * This bridges SQLite triggers with the JavaScript change feed.
+   * Delivers every committed outbox change to the sink.
+   *
+   * Called automatically after write statements settle; call directly to flush
+   * before closing the connection. Does nothing while a transaction is open,
+   * because those changes may still roll back.
    */
-  private registerEmitFunction(): void {
-    this.sqlite.function(
-      'emit_db_change',
-      { deterministic: false },
-      (operation, table, id, oldJson, nextJson) => {
-        const change = this.createRawChange(operation, table, id, oldJson, nextJson)
+  drain(): void {
+    if (this.disposed || this.sqlite.inTransaction) {
+      return
+    }
 
-        // Defer delivery until the current SQL statement completes.
-        // This prevents "connection is busy" errors when consumers access the DB.
-        queueMicrotask(() => {
-          this.sink(change)
-        })
-      }
-    )
+    let rows: OutboxRow[]
+    try {
+      rows = this.sqlite
+        .prepare(`SELECT * FROM ${quoteIdentifier(OUTBOX_TABLE)} ORDER BY "seq"`)
+        .all() as OutboxRow[]
+    } catch (error) {
+      log.error('Failed to read change outbox.', error)
+      return
+    }
+
+    if (rows.length === 0) {
+      return
+    }
+
+    // Consume before dispatching: sink listeners may write to the database and
+    // append new outbox rows, which must not be redelivered with this batch.
+    this.sqlite
+      .prepare(`DELETE FROM ${quoteIdentifier(OUTBOX_TABLE)} WHERE "seq" <= ?`)
+      .run(rows[rows.length - 1].seq)
+
+    for (const row of rows) {
+      this.sink(toRawChange(row))
+    }
   }
 
-  private createRawChange(
-    operation: unknown,
-    table: unknown,
-    id: unknown,
-    oldJson: unknown,
-    nextJson: unknown
-  ): RawDbChange {
-    return {
-      operation: normalizeOperation(operation),
-      table: table as TableName,
-      id: String(id),
-      old: parseRowSnapshot(oldJson),
-      next: parseRowSnapshot(nextJson),
-      occurredAt: Date.now()
+  dispose(): void {
+    this.disposed = true
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer)
+      this.retryTimer = null
     }
+  }
+
+  private createOutbox(): void {
+    this.sqlite.exec(`
+      CREATE TEMP TABLE IF NOT EXISTS ${quoteIdentifier(OUTBOX_TABLE)} (
+        "seq" INTEGER PRIMARY KEY AUTOINCREMENT,
+        "operation" TEXT NOT NULL,
+        "table_name" TEXT NOT NULL,
+        "row_id" TEXT NOT NULL,
+        "old_json" TEXT,
+        "next_json" TEXT,
+        "occurred_at" INTEGER NOT NULL
+      )
+    `)
+  }
+
+  /**
+   * Register the signal triggers call after appending to the outbox.
+   * Delivery is deferred so consumers never re-enter a busy connection, and so
+   * changes stay unpublished until their transaction commits.
+   */
+  private registerSignalFunction(): void {
+    this.sqlite.function('emit_db_change_signal', { deterministic: false }, () => {
+      this.scheduleDrain()
+      return null
+    })
+  }
+
+  private scheduleDrain(): void {
+    if (this.drainScheduled || this.disposed) {
+      return
+    }
+    this.drainScheduled = true
+    queueMicrotask(() => this.runScheduledDrain())
+  }
+
+  private runScheduledDrain(): void {
+    this.drainScheduled = false
+    if (this.disposed) {
+      return
+    }
+
+    if (this.sqlite.inTransaction) {
+      this.retryDrainLater()
+      return
+    }
+
+    try {
+      this.drain()
+    } catch (error) {
+      log.error('Failed to drain change outbox.', error)
+    }
+  }
+
+  private retryDrainLater(): void {
+    if (this.retryTimer) {
+      return
+    }
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null
+      this.scheduleDrain()
+    }, DRAIN_RETRY_MS)
   }
 
   /**
@@ -117,37 +211,40 @@ export class TriggerStore {
    * Create all three triggers for a specific table.
    */
   private createTriggersForTable(table: string): void {
-    const idColumn = 'id'
     const columns = this.getTableColumns(table)
-    const oldSnapshot = this.createRowSnapshotExpression('OLD', columns)
-    const nextSnapshot = this.createRowSnapshotExpression('NEW', columns)
+    const oldSnapshot = createRowSnapshotExpression('OLD', columns)
+    const nextSnapshot = createRowSnapshotExpression('NEW', columns)
 
-    // Drop existing triggers first (for idempotent initialization)
-    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${quoteIdentifier(`${table}_after_insert`)}`)
-    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${quoteIdentifier(`${table}_after_update`)}`)
-    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${quoteIdentifier(`${table}_after_delete`)}`)
+    this.createTrigger(table, 'INSERT', 'inserted', 'NEW', 'NULL', nextSnapshot)
+    this.createTrigger(table, 'UPDATE', 'updated', 'NEW', oldSnapshot, nextSnapshot)
+    this.createTrigger(table, 'DELETE', 'deleted', 'OLD', oldSnapshot, 'NULL')
+  }
 
-    // Create AFTER INSERT trigger
+  private createTrigger(
+    table: string,
+    event: 'INSERT' | 'UPDATE' | 'DELETE',
+    operation: RawDbChangeOperation,
+    alias: 'OLD' | 'NEW',
+    oldExpression: string,
+    nextExpression: string
+  ): void {
+    const name = quoteIdentifier(`${table}_after_${event.toLowerCase()}`)
+
+    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${name}`)
     this.sqlite.exec(`
-      CREATE TRIGGER ${quoteIdentifier(`${table}_after_insert`)} AFTER INSERT ON ${quoteIdentifier(table)}
+      CREATE TEMP TRIGGER ${name} AFTER ${event} ON main.${quoteIdentifier(table)}
       BEGIN
-        SELECT emit_db_change('inserted', '${table}', NEW.${quoteIdentifier(idColumn)}, NULL, ${nextSnapshot});
-      END
-    `)
-
-    // Create AFTER UPDATE trigger
-    this.sqlite.exec(`
-      CREATE TRIGGER ${quoteIdentifier(`${table}_after_update`)} AFTER UPDATE ON ${quoteIdentifier(table)}
-      BEGIN
-        SELECT emit_db_change('updated', '${table}', NEW.${quoteIdentifier(idColumn)}, ${oldSnapshot}, ${nextSnapshot});
-      END
-    `)
-
-    // Create AFTER DELETE trigger
-    this.sqlite.exec(`
-      CREATE TRIGGER ${quoteIdentifier(`${table}_after_delete`)} AFTER DELETE ON ${quoteIdentifier(table)}
-      BEGIN
-        SELECT emit_db_change('deleted', '${table}', OLD.${quoteIdentifier(idColumn)}, ${oldSnapshot}, NULL);
+        INSERT INTO ${quoteIdentifier(OUTBOX_TABLE)}
+          ("operation", "table_name", "row_id", "old_json", "next_json", "occurred_at")
+        VALUES (
+          ${quoteString(operation)},
+          ${quoteString(table)},
+          ${alias}."id",
+          ${oldExpression},
+          ${nextExpression},
+          ${OCCURRED_AT_MS}
+        );
+        SELECT emit_db_change_signal();
       END
     `)
   }
@@ -164,12 +261,23 @@ export class TriggerStore {
     }
     return columns
   }
+}
 
-  private createRowSnapshotExpression(alias: 'OLD' | 'NEW', columns: string[]): string {
-    const args = columns
-      .map((column) => `${quoteString(column)}, ${alias}.${quoteIdentifier(column)}`)
-      .join(', ')
-    return `json_object(${args})`
+function createRowSnapshotExpression(alias: 'OLD' | 'NEW', columns: string[]): string {
+  const args = columns
+    .map((column) => `${quoteString(column)}, ${alias}.${quoteIdentifier(column)}`)
+    .join(', ')
+  return `json_object(${args})`
+}
+
+function toRawChange(row: OutboxRow): RawDbChange {
+  return {
+    operation: normalizeOperation(row.operation),
+    table: row.table_name as TableName,
+    id: String(row.row_id),
+    old: parseRowSnapshot(row.old_json),
+    next: parseRowSnapshot(row.next_json),
+    occurredAt: row.occurred_at
   }
 }
 

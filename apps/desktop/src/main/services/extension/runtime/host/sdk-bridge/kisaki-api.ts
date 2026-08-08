@@ -452,16 +452,21 @@ export function createKisakiApi(
                 lookup,
                 options
               })
-            ).result
-        },
-        update: {
-          fromScraper: async (input, options) =>
+            ).result,
+          startFromScraper: async (profileId, lookup, options) =>
             (
-              await requestMain('capabilities.ingest.game.update.fromScraper', {
-                input,
+              await requestMain('capabilities.ingest.game.add.startFromScraper', {
+                profileId,
+                lookup,
                 options
               })
-            ).result
+            ).start
+        },
+        update: {
+          fromScraper: async (input) =>
+            (await requestMain('capabilities.ingest.game.update.fromScraper', { input })).result,
+          startFromScraper: async (input) =>
+            (await requestMain('capabilities.ingest.game.update.startFromScraper', { input })).start
         }
       }
     },

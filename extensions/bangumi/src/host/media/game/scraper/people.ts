@@ -6,6 +6,7 @@ import type {
 import type { BangumiClient } from '../../../api/client'
 import type { BangumiPersonDetail, BangumiRelatedPerson } from '../../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../../utils/constants'
+import { isCancellationError } from '../../../utils/errors'
 import { omitUndefined } from '../../../utils/object'
 import { dedupeExternalIds } from './format/dedupe'
 import { toPartialDateFromParts } from './format/dates'
@@ -56,21 +57,26 @@ export async function buildGameCompanies(
 
 export async function fetchPersonDetails(
   client: BangumiClient,
-  ids: number[]
+  ids: number[],
+  signal?: AbortSignal
 ): Promise<Map<number, BangumiPersonDetail>> {
   const results = await Promise.all(
     ids.map(async (personId) => {
       try {
-        const detail = await client.getPersonById(personId)
+        const detail = await client.getPersonById(personId, { signal })
         if (extractImageUrls(detail.images).length === 0) {
-          const fallbackImage = await client.getPersonImageUrl(personId, 'large')
+          const fallbackImage = await client.getPersonImageUrl(personId, 'large', { signal })
           if (fallbackImage) {
             detail.images = { ...(detail.images ?? {}), large: fallbackImage }
           }
         }
 
         return [personId, detail] as const
-      } catch {
+      } catch (error) {
+        if (isCancellationError(error)) {
+          throw error
+        }
+
         return null
       }
     })

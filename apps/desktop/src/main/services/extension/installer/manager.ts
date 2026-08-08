@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { rm, stat } from 'node:fs/promises'
 import { resolveLocalizedText } from '@kisaki3/extension-api'
+import { isAbortError } from '@main/utils/async'
 import type {
   ExtensionCreateLocalReleasePlanRequest,
   ExtensionCreateReleasePlanRequest,
@@ -619,8 +620,4 @@ function createPackagePhaseProgress(
         }
       }
   }
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError'
 }

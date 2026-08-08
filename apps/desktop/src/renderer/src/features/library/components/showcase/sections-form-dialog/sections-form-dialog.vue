@@ -32,7 +32,7 @@ import { notify } from '@renderer/core/notify'
 import type { SectionLayout, SectionItemSize, SectionOpenMode } from '@shared/db'
 import type { ShowcaseSectionFormItem } from './types'
 import type { AllEntityType, ContentEntityType, SortDirection } from '@shared/common'
-import { createEmptyFilter } from '@shared/filter'
+import { createEmptyFilter, parseFilterState } from '@shared/filter'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 
@@ -130,7 +130,8 @@ async function handleSave() {
         itemSize: item.itemSize,
         openMode: item.openMode,
         limit: item.limit,
-        filter: item.filter,
+        // Storage accepts canonical filters only; unfinished conditions are dropped here.
+        filter: parseFilterState(item.filter),
         sortField: item.sortField,
         sortDirection: item.sortDirection
       })
@@ -151,7 +152,7 @@ async function handleSave() {
           itemSize: item.itemSize,
           openMode: item.openMode,
           limit: item.limit,
-          filter: item.filter,
+          filter: parseFilterState(item.filter),
           sortField: item.sortField,
           sortDirection: item.sortDirection
         })

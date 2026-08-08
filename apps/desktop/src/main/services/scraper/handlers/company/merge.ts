@@ -13,6 +13,7 @@ import {
   applyImageStrategy,
   applyStrategy,
   filterBySlot,
+  foldCollectionResults,
   mergeScrapedIdentities,
   sortByRank
 } from '../../shared'
@@ -109,7 +110,9 @@ function mergeInfo(
     if (!metadata.foundedDate && info.foundedDate) metadata.foundedDate = info.foundedDate
     if (!metadata.description && info.description) metadata.description = info.description
 
-    if (info.relatedSites?.length) {
+    // Presence is authority: a provider that reports no sites at all keeps the
+    // collection empty instead of leaving it unknown.
+    if (info.relatedSites) {
       metadata.relatedSites = applyStrategy(
         metadata.relatedSites,
         info.relatedSites,
@@ -127,13 +130,9 @@ function mergeTags(
   results: CompanyScraperTagsResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-    metadata.tags = applyStrategy(metadata.tags, result.data, strategy, (t) => t.name)
-    if (strategy === 'first' && metadata.tags?.length) break
-  }
+  metadata.tags = foldCollectionResults(results, strategy, (merged, result) =>
+    applyStrategy(merged, result.data, strategy, (t) => t.name)
+  )
 }
 
 function mergeLogos(
@@ -141,13 +140,9 @@ function mergeLogos(
   results: CompanyScraperLogosResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-    metadata.logos = applyImageStrategy(metadata.logos, result.data, strategy)
-    if (strategy === 'first' && metadata.logos?.length) break
-  }
+  metadata.logos = foldCollectionResults(results, strategy, (merged, result) =>
+    applyImageStrategy(merged, result.data, strategy)
+  )
 }
 
 function finalize(partial: Partial<ScrapedCompanyMetadata>): ScrapedCompanyMetadata | null {
@@ -158,8 +153,8 @@ function finalize(partial: Partial<ScrapedCompanyMetadata>): ScrapedCompanyMetad
     name: partial.name,
     originalName: partial.originalName,
     foundedDate: partial.foundedDate,
-    description: partial.description ?? '',
-    relatedSites: partial.relatedSites ?? [],
+    description: partial.description,
+    relatedSites: partial.relatedSites,
     tags: partial.tags,
     logos: partial.logos
   }
@@ -179,10 +174,8 @@ export function toScrapedCompanyBundle(metadata: ScrapedCompanyMetadata): Scrape
       relatedSites: metadata.relatedSites,
       tags: metadata.tags
     },
-    mediaCandidates: metadata.logos?.length
-      ? {
-          logoUrls: metadata.logos
-        }
-      : undefined
+    // Slot presence, not slot content: an empty array is an authoritative
+    // "no logos", a missing key is "unknown".
+    mediaCandidates: metadata.logos ? { logoUrls: metadata.logos } : undefined
   }
 }

@@ -54,7 +54,20 @@ export interface FilterQuerySpec extends FilterQuerySpecInput {
   relevantTables: readonly TableName[]
 }
 
-export function defineFilterQuerySpec(input: FilterQuerySpecInput): FilterQuerySpec {
+/** Field keys declared by a spec, as a literal union. */
+export type FilterFieldKeyOf<TSpec extends FilterQuerySpecInput> = TSpec['fields'][number]['key']
+
+/** Sort keys declared by a spec, as a literal union. */
+export type FilterSortKeyOf<TSpec extends FilterQuerySpecInput> =
+  TSpec['sort']['fields'][number]['key']
+
+/**
+ * Keeps the literal field and sort keys of the declaration so dependent specs
+ * (such as the renderer UI specs) can be checked against them at compile time.
+ */
+export function defineFilterQuerySpec<const TInput extends FilterQuerySpecInput>(
+  input: TInput
+): FilterQuerySpec & TInput {
   const idColumn = getTableColumns(input.table).id as SQLiteColumn | undefined
   if (!idColumn) {
     throw new Error(`Filter spec table for ${input.entityType} has no id column`)

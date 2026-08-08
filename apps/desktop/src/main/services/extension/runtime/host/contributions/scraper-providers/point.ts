@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
+  createUnavailableError,
   type CharacterScraperProvider,
   type CharacterScraperSession,
   type CharacterScraperSlot,
@@ -434,7 +435,7 @@ export class HostScraperProviderContributionPoint {
     )
     const results = await this.options.runInExtensionContext(
       runtime,
-      () => provider.search(request.query, request.locale),
+      () => provider.search(request.query, { locale: request.locale, signal }),
       signal
     )
     this.assertValidProviderOutput(
@@ -468,7 +469,7 @@ export class HostScraperProviderContributionPoint {
     )
     const target = await this.options.runInExtensionContext(
       runtime,
-      () => provider.resolve(request.lookup, request.locale),
+      () => provider.resolve(request.lookup, { locale: request.locale, signal }),
       signal
     )
     this.assertValidProviderOutput(
@@ -500,24 +501,50 @@ export class HostScraperProviderContributionPoint {
       request.runtimeHandle,
       request.providerId
     )
-    const session = await this.options.runInExtensionContext(
-      runtime,
-      () => provider.openSession(request.target, request.locale),
-      signal
-    )
-    this.assertValidProviderOutput(
-      domain,
-      runtime,
-      request.providerId,
-      'session',
-      domain.validateSession(session)
-    )
-    const sessionId = randomUUID()
-    domain.sessions.set(sessionId, {
+    // A session outlives its open request, so it gets a signal of its own that
+    // fires when the session ends. Abandoning the open request ends the session
+    // too, because its id can no longer reach the caller.
+    const controller = new AbortController()
+    const abortSession = (): void => controller.abort()
+    signal.addEventListener('abort', abortSession, { once: true })
+
+    let session: TSession
+    try {
+      session = await this.options.runInExtensionContext(
+        runtime,
+        () =>
+          provider.openSession(request.target, {
+            locale: request.locale,
+            signal: controller.signal
+          }),
+        signal
+      )
+    } catch (error) {
+      controller.abort()
+      throw error
+    } finally {
+      signal.removeEventListener('abort', abortSession)
+    }
+
+    const sessionIssues = domain.validateSession(session)
+    if (sessionIssues.length > 0) {
+      controller.abort()
+      this.assertValidProviderOutput(domain, runtime, request.providerId, 'session', sessionIssues)
+    }
+
+    const record: ScraperSessionRecord<TSession> = {
       runtimeHandle: request.runtimeHandle,
       providerId: request.providerId,
-      session
-    })
+      session,
+      controller
+    }
+    if (signal.aborted) {
+      await this.disposeSession(record)
+      throw createUnavailableError('The scraper session open request was aborted.')
+    }
+
+    const sessionId = randomUUID()
+    domain.sessions.set(sessionId, record)
 
     return { mediaType: domain.mediaType, sessionId } as unknown as Extract<
       ScraperProviderSessionOpenResponse,
@@ -694,6 +721,7 @@ export class HostScraperProviderContributionPoint {
   private async disposeSession<TSession extends { dispose?(): Promise<void> | void }>(
     record: ScraperSessionRecord<TSession>
   ): Promise<void> {
+    record.controller.abort()
     if (!record.session.dispose) {
       return
     }

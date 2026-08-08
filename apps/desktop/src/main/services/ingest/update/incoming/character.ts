@@ -3,6 +3,7 @@ import type { CoreCharacterMetadata } from '@shared/metadata'
 import type { IngestUpdateLookup } from '@shared/ingest/update'
 import type { ScrapedCharacterBundle } from '@shared/scraper'
 import type { CharacterIncomingBuildResult } from '../types'
+import { buildCompleteCharacterRelationLinks } from '../relation-links'
 import {
   normalizeOptionalString,
   normalizeRelatedSites,
@@ -40,11 +41,10 @@ function buildCharacterCore(
   const relatedSites = normalizeRelatedSites(bundleCore?.relatedSites)
   if (relatedSites) core.relatedSites = relatedSites
 
-  const externalIds = normalizeExternalIds([
-    ...(bundle?.identity.externalIds ?? []),
-    ...(lookup.knownIds ?? [])
-  ])
-  if (externalIds.length > 0) core.externalIds = externalIds
+  const identityIds = bundle?.identity.externalIds
+  if (identityIds || lookup.knownIds) {
+    core.externalIds = normalizeExternalIds([...(identityIds ?? []), ...(lookup.knownIds ?? [])])
+  }
 
   const tags = normalizeTags(bundleCore?.tags)
   if (tags) core.tags = tags
@@ -60,8 +60,12 @@ export function buildCharacterIncoming(
   const photoUrls = normalizeUrlCandidates(bundle?.mediaCandidates?.photoUrls)
   const relationFacts = bundle?.relationFacts ?? {}
 
+  // A surface is available when the scraper spoke about it at all; an empty
+  // collection is an authoritative "none", not a missing answer. Deleting rows
+  // needs more, so completeness is resolved from the link topology.
   const availability: CharacterIncomingBuildResult['availability'] = {
-    surfaces: new Set()
+    surfaces: new Set(),
+    completeRelationLinks: buildCompleteCharacterRelationLinks(relationFacts)
   }
 
   if (core.name) availability.surfaces.add('name')
@@ -77,11 +81,11 @@ export function buildCharacterIncoming(
   if (typeof core.hips === 'number') availability.surfaces.add('hips')
   if (core.cup) availability.surfaces.add('cup')
   if (core.description) availability.surfaces.add('description')
-  if (core.relatedSites?.length) availability.surfaces.add('relatedSites')
-  if (core.externalIds?.length) availability.surfaces.add('externalIds')
-  if (core.tags?.length) availability.surfaces.add('tags')
-  if ((relationFacts.characterPerson?.length ?? 0) > 0) availability.surfaces.add('person')
-  if (photoUrls?.[0]) availability.surfaces.add('photos')
+  if (core.relatedSites) availability.surfaces.add('relatedSites')
+  if (core.externalIds) availability.surfaces.add('externalIds')
+  if (core.tags) availability.surfaces.add('tags')
+  if (relationFacts.characterPerson) availability.surfaces.add('person')
+  if (photoUrls) availability.surfaces.add('photos')
 
   return {
     incoming: {

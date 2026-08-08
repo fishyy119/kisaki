@@ -261,12 +261,15 @@ export function mergeExternalIds(
 
 /**
  * Merge RelatedSite arrays with deduplication by url.
+ *
+ * Presence is preserved: the result is `undefined` only when neither side knows
+ * the collection, so an authoritative empty answer stays empty.
  */
 export function mergeRelatedSites(
   existing: RelatedSite[] | undefined,
   incoming: RelatedSite[] | undefined
 ): RelatedSite[] | undefined {
-  if (!existing?.length && !incoming?.length) return undefined
+  if (!existing && !incoming) return undefined
   return mergeArrays(existing ?? [], incoming ?? [], (s) => s.url)
 }
 
@@ -277,7 +280,7 @@ export function mergeTagsArray(
   existing: Tag[] | undefined,
   incoming: Tag[] | undefined
 ): Tag[] | undefined {
-  if (!existing?.length && !incoming?.length) return undefined
+  if (!existing && !incoming) return undefined
   return mergeArrays(existing ?? [], incoming ?? [], (t) => t.name)
 }
 
@@ -288,8 +291,44 @@ export function mergeImageUrls(
   existing: string[] | undefined,
   incoming: string[] | undefined
 ): string[] | undefined {
-  if (!existing?.length && !incoming?.length) return undefined
+  if (!existing && !incoming) return undefined
   return [...new Set([...(existing ?? []), ...(incoming ?? [])])]
+}
+
+/**
+ * Fold every provider result for one collection slot into the merged value.
+ *
+ * Slot presence carries the authority: `undefined` means no consulted provider
+ * answered, while an array means at least one did, so a slot every provider
+ * reported as empty stays an authoritative empty collection instead of decaying
+ * into "unknown". Empty answers never satisfy `first`, so the next provider is
+ * still consulted.
+ */
+export function foldCollectionResults<TItem, TResult extends { rank: number; data: TItem[] }>(
+  results: readonly TResult[],
+  strategy: SlotStrategy,
+  apply: (merged: TItem[], result: TResult) => TItem[]
+): TItem[] | undefined {
+  const sorted = sortByRank(results)
+  if (sorted.length === 0) {
+    return undefined
+  }
+
+  let merged: TItem[] = []
+
+  for (const result of sorted) {
+    if (result.data.length === 0) {
+      continue
+    }
+
+    merged = apply(merged, result)
+
+    if (strategy === 'first' && merged.length > 0) {
+      break
+    }
+  }
+
+  return merged
 }
 
 /**
@@ -414,7 +453,7 @@ export function mergeCharacterPersons(
   incoming: ScrapedCharacterPersonFact[] | undefined,
   options: RelationCollectionMergeOptions
 ): ScrapedCharacterPersonFact[] | undefined {
-  if (!existing?.length && !incoming?.length) return undefined
+  if (!existing && !incoming) return undefined
 
   return applyEntityCollectionStrategy(
     existing,

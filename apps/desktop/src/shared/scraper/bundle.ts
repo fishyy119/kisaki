@@ -126,15 +126,23 @@ export interface ScrapedGameMetadata extends ScrapedGameCore, ScrapedIdentityCar
   icons?: string[]
 }
 
+/**
+ * Relation facts a game scrape can state.
+ *
+ * An absent key means the scrape could not answer that relation; an empty array
+ * means the source states the game has none.
+ */
+export interface ScrapedGameRelationFacts {
+  gamePerson?: ScrapedGamePersonFact[]
+  gameCompany?: ScrapedGameCompanyFact[]
+  gameCharacter?: ScrapedGameCharacterFact[]
+  characterPerson?: ScrapedCharacterPersonFact[]
+}
+
 export interface ScrapedGameBundle {
   identity: ScrapedEntityIdentity
   core?: ScrapedGameCore
-  relationFacts?: {
-    gamePerson?: ScrapedGamePersonFact[]
-    gameCompany?: ScrapedGameCompanyFact[]
-    gameCharacter?: ScrapedGameCharacterFact[]
-    characterPerson?: ScrapedCharacterPersonFact[]
-  }
+  relationFacts?: ScrapedGameRelationFacts
   mediaCandidates?: {
     coverUrls?: string[]
     backdropUrls?: string[]
@@ -159,12 +167,15 @@ export interface ScrapedCompanyBundle {
   }
 }
 
+/** Relation facts a character scrape can state; see `ScrapedGameRelationFacts`. */
+export interface ScrapedCharacterRelationFacts {
+  characterPerson?: ScrapedCharacterPersonFact[]
+}
+
 export interface ScrapedCharacterBundle {
   identity: ScrapedEntityIdentity
   core?: ScrapedCharacterCore
-  relationFacts?: {
-    characterPerson?: ScrapedCharacterPersonFact[]
-  }
+  relationFacts?: ScrapedCharacterRelationFacts
   mediaCandidates?: {
     photoUrls?: string[]
   }

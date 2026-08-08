@@ -38,6 +38,7 @@ export const library = {
     relatedPersons: '関連人物',
     relatedCharacters: '関連キャラクター',
     relatedCompanies: '関連会社',
+    characterPersons: 'キャラクター関連人物',
     relatedSites: '関連リンク',
     externalIds: '外部 ID',
     photos: '写真',
@@ -394,7 +395,8 @@ export const library = {
     collectionStrategyMerge: 'マージして追加',
     collectionStrategyReplace: '全体を置き換え',
     collectionStrategyMergeHint: '既存の内容を保持し、新しい項目を追加します。',
-    collectionStrategyReplaceHint: '現在の内容を新しい内容で置き換えます。',
+    collectionStrategyReplaceHint:
+      '現在の内容を新しい内容で置き換えます。取得元が空と明示したコレクションは削除されます。',
     useExternalIdsLabel: '現在の外部 ID で対象を特定する',
     useExternalIdsHint:
       '現在の項目が誤った対象に対応している可能性がある場合は有効にしないでください。',

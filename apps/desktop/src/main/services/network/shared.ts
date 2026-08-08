@@ -1,4 +1,5 @@
 import { createLogger } from '@main/log'
+import { assertNotAborted, isAbortError, sleep } from '@main/utils/async'
 
 const log = createLogger('Network')
 
@@ -45,46 +46,4 @@ export async function executeWithNetworkRetry<T>(
   }
 
   throw lastError
-}
-
-export function assertNotAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw createAbortError()
-  }
-}
-
-export function linkAbortSignal(signal: AbortSignal | undefined, onAbort: () => void): () => void {
-  if (!signal) {
-    return () => undefined
-  }
-
-  signal.addEventListener('abort', onAbort, { once: true })
-  return () => signal.removeEventListener('abort', onAbort)
-}
-
-function isAbortError(error: unknown): error is Error {
-  return error instanceof Error && error.name === 'AbortError'
-}
-
-function createAbortError(): Error {
-  const error = new Error('Request aborted')
-  error.name = 'AbortError'
-  return error
-}
-
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    assertNotAborted(signal)
-
-    const timeoutId = setTimeout(() => {
-      cleanupAbort()
-      resolve()
-    }, ms)
-    const onAbort = () => {
-      clearTimeout(timeoutId)
-      cleanupAbort()
-      reject(createAbortError())
-    }
-    const cleanupAbort = signal ? linkAbortSignal(signal, onAbort) : () => undefined
-  })
 }

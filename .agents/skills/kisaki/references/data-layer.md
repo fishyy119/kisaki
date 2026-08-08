@@ -61,16 +61,38 @@ const baseColumns = {
 }
 ```
 
+### Identity Key Columns
+
+Columns whose value is an identity rather than display text use `identityKeyText`
+(`shared/db/columns/identity.ts`), which applies `normalizeKeyText` (NFKC + case folding) on write.
+The stored value is the comparison key, so lookups can match with a plain `eq(...)` instead of
+normalizing in application code.
+
+`tags` keeps both forms: `name` is the display name and `normalized_name` is the unique identity
+key. Resolve or create tags through `resolveTagId` (`services/db/helper/tag.ts`) so every ingest path
+shares one matching semantic.
+
 ## Triggers & Change Feed
 
-`TriggerStore` automatically creates SQLite triggers for all schema tables. Each `INSERT` /
-`UPDATE` / `DELETE` produces a `RawDbChange` (`shared/db/changes.ts`) that is handed to the
-`DbChangeFeed` (`services/db/feed/`). The feed debounces and groups changes, then fans out to the
-batched `db:changed` IPC push, the `library.changed` module hook, and the settings projection; see
-[ipc-events.md](ipc-events.md).
+`TriggerStore` creates TEMP `AFTER` triggers for all schema tables. Each `INSERT` / `UPDATE` /
+`DELETE` appends a row to the TEMP `db_change_outbox` table and signals the store to drain.
 
-Change delivery is deferred via `queueMicrotask()` to avoid SQLite busy errors. Row snapshots in
-`RawDbChange` never leave the main process.
+Delivery is **transactional**: the outbox row is written inside the caller's transaction, so a
+rollback discards it along with the rest of the transaction's writes. A drain is deferred via
+`queueMicrotask()` (also avoiding SQLite busy errors) and skipped while `sqlite.inTransaction` is
+true, so changes only reach consumers after their transaction commits. Draining consumes the outbox
+before dispatching, so listeners that write to the database cannot redeliver the same batch.
+`DbService.dispose` drains and flushes once more so deletions captured just before shutdown still
+reach attachment cleanup.
+
+Drained rows become `RawDbChange` values (`shared/db/changes.ts`) handed to the `DbChangeFeed`
+(`services/db/feed/`). The feed debounces and groups changes, then fans out to the chunked
+`db:changed` IPC push, the `library.changed` module hook, and the settings projection; see
+[ipc-events.md](ipc-events.md). Row snapshots in `RawDbChange` never leave the main process.
+
+Triggers and the outbox are TEMP objects owned by the connection: they never persist and are
+rebuilt on every start. `dropAllTriggers` clears _persisted_ triggers (FTS sync, plus change
+triggers left by older versions) before migrations run.
 
 **Assumption**: All tracked tables have an `id` column (default primary key).
 
@@ -87,7 +109,7 @@ FTS is configured for entity tables (games, characters, persons, companies):
 - Schema: `sqliteTable(`, `drizzle-orm/sqlite-core`
 - Initialization: `drizzle(`, `journal_mode = WAL`, `migrate(`
 - Renderer proxy: `drizzle-orm/sqlite-proxy`, `ipcManager.invoke('db:execute'`
-- Triggers: `emit_db_change`, `CREATE TRIGGER`, `DROP TRIGGER`
+- Triggers: `emit_db_change_signal`, `db_change_outbox`, `CREATE TEMP TRIGGER`, `DROP TRIGGER`
 - FTS: `FtsStore`, `CREATE VIRTUAL TABLE`, `tokenize='unicode61'`
 - Transaction: `.transaction(`
 

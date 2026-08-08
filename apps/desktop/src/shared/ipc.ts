@@ -298,7 +298,6 @@ export interface IpcMainHandlers {
     field: string
   ) => IpcResult<string[]>
   'db:attachment-clear-files': (table: TableName, rowId: string, field: string) => IpcVoidResult
-  'db:attachment-cleanup-row': (table: TableName, rowId: string) => IpcVoidResult
   'db:attachment-get-path': (table: TableName, rowId: string, fileName: string) => IpcResult<string>
 
   // Ingest

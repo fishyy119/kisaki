@@ -3,7 +3,7 @@ import type { ExternalId } from '../shared'
 
 export type IngestExistingReason = 'externalId' | 'path'
 
-export type IngestWarningCode = 'asset-persist-failed'
+export type IngestWarningCode = 'asset-persist-failed' | 'collection-replace-degraded'
 
 export type IngestUpdateSurfaceGroup = 'core' | 'media' | 'relation'
 
@@ -48,6 +48,7 @@ export const GAME_UPDATE_SURFACES = [
   { key: 'person', group: 'relation', cardinality: 'collection' },
   { key: 'company', group: 'relation', cardinality: 'collection' },
   { key: 'character', group: 'relation', cardinality: 'collection' },
+  { key: 'characterPerson', group: 'relation', cardinality: 'collection' },
   { key: 'covers', group: 'media', cardinality: 'singular' },
   { key: 'backdrops', group: 'media', cardinality: 'singular' },
   { key: 'logos', group: 'media', cardinality: 'singular' },
@@ -69,7 +70,6 @@ export interface IngestAddGameFromScraperOptions {
   gameDirPath?: string
   gameFilePath?: string
   targetCollectionId?: string
-  taskRun?: boolean
 }
 
 export interface IngestAddGameFromScraperResult {
@@ -83,23 +83,38 @@ export interface IngestUpdateResult {
   warnings?: readonly IngestWarning[]
 }
 
+/** Identifies a task run the caller can observe through the task-runs capability. */
+export interface IngestTaskRunStart {
+  runId: string
+  createdAt: number
+}
+
 export interface IngestGameAddCapability {
+  /** Runs the ingest inline and resolves with its result. */
   fromScraper(
     profileId: string,
     lookup: ScraperLookup,
     options?: IngestAddGameFromScraperOptions
   ): Promise<IngestAddGameFromScraperResult>
-}
-
-export interface IngestGameUpdateFromScraperOptions {
-  taskRun?: boolean
+  /**
+   * Starts the ingest as a user-visible task run attributed to this extension
+   * and resolves as soon as the run exists.
+   */
+  startFromScraper(
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddGameFromScraperOptions
+  ): Promise<IngestTaskRunStart>
 }
 
 export interface IngestGameUpdateCapability {
-  fromScraper(
-    input: IngestGameUpdateFromScraperInput,
-    options?: IngestGameUpdateFromScraperOptions
-  ): Promise<IngestUpdateResult>
+  /** Runs the update inline and resolves with its result. */
+  fromScraper(input: IngestGameUpdateFromScraperInput): Promise<IngestUpdateResult>
+  /**
+   * Starts the update as a user-visible task run attributed to this extension
+   * and resolves as soon as the run exists.
+   */
+  startFromScraper(input: IngestGameUpdateFromScraperInput): Promise<IngestTaskRunStart>
 }
 
 export interface IngestGameCapability {

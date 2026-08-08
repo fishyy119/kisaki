@@ -322,7 +322,7 @@ export class GameScannerHandler {
     scanner: Scanner,
     session: ScannerRunSession<Scanner>
   ): Promise<void> {
-    const settingsData = this.dbService.entityFinder.getAppSettings()
+    const settingsData = this.dbService.settings.get()
     const {
       scannerIgnoredNames: ignoredNames,
       scannerParallelCount,

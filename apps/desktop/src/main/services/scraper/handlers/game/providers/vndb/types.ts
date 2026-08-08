@@ -33,11 +33,6 @@ export interface VndbQueryResponse<T> {
   normalized_filters?: unknown
 }
 
-export interface VndbErrorResponse {
-  id: string
-  message: string
-}
-
 // =============================================================================
 // Common Objects
 // =============================================================================

@@ -123,14 +123,10 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   async addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult> {
-    const result = await kisaki.ingest.game.add.fromScraper(
-      input.profileId,
-      {
-        name: input.name,
-        knownIds: [...input.knownIds]
-      },
-      { taskRun: false }
-    )
+    const result = await kisaki.ingest.game.add.fromScraper(input.profileId, {
+      name: input.name,
+      knownIds: [...input.knownIds]
+    })
 
     return {
       localId: result.gameId,

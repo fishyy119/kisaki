@@ -1,3 +1,9 @@
+/**
+ * Collection normalizers preserve slot presence: a missing collection stays
+ * `undefined` ("unknown"), while a provided collection normalizes to an array
+ * that may be empty ("authoritatively none").
+ */
+
 import type { RelatedSite } from '@shared/db'
 import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
 import type { IngestUpdateLookup } from '@shared/ingest/update'
@@ -24,14 +30,14 @@ export function normalizeOptionalString(value: string | null | undefined): strin
 }
 
 export function normalizeUrlCandidates(urls: string[] | null | undefined): string[] | undefined {
-  const normalized = uniqueByKey(
-    (urls ?? [])
+  if (!urls) return undefined
+
+  return uniqueByKey(
+    urls
       .map((url) => normalizeOptionalString(url))
       .filter((url): url is string => typeof url === 'string'),
     (url) => normalizeKeyText(url)
   )
-
-  return normalized.length > 0 ? normalized : undefined
 }
 
 export function pickFirstUrl(urls: string[] | null | undefined): string | undefined {
@@ -41,8 +47,10 @@ export function pickFirstUrl(urls: string[] | null | undefined): string | undefi
 export function normalizeRelatedSites(
   sites: RelatedSite[] | null | undefined
 ): RelatedSite[] | undefined {
-  const normalized = uniqueByKey(
-    (sites ?? [])
+  if (!sites) return undefined
+
+  return uniqueByKey(
+    sites
       .map((site) => {
         const url = normalizeOptionalString(site.url)
         if (!url) return null
@@ -55,13 +63,13 @@ export function normalizeRelatedSites(
       .filter((site): site is RelatedSite => site !== null),
     (site) => normalizeKeyText(site.url)
   )
-
-  return normalized.length > 0 ? normalized : undefined
 }
 
 export function normalizeTags(tagsInput: Tag[] | null | undefined): Tag[] | undefined {
-  const normalized = uniqueByKey(
-    (tagsInput ?? [])
+  if (!tagsInput) return undefined
+
+  return uniqueByKey(
+    tagsInput
       .map((tag) => {
         const name = normalizeOptionalString(tag.name)
         if (!name) return null
@@ -78,8 +86,6 @@ export function normalizeTags(tagsInput: Tag[] | null | undefined): Tag[] | unde
       .filter((tag): tag is Tag => tag !== null),
     (tag) => normalizeKeyText(tag.name)
   )
-
-  return normalized.length > 0 ? normalized : undefined
 }
 
 export function normalizeLookup(lookup: IngestUpdateLookup): {

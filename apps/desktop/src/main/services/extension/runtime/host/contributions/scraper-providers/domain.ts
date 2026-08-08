@@ -2,6 +2,7 @@ import type {
   HostToMainRpcRequestMap,
   RpcParams,
   ScraperMediaType,
+  ScraperProviderContext,
   ScraperProviderResolveRequest,
   ScraperProviderSearchRequest,
   ScraperProviderSessionOpenRequest,
@@ -26,15 +27,15 @@ export interface ScraperProviderLike<
   readonly capabilities: readonly unknown[]
   search(
     query: ScraperProviderSearchRequest['query'],
-    locale?: ScraperProviderSearchRequest['locale']
+    ctx: ScraperProviderContext
   ): Promise<readonly unknown[]>
   resolve(
     lookup: ScraperProviderResolveRequest['lookup'],
-    locale: ScraperProviderResolveRequest['locale']
+    ctx: ScraperProviderContext
   ): Promise<ScraperProviderSessionOpenRequest['target'] | null>
   openSession(
     target: ScraperProviderSessionOpenRequest['target'],
-    locale: ScraperProviderSessionOpenRequest['locale']
+    ctx: ScraperProviderContext
   ): Promise<TSession>
 }
 
@@ -42,6 +43,8 @@ export interface ScraperSessionRecord<TSession extends { dispose?(): Promise<voi
   runtimeHandle: string
   providerId: string
   session: TSession
+  /** Aborted when the session ends, so provider work tied to it stops. */
+  controller: AbortController
 }
 
 export interface ScraperDomain<

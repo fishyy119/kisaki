@@ -13,6 +13,7 @@ import {
   applyImageStrategy,
   applyStrategy,
   filterBySlot,
+  foldCollectionResults,
   mergeScrapedIdentities,
   sortByRank
 } from '../../shared'
@@ -111,7 +112,9 @@ function mergeInfo(
     if (!metadata.gender && info.gender) metadata.gender = info.gender
     if (!metadata.description && info.description) metadata.description = info.description
 
-    if (info.relatedSites?.length) {
+    // Presence is authority: a provider that reports no sites at all keeps the
+    // collection empty instead of leaving it unknown.
+    if (info.relatedSites) {
       metadata.relatedSites = applyStrategy(
         metadata.relatedSites,
         info.relatedSites,
@@ -129,13 +132,9 @@ function mergeTags(
   results: PersonScraperTagsResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-    metadata.tags = applyStrategy(metadata.tags, result.data, strategy, (t) => t.name)
-    if (strategy === 'first' && metadata.tags?.length) break
-  }
+  metadata.tags = foldCollectionResults(results, strategy, (merged, result) =>
+    applyStrategy(merged, result.data, strategy, (t) => t.name)
+  )
 }
 
 function mergePhotos(
@@ -143,13 +142,9 @@ function mergePhotos(
   results: PersonScraperPhotosResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByRank(results)
-
-  for (const result of sorted) {
-    if (!result.data.length) continue
-    metadata.photos = applyImageStrategy(metadata.photos, result.data, strategy)
-    if (strategy === 'first' && metadata.photos?.length) break
-  }
+  metadata.photos = foldCollectionResults(results, strategy, (merged, result) =>
+    applyImageStrategy(merged, result.data, strategy)
+  )
 }
 
 function finalize(partial: Partial<ScrapedPersonMetadata>): ScrapedPersonMetadata | null {
@@ -162,8 +157,8 @@ function finalize(partial: Partial<ScrapedPersonMetadata>): ScrapedPersonMetadat
     birthDate: partial.birthDate,
     deathDate: partial.deathDate,
     gender: partial.gender,
-    description: partial.description ?? '',
-    relatedSites: partial.relatedSites ?? [],
+    description: partial.description,
+    relatedSites: partial.relatedSites,
     tags: partial.tags,
     photos: partial.photos
   }
@@ -185,10 +180,8 @@ export function toScrapedPersonBundle(metadata: ScrapedPersonMetadata): ScrapedP
       relatedSites: metadata.relatedSites,
       tags: metadata.tags
     },
-    mediaCandidates: metadata.photos?.length
-      ? {
-          photoUrls: metadata.photos
-        }
-      : undefined
+    // Slot presence, not slot content: an empty array is an authoritative
+    // "no photos", a missing key is "unknown".
+    mediaCandidates: metadata.photos ? { photoUrls: metadata.photos } : undefined
   }
 }

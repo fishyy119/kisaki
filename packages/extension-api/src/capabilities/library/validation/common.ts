@@ -135,12 +135,23 @@ export function validateOptionalPartialDate(value: unknown, path: string): Valid
     return [{ path, message: 'Partial date must be an object.' }]
   }
 
-  return [
+  const issues = [
     ...validateUnknownKeys(value, PARTIAL_DATE_KEYS, path),
     ...validateOptionalInteger(value.year, `${path}.year`, 'year must be an integer.'),
     ...validateOptionalIntegerInRange(value.month, `${path}.month`, 1, 12),
     ...validateOptionalIntegerInRange(value.day, `${path}.day`, 1, 31)
   ]
+
+  if (Object.keys(value).length === 0) {
+    issues.push({ path, message: 'Partial date must carry at least one component.' })
+  }
+
+  // A day within an unspecified month has no meaning, so storage rejects it.
+  if ('year' in value && 'day' in value && !('month' in value)) {
+    issues.push({ path, message: 'Partial date with year and day must also specify month.' })
+  }
+
+  return issues
 }
 
 export function validateOptionalExternalIds(value: unknown, path: string): ValidationIssue[] {

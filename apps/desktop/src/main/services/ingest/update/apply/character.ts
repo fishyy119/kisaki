@@ -1,18 +1,25 @@
-import { eq, inArray } from 'drizzle-orm'
-import type { DbContext } from '@main/services/db'
+import { eq } from 'drizzle-orm'
+import {
+  characterExternalIdLink,
+  requireExternalIdsAvailable,
+  resolveTagId,
+  type DbContext
+} from '@main/services/db'
 import { IngestPersistHandlers } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
 import {
   characterExternalIds,
   characterTagLinks,
   characters,
-  tags,
   type NewCharacter,
   type NewCharacterTagLink
 } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import type { CharacterUpdatePlan, UpdateApplyResult } from '../types'
-import { ensureCharacterExternalIdsAvailable, findExistingTagId } from '../shared/availability'
+import type {
+  CharacterRelationLink,
+  CharacterUpdatePlan,
+  UpdateRelationApplyResult
+} from '../types'
 import { applyCharacterPersonRows, filterNodesByIdentity, resolvePersonNodes } from './relations'
 
 function replaceCharacterExternalIds(
@@ -40,23 +47,11 @@ function replaceCharacterTags(
   nextTags: CharacterUpdatePlan['tags']
 ): void {
   tx.delete(characterTagLinks).where(eq(characterTagLinks.characterId, characterId)).run()
-  if (!nextTags || nextTags.length === 0) return
-
-  const tagNames = [...new Set(nextTags.map((tag) => tag.name))]
-  const existingRows = tx.select().from(tags).where(inArray(tags.name, tagNames)).all()
-  const existingByName = new Map(existingRows.map((row) => [row.name, row.id]))
-
-  for (const tag of nextTags) {
-    if (existingByName.has(tag.name)) continue
-    tx.insert(tags)
-      .values({ name: tag.name, isNsfw: tag.isNsfw ?? false })
-      .onConflictDoNothing()
-      .run()
-  }
+  if (!nextTags?.length) return
 
   const linkValues: NewCharacterTagLink[] = []
   nextTags.forEach((tag, index) => {
-    const tagId = existingByName.get(tag.name) ?? findExistingTagId(tx, tag.name)
+    const tagId = resolveTagId(tx, tag)
     if (!tagId) return
 
     linkValues.push({
@@ -79,10 +74,11 @@ function applyCharacterRelationGraph(
   characterId: string,
   plan: CharacterUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): PendingAssetTask[] {
+): UpdateRelationApplyResult<CharacterRelationLink> {
   const relationGraph = plan.relationGraph
-  if (!relationGraph || !plan.selectedRelationSurfaces.includes('person')) {
-    return []
+  const collectionMode = plan.relationLinks.characterPerson
+  if (!relationGraph || !collectionMode) {
+    return { pendingAssets: [], preservedRelationRows: {} }
   }
 
   const personIdentityKeys = new Set(relationGraph.links.map((link) => link.personIdentityKey))
@@ -92,15 +88,15 @@ function applyCharacterRelationGraph(
     filterNodesByIdentity(relationGraph.persons, personIdentityKeys)
   )
 
-  applyCharacterPersonRows({
+  const preserved = applyCharacterPersonRows({
     tx,
     characterId,
     links: relationGraph.links,
-    collectionMode: plan.collectionMode,
+    collectionMode,
     personIdByIdentity: idByIdentity
   })
 
-  return pendingAssets
+  return { pendingAssets, preservedRelationRows: { characterPerson: preserved } }
 }
 
 export function applyCharacterPlan(
@@ -108,9 +104,9 @@ export function applyCharacterPlan(
   characterId: string,
   plan: CharacterUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): UpdateApplyResult {
+): UpdateRelationApplyResult<CharacterRelationLink> {
   if (plan.externalIds) {
-    ensureCharacterExternalIdsAvailable(tx, characterId, plan.externalIds)
+    requireExternalIdsAvailable(tx, characterExternalIdLink, [characterId], plan.externalIds)
     replaceCharacterExternalIds(tx, characterId, plan.externalIds)
   }
 
@@ -126,10 +122,11 @@ export function applyCharacterPlan(
   }
 
   const pendingAssets: PendingAssetTask[] = plan.photoUrl
-    ? [{ type: 'character', characterId, url: plan.photoUrl }]
+    ? [{ table: 'characters', rowId: characterId, field: 'photoFile', url: plan.photoUrl }]
     : []
 
-  pendingAssets.push(...applyCharacterRelationGraph(tx, characterId, plan, persistHandlers))
+  const relations = applyCharacterRelationGraph(tx, characterId, plan, persistHandlers)
+  pendingAssets.push(...relations.pendingAssets)
 
-  return { pendingAssets }
+  return { pendingAssets, preservedRelationRows: relations.preservedRelationRows }
 }

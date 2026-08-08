@@ -50,6 +50,19 @@ export interface ScraperLookup {
   knownIds?: readonly ExternalId[]
 }
 
+/**
+ * Invocation-scoped context passed to every scraper provider call.
+ *
+ * The host always resolves `locale`, so providers never re-derive it. `signal`
+ * aborts when the requesting side gives up: providers should forward it to
+ * network work and stop early, but cancellation is cooperative, so ignoring it
+ * only means the call keeps running until it finishes on its own.
+ */
+export interface ScraperProviderContext {
+  locale: ContentLocale
+  signal?: AbortSignal
+}
+
 export interface ScrapedEntityIdentity {
   externalIds: readonly ExternalId[]
 }
@@ -203,6 +216,15 @@ export interface BaseScraperSession<
   TSlot extends string,
   TResultMap extends Partial<Record<TSlot, unknown>>
 > {
+  /**
+   * Fetch one or more slots.
+   *
+   * Slot presence is authoritative: omit a slot the provider cannot answer
+   * (unsupported, not found, or failed enrichment), and return an empty
+   * collection only when the source states the entity has none. The host treats
+   * an omitted slot as unknown and an empty collection as a real emptiness, so
+   * it can clear stored data when the user picks the replace policy.
+   */
   get(slots: readonly TSlot[]): Promise<ScraperSessionResult<TResultMap>>
   dispose?(): Promise<void>
 }
@@ -291,27 +313,30 @@ export interface BaseScraperProvider<TSlot extends ScraperSlot = ScraperSlot> {
 }
 
 export interface GameScraperProvider extends BaseScraperProvider<GameScraperSlot> {
-  search(query: string, locale?: ContentLocale): Promise<readonly GameSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null>
-  openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<GameScraperSession>
+  search(query: string, ctx: ScraperProviderContext): Promise<readonly GameSearchResult[]>
+  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<GameScraperSession>
 }
 
 export interface PersonScraperProvider extends BaseScraperProvider<PersonScraperSlot> {
-  search(query: string, locale?: ContentLocale): Promise<readonly PersonSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null>
-  openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<PersonScraperSession>
+  search(query: string, ctx: ScraperProviderContext): Promise<readonly PersonSearchResult[]>
+  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<PersonScraperSession>
 }
 
 export interface CompanyScraperProvider extends BaseScraperProvider<CompanyScraperSlot> {
-  search(query: string, locale?: ContentLocale): Promise<readonly CompanySearchResult[]>
-  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null>
-  openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<CompanyScraperSession>
+  search(query: string, ctx: ScraperProviderContext): Promise<readonly CompanySearchResult[]>
+  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<CompanyScraperSession>
 }
 
 export interface CharacterScraperProvider extends BaseScraperProvider<CharacterScraperSlot> {
-  search(query: string, locale?: ContentLocale): Promise<readonly CharacterSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null>
-  openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<CharacterScraperSession>
+  search(query: string, ctx: ScraperProviderContext): Promise<readonly CharacterSearchResult[]>
+  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(
+    target: IdResolvedTarget,
+    ctx: ScraperProviderContext
+  ): Promise<CharacterScraperSession>
 }
 
 export type ScraperProviderRegistration = Disposable

@@ -3,7 +3,6 @@ import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
-import { isTaskRunCancellation } from '@main/services/task-run'
 import type { IngestPersistHandlers } from '../persist'
 import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { flushPendingAssets } from '../assets'
@@ -21,15 +20,13 @@ import { applyGamePlan } from './apply'
 import { loadGameCurrent } from './current'
 import { buildGameIncoming } from './incoming'
 import { buildGamePlan } from './plan'
+import { createRelationDegradeWarnings, GAME_RELATION_LINKS } from './relation-links'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
-import {
-  reportIngestProgress,
-  throwIfIngestAborted,
-  type IngestOperationOptions,
-  type IngestTaskRunOptions
-} from '../types'
+import { reportIngestProgress } from '../progress'
+import { isIngestCancellation, throwIfIngestAborted } from '../abort'
+import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
 import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 const log = createLogger('Ingest')
@@ -105,7 +102,9 @@ export class GameUpdateHandler {
       phase: 'scraping',
       label: this.i18nService.messages.ingest.update.scrapingMetadata({ entity: 'game' })
     })
-    const bundle = await this.scraperService.game.scrape(request.profileId, lookup)
+    const bundle = await this.scraperService.game.scrape(request.profileId, lookup, {
+      signal: options?.signal
+    })
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
@@ -118,15 +117,6 @@ export class GameUpdateHandler {
           ? buildGameGraph(bundle, lookup)
           : buildDirectGameGraph(lookup)
         : undefined
-    const current = loadGameCurrent(this.dbService.client, request.rootId, selection)
-    const plan = buildGamePlan({
-      current,
-      incoming,
-      relationGraph,
-      selection,
-      policy
-    })
-
     throwIfIngestAborted(options?.signal)
     await requireIngestAllowed(this.hooks.updating, {
       entityId: request.rootId,
@@ -138,9 +128,22 @@ export class GameUpdateHandler {
       phase: 'writing',
       label: this.i18nService.messages.ingest.update.writing({ entity: 'game' })
     })
-    const applyResult = this.dbService.client.transaction((tx) =>
-      applyGamePlan(tx, request.rootId, plan, this.persistHandlers)
-    )
+    // Read, plan and apply share one synchronous transaction: planning against a
+    // snapshot taken outside it would overwrite concurrent edits.
+    const { applyResult, degradedRelationLinks } = this.dbService.client.transaction((tx) => {
+      const current = loadGameCurrent(tx, request.rootId, selection)
+      const plan = buildGamePlan({
+        current,
+        incoming,
+        relationGraph,
+        selection,
+        policy
+      })
+      return {
+        applyResult: applyGamePlan(tx, request.rootId, plan, this.persistHandlers),
+        degradedRelationLinks: plan.degradedRelationLinks
+      }
+    })
 
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
@@ -148,11 +151,18 @@ export class GameUpdateHandler {
         label: this.i18nService.messages.ingest.persist.savingMedia({ entity: 'game' })
       })
     }
-    const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
-      signal: options?.signal
-    })
+    const warnings = [
+      ...createRelationDegradeWarnings({
+        links: GAME_RELATION_LINKS,
+        degraded: degradedRelationLinks,
+        preservedRows: applyResult.preservedRelationRows
+      }),
+      ...(await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
+        signal: options?.signal
+      }))
+    ]
     if (warnings.length > 0) {
-      log.warn('Game update completed with asset warnings.', {
+      log.warn('Game update completed with warnings.', {
         warningsItemsText: warnings.map((warning) => warning.message).join(' | ')
       })
     }
@@ -180,7 +190,6 @@ export class GameUpdateHandler {
         signal: run.context.signal,
         onProgress: (update) => run.context.report(update)
       })
-      run.context.throwIfCancelled()
       run.complete({
         title: this.i18nService.messages.ingest.update.completedTitle({ entity: 'game' }),
         summary: this.i18nService.messages.ingest.update.completedSummary({ entity: 'game' }),
@@ -195,7 +204,7 @@ export class GameUpdateHandler {
         warnings: toTaskRunWarnings(result.warnings)
       })
     } catch (error) {
-      if (isTaskRunCancellation(error)) {
+      if (isIngestCancellation(error)) {
         run.cancel({
           summary: this.i18nService.messages.ingest.update.cancelledSummary({ entity: 'game' })
         })

@@ -1,4 +1,4 @@
-import type { DbContext, DbService } from '@main/services/db'
+import { resolveTagId, type DbContext, type DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type {
   IngestAddCharacterFromScraperOptions,
@@ -13,66 +13,20 @@ import {
   characterExternalIds,
   characterTagLinks,
   characters,
-  tags,
   type NewCharacter,
   type NewCharacterPersonLink,
   type NewCollectionCharacterLink
 } from '@shared/db'
 import type { IngestCharacterGraph, IngestCharacterNode, IngestCharacterPersonLink } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
+import { requireOwnerIdentity, requirePersistedId, resolveOrderedLinks } from './links'
 import { pickFirstAssetUrl, type PersistCharacterGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
-import { reportIngestProgress, type IngestOperationOptions } from '../types'
+import { reportIngestProgress } from '../progress'
+import type { IngestOperationOptions } from '../types'
 
 type CharacterPersistOptions = IngestAddCharacterFromScraperOptions &
   Pick<IngestOperationOptions, 'signal' | 'onProgress'>
-
-function assertOrderValue(value: number, field: string): void {
-  if (!Number.isInteger(value) || value < 0) {
-    throw new Error(`[IngestPersist] Invalid ${field}: expected a non-negative integer`)
-  }
-}
-
-function assertOptionalNote(note: string | undefined): void {
-  if (note !== undefined && typeof note !== 'string') {
-    throw new Error('[IngestPersist] Invalid note: expected a string when provided')
-  }
-}
-
-function assertCharacterPersonLink(link: IngestCharacterPersonLink): void {
-  if (typeof link.isSpoiler !== 'boolean') {
-    throw new Error('[IngestPersist] Missing required relation field: isSpoiler')
-  }
-
-  assertOrderValue(link.orderInCharacter, 'orderInCharacter')
-  assertOrderValue(link.orderInPerson, 'orderInPerson')
-  assertOptionalNote(link.note)
-}
-
-interface ResolvedRelationState {
-  isSpoiler: boolean
-  note?: string
-}
-
-interface ResolvedCharacterPersonLink extends ResolvedRelationState {
-  personId: string
-  type: IngestCharacterPersonLink['type']
-}
-
-function mergeResolvedRelation<T extends ResolvedRelationState>(
-  map: Map<string, T>,
-  key: string,
-  next: T
-): void {
-  const existing = map.get(key)
-  if (!existing) {
-    map.set(key, next)
-    return
-  }
-
-  existing.isSpoiler = existing.isSpoiler || next.isSpoiler
-  existing.note = existing.note ?? next.note
-}
 
 function resolveCharacterPersonLinks(params: {
   characterId: string
@@ -81,47 +35,31 @@ function resolveCharacterPersonLinks(params: {
   personIdByIdentity: Map<string, string>
 }): NewCharacterPersonLink[] {
   const { characterId, characterIdentityKey, links, personIdByIdentity } = params
-  const resolved = new Map<string, ResolvedCharacterPersonLink>()
 
-  for (const linkInput of links) {
-    assertCharacterPersonLink(linkInput)
-
-    if (linkInput.characterIdentityKey !== characterIdentityKey) {
-      throw new Error(
-        `[IngestPersist] Character-person link references unexpected character identity: ${linkInput.characterIdentityKey}`
-      )
-    }
-
-    const personId = personIdByIdentity.get(linkInput.personIdentityKey)
-    if (!personId) {
-      throw new Error(
-        `[IngestPersist] Missing persisted person for identity: ${linkInput.personIdentityKey}`
-      )
-    }
-
-    mergeResolvedRelation(resolved, `${personId}:${linkInput.type}`, {
-      personId,
-      type: linkInput.type,
-      isSpoiler: linkInput.isSpoiler,
-      note: linkInput.note
-    })
-  }
-
-  const personOrderCounters = new Map<string, number>()
-
-  return [...resolved.values()].map((link, orderInCharacter) => {
-    const orderInPerson = personOrderCounters.get(link.personId) ?? 0
-    personOrderCounters.set(link.personId, orderInPerson + 1)
-
-    return {
+  return resolveOrderedLinks({
+    links,
+    resolve: (link) => {
+      requireOwnerIdentity(link.characterIdentityKey, characterIdentityKey, 'character')
+      const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
+      return {
+        key: `${personId}:${link.type}`,
+        value: {
+          personId,
+          type: link.type,
+          isSpoiler: link.isSpoiler,
+          note: link.note
+        }
+      }
+    },
+    buildRow: (link, orderInCharacter, counters) => ({
       characterId,
       personId: link.personId,
       type: link.type,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInCharacter,
-      orderInPerson
-    }
+      orderInPerson: counters.next('person', link.personId)
+    })
   })
 }
 
@@ -189,7 +127,7 @@ export class CharacterIngestPersistHandler {
     for (const personIdentityKey of requiredPersonIdentities) {
       const personNode = personByIdentity.get(personIdentityKey)
       if (!personNode) {
-        throw new Error(`[IngestPersist] Missing person node for identity: ${personIdentityKey}`)
+        throw new Error(`Missing person node for identity: ${personIdentityKey}`)
       }
 
       const personResult = this.personPersist.persistPersonNodeInternal(personNode, tx)
@@ -267,20 +205,15 @@ export class CharacterIngestPersistHandler {
     for (let i = 0; i < (core.tags?.length ?? 0); i++) {
       const tagData = core.tags![i]
 
-      tx.insert(tags)
-        .values({ name: tagData.name, isNsfw: tagData.isNsfw })
-        .onConflictDoNothing()
-        .run()
-
-      const existingTag = this.dbService.entityFinder.findExistingTag({ name: tagData.name }, tx)
-      if (!existingTag) {
+      const tagId = resolveTagId(tx, tagData)
+      if (!tagId) {
         continue
       }
 
       tx.insert(characterTagLinks)
         .values({
           characterId,
-          tagId: existingTag.id,
+          tagId,
           isSpoiler: tagData.isSpoiler || false,
           note: tagData.note || null,
           orderInCharacter: i,
@@ -292,7 +225,12 @@ export class CharacterIngestPersistHandler {
     const pendingAssets: PendingAssetTask[] = []
     const photoUrl = pickFirstAssetUrl(node.photoUrls)
     if (photoUrl) {
-      pendingAssets.push({ type: 'character', characterId, url: photoUrl })
+      pendingAssets.push({
+        table: 'characters',
+        rowId: characterId,
+        field: 'photoFile',
+        url: photoUrl
+      })
     }
 
     this.addToCollection(tx, characterId, targetCollectionId)
@@ -339,8 +277,16 @@ export class CharacterIngestPersistHandler {
     result: PersistCharacterGraphResult,
     warnings: IngestWarning[]
   ): IngestAddCharacterFromScraperResult {
-    const { pendingAssets, ...publicResult } = result
-    void pendingAssets
-    return warnings.length > 0 ? { ...publicResult, warnings } : publicResult
+    const publicResult: IngestAddCharacterFromScraperResult = {
+      characterId: result.characterId,
+      isNew: result.isNew
+    }
+    if (result.existingReason) {
+      publicResult.existingReason = result.existingReason
+    }
+    if (warnings.length > 0) {
+      publicResult.warnings = warnings
+    }
+    return publicResult
   }
 }

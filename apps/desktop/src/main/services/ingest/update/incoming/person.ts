@@ -33,11 +33,10 @@ function buildPersonCore(
   const relatedSites = normalizeRelatedSites(bundleCore?.relatedSites)
   if (relatedSites) core.relatedSites = relatedSites
 
-  const externalIds = normalizeExternalIds([
-    ...(bundle?.identity.externalIds ?? []),
-    ...(lookup.knownIds ?? [])
-  ])
-  if (externalIds.length > 0) core.externalIds = externalIds
+  const identityIds = bundle?.identity.externalIds
+  if (identityIds || lookup.knownIds) {
+    core.externalIds = normalizeExternalIds([...(identityIds ?? []), ...(lookup.knownIds ?? [])])
+  }
 
   const tags = normalizeTags(bundleCore?.tags)
   if (tags) core.tags = tags
@@ -52,6 +51,8 @@ export function buildPersonIncoming(
   const core = buildPersonCore(bundle, lookup)
   const photoUrls = normalizeUrlCandidates(bundle?.mediaCandidates?.photoUrls)
 
+  // A surface is available when the scraper spoke about it at all; an empty
+  // collection is an authoritative "none", not a missing answer.
   const availability: PersonIncomingBuildResult['availability'] = {
     surfaces: new Set()
   }
@@ -62,10 +63,10 @@ export function buildPersonIncoming(
   if (core.deathDate) availability.surfaces.add('deathDate')
   if (core.gender) availability.surfaces.add('gender')
   if (core.description) availability.surfaces.add('description')
-  if (core.relatedSites?.length) availability.surfaces.add('relatedSites')
-  if (core.externalIds?.length) availability.surfaces.add('externalIds')
-  if (core.tags?.length) availability.surfaces.add('tags')
-  if (photoUrls?.[0]) availability.surfaces.add('photos')
+  if (core.relatedSites) availability.surfaces.add('relatedSites')
+  if (core.externalIds) availability.surfaces.add('externalIds')
+  if (core.tags) availability.surfaces.add('tags')
+  if (photoUrls) availability.surfaces.add('photos')
 
   return {
     incoming: {

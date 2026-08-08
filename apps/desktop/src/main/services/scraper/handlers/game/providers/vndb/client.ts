@@ -9,12 +9,12 @@
  */
 
 import type { NetworkService } from '@main/services/network'
+import { createProviderHttpError } from '../../../../shared'
 import { buildIdOrFilter, chunkArray } from './format'
 import type {
   VndbKanaSchema,
   VndbQueryRequest,
   VndbQueryResponse,
-  VndbErrorResponse,
   VndbVn,
   VndbCharacter,
   VndbStaff,
@@ -28,42 +28,62 @@ const RATE_LIMIT_KEY = 'vndb'
 // Official docs: 200 requests per 5 minutes (unauthenticated).
 const RATE_LIMIT_CONFIG = { maxRequests: 200, windowMs: 300_000 }
 
+const BASE_URL = 'https://api.vndb.org/kana'
+const USER_AGENT = 'kisaki/1.0 (+https://github.com/ximu3/kisaki)'
+
 type VndbEndpoint = 'vn' | 'release' | 'producer' | 'character' | 'staff' | 'tag' | 'trait'
 
+/** Token and cached enum schema shared by every bound client view. */
+interface VndbClientState {
+  network: NetworkService
+  token?: string
+  rateLimitRegistered: boolean
+  schema: VndbKanaSchema | null
+}
+
 export class VndbClient {
-  private readonly baseUrl = 'https://api.vndb.org/kana'
-  private readonly userAgent = 'kisaki/1.0 (+https://github.com/ximu3/kisaki)'
-  private readonly token?: string
+  private constructor(
+    private readonly state: VndbClientState,
+    private readonly signal?: AbortSignal
+  ) {}
 
-  private rateLimitRegistered = false
-  private schemaPromise: Promise<VndbKanaSchema> | null = null
+  static create(network: NetworkService, token?: string): VndbClient {
+    return new VndbClient({
+      network,
+      token: token?.trim() || undefined,
+      rateLimitRegistered: false,
+      schema: null
+    })
+  }
 
-  constructor(
-    private readonly network: NetworkService,
-    token?: string
-  ) {
-    this.token = token?.trim() || undefined
+  /**
+   * View bound to one invocation's cancellation scope. Shared state stays
+   * shared, so every request a provider makes for that invocation is
+   * cancellable without the call sites carrying a signal.
+   */
+  withSignal(signal: AbortSignal | undefined): VndbClient {
+    return new VndbClient(this.state, signal)
   }
 
   private ensureRateLimitRegistered(): void {
-    if (!this.rateLimitRegistered) {
-      this.network.rateLimits.register(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
-      this.rateLimitRegistered = true
+    if (!this.state.rateLimitRegistered) {
+      this.state.network.rateLimits.register(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
+      this.state.rateLimitRegistered = true
     }
   }
 
   private buildHeaders(method: 'GET' | 'POST'): Record<string, string> {
     const headers: Record<string, string> = {
       Accept: 'application/json',
-      'User-Agent': this.userAgent
+      'User-Agent': USER_AGENT
     }
 
     if (method === 'POST') {
       headers['Content-Type'] = 'application/json'
     }
 
-    if (this.token) {
-      headers.Authorization = `token ${this.token}`
+    if (this.state.token) {
+      headers.Authorization = `token ${this.state.token}`
     }
 
     return headers
@@ -72,30 +92,16 @@ export class VndbClient {
   private async request<T>(method: 'GET' | 'POST', pathname: string, body?: unknown): Promise<T> {
     this.ensureRateLimitRegistered()
 
-    const response = await this.network.request.fetch(`${this.baseUrl}${pathname}`, {
+    const response = await this.state.network.request.fetch(`${BASE_URL}${pathname}`, {
       method,
       headers: this.buildHeaders(method),
       body: body ? JSON.stringify(body) : undefined,
-      rateLimitKey: RATE_LIMIT_KEY
+      rateLimitKey: RATE_LIMIT_KEY,
+      signal: this.signal
     })
 
     if (!response.ok) {
-      let detail: string
-
-      try {
-        const errorBody = (await response.json()) as Partial<VndbErrorResponse>
-        if (errorBody.id && errorBody.message) {
-          detail = `${errorBody.id}: ${errorBody.message}`
-        } else {
-          detail = JSON.stringify(errorBody)
-        }
-      } catch {
-        detail = await response.text().catch(() => '')
-      }
-
-      throw new Error(
-        `VNDB API request failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`
-      )
+      throw createProviderHttpError('VNDB', 'API request', response)
     }
 
     return response.json() as Promise<T>
@@ -166,11 +172,19 @@ export class VndbClient {
     return all
   }
 
+  /**
+   * The enum schema is immutable, so the resolved value is cached across
+   * invocations. Only the value is cached, never the in-flight request: sharing
+   * the promise would let one invocation's cancellation reject another's await.
+   */
   async getSchema(): Promise<VndbKanaSchema> {
-    if (!this.schemaPromise) {
-      this.schemaPromise = this.request<VndbKanaSchema>('GET', '/schema')
+    if (this.state.schema) {
+      return this.state.schema
     }
-    return this.schemaPromise
+
+    const schema = await this.request<VndbKanaSchema>('GET', '/schema')
+    this.state.schema = schema
+    return schema
   }
 
   async searchVn(query: string, fields: string, limit = 25): Promise<VndbVn[]> {

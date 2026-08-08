@@ -13,6 +13,7 @@ import { usePreferencesStore } from '@renderer/stores'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 import { db } from '@renderer/core/db'
 import { tags } from '@shared/db'
+import { normalizeKeyText } from '@shared/identity'
 import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 
 interface Props {
@@ -105,8 +106,13 @@ const selectedIds = computed({
 
 // Handle creating a new tag
 async function handleCreate(name: string) {
-  // Check if tag already exists
-  const existing = (allTags.value || []).find((t) => t.name.toLowerCase() === name.toLowerCase())
+  const trimmedName = name.trim()
+  const identity = normalizeKeyText(trimmedName)
+  // A tag name must carry identity (see resolveTagId); blank input creates nothing.
+  if (!identity) return
+
+  // Select the tag that already owns this identity instead of creating a twin
+  const existing = (allTags.value || []).find((t) => normalizeKeyText(t.name) === identity)
   if (existing) {
     // Select existing tag instead of creating
     if (props.multiple) {
@@ -121,7 +127,7 @@ async function handleCreate(name: string) {
 
   // Create new tag
   const newId = nanoid()
-  await db.insert(tags).values({ id: newId, name })
+  await db.insert(tags).values({ id: newId, name: trimmedName, normalizedName: trimmedName })
 
   // Auto-select the new tag
   if (props.multiple) {

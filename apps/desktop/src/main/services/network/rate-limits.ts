@@ -1,4 +1,5 @@
 import { createLogger } from '@main/log'
+import { assertNotAborted, Semaphore, sleep } from '@main/utils/async'
 import type { RateLimitConfig } from '@shared/network'
 
 const log = createLogger('Network')
@@ -9,7 +10,7 @@ export interface NetworkRateLimitApi {
 }
 
 export interface NetworkRateLimitGate {
-  waitForSlot(key: string): Promise<void>
+  waitForSlot(key: string, signal?: AbortSignal): Promise<void>
 }
 
 export class NetworkRateLimitRegistry implements NetworkRateLimitGate {
@@ -33,47 +34,41 @@ export class NetworkRateLimitRegistry implements NetworkRateLimitGate {
     this.limiters.delete(key)
   }
 
-  async waitForSlot(key: string): Promise<void> {
+  async waitForSlot(key: string, signal?: AbortSignal): Promise<void> {
     const limiter = this.limiters.get(key)
     if (limiter) {
-      await limiter.wait()
+      await limiter.wait(signal)
     }
   }
 }
 
 /**
- * Sliding window rate limiter with mutex.
+ * Sliding window rate limiter.
+ *
+ * Waiters queue on a mutex so the window is inspected by one caller at a time.
+ * A cancelled waiter leaves both the queue and the window without consuming a
+ * slot, so cancelling a long scrape frees its remaining quota for whatever runs
+ * next instead of holding the window until the sleep elapses.
  */
 class RateLimiter {
   private readonly maxRequests: number
   private readonly windowMs: number
+  private readonly mutex = new Semaphore(1)
   private requestTimestamps: number[] = []
-  private waitQueue: Array<() => void> = []
-  private processing = false
 
   constructor(config: RateLimitConfig) {
     this.maxRequests = config.maxRequests
     this.windowMs = config.windowMs
   }
 
-  async wait(): Promise<void> {
-    if (this.processing) {
-      await new Promise<void>((resolve) => this.waitQueue.push(resolve))
-    }
-
-    this.processing = true
-
-    try {
-      await this.acquireSlot()
-    } finally {
-      this.processing = false
-      const next = this.waitQueue.shift()
-      if (next) next()
-    }
+  async wait(signal?: AbortSignal): Promise<void> {
+    await this.mutex.run(() => this.acquireSlot(signal), signal)
   }
 
-  private async acquireSlot(): Promise<void> {
+  private async acquireSlot(signal: AbortSignal | undefined): Promise<void> {
     while (true) {
+      assertNotAborted(signal)
+
       const now = Date.now()
       const windowStart = now - this.windowMs
 
@@ -88,7 +83,7 @@ class RateLimiter {
       const waitTime = oldestTimestamp + this.windowMs - now + 1
 
       if (waitTime > 0) {
-        await new Promise((resolve) => setTimeout(resolve, waitTime))
+        await sleep(waitTime, signal)
       }
     }
   }

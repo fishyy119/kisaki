@@ -28,15 +28,17 @@ export {
   updateCondition
 } from './state'
 
-export { matchesFilterStateShape, parseFilterCondition, parseFilterState } from './normalization'
+export { parseFilterCondition, parseFilterState } from './normalization'
 
 export type {
   DateColumnMode,
+  FilterFieldKeyOf,
   FilterQueryFieldDef,
   FilterQuerySortDef,
   FilterQuerySpec,
   FilterQuerySpecInput,
-  FilterRelationLink
+  FilterRelationLink,
+  FilterSortKeyOf
 } from './spec'
 export { defineFilterQuerySpec } from './spec'
 

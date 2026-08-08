@@ -9,6 +9,17 @@ export type { ThumbnailFit, ThumbnailOptions, FileColumns, FilesColumns, DbConte
 export { AttachmentStore } from './attachment'
 export { ThumbnailStore } from './thumbnail'
 export { DbEntityDeleteHelper, DbEntityFinderHelper } from './helper'
+export {
+  characterExternalIdLink,
+  companyExternalIdLink,
+  findExternalIdOwners,
+  gameExternalIdLink,
+  personExternalIdLink,
+  requireExternalIdsAvailable,
+  resolveTagId,
+  type ExternalIdLinkTable
+} from './helper'
+export { SettingsStore } from './settings'
 export { FtsStore } from './fts'
 export { SqlExecutor, type DbSqlMethod } from './sql'
 export type { FtsEntityType } from '@shared/db/contracts/fts'

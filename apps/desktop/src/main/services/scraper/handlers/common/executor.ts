@@ -2,9 +2,10 @@
  * Shared session payload loading helpers for the scraper execution pipeline.
  */
 
+import { assertNotAborted, isAbortError } from '@main/utils/async'
 import type { ContentLocale } from '@shared/i18n'
 import type { SlotStrategy } from '@shared/db'
-import type { BaseResolvedTarget, BaseScraperSession } from '../../types'
+import type { BaseResolvedTarget, BaseScraperSession, ScraperProviderContext } from '../../types'
 import type { PlannedProviderTask, ScraperExecutionPlan } from './planner'
 import type { ScraperInvocationState } from './state'
 
@@ -15,7 +16,7 @@ interface SessionCapableScraperProvider<
   TResultMap extends Partial<Record<TSlot, unknown>>
 > {
   readonly capabilities: readonly string[]
-  openSession(target: TTarget, locale: ContentLocale): Promise<TSession>
+  openSession(target: TTarget, ctx: ScraperProviderContext): Promise<TSession>
 }
 
 export interface ExecuteScraperPlanOptions<
@@ -28,6 +29,8 @@ export interface ExecuteScraperPlanOptions<
 > {
   state: ScraperInvocationState<TTarget, TSession, TSlot, TResultMap, TResult>
   plan: ScraperExecutionPlan<TSlot>
+  /** Cancels every provider call this plan makes; unset means uncancellable. */
+  signal?: AbortSignal
   getProvider(providerId: string): TProvider | undefined
   resolveProviderTarget(providerId: string, locale: ContentLocale): Promise<TTarget | null>
   collectResolvedIdentity?(context: { providerId: string; target: TTarget }): void
@@ -95,6 +98,29 @@ function getActiveTaskEntries<TSlot extends string>(
   )
 }
 
+/**
+ * Whether a payload ends the search for a `first` slot.
+ *
+ * An authoritatively empty collection still answers the slot, but it gives the
+ * user nothing, so the remaining providers are consulted. If they all answer
+ * empty the merge keeps the empty collection rather than reporting "unknown".
+ */
+function satisfiesFirstStrategy(data: unknown): boolean {
+  return !Array.isArray(data) || data.length > 0
+}
+
+/**
+ * Result of one provider task.
+ *
+ * A cancellation is reported instead of thrown so waves can settle every task
+ * they started before abandoning the plan; a rejection escaping a wave would
+ * leave its siblings' rejections unobserved.
+ */
+interface ProviderTaskOutcome<TSlot extends string> {
+  attemptedEntries: readonly PlannedTaskEntry<TSlot>[]
+  aborted?: Error
+}
+
 async function runProviderTask<
   TTarget extends BaseResolvedTarget,
   TSession extends BaseScraperSession<TSlot, TResultMap>,
@@ -107,27 +133,29 @@ async function runProviderTask<
   slotStates: Map<TSlot, SlotExecutionState>,
   options: ExecuteScraperPlanOptions<TTarget, TSession, TSlot, TResultMap, TResult, TProvider>,
   entries: readonly PlannedTaskEntry<TSlot>[] = task.entries
-): Promise<readonly PlannedTaskEntry<TSlot>[]> {
+): Promise<ProviderTaskOutcome<TSlot>> {
   const pendingEntries = getPendingTaskEntries(entries, slotStates)
   if (pendingEntries.length === 0) {
-    return []
+    return { attemptedEntries: [] }
   }
 
   const provider = options.getProvider(task.providerId)
   if (!provider) {
-    options.warn(`[Scraper] Provider '${task.providerId}' not available`)
-    return pendingEntries
+    options.warn(`Provider '${task.providerId}' not available`)
+    return { attemptedEntries: pendingEntries }
   }
 
   const activeEntries = getActiveTaskEntries(pendingEntries, slotStates, provider.capabilities)
   if (activeEntries.length === 0) {
-    return pendingEntries
+    return { attemptedEntries: pendingEntries }
   }
 
   try {
+    assertNotAborted(options.signal)
+
     const target = await options.resolveProviderTarget(task.providerId, task.locale)
     if (!target) {
-      return pendingEntries
+      return { attemptedEntries: pendingEntries }
     }
 
     options.collectResolvedIdentity?.({
@@ -140,8 +168,8 @@ async function runProviderTask<
       providerId: task.providerId,
       target,
       slots: activeEntries.map((entry) => entry.slot),
-      locale: task.locale,
-      openSession: (resolvedTarget, locale) => provider.openSession(resolvedTarget, locale)
+      ctx: { locale: task.locale, signal: options.signal },
+      openSession: (resolvedTarget, ctx) => provider.openSession(resolvedTarget, ctx)
     })
 
     for (const entry of activeEntries) {
@@ -164,18 +192,24 @@ async function runProviderTask<
       options.state.collect(result)
 
       const slotState = slotStates.get(entry.slot)
-      if (slotState?.strategy === 'first') {
+      if (slotState?.strategy === 'first' && satisfiesFirstStrategy(data)) {
         slotState.closed = true
       }
     }
   } catch (error) {
+    // A cancelled invocation must not degrade into a partial scrape, so it
+    // abandons the plan instead of being recorded as a provider failure.
+    if (isAbortError(error)) {
+      return { attemptedEntries: pendingEntries, aborted: error }
+    }
+
     options.warn(
-      `[Scraper] ${task.providerId}.${activeEntries.map((entry) => entry.slot).join(',')} failed:`,
+      `${task.providerId}.${activeEntries.map((entry) => entry.slot).join(',')} failed:`,
       error
     )
   }
 
-  return pendingEntries
+  return { attemptedEntries: pendingEntries }
 }
 
 function getFirstWaveTasks<TSlot extends string>(
@@ -305,15 +339,17 @@ async function executeFirstWave<
   const executedEntries = new Set<PlannedTaskEntry<TSlot>>()
   const runningTasks = new Map<
     PlannedProviderTask<TSlot>,
-    Promise<{
-      task: PlannedProviderTask<TSlot>
-      attemptedEntries: readonly PlannedTaskEntry<TSlot>[]
-    }>
+    Promise<ProviderTaskOutcome<TSlot> & { task: PlannedProviderTask<TSlot> }>
   >()
+  let aborted: Error | undefined
 
   // First-slot fallbacks advance per slot. Shared provider tasks can still batch
   // whichever first entries are ready now, then pick up the remaining ones later.
   const scheduleReadyTasks = (): void => {
+    if (aborted) {
+      return
+    }
+
     for (const task of tasks) {
       if (runningTasks.has(task)) {
         continue
@@ -331,10 +367,7 @@ async function executeFirstWave<
       }
 
       const execution = runProviderTask(task, slotStates, options, readyEntries).then(
-        (attemptedEntries) => ({
-          task,
-          attemptedEntries
-        })
+        (outcome) => ({ task, ...outcome })
       )
       runningTasks.set(task, execution)
     }
@@ -343,17 +376,18 @@ async function executeFirstWave<
   scheduleReadyTasks()
 
   while (runningTasks.size > 0) {
-    const { task, attemptedEntries } = await Promise.race(Array.from(runningTasks.values()))
-    runningTasks.delete(task)
+    const outcome = await Promise.race(Array.from(runningTasks.values()))
+    runningTasks.delete(outcome.task)
+    aborted ??= outcome.aborted
 
-    for (const entry of attemptedEntries) {
+    for (const entry of outcome.attemptedEntries) {
       executedEntries.add(entry)
 
       if (entry.strategy !== 'first') {
         continue
       }
 
-      if (getCurrentFirstWaveTaskForSlot(entry.slot, slotQueues, slotProgress) !== task) {
+      if (getCurrentFirstWaveTaskForSlot(entry.slot, slotQueues, slotProgress) !== outcome.task) {
         continue
       }
 
@@ -361,6 +395,10 @@ async function executeFirstWave<
     }
 
     scheduleReadyTasks()
+  }
+
+  if (aborted) {
+    throw aborted
   }
 }
 
@@ -377,7 +415,14 @@ async function executeEnrichWave<
   options: ExecuteScraperPlanOptions<TTarget, TSession, TSlot, TResultMap, TResult, TProvider>
 ): Promise<void> {
   for (const step of plan.enrichWave) {
-    await Promise.all(step.tasks.map((task) => runProviderTask(task, slotStates, options)))
+    const outcomes = await Promise.all(
+      step.tasks.map((task) => runProviderTask(task, slotStates, options))
+    )
+
+    const aborted = outcomes.find((outcome) => outcome.aborted)?.aborted
+    if (aborted) {
+      throw aborted
+    }
   }
 }
 
@@ -403,39 +448,9 @@ export async function executeScraperPlan<
 }
 
 /**
- * Load a single slot payload through an invocation-scoped session and payload cache.
- */
-export async function loadSessionSlot<
-  TTarget extends BaseResolvedTarget,
-  TSession extends BaseScraperSession<TSlot, TResultMap>,
-  TSlot extends string,
-  TResultMap extends Partial<Record<TSlot, unknown>>,
-  TResult
->(options: {
-  state: ScraperInvocationState<TTarget, TSession, TSlot, TResultMap, TResult>
-  providerId: string
-  target: TTarget
-  slot: TSlot
-  locale: ContentLocale
-  openSession: (target: TTarget, locale: ContentLocale) => Promise<TSession>
-}): Promise<TResultMap[TSlot] | null> {
-  const results = await loadSessionSlots({
-    state: options.state,
-    providerId: options.providerId,
-    target: options.target,
-    slots: [options.slot],
-    locale: options.locale,
-    openSession: options.openSession
-  })
-
-  const payload = results[options.slot]
-  return payload === undefined ? null : (payload as TResultMap[TSlot])
-}
-
-/**
  * Load one or more slot payloads while sharing the same provider session fetch.
  */
-export async function loadSessionSlots<
+async function loadSessionSlots<
   TTarget extends BaseResolvedTarget,
   TSession extends BaseScraperSession<TSlot, TResultMap>,
   TSlot extends string,
@@ -446,13 +461,14 @@ export async function loadSessionSlots<
   providerId: string
   target: TTarget
   slots: readonly TSlot[]
-  locale: ContentLocale
-  openSession: (target: TTarget, locale: ContentLocale) => Promise<TSession>
+  ctx: ScraperProviderContext
+  openSession: (target: TTarget, ctx: ScraperProviderContext) => Promise<TSession>
 }): Promise<Partial<TResultMap>> {
+  const locale = options.ctx.locale
   const missingSlots: TSlot[] = []
 
   for (const slot of options.slots) {
-    if (!options.state.getPayloadTask(options.providerId, options.target, slot, options.locale)) {
+    if (!options.state.getPayloadTask(options.providerId, options.target, slot, locale)) {
       missingSlots.push(slot)
     }
   }
@@ -461,8 +477,8 @@ export async function loadSessionSlots<
     const sessionTask = options.state.getOrCreateSession(
       options.providerId,
       options.target,
-      options.locale,
-      () => options.openSession(options.target, options.locale)
+      locale,
+      () => options.openSession(options.target, options.ctx)
     )
 
     const fetchTask = (async () => {
@@ -479,7 +495,7 @@ export async function loadSessionSlots<
         options.providerId,
         options.target,
         slot,
-        options.locale,
+        locale,
         fetchTask.then((result) => {
           const payload = result[slot]
           return payload === undefined ? null : (payload as TResultMap[typeof slot])
@@ -495,7 +511,7 @@ export async function loadSessionSlots<
       options.providerId,
       options.target,
       slot,
-      options.locale
+      locale
     )
     const payload = payloadTask ? await payloadTask : null
     if (payload !== null) {

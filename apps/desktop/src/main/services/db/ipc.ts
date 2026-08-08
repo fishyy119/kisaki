@@ -49,10 +49,6 @@ export function registerDbIpc(service: DbService, ipc: IpcService): void {
     wrapIpcVoid(() => service.attachment.clearFilesByTableName(tableName, rowId, field))
   )
 
-  ipc.handle('db:attachment-cleanup-row', async (_, tableName, rowId) =>
-    wrapIpcVoid(() => service.attachment.cleanupRow(tableName, rowId))
-  )
-
   ipc.handle('db:attachment-get-path', async (_, tableName, rowId, fileName) =>
     wrapIpc(() => service.attachment.getPath(tableName, rowId, fileName))
   )

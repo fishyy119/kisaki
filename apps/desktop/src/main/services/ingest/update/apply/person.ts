@@ -1,16 +1,19 @@
-import { eq, inArray } from 'drizzle-orm'
-import type { DbContext } from '@main/services/db'
+import { eq } from 'drizzle-orm'
+import {
+  personExternalIdLink,
+  requireExternalIdsAvailable,
+  resolveTagId,
+  type DbContext
+} from '@main/services/db'
 import {
   personExternalIds,
   persons,
   personTagLinks,
-  tags,
   type NewPerson,
   type NewPersonTagLink
 } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { PersonUpdatePlan, UpdateApplyResult } from '../types'
-import { ensurePersonExternalIdsAvailable, findExistingTagId } from '../shared/availability'
 
 function replacePersonExternalIds(
   tx: DbContext,
@@ -37,23 +40,11 @@ function replacePersonTags(
   nextTags: PersonUpdatePlan['tags']
 ): void {
   tx.delete(personTagLinks).where(eq(personTagLinks.personId, personId)).run()
-  if (!nextTags || nextTags.length === 0) return
-
-  const tagNames = [...new Set(nextTags.map((tag) => tag.name))]
-  const existingRows = tx.select().from(tags).where(inArray(tags.name, tagNames)).all()
-  const existingByName = new Map(existingRows.map((row) => [row.name, row.id]))
-
-  for (const tag of nextTags) {
-    if (existingByName.has(tag.name)) continue
-    tx.insert(tags)
-      .values({ name: tag.name, isNsfw: tag.isNsfw ?? false })
-      .onConflictDoNothing()
-      .run()
-  }
+  if (!nextTags?.length) return
 
   const linkValues: NewPersonTagLink[] = []
   nextTags.forEach((tag, index) => {
-    const tagId = existingByName.get(tag.name) ?? findExistingTagId(tx, tag.name)
+    const tagId = resolveTagId(tx, tag)
     if (!tagId) return
 
     linkValues.push({
@@ -77,7 +68,7 @@ export function applyPersonPlan(
   plan: PersonUpdatePlan
 ): UpdateApplyResult {
   if (plan.externalIds) {
-    ensurePersonExternalIdsAvailable(tx, personId, plan.externalIds)
+    requireExternalIdsAvailable(tx, personExternalIdLink, [personId], plan.externalIds)
     replacePersonExternalIds(tx, personId, plan.externalIds)
   }
 
@@ -93,6 +84,8 @@ export function applyPersonPlan(
   }
 
   return {
-    pendingAssets: plan.photoUrl ? [{ type: 'person', personId, url: plan.photoUrl }] : []
+    pendingAssets: plan.photoUrl
+      ? [{ table: 'persons', rowId: personId, field: 'photoFile', url: plan.photoUrl }]
+      : []
   }
 }

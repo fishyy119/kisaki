@@ -18,8 +18,9 @@ import type {
   PersonUpdateSurface
 } from '@shared/ingest/update'
 import type { ExternalId } from '@shared/identity'
+import type { ScrapedCharacterRelationFacts, ScrapedGameRelationFacts } from '@shared/scraper'
 import type { PendingAssetTask } from '../assets'
-import type { IngestCharacterGraph, IngestGameGraph } from '../graph'
+import type { IngestCharacterGraph, IngestGameGraph, IngestGameGraphLinks } from '../graph'
 import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
@@ -35,19 +36,44 @@ export interface UpdateIncomingBundle<TCore, TRelationFacts, TMediaCandidates> {
   mediaCandidates: Partial<TMediaCandidates>
 }
 
+/** How a collection write target reconciles incoming values with stored ones. */
+export type CollectionUpdateMode = IngestUpdatePolicy['collectionUpdate']
+
+/** Surfaces the scraper answered at all; only these may be applied. */
 export interface UpdateIncomingAvailability<TSurface extends string> {
   surfaces: Set<TSurface>
 }
 
-export interface UpdateIncomingBuildResult<
+/**
+ * Availability for entities that write relation link tables.
+ *
+ * A link table can be fed by several fact sources, so "may be written" and "may
+ * be cleared" are different questions: writing needs one answer, while clearing
+ * needs every source to have answered.
+ */
+export interface UpdateIncomingRelationAvailability<
   TSurface extends string,
-  TCore,
-  TRelationFacts,
-  TMediaCandidates
-> {
-  incoming: UpdateIncomingBundle<TCore, TRelationFacts, TMediaCandidates>
-  availability: UpdateIncomingAvailability<TSurface>
+  TRelationLink extends string
+> extends UpdateIncomingAvailability<TSurface> {
+  /** Link tables whose every fact source answered; only these may be cleared. */
+  completeRelationLinks: Set<TRelationLink>
 }
+
+export interface UpdateIncomingBuildResult<TAvailability, TCore, TRelationFacts, TMediaCandidates> {
+  incoming: UpdateIncomingBundle<TCore, TRelationFacts, TMediaCandidates>
+  availability: TAvailability
+}
+
+/**
+ * Link tables a game update can write.
+ *
+ * Derived from the graph builder's output, so a new link table forces a
+ * declaration in `GAME_RELATION_LINKS`.
+ */
+export type GameRelationLink = keyof IngestGameGraphLinks
+
+/** Link tables a character update can write; the graph carries a single set. */
+export type CharacterRelationLink = 'characterPerson'
 
 export interface PersonIncomingMediaCandidates {
   photoUrls?: string[]
@@ -69,30 +95,30 @@ export interface GameIncomingMediaCandidates {
 }
 
 export type PersonIncomingBuildResult = UpdateIncomingBuildResult<
-  PersonUpdateSurface,
+  UpdateIncomingAvailability<PersonUpdateSurface>,
   CorePersonMetadata,
   Record<never, never>,
   PersonIncomingMediaCandidates
 >
 
 export type CompanyIncomingBuildResult = UpdateIncomingBuildResult<
-  CompanyUpdateSurface,
+  UpdateIncomingAvailability<CompanyUpdateSurface>,
   CoreCompanyMetadata,
   Record<never, never>,
   CompanyIncomingMediaCandidates
 >
 
 export type CharacterIncomingBuildResult = UpdateIncomingBuildResult<
-  CharacterUpdateSurface,
+  UpdateIncomingRelationAvailability<CharacterUpdateSurface, CharacterRelationLink>,
   CoreCharacterMetadata,
-  Record<string, unknown>,
+  ScrapedCharacterRelationFacts,
   CharacterIncomingMediaCandidates
 >
 
 export type GameIncomingBuildResult = UpdateIncomingBuildResult<
-  GameUpdateSurface,
+  UpdateIncomingRelationAvailability<GameUpdateSurface, GameRelationLink>,
   CoreGameMetadata,
-  Record<string, unknown>,
+  ScrapedGameRelationFacts,
   GameIncomingMediaCandidates
 >
 
@@ -139,8 +165,10 @@ export interface CharacterUpdatePlan {
   externalIds?: ExternalId[]
   tags?: Tag[]
   photoUrl?: string
-  collectionMode: IngestUpdatePolicy['collectionUpdate']
-  selectedRelationSurfaces: CharacterUpdateRelationSurface[]
+  /** Link tables to write, each with the mode resolved for that table. */
+  relationLinks: Partial<Record<CharacterRelationLink, CollectionUpdateMode>>
+  /** Link tables where `replace` was downgraded because a fact source stayed silent. */
+  degradedRelationLinks: CharacterRelationLink[]
   relationGraph?: IngestCharacterGraph
 }
 
@@ -152,13 +180,20 @@ export interface GameUpdatePlan {
   backdropUrl?: string
   logoUrl?: string
   iconUrl?: string
-  collectionMode: IngestUpdatePolicy['collectionUpdate']
-  selectedRelationSurfaces: GameUpdateRelationSurface[]
+  /** Link tables to write, each with the mode resolved for that table. */
+  relationLinks: Partial<Record<GameRelationLink, CollectionUpdateMode>>
+  /** Link tables where `replace` was downgraded because a fact source stayed silent. */
+  degradedRelationLinks: GameRelationLink[]
   relationGraph?: IngestGameGraph
 }
 
 export interface UpdateApplyResult {
   pendingAssets: PendingAssetTask[]
+}
+
+export interface UpdateRelationApplyResult<TRelationLink extends string> extends UpdateApplyResult {
+  /** Stored rows per link table that a `replace` would have deleted but merge kept. */
+  preservedRelationRows: Partial<Record<TRelationLink, number>>
 }
 
 export interface UpdateResolvedSelection<

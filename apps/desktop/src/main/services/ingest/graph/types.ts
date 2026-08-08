@@ -67,17 +67,20 @@ export interface IngestGameCharacterPersonLink extends IngestLinkBase {
   orderInPerson: number
 }
 
+/** Link rows a game graph produces, keyed by the link table they populate. */
+export interface IngestGameGraphLinks {
+  gamePerson: IngestGamePersonLink[]
+  gameCompany: IngestGameCompanyLink[]
+  gameCharacter: IngestGameCharacterLink[]
+  characterPerson: IngestGameCharacterPersonLink[]
+}
+
 export interface IngestGameGraph {
   game: IngestGameNode
   persons: IngestGamePersonNode[]
   companies: IngestGameCompanyNode[]
   characters: IngestGameCharacterNode[]
-  links: {
-    gamePerson: IngestGamePersonLink[]
-    gameCompany: IngestGameCompanyLink[]
-    gameCharacter: IngestGameCharacterLink[]
-    characterPerson: IngestGameCharacterPersonLink[]
-  }
+  links: IngestGameGraphLinks
   media: {
     coverUrl?: string
     backdropUrl?: string

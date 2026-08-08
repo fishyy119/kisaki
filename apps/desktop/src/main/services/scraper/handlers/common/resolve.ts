@@ -2,13 +2,13 @@
  * Shared resolve orchestration built on top of invocation state caches.
  */
 
-import type { ContentLocale } from '@shared/i18n'
+import { isAbortError } from '@main/utils/async'
 import type { ScraperLookup } from '@shared/scraper'
-import type { BaseResolvedTarget, BaseScraperSession } from '../../types'
+import type { BaseResolvedTarget, BaseScraperSession, ScraperProviderContext } from '../../types'
 import type { ScraperInvocationState } from './state'
 
 export interface ResolveCapableScraperProvider<TTarget extends BaseResolvedTarget> {
-  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<TTarget | null>
+  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<TTarget | null>
 }
 
 /**
@@ -41,13 +41,13 @@ export async function resolveProviderTarget<
   providerId: string
   provider: TProvider
   lookup: ScraperLookup
-  locale: ContentLocale
+  ctx: ScraperProviderContext
 }): Promise<TTarget | null> {
   return options.state.getOrCreateResolvedTarget(
     options.providerId,
     options.lookup,
-    options.locale,
-    () => options.provider.resolve(options.lookup, options.locale)
+    options.ctx.locale,
+    () => options.provider.resolve(options.lookup, options.ctx)
   )
 }
 
@@ -66,7 +66,7 @@ export async function resolveSearchProviderTarget<
   providerId: string
   provider: TProvider
   lookup: ScraperLookup
-  locale: ContentLocale
+  ctx: ScraperProviderContext
   warn?: (message: string, error?: unknown) => void
 }): Promise<{
   target: TTarget | null
@@ -80,7 +80,12 @@ export async function resolveSearchProviderTarget<
       canonicalLookup: createCanonicalLookup(options.lookup, target?.resolveName)
     }
   } catch (error) {
-    options.warn?.(`[Scraper] Search provider '${options.providerId}' resolve failed:`, error)
+    // A cancelled resolve must not degrade into an unresolved lookup.
+    if (isAbortError(error)) {
+      throw error
+    }
+
+    options.warn?.(`Search provider '${options.providerId}' resolve failed:`, error)
 
     return {
       target: null,

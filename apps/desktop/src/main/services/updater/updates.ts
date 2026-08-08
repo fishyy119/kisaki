@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { isDev } from '@main/env'
 import { createLogger } from '@main/log'
+import { isAbortError } from '@main/utils/async'
 import type { IpcService } from '@main/services/ipc'
 import {
   isTaskRunCancellation,
@@ -496,8 +497,4 @@ function createDownloadProgress(
       indeterminate: total === undefined
     }
   }
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError'
 }

@@ -3,7 +3,7 @@ import type { SettingsStore } from '../config/store'
 import type { BangumiMediaScope } from '../media/scopes'
 import type { LocalMediaChangeEvent } from '../media/types'
 import type { MediaRegistry } from '../media/registry'
-import { BangumiExtensionError } from '../utils/errors'
+import { BangumiExtensionError, isCancellationError } from '../utils/errors'
 import { m } from '../i18n'
 import type { SyncEngine, SyncItemResult } from './engine'
 import type { SyncQueueStore } from './queue'
@@ -180,13 +180,6 @@ function createPendingKey(scope: BangumiMediaScope, localId: string): string {
 
 function normalizeDebounceMs(value: number): number {
   return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : 3000
-}
-
-function isCancellationError(error: unknown): boolean {
-  return (
-    (error instanceof BangumiExtensionError && error.code === 'job_cancelled') ||
-    (error instanceof Error && error.name === 'AbortError')
-  )
 }
 
 function toUserErrorMessage(error: unknown): string {

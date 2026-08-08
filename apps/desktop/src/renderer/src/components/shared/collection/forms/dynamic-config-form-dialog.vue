@@ -35,6 +35,7 @@ import { db } from '@renderer/core/db'
 import { createEmptyFilter, countConditions } from '@shared/filter'
 import type { FilterState } from '@shared/filter'
 import { collections, type DynamicCollectionConfig, type DynamicEntityConfig } from '@shared/db'
+import { parseDynamicCollectionConfig } from '@shared/db/columns/json/collection'
 import type { ContentEntityType, SortDirection } from '@shared/common'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
 import { createLogger } from '@renderer/core/log'
@@ -187,12 +188,14 @@ function handleConfirm() {
     if (isSubmitting.value) return
     isSubmitting.value = true
     try {
+      // Storage accepts canonical configs only; unfinished conditions are dropped here.
+      const config = parseDynamicCollectionConfig(localConfig.value) ?? createDefaultConfig()
       await db
         .update(collections)
-        .set({ dynamicConfig: localConfig.value })
+        .set({ dynamicConfig: config })
         .where(eq(collections.id, props.collectionId))
       notify.success(m.value.library.forms.filterConfigUpdated)
-      emit('updated', localConfig.value)
+      emit('updated', config)
       open.value = false
     } catch (error) {
       log.error('Failed to update filter config:', error)

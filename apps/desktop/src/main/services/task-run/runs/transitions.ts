@@ -7,7 +7,9 @@ const ALLOWED_TRANSITIONS: ReadonlyMap<TaskRunStatus, readonly TaskRunStatus[]> 
   ['running', ['pausing', 'cancelling', 'completed', 'failed', 'cancelled']],
   ['pausing', ['paused', 'running', 'cancelling', 'cancelled']],
   ['paused', ['running', 'cancelling', 'cancelled']],
-  ['cancelling', ['cancelled']],
+  // Cancellation is cooperative: work that passed its point of no return before
+  // observing the request still finishes with its real outcome.
+  ['cancelling', ['cancelled', 'completed', 'failed']],
   ['completed', []],
   ['failed', []],
   ['cancelled', []]

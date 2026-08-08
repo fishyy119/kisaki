@@ -37,3 +37,21 @@ export interface ThumbnailOptions {
 export type DbContext =
   | BetterSQLite3Database<typeof schema>
   | SQLiteTransaction<'sync', any, typeof schema, ExtractTablesWithRelations<typeof schema>>
+
+/**
+ * Read-only view of a `DbContext`.
+ *
+ * The union above hides `select`'s overloads, so helpers that build queries from
+ * runtime table references narrow to this shape first. Connection and
+ * transaction share the same query surface, so the narrowing is structural.
+ */
+export type DbQueryContext = Pick<BetterSQLite3Database<typeof schema>, 'select'>
+
+/**
+ * Write view of a `DbContext`, for helpers that write through runtime table
+ * references. Same structural narrowing rationale as `DbQueryContext`.
+ */
+export type DbWriteContext = Pick<
+  BetterSQLite3Database<typeof schema>,
+  'insert' | 'update' | 'delete'
+>

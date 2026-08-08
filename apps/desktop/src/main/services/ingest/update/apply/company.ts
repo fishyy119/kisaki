@@ -1,16 +1,19 @@
-import { eq, inArray } from 'drizzle-orm'
-import type { DbContext } from '@main/services/db'
+import { eq } from 'drizzle-orm'
+import {
+  companyExternalIdLink,
+  requireExternalIdsAvailable,
+  resolveTagId,
+  type DbContext
+} from '@main/services/db'
 import {
   companies,
   companyExternalIds,
   companyTagLinks,
-  tags,
   type NewCompany,
   type NewCompanyTagLink
 } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { CompanyUpdatePlan, UpdateApplyResult } from '../types'
-import { ensureCompanyExternalIdsAvailable, findExistingTagId } from '../shared/availability'
 
 function replaceCompanyExternalIds(
   tx: DbContext,
@@ -37,23 +40,11 @@ function replaceCompanyTags(
   nextTags: CompanyUpdatePlan['tags']
 ): void {
   tx.delete(companyTagLinks).where(eq(companyTagLinks.companyId, companyId)).run()
-  if (!nextTags || nextTags.length === 0) return
-
-  const tagNames = [...new Set(nextTags.map((tag) => tag.name))]
-  const existingRows = tx.select().from(tags).where(inArray(tags.name, tagNames)).all()
-  const existingByName = new Map(existingRows.map((row) => [row.name, row.id]))
-
-  for (const tag of nextTags) {
-    if (existingByName.has(tag.name)) continue
-    tx.insert(tags)
-      .values({ name: tag.name, isNsfw: tag.isNsfw ?? false })
-      .onConflictDoNothing()
-      .run()
-  }
+  if (!nextTags?.length) return
 
   const linkValues: NewCompanyTagLink[] = []
   nextTags.forEach((tag, index) => {
-    const tagId = existingByName.get(tag.name) ?? findExistingTagId(tx, tag.name)
+    const tagId = resolveTagId(tx, tag)
     if (!tagId) return
 
     linkValues.push({
@@ -77,7 +68,7 @@ export function applyCompanyPlan(
   plan: CompanyUpdatePlan
 ): UpdateApplyResult {
   if (plan.externalIds) {
-    ensureCompanyExternalIdsAvailable(tx, companyId, plan.externalIds)
+    requireExternalIdsAvailable(tx, companyExternalIdLink, [companyId], plan.externalIds)
     replaceCompanyExternalIds(tx, companyId, plan.externalIds)
   }
 
@@ -93,6 +84,8 @@ export function applyCompanyPlan(
   }
 
   return {
-    pendingAssets: plan.logoUrl ? [{ type: 'company', companyId, url: plan.logoUrl }] : []
+    pendingAssets: plan.logoUrl
+      ? [{ table: 'companies', rowId: companyId, field: 'logoFile', url: plan.logoUrl }]
+      : []
   }
 }

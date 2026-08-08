@@ -3,9 +3,9 @@ import type {
   GameScraperSession,
   GameSearchResult,
   IdResolvedTarget,
-  ContentLocale,
   ScrapedEntityIdentity,
-  ScraperLookup
+  ScraperLookup,
+  ScraperProviderContext
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
 import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../../../utils/constants'
@@ -34,7 +34,7 @@ export class BangumiProvider implements GameScraperProvider {
 
   constructor(private readonly client: BangumiClient) {}
 
-  async search(query: string, locale?: ContentLocale): Promise<GameSearchResult[]> {
+  async search(query: string, ctx: ScraperProviderContext): Promise<GameSearchResult[]> {
     const keyword = query.trim()
     if (!keyword) return []
 
@@ -46,7 +46,8 @@ export class BangumiProvider implements GameScraperProvider {
           type: [BANGUMI_SUBJECT_TYPE_GAME]
         }
       },
-      { limit: 25, offset: 0 }
+      { limit: 25, offset: 0 },
+      { signal: ctx.signal }
     )
 
     return page.items
@@ -55,7 +56,7 @@ export class BangumiProvider implements GameScraperProvider {
         const { name, originalName } = resolveLocalizedSubjectName(
           subject.name,
           subject.name_cn,
-          locale
+          ctx.locale
         )
 
         return omitUndefined({
@@ -68,23 +69,30 @@ export class BangumiProvider implements GameScraperProvider {
       })
   }
 
-  async resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null> {
+  async resolve(
+    lookup: ScraperLookup,
+    ctx: ScraperProviderContext
+  ): Promise<IdResolvedTarget | null> {
     const knownTarget = this.resolveKnownTarget(lookup)
     if (knownTarget) {
       return knownTarget
     }
 
-    const first = (await this.search(lookup.name, locale))[0]
+    const first = (await this.search(lookup.name, ctx))[0]
     return first
       ? this.createResolvedTarget(first.id, first.originalName, { externalIds: first.externalIds })
       : null
   }
 
-  async openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<GameScraperSession> {
+  async openSession(
+    target: IdResolvedTarget,
+    ctx: ScraperProviderContext
+  ): Promise<GameScraperSession> {
     return createBangumiGameSession({
       client: this.client,
       target,
-      locale
+      locale: ctx.locale,
+      signal: ctx.signal
     })
   }
 

@@ -1,8 +1,8 @@
 /**
  * Filter UI spec registry.
  *
- * Resolves the per-entity FilterUiSpec and asserts (dev only) that UI specs
- * stay key/kind aligned with the shared query specs.
+ * Resolves the per-entity FilterUiSpec and asserts (dev only) that every query
+ * spec field is surfaced in the UI.
  */
 import type { ComputedRef } from 'vue'
 import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/common'
@@ -33,34 +33,22 @@ export function getFilterUiSpec(entityType: AllEntityType): ComputedRef<FilterUi
   }
 }
 
-function assertSpecAlignment(entityType: AllEntityType): void {
+/**
+ * Field keys, field kinds, and sort keys are checked by the type system through
+ * `FilterUiSpec<typeof entityFilterQuerySpec>`. Coverage is not: a UI spec can
+ * still omit a declared field, which would silently hide it from the builder.
+ */
+function assertSpecCoverage(entityType: AllEntityType): void {
   const uiSpec = getFilterUiSpec(entityType).value
   const querySpec = getFilterQuerySpec(entityType)
 
-  for (const field of uiSpec.fields) {
-    const queryField = querySpec.fieldByKey.get(field.key)
-    if (!queryField) {
-      throw new Error(`Filter UI spec ${entityType}.${field.key} has no query spec field`)
-    }
-    if (queryField.kind !== field.kind) {
-      throw new Error(
-        `Filter UI spec ${entityType}.${field.key} kind ${field.kind} != query spec kind ${queryField.kind}`
-      )
-    }
-  }
   if (uiSpec.fields.length !== querySpec.fields.length) {
     throw new Error(`Filter UI spec ${entityType} does not cover every query spec field`)
-  }
-
-  for (const option of uiSpec.sortOptions) {
-    if (!querySpec.sortByKey.has(option.key)) {
-      throw new Error(`Filter UI spec ${entityType} sort option ${option.key} not in query spec`)
-    }
   }
 }
 
 if (import.meta.env.DEV) {
   for (const entityType of ALL_ENTITY_TYPES) {
-    assertSpecAlignment(entityType)
+    assertSpecCoverage(entityType)
   }
 }

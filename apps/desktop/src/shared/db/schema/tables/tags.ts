@@ -1,7 +1,7 @@
 import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
-import { baseColumns } from '../../columns'
+import { baseColumns, identityKeyText } from '../../columns'
 import { characters, companies, persons, games } from './content'
 
 export const tags = sqliteTable(
@@ -9,10 +9,22 @@ export const tags = sqliteTable(
   {
     ...baseColumns,
     name: text('name').notNull().unique(),
+    /**
+     * The tag's matching identity, written as the display name and normalized by
+     * the column. Kept as an indexed column because that normalization (NFKC +
+     * case folding) cannot be pushed into SQL. Deliberately not unique: existing
+     * rows may normalize to the same key, and dedup is a merge decision rather
+     * than a write constraint.
+     */
+    normalizedName: identityKeyText('normalized_name').notNull().default(''),
     description: text('description'),
     isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false)
   },
-  (t) => [index('idx_tags_name').on(t.name), index('idx_tags_is_nsfw').on(t.isNsfw)]
+  (t) => [
+    index('idx_tags_name').on(t.name),
+    index('idx_tags_normalized_name').on(t.normalizedName),
+    index('idx_tags_is_nsfw').on(t.isNsfw)
+  ]
 )
 
 export const gameTagLinks = sqliteTable(

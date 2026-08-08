@@ -4,14 +4,17 @@
 
 import type { PersonScraperSlot } from '@shared/db'
 import type { Tag } from '@shared/metadata'
-import type { ContentLocale } from '@shared/i18n'
 import type {
   PersonSearchResult,
   ScrapedPersonInfo,
   ScraperCapability,
   ScraperLookup
 } from '@shared/scraper'
-import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
+import {
+  type BaseScraperSession,
+  type IdResolvedTarget,
+  type ScraperProviderContext
+} from '../../types'
 
 export type PersonResolvedTarget = IdResolvedTarget
 
@@ -29,7 +32,10 @@ export interface PersonScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, locale?: ContentLocale): Promise<PersonSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<PersonResolvedTarget | null>
-  openSession(target: PersonResolvedTarget, locale: ContentLocale): Promise<PersonScraperSession>
+  search(query: string, ctx: ScraperProviderContext): Promise<PersonSearchResult[]>
+  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<PersonResolvedTarget | null>
+  openSession(
+    target: PersonResolvedTarget,
+    ctx: ScraperProviderContext
+  ): Promise<PersonScraperSession>
 }

@@ -41,6 +41,7 @@ export const library = {
     relatedPersons: 'Related people',
     relatedCharacters: 'Related characters',
     relatedCompanies: 'Related companies',
+    characterPersons: 'People per character',
     relatedSites: 'Related links',
     externalIds: 'External IDs',
     photos: 'Photos',
@@ -414,7 +415,8 @@ export const library = {
     collectionStrategyMerge: 'Merge and append',
     collectionStrategyReplace: 'Replace entirely',
     collectionStrategyMergeHint: 'Keeps existing content and appends new items.',
-    collectionStrategyReplaceHint: 'Replaces the current content with the new content.',
+    collectionStrategyReplaceHint:
+      'Replaces the current content with the new content. Collections the source reports as empty are cleared.',
     useExternalIdsLabel: 'Use current external IDs to locate the entry',
     useExternalIdsHint: 'Do not enable this if the current entry may match the wrong target.',
     personStandaloneHint: '"Person" can be selected and updated as a standalone field.',

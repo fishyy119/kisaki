@@ -19,6 +19,41 @@ export function stringifyJsonStorageValue(typeName: string, value: unknown): str
   }
 }
 
+/**
+ * Round-trip guard for strict writes.
+ *
+ * Returns the canonical form to persist, and throws when the requested value is
+ * not equivalent to it: storing a repaired value would silently lose whatever
+ * the caller asked to store. Key order and dropped `undefined` properties are
+ * equivalence-preserving, so both sides are compared in stable JSON form.
+ */
+export function requireCanonicalJsonValue<T>(typeName: string, value: unknown, canonical: T): T {
+  if (stableJsonString(value) !== stableJsonString(canonical)) {
+    throw new Error(`${typeName} contains values that cannot be stored as given`)
+  }
+  return canonical
+}
+
+function stableJsonString(value: unknown): string {
+  return JSON.stringify(sortObjectKeysDeep(value)) ?? 'undefined'
+}
+
+function sortObjectKeysDeep(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortObjectKeysDeep)
+  }
+  if (!matchesPlainObject(value)) {
+    return value
+  }
+
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .filter((key) => value[key] !== undefined)
+      .map((key) => [key, sortObjectKeysDeep(value[key])])
+  )
+}
+
 export function matchesOptionalString(value: unknown): value is string | undefined {
   return value === undefined || typeof value === 'string'
 }

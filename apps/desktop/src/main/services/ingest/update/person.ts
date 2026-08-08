@@ -3,7 +3,6 @@ import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
-import { isTaskRunCancellation } from '@main/services/task-run'
 import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { flushPendingAssets } from '../assets'
 import {
@@ -21,12 +20,9 @@ import { buildPersonPlan } from './plan'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
-import {
-  reportIngestProgress,
-  throwIfIngestAborted,
-  type IngestOperationOptions,
-  type IngestTaskRunOptions
-} from '../types'
+import { reportIngestProgress } from '../progress'
+import { isIngestCancellation, throwIfIngestAborted } from '../abort'
+import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
 import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 const log = createLogger('Ingest')
@@ -100,21 +96,15 @@ export class PersonUpdateHandler {
       phase: 'scraping',
       label: this.i18nService.messages.ingest.update.scrapingMetadata({ entity: 'person' })
     })
-    const bundle = await this.scraperService.person.scrape(request.profileId, lookup)
+    const bundle = await this.scraperService.person.scrape(request.profileId, lookup, {
+      signal: options?.signal
+    })
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
       label: this.i18nService.messages.ingest.update.planning({ entity: 'person' })
     })
     const incoming = buildPersonIncoming(bundle, lookup)
-    const current = loadPersonCurrent(this.dbService.client, request.rootId, selection)
-    const plan = buildPersonPlan({
-      current,
-      incoming,
-      selection,
-      policy
-    })
-
     throwIfIngestAborted(options?.signal)
     await requireIngestAllowed(this.hooks.updating, {
       entityId: request.rootId,
@@ -126,9 +116,18 @@ export class PersonUpdateHandler {
       phase: 'writing',
       label: this.i18nService.messages.ingest.update.writing({ entity: 'person' })
     })
-    const applyResult = this.dbService.client.transaction((tx) =>
-      applyPersonPlan(tx, request.rootId, plan)
-    )
+    // Read, plan and apply share one synchronous transaction: planning against a
+    // snapshot taken outside it would overwrite concurrent edits.
+    const applyResult = this.dbService.client.transaction((tx) => {
+      const current = loadPersonCurrent(tx, request.rootId, selection)
+      const plan = buildPersonPlan({
+        current,
+        incoming,
+        selection,
+        policy
+      })
+      return applyPersonPlan(tx, request.rootId, plan)
+    })
 
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
@@ -168,7 +167,6 @@ export class PersonUpdateHandler {
         signal: run.context.signal,
         onProgress: (update) => run.context.report(update)
       })
-      run.context.throwIfCancelled()
       run.complete({
         title: this.i18nService.messages.ingest.update.completedTitle({ entity: 'person' }),
         summary: this.i18nService.messages.ingest.update.completedSummary({ entity: 'person' }),
@@ -183,7 +181,7 @@ export class PersonUpdateHandler {
         warnings: toTaskRunWarnings(result.warnings)
       })
     } catch (error) {
-      if (isTaskRunCancellation(error)) {
+      if (isIngestCancellation(error)) {
         run.cancel({
           summary: this.i18nService.messages.ingest.update.cancelledSummary({ entity: 'person' })
         })

@@ -4,10 +4,11 @@ import path from 'node:path'
 import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { mkdir, rm } from 'node:fs/promises'
+import { assertNotAborted } from '@main/utils/async'
 import { movePath } from '@main/utils/fs'
 import type { FetchOptions } from '@shared/network'
 import type { NetworkRequestClient } from './request'
-import { assertNotAborted, DEFAULT_NETWORK_RETRY_COUNT, executeWithNetworkRetry } from './shared'
+import { DEFAULT_NETWORK_RETRY_COUNT, executeWithNetworkRetry } from './shared'
 
 export interface NetworkDownloaderOptions {
   request: NetworkRequestClient

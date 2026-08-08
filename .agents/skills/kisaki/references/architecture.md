@@ -313,6 +313,32 @@ execution ids, progress, cancellation, wait state, notifications, or command his
 command handler calls the real producer or scoped extension task-run API and returns the created
 `runId`.
 
+### Scraper & Ingest Boundary
+
+`ScraperService` turns provider answers into a fact bundle; `IngestService` decides what those facts
+change in the library. Two contracts hold the seam together:
+
+- **Slot presence is authority.** A provider omits a slot it cannot answer and returns an empty
+  collection only when the source states the entity has none. The merge layer keeps that distinction
+  (`foldCollectionResults`), incoming availability is computed from presence rather than length, and
+  the `replace` collection policy may therefore clear tags, external ids, related sites, and
+  relations. An empty answer never satisfies a `first` strategy slot, so the remaining providers are
+  still consulted.
+- **Writing and clearing need different authority.** Several fact sources can feed one relation link
+  table: `game_person_links` takes the `persons` slot plus the cast stated by characters. So
+  `availability` carries two sets: `surfaces` (any source answered, gates writing) and
+  `completeRelationLinks` (every source answered, gates deleting). `update/relation-links.ts` declares
+  the topology once — each link table with the surface that selects it and the fact sources that feed
+  it — keyed by the graph builder's link output so a new link table cannot skip its declaration.
+  `resolveRelationLinks` downgrades `replace` to `merge` for an incomplete table, and the update
+  coordinator reports a `collection-replace-degraded` warning when the downgrade actually preserved
+  rows. Without this, a profile that cannot ask about staff would delete staff rows no source
+  contradicted.
+- **Cancellation is a signal, not a status poll.** Every provider entry point takes
+  `ScraperProviderContext` (`{ locale, signal }`), and ingest threads the same signal down to network
+  calls and asset flushes. `AbortError` propagates instead of degrading into a partial scrape, and
+  cancellation checks stop at the commit point: once a transaction commits, the run finishes.
+
 ### Service Directory Structure
 
 **Required files:**

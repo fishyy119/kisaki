@@ -10,7 +10,6 @@ import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
-import { isTaskRunCancellation } from '@main/services/task-run'
 import type { TaskRunStartResult } from '@shared/task-run'
 import type { GameIngestPersistHandler } from '../persist'
 import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
@@ -21,12 +20,9 @@ import {
   normalizeLookup,
   requireScrapedBundle
 } from './common'
-import {
-  reportIngestProgress,
-  throwIfIngestAborted,
-  type IngestOperationOptions,
-  type IngestTaskRunOptions
-} from '../types'
+import { reportIngestProgress } from '../progress'
+import { isIngestCancellation, throwIfIngestAborted } from '../abort'
+import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
 import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 type GameAddFromScraperOptions = IngestAddGameFromScraperOptions & IngestOperationOptions
@@ -138,7 +134,9 @@ export class GameAddHandler {
       label: this.i18nService.messages.ingest.add.scrapingMetadata({ entity: 'game' })
     })
     const bundle = requireScrapedBundle(
-      await this.scraperService.game.scrape(normalized.profileId, normalized.lookup),
+      await this.scraperService.game.scrape(normalized.profileId, normalized.lookup, {
+        signal: options?.signal
+      }),
       'game'
     )
     throwIfIngestAborted(options?.signal)
@@ -228,7 +226,6 @@ export class GameAddHandler {
         signal: run.context.signal,
         onProgress: (update) => run.context.report(update)
       })
-      run.context.throwIfCancelled()
       this.completeRun(run, result)
     } catch (error) {
       this.finishRunFromError(run, error)
@@ -251,7 +248,6 @@ export class GameAddHandler {
           onProgress: (update) => run.context.report(update)
         }
       )
-      run.context.throwIfCancelled()
       this.completeRun(run, result)
     } catch (error) {
       this.finishRunFromError(run, error)
@@ -281,7 +277,7 @@ export class GameAddHandler {
   }
 
   private finishRunFromError(run: TaskRunHandle, error: unknown): void {
-    if (isTaskRunCancellation(error)) {
+    if (isIngestCancellation(error)) {
       run.cancel({
         summary: this.i18nService.messages.ingest.add.cancelledSummary({ entity: 'game' })
       })

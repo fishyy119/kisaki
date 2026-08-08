@@ -1,3 +1,10 @@
+/**
+ * Collection merges resolve an authoritative incoming collection against the
+ * stored one. `merge` only adds, so an empty incoming means "nothing to do";
+ * `replace` makes the stored collection equal the incoming one, so an empty
+ * incoming clears it. `undefined` means the plan carries no change.
+ */
+
 import type { RelatedSite } from '@shared/db'
 import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
@@ -9,8 +16,8 @@ export function mergeExternalIds(
   incoming: ExternalId[],
   mode: IngestUpdatePolicy['collectionUpdate']
 ): ExternalId[] | undefined {
-  if (incoming.length === 0) return undefined
   if (mode === 'replace') return normalizeExternalIds(incoming)
+  if (incoming.length === 0) return undefined
   return normalizeExternalIds([...current, ...incoming])
 }
 
@@ -20,8 +27,8 @@ export function mergeRelatedSites(
   mode: IngestUpdatePolicy['collectionUpdate']
 ): RelatedSite[] | undefined {
   const normalizedIncoming = normalizeRelatedSites(incoming) ?? []
-  if (normalizedIncoming.length === 0) return undefined
   if (mode === 'replace') return normalizedIncoming
+  if (normalizedIncoming.length === 0) return undefined
 
   const currentKeys = new Set(current.map((site) => normalizeKeyText(site.url)))
   const appended = normalizedIncoming.filter((site) => !currentKeys.has(normalizeKeyText(site.url)))
@@ -34,8 +41,8 @@ export function mergeTags(
   mode: IngestUpdatePolicy['collectionUpdate']
 ): Tag[] | undefined {
   const normalizedIncoming = normalizeTags(incoming) ?? []
-  if (normalizedIncoming.length === 0) return undefined
   if (mode === 'replace') return normalizedIncoming
+  if (normalizedIncoming.length === 0) return undefined
 
   const currentKeys = new Set(current.map((tag) => normalizeKeyText(tag.name)))
   const appended = normalizedIncoming.filter((tag) => !currentKeys.has(normalizeKeyText(tag.name)))

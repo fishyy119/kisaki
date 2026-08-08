@@ -1,15 +1,17 @@
 import { customType } from 'drizzle-orm/sqlite-core'
 
 import type { FilterState } from '@shared/filter/model'
-import { matchesFilterStateShape, parseFilterState } from '@shared/filter/normalization'
+import { parseFilterState } from '@shared/filter/normalization'
 import { createEmptyFilter } from '@shared/filter/state'
+import { requireCanonicalJsonValue } from './utils'
 
 /**
  * FilterState JSON column.
  *
  * Lenient read: corrupt, foreign, or retired-format content degrades to an
- * empty filter. Strict write: the app must produce a structurally valid
- * FilterState; no-op conditions are normalized away by parseFilterState.
+ * empty filter. Strict write: the filter must already be canonical, so filter
+ * editors normalize with `parseFilterState` before saving — unfinished
+ * conditions are the editor's business, not storage's to discard.
  */
 export const filterState = customType<{
   data: FilterState
@@ -29,9 +31,6 @@ export const filterState = customType<{
   },
 
   toDriver(value: FilterState): string {
-    if (!matchesFilterStateShape(value)) {
-      throw new Error('filterState must be a { match, conditions } object')
-    }
-    return JSON.stringify(parseFilterState(value))
+    return JSON.stringify(requireCanonicalJsonValue('filterState', value, parseFilterState(value)))
   }
 })

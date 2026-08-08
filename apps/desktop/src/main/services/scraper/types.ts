@@ -5,9 +5,29 @@
 import type { NetworkService } from '@main/services/network'
 import type { Logger } from '@main/log'
 import type { PartialDate } from '@shared/db'
+import type { ContentLocale } from '@shared/i18n'
 import type { ScrapedEntityIdentity, ScraperLookup, ScraperSessionResult } from '@shared/scraper'
 
 type ScraperLogger = Logger
+
+/**
+ * Invocation-scoped parameters every provider call receives.
+ *
+ * The host always resolves a locale, so providers never re-derive it. `signal`
+ * aborts in-flight network work when the caller gives up; a provider that
+ * ignores it stays correct but keeps running until its requests finish.
+ */
+export interface ScraperProviderContext {
+  locale: ContentLocale
+  signal?: AbortSignal
+}
+
+/**
+ * Caller-supplied options for a handler-level scraper invocation.
+ */
+export interface ScraperInvocationOptions {
+  signal?: AbortSignal
+}
 
 /**
  * Provider-specific target resolved from a cross-provider scraper lookup.
@@ -37,6 +57,9 @@ export interface BaseScraperSession<
 > {
   /**
    * Fetch one or more slots using the provider's preferred resource topology.
+   *
+   * Slot presence is authoritative: omit a slot the provider cannot answer, and
+   * return an empty collection only when the source states there is nothing.
    */
   get(slots: readonly TSlot[]): Promise<ScraperSessionResult<TResultMap>>
 

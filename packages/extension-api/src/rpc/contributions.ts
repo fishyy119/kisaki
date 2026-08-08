@@ -178,19 +178,19 @@ export type ScraperProviderUnregisterRequest = ScraperProviderScopedRpcParams
 export type ScraperProviderSearchRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & {
       query: string
-      locale?: ContentLocale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'person'> & {
       query: string
-      locale?: ContentLocale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'company'> & {
       query: string
-      locale?: ContentLocale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'character'> & {
       query: string
-      locale?: ContentLocale
+      locale: ContentLocale
     })
 
 export type ScraperProviderSearchResponse =

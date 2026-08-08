@@ -4,10 +4,11 @@
   Uses two-layer pattern: outer handles data fetching, inner handles form state.
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { tags } from '@shared/db'
+import { normalizeKeyText } from '@shared/identity'
 import { useAsyncData } from '@renderer/composables'
 import {
   Dialog,
@@ -93,13 +94,20 @@ watch(
   }
 )
 
+// A tag name must carry identity (see resolveTagId); blank names cannot be saved.
+const canSubmit = computed(() => normalizeKeyText(formData.value.name) !== '')
+
 async function handleSubmit() {
+  if (!canSubmit.value) return
+
   isSaving.value = true
   try {
+    const name = formData.value.name.trim()
     await db
       .update(tags)
       .set({
-        name: formData.value.name || 'unknown tag',
+        name,
+        normalizedName: name,
         description: formData.value.description.trim() || null,
         isNsfw: formData.value.isNsfw
       })
@@ -175,7 +183,7 @@ async function handleSubmit() {
             </Button>
             <Button
               type="submit"
-              :disabled="isSaving"
+              :disabled="isSaving || !canSubmit"
             >
               {{ m.common.save }}
             </Button>

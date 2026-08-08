@@ -1,7 +1,7 @@
 import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
-import { baseColumns, externalIdentityText } from '../../columns'
+import { baseColumns, identityKeyText } from '../../columns'
 import { characters, companies, games, persons } from './content'
 
 export const gameExternalIds = sqliteTable(
@@ -11,8 +11,8 @@ export const gameExternalIds = sqliteTable(
     gameId: text('game_id')
       .notNull()
       .references(() => games.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    source: externalIdentityText('source').notNull(),
-    externalId: externalIdentityText('external_id').notNull(),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
     orderInGame: integer('order_in_game').notNull().default(0)
   },
   (t) => [
@@ -29,8 +29,8 @@ export const personExternalIds = sqliteTable(
     personId: text('person_id')
       .notNull()
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    source: externalIdentityText('source').notNull(),
-    externalId: externalIdentityText('external_id').notNull(),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
     orderInPerson: integer('order_in_person').notNull().default(0)
   },
   (t) => [
@@ -47,8 +47,8 @@ export const companyExternalIds = sqliteTable(
     companyId: text('company_id')
       .notNull()
       .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    source: externalIdentityText('source').notNull(),
-    externalId: externalIdentityText('external_id').notNull(),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
     orderInCompany: integer('order_in_company').notNull().default(0)
   },
   (t) => [
@@ -65,8 +65,8 @@ export const characterExternalIds = sqliteTable(
     characterId: text('character_id')
       .notNull()
       .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    source: externalIdentityText('source').notNull(),
-    externalId: externalIdentityText('external_id').notNull(),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
     orderInCharacter: integer('order_in_character').notNull().default(0)
   },
   (t) => [

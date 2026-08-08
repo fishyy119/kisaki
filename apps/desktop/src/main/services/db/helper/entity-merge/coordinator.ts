@@ -7,6 +7,8 @@ import { createLogger } from '@main/log'
 import * as schema from '@shared/db/schema'
 import type { AttachmentStore } from '../../attachment'
 import type { DbHooks } from '../../hooks'
+import type { DbContext, DbQueryContext, DbWriteContext } from '../../types'
+import { requireExternalIdsAvailable } from '../external-id'
 import { ENTITY_MERGE_CONFIGS } from './configs'
 import { cleanupStagedMergeFiles, stageEntityAttachments } from './attachments'
 import { buildEntityFieldPatch } from './fields'
@@ -47,8 +49,8 @@ export class DbEntityMergeCoordinator {
       throw new Error('Entity merge source must differ from target.')
     }
 
-    const target = this.getEntityRow(config, targetId)
-    const source = this.getEntityRow(config, sourceId)
+    const target = this.getEntityRow(this.db, config, targetId)
+    const source = this.getEntityRow(this.db, config, sourceId)
     if (!target || !source) {
       throw new Error('Entity merge target or source was not found.')
     }
@@ -57,10 +59,6 @@ export class DbEntityMergeCoordinator {
     if (veto) {
       throw new Error('Entity merge was cancelled by an extension hook.')
     }
-
-    const externalIdPlan = config.externalIds
-      ? this.buildExternalIdPlan(config.externalIds, targetId, sourceId)
-      : null
 
     const stagedFiles: StagedMergeFile[] = []
     let attachmentStage: Awaited<ReturnType<typeof stageEntityAttachments>>
@@ -83,12 +81,36 @@ export class DbEntityMergeCoordinator {
     const now = new Date()
 
     try {
+      // Rows are re-read and re-planned inside the transaction; the pre-hook
+      // snapshot only drives attachment staging, which must happen outside it.
       this.db.transaction((tx) => {
-        const patch = buildEntityFieldPatch(entityType, target, source, attachmentStage.patch, now)
-        ;(tx as any).update(config.table).set(patch).where(eq(config.idColumn, targetId)).run()
+        const currentTarget = this.getEntityRow(tx, config, targetId)
+        const currentSource = this.getEntityRow(tx, config, sourceId)
+        if (!currentTarget || !currentSource) {
+          throw new Error('Entity merge target or source was not found.')
+        }
+
+        const patch = buildEntityFieldPatch(
+          entityType,
+          currentTarget,
+          currentSource,
+          attachmentStage.patch,
+          now
+        )
+        ;(tx as DbWriteContext)
+          .update(config.table)
+          .set(patch)
+          .where(eq(config.idColumn, targetId))
+          .run()
         changedCounts.fields = countFieldChanges(patch)
 
-        if (config.externalIds && externalIdPlan) {
+        if (config.externalIds) {
+          const externalIdPlan = this.buildExternalIdPlan(
+            tx,
+            config.externalIds,
+            targetId,
+            sourceId
+          )
           changedCounts.externalIds = this.writeExternalIds(
             tx,
             config.externalIds,
@@ -110,7 +132,7 @@ export class DbEntityMergeCoordinator {
         changedCounts.relations = relationChanges
 
         changedCounts.filters = rewriteMergeFilters(tx, entityType, targetId, sourceId, now)
-        ;(tx as any).delete(config.table).where(eq(config.idColumn, sourceId)).run()
+        ;(tx as DbWriteContext).delete(config.table).where(eq(config.idColumn, sourceId)).run()
         changedCounts.source = 1
       })
     } catch (error) {
@@ -136,8 +158,8 @@ export class DbEntityMergeCoordinator {
     }
   }
 
-  private getEntityRow(config: EntityMergeConfig, id: string): MergeRow | null {
-    const row = (this.db as any)
+  private getEntityRow(tx: DbContext, config: EntityMergeConfig, id: string): MergeRow | null {
+    const row = (tx as DbQueryContext)
       .select()
       .from(config.table)
       .where(eq(config.idColumn, id))
@@ -147,59 +169,47 @@ export class DbEntityMergeCoordinator {
   }
 
   private buildExternalIdPlan(
+    tx: DbContext,
     config: ExternalIdMergeConfig,
     targetId: string,
     sourceId: string
   ): ExternalIdMergePlan {
-    const rows = (this.db as any)
+    const rows = (tx as DbQueryContext)
       .select()
-      .from(config.table)
-      .where(inArray(config.entityIdColumn, [targetId, sourceId]))
+      .from(config.link.table)
+      .where(inArray(config.link.entityIdColumn, [targetId, sourceId]))
       .all() as MergeRow[]
 
-    const targetExternalIds = rows
-      .filter((row) => row[config.entityIdField] === targetId)
-      .sort((a, b) => (a[config.orderField] ?? 0) - (b[config.orderField] ?? 0))
-      .map(toExternalId)
-    const sourceExternalIds = rows
-      .filter((row) => row[config.entityIdField] === sourceId)
-      .sort((a, b) => (a[config.orderField] ?? 0) - (b[config.orderField] ?? 0))
-      .map(toExternalId)
-    const merged = normalizeExternalIds([...targetExternalIds, ...sourceExternalIds])
+    const byOwner = (ownerId: string): ExternalId[] =>
+      rows
+        .filter((row) => row[config.entityIdField] === ownerId)
+        .sort((a, b) => toOrder(a[config.orderField]) - toOrder(b[config.orderField]))
+        .map(toExternalId)
 
-    const mergedKeys = new Set(merged.map((externalId) => toExternalIdKey(externalId)))
-    const allRows = (this.db as any).select().from(config.table).all() as MergeRow[]
-    for (const row of allRows) {
-      const [normalized] = normalizeExternalIds([toExternalId(row)])
-      if (!normalized || !mergedKeys.has(toExternalIdKey(normalized))) continue
-
-      const ownerId = row[config.entityIdField]
-      if (ownerId && ownerId !== targetId && ownerId !== sourceId) {
-        throw new Error('External ID already belongs to another entity.')
-      }
-    }
+    const merged = normalizeExternalIds([...byOwner(targetId), ...byOwner(sourceId)])
+    requireExternalIdsAvailable(tx, config.link, [targetId, sourceId], merged)
 
     return { rows: merged }
   }
 
   private writeExternalIds(
-    tx: unknown,
+    tx: DbContext,
     config: ExternalIdMergeConfig,
     targetId: string,
     sourceId: string,
     plan: ExternalIdMergePlan
   ): number {
-    ;(tx as any)
-      .delete(config.table)
-      .where(inArray(config.entityIdColumn, [targetId, sourceId]))
+    ;(tx as DbWriteContext)
+      .delete(config.link.table)
+      .where(inArray(config.link.entityIdColumn, [targetId, sourceId]))
       .run()
 
     if (plan.rows.length === 0) {
       return 0
     }
 
-    ;(tx as any)
-      .insert(config.table)
+    ;(tx as DbWriteContext)
+      .insert(config.link.table)
       .values(
         plan.rows.map((externalId, index) => ({
           [config.entityIdField]: targetId,
@@ -218,15 +228,16 @@ function normalizeId(id: string): string {
   return typeof id === 'string' ? id.trim() : ''
 }
 
+// External-id link rows always store text source/externalId columns.
 function toExternalId(row: MergeRow): ExternalId {
   return {
-    source: row.source,
-    id: row.externalId
+    source: String(row.source ?? ''),
+    id: String(row.externalId ?? '')
   }
 }
 
-function toExternalIdKey(externalId: ExternalId): string {
-  return `${externalId.source}\0${externalId.id}`
+function toOrder(value: unknown): number {
+  return typeof value === 'number' ? value : 0
 }
 
 function countFieldChanges(patch: MergeRow): number {
