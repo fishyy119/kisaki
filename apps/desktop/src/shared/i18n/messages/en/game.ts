@@ -5,6 +5,8 @@
 export const game = {
   play: 'Play',
   stop: 'Stop',
+  launching: 'Starting',
+  stopping: 'Stopping',
 
   statusDialog: {
     title: 'Edit play status',

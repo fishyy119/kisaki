@@ -1,15 +1,15 @@
 import type { Messages } from '../schema'
 
-/** Game launcher: launch/stop notifications owned by the main process. */
+/**
+ * Game launcher: launch/stop outcome notifications and the launcher file
+ * picker. Confirmed launches and stops are reported by the play button state,
+ * so only the unexpected outcomes have copy here.
+ */
 export const launcher = {
-  launching: '正在啟動遊戲',
   launchCancelledTitle: '已取消啟動',
   launchFailedTitle: '啟動遊戲失敗',
-  launchedTitle: '已啟動遊戲',
   launchRequestedTitle: '啟動請求已送出',
-  stopping: '正在停止遊戲',
   stopFailedTitle: '停止遊戲失敗',
-  stoppedTitle: '已停止遊戲',
   stopRequestedTitle: '停止請求已送出',
 
   filePickerTitle: '選擇啟動檔案',

@@ -1,13 +1,13 @@
-/** Game launcher: launch/stop notifications owned by the main process. */
+/**
+ * Game launcher: launch/stop outcome notifications and the launcher file
+ * picker. Confirmed launches and stops are reported by the play button state,
+ * so only the unexpected outcomes have copy here.
+ */
 export const launcher = {
-  launching: 'Launching the game',
   launchCancelledTitle: 'Launch cancelled',
   launchFailedTitle: 'Could not launch the game',
-  launchedTitle: 'Game launched',
   launchRequestedTitle: 'Launch request sent',
-  stopping: 'Stopping the game',
   stopFailedTitle: 'Could not stop the game',
-  stoppedTitle: 'Game stopped',
   stopRequestedTitle: 'Stop request sent',
 
   filePickerTitle: 'Select launch file',

@@ -14,11 +14,9 @@ import { createLogger } from '@main/log'
 import type { MonitorService } from '@main/services/monitor'
 import type { DbService } from '@main/services/db'
 import type { NativeService } from '@main/services/native'
-import type { NotifyService } from '@main/services/notify'
 import type { I18nService } from '@main/services/i18n'
-import type { Messages } from '@shared/i18n'
 import { games } from '@shared/db'
-import type { GameLaunchResult, GameStopResult } from '@shared/launcher'
+import type { GameLaunchFailureReason, GameLaunchResult, GameStopResult } from '@shared/launcher'
 import { and, eq } from 'drizzle-orm'
 import { openExternalProtocol } from '@main/utils/external-url'
 import type { LauncherHooks } from '../hooks'
@@ -32,7 +30,6 @@ export class GameLauncherHandler {
     private dbService: DbService,
     private monitorService: MonitorService,
     private nativeService: NativeService,
-    private notifyService: NotifyService,
     private i18nService: I18nService,
     private hooks: LauncherHooks
   ) {}
@@ -58,46 +55,15 @@ export class GameLauncherHandler {
   }
 
   /**
-   * Launches a game
+   * Launches a game.
+   *
+   * Every expected outcome is reported through the result; callers own the
+   * user notifications and this handler logs the failure detail.
+   *
    * @param gameId - The game ID
-   * @param options - Optional behavior toggles
    * @returns Process detection result.
-   * @throws Error when launch fails
    */
-  async launchGame(
-    gameId: string,
-    options?: { cancelBehavior?: 'return' | 'throw' }
-  ): Promise<GameLaunchResult> {
-    const messages = this.i18nService.messages
-    const toastId = this.notifyService.loading(messages.launcher.launching)
-
-    try {
-      const result = await this.performLaunchGame(gameId, options)
-      this.notifyService.update(toastId, {
-        title: getLaunchResultTitle(messages, result),
-        message: getLaunchResultMessage(messages, result),
-        type: result.status === 'detected' ? 'success' : 'warning',
-        duration: result.status === 'unconfirmed' ? 5000 : 3000
-      })
-      return result
-    } catch (error) {
-      const selectionCancelled = isLaunchPathSelectionCancelled(error)
-      this.notifyService.update(toastId, {
-        title: selectionCancelled
-          ? messages.launcher.launchCancelledTitle
-          : messages.launcher.launchFailedTitle,
-        message: selectionCancelled ? undefined : formatLaunchErrorMessage(messages, error),
-        type: selectionCancelled ? 'warning' : 'error',
-        duration: selectionCancelled ? 3000 : 5000
-      })
-      throw error
-    }
-  }
-
-  private async performLaunchGame(
-    gameId: string,
-    options?: { cancelBehavior?: 'return' | 'throw' }
-  ): Promise<GameLaunchResult> {
+  async launchGame(gameId: string): Promise<GameLaunchResult> {
     const [game] = this.dbService.client
       .select()
       .from(games)
@@ -105,19 +71,18 @@ export class GameLauncherHandler {
       .limit(1)
       .all()
     if (!game) {
-      throw new Error('Game not found')
+      log.warn('Game to launch was not found.', { gameId })
+      return { status: 'failed', reason: 'gameNotFound' }
     }
 
     if (!game.launcherPath) {
       if (game.launcherMode === 'url') {
-        throw new Error('Launcher path is not set')
+        log.warn('Launcher path is not set.', { gameName: game.name, gameId: game.id })
+        return { status: 'failed', reason: 'launcherPathNotSet' }
       }
 
       const selected = await this.selectLauncherPath(game)
       if (!selected) {
-        if (options?.cancelBehavior === 'throw') {
-          throw new Error('Launcher path selection cancelled')
-        }
         log.info('Launcher path selection cancelled.', { gameName: game.name, gameId: game.id })
         return { status: 'cancelled' }
       }
@@ -143,25 +108,16 @@ export class GameLauncherHandler {
     game.gameDirPath = launchConfig.gameDirPath
 
     // Launch first
-    switch (game.launcherMode) {
-      case 'file':
-        await this.launchFile(game)
-        break
-      case 'url':
-        await this.launchUrl(game)
-        break
-      case 'exec':
-        await this.launchExec(game)
-        break
-      default:
-        throw new Error(`Unknown launcher mode: ${game.launcherMode}`)
+    const failureReason = await this.startLauncherTarget(game)
+    if (failureReason) {
+      return { status: 'failed', reason: failureReason }
     }
 
     const monitoringStarted = await this.startMonitoringAfterLaunch(game.id)
     if (!monitoringStarted) {
       return {
         status: 'unconfirmed',
-        reason: 'monitor-unavailable'
+        reason: 'monitorUnavailable'
       }
     }
 
@@ -176,7 +132,7 @@ export class GameLauncherHandler {
       })
       return {
         status: 'unconfirmed',
-        reason: 'process-not-detected'
+        reason: 'processNotDetected'
       }
     }
 
@@ -235,10 +191,25 @@ export class GameLauncherHandler {
     return result.filePaths[0]
   }
 
+  /** Starts the configured launch target, returning why it could not start. */
+  private async startLauncherTarget(game: Game): Promise<GameLaunchFailureReason | null> {
+    switch (game.launcherMode) {
+      case 'file':
+        return this.launchFile(game)
+      case 'url':
+        return this.launchUrl(game)
+      case 'exec':
+        return this.launchExec(game)
+      default:
+        log.warn('Unknown launcher mode.', { gameId: game.id, launcherMode: game.launcherMode })
+        return 'unknownMode'
+    }
+  }
+
   /**
    * file mode: Open file with system default application
    */
-  private async launchFile(game: Game): Promise<void> {
+  private async launchFile(game: Game): Promise<GameLaunchFailureReason | null> {
     const filePath = game.launcherPath!
 
     // If relative path, resolve relative to game directory
@@ -246,7 +217,8 @@ export class GameLauncherHandler {
 
     // Check if file exists
     if (!existsSync(absolutePath)) {
-      throw new Error(`File not found: ${absolutePath}`)
+      log.warn('Launch file not found.', { gameId: game.id, absolutePath })
+      return 'fileNotFound'
     }
 
     // Use shell.openPath to open file
@@ -254,30 +226,35 @@ export class GameLauncherHandler {
 
     if (result) {
       // Non-empty result indicates failure with error info
-      throw new Error(`Failed to open file: ${result}`)
+      log.warn('Failed to open launch file.', { gameId: game.id, absolutePath, openError: result })
+      return 'openFileFailed'
     }
+
+    return null
   }
 
   /**
    * url mode: Open URL with system default browser
    */
-  private async launchUrl(game: Game): Promise<void> {
+  private async launchUrl(game: Game): Promise<GameLaunchFailureReason | null> {
     const url = game.launcherPath!
 
     // Validate URL format
     try {
       new URL(url)
     } catch {
-      throw new Error(`Invalid URL format: ${url}`)
+      log.warn('Launch URL format is invalid.', { gameId: game.id })
+      return 'invalidUrl'
     }
 
     await openExternalProtocol(url, { allowCustomProtocols: true })
+    return null
   }
 
   /**
    * exec mode: Execute the executable file directly
    */
-  private async launchExec(game: Game): Promise<void> {
+  private async launchExec(game: Game): Promise<GameLaunchFailureReason | null> {
     const execPath = game.launcherPath!
 
     // If relative path, resolve relative to game directory
@@ -285,7 +262,8 @@ export class GameLauncherHandler {
 
     // Check if executable exists
     if (!existsSync(absolutePath)) {
-      throw new Error(`Executable not found: ${absolutePath}`)
+      log.warn('Launch executable not found.', { gameId: game.id, absolutePath })
+      return 'executableNotFound'
     }
 
     // Use spawn to execute
@@ -302,136 +280,52 @@ export class GameLauncherHandler {
 
     // Detach process to run independently
     child.unref()
+
+    return null
   }
 
   /**
-   * Kill game process
+   * Kill game process.
+   *
+   * Reports every expected outcome through the result, as {@link launchGame}.
+   *
    * @param gameId - The game ID
-   * @throws Error when game is not running or kill fails
    */
   async killGame(gameId: string): Promise<GameStopResult> {
-    const messages = this.i18nService.messages
-    const toastId = this.notifyService.loading(messages.launcher.stopping)
-
-    try {
-      const result = await this.performKillGame(gameId)
-      this.notifyService.update(toastId, {
-        title: getStopResultTitle(messages, result),
-        message: getStopResultMessage(messages, result),
-        type: result.status === 'stopped' ? 'success' : 'warning',
-        duration: result.status === 'stopped' ? 3000 : 5000
-      })
-      return result
-    } catch (error) {
-      this.notifyService.update(toastId, {
-        title: messages.launcher.stopFailedTitle,
-        message: formatKillErrorMessage(messages, error),
-        type: 'error',
-        duration: 5000
-      })
-      throw error
-    }
-  }
-
-  private async performKillGame(gameId: string): Promise<GameStopResult> {
     const status = this.monitorService.game.getStatus(gameId)
     if (!status || !status.isRunning || !status.pid) {
-      throw new Error('Game is not running')
+      log.warn('Game to stop is not running.', { gameId })
+      return { status: 'failed', reason: 'gameNotRunning' }
     }
 
-    // Windows uses taskkill command
-    if (isWindows) {
-      await runExternalCommand('taskkill', ['/F', '/PID', String(status.pid)])
-    } else {
-      // Unix-like systems use kill command
-      process.kill(status.pid, 'SIGTERM')
+    const terminated = await this.terminateProcess(status.pid)
+    if (!terminated) {
+      return { status: 'failed', reason: 'stopProcessFailed' }
     }
 
     const stopped = await this.monitorService.game.waitForStopped(gameId, STOP_DETECTION_TIMEOUT_MS)
     if (!stopped) {
       log.warn('Game stop was not confirmed by monitor.', { gameId: gameId, statusPid: status.pid })
-      return { status: 'unconfirmed', reason: 'process-still-running' }
+      return { status: 'unconfirmed' }
     }
 
     log.info('Game stop confirmed.', { gameId: gameId, statusPid: status.pid })
     return { status: 'stopped' }
   }
-}
 
-function formatLaunchErrorMessage(messages: Messages, error: unknown): string {
-  const message = toErrorMessage(error)
-  const errors = messages.launcher.errors
-
-  if (message === 'Game not found') return errors.gameNotFound
-  if (message === 'Launcher path is not set') return errors.launcherPathNotSet
-  if (message.startsWith('File not found:')) return errors.fileNotFound
-  if (message.startsWith('Executable not found:')) return errors.executableNotFound
-  if (message.startsWith('Failed to open file:')) return errors.openFileFailed
-  if (message.startsWith('Invalid URL format:')) return errors.invalidUrl
-  if (message.startsWith('Unknown launcher mode:')) return errors.unknownMode
-
-  return message
-}
-
-function getLaunchResultTitle(messages: Messages, result: GameLaunchResult): string {
-  switch (result.status) {
-    case 'detected':
-      return messages.launcher.launchedTitle
-    case 'cancelled':
-      return messages.launcher.launchCancelledTitle
-    case 'unconfirmed':
-      return messages.launcher.launchRequestedTitle
+  private async terminateProcess(pid: number): Promise<boolean> {
+    try {
+      if (isWindows) {
+        await runExternalCommand('taskkill', ['/F', '/PID', String(pid)])
+      } else {
+        process.kill(pid, 'SIGTERM')
+      }
+      return true
+    } catch (error) {
+      log.warn('Failed to terminate game process.', error, { processPid: pid })
+      return false
+    }
   }
-}
-
-function getLaunchResultMessage(messages: Messages, result: GameLaunchResult): string | undefined {
-  if (result.status !== 'unconfirmed') {
-    return undefined
-  }
-
-  switch (result.reason) {
-    case 'monitor-unavailable':
-      return messages.launcher.monitorUnavailable
-    case 'process-not-detected':
-      return messages.launcher.processNotDetected
-  }
-}
-
-function getStopResultTitle(messages: Messages, result: GameStopResult): string {
-  switch (result.status) {
-    case 'stopped':
-      return messages.launcher.stoppedTitle
-    case 'unconfirmed':
-      return messages.launcher.stopRequestedTitle
-  }
-}
-
-function getStopResultMessage(messages: Messages, result: GameStopResult): string | undefined {
-  if (result.status !== 'unconfirmed') {
-    return undefined
-  }
-
-  switch (result.reason) {
-    case 'process-still-running':
-      return messages.launcher.stopNotConfirmed
-  }
-}
-
-function formatKillErrorMessage(messages: Messages, error: unknown): string {
-  const message = toErrorMessage(error)
-
-  if (message === 'Game is not running') return messages.launcher.errors.gameNotRunning
-  if (message.includes('exited with code')) return messages.launcher.errors.stopProcessFailed
-
-  return message
-}
-
-function isLaunchPathSelectionCancelled(error: unknown): boolean {
-  return toErrorMessage(error) === 'Launcher path selection cancelled'
-}
-
-function toErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 function runExternalCommand(command: string, args: readonly string[]): Promise<void> {

@@ -20,7 +20,13 @@ const log = createLogger('Deeplink')
 
 export class DeeplinkService implements IService {
   readonly id = 'deeplink'
-  readonly deps = ['ipc', 'window', 'launcher'] as const satisfies readonly ServiceName[]
+  readonly deps = [
+    'i18n',
+    'ipc',
+    'launcher',
+    'notify',
+    'window'
+  ] as const satisfies readonly ServiceName[]
 
   router!: DeeplinkRouter
   private windowService!: WindowService
@@ -33,10 +39,12 @@ export class DeeplinkService implements IService {
     const ipc = container.get('ipc')
     this.windowService = container.get('window')
     const launcher = container.get('launcher')
+    const notify = container.get('notify')
+    const i18n = container.get('i18n')
 
     this.router = new DeeplinkRouter()
 
-    this.router.register(LAUNCH_DEEPLINK_ROUTE, new LaunchHandler(launcher))
+    this.router.register(LAUNCH_DEEPLINK_ROUTE, new LaunchHandler(launcher, notify, i18n))
     this.router.register(AUTH_DEEPLINK_ROUTE, new AuthHandler(ipc, this.windowService))
     this.router.register(NAVIGATE_DEEPLINK_ROUTE, new NavigateHandler(ipc, this.windowService))
 

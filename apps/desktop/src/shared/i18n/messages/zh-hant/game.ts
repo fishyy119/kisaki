@@ -3,6 +3,8 @@ import type { Messages } from '../schema'
 export const game = {
   play: '開始遊戲',
   stop: '停止遊戲',
+  launching: '正在啟動',
+  stopping: '正在停止',
 
   statusDialog: {
     title: '編輯遊玩狀態',

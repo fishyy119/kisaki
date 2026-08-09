@@ -21,8 +21,7 @@ export class LauncherService implements IMediaService {
     'i18n',
     'ipc',
     'monitor',
-    'native',
-    'notify'
+    'native'
   ] as const satisfies readonly ServiceName[]
   readonly hooks = createLauncherHooks()
 
@@ -33,14 +32,12 @@ export class LauncherService implements IMediaService {
     const monitorService = container.get('monitor')
     const ipcService = container.get('ipc')
     const nativeService = container.get('native')
-    const notifyService = container.get('notify')
     const i18nService = container.get('i18n')
 
     this.game = new GameLauncherHandler(
       dbService,
       monitorService,
       nativeService,
-      notifyService,
       i18nService,
       this.hooks
     )

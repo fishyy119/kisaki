@@ -1,15 +1,15 @@
 import type { Messages } from '../schema'
 
-/** Game launcher: launch/stop notifications owned by the main process. */
+/**
+ * Game launcher: launch/stop outcome notifications and the launcher file
+ * picker. Confirmed launches and stops are reported by the play button state,
+ * so only the unexpected outcomes have copy here.
+ */
 export const launcher = {
-  launching: 'ゲームを起動しています',
   launchCancelledTitle: '起動をキャンセルしました',
   launchFailedTitle: 'ゲームを起動できませんでした',
-  launchedTitle: 'ゲームを起動しました',
   launchRequestedTitle: '起動リクエストを送信しました',
-  stopping: 'ゲームを停止しています',
   stopFailedTitle: 'ゲームを停止できませんでした',
-  stoppedTitle: 'ゲームを停止しました',
   stopRequestedTitle: '停止リクエストを送信しました',
 
   filePickerTitle: '起動ファイルを選択',

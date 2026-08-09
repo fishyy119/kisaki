@@ -494,8 +494,15 @@ Kisaki provides a unified `notify` API that is callable from both main and rende
 
 ### Placement (keep layers reusable)
 
-- Do **not** call `notify` from low-level domain/handler code that should be reusable (`handlers/`, pure utilities).
-  - Those layers should throw or return a `Result`-style value.
+- `notify` belongs to the surface that owns a user-facing flow, never to shared capability code.
+  - A flow surface is the single place a user or external trigger enters the flow: a renderer
+    component, a deeplink route handler, a tray/menu action, or a background job coordinator.
+  - Capability code that more than one flow can invoke (media service handlers, domain modules,
+    pure utilities) stays silent: return a result union for expected outcomes, throw stable
+    errors for unexpected ones, and log detail once at the layer that owns the context.
+  - Folder names do not decide this; ownership does. `launcher/handlers/game.ts` is a shared
+    capability (play button, deeplinks, automations) and must not notify;
+    `deeplink/handlers/launch.ts` is the entry adapter of one flow and owns its notifications.
 - Keep `ipc.handle(...)` functions as **thin adapters**: forward typed arguments to a service/use-case method + map to `IpcResult`.
   - Do not add runtime shape parsers for internal main-app IPC calls; put necessary safety and business invariants in the owning service/domain module.
   - Do not embed business workflows (DB lookups, process management, orchestration) directly inside anonymous IPC handlers.
