@@ -356,7 +356,8 @@ export class ExtensionHostSdkBridge {
   private createKisakiApiDelegate(): KisakiApiBridgeDelegate {
     return {
       requireCurrentScope: () => this.requireCurrentScope(),
-      requestMain: (scope, method, params) => this.requestMain(scope, method, params),
+      requestMain: (scope, method, params, signal) =>
+        this.requestMain(scope, method, params, signal),
       registerTaskRunAbortController: (scope, runId, controller) =>
         this.registerTaskRunAbortController(scope, runId, controller),
       createWebviewSession: (scope, webviewId) =>
@@ -378,7 +379,8 @@ export class ExtensionHostSdkBridge {
   private requestMain<K extends HostToMainRpcMethod>(
     scope: ActiveExtensionScope,
     method: K,
-    params: ScopedHostToMainRpcParams<K>
+    params: ScopedHostToMainRpcParams<K>,
+    signal?: AbortSignal
   ): Promise<RpcResult<HostToMainRpcRequestMap, K>> {
     return this.rpc.requestMain(
       method,
@@ -386,7 +388,7 @@ export class ExtensionHostSdkBridge {
         runtimeHandle: scope.runtimeHandle,
         ...params
       } as RpcParams<HostToMainRpcRequestMap, K>,
-      this.getRequestOptions(scope)
+      this.getRequestOptions(scope, signal)
     )
   }
 
@@ -506,10 +508,18 @@ export class ExtensionHostSdkBridge {
     return scope
   }
 
-  private getRequestOptions(scope: ActiveExtensionScope): { signal?: AbortSignal } | undefined {
+  /**
+   * Cancellation every capability request inherits: the runtime unload signal,
+   * the host invocation the call runs inside, and the signal the author passed
+   * to this specific call.
+   */
+  private getRequestOptions(
+    scope: ActiveExtensionScope,
+    callSignal?: AbortSignal
+  ): { signal?: AbortSignal } | undefined {
     const runtimeSignal = this.registry.getByRuntimeHandle(scope.runtimeHandle)?.abortController
       .signal
-    const signal = combineAbortSignals(runtimeSignal, scope.signal)
+    const signal = combineAbortSignals(runtimeSignal, scope.signal, callSignal)
     return signal ? { signal } : undefined
   }
 
@@ -597,36 +607,11 @@ function toScope(
   return signal ? { ...runtimeOrScope, signal } : runtimeOrScope
 }
 
+/** Resolves the signal a request waits on: the only one present, or a composite. */
 function combineAbortSignals(
-  left: AbortSignal | undefined,
-  right: AbortSignal | undefined
+  ...signals: readonly (AbortSignal | undefined)[]
 ): AbortSignal | undefined {
-  if (!left) {
-    return right
-  }
-
-  if (!right || left === right) {
-    return left
-  }
-
-  if (left.aborted) {
-    return left
-  }
-
-  if (right.aborted) {
-    return right
-  }
-
-  const anySignal = AbortSignal as typeof AbortSignal & {
-    any?: (signals: AbortSignal[]) => AbortSignal
-  }
-  if (typeof anySignal.any === 'function') {
-    return anySignal.any([left, right])
-  }
-
-  const controller = new AbortController()
-  const abort = () => controller.abort()
-  left.addEventListener('abort', abort, { once: true })
-  right.addEventListener('abort', abort, { once: true })
-  return controller.signal
+  const present = signals.filter((signal): signal is AbortSignal => signal !== undefined)
+  const distinct = [...new Set(present)]
+  return distinct.length > 1 ? AbortSignal.any(distinct) : distinct[0]
 }

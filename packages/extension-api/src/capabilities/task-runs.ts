@@ -1,3 +1,4 @@
+import { CANCELLED_ERROR_CODE } from '../shared'
 import type { JsonValue } from '../shared'
 
 export type TaskRunOperation = string
@@ -161,6 +162,8 @@ export interface TaskRunHistoryListQuery {
 
 export class TaskRunCancellation extends Error {
   override readonly name = 'TaskRunCancellation'
+  /** Carries the shared code so `isCancellationError` recognizes this too. */
+  readonly code = CANCELLED_ERROR_CODE
 
   constructor(message = 'Extension task run was cancelled.') {
     super(message)

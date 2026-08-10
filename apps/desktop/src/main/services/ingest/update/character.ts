@@ -2,7 +2,7 @@ import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
-import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
+import { isCancellation, type TaskRunHandle, type TaskRunService } from '@main/services/task-run'
 import type { IngestPersistHandlers } from '../persist'
 import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { flushPendingAssets } from '../assets'
@@ -25,7 +25,7 @@ import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
 import { reportIngestProgress } from '../progress'
-import { isIngestCancellation, throwIfIngestAborted } from '../abort'
+import { throwIfIngestAborted } from '../abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
 import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
@@ -202,7 +202,7 @@ export class CharacterUpdateHandler {
         warnings: toTaskRunWarnings(result.warnings)
       })
     } catch (error) {
-      if (isIngestCancellation(error)) {
+      if (isCancellation(error)) {
         run.cancel({
           summary: this.i18nService.messages.ingest.update.cancelledSummary({ entity: 'character' })
         })

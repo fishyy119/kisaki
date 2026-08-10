@@ -1,13 +1,14 @@
 /**
  * Host-side adapter that presents an extension provider as a scraper provider.
  *
- * Cancellation is cooperative and best-effort: aborting stops the main process
- * from waiting on in-flight RPC calls and from dispatching new ones, but the
- * host keeps running whatever it already started because the RPC protocol has
- * no per-call cancel message. Session close is therefore never signal-bound —
- * it is the only way an abandoned session gets released on the host.
+ * Aborting reaches the extension: the RPC channel cancels the in-flight request
+ * per call, so the host fires the provider's `ctx.signal`. Cancellation stays
+ * cooperative from there, and a provider that ignores the signal runs to
+ * completion. Session close is therefore never signal-bound — it is the only
+ * way an abandoned session gets released on the host.
  */
 
+import { isCancellationError } from '@kisaki3/extension-api'
 import { createAbortError } from '@main/utils/async'
 import type { ScraperLookup } from '@shared/scraper'
 import type { ScraperProviderContext } from '@main/services/scraper'
@@ -143,10 +144,10 @@ async function requestScraperHost<TResponse>(
 
     return response as TResponse
   } catch (error) {
-    // The RPC channel reports an aborted call as an unavailable host error; the
-    // scraper pipeline has to see a cancellation so it abandons the invocation
-    // instead of recording a provider failure.
-    if (signal?.aborted) {
+    // Translate the extension boundary's coded cancellation into the DOM-style
+    // abort the scraper pipeline recognizes, so a cancelled invocation is
+    // abandoned instead of recorded as a provider failure.
+    if (isCancellationError(error)) {
       throw createAbortError()
     }
 

@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto'
 import {
   RPC_ABORT_EVENT,
   RpcTimeoutError,
+  createCancellationError,
   createExtensionError,
-  createUnavailableError,
   fromRpcErrorPayload,
   toRpcErrorPayload,
   type RpcEnvelope,
@@ -278,7 +278,7 @@ export class RpcChannel {
 }
 
 function createRpcAbortError(method: string, phase: string): Error {
-  return createUnavailableError(`RPC request "${method}" was aborted ${phase}.`, {
+  return createCancellationError(`RPC request "${method}" was cancelled ${phase}.`, {
     method,
     phase
   })

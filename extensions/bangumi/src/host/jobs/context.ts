@@ -1,6 +1,5 @@
 import {
   createTaskRunProgressWork,
-  isTaskRunCancellation,
   type ExtensionLogger,
   type JsonObject,
   type TaskRunProgressUpdate,
@@ -146,7 +145,7 @@ export async function runBangumiJob(
     )
     return summary
   } catch (error) {
-    if (isTaskRunCancellation(error) || isCancellationError(error) || context.run.signal.aborted) {
+    if (isCancellationError(error) || context.run.signal.aborted) {
       job.report('cancelled', m().jobs.cancelled, { indeterminate: true })
       const summary = createSummary(state)
       await finishRun(logger, () =>

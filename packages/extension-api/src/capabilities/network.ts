@@ -37,7 +37,26 @@ export interface NetworkDownloadResult {
   contentType?: string
 }
 
+/**
+ * Invocation-scoped options for a single network call.
+ *
+ * `signal` never crosses the transport: the SDK turns it into the cancellation
+ * of the underlying request, which aborts the in-flight fetch or download.
+ * Calls made while the host is invoking the extension (a scraper provider, a
+ * command, a hook) already inherit that invocation's cancellation, so pass a
+ * signal explicitly for work the extension drives itself, such as a task run.
+ */
+export interface NetworkCallOptions {
+  signal?: AbortSignal
+}
+
 export interface NetworkCapability {
-  request<TData = RpcValue>(input: NetworkRequest): Promise<NetworkResponse<TData>>
-  download(input: NetworkDownloadRequest): Promise<NetworkDownloadResult>
+  request<TData = RpcValue>(
+    input: NetworkRequest,
+    options?: NetworkCallOptions
+  ): Promise<NetworkResponse<TData>>
+  download(
+    input: NetworkDownloadRequest,
+    options?: NetworkCallOptions
+  ): Promise<NetworkDownloadResult>
 }

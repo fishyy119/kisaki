@@ -1,11 +1,7 @@
-import { createExtensionError, type TaskRunFailureErrorPayload } from '@kisaki3/extension-api'
-
-const TASK_RUN_CANCELLED_ERROR_CODE = 'task_run_cancelled'
+import { createCancellationError, type TaskRunFailureErrorPayload } from '@kisaki3/extension-api'
 
 export function createTaskRunCancelledError() {
-  return createExtensionError('Task run was cancelled.', {
-    code: TASK_RUN_CANCELLED_ERROR_CODE
-  })
+  return createCancellationError('Task run was cancelled.')
 }
 
 export function toFailureError(payload: TaskRunFailureErrorPayload): Error {

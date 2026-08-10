@@ -7,7 +7,7 @@ import type {
   JsonValue
 } from '@kisaki3/extension-sdk'
 import { BangumiApiError, normalizeBangumiApiError, readRetryAfterMs } from './errors'
-import { BangumiRateLimiter, delay, normalizeRateLimitConfig, throwIfAborted } from './limiter'
+import { BangumiRateLimiter, delay, normalizeRateLimitConfig } from './limiter'
 import { normalizePageQuery, toPage, type Page, type PageQuery } from './pagination'
 import type {
   BangumiCharacterDetail,
@@ -31,7 +31,7 @@ import type {
 } from './types'
 import type { BangumiSettingsV1 } from '../config/schema'
 import { BANGUMI_API_BASE_URL, BANGUMI_SUBJECT_TYPE_GAME } from '../utils/constants'
-import { BangumiExtensionError, isCancellationError } from '../utils/errors'
+import { BangumiExtensionError, isCancellationError, throwIfAborted } from '../utils/errors'
 import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 import type { TokenService } from '../auth/token-service'
@@ -399,7 +399,9 @@ export class BangumiClient {
 
         throw normalizeBangumiApiError(response.status, pathname, response.data, retryAfterMs)
       } catch (error) {
-        if (isAbortLikeError(error)) {
+        // Must precede the retry branches: a cancelled call is not a transient
+        // fault and reissuing it would outlive the cancellation.
+        if (isCancellationError(error)) {
           throw new BangumiExtensionError('job_cancelled', m().errors.operationCancelled)
         }
 
@@ -443,7 +445,8 @@ export class BangumiClient {
         body: options.body === undefined ? undefined : (options.body as JsonValue),
         timeoutMs: normalizeTimeoutMs(settings.timeoutMs),
         responseType: options.responseType ?? 'json'
-      })
+      }),
+      omitUndefined({ signal: options.signal })
     )
   }
 
@@ -543,11 +546,6 @@ function resolveRetryDelayMs(attempt: number, retryAfterMs?: number): number {
   }
   return Math.min(30_000, 500 * 2 ** attempt)
 }
-
-function isAbortLikeError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError'
-}
-
 function toSafeErrorLog(error: unknown): Record<string, unknown> {
   if (error instanceof BangumiExtensionError) {
     return { code: error.code, message: error.message }

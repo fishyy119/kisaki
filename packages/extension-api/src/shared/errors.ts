@@ -11,12 +11,22 @@ const EXTENSION_ERROR_KEYS = new Set<string>(['code', 'message', 'details'])
 
 const DEFAULT_CONFLICT_CODES = ['SQLITE_CONSTRAINT'] as const
 
+/**
+ * Code every cancelled operation carries across the extension boundary.
+ *
+ * Cancellation is not a failure mode of the operation, so it must stay
+ * distinguishable from `unavailable` and `timeout`: callers that retry or
+ * report failures branch on this code.
+ */
+export const CANCELLED_ERROR_CODE = 'cancelled'
+
 export type ExtensionErrorCode =
   | 'validation_failure'
   | 'not_found'
   | 'conflict'
   | 'timeout'
   | 'unavailable'
+  | 'cancelled'
   | 'internal'
   | 'method_not_found'
   | (string & {})
@@ -130,8 +140,25 @@ export function createUnavailableError(message: string, details?: JsonObject): E
   return createCodedExtensionError(message, 'unavailable', details)
 }
 
+export function createCancellationError(message: string, details?: JsonObject): ExtensionError {
+  return createCodedExtensionError(message, CANCELLED_ERROR_CODE, details)
+}
+
 export function createInternalError(message: string, details?: JsonObject): ExtensionError {
   return createCodedExtensionError(message, 'internal', details)
+}
+
+/**
+ * Single check for "the caller asked to stop", covering both markers a
+ * cancellation can carry: the code the extension boundary attaches, and the
+ * DOM-style `AbortError` raised by aborted web-platform APIs.
+ */
+export function isCancellationError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return isAbortError(error) || readErrorCode(error) === CANCELLED_ERROR_CODE
 }
 
 export function normalizeExtensionError(
@@ -153,7 +180,7 @@ export function normalizeExtensionError(
     }
 
     if (isAbortError(error)) {
-      return createUnavailableError('The host capability request was aborted.')
+      return createCancellationError('The host capability request was cancelled.')
     }
 
     if (isTimeoutLikeError(error)) {

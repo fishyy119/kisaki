@@ -1,6 +1,11 @@
 import type { NetworkCapability, JsonObject } from '@kisaki3/extension-sdk'
 import { BANGUMI_OAUTH_RELAY_BASE_URL } from '../utils/constants'
-import { BangumiExtensionError } from '../utils/errors'
+import {
+  BangumiExtensionError,
+  createAbortError,
+  isCancellationError,
+  throwIfAborted
+} from '../utils/errors'
 import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 
@@ -100,13 +105,16 @@ export class OAuthRelayClient {
     const checkedAt = Date.now()
 
     try {
-      const response = await this.network.request<unknown>({
-        url: this.buildUrl('/healthz'),
-        method: 'GET',
-        headers: this.buildHeaders(),
-        timeoutMs: await this.readTimeoutMs(),
-        responseType: 'json'
-      })
+      const response = await this.network.request<unknown>(
+        {
+          url: this.buildUrl('/healthz'),
+          method: 'GET',
+          headers: this.buildHeaders(),
+          timeoutMs: await this.readTimeoutMs(),
+          responseType: 'json'
+        },
+        omitUndefined({ signal })
+      )
 
       return omitUndefined({
         ok: response.ok,
@@ -144,7 +152,8 @@ export class OAuthRelayClient {
           body,
           timeoutMs: await this.readTimeoutMs(),
           responseType: 'json'
-        })
+        }),
+        omitUndefined({ signal })
       )
 
       if (!response.ok) {
@@ -156,7 +165,7 @@ export class OAuthRelayClient {
 
       return response.data
     } catch (error) {
-      if (signal?.aborted || isAbortLikeError(error)) {
+      if (isCancellationError(error)) {
         throw createAbortError()
       }
 
@@ -411,20 +420,4 @@ function readRelayErrorMessage(data: unknown): string | undefined {
   }
 
   return undefined
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw createAbortError()
-  }
-}
-
-function isAbortLikeError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError'
-}
-
-function createAbortError(): Error {
-  const error = new Error('Operation was cancelled.')
-  error.name = 'AbortError'
-  return error
 }

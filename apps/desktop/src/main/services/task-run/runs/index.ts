@@ -1,4 +1,10 @@
-export { TaskRunCancellation, isTaskRunCancellation, type TaskRunContext } from './context'
+export {
+  TaskRunCancellation,
+  finishTaskRunFromError,
+  isCancellation,
+  isTaskRunCancellation
+} from './cancellation'
+export { type TaskRunContext } from './context'
 export {
   type TaskRunCancellationResult,
   type TaskRunCompletionResult,

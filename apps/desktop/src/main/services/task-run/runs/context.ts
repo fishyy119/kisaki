@@ -1,17 +1,6 @@
 import type { TaskRunProgressUpdate } from '@shared/task-run'
+import { TaskRunCancellation } from './cancellation'
 import type { TaskRunManager } from './manager'
-
-export class TaskRunCancellation extends Error {
-  override readonly name = 'TaskRunCancellation'
-
-  constructor(message = 'Task run was cancelled.') {
-    super(message)
-  }
-}
-
-export function isTaskRunCancellation(error: unknown): error is TaskRunCancellation {
-  return error instanceof TaskRunCancellation
-}
 
 export interface TaskRunContext {
   readonly runId: string

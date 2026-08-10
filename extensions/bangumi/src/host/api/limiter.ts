@@ -1,3 +1,5 @@
+import { createAbortError, throwIfAborted } from '../utils/errors'
+
 export interface BangumiRateLimitConfig {
   maxRequests: number
   windowMs: number
@@ -102,16 +104,4 @@ export function delay(ms: number, signal?: AbortSignal): Promise<void> {
 
     signal?.addEventListener('abort', onAbort, { once: true })
   })
-}
-
-export function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw createAbortError()
-  }
-}
-
-function createAbortError(): Error {
-  const error = new Error('Operation was cancelled.')
-  error.name = 'AbortError'
-  return error
 }

@@ -6,6 +6,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { movePath, pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import {
+  createCancellationError,
   createUnavailableError,
   createValidationError,
   toJsonValue,
@@ -221,8 +222,8 @@ export class ExtensionRuntimeSecrets {
     signal?: AbortSignal
   ): void {
     if (signal?.aborted) {
-      throw createUnavailableError(
-        `Secrets request for runtime handle "${runtimeHandle}" was aborted.`
+      throw createCancellationError(
+        `Secrets request for runtime handle "${runtimeHandle}" was cancelled.`
       )
     }
 

@@ -1,4 +1,5 @@
 import { createLogger } from '@main/log'
+import { createAbortError } from '@main/utils/async'
 import type {
   ExtensionCreateRepositoryReleasePlanRequest,
   ExtensionCatalogSearchRequest,
@@ -279,8 +280,10 @@ export class ExtensionRepositoryManager {
         error: null
       }
     } catch (error) {
+      // A cancelled refresh is abandoned rather than recorded as a failure, and
+      // it reports as a cancellation even when the aborted fetch lost that shape.
       if (options.signal?.aborted) {
-        throw error
+        throw createAbortError()
       }
 
       const updated = this.store.recordRefreshFailure(row.id, {
@@ -302,7 +305,7 @@ export class ExtensionRepositoryManager {
     const results: ExtensionRepositoryRefreshResult[] = []
     for (const row of this.store.listEnabled()) {
       if (options.signal?.aborted) {
-        throw new Error('Extension repository refresh was aborted.')
+        throw createAbortError()
       }
       results.push(await this.refreshRepository(row.id, options))
     }

@@ -1,4 +1,4 @@
-import { TaskRunCancellation, readErrorCode } from '@kisaki3/extension-api'
+import { TaskRunCancellation, isCancellationError } from '@kisaki3/extension-api'
 import type {
   Disposable,
   TaskRunHandle,
@@ -12,6 +12,7 @@ import type {
   LibraryRelationKind,
   LibraryRelationPatch,
   LibraryRelationSelector,
+  NetworkCallOptions,
   NetworkDownloadRequest,
   NetworkRequest,
   NetworkResponse,
@@ -22,8 +23,6 @@ import type {
 } from '@kisaki3/extension-api'
 import type { ActiveExtensionScope } from './types'
 import { toTaskRunFailureErrorPayload } from './utils/task-runs'
-
-const TASK_RUN_CANCELLED_ERROR_CODE = 'task_run_cancelled'
 
 type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
   RpcParams<HostToMainRpcRequestMap, K>,
@@ -69,7 +68,8 @@ export interface KisakiApiBridgeDelegate {
   requestMain<K extends HostToMainRpcMethod>(
     scope: ActiveExtensionScope,
     method: K,
-    params: ScopedHostToMainRpcParams<K>
+    params: ScopedHostToMainRpcParams<K>,
+    signal?: AbortSignal
   ): Promise<RpcResult<HostToMainRpcRequestMap, K>>
   registerTaskRunAbortController(
     scope: ActiveExtensionScope,
@@ -96,10 +96,11 @@ export function createKisakiApi(
 
   const requestMain = <K extends HostToMainRpcMethod>(
     method: K,
-    params: ScopedHostToMainRpcParams<K>
+    params: ScopedHostToMainRpcParams<K>,
+    signal?: AbortSignal
   ) => {
     const scope = requireScope()
-    return delegate.requestMain(scope, method, params)
+    return delegate.requestMain(scope, method, params, signal)
   }
 
   const createEntityNamespace = <TNamespace extends LibraryEntityNamespaceFacade>(
@@ -185,7 +186,7 @@ export function createKisakiApi(
     }
 
     const mapTaskRunError = (error: unknown): never => {
-      if (controller.signal.aborted || readErrorCode(error) === TASK_RUN_CANCELLED_ERROR_CODE) {
+      if (controller.signal.aborted || isCancellationError(error)) {
         throw new TaskRunCancellation()
       }
 
@@ -356,11 +357,14 @@ export function createKisakiApi(
       }
     },
     network: {
-      request: async <TData = unknown>(input: NetworkRequest): Promise<NetworkResponse<TData>> =>
-        (await requestMain('capabilities.network.request', { input }))
+      request: async <TData = unknown>(
+        input: NetworkRequest,
+        options?: NetworkCallOptions
+      ): Promise<NetworkResponse<TData>> =>
+        (await requestMain('capabilities.network.request', { input }, options?.signal))
           .response as NetworkResponse<TData>,
-      download: async (input: NetworkDownloadRequest) =>
-        (await requestMain('capabilities.network.download', { input })).result
+      download: async (input: NetworkDownloadRequest, options?: NetworkCallOptions) =>
+        (await requestMain('capabilities.network.download', { input }, options?.signal)).result
     },
     notify: {
       success: async (title, options) =>

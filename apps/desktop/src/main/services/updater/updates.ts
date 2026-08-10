@@ -1,10 +1,9 @@
 import { app } from 'electron'
 import { isDev } from '@main/env'
 import { createLogger } from '@main/log'
-import { isAbortError } from '@main/utils/async'
 import type { IpcService } from '@main/services/ipc'
 import {
-  isTaskRunCancellation,
+  finishTaskRunFromError,
   type TaskRunHandle,
   type TaskRunService
 } from '@main/services/task-run'
@@ -376,7 +375,7 @@ export class AppUpdateManager {
         counters: { notAvailable: 1 }
       })
     } catch (error) {
-      this.finishTaskRunFromError(run, error, {
+      finishTaskRunFromError(run, error, {
         cancelledSummary: messages.updater.run.checkCancelledSummary
       })
       throw error
@@ -417,7 +416,7 @@ export class AppUpdateManager {
         }
       })
     } catch (error) {
-      this.finishTaskRunFromError(run, error, {
+      finishTaskRunFromError(run, error, {
         cancelledSummary: messages.updater.run.downloadCancelledSummary
       })
       throw error
@@ -457,19 +456,6 @@ export class AppUpdateManager {
       transferred: progress.transferred ?? 0,
       total: progress.total ?? 0
     }
-  }
-
-  private finishTaskRunFromError(
-    run: TaskRunHandle,
-    error: unknown,
-    options: { cancelledSummary: string }
-  ): void {
-    if (isTaskRunCancellation(error) || run.context.signal.aborted || isAbortError(error)) {
-      run.cancel({ summary: options.cancelledSummary })
-      return
-    }
-
-    run.fail(error)
   }
 }
 

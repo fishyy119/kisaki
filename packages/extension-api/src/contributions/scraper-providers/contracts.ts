@@ -53,14 +53,15 @@ export interface ScraperLookup {
 /**
  * Invocation-scoped context passed to every scraper provider call.
  *
- * The host always resolves `locale`, so providers never re-derive it. `signal`
- * aborts when the requesting side gives up: providers should forward it to
- * network work and stop early, but cancellation is cooperative, so ignoring it
- * only means the call keeps running until it finishes on its own.
+ * The host resolves both members, so providers never re-derive the locale nor
+ * handle a missing signal. `signal` aborts when the requesting side gives up:
+ * providers should forward it to network work and stop early, but cancellation
+ * is cooperative, so ignoring it only means the call keeps running until it
+ * finishes on its own.
  */
 export interface ScraperProviderContext {
   locale: ContentLocale
-  signal?: AbortSignal
+  signal: AbortSignal
 }
 
 export interface ScrapedEntityIdentity {

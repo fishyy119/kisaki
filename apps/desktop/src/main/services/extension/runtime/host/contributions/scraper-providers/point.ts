@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
-  createUnavailableError,
+  createCancellationError,
   type CharacterScraperProvider,
   type CharacterScraperSession,
   type CharacterScraperSlot,
@@ -540,7 +540,7 @@ export class HostScraperProviderContributionPoint {
     }
     if (signal.aborted) {
       await this.disposeSession(record)
-      throw createUnavailableError('The scraper session open request was aborted.')
+      throw createCancellationError('The scraper session open request was cancelled.')
     }
 
     const sessionId = randomUUID()

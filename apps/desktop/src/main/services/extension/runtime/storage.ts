@@ -5,6 +5,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { movePath, pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import {
+  createCancellationError,
   createUnavailableError,
   createValidationError,
   toJsonObject,
@@ -184,8 +185,8 @@ export class ExtensionRuntimeStorage {
     signal?: AbortSignal
   ): void {
     if (signal?.aborted) {
-      throw createUnavailableError(
-        `Storage request for runtime handle "${runtimeHandle}" was aborted.`
+      throw createCancellationError(
+        `Storage request for runtime handle "${runtimeHandle}" was cancelled.`
       )
     }
 

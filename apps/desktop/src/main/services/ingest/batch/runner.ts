@@ -12,7 +12,7 @@
 
 import { createLogger } from '@main/log'
 import type { I18nService } from '@main/services/i18n'
-import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
+import { isCancellation, type TaskRunHandle, type TaskRunService } from '@main/services/task-run'
 import type { ExternalId } from '@shared/identity'
 import type { IngestUpdateResult } from '@shared/ingest'
 import {
@@ -21,7 +21,7 @@ import {
   type IngestUpdateRequest
 } from '@shared/ingest/update'
 import type { TaskRunContentEntity, TaskRunStartResult } from '@shared/task-run'
-import { isIngestCancellation, throwIfIngestAborted } from '../abort'
+import { throwIfIngestAborted } from '../abort'
 import {
   createBatchTaskRunWarnings,
   getBatchRowQueryName,
@@ -159,7 +159,7 @@ export class IngestBatchUpdateRunner {
             })
           }
         } catch (error) {
-          if (isIngestCancellation(error)) {
+          if (isCancellation(error)) {
             throw error
           }
 
@@ -193,7 +193,7 @@ export class IngestBatchUpdateRunner {
         output: outcome()
       })
     } catch (error) {
-      if (isIngestCancellation(error)) {
+      if (isCancellation(error)) {
         run.cancel({
           summary: messages.ingest.batch.cancelledSummary({
             succeeded: counters.succeeded,

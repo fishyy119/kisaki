@@ -1,6 +1,5 @@
-import { isAbortError } from '@main/utils/async'
 import {
-  isTaskRunCancellation,
+  finishTaskRunFromError,
   type TaskRunHandle,
   type TaskRunService
 } from '@main/services/task-run'
@@ -381,17 +380,4 @@ function createRepositoryRefreshSummary(
     notModified: counters.notModified,
     failed: counters.failed
   })
-}
-
-function finishTaskRunFromError(
-  run: TaskRunHandle,
-  error: unknown,
-  options: { cancelledSummary: string }
-): void {
-  if (isTaskRunCancellation(error) || run.context.signal.aborted || isAbortError(error)) {
-    run.cancel({ summary: options.cancelledSummary })
-    return
-  }
-
-  run.fail(error)
 }

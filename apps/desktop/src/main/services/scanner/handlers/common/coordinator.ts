@@ -1,7 +1,7 @@
 import type { I18nService } from '@main/services/i18n'
 import type { IpcService } from '@main/services/ipc'
 import type { TaskRunService } from '@main/services/task-run'
-import { isTaskRunCancellation } from '@main/services/task-run'
+import { isCancellation } from '@main/services/task-run'
 import type { ScannerHooks } from '../../hooks'
 import type {
   ScanCompletedData,
@@ -185,7 +185,7 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
       this.emitFinished(record, 'completed', result)
       return result
     } catch (error) {
-      if (isTaskRunCancellation(error) || record.taskRun.context.signal.aborted) {
+      if (isCancellation(error) || record.taskRun.context.signal.aborted) {
         const result = this.finishRecord(record, 'cancelled')
         this.taskRuns.finishCancelled(record)
         this.emitFinished(record, 'cancelled', result)

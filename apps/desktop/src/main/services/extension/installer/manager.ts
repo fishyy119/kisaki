@@ -1,7 +1,6 @@
 import path from 'node:path'
 import { rm, stat } from 'node:fs/promises'
 import { resolveLocalizedText } from '@kisaki3/extension-api'
-import { isAbortError } from '@main/utils/async'
 import type {
   ExtensionCreateLocalReleasePlanRequest,
   ExtensionCreateReleasePlanRequest,
@@ -15,7 +14,7 @@ import type {
   TaskRunStartResult
 } from '@shared/task-run'
 import {
-  isTaskRunCancellation,
+  finishTaskRunFromError,
   type TaskRunHandle,
   type TaskRunService
 } from '@main/services/task-run'
@@ -259,7 +258,7 @@ export class ExtensionInstallerManager {
       return installed
     } catch (error) {
       await this.cleanupPackageWorkspace(workspaceId)
-      this.finishTaskRunFromError(run, error, {
+      finishTaskRunFromError(run, error, {
         cancelledSummary: this.i18n.messages.extension.installer.cancelledSummary({
           action: plan.action
         })
@@ -337,7 +336,7 @@ export class ExtensionInstallerManager {
       return installed
     } catch (error) {
       await this.cleanupPackageWorkspace(workspaceId)
-      this.finishTaskRunFromError(run, error, {
+      finishTaskRunFromError(run, error, {
         cancelledSummary: this.i18n.messages.extension.installer.localCancelledSummary
       })
       throw error
@@ -378,19 +377,6 @@ export class ExtensionInstallerManager {
 
   private getInstalledExtensionName(entry: ExtensionInstalledEntry): string {
     return entry.manifest ? resolveLocalizedText(entry.manifest.name, this.i18n.locale) : entry.id
-  }
-
-  private finishTaskRunFromError(
-    run: TaskRunHandle,
-    error: unknown,
-    options: { cancelledSummary: string }
-  ): void {
-    if (isTaskRunCancellation(error) || run.context.signal.aborted || isAbortError(error)) {
-      run.cancel({ summary: options.cancelledSummary })
-      return
-    }
-
-    run.fail(error)
   }
 
   private async commitPreparedRepositoryPackage(input: {

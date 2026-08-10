@@ -80,9 +80,11 @@ monochrome silhouettes.
 - `search`, `resolve`, and `openSession` take the invocation-scoped
   `ScraperProviderContext` (`{ locale, signal }`) as their last parameter. Add new invocation-scoped
   inputs to that context instead of appending parameters.
-- `ctx.signal` is the host's cancellation request. Forward it to every network call the invocation
-  makes and let `AbortError` propagate; extension cancellation is best-effort, so the host also
-  aborts the session's own controller when it disposes the session.
+- `ctx.signal` is the host's cancellation request and is always present. The RPC channel aborts the
+  in-flight call per request, so the signal really fires inside the extension host; forward it to
+  every network call the invocation makes and let the cancellation propagate. Cancellation stays
+  cooperative from there, so the host also aborts the session's own controller when it disposes the
+  session.
 - Slot presence in `session.get(slots)` is authoritative. Omit a slot the provider cannot answer
   (unsupported, target not found, enrichment failed) and return an empty collection only when the
   source states the entity has none. The host reads an omitted slot as unknown and an empty
@@ -93,6 +95,31 @@ monochrome silhouettes.
 Each ingest entry point exposes two explicit methods instead of a task-run flag: `fromScraper(...)`
 runs inline and resolves with the ingest result, while `startFromScraper(...)` creates a
 user-visible task run attributed to the extension and resolves with `IngestTaskRunStart`.
+
+## Network Capability Cancellation
+
+`kisaki.network.request` and `kisaki.network.download` take an optional `NetworkCallOptions`
+(`{ signal }`) as their second argument. Calls an extension makes while the host is invoking it
+already inherit that invocation's cancellation, so pass a signal explicitly only for work the
+extension drives itself, such as a task run. The signal stays in the extension host process: the SDK
+converts it into the cancellation of the underlying RPC request, which aborts the main-process fetch
+or download.
+
+## Cancellation Errors
+
+Cancellation is a distinct outcome, never a failure mode: it carries the `cancelled` error code
+(`CANCELLED_ERROR_CODE`, produced by `createCancellationError`) and must not be reported as
+`unavailable` or `timeout`. `TaskRunCancellation` carries the same code, and an aborted
+web-platform call still raises a DOM-style `AbortError`.
+
+Classify a caught error with `isCancellationError`, which recognizes all of those shapes. Do not
+branch on `signal.aborted` to tell cancellation apart from a real fault — the error itself is
+authoritative, and a signal check only reproduces what the predicate already answers. Read the
+signal to decide whether to _start_ work, not to interpret work that already failed.
+
+Code that bridges the extension boundary into main-process pipelines translates the coded
+cancellation into the app's own `AbortError` at that seam; below it, main-process code classifies
+with `isCancellation` from `@main/services/task-run`.
 
 ## Naming Suffixes
 

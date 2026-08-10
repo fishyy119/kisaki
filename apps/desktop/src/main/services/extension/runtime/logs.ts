@@ -2,6 +2,7 @@ import path from 'node:path'
 import { mkdir } from 'node:fs/promises'
 import rawLog from 'electron-log/main'
 import {
+  createCancellationError,
   createUnavailableError,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata,
@@ -77,7 +78,9 @@ export class ExtensionRuntimeLogs {
     signal?: AbortSignal
   ): void {
     if (signal?.aborted) {
-      throw createUnavailableError(`Log request for runtime handle "${runtimeHandle}" was aborted.`)
+      throw createCancellationError(
+        `Log request for runtime handle "${runtimeHandle}" was cancelled.`
+      )
     }
 
     const extension = this.requireRuntimeHandle(runtimeHandle)

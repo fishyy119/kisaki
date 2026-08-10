@@ -9,7 +9,7 @@ import type { ScraperLookup } from '@shared/scraper'
 import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
-import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
+import { isCancellation, type TaskRunHandle, type TaskRunService } from '@main/services/task-run'
 import type { TaskRunStartResult } from '@shared/task-run'
 import type { GameIngestPersistHandler } from '../persist'
 import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
@@ -21,7 +21,7 @@ import {
   requireScrapedBundle
 } from './common'
 import { reportIngestProgress } from '../progress'
-import { isIngestCancellation, throwIfIngestAborted } from '../abort'
+import { throwIfIngestAborted } from '../abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
 import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
@@ -277,7 +277,7 @@ export class GameAddHandler {
   }
 
   private finishRunFromError(run: TaskRunHandle, error: unknown): void {
-    if (isIngestCancellation(error)) {
+    if (isCancellation(error)) {
       run.cancel({
         summary: this.i18nService.messages.ingest.add.cancelledSummary({ entity: 'game' })
       })
