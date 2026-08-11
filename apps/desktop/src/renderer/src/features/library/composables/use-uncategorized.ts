@@ -13,24 +13,23 @@ import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
 import {
   games,
+  animes,
   characters,
   persons,
   companies,
   collectionGameLinks,
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionPersonLinks,
   collectionCompanyLinks
 } from '@shared/db'
-import type { Game, Character, Person, Company } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
-import { useDbChanges } from '@renderer/composables'
-
-type EntityData = Game | Character | Person | Company
+import { useDbChanges, type ContentEntityData } from '@renderer/composables'
 
 async function fetchUncategorized(
   entityType: ContentEntityType,
   showNsfw: boolean
-): Promise<EntityData[]> {
+): Promise<ContentEntityData[]> {
   switch (entityType) {
     case 'game': {
       const linkedIds = await db
@@ -45,6 +44,22 @@ async function fetchUncategorized(
           and(
             linkedIdSet.length > 0 ? notInArray(games.id, linkedIdSet) : undefined,
             showNsfw ? undefined : eq(games.isNsfw, false)
+          )
+        )
+    }
+    case 'anime': {
+      const linkedIds = await db
+        .selectDistinct({ id: collectionAnimeLinks.animeId })
+        .from(collectionAnimeLinks)
+      const linkedIdSet = linkedIds.map((l) => l.id)
+
+      return await db
+        .select()
+        .from(animes)
+        .where(
+          and(
+            linkedIdSet.length > 0 ? notInArray(animes.id, linkedIdSet) : undefined,
+            showNsfw ? undefined : eq(animes.isNsfw, false)
           )
         )
     }
@@ -126,6 +141,7 @@ export function useUncategorized() {
 function isRelevantTable(table: string): boolean {
   return (
     table === 'games' ||
+    table === 'animes' ||
     table === 'characters' ||
     table === 'persons' ||
     table === 'companies' ||

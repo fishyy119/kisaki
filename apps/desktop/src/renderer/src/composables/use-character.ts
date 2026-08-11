@@ -30,8 +30,10 @@ import type {
   Character,
   CharacterTagLink,
   GameCharacterLink,
+  AnimeCharacterLink,
   CharacterPersonLink,
   Game,
+  Anime,
   Person,
   Tag
 } from '@shared/db/schema'
@@ -46,6 +48,7 @@ interface CharacterData {
   character: Character
   tags: (CharacterTagLink & { tag: Tag | null })[]
   games: (GameCharacterLink & { game: Game | null })[]
+  animes: (AnimeCharacterLink & { anime: Anime | null })[]
   persons: (CharacterPersonLink & { person: Person | null })[]
 }
 
@@ -53,6 +56,7 @@ export interface CharacterContext {
   character: ComputedRef<Character | null>
   tags: ComputedRef<(CharacterTagLink & { tag: Tag | null })[]>
   games: ComputedRef<(GameCharacterLink & { game: Game | null })[]>
+  animes: ComputedRef<(AnimeCharacterLink & { anime: Anime | null })[]>
   persons: ComputedRef<(CharacterPersonLink & { person: Person | null })[]>
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
@@ -102,6 +106,12 @@ async function fetchCharacterData(
     showNsfw ? undefined : eq(schema.games.isNsfw, false)
   )
 
+  const animeCharacterLinksWhere = and(
+    eq(schema.animeCharacterLinks.characterId, characterId),
+    spoilersRevealed ? undefined : eq(schema.animeCharacterLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.animes.isNsfw, false)
+  )
+
   const characterPersonLinksWhere = and(
     eq(schema.characterPersonLinks.characterId, characterId),
     spoilersRevealed ? undefined : eq(schema.characterPersonLinks.isSpoiler, false),
@@ -109,7 +119,7 @@ async function fetchCharacterData(
   )
 
   // Parallel fetch all related data
-  const [tagLinks, gameLinks, personLinks] = await Promise.all([
+  const [tagLinks, gameLinks, animeLinks, personLinks] = await Promise.all([
     db
       .select()
       .from(schema.characterTagLinks)
@@ -124,6 +134,12 @@ async function fetchCharacterData(
       .orderBy(asc(schema.gameCharacterLinks.orderInCharacter)),
     db
       .select()
+      .from(schema.animeCharacterLinks)
+      .leftJoin(schema.animes, eq(schema.animeCharacterLinks.animeId, schema.animes.id))
+      .where(animeCharacterLinksWhere)
+      .orderBy(asc(schema.animeCharacterLinks.orderInCharacter)),
+    db
+      .select()
       .from(schema.characterPersonLinks)
       .leftJoin(schema.persons, eq(schema.characterPersonLinks.personId, schema.persons.id))
       .where(characterPersonLinksWhere)
@@ -134,6 +150,7 @@ async function fetchCharacterData(
     character: charData,
     tags: tagLinks.map((row) => ({ ...row.character_tag_links, tag: row.tags })),
     games: gameLinks.map((row) => ({ ...row.game_character_links, game: row.games })),
+    animes: animeLinks.map((row) => ({ ...row.anime_character_links, anime: row.animes })),
     persons: personLinks.map((row) => ({ ...row.character_person_links, person: row.persons }))
   }
 }
@@ -174,6 +191,7 @@ function provideCharacterContext(source: CharacterDataSource): CharacterContext 
     character: computed(() => source.data.value?.character ?? null),
     tags: computed(() => source.data.value?.tags ?? []),
     games: computed(() => source.data.value?.games ?? []),
+    animes: computed(() => source.data.value?.animes ?? []),
     persons: computed(() => source.data.value?.persons ?? []),
     isLoading: source.isLoading,
     isFetching: source.isFetching,
@@ -198,6 +216,7 @@ function useCharacterDbSync(
       if (
         table === 'character_tag_links' ||
         table === 'game_character_links' ||
+        table === 'anime_character_links' ||
         table === 'character_person_links'
       ) {
         refetch()
@@ -207,6 +226,7 @@ function useCharacterDbSync(
       if (
         table === 'character_tag_links' ||
         table === 'game_character_links' ||
+        table === 'anime_character_links' ||
         table === 'character_person_links'
       ) {
         refetch()

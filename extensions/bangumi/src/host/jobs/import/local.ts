@@ -1,7 +1,7 @@
 import type { BangumiIndexSubject, BangumiUserCollection } from '../../api/types'
 import type { BangumiCollectionType } from '../../config/schema'
 import type { ImportExecutor } from '../../import/executor'
-import type { BangumiMediaScope } from '../../media/scopes'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import type {
   LocalCollectionTarget,
   LocalMediaAdapter,

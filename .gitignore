@@ -2,6 +2,7 @@ node_modules
 dist
 out
 artifacts/
+apps/desktop/resources/bin
 apps/desktop/resources/extensions
 apps/desktop/resources/webview-fonts
 .DS_Store

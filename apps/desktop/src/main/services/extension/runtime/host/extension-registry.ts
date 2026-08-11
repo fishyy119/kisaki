@@ -1,4 +1,5 @@
 import type {
+  AnimeScraperProvider,
   CardActionContribution,
   CharacterScraperProvider,
   CommandContribution,
@@ -51,6 +52,7 @@ export type EntityMenuRegistrationMaps = {
 
 export interface ScraperProviderMaps {
   game: Map<string, GameScraperProvider>
+  anime: Map<string, AnimeScraperProvider>
   person: Map<string, PersonScraperProvider>
   company: Map<string, CompanyScraperProvider>
   character: Map<string, CharacterScraperProvider>
@@ -254,6 +256,10 @@ export function createEntityMenuRegistrationMaps(): EntityMenuRegistrationMaps {
       single: new Map(),
       batch: new Map()
     },
+    anime: {
+      single: new Map(),
+      batch: new Map()
+    },
     character: {
       single: new Map()
     },
@@ -269,7 +275,7 @@ export function createEntityMenuRegistrationMaps(): EntityMenuRegistrationMaps {
     tag: {
       single: new Map()
     }
-  } as EntityMenuRegistrationMaps
+  }
 }
 
 export function getEntityMenuRegistrationMap<
@@ -294,6 +300,8 @@ export function getEntityMenuRegistrationForInput(
   switch (input.domain) {
     case 'game':
       return runtime.entityMenus.game[input.scope].get(contributionId)
+    case 'anime':
+      return runtime.entityMenus.anime[input.scope].get(contributionId)
     case 'character':
       return runtime.entityMenus.character.single.get(contributionId)
     case 'person':
@@ -320,6 +328,7 @@ export function getScraperProviderMap<TMediaType extends ScraperMediaType>(
 export function createScraperProviderMaps(): ScraperProviderMaps {
   return {
     game: new Map(),
+    anime: new Map(),
     person: new Map(),
     company: new Map(),
     character: new Map()

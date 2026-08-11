@@ -71,6 +71,10 @@ async function listProviders(entityType: ContentEntityType): Promise<ScraperProv
       const result = await ipcManager.invoke('scraper:list-game-providers')
       return result.success ? result.data : []
     }
+    case 'anime': {
+      const result = await ipcManager.invoke('scraper:list-anime-providers')
+      return result.success ? result.data : []
+    }
     case 'person': {
       const result = await ipcManager.invoke('scraper:list-person-providers')
       return result.success ? result.data : []

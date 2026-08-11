@@ -1,4 +1,9 @@
 import {
+  assertValidLibraryAnimeCreateInput,
+  assertValidLibraryAnimeEpisodeQuery,
+  assertValidLibraryAnimeEpisodeWatchStatePatch,
+  assertValidLibraryAnimePatch,
+  assertValidLibraryAnimeQuery,
   assertValidLibraryAttachmentOwnerReference,
   assertValidLibraryAttachmentRemoveInput,
   assertValidLibraryAttachmentWriteInput,
@@ -28,6 +33,10 @@ import {
   createUnavailableError,
   type ExtensionRuntimeMetadata,
   type HostToMainRpcMethod,
+  type LibraryAnime,
+  type LibraryAnimeCreateInput,
+  type LibraryAnimePatch,
+  type LibraryAnimeQuery,
   type LibraryCharacter,
   type LibraryCharacterCreateInput,
   type LibraryCharacterPatch,
@@ -57,12 +66,12 @@ import {
 import type { DbService } from '@main/services/db'
 import type { ExtensionHostRpcClient } from '../../runtime'
 import { ExtensionLibraryAttachmentStore } from './attachments'
-import { ExtensionLibraryEntityStore } from './entities'
+import { ExtensionLibraryEntityStore, ExtensionLibraryEpisodeStore } from './entities'
 import { ExtensionLibraryGraphManager } from './graph'
 import { ExtensionLibraryRelationStore } from './relations'
 
 type LibraryEntityNamespaceName =
-  'games' | 'characters' | 'persons' | 'companies' | 'collections' | 'tags'
+  'games' | 'animes' | 'characters' | 'persons' | 'companies' | 'collections' | 'tags'
 type LibraryEntityRpcMethod<
   TNamespace extends LibraryEntityNamespaceName,
   TAction extends 'get' | 'list' | 'create' | 'update' | 'remove'
@@ -100,12 +109,14 @@ export interface ExtensionLibraryCapabilityProviderOptions {
 
 export class ExtensionLibraryCapabilityProvider {
   readonly entities: ExtensionLibraryEntityStore
+  readonly episodes: ExtensionLibraryEpisodeStore
   readonly relations: ExtensionLibraryRelationStore
   readonly attachments: ExtensionLibraryAttachmentStore
   readonly graph: ExtensionLibraryGraphManager
 
   constructor(private readonly options: ExtensionLibraryCapabilityProviderOptions) {
     this.entities = new ExtensionLibraryEntityStore({ db: options.db })
+    this.episodes = new ExtensionLibraryEpisodeStore({ db: options.db })
     this.relations = new ExtensionLibraryRelationStore({ db: options.db })
     this.attachments = new ExtensionLibraryAttachmentStore({
       db: options.db,
@@ -114,6 +125,7 @@ export class ExtensionLibraryCapabilityProvider {
     this.graph = new ExtensionLibraryGraphManager({
       db: options.db,
       entities: this.entities,
+      episodes: this.episodes,
       attachments: this.attachments,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
@@ -141,6 +153,24 @@ export class ExtensionLibraryCapabilityProvider {
         this.withRuntime(runtimeHandle, async () => ({
           result: await this.graph.apply(runtimeHandle, input as LibraryGraphInput, context.signal)
         }))
+    )
+
+    rpc.handleHostRequest(
+      'capabilities.library.animes.episodes.list',
+      async ({ runtimeHandle, query }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryAnimeEpisodeQuery(query)
+          return { items: this.episodes.list(query) }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.animes.episodes.patchWatchState',
+      async ({ runtimeHandle, episodeId, patch }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryEntityId(episodeId, 'library.animes.episodes.patchWatchState id')
+          assertValidLibraryAnimeEpisodeWatchStatePatch(patch)
+          return { episode: this.episodes.patchWatchState(episodeId, patch) }
+        })
     )
 
     rpc.handleHostRequest('capabilities.library.relations.list', async ({ runtimeHandle, query }) =>
@@ -217,6 +247,13 @@ export class ExtensionLibraryCapabilityProvider {
       LibraryGameQuery
     >,
     LibraryEntityRpcDescriptor<
+      'animes',
+      LibraryAnime,
+      LibraryAnimeCreateInput,
+      LibraryAnimePatch,
+      LibraryAnimeQuery
+    >,
+    LibraryEntityRpcDescriptor<
       'characters',
       LibraryCharacter,
       LibraryCharacterCreateInput,
@@ -264,6 +301,18 @@ export class ExtensionLibraryCapabilityProvider {
         assertQuery: assertValidLibraryGameQuery,
         assertCreate: assertValidLibraryGameCreateInput,
         assertPatch: assertValidLibraryGamePatch
+      },
+      {
+        namespace: 'animes',
+        methods: createLibraryEntityRpcMethods('animes'),
+        get: (id) => this.entities.getAnime(id),
+        list: (query) => this.entities.listAnimes(query),
+        create: (input) => this.entities.createAnime(input),
+        update: (id, patch) => this.entities.updateAnime(id, patch),
+        remove: (id) => this.entities.removeAnime(id),
+        assertQuery: assertValidLibraryAnimeQuery,
+        assertCreate: assertValidLibraryAnimeCreateInput,
+        assertPatch: assertValidLibraryAnimePatch
       },
       {
         namespace: 'characters',

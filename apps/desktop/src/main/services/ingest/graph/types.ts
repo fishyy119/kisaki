@@ -1,10 +1,15 @@
 import type {
+  AnimeCharacterType,
+  AnimeCompanyType,
+  AnimePersonType,
   CharacterPersonType,
   GameCharacterType,
   GameCompanyType,
   GamePersonType
 } from '@shared/db'
 import type {
+  AnimeEpisodeInfo,
+  CoreAnimeMetadata,
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
@@ -23,16 +28,26 @@ export interface IngestLinkBase {
 
 export type IngestGameNode = IngestEntityNode<CoreGameMetadata>
 
-export interface IngestGamePersonNode extends IngestEntityNode<CorePersonMetadata> {
+export type IngestAnimeNode = IngestEntityNode<CoreAnimeMetadata>
+
+export interface IngestPersonNode extends IngestEntityNode<CorePersonMetadata> {
   photoUrls?: string[]
 }
 
-export interface IngestGameCompanyNode extends IngestEntityNode<CoreCompanyMetadata> {
+export interface IngestCompanyNode extends IngestEntityNode<CoreCompanyMetadata> {
   logoUrls?: string[]
 }
 
-export interface IngestGameCharacterNode extends IngestEntityNode<CoreCharacterMetadata> {
+export interface IngestCharacterNode extends IngestEntityNode<CoreCharacterMetadata> {
   photoUrls?: string[]
+}
+
+export interface IngestCharacterPersonLink extends IngestLinkBase {
+  characterIdentityKey: string
+  personIdentityKey: string
+  type: CharacterPersonType
+  orderInCharacter: number
+  orderInPerson: number
 }
 
 export interface IngestGamePersonLink extends IngestLinkBase {
@@ -59,27 +74,19 @@ export interface IngestGameCharacterLink extends IngestLinkBase {
   orderInCharacter: number
 }
 
-export interface IngestGameCharacterPersonLink extends IngestLinkBase {
-  characterIdentityKey: string
-  personIdentityKey: string
-  type: CharacterPersonType
-  orderInCharacter: number
-  orderInPerson: number
-}
-
 /** Link rows a game graph produces, keyed by the link table they populate. */
 export interface IngestGameGraphLinks {
   gamePerson: IngestGamePersonLink[]
   gameCompany: IngestGameCompanyLink[]
   gameCharacter: IngestGameCharacterLink[]
-  characterPerson: IngestGameCharacterPersonLink[]
+  characterPerson: IngestCharacterPersonLink[]
 }
 
 export interface IngestGameGraph {
   game: IngestGameNode
-  persons: IngestGamePersonNode[]
-  companies: IngestGameCompanyNode[]
-  characters: IngestGameCharacterNode[]
+  persons: IngestPersonNode[]
+  companies: IngestCompanyNode[]
+  characters: IngestCharacterNode[]
   links: IngestGameGraphLinks
   media: {
     coverUrl?: string
@@ -89,60 +96,65 @@ export interface IngestGameGraph {
   }
 }
 
-export interface IngestPersonNode extends IngestEntityNode<CorePersonMetadata> {
-  photoUrls?: string[]
+export interface IngestAnimePersonLink extends IngestLinkBase {
+  animeIdentityKey: string
+  personIdentityKey: string
+  type: AnimePersonType
+  orderInAnime: number
+  orderInPerson: number
+}
+
+export interface IngestAnimeCompanyLink extends IngestLinkBase {
+  animeIdentityKey: string
+  companyIdentityKey: string
+  type: AnimeCompanyType
+  orderInAnime: number
+  orderInCompany: number
+}
+
+export interface IngestAnimeCharacterLink extends IngestLinkBase {
+  animeIdentityKey: string
+  characterIdentityKey: string
+  type: AnimeCharacterType
+  orderInAnime: number
+  orderInCharacter: number
+}
+
+/** Link rows an anime graph produces, keyed by the link table they populate. */
+export interface IngestAnimeGraphLinks {
+  animePerson: IngestAnimePersonLink[]
+  animeCompany: IngestAnimeCompanyLink[]
+  animeCharacter: IngestAnimeCharacterLink[]
+  characterPerson: IngestCharacterPersonLink[]
+}
+
+export interface IngestAnimeGraph {
+  anime: IngestAnimeNode
+  /** Absent means the scrape could not answer episodes; an empty array means none exist. */
+  episodes?: AnimeEpisodeInfo[]
+  persons: IngestPersonNode[]
+  companies: IngestCompanyNode[]
+  characters: IngestCharacterNode[]
+  links: IngestAnimeGraphLinks
+  media: {
+    coverUrl?: string
+    backdropUrl?: string
+    logoUrl?: string
+  }
 }
 
 export interface IngestPersonGraph {
   person: IngestPersonNode
 }
 
-export interface IngestCompanyNode extends IngestEntityNode<CoreCompanyMetadata> {
-  logoUrls?: string[]
-}
-
 export interface IngestCompanyGraph {
   company: IngestCompanyNode
 }
 
-export interface IngestCharacterNode extends IngestEntityNode<CoreCharacterMetadata> {
-  photoUrls?: string[]
-}
-
-export interface IngestCharacterPersonNode extends IngestEntityNode<CorePersonMetadata> {
-  photoUrls?: string[]
-}
-
-export interface IngestCharacterPersonLink extends IngestLinkBase {
-  characterIdentityKey: string
-  personIdentityKey: string
-  type: CharacterPersonType
-  orderInCharacter: number
-  orderInPerson: number
-}
-
 export interface IngestCharacterGraph {
   character: IngestCharacterNode
-  persons: IngestCharacterPersonNode[]
+  persons: IngestPersonNode[]
   links: IngestCharacterPersonLink[]
-}
-
-export interface NormalizedPersonNode {
-  identityKey: string
-  core: CorePersonMetadata
-  photoUrls?: string[]
-}
-
-export interface NormalizedCompanyNode {
-  identityKey: string
-  core: CoreCompanyMetadata
-  logoUrls?: string[]
-}
-
-export interface NormalizedCharacterNode {
-  identityKey: string
-  core: CoreCharacterMetadata
-  photoUrls?: string[]
 }
 
 export interface IdentityAliasIndex {

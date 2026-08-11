@@ -17,6 +17,14 @@ export function registerScraperIpc(service: ScraperService, ipc: IpcService): vo
     wrapIpc(() => service.game.getProviderInfo(providerId))
   )
 
+  ipc.handle('scraper:list-anime-providers', async () =>
+    wrapIpc(() => service.anime.getProviders())
+  )
+
+  ipc.handle('scraper:get-anime-provider', async (_, providerId) =>
+    wrapIpc(() => service.anime.getProviderInfo(providerId))
+  )
+
   ipc.handle('scraper:list-person-providers', async () =>
     wrapIpc(() => service.person.getProviders())
   )
@@ -51,6 +59,18 @@ export function registerScraperIpc(service: ScraperService, ipc: IpcService): vo
 
   ipc.handle('scraper:get-game-provider-images', async (_, providerId, lookup, imageType) =>
     wrapIpc(() => service.game.getProviderImages(providerId, lookup, imageType))
+  )
+
+  ipc.handle('scraper:search-anime', async (_, profileId, query) =>
+    wrapIpc(() => service.anime.search(profileId, query))
+  )
+
+  ipc.handle('scraper:scrape-anime', async (_, profileId, lookup) =>
+    wrapIpc(() => service.anime.scrape(profileId, lookup))
+  )
+
+  ipc.handle('scraper:get-anime-provider-images', async (_, providerId, lookup, imageType) =>
+    wrapIpc(() => service.anime.getProviderImages(providerId, lookup, imageType))
   )
 
   ipc.handle('scraper:search-person', async (_, profileId, query) =>

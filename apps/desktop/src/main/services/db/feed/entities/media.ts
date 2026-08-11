@@ -1,0 +1,414 @@
+/**
+ * Change projection for playable media entries.
+ *
+ * Games and anime differ only in table names, asset columns, and the episode
+ * facet, so one projection descriptor drives both instead of a per-media copy.
+ */
+
+import type Database from 'better-sqlite3'
+import type { Status } from '@shared/db/contracts/enums'
+import type { RawDbChange } from '@shared/db/changes'
+import type {
+  LibraryChange,
+  LibraryEntityTopic,
+  LibraryMediaActivitySnapshot,
+  LibraryMediaRelationSnapshot
+} from '@shared/library'
+import type { ExternalId } from '@shared/identity'
+import {
+  rebuildExternalIdsBefore,
+  rebuildIdSetBefore,
+  rebuildRelationSnapshotBefore,
+  rebuildWatchedIdSetBefore
+} from '../rebuild'
+import type { MediaFeedProjection, MediaRow } from '../types'
+import {
+  normalizeActivityValue,
+  normalizeCoreValue,
+  normalizeNullableString,
+  nullableNumber,
+  stringValue,
+  uniqueStrings
+} from '../shared/normalization'
+import { createPartialSnapshot, sameJson } from '../shared/snapshot'
+
+const GAME_PROJECTION: MediaFeedProjection = {
+  entity: 'game',
+  table: 'games',
+  ownerColumn: 'game_id',
+  orderColumn: 'order_in_game',
+  externalIdsTable: 'game_external_ids',
+  tagLinksTable: 'game_tag_links',
+  collectionLinksTable: 'collection_game_links',
+  relationTables: {
+    person: 'game_person_links',
+    company: 'game_company_links',
+    character: 'game_character_links'
+  },
+  ownedTables: ['game_sessions'],
+  coreFields: {
+    name: 'name',
+    original_name: 'originalName',
+    description: 'description',
+    release_date: 'releaseDate'
+  },
+  assetFields: {
+    cover_file: 'coverFile',
+    backdrop_file: 'backdropFile',
+    logo_file: 'logoFile',
+    icon_file: 'iconFile'
+  }
+}
+
+const ANIME_PROJECTION: MediaFeedProjection = {
+  entity: 'anime',
+  table: 'animes',
+  ownerColumn: 'anime_id',
+  orderColumn: 'order_in_anime',
+  externalIdsTable: 'anime_external_ids',
+  tagLinksTable: 'anime_tag_links',
+  collectionLinksTable: 'collection_anime_links',
+  relationTables: {
+    person: 'anime_person_links',
+    company: 'anime_company_links',
+    character: 'anime_character_links'
+  },
+  // `anime_episode_files` has no anime_id column, so the owner-column mechanism
+  // cannot cover it; episode file changes reach subscribers via the episodes
+  // they hang off.
+  ownedTables: ['anime_episodes', 'anime_extras', 'anime_sessions'],
+  coreFields: {
+    name: 'name',
+    original_name: 'originalName',
+    description: 'description',
+    release_date: 'releaseDate',
+    format: 'format',
+    total_episodes: 'totalEpisodes'
+  },
+  assetFields: {
+    cover_file: 'coverFile',
+    backdrop_file: 'backdropFile',
+    logo_file: 'logoFile'
+  },
+  episodesTable: 'anime_episodes'
+}
+
+export const MEDIA_PROJECTIONS: readonly MediaFeedProjection[] = [GAME_PROJECTION, ANIME_PROJECTION]
+
+export function getMediaProjectionForTable(table: string): MediaFeedProjection | undefined {
+  return MEDIA_PROJECTIONS.find((projection) => projection.table === table)
+}
+
+export function getMediaProjectionForTopic(
+  entity: LibraryEntityTopic
+): MediaFeedProjection | undefined {
+  return MEDIA_PROJECTIONS.find((projection) => projection.entity === entity)
+}
+
+/** Media rows reached indirectly, through a link or owned row that changed. */
+export function getMediaIdsFromChange(
+  projection: MediaFeedProjection,
+  change: RawDbChange
+): string[] {
+  if (!relatedTables(projection).has(change.table)) {
+    return []
+  }
+
+  return uniqueStrings([
+    stringValue(change.old?.[projection.ownerColumn]),
+    stringValue(change.next?.[projection.ownerColumn])
+  ])
+}
+
+export function getMediaCreatedName(
+  sqlite: Database.Database,
+  projection: MediaFeedProjection,
+  mediaId: string,
+  next?: Record<string, unknown>
+): string {
+  const current = readMediaRow(sqlite, projection, mediaId)
+  return current?.name ?? stringValue(next?.name) ?? mediaId
+}
+
+export function mediaExists(
+  sqlite: Database.Database,
+  projection: MediaFeedProjection,
+  mediaId: string
+): boolean {
+  return Boolean(readMediaRow(sqlite, projection, mediaId))
+}
+
+export function projectMediaChanges(
+  sqlite: Database.Database,
+  projection: MediaFeedProjection,
+  mediaId: string,
+  changes: RawDbChange[]
+): LibraryChange[] {
+  const projected: LibraryChange[] = []
+
+  projected.push(
+    ...projectDirectChanges(
+      projection,
+      changes.filter((change) => change.table === projection.table)
+    )
+  )
+
+  const externalIdChanges = changes.filter(
+    (change) => change.table === projection.externalIdsTable
+  )
+  if (externalIdChanges.length > 0) {
+    const after = readExternalIds(sqlite, projection, mediaId)
+    const before = rebuildExternalIdsBefore(after, externalIdChanges)
+    if (!sameJson(before, after)) {
+      projected.push({
+        facet: 'identity',
+        before: { externalIds: before },
+        after: { externalIds: after },
+        fields: ['externalIds']
+      })
+    }
+  }
+
+  const tagIds = projectIdSet(sqlite, {
+    changes,
+    table: projection.tagLinksTable,
+    field: 'tag_id',
+    sql: `SELECT tag_id AS id FROM ${projection.tagLinksTable} WHERE ${projection.ownerColumn} = ? ORDER BY ${projection.orderColumn} ASC, id ASC`,
+    mediaId
+  })
+  if (tagIds) {
+    projected.push({
+      facet: 'tags',
+      before: { tagIds: tagIds.before },
+      after: { tagIds: tagIds.after },
+      fields: ['tagIds']
+    })
+  }
+
+  const collectionIds = projectIdSet(sqlite, {
+    changes,
+    table: projection.collectionLinksTable,
+    field: 'collection_id',
+    sql: `SELECT collection_id AS id FROM ${projection.collectionLinksTable} WHERE ${projection.ownerColumn} = ? ORDER BY order_in_collection ASC, id ASC`,
+    mediaId
+  })
+  if (collectionIds) {
+    projected.push({
+      facet: 'collections',
+      before: { collectionIds: collectionIds.before },
+      after: { collectionIds: collectionIds.after },
+      fields: ['collectionIds']
+    })
+  }
+
+  const relationTables = Object.values(projection.relationTables)
+  const relationChanges = changes.filter((change) => relationTables.includes(change.table))
+  if (relationChanges.length > 0) {
+    const after = readRelationSnapshot(sqlite, projection, mediaId)
+    const before = rebuildRelationSnapshotBefore(after, projection.relationTables, relationChanges)
+    if (!sameJson(before, after)) {
+      projected.push({
+        facet: 'relations',
+        before,
+        after,
+        fields: ['personLinkIds', 'companyLinkIds', 'characterLinkIds']
+      })
+    }
+  }
+
+  const episodes = projectEpisodesChange(sqlite, projection, mediaId, changes)
+  if (episodes) {
+    projected.push(episodes)
+  }
+
+  return projected
+}
+
+function projectDirectChanges(
+  projection: MediaFeedProjection,
+  changes: RawDbChange[]
+): LibraryChange[] {
+  const firstOld = changes.find((change) => change.old)?.old
+  const lastNext = changes.findLast((change) => change.next)?.next
+  if (!firstOld || !lastNext) {
+    return []
+  }
+
+  const projected: LibraryChange[] = []
+
+  if (firstOld.status !== lastNext.status) {
+    projected.push({
+      facet: 'status',
+      before: { status: firstOld.status as Status },
+      after: { status: lastNext.status as Status },
+      fields: ['status']
+    })
+  }
+
+  if (nullableNumber(firstOld.score) !== nullableNumber(lastNext.score)) {
+    projected.push({
+      facet: 'score',
+      before: { score: nullableNumber(firstOld.score) },
+      after: { score: nullableNumber(lastNext.score) },
+      fields: ['score']
+    })
+  }
+
+  const activity = createPartialSnapshot<LibraryMediaActivitySnapshot>(
+    firstOld,
+    lastNext,
+    {
+      total_duration: 'totalDuration',
+      last_active_at: 'lastActiveAt'
+    },
+    normalizeActivityValue
+  )
+  if (activity.fields.length > 0) {
+    projected.push({
+      facet: 'activity',
+      before: activity.before,
+      after: activity.after,
+      fields: activity.fields
+    })
+  }
+
+  const assets = createPartialSnapshot(
+    firstOld,
+    lastNext,
+    projection.assetFields,
+    normalizeNullableString
+  )
+  if (assets.fields.length > 0) {
+    projected.push({
+      facet: 'assets',
+      before: assets.before,
+      after: assets.after,
+      fields: assets.fields
+    })
+  }
+
+  const core = createPartialSnapshot(firstOld, lastNext, projection.coreFields, normalizeCoreValue)
+  if (core.fields.length > 0) {
+    projected.push({
+      facet: 'core',
+      before: core.before,
+      after: core.after,
+      fields: core.fields
+    })
+  }
+
+  return projected
+}
+
+function projectEpisodesChange(
+  sqlite: Database.Database,
+  projection: MediaFeedProjection,
+  mediaId: string,
+  changes: RawDbChange[]
+): LibraryChange | null {
+  const episodesTable = projection.episodesTable
+  if (!episodesTable) {
+    return null
+  }
+
+  const episodeChanges = changes.filter((change) => change.table === episodesTable)
+  if (episodeChanges.length === 0) {
+    return null
+  }
+
+  const after = readIds(
+    sqlite,
+    `SELECT id FROM ${episodesTable} WHERE ${projection.ownerColumn} = ? AND watched_at IS NOT NULL ORDER BY id ASC`,
+    mediaId
+  )
+  const before = rebuildWatchedIdSetBefore(after, episodeChanges, 'watched_at')
+  if (sameJson(before, after)) {
+    return null
+  }
+
+  return {
+    facet: 'episodes',
+    before: { watchedEpisodeIds: before },
+    after: { watchedEpisodeIds: after },
+    fields: ['watchedEpisodeIds']
+  }
+}
+
+function projectIdSet(
+  sqlite: Database.Database,
+  options: {
+    changes: RawDbChange[]
+    table: string
+    field: string
+    sql: string
+    mediaId: string
+  }
+): { before: string[]; after: string[] } | null {
+  const linkChanges = options.changes.filter((change) => change.table === options.table)
+  if (linkChanges.length === 0) {
+    return null
+  }
+
+  const after = readIds(sqlite, options.sql, options.mediaId)
+  const before = rebuildIdSetBefore(after, linkChanges, options.field)
+  return sameJson(before, after) ? null : { before, after }
+}
+
+function relatedTables(projection: MediaFeedProjection): Set<string> {
+  return new Set([
+    projection.externalIdsTable,
+    projection.tagLinksTable,
+    projection.collectionLinksTable,
+    ...Object.values(projection.relationTables),
+    ...projection.ownedTables
+  ])
+}
+
+function readMediaRow(
+  sqlite: Database.Database,
+  projection: MediaFeedProjection,
+  mediaId: string
+): MediaRow | null {
+  return (
+    (sqlite
+      .prepare(`SELECT id, name FROM ${projection.table} WHERE id = ?`)
+      .get(mediaId) as MediaRow | undefined) ?? null
+  )
+}
+
+function readExternalIds(
+  sqlite: Database.Database,
+  projection: MediaFeedProjection,
+  mediaId: string
+): ExternalId[] {
+  const rows = sqlite
+    .prepare(
+      `SELECT source, external_id FROM ${projection.externalIdsTable} WHERE ${projection.ownerColumn} = ? ORDER BY ${projection.orderColumn} ASC, id ASC`
+    )
+    .all(mediaId) as Array<{ source: string; external_id: string }>
+  return rows.map((row) => ({ source: row.source, id: row.external_id }))
+}
+
+function readRelationSnapshot(
+  sqlite: Database.Database,
+  projection: MediaFeedProjection,
+  mediaId: string
+): LibraryMediaRelationSnapshot {
+  const readLinkIds = (table: string): string[] =>
+    readIds(
+      sqlite,
+      `SELECT id FROM ${table} WHERE ${projection.ownerColumn} = ? ORDER BY ${projection.orderColumn} ASC, id ASC`,
+      mediaId
+    )
+
+  return {
+    personLinkIds: readLinkIds(projection.relationTables.person),
+    companyLinkIds: readLinkIds(projection.relationTables.company),
+    characterLinkIds: readLinkIds(projection.relationTables.character)
+  }
+}
+
+function readIds(sqlite: Database.Database, sql: string, entityId: string): string[] {
+  const rows = sqlite.prepare(sql).all(entityId) as Array<{ id: string }>
+  return rows.map((row) => row.id)
+}

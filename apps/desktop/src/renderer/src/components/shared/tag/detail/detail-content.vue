@@ -11,8 +11,8 @@ import { getEntityIcon } from '@renderer/utils/format'
 import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
+import type { ContentEntityData } from '@renderer/composables'
 import type { ContentEntityType } from '@shared/common'
-import type { Game, Character, Person, Company } from '@shared/db'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -25,18 +25,19 @@ const props = withDefaults(defineProps<Props>(), {
   scrollParent: null
 })
 
-type EntityData = Game | Character | Person | Company
-
 const { tag, entities, entityType, isLoading, error } = useTag()
 const state = useRenderState(isLoading, error, tag)
 
 const entityLabel = computed(() => m.value.library.entities[entityType.value])
 
 const emit = defineEmits<{
-  (e: 'entity-click', payload: { type: ContentEntityType; id: string; entity: EntityData }): void
+  (
+    e: 'entity-click',
+    payload: { type: ContentEntityType; id: string; entity: ContentEntityData }
+  ): void
 }>()
 
-function handleItemClick(entity: EntityData) {
+function handleItemClick(entity: ContentEntityData) {
   if (state.value !== 'success') return
   emit('entity-click', { type: entityType.value, id: entity.id, entity })
 }

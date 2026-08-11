@@ -10,7 +10,7 @@ export interface ScannerRunMetadata {
 }
 
 export type ScannerEntityWarningType =
-  'asset-persist-failed' | 'metadata-missing' | 'scraper-unavailable'
+  'asset-persist-failed' | 'file-sync-failed' | 'metadata-missing' | 'scraper-unavailable'
 
 export type ScannerEntityErrorType =
   | 'duplicate-external-id'
@@ -38,13 +38,13 @@ export interface ScannerEntityError {
 export type ScannerEntityProcessResult =
   | (ScannedEntity & {
       kind: 'new'
-      gameId: string
+      entityId: string
       warnings?: ScannerEntityWarning[]
     })
   | { kind: 'existing'; existing: ScannerRunExisting }
   | (ScannedEntity & {
       kind: 'failed'
-      existingGameId?: string
+      existingEntityId?: string
       errors: ScannerEntityError[]
     })
 

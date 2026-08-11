@@ -122,6 +122,7 @@ export const task = {
     automation: '自動化',
     scanner: '掃描器',
     game: '遊戲',
+    anime: '動漫',
     person: '人物',
     company: '公司',
     character: '角色',

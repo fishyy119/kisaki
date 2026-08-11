@@ -19,10 +19,16 @@ import type {
 } from '@shared/entity-delete'
 import * as schema from '@shared/db/schema'
 import {
+  animeCharacterLinks,
+  animeCompanyLinks,
+  animePersonLinks,
+  animes,
+  animeTagLinks,
   characters,
   characterPersonLinks,
   characterTagLinks,
   collections,
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
@@ -42,11 +48,12 @@ import type { DbContext } from '../types'
 
 const DIRECT_RELATED_ENTITY_TYPES: Record<AllEntityType, readonly AllEntityType[]> = {
   game: ['character', 'person', 'company', 'tag'],
-  character: ['game', 'person', 'tag'],
-  person: ['game', 'character', 'tag'],
-  company: ['game', 'tag'],
-  tag: ['game', 'character', 'person', 'company'],
-  collection: ['game', 'character', 'person', 'company']
+  anime: ['character', 'person', 'company', 'tag'],
+  character: ['game', 'anime', 'person', 'tag'],
+  person: ['game', 'anime', 'character', 'tag'],
+  company: ['game', 'anime', 'tag'],
+  tag: ['game', 'anime', 'character', 'person', 'company'],
+  collection: ['game', 'anime', 'character', 'person', 'company']
 }
 
 type RelatedIdMap = Partial<Record<AllEntityType, Set<string>>>
@@ -160,12 +167,45 @@ export class DbEntityDeleteHelper {
             entityIds
           )
         }
+      case 'anime':
+        return {
+          character: this.selectDistinctIds(
+            animeCharacterLinks,
+            animeCharacterLinks.animeId,
+            animeCharacterLinks.characterId,
+            entityIds
+          ),
+          person: this.selectDistinctIds(
+            animePersonLinks,
+            animePersonLinks.animeId,
+            animePersonLinks.personId,
+            entityIds
+          ),
+          company: this.selectDistinctIds(
+            animeCompanyLinks,
+            animeCompanyLinks.animeId,
+            animeCompanyLinks.companyId,
+            entityIds
+          ),
+          tag: this.selectDistinctIds(
+            animeTagLinks,
+            animeTagLinks.animeId,
+            animeTagLinks.tagId,
+            entityIds
+          )
+        }
       case 'character':
         return {
           game: this.selectDistinctIds(
             gameCharacterLinks,
             gameCharacterLinks.characterId,
             gameCharacterLinks.gameId,
+            entityIds
+          ),
+          anime: this.selectDistinctIds(
+            animeCharacterLinks,
+            animeCharacterLinks.characterId,
+            animeCharacterLinks.animeId,
             entityIds
           ),
           person: this.selectDistinctIds(
@@ -189,6 +229,12 @@ export class DbEntityDeleteHelper {
             gamePersonLinks.gameId,
             entityIds
           ),
+          anime: this.selectDistinctIds(
+            animePersonLinks,
+            animePersonLinks.personId,
+            animePersonLinks.animeId,
+            entityIds
+          ),
           character: this.selectDistinctIds(
             characterPersonLinks,
             characterPersonLinks.personId,
@@ -210,6 +256,12 @@ export class DbEntityDeleteHelper {
             gameCompanyLinks.gameId,
             entityIds
           ),
+          anime: this.selectDistinctIds(
+            animeCompanyLinks,
+            animeCompanyLinks.companyId,
+            animeCompanyLinks.animeId,
+            entityIds
+          ),
           tag: this.selectDistinctIds(
             companyTagLinks,
             companyTagLinks.companyId,
@@ -223,6 +275,12 @@ export class DbEntityDeleteHelper {
             gameTagLinks,
             gameTagLinks.tagId,
             gameTagLinks.gameId,
+            entityIds
+          ),
+          anime: this.selectDistinctIds(
+            animeTagLinks,
+            animeTagLinks.tagId,
+            animeTagLinks.animeId,
             entityIds
           ),
           character: this.selectDistinctIds(
@@ -250,6 +308,12 @@ export class DbEntityDeleteHelper {
             collectionGameLinks,
             collectionGameLinks.collectionId,
             collectionGameLinks.gameId,
+            entityIds
+          ),
+          anime: this.selectDistinctIds(
+            collectionAnimeLinks,
+            collectionAnimeLinks.collectionId,
+            collectionAnimeLinks.animeId,
             entityIds
           ),
           character: this.selectDistinctIds(
@@ -286,6 +350,12 @@ export class DbEntityDeleteHelper {
           .select({ id: games.id, name: games.name })
           .from(games)
           .where(inArray(games.id, entityIds))
+          .all()
+      case 'anime':
+        return this.db
+          .select({ id: animes.id, name: animes.name })
+          .from(animes)
+          .where(inArray(animes.id, entityIds))
           .all()
       case 'character':
         return this.db
@@ -331,6 +401,9 @@ export class DbEntityDeleteHelper {
     switch (entityType) {
       case 'game':
         db.delete(games).where(inArray(games.id, entityIds)).run()
+        return
+      case 'anime':
+        db.delete(animes).where(inArray(animes.id, entityIds)).run()
         return
       case 'character':
         db.delete(characters).where(inArray(characters.id, entityIds)).run()

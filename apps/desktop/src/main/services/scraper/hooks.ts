@@ -7,10 +7,12 @@
 
 import { createWaterfallHook, type WaterfallHook } from '@main/hooks'
 import type {
+  AnimeSearchResult,
   CharacterSearchResult,
   CompanySearchResult,
   GameSearchResult,
   PersonSearchResult,
+  ScrapedAnimeBundle,
   ScrapedCharacterBundle,
   ScrapedCompanyBundle,
   ScrapedGameBundle,
@@ -29,6 +31,7 @@ export interface ScraperMediaHooks<TSearchResult, TBundle> {
 
 export interface ScraperHooks {
   game: ScraperMediaHooks<GameSearchResult, ScrapedGameBundle>
+  anime: ScraperMediaHooks<AnimeSearchResult, ScrapedAnimeBundle>
   person: ScraperMediaHooks<PersonSearchResult, ScrapedPersonBundle>
   company: ScraperMediaHooks<CompanySearchResult, ScrapedCompanyBundle>
   character: ScraperMediaHooks<CharacterSearchResult, ScrapedCharacterBundle>
@@ -37,6 +40,7 @@ export interface ScraperHooks {
 export function createScraperHooks(): ScraperHooks {
   return {
     game: createScraperMediaHooks('scraper.game'),
+    anime: createScraperMediaHooks('scraper.anime'),
     person: createScraperMediaHooks('scraper.person'),
     company: createScraperMediaHooks('scraper.company'),
     character: createScraperMediaHooks('scraper.character')

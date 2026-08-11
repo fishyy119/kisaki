@@ -1,5 +1,5 @@
 import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import/planner'
-import type { BangumiMediaScope } from '../../media/scopes'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import type {
   LocalCollectionTarget,
   LocalMediaAdapter,

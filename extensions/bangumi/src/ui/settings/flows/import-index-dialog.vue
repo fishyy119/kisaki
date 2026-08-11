@@ -1,4 +1,4 @@
-<!-- Import a Bangumi index into the local game library with preview. -->
+<!-- Import a Bangumi index into the local library with preview. -->
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import {
@@ -24,9 +24,11 @@ import {
   Spinner,
   Switch
 } from '@kisaki3/extension-ui-vue'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import type {
   BangumiImportIndexFormArgs,
   BangumiImportIndexTargetMode,
+  BangumiOptionItem,
   BangumiPreviewGroupDto,
   BangumiSettingsOverview
 } from '../../../shared/settings'
@@ -36,6 +38,8 @@ import JobPreviewDialog from '../components/job-preview-dialog.vue'
 
 interface Props {
   overview: BangumiSettingsOverview
+  scope: BangumiMediaScope
+  profiles: readonly BangumiOptionItem[]
   indexInput: string
 }
 
@@ -54,7 +58,7 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const defaultProfileId = computed(() => props.overview.profiles[0]?.value ?? '')
+const defaultProfileId = computed(() => props.profiles[0]?.value ?? '')
 const defaultCollectionId = computed(() => props.overview.collections[0]?.value ?? '')
 
 const busy = ref<'preview' | 'run' | null>(null)
@@ -132,6 +136,7 @@ async function runIndex(): Promise<void> {
 
 function snapshotArgs(): BangumiImportIndexFormArgs {
   return {
+    scope: props.scope,
     profileId: indexForm.profileId,
     indexInput: props.indexInput,
     patchExisting: indexForm.patchExisting,
@@ -169,7 +174,7 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem
-                  v-for="profile in props.overview.profiles"
+                  v-for="profile in props.profiles"
                   :key="profile.value"
                   :value="profile.value"
                 >

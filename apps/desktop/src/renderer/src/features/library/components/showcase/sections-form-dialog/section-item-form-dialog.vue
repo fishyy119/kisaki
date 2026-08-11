@@ -29,7 +29,7 @@ import { createEmptyFilter, countConditions, type FilterState } from '@shared/fi
 import { notify } from '@renderer/core/notify'
 import type { SectionLayout, SectionItemSize, SectionOpenMode } from '@shared/db'
 import type { ShowcaseSectionFormItem } from './types'
-import type { AllEntityType, SortDirection } from '@shared/common'
+import { ALL_ENTITY_TYPES, type AllEntityType, type SortDirection } from '@shared/common'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -39,7 +39,7 @@ const { m } = useI18n()
 // =============================================================================
 
 const ENTITY_TYPES = computed<{ value: AllEntityType; label: string }[]>(() =>
-  (['game', 'character', 'person', 'company', 'collection', 'tag'] as const).map((value) => ({
+  ALL_ENTITY_TYPES.map((value) => ({
     value,
     label: m.value.library.entities[value]
   }))

@@ -11,7 +11,7 @@ import {
   type LibraryGraphMediaAttachmentEdge,
   type SaveBackup
 } from '@kisaki3/extension-api'
-import { gameNotes } from '@shared/db'
+import { animeEpisodes, gameNotes } from '@shared/db'
 import type { DbService } from '@main/services/db'
 import { assertInsideAnyRoot } from '../../../shared/path-confinement'
 import { createDiagnostic } from './diagnostics'
@@ -88,6 +88,21 @@ export async function persistNoteCover(
     noteId,
     'coverFile',
     { kind: 'path', path: coverPath },
+    signal
+  )
+}
+
+export async function persistEpisodeStill(
+  db: DbService,
+  episodeId: string,
+  stillPath: string,
+  signal?: AbortSignal
+): Promise<string> {
+  return await db.attachment.setFile(
+    animeEpisodes,
+    episodeId,
+    'stillFile',
+    { kind: 'path', path: stillPath },
     signal
   )
 }

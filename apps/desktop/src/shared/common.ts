@@ -23,9 +23,12 @@
  * - Scraper support
  * - Independent library page at /library/$mediaType
  *
- * Future: May expand to include 'book' | 'movie' | 'music' | 'tv'
+ * Media types are divided by metadata ecosystem and user-facing library, not by
+ * playback technology: several media types share one technical capability
+ * (anime/tv/movie all play video). Target set: game, anime, tv, movie, music,
+ * audio, comic, book.
  */
-export type MediaType = 'game'
+export type MediaType = 'game' | 'anime'
 
 /**
  * Metadata entity types - Entities associated with media
@@ -77,7 +80,7 @@ export type AllEntityType = ContentEntityType | OrganizerType
 // Type Constants (for iteration and validation)
 // =============================================================================
 
-export const MEDIA_TYPES: readonly MediaType[] = ['game']
+export const MEDIA_TYPES: readonly MediaType[] = ['game', 'anime']
 
 export const METADATA_TYPES: readonly MetadataType[] = ['character', 'person', 'company']
 

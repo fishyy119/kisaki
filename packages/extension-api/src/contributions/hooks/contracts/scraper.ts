@@ -1,8 +1,10 @@
 import type {
+  AnimeSearchResult,
   CharacterSearchResult,
   CompanySearchResult,
   GameSearchResult,
   PersonSearchResult,
+  ScrapedAnimeBundle,
   ScrapedCharacterBundle,
   ScrapedCompanyBundle,
   ScrapedGameBundle,
@@ -22,6 +24,9 @@ export interface ScraperHookPoints {
   'scraper.game.lookup': HookPointSpec<'waterfall', ScraperLookup>
   'scraper.game.searched': HookPointSpec<'waterfall', GameSearchResult[]>
   'scraper.game.collected': HookPointSpec<'waterfall', ScrapedGameBundle>
+  'scraper.anime.lookup': HookPointSpec<'waterfall', ScraperLookup>
+  'scraper.anime.searched': HookPointSpec<'waterfall', AnimeSearchResult[]>
+  'scraper.anime.collected': HookPointSpec<'waterfall', ScrapedAnimeBundle>
   'scraper.person.lookup': HookPointSpec<'waterfall', ScraperLookup>
   'scraper.person.searched': HookPointSpec<'waterfall', PersonSearchResult[]>
   'scraper.person.collected': HookPointSpec<'waterfall', ScrapedPersonBundle>

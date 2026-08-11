@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-import { useGameMonitorStore } from '@renderer/stores'
+import { useGameActivityStore } from '@renderer/stores'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ButtonVariants } from '@renderer/components/ui/button'
@@ -50,8 +50,8 @@ const emit = defineEmits<{
   click: []
 }>()
 
-const gameMonitorStore = useGameMonitorStore()
-const isRunning = computed(() => gameMonitorStore.isGameRunning(props.game.id))
+const gameActivityStore = useGameActivityStore()
+const isRunning = computed(() => gameActivityStore.isGameRunning(props.game.id))
 
 const imageUrl = computed(() =>
   props.game.coverFile

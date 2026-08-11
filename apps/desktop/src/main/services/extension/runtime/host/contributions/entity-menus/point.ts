@@ -357,6 +357,8 @@ function getEntityMenuRegistrationForPath(
   switch (domain) {
     case 'game':
       return runtime.entityMenus.game[scope]?.get(contributionId)
+    case 'anime':
+      return runtime.entityMenus.anime[scope]?.get(contributionId)
     case 'character':
       return scope === 'single'
         ? runtime.entityMenus.character.single.get(contributionId)
@@ -384,6 +386,15 @@ function resolveRegisteredMenuContribution(
         return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
       }
       if (registration.scope === 'batch' && input.domain === 'game' && input.scope === 'batch') {
+        return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
+      }
+      break
+
+    case 'anime':
+      if (registration.scope === 'single' && input.domain === 'anime' && input.scope === 'single') {
+        return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
+      }
+      if (registration.scope === 'batch' && input.domain === 'anime' && input.scope === 'batch') {
         return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
       }
       break

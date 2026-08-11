@@ -10,6 +10,7 @@ import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import type { ContentEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
 import {
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
@@ -40,6 +41,16 @@ export const COLLECTION_LINKS: Record<ContentEntityType, CollectionLinkDef> = {
     orderColumn: collectionGameLinks.orderInCollection,
     buildInsertValue(id, collectionId, entityId, orderInCollection) {
       return { id, collectionId, gameId: entityId, orderInCollection }
+    }
+  },
+  anime: {
+    table: collectionAnimeLinks,
+    tableName: getTableName(collectionAnimeLinks),
+    collectionIdColumn: collectionAnimeLinks.collectionId,
+    entityIdColumn: collectionAnimeLinks.animeId,
+    orderColumn: collectionAnimeLinks.orderInCollection,
+    buildInsertValue(id, collectionId, entityId, orderInCollection) {
+      return { id, collectionId, animeId: entityId, orderInCollection }
     }
   },
   character: {

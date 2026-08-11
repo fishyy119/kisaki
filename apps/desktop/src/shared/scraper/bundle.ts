@@ -1,4 +1,7 @@
 import type {
+  AnimeCharacterType,
+  AnimeCompanyType,
+  AnimePersonType,
   CharacterPersonType,
   GameCharacterType,
   GameCompanyType,
@@ -6,6 +9,8 @@ import type {
 } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
 import type {
+  AnimeEpisodeInfo,
+  CoreAnimeMetadata,
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
@@ -28,6 +33,8 @@ export type ScraperSessionResult<TResultMap extends object> = {
 
 export type ScrapedGameInfo = Omit<CoreGameMetadata, 'externalIds' | 'tags'>
 
+export type ScrapedAnimeInfo = Omit<CoreAnimeMetadata, 'externalIds' | 'tags'>
+
 export type ScrapedPersonInfo = Omit<CorePersonMetadata, 'externalIds' | 'tags'>
 
 export type ScrapedCompanyInfo = Omit<CoreCompanyMetadata, 'externalIds' | 'tags'>
@@ -35,6 +42,10 @@ export type ScrapedCompanyInfo = Omit<CoreCompanyMetadata, 'externalIds' | 'tags
 export type ScrapedCharacterInfo = Omit<CoreCharacterMetadata, 'externalIds' | 'tags'>
 
 export interface ScrapedGameCore extends ScrapedGameInfo {
+  tags?: Tag[]
+}
+
+export interface ScrapedAnimeCore extends ScrapedAnimeInfo {
   tags?: Tag[]
 }
 
@@ -127,6 +138,46 @@ export interface ScrapedGameMetadata extends ScrapedGameCore, ScrapedIdentityCar
 }
 
 /**
+ * Scraped anime-person relation fact.
+ */
+export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
+  type: AnimePersonType
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped anime-character relation fact.
+ */
+export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
+  type: AnimeCharacterType
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped anime-company relation fact.
+ */
+export interface ScrapedAnimeCompanyFact extends ScrapedCompanyMetadata {
+  type: AnimeCompanyType
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped anime metadata with relation/media facts.
+ */
+export interface ScrapedAnimeMetadata extends ScrapedAnimeCore, ScrapedIdentityCarrier {
+  episodes?: AnimeEpisodeInfo[]
+  persons?: ScrapedAnimePersonFact[]
+  characters?: ScrapedAnimeCharacterFact[]
+  companies?: ScrapedAnimeCompanyFact[]
+  covers?: string[]
+  backdrops?: string[]
+  logos?: string[]
+}
+
+/**
  * Relation facts a game scrape can state.
  *
  * An absent key means the scrape could not answer that relation; an empty array
@@ -148,6 +199,27 @@ export interface ScrapedGameBundle {
     backdropUrls?: string[]
     logoUrls?: string[]
     iconUrls?: string[]
+  }
+}
+
+/** Relation facts an anime scrape can state; see `ScrapedGameRelationFacts`. */
+export interface ScrapedAnimeRelationFacts {
+  animePerson?: ScrapedAnimePersonFact[]
+  animeCompany?: ScrapedAnimeCompanyFact[]
+  animeCharacter?: ScrapedAnimeCharacterFact[]
+  characterPerson?: ScrapedCharacterPersonFact[]
+}
+
+export interface ScrapedAnimeBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedAnimeCore
+  /** Absent means unknown; an empty array means the source states no episodes. */
+  episodes?: AnimeEpisodeInfo[]
+  relationFacts?: ScrapedAnimeRelationFacts
+  mediaCandidates?: {
+    coverUrls?: string[]
+    backdropUrls?: string[]
+    logoUrls?: string[]
   }
 }
 

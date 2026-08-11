@@ -48,6 +48,7 @@ export const scanner = {
   issueTypes: {
     assetPersistFailed: 'アセットの保存に失敗',
     duplicateExternalId: '外部 ID の重複',
+    fileSyncFailed: 'ファイルの同期に失敗',
     metadataMissing: 'メタデータの欠落',
     pathUnavailable: 'パスにアクセス不可',
     scraperUnavailable: 'スクレイパーが利用不可',
@@ -66,7 +67,7 @@ export const scanner = {
       type: '種類',
       path: 'パス',
       reason: '原因',
-      relatedGame: '関連ゲーム',
+      relatedEntity: '関連項目',
       actions: '操作'
     },
     openPath: 'パスを開く',
@@ -238,7 +239,11 @@ export const scanner = {
         `パスにアクセスできないため追加しませんでした：${message}`,
       notScannableDirectory: 'パスはスキャン可能なディレクトリではないため追加しませんでした。',
       externalIdLinked:
-        '外部 ID が既存のゲームに関連付けられているため、このパスは追加しませんでした。'
+        '外部 ID が既存の項目に関連付けられているため、このパスは追加しませんでした。',
+      episodeNumbersUnreadable: ({ count }: { count: number }) =>
+        `${count} 件の動画ファイルは話数を判別できないため、番号なしのエピソードとして追加しました。`,
+      episodeSyncFailed: ({ message }: { message: string }) =>
+        `項目は追加しましたが、動画ファイルを読み取れませんでした：${message}`
     }
   }
 } satisfies Messages['scanner']

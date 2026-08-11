@@ -1,6 +1,13 @@
 import type { LibraryAttachmentCapability } from './attachments'
 import type { LibraryGraphCapability } from './graph'
 import type {
+  LibraryAnime,
+  LibraryAnimeCreateInput,
+  LibraryAnimeEpisode,
+  LibraryAnimeEpisodeQuery,
+  LibraryAnimeEpisodeWatchStatePatch,
+  LibraryAnimePatch,
+  LibraryAnimeQuery,
   LibraryCharacter,
   LibraryCharacterCreateInput,
   LibraryCharacterPatch,
@@ -36,6 +43,31 @@ export interface LibraryEntityNamespace<TEntity, TCreate, TPatch, TQuery> {
   remove(id: string): Promise<void>
 }
 
+/**
+ * Episodes owned by an anime entry.
+ *
+ * Exposed under the anime namespace rather than promoted to an entity type:
+ * an episode has no independent identity in the library, and per-episode watch
+ * state is the only reason callers reach for it.
+ */
+export interface LibraryAnimeEpisodeNamespace {
+  list(query: LibraryAnimeEpisodeQuery): Promise<readonly LibraryAnimeEpisode[]>
+  patchWatchState(
+    episodeId: string,
+    patch: LibraryAnimeEpisodeWatchStatePatch
+  ): Promise<LibraryAnimeEpisode>
+}
+
+export interface LibraryAnimeNamespace
+  extends LibraryEntityNamespace<
+    LibraryAnime,
+    LibraryAnimeCreateInput,
+    LibraryAnimePatch,
+    LibraryAnimeQuery
+  > {
+  episodes: LibraryAnimeEpisodeNamespace
+}
+
 export interface LibraryCapability {
   graph: LibraryGraphCapability
   games: LibraryEntityNamespace<
@@ -44,6 +76,7 @@ export interface LibraryCapability {
     LibraryGamePatch,
     LibraryGameQuery
   >
+  animes: LibraryAnimeNamespace
   characters: LibraryEntityNamespace<
     LibraryCharacter,
     LibraryCharacterCreateInput,

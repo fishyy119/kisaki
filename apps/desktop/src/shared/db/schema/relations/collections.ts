@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
 
 import {
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
@@ -11,6 +12,7 @@ import {
 
 export const collectionsRelations = relations(collections, ({ many }) => ({
   collectionGameLinks: many(collectionGameLinks),
+  collectionAnimeLinks: many(collectionAnimeLinks),
   collectionCharacterLinks: many(collectionCharacterLinks),
   collectionPersonLinks: many(collectionPersonLinks),
   collectionCompanyLinks: many(collectionCompanyLinks),

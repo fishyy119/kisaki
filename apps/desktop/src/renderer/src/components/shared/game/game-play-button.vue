@@ -1,6 +1,6 @@
 <!--
   GamePlayButton
-  Universal game play/stop button that syncs with game monitor state.
+  Universal game play/stop button that syncs with game activity state.
   Owns the four visible states (idle, launching, running, stopping) and the
   user notifications for every launch/stop outcome the button cannot show.
 -->
@@ -9,7 +9,7 @@ import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { useGameMonitorStore } from '@renderer/stores'
+import { useGameActivityStore } from '@renderer/stores'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { Button } from '@renderer/components/ui/button'
@@ -17,7 +17,7 @@ import { cn } from '@renderer/utils/cn'
 import { cva } from 'class-variance-authority'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { GameLaunchResult, GameStopResult } from '@shared/launcher'
+import type { GameLaunchResult, GameStopResult } from '@shared/activity'
 
 const log = createLogger('Game')
 
@@ -39,13 +39,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { m } = useI18n()
 
-const gameMonitorStore = useGameMonitorStore()
-const isRunning = computed(() => gameMonitorStore.isGameRunning(props.gameId))
+const gameActivityStore = useGameActivityStore()
+const isRunning = computed(() => gameActivityStore.isGameRunning(props.gameId))
 const pendingAction = ref<'play' | 'stop' | null>(null)
 
 /**
- * The monitor broadcast lands before the launcher IPC reply, so the in-flight
- * phase ends on the monitor state instead of the reply. Deriving both from one
+ * The activity broadcast lands before the launch IPC reply, so the in-flight
+ * phase ends on the tracked state instead of the reply. Deriving both from one
  * value keeps a single visual transition per action.
  */
 const state = computed<PlayButtonState>(() => {
@@ -125,14 +125,14 @@ async function handleClick(e: Event) {
 
   try {
     if (action === 'stop') {
-      const result = await ipcManager.invoke('launcher:kill-game', props.gameId)
+      const result = await ipcManager.invoke('activity:stop-game', props.gameId)
       if (result.success) {
         notifyStopOutcome(result.data)
       } else {
         notifyUnexpected(action, result.error)
       }
     } else {
-      const result = await ipcManager.invoke('launcher:launch-game', props.gameId)
+      const result = await ipcManager.invoke('activity:launch-game', props.gameId)
       if (result.success) {
         notifyLaunchOutcome(result.data)
       } else {
@@ -140,7 +140,7 @@ async function handleClick(e: Event) {
       }
     }
   } catch (error) {
-    log.error('launcher call threw:', error)
+    log.error('activity call threw:', error)
     notifyUnexpected(action, error instanceof Error ? error.message : String(error))
   } finally {
     pendingAction.value = null
@@ -148,7 +148,7 @@ async function handleClick(e: Event) {
 }
 
 function notifyLaunchOutcome(result: GameLaunchResult): void {
-  const messages = m.value.launcher
+  const messages = m.value.activity
 
   switch (result.status) {
     case 'detected':
@@ -166,7 +166,7 @@ function notifyLaunchOutcome(result: GameLaunchResult): void {
 }
 
 function notifyStopOutcome(result: GameStopResult): void {
-  const messages = m.value.launcher
+  const messages = m.value.activity
 
   switch (result.status) {
     case 'stopped':
@@ -182,9 +182,9 @@ function notifyStopOutcome(result: GameStopResult): void {
 
 /** Only transport or programming errors reach here; expected ones are results. */
 function notifyUnexpected(action: 'play' | 'stop', error: string): void {
-  log.warn(`launcher ${action} failed:`, error)
+  log.warn(`activity ${action} failed:`, error)
 
-  const messages = m.value.launcher
+  const messages = m.value.activity
   notify.error(action === 'stop' ? messages.stopFailedTitle : messages.launchFailedTitle, error)
 }
 </script>

@@ -11,8 +11,10 @@ import { WindowService } from './services/window'
 import { NativeService } from './services/native'
 import { I18nService } from './services/i18n'
 import { ScraperService } from './services/scraper'
-import { MonitorService } from './services/monitor'
-import { LauncherService } from './services/launcher'
+import { ProcessService } from './services/process'
+import { PlayerService } from './services/player'
+import { MediaInfoService } from './services/media-info'
+import { ActivityService } from './services/activity'
 import { IngestService } from './services/ingest'
 import { ScannerService } from './services/scanner'
 import { AttachmentService } from './services/attachment'
@@ -120,12 +122,14 @@ async function onAppReady(): Promise<void> {
   await container.register(new AutomationService())
   await container.register(new NativeService())
   await container.register(new I18nService())
+  await container.register(new MediaInfoService())
   await container.register(new ScraperService())
   await container.register(new IngestService())
   await container.register(new ScannerService())
   await container.register(new AttachmentService())
-  await container.register(new MonitorService())
-  await container.register(new LauncherService())
+  await container.register(new ProcessService())
+  await container.register(new PlayerService())
+  await container.register(new ActivityService())
   await container.register(new ExtensionService())
   await container.register(new DeeplinkService())
 
@@ -176,12 +180,12 @@ async function onAppReady(): Promise<void> {
   const dbService = container.get<DbService>('db')
 
   // Schedule all scanners for periodic scanning
-  await scannerService.game.scheduleAllScanners()
+  await scannerService.scheduleAllScanners()
 
   // Check if we should scan all scanners on app start
   const settings = dbService.settings.get()
   if (settings.scannerStartAtOpen) {
-    scannerService.game.startAllScanners({ type: 'system', reason: 'startup' }).catch((error) => {
+    scannerService.startAllScanners({ type: 'system', reason: 'startup' }).catch((error) => {
       log.error('Failed to start scanners on startup.', error)
     })
   }

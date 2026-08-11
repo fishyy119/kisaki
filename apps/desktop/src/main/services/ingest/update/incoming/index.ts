@@ -1,3 +1,4 @@
+export { buildAnimeIncoming } from './anime'
 export { buildCharacterIncoming } from './character'
 export { buildCompanyIncoming } from './company'
 export { buildGameIncoming } from './game'

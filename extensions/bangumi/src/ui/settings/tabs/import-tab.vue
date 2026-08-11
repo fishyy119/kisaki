@@ -12,6 +12,8 @@ import {
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
 import { m } from '../i18n'
+import { useScopeSelection } from '../scope'
+import MediaScopeSelect from '../components/media-scope-select.vue'
 import SettingsSection from '../components/settings-section.vue'
 import ImportCollectionsDialog from '../flows/import-collections-dialog.vue'
 import ImportIndexDialog from '../flows/import-index-dialog.vue'
@@ -30,7 +32,12 @@ const emit = defineEmits<{
 const indexInput = ref('')
 const collectionsOpen = ref(false)
 const indexOpen = ref(false)
-const hasProfiles = computed(() => props.overview.profiles.length > 0)
+const {
+  scope,
+  options: scopeOptions,
+  profiles
+} = useScopeSelection(() => props.overview.scopes)
+const hasProfiles = computed(() => profiles.value.length > 0)
 </script>
 
 <template>
@@ -50,6 +57,16 @@ const hasProfiles = computed(() => props.overview.profiles.length > 0)
       <FieldGroup>
         <Field
           orientation="horizontal"
+          :label="m.ui.mediaScope"
+        >
+          <MediaScopeSelect
+            v-model="scope"
+            :scopes="scopeOptions"
+          />
+        </Field>
+
+        <Field
+          orientation="horizontal"
           :label="m.ui.import.myCollections"
           :description="m.ui.import.myCollectionsDescription"
         >
@@ -57,7 +74,7 @@ const hasProfiles = computed(() => props.overview.profiles.length > 0)
             <Button
               size="sm"
               type="button"
-              :disabled="props.overview.activeJobs.importCollections"
+              :disabled="!scope || props.overview.activeJobs.importCollections"
               @click="collectionsOpen = true"
             >
               <Icon
@@ -84,7 +101,7 @@ const hasProfiles = computed(() => props.overview.profiles.length > 0)
             <Button
               size="sm"
               type="button"
-              :disabled="!indexInput.trim() || props.overview.activeJobs.importIndex"
+              :disabled="!scope || !indexInput.trim() || props.overview.activeJobs.importIndex"
               @click="indexOpen = true"
             >
               <Icon
@@ -99,17 +116,21 @@ const hasProfiles = computed(() => props.overview.profiles.length > 0)
     </SettingsSection>
 
     <ImportCollectionsDialog
-      v-if="collectionsOpen"
+      v-if="collectionsOpen && scope"
       v-model:open="collectionsOpen"
       :overview="props.overview"
+      :scope="scope"
+      :profiles="profiles"
       @refresh="emit('refresh')"
       @error="(message) => emit('error', message)"
     />
 
     <ImportIndexDialog
-      v-if="indexOpen"
+      v-if="indexOpen && scope"
       v-model:open="indexOpen"
       :overview="props.overview"
+      :scope="scope"
+      :profiles="profiles"
       :index-input="indexInput"
       @refresh="emit('refresh')"
       @error="(message) => emit('error', message)"

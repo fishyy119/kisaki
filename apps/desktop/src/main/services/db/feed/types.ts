@@ -1,4 +1,4 @@
-import type { Status } from '@shared/db/contracts/enums'
+import type { MediaType } from '@shared/common'
 import type { RawDbChange } from '@shared/db/changes'
 import type { LibraryEntityTopic } from '@shared/library'
 
@@ -7,7 +7,9 @@ export const FEED_DEBOUNCE_MS = 25
 /** Upper bound on summaries per `db:changed` push, so bulk writes stay deliverable. */
 export const FEED_PUSH_CHUNK_SIZE = 2000
 
-export type ConfiguredEntityTopic = Exclude<LibraryEntityTopic, 'game'>
+export type MediaEntityTopic = Extract<LibraryEntityTopic, MediaType>
+
+export type ConfiguredEntityTopic = Exclude<LibraryEntityTopic, MediaEntityTopic>
 
 export interface EntityGroup {
   entity: LibraryEntityTopic
@@ -15,16 +17,36 @@ export interface EntityGroup {
   changes: RawDbChange[]
 }
 
-export interface GameRow {
+export interface MediaRow {
   id: string
   name: string
-  status: Status
-  score: number | null
-  total_duration: number
-  last_active_at: number | null
 }
 
-export type IdSnapshotReader = (gameId: string) => string[]
+export interface MediaRelationTables {
+  person: string
+  company: string
+  character: string
+}
+
+/** Table and column layout of one playable media type, for change projection. */
+export interface MediaFeedProjection {
+  entity: MediaEntityTopic
+  table: string
+  /** Column every related table uses to point back at the media row. */
+  ownerColumn: string
+  /** Ordering column shared by the media-owned link tables. */
+  orderColumn: string
+  externalIdsTable: string
+  tagLinksTable: string
+  collectionLinksTable: string
+  relationTables: MediaRelationTables
+  /** Owned rows that only redirect the feed at their media row. */
+  ownedTables: readonly string[]
+  coreFields: Record<string, string>
+  assetFields: Record<string, string>
+  /** Present when the media type tracks per-episode watch state. */
+  episodesTable?: string
+}
 
 export interface EntityProjection {
   entity: ConfiguredEntityTopic

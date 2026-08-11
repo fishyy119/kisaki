@@ -1,7 +1,7 @@
 import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiCollectionType, BangumiUserCollection } from '../api/types'
-import type { BangumiMediaScope } from '../media/scopes'
+import type { BangumiMediaScope } from '../../shared/scopes'
 import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
 

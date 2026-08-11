@@ -18,6 +18,7 @@ export * from './use-inline-attachments'
 
 // Entity data composables (Provider/Consumer pattern)
 export * from './use-game'
+export * from './use-anime'
 export * from './use-collection'
 export * from './use-person'
 export * from './use-character'

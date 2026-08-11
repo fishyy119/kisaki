@@ -3,6 +3,7 @@ import type { Messages } from '../schema'
 export const library = {
   entities: {
     game: 'ゲーム',
+    anime: 'アニメ',
     character: 'キャラクター',
     person: '人物',
     company: '会社',
@@ -52,7 +53,14 @@ export const library = {
     status: 'ステータス',
     playDuration: 'プレイ時間',
     lastActiveAt: '最終プレイ',
-    order: '並び順'
+    order: '並び順',
+    format: '種別',
+    totalEpisodes: '話数',
+    episodes: 'エピソード',
+    extras: '特典映像',
+    watchDuration: '視聴時間',
+    lastWatchedAt: '最終視聴',
+    relatedAnimes: '関連アニメ'
   },
 
   status: {
@@ -104,11 +112,66 @@ export const library = {
       publisher: '発売',
       distributor: '販売',
       other: 'その他'
+    },
+    animePerson: {
+      director: '監督',
+      series: 'シリーズ構成',
+      scenario: '脚本',
+      characterDesign: 'キャラクターデザイン',
+      music: '音楽',
+      animationDirector: '作画監督',
+      other: 'その他'
+    },
+    animeCharacter: {
+      main: '主人公',
+      supporting: '脇役',
+      cameo: 'カメオ',
+      other: 'その他'
+    },
+    animeCompany: {
+      studio: '制作',
+      producer: '製作',
+      distributor: '配給',
+      other: 'その他'
     }
+  },
+
+  animeFormat: {
+    tv: 'TV',
+    movie: '劇場版',
+    ova: 'OVA',
+    ona: 'ONA',
+    special: 'スペシャル',
+    other: 'その他'
+  },
+
+  animeEpisodeType: {
+    regular: '本編',
+    special: 'スペシャル'
+  },
+
+  animeRelation: {
+    sequel: '続編',
+    prequel: '前作',
+    sideStory: '外伝',
+    movie: '劇場版',
+    summary: '総集編',
+    alternative: '別バージョン',
+    other: 'その他'
+  },
+
+  animeExtraKind: {
+    trailer: '予告',
+    pv: 'PV',
+    ncop: 'ノンクレジット OP',
+    nced: 'ノンクレジット ED',
+    interview: 'インタビュー',
+    other: 'その他'
   },
 
   counts: {
     game: ({ count }: { count: number }) => `${count} 本のゲーム`,
+    anime: ({ count }: { count: number }) => `${count} 本のアニメ`,
     character: ({ count }: { count: number }) => `${count} 体のキャラクター`,
     person: ({ count }: { count: number }) => `${count} 名の人物`,
     company: ({ count }: { count: number }) => `${count} 社`,
@@ -455,6 +518,7 @@ export const library = {
     filterConfigUpdated: 'フィルター設定を更新しました',
 
     gameLabel: 'ゲーム',
+    animeLabel: 'アニメ',
     characterLabel: 'キャラクター',
     personLabel: '人物',
     companyLabel: '会社',
@@ -468,6 +532,7 @@ export const library = {
 
     linkLabels: {
       game: 'ゲームの関連付け',
+      anime: 'アニメの関連付け',
       character: 'キャラクターの関連付け',
       person: '人物の関連付け',
       company: '会社の関連付け',
@@ -582,6 +647,9 @@ export const library = {
       recentlyAdded: { name: '最近追加', description: '追加日時で並べたゲーム' },
       allGames: { name: 'すべてのゲーム', description: 'ライブラリ内のすべてのゲーム' },
       favoriteGames: { name: 'お気に入りのゲーム', description: 'お気に入りにしたゲーム' },
+      recentlyWatched: { name: '最近視聴', description: '最終視聴日時で並べたアニメ' },
+      topRatedAnime: { name: '高評価アニメ', description: 'スコアで並べたアニメ' },
+      recentlyAddedAnime: { name: '最近追加のアニメ', description: '追加日時で並べたアニメ' },
       favoriteCharacters: {
         name: 'お気に入りのキャラクター',
         description: 'お気に入りにしたキャラクター'

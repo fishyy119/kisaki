@@ -1,4 +1,8 @@
 import type {
+  LibraryAnime,
+  LibraryAnimeCreateInput,
+  LibraryAnimePatch,
+  LibraryAnimeQuery,
   LibraryCharacter,
   LibraryCharacterCreateInput,
   LibraryCharacterPatch,
@@ -37,6 +41,7 @@ import { buildFilterConditions, buildOrderBy } from '@shared/filter/builder'
 import { buildSearchCondition } from '@shared/search/builder'
 import type { DbService } from '@main/services/db'
 import {
+  ANIME_CONFIG,
   CHARACTER_CONFIG,
   COLLECTION_CONFIG,
   COMPANY_CONFIG,
@@ -79,6 +84,26 @@ export class ExtensionLibraryEntityStore {
 
   removeGame(id: string): void {
     this.removeEntity(id, GAME_CONFIG)
+  }
+
+  getAnime(id: string): LibraryAnime | null {
+    return this.getEntity(id, ANIME_CONFIG)
+  }
+
+  listAnimes(query?: LibraryAnimeQuery): readonly LibraryAnime[] {
+    return this.listEntities(query, ANIME_CONFIG)
+  }
+
+  createAnime(input: LibraryAnimeCreateInput): LibraryAnime {
+    return this.createEntity(input, ANIME_CONFIG)
+  }
+
+  updateAnime(id: string, patch: LibraryAnimePatch): LibraryAnime {
+    return this.updateEntity(id, patch, ANIME_CONFIG)
+  }
+
+  removeAnime(id: string): void {
+    this.removeEntity(id, ANIME_CONFIG)
   }
 
   getCharacter(id: string): LibraryCharacter | null {

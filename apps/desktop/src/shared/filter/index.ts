@@ -46,6 +46,7 @@ export { buildFilterConditions, buildOrderBy } from './builder'
 
 export { getFilterQuerySpec, getFilterRelevantTables } from './specs/registry'
 export { gameFilterQuerySpec } from './specs/game'
+export { animeFilterQuerySpec } from './specs/anime'
 export { characterFilterQuerySpec } from './specs/character'
 export { personFilterQuerySpec } from './specs/person'
 export { companyFilterQuerySpec } from './specs/company'

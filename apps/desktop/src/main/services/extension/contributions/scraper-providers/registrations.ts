@@ -15,7 +15,7 @@ import type { ScraperProviderContext } from '@main/services/scraper'
 import type { ExtensionContributionPointOptions } from '../types'
 import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
 import { getScraperRpcMethod } from './descriptors'
-import type { ScraperDomain, ScraperRegistration } from './domain'
+import type { ScraperDomain, ScraperRegistration, ScraperRpcAction } from './domain'
 
 export function createProviderAdapter(
   options: ExtensionContributionPointOptions,
@@ -126,7 +126,7 @@ function createSessionAdapter(
 async function requestScraperHost<TResponse>(
   options: ExtensionContributionPointOptions,
   domain: ScraperDomain,
-  action: 'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close',
+  action: ScraperRpcAction,
   params: Record<string, unknown>,
   request: { signal?: AbortSignal; timeoutMs?: number } = {}
 ): Promise<TResponse> {

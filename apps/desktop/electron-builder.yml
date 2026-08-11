@@ -9,6 +9,9 @@ files:
   - out/**
   - drizzle/**
   - resources/**
+  # Media tools are staged per platform-arch; ship only the target's directory.
+  - '!resources/bin/**'
+  - resources/bin/${platform}-${arch}/**
 asarUnpack:
   - resources/**
 

@@ -1,4 +1,8 @@
 import type {
+  AnimeUpdateCoreSurface,
+  AnimeUpdateMediaSurface,
+  AnimeUpdateRelationSurface,
+  AnimeUpdateSurface,
   CharacterUpdateCoreSurface,
   CharacterUpdateMediaSurface,
   CharacterUpdateRelationSurface,
@@ -18,17 +22,29 @@ import type {
   PersonUpdateSurface
 } from '@shared/ingest/update'
 import type { ExternalId } from '@shared/identity'
-import type { ScrapedCharacterRelationFacts, ScrapedGameRelationFacts } from '@shared/scraper'
-import type { PendingAssetTask } from '../assets'
-import type { IngestCharacterGraph, IngestGameGraph, IngestGameGraphLinks } from '../graph'
 import type {
+  ScrapedAnimeRelationFacts,
+  ScrapedCharacterRelationFacts,
+  ScrapedGameRelationFacts
+} from '@shared/scraper'
+import type { PendingAssetTask } from '../assets'
+import type {
+  IngestAnimeGraph,
+  IngestAnimeGraphLinks,
+  IngestCharacterGraph,
+  IngestGameGraph,
+  IngestGameGraphLinks
+} from '../graph'
+import type {
+  AnimeEpisodeInfo,
+  CoreAnimeMetadata,
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
   CorePersonMetadata,
   Tag
 } from '@shared/metadata'
-import type { Character, Company, Game, Person } from '@shared/db'
+import type { Anime, Character, Company, Game, Person } from '@shared/db'
 
 export interface UpdateIncomingBundle<TCore, TRelationFacts, TMediaCandidates> {
   core: Partial<TCore>
@@ -72,6 +88,14 @@ export interface UpdateIncomingBuildResult<TAvailability, TCore, TRelationFacts,
  */
 export type GameRelationLink = keyof IngestGameGraphLinks
 
+/**
+ * Link tables an anime update can write.
+ *
+ * Derived from the graph builder's output, so a new link table forces a
+ * declaration in `ANIME_RELATION_LINKS`.
+ */
+export type AnimeRelationLink = keyof IngestAnimeGraphLinks
+
 /** Link tables a character update can write; the graph carries a single set. */
 export type CharacterRelationLink = 'characterPerson'
 
@@ -92,6 +116,12 @@ export interface GameIncomingMediaCandidates {
   backdropUrls?: string[]
   logoUrls?: string[]
   iconUrls?: string[]
+}
+
+export interface AnimeIncomingMediaCandidates {
+  coverUrls?: string[]
+  backdropUrls?: string[]
+  logoUrls?: string[]
 }
 
 export type PersonIncomingBuildResult = UpdateIncomingBuildResult<
@@ -122,6 +152,17 @@ export type GameIncomingBuildResult = UpdateIncomingBuildResult<
   GameIncomingMediaCandidates
 >
 
+export interface AnimeIncomingBuildResult
+  extends UpdateIncomingBuildResult<
+    UpdateIncomingRelationAvailability<AnimeUpdateSurface, AnimeRelationLink>,
+    CoreAnimeMetadata,
+    ScrapedAnimeRelationFacts,
+    AnimeIncomingMediaCandidates
+  > {
+  /** Absent means the scrape could not answer episodes; an empty array means none exist. */
+  episodes?: AnimeEpisodeInfo[]
+}
+
 export interface PersonCurrentState {
   person: Person
   externalIds: ExternalId[]
@@ -142,6 +183,12 @@ export interface CharacterCurrentState {
 
 export interface GameCurrentState {
   game: Game
+  externalIds: ExternalId[]
+  tags: Tag[]
+}
+
+export interface AnimeCurrentState {
+  anime: Anime
   externalIds: ExternalId[]
   tags: Tag[]
 }
@@ -185,6 +232,34 @@ export interface GameUpdatePlan {
   /** Link tables where `replace` was downgraded because a fact source stayed silent. */
   degradedRelationLinks: GameRelationLink[]
   relationGraph?: IngestGameGraph
+}
+
+/**
+ * Episode write resolved for one update.
+ *
+ * Present only when the episodes surface was selected and the scrape answered
+ * it; `items` may then be an authoritative empty list. `mode` decides whether
+ * stored rows absent from `items` may be deleted (`replace`) or must be kept
+ * (`merge`).
+ */
+export interface AnimeEpisodeUpdatePlan {
+  items: AnimeEpisodeInfo[]
+  mode: CollectionUpdateMode
+}
+
+export interface AnimeUpdatePlan {
+  patch: Partial<Anime>
+  externalIds?: ExternalId[]
+  tags?: Tag[]
+  coverUrl?: string
+  backdropUrl?: string
+  logoUrl?: string
+  episodes?: AnimeEpisodeUpdatePlan
+  /** Link tables to write, each with the mode resolved for that table. */
+  relationLinks: Partial<Record<AnimeRelationLink, CollectionUpdateMode>>
+  /** Link tables where `replace` was downgraded because a fact source stayed silent. */
+  degradedRelationLinks: AnimeRelationLink[]
+  relationGraph?: IngestAnimeGraph
 }
 
 export interface UpdateApplyResult {
@@ -254,6 +329,19 @@ export interface GamePlanContext {
     GameUpdateCoreSurface,
     GameUpdateMediaSurface,
     GameUpdateRelationSurface
+  >
+  policy: IngestUpdatePolicy
+}
+
+export interface AnimePlanContext {
+  current: AnimeCurrentState
+  incoming: AnimeIncomingBuildResult
+  relationGraph?: IngestAnimeGraph
+  selection: UpdateResolvedSelection<
+    AnimeUpdateSurface,
+    AnimeUpdateCoreSurface,
+    AnimeUpdateMediaSurface,
+    AnimeUpdateRelationSurface
   >
   policy: IngestUpdatePolicy
 }

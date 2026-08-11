@@ -1,6 +1,6 @@
 import type { JsonObject } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionType } from '../config/schema'
-import { requireBangumiMediaScope, type BangumiMediaScope } from '../media/scopes'
+import { isBangumiMediaScope, type BangumiMediaScope } from '../../shared/scopes'
 import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
 
@@ -31,6 +31,7 @@ export interface BangumiFullSyncArgs extends BangumiScopedArgs {
   batchSize: number
   playStatusEnabled?: boolean
   scoreEnabled?: boolean
+  episodeStatusEnabled?: boolean
   clearRemoteScoreWhenEmpty?: boolean
 }
 
@@ -73,6 +74,7 @@ export function normalizeFullSyncArgs(args: JsonObject): BangumiFullSyncArgs {
     batchSize: readInteger(args.batchSize, 100, { min: 1, max: 500 }),
     ...readOptionalBooleanProp(args.playStatusEnabled, 'playStatusEnabled'),
     ...readOptionalBooleanProp(args.scoreEnabled, 'scoreEnabled'),
+    ...readOptionalBooleanProp(args.episodeStatusEnabled, 'episodeStatusEnabled'),
     ...readOptionalBooleanProp(args.clearRemoteScoreWhenEmpty, 'clearRemoteScoreWhenEmpty')
   }
 }
@@ -102,7 +104,15 @@ export function normalizeImportIndexArgs(args: JsonObject): BangumiImportIndexAr
 }
 
 function readScope(value: unknown): BangumiMediaScope {
-  return value === undefined ? 'game' : requireBangumiMediaScope(value)
+  if (value === undefined) {
+    return 'game'
+  }
+
+  if (!isBangumiMediaScope(value)) {
+    throw new BangumiExtensionError('bangumi_validation', m().errors.invalidMediaScope)
+  }
+
+  return value
 }
 
 export function parseBangumiIndexId(input: string): number {
@@ -173,7 +183,7 @@ function normalizeTargetCollection(
 
 function readOptionalBooleanProp(
   value: unknown,
-  key: 'playStatusEnabled' | 'scoreEnabled' | 'clearRemoteScoreWhenEmpty'
+  key: 'playStatusEnabled' | 'scoreEnabled' | 'episodeStatusEnabled' | 'clearRemoteScoreWhenEmpty'
 ): Partial<BangumiFullSyncArgs> {
   return typeof value === 'boolean' ? { [key]: value } : {}
 }

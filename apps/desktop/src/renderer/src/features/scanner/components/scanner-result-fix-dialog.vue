@@ -53,7 +53,7 @@ const { data: scanner } = useAsyncData(
 
 const defaultSearchQuery = computed(() => props.problem.extractedName)
 const defaultProfileId = computed(() => scanner.value?.scraperProfileId ?? '')
-const isUpdateMode = computed(() => !!props.problem.gameId)
+const isUpdateMode = computed(() => !!props.problem.entityId)
 const actionText = computed(() =>
   isUpdateMode.value ? m.value.scanner.fix.updateExisting : m.value.scanner.fix.readdGame
 )
@@ -83,10 +83,10 @@ function buildLookupName(): string {
 }
 
 async function startUpdateFromScraper() {
-  if (!props.problem.gameId) return
+  if (!props.problem.entityId) return
 
   const request: GameUpdateRequest = {
-    rootId: props.problem.gameId,
+    rootId: props.problem.entityId,
     profileId: selection.value.profileId,
     lookup: buildIngestUpdateLookup({
       name: buildLookupName(),

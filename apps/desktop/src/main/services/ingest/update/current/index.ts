@@ -1,3 +1,4 @@
+export { loadAnimeCurrent } from './anime'
 export { loadCharacterCurrent } from './character'
 export { loadCompanyCurrent } from './company'
 export { loadGameCurrent } from './game'

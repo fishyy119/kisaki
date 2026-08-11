@@ -85,7 +85,9 @@ export default defineConfig([
     ignores: [
       'src/shared/i18n/messages/**',
       // Parses CJK source data from the YMGal API; not UI copy.
-      'src/main/services/scraper/handlers/game/providers/ymgal/format.ts'
+      'src/main/services/scraper/handlers/game/providers/ymgal/format.ts',
+      // Matches CJK tokens in release file names; not UI copy.
+      'src/main/services/ingest/files/recognition.ts'
     ],
     rules: {
       'no-restricted-syntax': ['error', ...noCjkLiteralRestrictions]

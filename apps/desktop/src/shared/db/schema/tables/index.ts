@@ -1,3 +1,4 @@
+export * from './anime'
 export * from './automation-run-history'
 export * from './automations'
 export * from './collections'

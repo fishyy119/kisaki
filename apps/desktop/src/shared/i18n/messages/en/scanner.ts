@@ -46,6 +46,7 @@ export const scanner = {
   issueTypes: {
     assetPersistFailed: 'Asset save failed',
     duplicateExternalId: 'Duplicate external ID',
+    fileSyncFailed: 'File sync failed',
     metadataMissing: 'Missing metadata',
     pathUnavailable: 'Path unavailable',
     scraperUnavailable: 'Scraper unavailable',
@@ -65,7 +66,7 @@ export const scanner = {
       type: 'Type',
       path: 'Path',
       reason: 'Reason',
-      relatedGame: 'Related game',
+      relatedEntity: 'Related entry',
       actions: 'Actions'
     },
     openPath: 'Open path',
@@ -235,7 +236,11 @@ export const scanner = {
         `The path is inaccessible. Not added: ${message}`,
       notScannableDirectory: 'The path is not a scannable directory. Not added.',
       externalIdLinked:
-        'The external ID is already linked to an existing game. This path was not added.'
+        'The external ID is already linked to an existing entry. This path was not added.',
+      episodeNumbersUnreadable: ({ count }: { count: number }) =>
+        `${count} video file(s) had no readable episode number and were added as unnumbered episodes.`,
+      episodeSyncFailed: ({ message }: { message: string }) =>
+        `The entry was added but its video files could not be read: ${message}`
     }
   }
 }

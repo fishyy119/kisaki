@@ -1,7 +1,13 @@
 import {
+  animeCharacterLinks,
+  animeCompanyLinks,
+  animePersonLinks,
+  animes,
+  animeTagLinks,
   characters,
   characterPersonLinks,
   characterTagLinks,
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
@@ -20,6 +26,7 @@ import {
 } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
 import {
+  animeExternalIdLink,
   characterExternalIdLink,
   companyExternalIdLink,
   gameExternalIdLink,
@@ -31,6 +38,12 @@ const gameExternalIdConfig: ExternalIdMergeConfig = {
   link: gameExternalIdLink,
   entityIdField: 'gameId',
   orderField: 'orderInGame'
+}
+
+const animeExternalIdConfig: ExternalIdMergeConfig = {
+  link: animeExternalIdLink,
+  entityIdField: 'animeId',
+  orderField: 'orderInAnime'
 }
 
 const personExternalIdConfig: ExternalIdMergeConfig = {
@@ -107,6 +120,57 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
       })
     ]
   },
+  anime: {
+    entityType: 'anime',
+    table: animes,
+    idColumn: animes.id,
+    externalIds: animeExternalIdConfig,
+    relations: [
+      relation({
+        table: animePersonLinks,
+        mergeField: 'animeId',
+        mergeColumn: animePersonLinks.animeId,
+        uniqueKeyFields: ['animeId', 'personId', 'type'],
+        orderField: 'orderInAnime',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: animeCompanyLinks,
+        mergeField: 'animeId',
+        mergeColumn: animeCompanyLinks.animeId,
+        uniqueKeyFields: ['animeId', 'companyId', 'type'],
+        orderField: 'orderInAnime',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: animeCharacterLinks,
+        mergeField: 'animeId',
+        mergeColumn: animeCharacterLinks.animeId,
+        uniqueKeyFields: ['animeId', 'characterId', 'type'],
+        orderField: 'orderInAnime',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: animeTagLinks,
+        mergeField: 'animeId',
+        mergeColumn: animeTagLinks.animeId,
+        uniqueKeyFields: ['animeId', 'tagId'],
+        orderField: 'orderInAnime',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: collectionAnimeLinks,
+        mergeField: 'animeId',
+        mergeColumn: collectionAnimeLinks.animeId,
+        uniqueKeyFields: ['collectionId', 'animeId'],
+        noteField: 'note'
+      })
+    ]
+  },
   character: {
     entityType: 'character',
     table: characters,
@@ -118,6 +182,15 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         mergeField: 'characterId',
         mergeColumn: gameCharacterLinks.characterId,
         uniqueKeyFields: ['gameId', 'characterId', 'type'],
+        orderField: 'orderInCharacter',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: animeCharacterLinks,
+        mergeField: 'characterId',
+        mergeColumn: animeCharacterLinks.characterId,
+        uniqueKeyFields: ['animeId', 'characterId', 'type'],
         orderField: 'orderInCharacter',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -165,6 +238,15 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         noteField: 'note'
       }),
       relation({
+        table: animePersonLinks,
+        mergeField: 'personId',
+        mergeColumn: animePersonLinks.personId,
+        uniqueKeyFields: ['animeId', 'personId', 'type'],
+        orderField: 'orderInPerson',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
         table: characterPersonLinks,
         mergeField: 'personId',
         mergeColumn: characterPersonLinks.personId,
@@ -207,6 +289,15 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         noteField: 'note'
       }),
       relation({
+        table: animeCompanyLinks,
+        mergeField: 'companyId',
+        mergeColumn: animeCompanyLinks.companyId,
+        uniqueKeyFields: ['animeId', 'companyId', 'type'],
+        orderField: 'orderInCompany',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
         table: collectionCompanyLinks,
         mergeField: 'companyId',
         mergeColumn: collectionCompanyLinks.companyId,
@@ -234,6 +325,14 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         mergeField: 'collectionId',
         mergeColumn: collectionGameLinks.collectionId,
         uniqueKeyFields: ['collectionId', 'gameId'],
+        orderField: 'orderInCollection',
+        noteField: 'note'
+      }),
+      relation({
+        table: collectionAnimeLinks,
+        mergeField: 'collectionId',
+        mergeColumn: collectionAnimeLinks.collectionId,
+        uniqueKeyFields: ['collectionId', 'animeId'],
         orderField: 'orderInCollection',
         noteField: 'note'
       }),
@@ -273,6 +372,15 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         mergeField: 'tagId',
         mergeColumn: gameTagLinks.tagId,
         uniqueKeyFields: ['gameId', 'tagId'],
+        orderField: 'orderInTag',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: animeTagLinks,
+        mergeField: 'tagId',
+        mergeColumn: animeTagLinks.tagId,
+        uniqueKeyFields: ['animeId', 'tagId'],
         orderField: 'orderInTag',
         spoilerField: 'isSpoiler',
         noteField: 'note'

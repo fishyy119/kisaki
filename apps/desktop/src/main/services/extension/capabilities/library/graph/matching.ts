@@ -1,14 +1,19 @@
 import { and, eq } from 'drizzle-orm'
 import type {
   ExternalId,
+  LibraryAnime,
   LibraryCollection,
   LibraryCompany,
   LibraryGame,
   LibraryGraphDiagnostic,
+  LibraryGraphMediaNode,
+  LibraryMediaType,
   LibraryPerson,
   LibraryTag
 } from '@kisaki3/extension-api'
 import {
+  animeExternalIds,
+  animes,
   collections,
   companyExternalIds,
   gameExternalIds,
@@ -47,7 +52,7 @@ export function matchLibraryGraph(
   for (const entry of graph.nodes.media) {
     byIdentity.set(
       graphNodeIdentity(entry.kind, entry.key),
-      matchGameNode(entry.key, entry.node.input, options)
+      matchMediaNode(entry.key, entry.node, options)
     )
   }
   for (const entry of graph.nodes.collections) {
@@ -81,47 +86,43 @@ export function matchLibraryGraph(
   return { byIdentity }
 }
 
-function matchGameNode(
+function matchMediaNode(
   key: string,
-  input: { externalIds?: readonly ExternalId[]; gameDirPath?: string },
+  node: LibraryGraphMediaNode,
   options: MatchLibraryGraphOptions
 ): LibraryGraphNodeMatch {
+  const mediaType = node.mediaType
   const diagnostics: LibraryGraphDiagnostic[] = []
-  const externalMatches = findGameExternalIdMatches(input.externalIds, options)
-  const externalConflict = createExternalIdConflictDiagnostic(key, 'game', externalMatches)
+  const externalMatches = findMediaExternalIdMatches(mediaType, node.input.externalIds, options)
+  const externalConflict = createExternalIdConflictDiagnostic(key, mediaType, externalMatches)
   if (externalConflict) {
-    return {
-      key,
-      kind: 'media',
-      mediaType: 'game',
-      blocked: true,
-      diagnostics: [externalConflict]
-    }
+    return { key, kind: 'media', mediaType, blocked: true, diagnostics: [externalConflict] }
   }
-  const externalUnavailable = createExternalIdUnavailableDiagnostic(key, 'game', externalMatches)
+  const externalUnavailable = createExternalIdUnavailableDiagnostic(
+    key,
+    mediaType,
+    externalMatches
+  )
   if (externalUnavailable) {
-    return {
-      key,
-      kind: 'media',
-      mediaType: 'game',
-      blocked: true,
-      diagnostics: [externalUnavailable]
-    }
+    return { key, kind: 'media', mediaType, blocked: true, diagnostics: [externalUnavailable] }
   }
 
   const externalMatch = externalMatches[0]?.existing ?? undefined
-  const pathMatch = findGameByPath(input.gameDirPath, options)
+  const pathMatch =
+    node.mediaType === 'anime'
+      ? findAnimeByPath(node.input.animeDirPath, options)
+      : findGameByPath(node.input.gameDirPath, options)
   if (externalMatch && pathMatch && externalMatch.id !== pathMatch.id) {
     return {
       key,
       kind: 'media',
-      mediaType: 'game',
+      mediaType,
       blocked: true,
       diagnostics: [
         createDiagnostic({
           level: 'error',
           code: 'kisaki.graph.identityConflict',
-          message: `External IDs resolve to game "${externalMatch.id}", but local path resolves to game "${pathMatch.id}".`,
+          message: `External IDs resolve to ${mediaType} "${externalMatch.id}", but local path resolves to ${mediaType} "${pathMatch.id}".`,
           nodeKey: key
         })
       ]
@@ -133,14 +134,14 @@ function matchGameNode(
       createDiagnostic({
         level: 'info',
         code: 'kisaki.graph.existingExternalId',
-        message: 'Matched an existing game by external id.',
+        message: `Matched an existing ${mediaType} by external id.`,
         nodeKey: key
       })
     )
     return {
       key,
       kind: 'media',
-      mediaType: 'game',
+      mediaType,
       entityId: externalMatch.id,
       existing: externalMatch,
       reason: 'externalId',
@@ -153,14 +154,14 @@ function matchGameNode(
       createDiagnostic({
         level: 'info',
         code: 'kisaki.graph.existingPath',
-        message: 'Matched an existing game by local path.',
+        message: `Matched an existing ${mediaType} by local path.`,
         nodeKey: key
       })
     )
     return {
       key,
       kind: 'media',
-      mediaType: 'game',
+      mediaType,
       entityId: pathMatch.id,
       existing: pathMatch,
       reason: 'path',
@@ -168,7 +169,7 @@ function matchGameNode(
     }
   }
 
-  return { key, kind: 'media', mediaType: 'game', diagnostics }
+  return { key, kind: 'media', mediaType, diagnostics }
 }
 
 function matchCollectionNode(
@@ -241,6 +242,16 @@ function matchPersonNode(
   return { key, kind: 'person', diagnostics: [] }
 }
 
+function findMediaExternalIdMatches(
+  mediaType: LibraryMediaType,
+  externalIds: readonly ExternalId[] | undefined,
+  options: MatchLibraryGraphOptions
+): ExternalIdEntityMatch<LibraryAnime | LibraryGame>[] {
+  return mediaType === 'anime'
+    ? findAnimeExternalIdMatches(externalIds, options)
+    : findGameExternalIdMatches(externalIds, options)
+}
+
 function findGameExternalIdMatches(
   externalIds: readonly ExternalId[] | undefined,
   options: MatchLibraryGraphOptions
@@ -263,6 +274,35 @@ function findGameExternalIdMatches(
         externalId,
         entityId: row.gameId,
         existing: options.entities.getGame(row.gameId)
+      })
+    }
+  }
+
+  return matches
+}
+
+function findAnimeExternalIdMatches(
+  externalIds: readonly ExternalId[] | undefined,
+  options: MatchLibraryGraphOptions
+): ExternalIdEntityMatch<LibraryAnime>[] {
+  const matches: ExternalIdEntityMatch<LibraryAnime>[] = []
+  for (const externalId of normalizeExternalIds([...(externalIds ?? [])])) {
+    const rows = options.db.client
+      .select({ animeId: animeExternalIds.animeId })
+      .from(animeExternalIds)
+      .where(
+        and(
+          eq(animeExternalIds.source, externalId.source),
+          eq(animeExternalIds.externalId, externalId.id)
+        )
+      )
+      .all()
+
+    for (const row of rows) {
+      matches.push({
+        externalId,
+        entityId: row.animeId,
+        existing: options.entities.getAnime(row.animeId)
       })
     }
   }
@@ -342,6 +382,22 @@ function findGameByPath(
     .where(eq(games.gameDirPath, gameDirPath))
     .get()
   return row ? options.entities.getGame(row.id) : null
+}
+
+function findAnimeByPath(
+  animeDirPath: string | undefined,
+  options: MatchLibraryGraphOptions
+): LibraryAnime | null {
+  if (!animeDirPath) {
+    return null
+  }
+
+  const row = options.db.client
+    .select({ id: animes.id })
+    .from(animes)
+    .where(eq(animes.animeDirPath, animeDirPath))
+    .get()
+  return row ? options.entities.getAnime(row.id) : null
 }
 
 function createExternalIdConflictDiagnostic(
@@ -457,7 +513,7 @@ interface IncomingExternalIdClaim {
 }
 
 interface IncomingExternalIdClaimGroup {
-  scopeLabel: 'game' | 'company' | 'person'
+  scopeLabel: LibraryMediaType | 'company' | 'person'
   externalId: ExternalId
   claims: IncomingExternalIdClaim[]
 }
@@ -501,13 +557,14 @@ function applyExternalIdAvailabilityConflicts(
 ): void {
   for (const entry of graph.nodes.media) {
     const match = byIdentity.get(graphNodeIdentity(entry.kind, entry.key))
-    const existing = match?.existing as LibraryGame | undefined
+    const existing = match?.existing as LibraryAnime | LibraryGame | undefined
     applyNodeExternalIdAvailabilityConflicts({
       match,
       key: entry.key,
-      entityLabel: 'game',
+      entityLabel: entry.node.mediaType,
       targetEntityId: match?.entityId,
-      owners: findGameExternalIdMatches(
+      owners: findMediaExternalIdMatches(
+        entry.node.mediaType,
         normalizeExternalIds([
           ...(existing?.externalIds ?? []),
           ...(entry.node.input.externalIds ?? [])
@@ -611,10 +668,10 @@ function collectIncomingExternalIdClaimGroups(
   for (const entry of graph.nodes.media) {
     collectIncomingExternalIdClaims(
       groups,
-      'game',
+      entry.node.mediaType,
       'media',
       entry.key,
-      readGameLabel(entry.node.input, entry.key),
+      readMediaLabel(entry.node.input, entry.key),
       entry.node.input.externalIds
     )
   }
@@ -646,7 +703,7 @@ function collectIncomingExternalIdClaimGroups(
 
 function collectIncomingExternalIdClaims(
   groups: Map<string, IncomingExternalIdClaimGroup>,
-  scopeLabel: 'game' | 'company' | 'person',
+  scopeLabel: LibraryMediaType | 'company' | 'person',
   nodeKind: 'media' | 'company' | 'person',
   nodeKey: string,
   nodeLabel: string,
@@ -668,7 +725,7 @@ function collectIncomingExternalIdClaims(
   }
 }
 
-function readGameLabel(input: { name?: string; originalName?: string }, fallback: string): string {
+function readMediaLabel(input: { name?: string; originalName?: string }, fallback: string): string {
   return input.name || input.originalName || fallback
 }
 

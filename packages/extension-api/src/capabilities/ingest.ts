@@ -79,6 +79,18 @@ export interface IngestAddGameFromScraperResult {
   warnings?: readonly IngestWarning[]
 }
 
+export interface IngestAddAnimeFromScraperOptions {
+  animeDirPath?: string
+  targetCollectionId?: string
+}
+
+export interface IngestAddAnimeFromScraperResult {
+  animeId: string
+  isNew: boolean
+  existingReason?: IngestExistingReason
+  warnings?: readonly IngestWarning[]
+}
+
 export interface IngestUpdateResult {
   warnings?: readonly IngestWarning[]
 }
@@ -122,6 +134,29 @@ export interface IngestGameCapability {
   update: IngestGameUpdateCapability
 }
 
+export interface IngestAnimeAddCapability {
+  /** Runs the ingest inline and resolves with its result. */
+  fromScraper(
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddAnimeFromScraperOptions
+  ): Promise<IngestAddAnimeFromScraperResult>
+  /**
+   * Starts the ingest as a user-visible task run attributed to this extension
+   * and resolves as soon as the run exists.
+   */
+  startFromScraper(
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddAnimeFromScraperOptions
+  ): Promise<IngestTaskRunStart>
+}
+
+export interface IngestAnimeCapability {
+  add: IngestAnimeAddCapability
+}
+
 export interface IngestCapability {
   game: IngestGameCapability
+  anime: IngestAnimeCapability
 }

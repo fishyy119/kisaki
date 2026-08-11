@@ -8,6 +8,12 @@ export const gameSearchQuerySpec: SearchQuerySpec = {
   sourceTable: 'games'
 }
 
+export const animeSearchQuerySpec: SearchQuerySpec = {
+  kind: 'fts',
+  ftsTable: 'animes_fts',
+  sourceTable: 'animes'
+}
+
 export const characterSearchQuerySpec: SearchQuerySpec = {
   kind: 'fts',
   ftsTable: 'characters_fts',
@@ -40,6 +46,8 @@ export function getSearchQuerySpec(entityType: AllEntityType): SearchQuerySpec {
   switch (entityType) {
     case 'game':
       return gameSearchQuerySpec
+    case 'anime':
+      return animeSearchQuerySpec
     case 'character':
       return characterSearchQuerySpec
     case 'person':

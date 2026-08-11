@@ -48,6 +48,7 @@ export const scanner = {
   issueTypes: {
     assetPersistFailed: '资源保存失败',
     duplicateExternalId: '外部 ID 重复',
+    fileSyncFailed: '文件同步失败',
     metadataMissing: '元数据缺失',
     pathUnavailable: '路径不可访问',
     scraperUnavailable: '刮削不可用',
@@ -66,7 +67,7 @@ export const scanner = {
       type: '类型',
       path: '路径',
       reason: '原因',
-      relatedGame: '关联游戏',
+      relatedEntity: '关联条目',
       actions: '操作'
     },
     openPath: '打开路径',
@@ -221,7 +222,11 @@ export const scanner = {
       scrapeFailedFallback: '刮削失败，已使用目录名直接添加。',
       pathInaccessible: ({ message }: { message: string }) => `路径不可访问，未添加：${message}`,
       notScannableDirectory: '路径不是可扫描目录，未添加。',
-      externalIdLinked: '外部 ID 已关联到现有游戏，当前路径未添加。'
+      externalIdLinked: '外部 ID 已关联到现有条目，当前路径未添加。',
+      episodeNumbersUnreadable: ({ count }: { count: number }) =>
+        `${count} 个视频文件无法识别话数，已作为未编号剧集添加。`,
+      episodeSyncFailed: ({ message }: { message: string }) =>
+        `条目已添加，但视频文件读取失败：${message}`
     }
   }
 } satisfies Messages['scanner']

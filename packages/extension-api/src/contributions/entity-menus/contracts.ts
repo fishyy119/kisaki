@@ -28,6 +28,18 @@ export interface EntityMenuGameBatchInput extends EntityMenuInputBase {
   entityIds: readonly string[]
 }
 
+export interface EntityMenuAnimeSingleInput extends EntityMenuInputBase {
+  domain: 'anime'
+  scope: 'single'
+  entityId: string
+}
+
+export interface EntityMenuAnimeBatchInput extends EntityMenuInputBase {
+  domain: 'anime'
+  scope: 'batch'
+  entityIds: readonly string[]
+}
+
 export interface EntityMenuCharacterSingleInput extends EntityMenuInputBase {
   domain: 'character'
   scope: 'single'
@@ -62,6 +74,10 @@ export interface EntityMenuInputMap {
   game: {
     single: EntityMenuGameSingleInput
     batch: EntityMenuGameBatchInput
+  }
+  anime: {
+    single: EntityMenuAnimeSingleInput
+    batch: EntityMenuAnimeBatchInput
   }
   character: {
     single: EntityMenuCharacterSingleInput

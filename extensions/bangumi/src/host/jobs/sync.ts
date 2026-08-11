@@ -1,6 +1,6 @@
 import { formatScopedCollectionType } from '../media/labels'
-import type { BangumiMediaScope } from '../media/scopes'
-import { readBangumiSubjectId } from '../media/game/mapping'
+import type { BangumiMediaScope } from '../../shared/scopes'
+import { readBangumiSubjectIdFromExternalIds } from '../identity/subject-ref'
 import { m } from '../i18n'
 import { BangumiExtensionError, isCancellationError } from '../utils/errors'
 import { omitUndefined } from '../utils/object'
@@ -59,6 +59,7 @@ export class SyncJobRunner {
             signal: job.signal
           })
           recordSyncItemResult(job, result)
+          await this.syncEpisodes(job, item.scope, item.localId)
 
           await this.deps.syncQueueStore.remove([item])
         } catch (error) {
@@ -143,8 +144,8 @@ export class SyncJobRunner {
 
     const settings = await this.deps.settingsStore.get()
     const account = await this.requireAccount()
-    const playStatusEnabled = args.playStatusEnabled ?? settings.game.autoSync.playStatusEnabled
-    const scoreEnabled = args.scoreEnabled ?? settings.game.autoSync.scoreEnabled
+    const playStatusEnabled = args.playStatusEnabled ?? settings.autoSync.playStatusEnabled
+    const scoreEnabled = args.scoreEnabled ?? settings.autoSync.scoreEnabled
     const operations: SyncItemResult[] = []
     let offset = 0
     let scanned = 0
@@ -192,6 +193,10 @@ export class SyncJobRunner {
           } else if (!options.includePreview) {
             await this.deps.syncEngine.applyItem(result, { signal: job.signal })
           }
+
+          if (!options.includePreview && args.episodeStatusEnabled !== false) {
+            await this.syncEpisodes(job, args.scope, item.localId)
+          }
         } catch (error) {
           if (isCancellationError(error) || job.signal.aborted || shouldStopSyncBatch(error)) {
             countScanned = false
@@ -201,7 +206,7 @@ export class SyncJobRunner {
           job.addError(error, {
             scope: args.scope,
             localId: item.localId,
-            subjectId: readBangumiSubjectId(item) ?? null
+            subjectId: readBangumiSubjectIdFromExternalIds(item) ?? null
           })
           incrementSyncFailure(job, error)
         } finally {
@@ -275,6 +280,26 @@ export class SyncJobRunner {
           ratePeriod: 'minute'
         })
       }
+    }
+  }
+
+  /**
+   * Flushes per-episode watch state for one entry. Scopes without episodes and
+   * disabled episode sync resolve to a no-op inside the engine.
+   */
+  private async syncEpisodes(
+    job: JobStateController,
+    scope: BangumiMediaScope,
+    localId: string
+  ): Promise<void> {
+    const result = await this.deps.episodeSyncEngine.syncEpisodes({
+      scope,
+      localId,
+      signal: job.signal
+    })
+
+    if (result.status === 'synced') {
+      job.increment('syncedEpisodes', (result.markedCount ?? 0) + (result.unmarkedCount ?? 0))
     }
   }
 

@@ -13,6 +13,7 @@ import type { TokenService } from '../auth/token-service'
 import type { SettingsStore } from '../config/store'
 import type { MediaRegistry } from '../media/registry'
 import type { SyncEngine } from '../sync/engine'
+import type { EpisodeSyncEngine } from '../sync/episodes'
 import type { SyncQueueStore } from '../sync/queue'
 import type { SyncSuppressor } from '../sync/suppressor'
 import type { BangumiJobPreviewGroup } from '../../shared/settings'
@@ -38,6 +39,7 @@ export interface JobRunnerDependencies {
   tokenService: TokenService
   accountService: AccountService
   syncEngine: SyncEngine
+  episodeSyncEngine: EpisodeSyncEngine
   mediaRegistry: MediaRegistry
   syncQueueStore: SyncQueueStore
   syncSuppressor: SyncSuppressor

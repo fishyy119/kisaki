@@ -2,6 +2,9 @@ import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-co
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import {
+  animeCharacterType,
+  animeCompanyType,
+  animePersonType,
   baseColumns,
   characterPersonType,
   gameCharacterType,
@@ -9,7 +12,7 @@ import {
   gamePersonType
 } from '../../columns'
 import { collections } from './collections'
-import { characters, companies, games, persons } from './content'
+import { animes, characters, companies, games, persons } from './content'
 
 export const gamePersonLinks = sqliteTable(
   'game_person_links',
@@ -80,6 +83,75 @@ export const gameCharacterLinks = sqliteTable(
   ]
 )
 
+export const animePersonLinks = sqliteTable(
+  'anime_person_links',
+  {
+    ...baseColumns,
+    animeId: text('anime_id')
+      .notNull()
+      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    personId: text('person_id')
+      .notNull()
+      .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    type: animePersonType('type').notNull().default('other'),
+    note: text('note'),
+    orderInAnime: integer('order_in_anime').notNull().default(0),
+    orderInPerson: integer('order_in_person').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.animeId, t.personId, t.type),
+    index('idx_anime_person_links_anime_id').on(t.animeId),
+    index('idx_anime_person_links_person_id').on(t.personId)
+  ]
+)
+
+export const animeCompanyLinks = sqliteTable(
+  'anime_company_links',
+  {
+    ...baseColumns,
+    animeId: text('anime_id')
+      .notNull()
+      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    companyId: text('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    type: animeCompanyType('type').notNull().default('other'),
+    note: text('note'),
+    orderInAnime: integer('order_in_anime').notNull().default(0),
+    orderInCompany: integer('order_in_company').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.animeId, t.companyId, t.type),
+    index('idx_anime_company_links_anime_id').on(t.animeId),
+    index('idx_anime_company_links_company_id').on(t.companyId)
+  ]
+)
+
+export const animeCharacterLinks = sqliteTable(
+  'anime_character_links',
+  {
+    ...baseColumns,
+    animeId: text('anime_id')
+      .notNull()
+      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    type: animeCharacterType('type').notNull().default('other'),
+    note: text('note'),
+    orderInAnime: integer('order_in_anime').notNull().default(0),
+    orderInCharacter: integer('order_in_character').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.animeId, t.characterId, t.type),
+    index('idx_anime_character_links_anime_id').on(t.animeId),
+    index('idx_anime_character_links_character_id').on(t.characterId)
+  ]
+)
+
 export const collectionGameLinks = sqliteTable(
   'collection_game_links',
   {
@@ -97,6 +169,26 @@ export const collectionGameLinks = sqliteTable(
     unique().on(t.collectionId, t.gameId),
     index('idx_collection_game_links_collection_id').on(t.collectionId),
     index('idx_collection_game_links_game_id').on(t.gameId)
+  ]
+)
+
+export const collectionAnimeLinks = sqliteTable(
+  'collection_anime_links',
+  {
+    ...baseColumns,
+    collectionId: text('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    animeId: text('anime_id')
+      .notNull()
+      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    note: text('note'),
+    orderInCollection: integer('order_in_collection').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.collectionId, t.animeId),
+    index('idx_collection_anime_links_collection_id').on(t.collectionId),
+    index('idx_collection_anime_links_anime_id').on(t.animeId)
   ]
 )
 
@@ -183,6 +275,14 @@ export const characterPersonLinks = sqliteTable(
   ]
 )
 
+export type AnimePersonLink = InferSelectModel<typeof animePersonLinks>
+export type NewAnimePersonLink = InferInsertModel<typeof animePersonLinks>
+export type AnimeCompanyLink = InferSelectModel<typeof animeCompanyLinks>
+export type NewAnimeCompanyLink = InferInsertModel<typeof animeCompanyLinks>
+export type AnimeCharacterLink = InferSelectModel<typeof animeCharacterLinks>
+export type NewAnimeCharacterLink = InferInsertModel<typeof animeCharacterLinks>
+export type CollectionAnimeLink = InferSelectModel<typeof collectionAnimeLinks>
+export type NewCollectionAnimeLink = InferInsertModel<typeof collectionAnimeLinks>
 export type GamePersonLink = InferSelectModel<typeof gamePersonLinks>
 export type NewGamePersonLink = InferInsertModel<typeof gamePersonLinks>
 export type GameCompanyLink = InferSelectModel<typeof gameCompanyLinks>

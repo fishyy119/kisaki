@@ -9,7 +9,7 @@
  * Only fields used by Kisaki scraper are modeled here.
  */
 
-import type { BangumiMediaScope, BangumiSupportedSubjectType } from '../media/scopes'
+import type { BangumiMediaScope, BangumiSupportedSubjectType } from '../../shared/scopes'
 
 // =============================================================================
 // Shared
@@ -90,6 +90,9 @@ export interface BangumiSubject {
   summary: string
   date?: string
   platform?: string
+  /** Episode count declared by the entry; `total_episodes` counts known rows. */
+  eps?: number
+  total_episodes?: number
   images?: BangumiImages | null
   infobox?: BangumiInfoboxItem[] | null
   tags?: BangumiTag[] | null
@@ -198,6 +201,35 @@ export interface BangumiCharacterPerson {
 }
 
 // =============================================================================
+// Episode
+// =============================================================================
+
+/**
+ * `0` main story, `1` special, `2` opening, `3` ending, `4` trailer, `5` MAD,
+ * `6` other. Only main story and specials become library episodes.
+ */
+export type BangumiEpisodeType = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+export interface BangumiEpisode {
+  id: number
+  type: BangumiEpisodeType
+  name: string
+  name_cn: string
+  /** Number within its own type; `ep` is the main-story number when known. */
+  sort: number
+  ep?: number | null
+  airdate?: string
+  duration?: string
+  duration_seconds?: number | null
+  desc?: string
+  subject_id: number
+}
+
+export interface BangumiEpisodeQuery extends BangumiPageQuery {
+  type?: BangumiEpisodeType
+}
+
+// =============================================================================
 // Search
 // =============================================================================
 
@@ -244,6 +276,14 @@ export interface BangumiCollectionPatch {
   type?: BangumiCollectionType
   rate?: number
   tags?: readonly string[]
+}
+
+/** Per-episode collection state: 0 none, 1 wish, 2 watched, 3 dropped. */
+export type BangumiEpisodeCollectionType = 0 | 1 | 2 | 3
+
+export interface BangumiEpisodeCollection {
+  episode: BangumiEpisode
+  type: BangumiEpisodeCollectionType
 }
 
 // =============================================================================

@@ -23,6 +23,8 @@ import type {
   ScraperLookup,
   GameSearchResult,
   GameScraperProviderInfo,
+  AnimeSearchResult,
+  AnimeScraperProviderInfo,
   PersonSearchResult,
   PersonScraperProviderInfo,
   CompanySearchResult,
@@ -30,7 +32,9 @@ import type {
   CharacterSearchResult,
   CharacterScraperProviderInfo,
   GameImageSlot,
+  AnimeImageSlot,
   ScrapedGameBundle,
+  ScrapedAnimeBundle,
   ScraperProfileListQuery,
   ScraperProfileSummary,
   ScrapedPersonBundle,
@@ -39,6 +43,9 @@ import type {
 } from './scraper'
 import type { ExtractionTestResult, ScannerRunStartResult, ScannerRunState } from './scanner'
 import type {
+  IngestAddAnimeDirectOptions,
+  IngestAddAnimeDirectSeed,
+  IngestAddAnimeFromScraperOptions,
   IngestAddGameDirectOptions,
   IngestAddGameDirectSeed,
   IngestAddCharacterFromScraperOptions,
@@ -46,7 +53,10 @@ import type {
   IngestAddGameFromScraperOptions,
   IngestAddPersonFromScraperOptions
 } from './ingest/add'
+import type { IngestSyncAnimeFilesParams, IngestSyncAnimeFilesResult } from './ingest/files'
 import type {
+  AnimeBatchUpdateRequest,
+  AnimeUpdateRequest,
   CharacterBatchUpdateRequest,
   CharacterUpdateRequest,
   CompanyBatchUpdateRequest,
@@ -56,7 +66,6 @@ import type {
   PersonBatchUpdateRequest,
   PersonUpdateRequest
 } from './ingest/update'
-import type { GameMonitorPathConfig, GameRunningStatus } from './monitor'
 import type { PortableStatus, PortableSwitchTarget } from './portable'
 import type {
   ExtensionCatalogSearchRequest,
@@ -93,7 +102,7 @@ import type {
 } from './extension'
 import type { NotifyOptions } from './notify'
 import type { UiLocale, UiLocaleState } from './i18n'
-import type { AppTheme } from './common'
+import type { AppTheme, MediaType } from './common'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type {
   TaskRun,
@@ -125,7 +134,16 @@ import type {
   DeeplinkAuthErrorPayload
 } from './deeplink'
 import type { BootstrapArgs } from './bootstrap'
-import type { GameLaunchResult, GameStopResult } from './launcher'
+import type {
+  AnimeStopResult,
+  AnimeWatchingState,
+  AnimeWatchResult,
+  GameLaunchResult,
+  GameMonitorPathConfig,
+  GameRunningStatus,
+  GameStopResult
+} from './activity'
+import type { PlaybackEndReport, PlaybackProgress, PlaybackSessionState } from './player'
 
 // =============================================================================
 // IPC Result Types
@@ -310,6 +328,18 @@ export interface IpcMainHandlers {
     lookup: ScraperLookup,
     options?: IngestAddGameFromScraperOptions
   ) => IpcResult<TaskRunStartResult>
+  'ingest:add-anime-direct': (
+    seed: IngestAddAnimeDirectSeed,
+    options?: IngestAddAnimeDirectOptions
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:add-anime-from-scraper': (
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddAnimeFromScraperOptions
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:sync-anime-files': (
+    params: IngestSyncAnimeFilesParams
+  ) => IpcResult<IngestSyncAnimeFilesResult>
   'ingest:add-person-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
@@ -328,6 +358,7 @@ export interface IpcMainHandlers {
 
   // Ingest update
   'ingest:update-game-from-scraper': (request: GameUpdateRequest) => IpcResult<TaskRunStartResult>
+  'ingest:update-anime-from-scraper': (request: AnimeUpdateRequest) => IpcResult<TaskRunStartResult>
   'ingest:update-person-from-scraper': (
     request: PersonUpdateRequest
   ) => IpcResult<TaskRunStartResult>
@@ -339,6 +370,9 @@ export interface IpcMainHandlers {
   ) => IpcResult<TaskRunStartResult>
   'ingest:batch-update-game-from-scraper': (
     request: GameBatchUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:batch-update-anime-from-scraper': (
+    request: AnimeBatchUpdateRequest
   ) => IpcResult<TaskRunStartResult>
   'ingest:batch-update-person-from-scraper': (
     request: PersonBatchUpdateRequest
@@ -364,6 +398,19 @@ export interface IpcMainHandlers {
     providerId: string,
     lookup: ScraperLookup,
     imageType: GameImageSlot
+  ) => IpcResult<string[]>
+
+  'scraper:list-anime-providers': () => IpcResult<AnimeScraperProviderInfo[]>
+  'scraper:get-anime-provider': (providerId: string) => IpcResult<AnimeScraperProviderInfo>
+  'scraper:search-anime': (profileId: string, query: string) => IpcResult<AnimeSearchResult[]>
+  'scraper:scrape-anime': (
+    profileId: string,
+    lookup: ScraperLookup
+  ) => IpcResult<ScrapedAnimeBundle | null>
+  'scraper:get-anime-provider-images': (
+    providerId: string,
+    lookup: ScraperLookup,
+    imageType: AnimeImageSlot
   ) => IpcResult<string[]>
 
   'scraper:list-person-providers': () => IpcResult<PersonScraperProviderInfo[]>
@@ -408,17 +455,23 @@ export interface IpcMainHandlers {
     imageType: 'photos'
   ) => IpcResult<string[]>
 
-  // Monitor
-  'monitor:start-game': (gameId: string) => IpcVoidResult
-  'monitor:stop-game': (gameId: string) => IpcVoidResult
-  'monitor:list-game-statuses': () => IpcResult<GameRunningStatus[]>
-  'monitor:get-game-status': (gameId: string) => IpcResult<GameRunningStatus>
-  'monitor:compute-effective-path': (config: GameMonitorPathConfig) => IpcResult<string | null>
+  // Activity
+  'activity:launch-game': (gameId: string) => IpcResult<GameLaunchResult>
+  'activity:stop-game': (gameId: string) => IpcResult<GameStopResult>
+  'activity:list-game-statuses': () => IpcResult<GameRunningStatus[]>
+  'activity:compute-game-monitor-path': (
+    config: GameMonitorPathConfig
+  ) => IpcResult<string | null>
+  'activity:watch-anime': (animeId: string, episodeId?: string) => IpcResult<AnimeWatchResult>
+  'activity:stop-anime': (animeId: string) => IpcResult<AnimeStopResult>
+  'activity:list-anime-watching': () => IpcResult<AnimeWatchingState[]>
 
-  // Launcher
-  'launcher:kill-game': (gameId: string) => IpcResult<GameStopResult>
-  'launcher:launch-game': (gameId: string) => IpcResult<GameLaunchResult>
-  'launcher:apply-default-config': (gameId: string, filePath: string) => IpcVoidResult
+  // Player
+  'player:list-sessions': () => IpcResult<PlaybackSessionState[]>
+  'player:pause': (sessionId: string) => IpcVoidResult
+  'player:resume': (sessionId: string) => IpcVoidResult
+  'player:seek': (sessionId: string, positionMs: number) => IpcVoidResult
+  'player:stop': (sessionId: string) => IpcVoidResult
 
   // Native dialogs
   'native:open-dialog': (options?: OpenDialogOptions) => IpcResult<OpenDialogReturnValue>
@@ -517,8 +570,8 @@ export interface IpcMainHandlers {
   'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeRegistrationInfo[]>
 
   // Scanner
-  'scanner:start-game-scan': (scannerId: string) => IpcResult<ScannerRunStartResult>
-  'scanner:start-all-game-scans': () => IpcResult<ScannerRunStartResult[]>
+  'scanner:start-scan': (scannerId: string) => IpcResult<ScannerRunStartResult>
+  'scanner:start-all-scans': (mediaType?: MediaType) => IpcResult<ScannerRunStartResult[]>
   'scanner:list-run-states': () => IpcResult<ScannerRunState[]>
   'scanner:pause-scan': (scannerId: string) => IpcResult<boolean>
   'scanner:resume-scan': (scannerId: string) => IpcResult<boolean>
@@ -544,10 +597,16 @@ export interface IpcRendererEvents {
   ready: [boolean]
   'native:main-window-maximized': []
   'native:main-window-unmaximized': []
-  'monitor:game-started': [string]
-  'monitor:game-stopped': [string]
-  'monitor:game-foreground': [string]
-  'monitor:game-background': [string]
+  'activity:game-started': [string]
+  'activity:game-stopped': [string]
+  'activity:game-foreground': [string]
+  'activity:game-background': [string]
+  'activity:anime-started': [state: AnimeWatchingState]
+  'activity:anime-stopped': [state: AnimeWatchingState]
+  'player:session-started': [state: PlaybackSessionState]
+  'player:session-changed': [state: PlaybackSessionState]
+  'player:session-progress': [progress: PlaybackProgress]
+  'player:session-ended': [report: PlaybackEndReport]
   'scanner:run-state-changed': [state: ScannerRunState]
 
   // Db change feed (main -> renderer, batched)

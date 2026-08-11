@@ -1,6 +1,7 @@
 import type { ContentEntityType } from '@shared/common'
 import { parseExtensionScraperProviderId } from '@shared/scraper'
 import type {
+  AnimeScraperProviderInfo,
   CharacterScraperProviderInfo,
   CompanyScraperProviderInfo,
   GameScraperProviderInfo,
@@ -11,6 +12,7 @@ import { messages } from '@renderer/core/i18n'
 
 export type ScraperProviderInfo =
   | GameScraperProviderInfo
+  | AnimeScraperProviderInfo
   | PersonScraperProviderInfo
   | CompanyScraperProviderInfo
   | CharacterScraperProviderInfo

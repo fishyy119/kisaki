@@ -1,4 +1,8 @@
 import type {
+  LibraryAnime,
+  LibraryAnimeCreateInput,
+  LibraryAnimePatch,
+  LibraryAnimeQuery,
   LibraryCharacter,
   LibraryCharacterCreateInput,
   LibraryCharacterPatch,
@@ -26,6 +30,8 @@ import type {
 } from '@kisaki3/extension-api'
 import { eq, sql } from 'drizzle-orm'
 import {
+  animeExternalIds,
+  animes,
   characterExternalIds,
   characters,
   collections,
@@ -38,6 +44,7 @@ import {
   tags
 } from '@shared/db'
 import {
+  animeFilterQuerySpec,
   characterFilterQuerySpec,
   collectionFilterQuerySpec,
   companyFilterQuerySpec,
@@ -46,6 +53,7 @@ import {
   tagFilterQuerySpec
 } from '@shared/filter'
 import {
+  animeSearchQuerySpec,
   characterSearchQuerySpec,
   collectionSearchQuerySpec,
   companySearchQuerySpec,
@@ -94,6 +102,28 @@ const GAME_EXTERNAL_IDS_CONFIG = {
     }
   }
 } satisfies ExternalIdConfig<typeof gameExternalIds>
+
+const ANIME_EXTERNAL_IDS_CONFIG = {
+  table: animeExternalIds,
+  entityIdColumn: animeExternalIds.animeId,
+  sourceColumn: animeExternalIds.source,
+  externalIdColumn: animeExternalIds.externalId,
+  orderColumn: animeExternalIds.orderInAnime,
+  toEntityId(row) {
+    return row.animeId
+  },
+  toExternalId(row) {
+    return { source: row.source, id: row.externalId }
+  },
+  buildInsertValue(entityId, externalId, order) {
+    return {
+      animeId: entityId,
+      source: externalId.source,
+      externalId: externalId.id,
+      orderInAnime: order
+    }
+  }
+} satisfies ExternalIdConfig<typeof animeExternalIds>
 
 const PERSON_EXTERNAL_IDS_CONFIG = {
   table: personExternalIds,
@@ -277,6 +307,107 @@ export const GAME_CONFIG = {
   LibraryGameQuery,
   typeof games,
   typeof gameExternalIds
+>
+
+export const ANIME_CONFIG = {
+  table: animes,
+  filterSpec: animeFilterQuerySpec,
+  searchSpec: animeSearchQuerySpec,
+  externalIds: ANIME_EXTERNAL_IDS_CONFIG,
+  toFilter(query) {
+    return conditionsFilter([
+      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
+      anyOfCondition('status', query?.statuses),
+      anyOfCondition('format', query?.formats),
+      hasAnyOfCondition('tags', query?.tagIds),
+      hasAnyOfCondition('collections', query?.collectionIds)
+    ])
+  },
+  toDto(row, externalIds) {
+    return {
+      ...buildRankedEntityDtoBase(row, externalIds),
+      coverFile: optionalValue(row.coverFile),
+      backdropFile: optionalValue(row.backdropFile),
+      logoFile: optionalValue(row.logoFile),
+      releaseDate: optionalValue(row.releaseDate),
+      status: row.status,
+      format: row.format,
+      totalEpisodes: row.totalEpisodes,
+      lastActiveAt: toNullableTimestampMs(row.lastActiveAt),
+      totalDuration: row.totalDuration,
+      animeDirPath: optionalValue(row.animeDirPath),
+      descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
+    }
+  },
+  buildCreateValues(id, input) {
+    return {
+      id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
+      name: input.name,
+      description: input.description,
+      originalName: input.originalName,
+      sortName: input.sortName,
+      coverFile: input.coverFile,
+      backdropFile: input.backdropFile,
+      logoFile: input.logoFile,
+      releaseDate: input.releaseDate,
+      status: input.status,
+      format: input.format,
+      totalEpisodes: input.totalEpisodes,
+      lastActiveAt:
+        input.lastActiveAt === undefined
+          ? undefined
+          : input.lastActiveAt === null
+            ? null
+            : new Date(input.lastActiveAt),
+      totalDuration: input.totalDuration,
+      animeDirPath: input.animeDirPath,
+      descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
+      score: input.score,
+      isFavorite: input.isFavorite,
+      isNsfw: input.isNsfw,
+      relatedSites: copyReadonlyArray(input.relatedSites)
+    }
+  },
+  buildPatchValues(patch) {
+    return stripUndefined({
+      name: patch.name,
+      description: patch.description,
+      originalName: patch.originalName,
+      sortName: patch.sortName,
+      coverFile: patch.coverFile,
+      backdropFile: patch.backdropFile,
+      logoFile: patch.logoFile,
+      releaseDate: patch.releaseDate,
+      status: patch.status,
+      format: patch.format,
+      totalEpisodes: patch.totalEpisodes,
+      animeDirPath: patch.animeDirPath,
+      descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
+      score: patch.score,
+      isFavorite: patch.isFavorite,
+      isNsfw: patch.isNsfw,
+      relatedSites: copyReadonlyArray(patch.relatedSites),
+      lastActiveAt:
+        patch.lastActiveAt === undefined
+          ? undefined
+          : patch.lastActiveAt === null
+            ? null
+            : new Date(patch.lastActiveAt),
+      totalDuration: patch.totalDuration
+    })
+  },
+  buildExtraConditions(query) {
+    return query?.includeNsfw ? [] : [eq(animes.isNsfw, false)]
+  }
+} satisfies EntityConfig<
+  LibraryAnime,
+  LibraryAnimeCreateInput,
+  LibraryAnimePatch,
+  LibraryAnimeQuery,
+  typeof animes,
+  typeof animeExternalIds
 >
 
 export const PERSON_CONFIG = {

@@ -1,6 +1,6 @@
 import type { BangumiCollectionType } from '../api/types'
 import { m } from '../i18n'
-import type { BangumiMediaScope } from './scopes'
+import type { BangumiMediaScope } from '../../shared/scopes'
 
 /** Localized display name for a media scope in the current host UI locale. */
 export function getMediaScopeLabel(scope: BangumiMediaScope): string {

@@ -1,6 +1,7 @@
 import type { MainToHostRpcMethod } from '@kisaki3/extension-api'
+import type { ScraperMediaType } from '@shared/scraper'
 import { getRuntimeContributionKey } from '../types'
-import type { ScraperDomain, ScraperMediaType, ScraperRpcAction } from './domain'
+import type { ScraperDomain, ScraperRpcAction } from './domain'
 
 export function getScraperKey(
   runtimeHandle: string,

@@ -60,6 +60,7 @@ export const scraper = {
     slots: {
       info: '基本信息',
       tags: '标签',
+      episodes: '剧集',
       characters: '角色',
       persons: '人物',
       companies: '公司',

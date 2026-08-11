@@ -15,6 +15,10 @@ import type {
   BangumiCollectionPatch,
   BangumiCollectionQuery,
   BangumiEntityImageType,
+  BangumiEpisode,
+  BangumiEpisodeCollection,
+  BangumiEpisodeCollectionType,
+  BangumiEpisodeQuery,
   BangumiImageType,
   BangumiIndex,
   BangumiIndexSubject,
@@ -30,13 +34,13 @@ import type {
   BangumiPersonDetail
 } from './types'
 import type { BangumiSettingsV1 } from '../config/schema'
-import { BANGUMI_API_BASE_URL, BANGUMI_SUBJECT_TYPE_GAME } from '../utils/constants'
+import { BANGUMI_API_BASE_URL, BANGUMI_EPISODE_PAGE_LIMIT } from '../utils/constants'
 import { BangumiExtensionError, isCancellationError, throwIfAborted } from '../utils/errors'
 import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 import type { TokenService } from '../auth/token-service'
 import type { BangumiSubjectRef } from '../identity/subject-ref'
-import { getBangumiSubjectType, type BangumiMediaScope } from '../media/scopes'
+import { getBangumiSubjectType, type BangumiMediaScope } from '../../shared/scopes'
 
 type BangumiClientSettings = Pick<
   BangumiSettingsV1['client'],
@@ -93,14 +97,6 @@ export class BangumiClient {
     )
   }
 
-  async searchGameSubjects(
-    payload: BangumiSearchSubjectPayload,
-    page: PageQuery = {},
-    options: Pick<RequestOptions, 'signal'> = {}
-  ): Promise<Page<BangumiSubject>> {
-    return this.searchSubjects('game', payload, page, options)
-  }
-
   async searchSubjects(
     scope: BangumiMediaScope,
     payload: BangumiSearchSubjectPayload,
@@ -137,6 +133,43 @@ export class BangumiClient {
       auth: 'optional',
       signal: options.signal
     })
+  }
+
+  /**
+   * List episodes of a subject.
+   *
+   * The endpoint pages at 100 rows, so long-running shows need several
+   * requests; callers get the flattened list in source order.
+   */
+  async getSubjectEpisodes(
+    subjectId: number,
+    query: BangumiEpisodeQuery = {},
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiEpisode[]> {
+    const limit = Math.min(Math.max(query.limit ?? BANGUMI_EPISODE_PAGE_LIMIT, 1), 200)
+    const episodes: BangumiEpisode[] = []
+    let offset = Math.max(query.offset ?? 0, 0)
+
+    for (;;) {
+      const response = await this.request<BangumiPaged<BangumiEpisode>>('GET', '/v0/episodes', {
+        query: omitUndefined({
+          subject_id: subjectId,
+          type: query.type,
+          limit,
+          offset
+        }),
+        auth: 'optional',
+        signal: options.signal
+      })
+
+      const page = response.data ?? []
+      episodes.push(...page)
+      offset += page.length
+
+      if (page.length < limit || offset >= (response.total ?? episodes.length)) {
+        return episodes
+      }
+    }
   }
 
   async getSubjectPersons(
@@ -235,9 +268,7 @@ export class BangumiClient {
       {
         query: {
           ...pageQuery,
-          subject_type:
-            query.subject_type ??
-            (query.scope ? getBangumiSubjectType(query.scope) : BANGUMI_SUBJECT_TYPE_GAME),
+          subject_type: query.subject_type ?? getBangumiSubjectType(query.scope ?? 'game'),
           type: query.type
         },
         auth: 'required',
@@ -290,6 +321,64 @@ export class BangumiClient {
     })
   }
 
+  /**
+   * Read the signed-in user's per-episode collection state of one subject.
+   *
+   * Used to reconcile before the first push, so previously watched episodes are
+   * not re-sent as new marks.
+   */
+  async getMyEpisodeCollections(
+    refOrSubjectId: BangumiSubjectRef | number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiEpisodeCollection[]> {
+    const subjectId = readSubjectId(refOrSubjectId)
+    const collections: BangumiEpisodeCollection[] = []
+    let offset = 0
+
+    for (;;) {
+      const response = await this.request<BangumiPaged<BangumiEpisodeCollection>>(
+        'GET',
+        `/v0/users/-/collections/${subjectId}/episodes`,
+        {
+          query: { limit: BANGUMI_EPISODE_PAGE_LIMIT, offset },
+          auth: 'required',
+          signal: options.signal
+        }
+      )
+
+      const page = response.data ?? []
+      collections.push(...page)
+      offset += page.length
+
+      if (
+        page.length < BANGUMI_EPISODE_PAGE_LIMIT ||
+        offset >= (response.total ?? collections.length)
+      ) {
+        return collections
+      }
+    }
+  }
+
+  /** Batch-updates episode collection state; one call marks a whole season. */
+  async patchMyEpisodeCollections(
+    refOrSubjectId: BangumiSubjectRef | number,
+    episodeIds: readonly number[],
+    type: BangumiEpisodeCollectionType,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<void> {
+    if (episodeIds.length === 0) {
+      return
+    }
+
+    const subjectId = readSubjectId(refOrSubjectId)
+    await this.request<string>('PATCH', `/v0/users/-/collections/${subjectId}/episodes`, {
+      body: { episode_id: [...episodeIds], type },
+      auth: 'required',
+      responseType: 'text',
+      signal: options.signal
+    })
+  }
+
   async getIndex(
     indexId: number,
     options: Pick<RequestOptions, 'signal'> = {}
@@ -312,9 +401,7 @@ export class BangumiClient {
       {
         query: {
           ...pageQuery,
-          type:
-            query.type ??
-            (query.scope ? getBangumiSubjectType(query.scope) : BANGUMI_SUBJECT_TYPE_GAME)
+          type: query.type ?? getBangumiSubjectType(query.scope ?? 'game')
         },
         auth: 'optional',
         signal: options.signal

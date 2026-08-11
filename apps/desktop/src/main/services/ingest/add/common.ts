@@ -2,6 +2,7 @@ import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { ScraperLookup } from '@shared/scraper'
 import type { DbService } from '@main/services/db'
 import {
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
@@ -70,6 +71,24 @@ export function addGameToCollection(
     .values({
       collectionId: targetCollectionId,
       gameId,
+      orderInCollection: 0
+    })
+    .onConflictDoNothing()
+    .run()
+}
+
+export function addAnimeToCollection(
+  dbService: DbService,
+  animeId: string,
+  targetCollectionId: string | undefined
+): void {
+  if (!targetCollectionId) return
+
+  dbService.client
+    .insert(collectionAnimeLinks)
+    .values({
+      collectionId: targetCollectionId,
+      animeId,
       orderInCollection: 0
     })
     .onConflictDoNothing()

@@ -10,6 +10,7 @@ export { AttachmentStore } from './attachment'
 export { ThumbnailStore } from './thumbnail'
 export { DbEntityDeleteHelper, DbEntityFinderHelper } from './helper'
 export {
+  animeExternalIdLink,
   characterExternalIdLink,
   companyExternalIdLink,
   findExternalIdOwners,

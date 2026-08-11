@@ -3,6 +3,8 @@
  */
 
 import type {
+  AnimeScraperSlot,
+  AnimeScraperSlotConfigs,
   BasicSlotConfig,
   CharacterScraperSlot,
   CharacterScraperSlotConfigs,
@@ -24,6 +26,7 @@ import type { ContentEntityType } from '@shared/common'
 import type { ExternalId } from '@shared/identity'
 import type { ContentLocale } from '@shared/i18n'
 import {
+  ANIME_SCRAPER_SLOTS,
   CHARACTER_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
   GAME_SCRAPER_SLOTS,
@@ -40,6 +43,7 @@ export type SlotConfigForSlot<S extends ScraperSlot> = S extends RelationCollect
 
 export interface ScraperSlotConfigsByMediaType {
   game: GameScraperSlotConfigs
+  anime: AnimeScraperSlotConfigs
   person: PersonScraperSlotConfigs
   company: CompanyScraperSlotConfigs
   character: CharacterScraperSlotConfigs
@@ -61,6 +65,12 @@ export type GameImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons'
 
 /** Game image slot list. */
 export const GAME_IMAGE_SLOTS: GameImageSlot[] = ['covers', 'backdrops', 'logos', 'icons']
+
+/** Anime image slot types. */
+export type AnimeImageSlot = 'covers' | 'backdrops' | 'logos'
+
+/** Anime image slot list. */
+export const ANIME_IMAGE_SLOTS: AnimeImageSlot[] = ['covers', 'backdrops', 'logos']
 
 /** Image slot types. */
 export const SCRAPER_IMAGE_SLOTS: ScraperImageSlot[] = [...GAME_IMAGE_SLOTS, 'photos']
@@ -141,6 +151,7 @@ function normalizeBasicSlotConfig(value: unknown): BasicSlotConfig | null {
 }
 
 export function getScraperSlotsForMediaType(mediaType: 'game'): readonly GameScraperSlot[]
+export function getScraperSlotsForMediaType(mediaType: 'anime'): readonly AnimeScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'person'): readonly PersonScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'company'): readonly CompanyScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'character'): readonly CharacterScraperSlot[]
@@ -149,6 +160,8 @@ export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readon
   switch (mediaType) {
     case 'game':
       return GAME_SCRAPER_SLOTS
+    case 'anime':
+      return ANIME_SCRAPER_SLOTS
     case 'person':
       return PERSON_SCRAPER_SLOTS
     case 'company':
@@ -168,6 +181,10 @@ export function normalizeSlotConfigs(
   mediaType: 'game',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): GameScraperSlotConfigs
+export function normalizeSlotConfigs(
+  mediaType: 'anime',
+  slotConfigs: ScraperSlotConfigs | null | undefined
+): AnimeScraperSlotConfigs
 export function normalizeSlotConfigs(
   mediaType: 'person',
   slotConfigs: ScraperSlotConfigs | null | undefined
@@ -335,6 +352,12 @@ export function createSlotConfigs(
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): GameScraperSlotConfigs
+export function createSlotConfigs(
+  mediaType: 'anime',
+  providerId: string,
+  capabilities: ScraperCapability[],
+  locale?: ContentLocale
+): AnimeScraperSlotConfigs
 export function createSlotConfigs(
   mediaType: 'person',
   providerId: string,

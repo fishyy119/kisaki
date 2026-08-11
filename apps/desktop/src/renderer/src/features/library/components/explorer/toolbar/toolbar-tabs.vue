@@ -13,7 +13,7 @@ import { useLibraryExplorerStore } from '../../../stores'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ContentEntityType } from '@shared/common'
 
-const ENTITY_TABS: ContentEntityType[] = ['game', 'character', 'person', 'company']
+const ENTITY_TABS: ContentEntityType[] = ['game', 'anime', 'character', 'person', 'company']
 
 const store = useLibraryExplorerStore()
 const { activeEntityType } = storeToRefs(store)

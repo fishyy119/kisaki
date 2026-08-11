@@ -7,6 +7,7 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { GameDetailDialog } from '@renderer/components/shared/game'
+import { AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { CharacterDetailDialog } from '@renderer/components/shared/character'
 import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyDetailDialog } from '@renderer/components/shared/company'
@@ -60,6 +61,7 @@ const dialogBodyRef = ref<InstanceType<typeof DialogBody>>()
 type EntityClickPayload = { type: ContentEntityType; id: string }
 
 const openGameId = ref<string | null>(null)
+const openAnimeId = ref<string | null>(null)
 const openCharacterId = ref<string | null>(null)
 const openPersonId = ref<string | null>(null)
 const openCompanyId = ref<string | null>(null)
@@ -68,6 +70,12 @@ const gameDialogOpen = computed({
   get: () => openGameId.value !== null,
   set: (value) => {
     if (!value) openGameId.value = null
+  }
+})
+const animeDialogOpen = computed({
+  get: () => openAnimeId.value !== null,
+  set: (value) => {
+    if (!value) openAnimeId.value = null
   }
 })
 const characterDialogOpen = computed({
@@ -91,6 +99,7 @@ const companyDialogOpen = computed({
 
 function handleEntityClick(payload: EntityClickPayload) {
   openGameId.value = null
+  openAnimeId.value = null
   openCharacterId.value = null
   openPersonId.value = null
   openCompanyId.value = null
@@ -98,6 +107,9 @@ function handleEntityClick(payload: EntityClickPayload) {
   switch (payload.type) {
     case 'game':
       openGameId.value = payload.id
+      return
+    case 'anime':
+      openAnimeId.value = payload.id
       return
     case 'character':
       openCharacterId.value = payload.id
@@ -108,6 +120,8 @@ function handleEntityClick(payload: EntityClickPayload) {
     case 'company':
       openCompanyId.value = payload.id
       return
+    default:
+      payload.type satisfies never
   }
 }
 
@@ -210,6 +224,11 @@ const entityTypeModel = computed({
     v-if="openGameId"
     v-model:open="gameDialogOpen"
     :game-id="openGameId"
+  />
+  <AnimeDetailDialog
+    v-if="openAnimeId"
+    v-model:open="animeDialogOpen"
+    :anime-id="openAnimeId"
   />
   <CharacterDetailDialog
     v-if="openCharacterId"

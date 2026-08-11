@@ -21,6 +21,7 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { GameSelect } from '@renderer/components/shared/game'
+import { AnimeSelect } from '@renderer/components/shared/anime'
 import { CharacterSelect } from '@renderer/components/shared/character'
 import { PersonSelect } from '@renderer/components/shared/person'
 import { CompanySelect } from '@renderer/components/shared/company'
@@ -45,6 +46,7 @@ interface EntityConfig {
 
 const ENTITY_CONFIG = computed<Record<ContentEntityType, EntityConfig>>(() => ({
   game: { label: m.value.library.entities.game },
+  anime: { label: m.value.library.entities.anime },
   character: { label: m.value.library.entities.character },
   person: { label: m.value.library.entities.person },
   company: { label: m.value.library.entities.company }
@@ -105,6 +107,13 @@ watch(
         if (entity) name = entity.name
         break
       }
+      case 'anime': {
+        const entity = await db.query.animes.findFirst({
+          where: eq(db._.fullSchema.animes.id, id)
+        })
+        if (entity) name = entity.name
+        break
+      }
       case 'character': {
         const entity = await db.query.characters.findFirst({
           where: eq(db._.fullSchema.characters.id, id)
@@ -126,6 +135,8 @@ watch(
         if (entity) name = entity.name
         break
       }
+      default:
+        props.entityType satisfies never
     }
 
     formData.value.entityName = name
@@ -181,6 +192,12 @@ const config = computed(() => ENTITY_CONFIG.value[props.entityType])
               <FieldContent>
                 <GameSelect
                   v-if="props.entityType === 'game'"
+                  v-model="formData.entityId"
+                  :exclude-ids="excludeIds"
+                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
+                />
+                <AnimeSelect
+                  v-else-if="props.entityType === 'anime'"
                   v-model="formData.entityId"
                   :exclude-ids="excludeIds"
                   :placeholder="m.library.select.selectPlaceholder({ label: config.label })"

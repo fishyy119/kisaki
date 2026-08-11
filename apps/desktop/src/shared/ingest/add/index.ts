@@ -9,6 +9,16 @@ export type {
   IngestAddGameResult
 } from './game'
 export type {
+  IngestAddAnimeDirectOptions,
+  IngestAddAnimeDirectParams,
+  IngestAddAnimeDirectResult,
+  IngestAddAnimeDirectSeed,
+  IngestAddAnimeFromScraperOptions,
+  IngestAddAnimeFromScraperParams,
+  IngestAddAnimeFromScraperResult,
+  IngestAddAnimeResult
+} from './anime'
+export type {
   IngestAddPersonFromScraperOptions,
   IngestAddPersonFromScraperParams,
   IngestAddPersonFromScraperResult,

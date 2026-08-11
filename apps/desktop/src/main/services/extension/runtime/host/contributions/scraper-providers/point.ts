@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import {
   createCancellationError,
+  type AnimeScraperProvider,
+  type AnimeScraperSession,
+  type AnimeScraperSlot,
   type CharacterScraperProvider,
   type CharacterScraperSession,
   type CharacterScraperSlot,
@@ -24,6 +27,9 @@ import {
   type ScraperProviderSessionGetResponse,
   type ScraperProviderSessionOpenRequest,
   type ScraperProviderSessionOpenResponse,
+  validateAnimeScraperProviderShape,
+  validateAnimeScraperSearchResults,
+  validateAnimeScraperSessionResults,
   validateCharacterScraperProviderShape,
   validateCharacterScraperSearchResults,
   validateCharacterScraperSessionResults,
@@ -54,15 +60,18 @@ import { toScraperProviderRegistration } from './registrations'
 
 type ScraperProviderInput<TMediaType extends ScraperMediaType> = TMediaType extends 'game'
   ? GameScraperProvider
-  : TMediaType extends 'person'
-    ? PersonScraperProvider
-    : TMediaType extends 'company'
-      ? CompanyScraperProvider
-      : CharacterScraperProvider
+  : TMediaType extends 'anime'
+    ? AnimeScraperProvider
+    : TMediaType extends 'person'
+      ? PersonScraperProvider
+      : TMediaType extends 'company'
+        ? CompanyScraperProvider
+        : CharacterScraperProvider
 
 export class HostScraperProviderContributionPoint {
   private readonly options: HostContributionDomainOptions
   private readonly gameSessions = new Map<string, ScraperSessionRecord<GameScraperSession>>()
+  private readonly animeSessions = new Map<string, ScraperSessionRecord<AnimeScraperSession>>()
   private readonly personSessions = new Map<string, ScraperSessionRecord<PersonScraperSession>>()
   private readonly companySessions = new Map<string, ScraperSessionRecord<CompanyScraperSession>>()
   private readonly characterSessions = new Map<
@@ -74,6 +83,12 @@ export class HostScraperProviderContributionPoint {
     GameScraperSlot,
     GameScraperSession,
     GameScraperProvider
+  >
+  private readonly animeDomain: ScraperDomain<
+    'anime',
+    AnimeScraperSlot,
+    AnimeScraperSession,
+    AnimeScraperProvider
   >
   private readonly personDomain: ScraperDomain<
     'person',
@@ -122,6 +137,33 @@ export class HostScraperProviderContributionPoint {
         this.options.registry.registerScraperProvider(scope.extensionId, 'game', provider),
       unregister: (scope, providerId) =>
         this.options.registry.unregisterScraperProvider(scope.extensionId, 'game', providerId)
+    }
+    this.animeDomain = {
+      mediaType: 'anime',
+      label: 'Anime',
+      rpc: HOST_TO_MAIN_SCRAPER_RPC,
+      slots: SCRAPER_PROVIDER_SLOTS.anime,
+      sessions: this.animeSessions,
+      getProviders: (runtime) => runtime.scraperProviders.anime,
+      validate: validateAnimeScraperProviderShape,
+      validateSearchResults: validateAnimeScraperSearchResults,
+      validateResolvedTarget: validateScraperResolvedTarget,
+      validateSession: validateScraperSessionShape,
+      validateSessionResults: validateAnimeScraperSessionResults,
+      toRegistration: (scope, provider) => ({
+        runtimeHandle: scope.runtimeHandle,
+        mediaType: 'anime',
+        provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.anime)
+      }),
+      toUnregistration: (scope, providerId) => ({
+        runtimeHandle: scope.runtimeHandle,
+        mediaType: 'anime',
+        providerId
+      }),
+      register: (scope, provider) =>
+        this.options.registry.registerScraperProvider(scope.extensionId, 'anime', provider),
+      unregister: (scope, providerId) =>
+        this.options.registry.unregisterScraperProvider(scope.extensionId, 'anime', providerId)
     }
     this.personDomain = {
       mediaType: 'person',
@@ -218,6 +260,11 @@ export class HostScraperProviderContributionPoint {
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
+    mediaType: 'anime',
+    provider: AnimeScraperProvider
+  ): ScraperProviderRegistration
+  registerScraperProvider(
+    scope: HostContributionScope,
     mediaType: 'person',
     provider: PersonScraperProvider
   ): ScraperProviderRegistration
@@ -236,6 +283,7 @@ export class HostScraperProviderContributionPoint {
     mediaType: ScraperMediaType,
     provider:
       | GameScraperProvider
+      | AnimeScraperProvider
       | PersonScraperProvider
       | CompanyScraperProvider
       | CharacterScraperProvider
@@ -243,6 +291,8 @@ export class HostScraperProviderContributionPoint {
     switch (mediaType) {
       case 'game':
         return this.registerProvider(scope, provider as GameScraperProvider, this.gameDomain)
+      case 'anime':
+        return this.registerProvider(scope, provider as AnimeScraperProvider, this.animeDomain)
       case 'person':
         return this.registerProvider(scope, provider as PersonScraperProvider, this.personDomain)
       case 'company':
@@ -263,6 +313,8 @@ export class HostScraperProviderContributionPoint {
     switch (request.mediaType) {
       case 'game':
         return this.searchProvider(this.gameDomain, request, signal)
+      case 'anime':
+        return this.searchProvider(this.animeDomain, request, signal)
       case 'person':
         return this.searchProvider(this.personDomain, request, signal)
       case 'company':
@@ -279,6 +331,8 @@ export class HostScraperProviderContributionPoint {
     switch (request.mediaType) {
       case 'game':
         return this.resolveProvider(this.gameDomain, request, signal)
+      case 'anime':
+        return this.resolveProvider(this.animeDomain, request, signal)
       case 'person':
         return this.resolveProvider(this.personDomain, request, signal)
       case 'company':
@@ -295,6 +349,8 @@ export class HostScraperProviderContributionPoint {
     switch (request.mediaType) {
       case 'game':
         return this.openProviderSession(this.gameDomain, request, signal)
+      case 'anime':
+        return this.openProviderSession(this.animeDomain, request, signal)
       case 'person':
         return this.openProviderSession(this.personDomain, request, signal)
       case 'company':
@@ -311,6 +367,8 @@ export class HostScraperProviderContributionPoint {
     switch (request.mediaType) {
       case 'game':
         return this.getProviderSession(this.gameDomain, request, signal)
+      case 'anime':
+        return this.getProviderSession(this.animeDomain, request, signal)
       case 'person':
         return this.getProviderSession(this.personDomain, request, signal)
       case 'company':
@@ -324,6 +382,9 @@ export class HostScraperProviderContributionPoint {
     switch (request.mediaType) {
       case 'game':
         await this.closeProviderSession(this.gameDomain, request)
+        return
+      case 'anime':
+        await this.closeProviderSession(this.animeDomain, request)
         return
       case 'person':
         await this.closeProviderSession(this.personDomain, request)
@@ -340,6 +401,7 @@ export class HostScraperProviderContributionPoint {
   async releaseRuntime(runtimeHandle: string): Promise<void> {
     await Promise.all([
       this.closeRuntimeSessions(this.gameSessions, runtimeHandle, 'Game'),
+      this.closeRuntimeSessions(this.animeSessions, runtimeHandle, 'Anime'),
       this.closeRuntimeSessions(this.personSessions, runtimeHandle, 'Person'),
       this.closeRuntimeSessions(this.companySessions, runtimeHandle, 'Company'),
       this.closeRuntimeSessions(this.characterSessions, runtimeHandle, 'Character')
@@ -349,6 +411,7 @@ export class HostScraperProviderContributionPoint {
   async releaseAll(): Promise<void> {
     await Promise.all([
       this.closeAllSessions(this.gameSessions, 'Game'),
+      this.closeAllSessions(this.animeSessions, 'Anime'),
       this.closeAllSessions(this.personSessions, 'Person'),
       this.closeAllSessions(this.companySessions, 'Company'),
       this.closeAllSessions(this.characterSessions, 'Character')

@@ -113,6 +113,17 @@ export type GameScraperSlot =
   | 'logos'
   | 'icons'
 
+export type AnimeScraperSlot =
+  | 'info'
+  | 'tags'
+  | 'episodes'
+  | 'characters'
+  | 'persons'
+  | 'companies'
+  | 'covers'
+  | 'backdrops'
+  | 'logos'
+
 export type PersonScraperSlot = 'info' | 'tags' | 'photos'
 
 export type CompanyScraperSlot = 'info' | 'tags' | 'logos'
@@ -128,7 +139,11 @@ export type CharacterScraperSlot = 'info' | 'tags' | 'persons' | 'photos'
  * - Slot config editing UI
  */
 export type ScraperSlot =
-  GameScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
+  | GameScraperSlot
+  | AnimeScraperSlot
+  | PersonScraperSlot
+  | CompanyScraperSlot
+  | CharacterScraperSlot
 
 /** Shared strategy for combining multiple provider results. */
 export type SlotStrategy = 'first' | 'enrich'
@@ -175,6 +190,18 @@ export type GameScraperSlotConfigs = {
   backdrops: BasicSlotConfig
   logos: BasicSlotConfig
   icons: BasicSlotConfig
+}
+
+export type AnimeScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  episodes: BasicSlotConfig
+  characters: RelationCollectionSlotConfig
+  persons: RelationCollectionSlotConfig
+  companies: RelationCollectionSlotConfig
+  covers: BasicSlotConfig
+  backdrops: BasicSlotConfig
+  logos: BasicSlotConfig
 }
 
 export type PersonScraperSlotConfigs = {

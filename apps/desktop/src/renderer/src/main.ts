@@ -13,7 +13,8 @@ import {
 } from './core/extensions'
 import { setupDeeplinkHandlers } from './core/deeplink'
 import {
-  useGameMonitorStore,
+  useAnimeActivityStore,
+  useGameActivityStore,
   useScannerStore,
   useDefaultFromStore,
   useUpdaterStore,
@@ -71,7 +72,8 @@ async function initMainWindowRenderer() {
     setupExtensionWebviewNavigation(router)
 
     // Store initialization (registers listeners + fetches initial state)
-    await useGameMonitorStore().init()
+    await useGameActivityStore().init()
+    await useAnimeActivityStore().init()
     await useTaskRunStore().init()
     await useScannerStore().init()
     await useDefaultFromStore().init()

@@ -42,7 +42,7 @@ export default defineConfig([
     ignores: [
       'src/shared/i18n/messages/**',
       // Parses CJK source data from the Bangumi API; not UI copy.
-      'src/host/media/game/scraper/format/**'
+      'src/host/media/format/**'
     ],
     rules: {
       'no-restricted-syntax': ['error', ...noCjkLiteralRestrictions]

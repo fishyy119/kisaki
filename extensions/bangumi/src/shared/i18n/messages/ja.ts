@@ -1,8 +1,9 @@
 /** Japanese message catalog for the Bangumi extension. */
 
+import type { BangumiMediaScope } from '../../scopes'
 import type { en } from './en'
 
-type Scope = 'book' | 'game' | 'anime' | 'music'
+type Scope = BangumiMediaScope
 type CollectionType = 1 | 2 | 3 | 4 | 5
 
 const NOUNS: Record<Scope, string> = {
@@ -87,8 +88,8 @@ export const ja = {
     localWriteUnsupportedGeneric:
       'このメディア種別はまだローカルライブラリへの書き込みに対応していません。',
 
-    localGameStatusUnknown: 'ローカルゲームのステータスを認識できませんでした。',
-    localGameMissing: 'ローカルゲームが存在しません。',
+    localMediaStatusUnknown: 'ローカル項目のステータスを認識できませんでした。',
+    localMediaMissing: 'ローカル項目が存在しません。',
     localItemMissing: 'ローカルエントリが存在しません。',
     importedItemMissing: 'インポート済みのローカルエントリが存在しません。',
     targetCollectionMissing: '選択したターゲットコレクションが存在しません。',
@@ -99,8 +100,8 @@ export const ja = {
       'Bangumi インデックスは数値 ID、または https://bgm.tv/index/<id> や https://bangumi.tv/index/<id> のようなリンクである必要があります。',
     indexSubjectMissingId: 'Bangumi インデックスのエントリに有効な作品 ID がありません。',
     collectionMissingSubjectId: 'Bangumi コレクションに有効な作品 ID がありません。',
-    profileRequired: 'ゲーム作成に使うスクレイパープロファイルを選択してください。',
-    profileNotFound: '選択したゲームスクレイパープロファイルが存在しません。'
+    profileRequired: 'ローカル項目の作成に使うスクレイパープロファイルを選択してください。',
+    profileNotFound: '選択したスクレイパープロファイルが存在しません。'
   },
 
   oauth: {
@@ -128,7 +129,7 @@ export const ja = {
     },
     syncFull: {
       title: 'Bangumi フル同期',
-      description: 'ローカルゲームをスキャンして Bangumi のコレクション状態と評価を同期する'
+      description: 'ローカル項目をスキャンして Bangumi のコレクション状態と評価を同期する'
     },
     importCollections: {
       title: '自分の Bangumi コレクションをインポート',
@@ -284,7 +285,7 @@ export const ja = {
     descriptions: {
       'auth-refresh': 'アプリ起動時に Bangumi 資格情報を更新して検証します。',
       'sync-changed': '起動後に前回のセッション中に蓄積されたローカル変更を同期します。',
-      'sync-full-daily': '毎日早朝に一度ゲームのフル同期を実行します。'
+      'sync-full-daily': '毎日早朝に一度ライブラリのフル同期を実行します。'
     },
     status: {
       missing: '未作成',
@@ -307,6 +308,8 @@ export const ja = {
     discardChanges: '変更を破棄',
     savePreferences: '設定を保存',
     actionFailed: '操作に失敗しました。もう一度お試しください。',
+    mediaScope: 'メディア種別',
+    mediaScopePlaceholder: 'メディア種別を選択',
 
     tabs: {
       overview: '概要',
@@ -376,11 +379,12 @@ export const ja = {
     sync: {
       preferencesTitle: '自動同期設定',
       autoSync: '自動同期',
-      autoSyncDescription: 'ローカルゲームの作成とユーザー状態フィールドの変更を監視します。',
+      autoSyncDescription: 'ローカル項目の作成とユーザー状態フィールドの変更を監視します。',
       syncItems: '同期項目',
       itemCreate: 'コレクション作成',
-      itemStatus: 'プレイ状況',
+      itemStatus: '項目ステータス',
       itemScore: '評価',
+      itemEpisodes: 'エピソード視聴状態',
       clearRemoteScore: 'リモート評価の削除を許可',
       clearRemoteScoreDescription: 'ローカル評価をクリアしたとき Bangumi の評価も削除します。',
       manualTitle: '手動同期',
@@ -392,13 +396,13 @@ export const ja = {
 
     import: {
       noProfilesWarning:
-        'ゲームスクレイパープロファイルが未設定です。インポートのプレビューは可能ですが、ローカル書き込みには利用可能なプロファイルが必要です。',
+        'このメディア種別のスクレイパープロファイルが未設定です。インポートのプレビューは可能ですが、ローカル書き込みには利用可能なプロファイルが必要です。',
       sourceTitle: 'インポート元',
       sourceDescription:
         'インポートは一回限りのタスクです。オプションは今回の実行のみに適用され、Bangumi 設定には保存されません。',
       myCollections: '自分のコレクション',
       myCollectionsDescription:
-        '現在の Bangumi ユーザーのゲームコレクションをコレクション種別ごとにインポートします。',
+        '現在の Bangumi ユーザーの選択したメディア種別のコレクションを種別ごとにインポートします。',
       bangumiIndex: 'Bangumi インデックス',
       bangumiIndexDescription: 'インデックスの ID またはリンクを入力してインポートを設定します。',
       indexPlaceholder: 'インデックス ID または https://bgm.tv/index/...',
@@ -440,8 +444,9 @@ export const ja = {
     fullSync: {
       title: 'フル同期',
       syncData: '同期データ',
-      itemStatus: 'プレイ状況',
+      itemStatus: '項目ステータス',
       itemScore: '評価',
+      itemEpisodes: 'エピソード視聴状態',
       updateExisting: '既存コレクションを更新',
       updateExistingDescription:
         'オフの場合、リモートに存在しないエントリの Bangumi コレクションのみ作成します。',
@@ -458,7 +463,7 @@ export const ja = {
       profilePlaceholder: 'スクレイパープロファイルを選択',
       collectionTypes: 'コレクション種別',
       dataItems: 'インポートするユーザー状態フィールド',
-      itemStatus: 'プレイ状況',
+      itemStatus: '項目ステータス',
       itemScore: '評価',
       itemTags: 'タグ',
       patchExisting: '既存エントリを更新',

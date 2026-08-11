@@ -13,8 +13,13 @@ import {
 } from '@kisaki3/extension-api'
 import { and, eq, or, type SQL } from 'drizzle-orm'
 import {
+  animeCharacterLinks,
+  animeCompanyLinks,
+  animePersonLinks,
+  animeTagLinks,
   characterPersonLinks,
   characterTagLinks,
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
@@ -88,6 +93,45 @@ const RELATION_CONFIGS: Record<LibraryRelationKind, RelationConfig> = {
     spoilerField: 'isSpoiler',
     typeField: 'type'
   },
+  'anime-person': {
+    kind: 'anime-person',
+    table: animePersonLinks,
+    fromType: 'anime',
+    toType: 'person',
+    fromIdField: 'animeId',
+    toIdField: 'personId',
+    orderField: 'orderInAnime',
+    secondaryOrderField: 'orderInPerson',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    typeField: 'type'
+  },
+  'anime-company': {
+    kind: 'anime-company',
+    table: animeCompanyLinks,
+    fromType: 'anime',
+    toType: 'company',
+    fromIdField: 'animeId',
+    toIdField: 'companyId',
+    orderField: 'orderInAnime',
+    secondaryOrderField: 'orderInCompany',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    typeField: 'type'
+  },
+  'anime-character': {
+    kind: 'anime-character',
+    table: animeCharacterLinks,
+    fromType: 'anime',
+    toType: 'character',
+    fromIdField: 'animeId',
+    toIdField: 'characterId',
+    orderField: 'orderInAnime',
+    secondaryOrderField: 'orderInCharacter',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    typeField: 'type'
+  },
   'character-person': {
     kind: 'character-person',
     table: characterPersonLinks,
@@ -109,6 +153,18 @@ const RELATION_CONFIGS: Record<LibraryRelationKind, RelationConfig> = {
     fromIdField: 'gameId',
     toIdField: 'tagId',
     orderField: 'orderInGame',
+    secondaryOrderField: 'orderInTag',
+    noteField: 'note',
+    spoilerField: 'isSpoiler'
+  },
+  'anime-tag': {
+    kind: 'anime-tag',
+    table: animeTagLinks,
+    fromType: 'anime',
+    toType: 'tag',
+    fromIdField: 'animeId',
+    toIdField: 'tagId',
+    orderField: 'orderInAnime',
     secondaryOrderField: 'orderInTag',
     noteField: 'note',
     spoilerField: 'isSpoiler'
@@ -156,6 +212,16 @@ const RELATION_CONFIGS: Record<LibraryRelationKind, RelationConfig> = {
     toType: 'game',
     fromIdField: 'collectionId',
     toIdField: 'gameId',
+    orderField: 'orderInCollection',
+    noteField: 'note'
+  },
+  'collection-anime': {
+    kind: 'collection-anime',
+    table: collectionAnimeLinks,
+    fromType: 'collection',
+    toType: 'anime',
+    fromIdField: 'collectionId',
+    toIdField: 'animeId',
     orderField: 'orderInCollection',
     noteField: 'note'
   },

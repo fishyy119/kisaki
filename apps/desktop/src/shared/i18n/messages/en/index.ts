@@ -1,4 +1,6 @@
+import { activity } from './activity'
 import { adder } from './adder'
+import { anime } from './anime'
 import { automation } from './automation'
 import { app } from './app'
 import { common } from './common'
@@ -6,7 +8,6 @@ import { extension } from './extension'
 import { filter } from './filter'
 import { game } from './game'
 import { ingest } from './ingest'
-import { launcher } from './launcher'
 import { library } from './library'
 import { merge } from './merge'
 import { nav } from './nav'
@@ -20,7 +21,9 @@ import { updater } from './updater'
 
 /** English catalog: the schema source for all locales. */
 export const en = {
+  activity,
   adder,
+  anime,
   automation,
   app,
   common,
@@ -28,7 +31,6 @@ export const en = {
   filter,
   game,
   ingest,
-  launcher,
   library,
   merge,
   nav,

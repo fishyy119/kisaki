@@ -10,6 +10,12 @@ export const settings = {
   updaterAutoCheckLabel: '自動檢查更新',
   updaterAllowPrereleaseLabel: '接收預覽版更新',
   loadFailed: '設定載入失敗。',
+  player: {
+    audioLanguagesLabel: '首選音軌語言',
+    subtitleLanguagesLabel: '首選字幕語言',
+    languagesPlaceholder: '例如：jpn, eng',
+    languagesHint: '以逗號分隔的語言標籤，越靠前優先度越高。'
+  },
   language: {
     followSystem: '跟隨系統',
     uiLanguageLabel: '介面語言'

@@ -11,6 +11,7 @@ import { isContentEntityType } from '@shared/common'
 import { installRouteData } from '@renderer/core/route-data'
 import {
   gameDetailData,
+  animeDetailData,
   characterDetailData,
   personDetailData,
   companyDetailData,
@@ -75,6 +76,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@renderer/features/library/pages/game-detail-page.vue'),
         props: true,
         meta: { entityType: 'game', dataLoaders: [gameDetailData] }
+      },
+      {
+        path: 'anime/:animeId',
+        name: 'anime-detail',
+        component: () => import('@renderer/features/library/pages/anime-detail-page.vue'),
+        props: true,
+        meta: { entityType: 'anime', dataLoaders: [animeDetailData] }
       },
       {
         path: 'person/:personId',
@@ -248,7 +256,7 @@ installRouteData(router)
 // Navigation guards
 router.beforeEach((to, _from) => {
   // Auto-fill `from` query for content entity detail routes
-  // Only ContentEntityType (game, character, person, company) needs the from parameter
+  // Only ContentEntityType (game, anime, character, person, company) needs the from parameter
   // OrganizerType (collection, tag) are containers themselves, not content to be organized
   const entityType = to.meta.entityType as string | undefined
   if (entityType && isContentEntityType(entityType) && !to.query.from) {

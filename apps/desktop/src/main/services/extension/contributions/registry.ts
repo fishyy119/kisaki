@@ -20,8 +20,7 @@ import type { DbHooks } from '@main/services/db/hooks'
 import type { DeeplinkService } from '@main/services/deeplink'
 import type { I18nHooks } from '@main/services/i18n/hooks'
 import type { IngestHooks } from '@main/services/ingest/hooks'
-import type { LauncherHooks } from '@main/services/launcher/hooks'
-import type { MonitorHooks } from '@main/services/monitor/hooks'
+import type { ActivityHooks } from '@main/services/activity'
 import type { ScannerHooks } from '@main/services/scanner/hooks'
 import type { ScraperService } from '@main/services/scraper'
 import type { ScraperHooks } from '@main/services/scraper/hooks'
@@ -58,8 +57,7 @@ export interface ExtensionModuleHookSurfaces {
   scraper: ScraperHooks
   ingest: IngestHooks
   scanner: ScannerHooks
-  launcher: LauncherHooks
-  monitor: MonitorHooks
+  activity: ActivityHooks
 }
 
 export interface ExtensionContributionRegistryOptions extends ExtensionContributionPointOptions {
@@ -115,7 +113,7 @@ export class ExtensionContributionRegistry {
     bindScraperHookPoints(surfaces.scraper, this.hooks)
     bindIngestHookPoints(surfaces.ingest, this.hooks)
     bindScannerHookPoints(surfaces.scanner, this.hooks)
-    bindPlayHookPoints(surfaces.launcher, surfaces.monitor, this.hooks)
+    bindPlayHookPoints(surfaces.activity, this.hooks)
     bindLibraryHookPoints(surfaces.db, this.hooks)
     bindAppHookPoints(surfaces.bootstrap, surfaces.db, surfaces.i18n, surfaces.window, this.hooks)
   }

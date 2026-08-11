@@ -16,7 +16,6 @@ import {
   gamePersonLinks,
   games,
   gameTagLinks,
-  type NewCharacterPersonLink,
   type NewCollectionGameLink,
   type NewGame,
   type NewGameCharacterLink,
@@ -25,14 +24,18 @@ import {
 } from '@shared/db'
 import type {
   IngestGameCharacterLink,
-  IngestGameCharacterPersonLink,
   IngestGameCompanyLink,
   IngestGameGraph,
   IngestGameNode,
   IngestGamePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
-import { requireOwnerIdentity, requirePersistedId, resolveOrderedLinks } from './links'
+import {
+  requireOwnerIdentity,
+  requirePersistedId,
+  resolveCharacterPersonLinks,
+  resolveOrderedLinks
+} from './links'
 import type { PersistGameGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
 import type { CompanyIngestPersistHandler } from './company'
@@ -148,45 +151,6 @@ function resolveGameCharacterLinks(params: {
       note: link.note ?? null,
       orderInGame,
       orderInCharacter: counters.next('character', link.characterId)
-    })
-  })
-}
-
-function resolveCharacterPersonLinks(params: {
-  links: IngestGameCharacterPersonLink[]
-  characterIdByIdentity: Map<string, string>
-  personIdByIdentity: Map<string, string>
-}): NewCharacterPersonLink[] {
-  const { links, characterIdByIdentity, personIdByIdentity } = params
-
-  return resolveOrderedLinks({
-    links,
-    resolve: (link) => {
-      const characterId = requirePersistedId(
-        characterIdByIdentity,
-        link.characterIdentityKey,
-        'character'
-      )
-      const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
-      return {
-        key: `${characterId}:${personId}:${link.type}`,
-        value: {
-          characterId,
-          personId,
-          type: link.type,
-          isSpoiler: link.isSpoiler,
-          note: link.note
-        }
-      }
-    },
-    buildRow: (link, _index, counters) => ({
-      characterId: link.characterId,
-      personId: link.personId,
-      type: link.type,
-      isSpoiler: link.isSpoiler,
-      note: link.note ?? null,
-      orderInCharacter: counters.next('character', link.characterId),
-      orderInPerson: counters.next('person', link.personId)
     })
   })
 }

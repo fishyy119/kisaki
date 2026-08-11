@@ -19,6 +19,22 @@ export type {
   IngestUpdateSurfaceKeysByGroup
 } from './common'
 export {
+  ANIME_UPDATE_CORE_SURFACES,
+  ANIME_UPDATE_MEDIA_SURFACES,
+  ANIME_UPDATE_RELATION_SURFACES,
+  ANIME_UPDATE_SURFACES,
+  ANIME_UPDATE_SURFACE_KEYS
+} from './anime'
+export type {
+  AnimeBatchUpdateRequest,
+  AnimeUpdateCoreSurface,
+  AnimeUpdateMediaSurface,
+  AnimeUpdateRelationSurface,
+  AnimeUpdateRequest,
+  AnimeUpdateSelection,
+  AnimeUpdateSurface
+} from './anime'
+export {
   GAME_UPDATE_CORE_SURFACES,
   GAME_UPDATE_MEDIA_SURFACES,
   GAME_UPDATE_RELATION_SURFACES,

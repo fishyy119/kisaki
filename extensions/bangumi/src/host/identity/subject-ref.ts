@@ -1,5 +1,5 @@
 import { BANGUMI_SOURCE_ID } from '../utils/constants'
-import { getBangumiSubjectType, type BangumiMediaScope } from '../media/scopes'
+import { getBangumiSubjectType, type BangumiMediaScope } from '../../shared/scopes'
 
 export interface BangumiSubjectRef {
   scope: BangumiMediaScope

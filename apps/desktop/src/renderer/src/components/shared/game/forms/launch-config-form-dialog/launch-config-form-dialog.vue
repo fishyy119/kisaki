@@ -74,7 +74,7 @@ watch(game, (gameData) => {
 watch(
   [monitorPath, monitorMode, gameDirPath, launcherMode, launcherPath],
   async () => {
-    const result = await ipcManager.invoke('monitor:compute-effective-path', {
+    const result = await ipcManager.invoke('activity:compute-game-monitor-path', {
       monitorPath: monitorPath.value || null,
       monitorMode: monitorMode.value,
       gameDirPath: gameDirPath.value || null,

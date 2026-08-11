@@ -20,6 +20,7 @@ import { getEntityId, requireEntityId, requireNodeEntry, setOwnedNodeResult } fr
 
 type NoteEdge = Extract<LibraryGraphEdge, { kind: 'media-note' }>
 type SessionEdge = Extract<LibraryGraphEdge, { kind: 'media-session' }>
+type EpisodeEdge = Extract<LibraryGraphEdge, { kind: 'media-episode' }>
 
 export function previewNoteEdge(
   edge: NoteEdge,
@@ -75,6 +76,58 @@ export function previewSessionEdge(
   )
   const action = existing ? 'skip' : 'create'
   setOwnedNodeResult(draft, sessionEntry, action, existing?.id)
+  return action
+}
+
+export function previewEpisodeEdge(
+  edge: EpisodeEdge,
+  graph: NormalizedLibraryGraph,
+  draft: LibraryGraphResultDraft,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  state.episodeOwners.set(edge.to.key, edge.from.key)
+  const episodeEntry = requireNodeEntry(graph, 'episode', edge.to.key)
+  if (state.skippedMedia.has(edge.from.key)) {
+    setOwnedNodeResult(draft, episodeEntry, 'skip')
+    return 'skip'
+  }
+
+  const animeId = getEntityId(state, edge.from.kind, edge.from.key)
+  if (!animeId) {
+    setOwnedNodeResult(draft, episodeEntry, 'create')
+    return 'create'
+  }
+
+  const existing = options.episodes.findMatch(animeId, episodeEntry.node.input)
+  const action = existing ? 'update' : 'create'
+  setOwnedNodeResult(draft, episodeEntry, action, existing?.id)
+  return action
+}
+
+export function applyEpisodeEdge(
+  edge: EpisodeEdge,
+  graph: NormalizedLibraryGraph,
+  draft: LibraryGraphResultDraft,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  state.episodeOwners.set(edge.to.key, edge.from.key)
+  const episodeEntry = requireNodeEntry(graph, 'episode', edge.to.key)
+  if (state.skippedMedia.has(edge.from.key)) {
+    setOwnedNodeResult(draft, episodeEntry, 'skip')
+    return 'skip'
+  }
+
+  const animeId = requireEntityId(state, edge.from.kind, edge.from.key)
+  const input = episodeEntry.node.input
+  const existing = options.episodes.findMatch(animeId, input)
+  const episode = existing
+    ? options.episodes.update(existing.id, input)
+    : options.episodes.create(animeId, input)
+  const action = existing ? 'update' : 'create'
+
+  setOwnedNodeResult(draft, episodeEntry, action, episode.id)
   return action
 }
 

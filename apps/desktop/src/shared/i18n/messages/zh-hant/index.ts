@@ -1,5 +1,7 @@
 import type { Messages } from '../schema'
+import { activity } from './activity'
 import { adder } from './adder'
+import { anime } from './anime'
 import { automation } from './automation'
 import { app } from './app'
 import { common } from './common'
@@ -7,7 +9,6 @@ import { extension } from './extension'
 import { filter } from './filter'
 import { game } from './game'
 import { ingest } from './ingest'
-import { launcher } from './launcher'
 import { library } from './library'
 import { merge } from './merge'
 import { nav } from './nav'
@@ -20,7 +21,9 @@ import { ui } from './ui'
 import { updater } from './updater'
 
 export const zhHant = {
+  activity,
   adder,
+  anime,
   automation,
   app,
   common,
@@ -28,7 +31,6 @@ export const zhHant = {
   filter,
   game,
   ingest,
-  launcher,
   library,
   merge,
   nav,

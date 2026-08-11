@@ -15,6 +15,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import {
   collections,
   collectionGameLinks,
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionPersonLinks,
   collectionCompanyLinks
@@ -258,6 +259,27 @@ async function handleSubmit() {
             notify.success(
               m.value.library.forms.collectionCreatedWithEntities({
                 label: m.value.library.entities.game
+              })
+            )
+            break
+          }
+          case 'anime': {
+            const existing = await db.query.collectionAnimeLinks.findFirst({
+              where: and(
+                eq(collectionAnimeLinks.collectionId, newCollectionId),
+                eq(collectionAnimeLinks.animeId, entityId)
+              )
+            })
+            if (!existing?.id) {
+              await db.insert(collectionAnimeLinks).values({
+                id: nanoid(),
+                collectionId: newCollectionId,
+                animeId: entityId
+              })
+            }
+            notify.success(
+              m.value.library.forms.collectionCreatedWithEntities({
+                label: m.value.library.entities.anime
               })
             )
             break

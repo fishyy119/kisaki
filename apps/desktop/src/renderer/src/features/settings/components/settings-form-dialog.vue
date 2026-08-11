@@ -23,6 +23,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
+import { Input } from '@renderer/components/ui/input'
 import { Form } from '@renderer/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
 import { UiLocaleSelect } from '@renderer/components/ui/locale-select'
@@ -43,6 +44,8 @@ type SettingsFormData = {
   activeThemeId: string
   uiLocalePreference: UiLocale | null
   mainWindowCloseAction: MainWindowCloseAction
+  playerAudioLanguages: string
+  playerSubtitleLanguages: string
   updaterAutoCheck: boolean
   updaterAllowPrerelease: boolean
 }
@@ -52,9 +55,19 @@ const formData = ref<SettingsFormData>({
   activeThemeId: activeThemeId.value,
   uiLocalePreference: preference.value,
   mainWindowCloseAction: 'exit',
+  playerAudioLanguages: '',
+  playerSubtitleLanguages: '',
   updaterAutoCheck: true,
   updaterAllowPrerelease: false
 })
+
+/** Language preferences are edited as one comma-separated list per track kind. */
+function parseLanguageTags(value: string): string[] {
+  return value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0)
+}
 
 const openModel = computed({
   get: () => open.value,
@@ -81,6 +94,8 @@ const { data, isLoading, error, refetch } = useAsyncData(
     return {
       autoLaunch: autoLaunchResult.data,
       mainWindowCloseAction: currentSettings.mainWindowCloseAction,
+      playerAudioLanguages: currentSettings.playerAudioLanguages,
+      playerSubtitleLanguages: currentSettings.playerSubtitleLanguages,
       updaterAutoCheck: currentSettings.updaterAutoCheck,
       updaterAllowPrerelease: currentSettings.updaterAllowPrerelease
     }
@@ -99,6 +114,8 @@ watch(data, (d) => {
   if (!d) return
   formData.value.autoLaunch = d.autoLaunch
   formData.value.mainWindowCloseAction = d.mainWindowCloseAction
+  formData.value.playerAudioLanguages = d.playerAudioLanguages.join(', ')
+  formData.value.playerSubtitleLanguages = d.playerSubtitleLanguages.join(', ')
   formData.value.updaterAutoCheck = d.updaterAutoCheck
   formData.value.updaterAllowPrerelease = d.updaterAllowPrerelease
 })
@@ -136,6 +153,8 @@ async function handleSubmit() {
       .update(settings)
       .set({
         mainWindowCloseAction: formData.value.mainWindowCloseAction,
+        playerAudioLanguages: parseLanguageTags(formData.value.playerAudioLanguages),
+        playerSubtitleLanguages: parseLanguageTags(formData.value.playerSubtitleLanguages),
         updaterAutoCheck: formData.value.updaterAutoCheck,
         updaterAllowPrerelease: formData.value.updaterAllowPrerelease
       })
@@ -256,6 +275,31 @@ async function handleSubmit() {
                       <SelectItem value="tray">{{ m.settings.closeActionTray }}</SelectItem>
                     </SelectContent>
                   </Select>
+                </FieldContent>
+              </Field>
+
+              <Field
+                orientation="horizontal"
+                :label="m.settings.player.audioLanguagesLabel"
+                :description="m.settings.player.languagesHint"
+              >
+                <FieldContent>
+                  <Input
+                    v-model="formData.playerAudioLanguages"
+                    :placeholder="m.settings.player.languagesPlaceholder"
+                    class="w-56"
+                  />
+                </FieldContent>
+              </Field>
+
+              <Field orientation="horizontal">
+                <FieldLabel>{{ m.settings.player.subtitleLanguagesLabel }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="formData.playerSubtitleLanguages"
+                    :placeholder="m.settings.player.languagesPlaceholder"
+                    class="w-56"
+                  />
                 </FieldContent>
               </Field>
 

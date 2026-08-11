@@ -6,6 +6,8 @@ import {
   type ContentLocale,
   type ExtensionRuntimeMetadata,
   type GameUpdateSurface,
+  type IngestAddAnimeFromScraperOptions,
+  type IngestAddAnimeFromScraperResult,
   type IngestAddGameFromScraperOptions,
   type IngestAddGameFromScraperResult,
   type IngestGameUpdateFromScraperInput,
@@ -17,6 +19,8 @@ import type { TaskRunInitiator, TaskRunStartResult } from '@shared/task-run'
 import type { ScraperLookup as AppScraperLookup } from '@shared/scraper'
 import type { GameUpdateRequest } from '@shared/ingest/update'
 import type {
+  IngestAddAnimeFromScraperOptions as AppIngestAddAnimeFromScraperOptions,
+  IngestAddAnimeFromScraperResult as AppIngestAddAnimeFromScraperResult,
   IngestAddGameFromScraperOptions as AppIngestAddGameFromScraperOptions,
   IngestAddGameFromScraperResult as AppIngestAddGameFromScraperResult
 } from '@shared/ingest/add'
@@ -58,6 +62,41 @@ export class ExtensionIngestCapabilityProvider {
       ...toAppAddGameFromScraperOptions(options),
       taskRunInitiator: createExtensionTaskRunInitiator(metadata)
     })
+  }
+
+  async addAnimeFromScraper(
+    runtimeHandle: string,
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddAnimeFromScraperOptions,
+    signal?: AbortSignal
+  ): Promise<IngestAddAnimeFromScraperResult> {
+    this.requireRuntime(runtimeHandle)
+    readNonEmptyString(profileId, 'ingest profileId')
+    const result = await this.options.ingest.add.anime.addFromScraper(
+      profileId,
+      toAppScraperLookup(lookup),
+      { ...toAppAddAnimeFromScraperOptions(options), signal }
+    )
+    return toPublicIngestAddAnimeFromScraperResult(result)
+  }
+
+  startAddAnimeFromScraper(
+    runtimeHandle: string,
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddAnimeFromScraperOptions
+  ): TaskRunStartResult {
+    const metadata = this.requireRuntime(runtimeHandle)
+    readNonEmptyString(profileId, 'ingest profileId')
+    return this.options.ingest.add.anime.startAddFromScraper(
+      profileId,
+      toAppScraperLookup(lookup),
+      {
+        ...toAppAddAnimeFromScraperOptions(options),
+        taskRunInitiator: createExtensionTaskRunInitiator(metadata)
+      }
+    )
   }
 
   async updateGameFromScraper(
@@ -130,6 +169,37 @@ function toAppAddGameFromScraperOptions(
 }
 
 const ADD_GAME_OPTION_KEYS = new Set<string>(['gameDirPath', 'gameFilePath', 'targetCollectionId'])
+
+function toAppAddAnimeFromScraperOptions(
+  options: IngestAddAnimeFromScraperOptions | undefined
+): AppIngestAddAnimeFromScraperOptions {
+  if (options === undefined) {
+    return {}
+  }
+
+  if (!isPlainRecord(options)) {
+    throw createValidationError('ingest add options must be an object.')
+  }
+
+  for (const key of Object.keys(options)) {
+    if (!ADD_ANIME_OPTION_KEYS.has(key)) {
+      throw createValidationError(`ingest add options contain an unknown field "${key}".`)
+    }
+  }
+
+  return {
+    animeDirPath: readOptionalNonEmptyString(
+      options.animeDirPath,
+      'ingest add options.animeDirPath'
+    ),
+    targetCollectionId: readOptionalNonEmptyString(
+      options.targetCollectionId,
+      'ingest add options.targetCollectionId'
+    )
+  }
+}
+
+const ADD_ANIME_OPTION_KEYS = new Set<string>(['animeDirPath', 'targetCollectionId'])
 
 function createExtensionTaskRunInitiator(metadata: ExtensionRuntimeMetadata): TaskRunInitiator {
   return {
@@ -270,6 +340,20 @@ function toPublicIngestAddGameFromScraperResult(
 ): IngestAddGameFromScraperResult {
   return {
     gameId: result.gameId,
+    isNew: result.isNew,
+    existingReason: result.existingReason,
+    warnings: result.warnings?.map((warning) => ({
+      code: warning.code,
+      message: warning.message
+    }))
+  }
+}
+
+function toPublicIngestAddAnimeFromScraperResult(
+  result: AppIngestAddAnimeFromScraperResult
+): IngestAddAnimeFromScraperResult {
+  return {
+    animeId: result.animeId,
     isNew: result.isNew,
     existingReason: result.existingReason,
     warnings: result.warnings?.map((warning) => ({

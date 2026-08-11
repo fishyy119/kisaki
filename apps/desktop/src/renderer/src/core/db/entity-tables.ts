@@ -10,12 +10,14 @@ import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import type { AllEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
 import {
+  animes,
   characters,
   collections,
   companies,
   games,
   persons,
   tags,
+  type Anime,
   type Character,
   type Collection,
   type Company,
@@ -27,6 +29,7 @@ import {
 /** Row type per entity type for typed generic query results. */
 export interface EntityRowMap {
   game: Game
+  anime: Anime
   character: Character
   person: Person
   company: Company
@@ -49,6 +52,13 @@ export const ENTITY_TABLES: Record<AllEntityType, EntityTableDef> = {
     idColumn: games.id,
     nameColumn: games.name,
     isNsfwColumn: games.isNsfw
+  },
+  anime: {
+    table: animes,
+    tableName: getTableName(animes),
+    idColumn: animes.id,
+    nameColumn: animes.name,
+    isNsfwColumn: animes.isNsfw
   },
   character: {
     table: characters,

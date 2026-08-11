@@ -2,7 +2,7 @@ import type { BangumiIndexSubject, BangumiUserCollection } from '../../api/types
 import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import/planner'
 import { formatScopedCollectionType, getMediaScopeLabel } from '../../media/labels'
 import { m } from '../../i18n'
-import type { BangumiMediaScope } from '../../media/scopes'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import type { LocalCollectionTarget, LocalMediaAdapter, LocalMediaItem } from '../../media/types'
 import { BangumiExtensionError } from '../../utils/errors'
 import { omitUndefined } from '../../utils/object'

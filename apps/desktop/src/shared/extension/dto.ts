@@ -1,4 +1,5 @@
 import type {
+  AnimeScraperProviderRegistrationInfo,
   CharacterScraperProviderRegistrationInfo,
   CompanyScraperProviderRegistrationInfo,
   DeeplinkRouteRegistrationInfo,
@@ -30,6 +31,7 @@ import type {
   ExtensionRegistryReleaseEngines,
   ExtensionRegistrySigningAlgorithm
 } from '@kisaki3/extension-registry'
+import type { ScraperMediaType } from '@shared/scraper'
 import type { ExtensionInstallationSource } from './installation-source'
 
 export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package'
@@ -449,9 +451,10 @@ export interface ExtensionDeeplinkRouteRegistrationInfo extends ExtensionContrib
 }
 
 export interface ExtensionScraperProviderRegistrationInfo extends ExtensionContributionOwnerInfo {
-  mediaType: 'game' | 'person' | 'company' | 'character'
+  mediaType: ScraperMediaType
   provider:
     | GameScraperProviderRegistrationInfo
+    | AnimeScraperProviderRegistrationInfo
     | PersonScraperProviderRegistrationInfo
     | CompanyScraperProviderRegistrationInfo
     | CharacterScraperProviderRegistrationInfo

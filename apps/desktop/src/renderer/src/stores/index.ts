@@ -1,6 +1,7 @@
 // Stores re-exports
 export { useThemeStore, type ThemeMode } from './theme'
-export { useGameMonitorStore, type GameMonitorStatus } from './game-monitor'
+export { useGameActivityStore, type GameActivityStatus } from './game-activity'
+export { useAnimeActivityStore, type AnimeWatchingStatus } from './anime-activity'
 export { useScannerStore } from './scanner'
 export { useDefaultFromStore } from './default-from'
 export { usePreferencesStore } from './preferences'

@@ -48,6 +48,7 @@ export const scanner = {
   issueTypes: {
     assetPersistFailed: '資源儲存失敗',
     duplicateExternalId: '外部 ID 重複',
+    fileSyncFailed: '檔案同步失敗',
     metadataMissing: '中繼資料缺失',
     pathUnavailable: '路徑無法存取',
     scraperUnavailable: '刮削無法使用',
@@ -66,7 +67,7 @@ export const scanner = {
       type: '類型',
       path: '路徑',
       reason: '原因',
-      relatedGame: '關聯遊戲',
+      relatedEntity: '關聯項目',
       actions: '操作'
     },
     openPath: '開啟路徑',
@@ -222,7 +223,11 @@ export const scanner = {
       scrapeFailedFallback: '刮削失敗，已使用目錄名直接新增。',
       pathInaccessible: ({ message }: { message: string }) => `路徑無法存取，未新增：${message}`,
       notScannableDirectory: '路徑不是可掃描目錄，未新增。',
-      externalIdLinked: '外部 ID 已關聯到現有遊戲，目前路徑未新增。'
+      externalIdLinked: '外部 ID 已關聯到現有項目，目前路徑未新增。',
+      episodeNumbersUnreadable: ({ count }: { count: number }) =>
+        `${count} 個影片檔案無法辨識集數，已作為未編號劇集新增。`,
+      episodeSyncFailed: ({ message }: { message: string }) =>
+        `項目已新增，但影片檔案讀取失敗：${message}`
     }
   }
 } satisfies Messages['scanner']

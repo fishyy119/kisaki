@@ -26,6 +26,13 @@ export function buildEntityFieldPatch(
       applyFirst(patch, target, source, 'monitorPath')
       applyFirst(patch, target, source, 'gameDirPath')
       break
+    case 'anime':
+      applyFirst(patch, target, source, 'releaseDate')
+      patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
+      patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
+      applyFirst(patch, target, source, 'totalEpisodes')
+      applyFirst(patch, target, source, 'animeDirPath')
+      break
     case 'person':
       applyFirst(patch, target, source, 'birthDate')
       applyFirst(patch, target, source, 'deathDate')
@@ -58,6 +65,8 @@ export function buildEntityFieldPatch(
       applyFirst(patch, target, source, 'description')
       patch.isNsfw = Boolean(target.isNsfw || source.isNsfw)
       break
+    default:
+      entityType satisfies never
   }
 
   Object.assign(patch, attachmentPatch)

@@ -2,7 +2,8 @@ import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-co
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import { baseColumns, identityKeyText } from '../../columns'
-import { characters, companies, games, persons } from './content'
+import { animeEpisodes } from './anime'
+import { animes, characters, companies, games, persons } from './content'
 
 export const gameExternalIds = sqliteTable(
   'game_external_ids',
@@ -19,6 +20,48 @@ export const gameExternalIds = sqliteTable(
     unique().on(t.gameId, t.source, t.externalId),
     unique('unique_game_external_id').on(t.source, t.externalId),
     index('idx_game_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
+export const animeExternalIds = sqliteTable(
+  'anime_external_ids',
+  {
+    ...baseColumns,
+    animeId: text('anime_id')
+      .notNull()
+      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInAnime: integer('order_in_anime').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.animeId, t.source, t.externalId),
+    unique('unique_anime_external_id').on(t.source, t.externalId),
+    index('idx_anime_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
+/**
+ * Per-episode identity.
+ *
+ * Kept from the first scrape so re-scrapes realign existing rows by id instead
+ * of by episode number, which sources revise.
+ */
+export const animeEpisodeExternalIds = sqliteTable(
+  'anime_episode_external_ids',
+  {
+    ...baseColumns,
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => animeEpisodes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInEpisode: integer('order_in_episode').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.episodeId, t.source, t.externalId),
+    unique('unique_anime_episode_external_id').on(t.source, t.externalId),
+    index('idx_anime_episode_external_ids_lookup').on(t.source, t.externalId)
   ]
 )
 
@@ -78,6 +121,10 @@ export const characterExternalIds = sqliteTable(
 
 export type GameExternalId = InferSelectModel<typeof gameExternalIds>
 export type NewGameExternalId = InferInsertModel<typeof gameExternalIds>
+export type AnimeExternalId = InferSelectModel<typeof animeExternalIds>
+export type NewAnimeExternalId = InferInsertModel<typeof animeExternalIds>
+export type AnimeEpisodeExternalId = InferSelectModel<typeof animeEpisodeExternalIds>
+export type NewAnimeEpisodeExternalId = InferInsertModel<typeof animeEpisodeExternalIds>
 export type PersonExternalId = InferSelectModel<typeof personExternalIds>
 export type NewPersonExternalId = InferInsertModel<typeof personExternalIds>
 export type CompanyExternalId = InferSelectModel<typeof companyExternalIds>

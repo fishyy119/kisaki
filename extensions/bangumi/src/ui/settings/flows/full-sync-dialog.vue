@@ -19,7 +19,9 @@ import {
   Spinner,
   Switch
 } from '@kisaki3/extension-ui-vue'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import type {
+  BangumiFullSyncFormArgs,
   BangumiPreviewGroupDto,
   BangumiSettingsOverview,
   BangumiSyncDataItem
@@ -31,6 +33,7 @@ import JobPreviewDialog from '../components/job-preview-dialog.vue'
 
 interface Props {
   overview: BangumiSettingsOverview
+  scope: BangumiMediaScope
 }
 
 interface FullSyncForm {
@@ -48,9 +51,17 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
+const supportsEpisodes = computed(
+  () =>
+    props.overview.scopes.find((option) => option.scope === props.scope)?.supportsEpisodes === true
+)
+
 const fullSyncItems = computed<readonly { value: BangumiSyncDataItem; label: string }[]>(() => [
   { value: 'status', label: m.value.ui.fullSync.itemStatus },
-  { value: 'score', label: m.value.ui.fullSync.itemScore }
+  { value: 'score', label: m.value.ui.fullSync.itemScore },
+  ...(supportsEpisodes.value
+    ? [{ value: 'episodes' as const, label: m.value.ui.fullSync.itemEpisodes }]
+    : [])
 ])
 
 const DEFAULT_ITEMS: readonly BangumiSyncDataItem[] = ['status', 'score']
@@ -91,8 +102,9 @@ watch(
 )
 
 function initializeForm(): void {
-  const selectedItems = settingsForm.autoSyncItems.filter(
-    (item): item is BangumiSyncDataItem => item === 'status' || item === 'score'
+  const available = new Set(fullSyncItems.value.map((item) => item.value))
+  const selectedItems = settingsForm.autoSyncItems.filter((item): item is BangumiSyncDataItem =>
+    available.has(item as BangumiSyncDataItem)
   )
   fullSyncForm.items = selectedItems.length > 0 ? selectedItems : [...DEFAULT_ITEMS]
   fullSyncForm.updateExisting = true
@@ -143,8 +155,9 @@ async function runFullSync(): Promise<void> {
   }
 }
 
-function snapshotArgs(): FullSyncForm {
+function snapshotArgs(): BangumiFullSyncFormArgs {
   return {
+    scope: props.scope,
     items: [...fullSyncForm.items],
     updateExisting: fullSyncForm.updateExisting,
     clearRemoteScoreWhenEmpty: fullSyncForm.clearRemoteScoreWhenEmpty,

@@ -1,8 +1,9 @@
 /** Simplified Chinese message catalog for the Bangumi extension. */
 
+import type { BangumiMediaScope } from '../../scopes'
 import type { en } from './en'
 
-type Scope = 'book' | 'game' | 'anime' | 'music'
+type Scope = BangumiMediaScope
 type CollectionType = 1 | 2 | 3 | 4 | 5
 
 /** Scope noun with its measure word, used after a count. */
@@ -90,8 +91,8 @@ export const zhHans = {
     localWriteUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持写入本地库。`,
     localWriteUnsupportedGeneric: '该媒体类型暂不支持写入本地库。',
 
-    localGameStatusUnknown: '无法识别本地游戏状态。',
-    localGameMissing: '本地游戏不存在。',
+    localMediaStatusUnknown: '无法识别本地条目状态。',
+    localMediaMissing: '本地条目不存在。',
     localItemMissing: '本地条目不存在。',
     importedItemMissing: '已导入的本地条目不存在。',
     targetCollectionMissing: '所选目标合集不存在。',
@@ -102,8 +103,8 @@ export const zhHans = {
       'Bangumi 目录需要是数字 ID，或形如 https://bgm.tv/index/<id>、https://bangumi.tv/index/<id> 的链接。',
     indexSubjectMissingId: 'Bangumi 目录条目缺少有效的条目 ID。',
     collectionMissingSubjectId: 'Bangumi 收藏缺少有效的条目 ID。',
-    profileRequired: '请选择用于创建游戏的刮削配置。',
-    profileNotFound: '所选游戏刮削配置不存在。'
+    profileRequired: '请选择用于创建本地条目的刮削配置。',
+    profileNotFound: '所选刮削配置不存在。'
   },
 
   oauth: {
@@ -129,7 +130,7 @@ export const zhHans = {
     },
     syncFull: {
       title: 'Bangumi 全量同步',
-      description: '扫描本地游戏并同步 Bangumi 收藏状态与评分'
+      description: '扫描本地条目并同步 Bangumi 收藏状态与评分'
     },
     importCollections: {
       title: '导入我的 Bangumi 收藏',
@@ -275,7 +276,7 @@ export const zhHans = {
     descriptions: {
       'auth-refresh': '应用启动时刷新并验证 Bangumi 凭据。',
       'sync-changed': '应用启动后同步上次运行期积累的本地变更。',
-      'sync-full-daily': '每天凌晨执行一次游戏全量同步。'
+      'sync-full-daily': '每天凌晨执行一次媒体库全量同步。'
     },
     status: {
       missing: '未创建',
@@ -298,6 +299,8 @@ export const zhHans = {
     discardChanges: '放弃更改',
     savePreferences: '保存偏好',
     actionFailed: '操作失败，请重试。',
+    mediaScope: '媒体类型',
+    mediaScopePlaceholder: '选择媒体类型',
 
     tabs: {
       overview: '概览',
@@ -366,11 +369,12 @@ export const zhHans = {
     sync: {
       preferencesTitle: '自动同步偏好',
       autoSync: '自动同步',
-      autoSyncDescription: '监听本地游戏创建和用户态字段变更。',
+      autoSyncDescription: '监听本地条目创建和用户态字段变更。',
       syncItems: '同步项',
       itemCreate: '创建收藏',
-      itemStatus: '游玩状态',
+      itemStatus: '条目状态',
       itemScore: '评分',
+      itemEpisodes: '单集观看状态',
       clearRemoteScore: '允许删除远端评分',
       clearRemoteScoreDescription: '本地评分清空时同时清除 Bangumi 评分。',
       manualTitle: '手动同步',
@@ -380,11 +384,11 @@ export const zhHans = {
     },
 
     import: {
-      noProfilesWarning: '尚未配置游戏刮削配置，导入仍可预览，但执行本地写入前需要可用配置。',
+      noProfilesWarning: '当前媒体类型尚未配置刮削配置，导入仍可预览，但执行本地写入前需要可用配置。',
       sourceTitle: '导入来源',
       sourceDescription: '导入是一次性任务；选项只用于本次运行，不写入 Bangumi 偏好。',
       myCollections: '我的收藏',
-      myCollectionsDescription: '按收藏类型导入当前 Bangumi 用户的游戏收藏。',
+      myCollectionsDescription: '按收藏类型导入当前 Bangumi 用户所选媒体类型的收藏。',
       bangumiIndex: 'Bangumi 目录',
       bangumiIndexDescription: '输入目录 ID 或链接后配置导入。',
       indexPlaceholder: '目录 ID 或 https://bgm.tv/index/...',
@@ -423,8 +427,9 @@ export const zhHans = {
     fullSync: {
       title: '全量同步',
       syncData: '同步数据',
-      itemStatus: '游玩状态',
+      itemStatus: '条目状态',
       itemScore: '评分',
+      itemEpisodes: '单集观看状态',
       updateExisting: '更新已有收藏',
       updateExistingDescription: '关闭时只为远端缺失的条目创建 Bangumi 收藏。',
       clearRemoteScore: '允许删除远端评分',
@@ -440,7 +445,7 @@ export const zhHans = {
       profilePlaceholder: '选择刮削配置',
       collectionTypes: '收藏类型',
       dataItems: '导入用户态字段',
-      itemStatus: '游玩状态',
+      itemStatus: '条目状态',
       itemScore: '评分',
       itemTags: '标签',
       patchExisting: '更新已有条目',

@@ -1,5 +1,5 @@
 import { m } from '../i18n'
-import type { BangumiMediaScope } from '../media/scopes'
+import type { BangumiMediaScope } from '../../shared/scopes'
 import type { BangumiJobPreviewGroup, BangumiJobPreviewRow } from '../../shared/settings'
 
 export function formatBangumiSubjectTitle(

@@ -11,15 +11,18 @@ import { SettingsStore } from './config/store'
 import { registerBangumiJobCommands } from './jobs/commands'
 import { BangumiJobEvents } from './jobs/events'
 import { JobRunner } from './jobs/runner'
-import { createAnimeMediaDescriptor } from './media/anime/scope'
+import { AnimeLocalMediaAdapter, createAnimeMediaDescriptor } from './media/anime/adapter'
+import { BangumiAnimeProvider } from './media/anime/scraper/provider'
 import { createBookMediaDescriptor } from './media/book/scope'
 import { GameLocalMediaAdapter, createGameMediaDescriptor } from './media/game/adapter'
-import { BangumiProvider } from './media/game/scraper/provider'
+import { BangumiGameProvider } from './media/game/scraper/provider'
 import { createMusicMediaDescriptor } from './media/music/scope'
 import { MediaRegistry } from './media/registry'
 import { registerBangumiSettingsUi, type BangumiSettingsUiHandle } from './settings'
 import { BangumiExtensionError } from './utils/errors'
 import { SyncEngine } from './sync/engine'
+import { EpisodeSyncStateStore } from './sync/episode-state'
+import { EpisodeSyncEngine } from './sync/episodes'
 import { SyncStateStore } from './sync/fingerprint'
 import { SyncQueueStore } from './sync/queue'
 import { SyncSubscription } from './sync/subscription'
@@ -52,10 +55,11 @@ export default defineExtension({
     )
     const accountService = new AccountService(context.storage, client, tokenService)
     const gameAdapter = new GameLocalMediaAdapter(context.hooks)
+    const animeAdapter = new AnimeLocalMediaAdapter(context.hooks)
     const mediaRegistry = new MediaRegistry([
       createBookMediaDescriptor(),
       createGameMediaDescriptor(gameAdapter),
-      createAnimeMediaDescriptor(),
+      createAnimeMediaDescriptor(animeAdapter),
       createMusicMediaDescriptor()
     ])
     const syncStateStore = new SyncStateStore(context.storage)
@@ -69,12 +73,21 @@ export default defineExtension({
       suppressor: syncSuppressor,
       logger: context.logger
     })
+    const episodeSyncStateStore = new EpisodeSyncStateStore(context.storage)
+    const episodeSyncEngine = new EpisodeSyncEngine({
+      settingsStore,
+      client,
+      mediaRegistry,
+      stateStore: episodeSyncStateStore,
+      logger: context.logger
+    })
     const jobRunner = new JobRunner({
       settingsStore,
       client,
       tokenService,
       accountService,
       syncEngine,
+      episodeSyncEngine,
       mediaRegistry,
       syncQueueStore,
       syncSuppressor,
@@ -131,7 +144,10 @@ export default defineExtension({
 
     context.subscriptions.add(deeplinkRegistration)
     context.subscriptions.add(
-      context.contributions.scraperProviders.game.register(new BangumiProvider(client))
+      context.contributions.scraperProviders.game.register(new BangumiGameProvider(client))
+    )
+    context.subscriptions.add(
+      context.contributions.scraperProviders.anime.register(new BangumiAnimeProvider(client))
     )
     for (const registration of registerBangumiJobCommands({
       commands: context.contributions.commands,
@@ -146,6 +162,7 @@ export default defineExtension({
       await new SyncSubscription({
         settingsStore,
         engine: syncEngine,
+        episodeEngine: episodeSyncEngine,
         mediaRegistry,
         queueStore: syncQueueStore,
         logger: context.logger
@@ -160,6 +177,7 @@ export default defineExtension({
       jobEvents,
       mediaRegistry,
       syncStateStore,
+      episodeSyncStateStore,
       syncQueueStore,
       logger: context.logger,
       abortSignal: context.abortSignal

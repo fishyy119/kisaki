@@ -66,9 +66,9 @@ export async function createBangumiAutomation(
     args: {
       scope: 'game',
       updateExisting: true,
-      playStatusEnabled: settings.game.autoSync.playStatusEnabled,
-      scoreEnabled: settings.game.autoSync.scoreEnabled,
-      clearRemoteScoreWhenEmpty: settings.game.autoSync.clearRemoteScoreWhenEmpty,
+      playStatusEnabled: settings.autoSync.playStatusEnabled,
+      scoreEnabled: settings.autoSync.scoreEnabled,
+      clearRemoteScoreWhenEmpty: settings.autoSync.clearRemoteScoreWhenEmpty,
       batchSize: 100
     },
     enabled: true,

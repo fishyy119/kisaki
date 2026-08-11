@@ -1,8 +1,9 @@
 /** Traditional Chinese message catalog for the Bangumi extension. */
 
+import type { BangumiMediaScope } from '../../scopes'
 import type { en } from './en'
 
-type Scope = 'book' | 'game' | 'anime' | 'music'
+type Scope = BangumiMediaScope
 type CollectionType = 1 | 2 | 3 | 4 | 5
 
 /** Scope noun with its measure word, used after a count. */
@@ -91,8 +92,8 @@ export const zhHant = {
       `${SCOPES[scope]}暫不支援寫入本機媒體庫。`,
     localWriteUnsupportedGeneric: '該媒體類型暫不支援寫入本機媒體庫。',
 
-    localGameStatusUnknown: '無法識別本機遊戲狀態。',
-    localGameMissing: '本機遊戲不存在。',
+    localMediaStatusUnknown: '無法識別本機條目狀態。',
+    localMediaMissing: '本機條目不存在。',
     localItemMissing: '本機條目不存在。',
     importedItemMissing: '已匯入的本機條目不存在。',
     targetCollectionMissing: '所選目標合集不存在。',
@@ -103,8 +104,8 @@ export const zhHant = {
       'Bangumi 目錄需要是數字 ID，或形如 https://bgm.tv/index/<id>、https://bangumi.tv/index/<id> 的連結。',
     indexSubjectMissingId: 'Bangumi 目錄條目缺少有效的條目 ID。',
     collectionMissingSubjectId: 'Bangumi 收藏缺少有效的條目 ID。',
-    profileRequired: '請選擇用於建立遊戲的刮削設定檔。',
-    profileNotFound: '所選遊戲刮削設定檔不存在。'
+    profileRequired: '請選擇用於建立本機項目的刮削設定檔。',
+    profileNotFound: '所選刮削設定檔不存在。'
   },
 
   oauth: {
@@ -130,7 +131,7 @@ export const zhHant = {
     },
     syncFull: {
       title: 'Bangumi 全量同步',
-      description: '掃描本機遊戲並同步 Bangumi 收藏狀態與評分'
+      description: '掃描本機項目並同步 Bangumi 收藏狀態與評分'
     },
     importCollections: {
       title: '匯入我的 Bangumi 收藏',
@@ -276,7 +277,7 @@ export const zhHant = {
     descriptions: {
       'auth-refresh': '應用程式啟動時重新整理並驗證 Bangumi 憑證。',
       'sync-changed': '應用程式啟動後同步上次執行期間累積的本機變更。',
-      'sync-full-daily': '每天凌晨執行一次遊戲全量同步。'
+      'sync-full-daily': '每天凌晨執行一次媒體庫全量同步。'
     },
     status: {
       missing: '未建立',
@@ -299,6 +300,8 @@ export const zhHant = {
     discardChanges: '放棄變更',
     savePreferences: '儲存偏好',
     actionFailed: '操作失敗，請重試。',
+    mediaScope: '媒體類型',
+    mediaScopePlaceholder: '選擇媒體類型',
 
     tabs: {
       overview: '總覽',
@@ -367,11 +370,12 @@ export const zhHant = {
     sync: {
       preferencesTitle: '自動同步偏好',
       autoSync: '自動同步',
-      autoSyncDescription: '監聽本機遊戲建立和使用者狀態欄位變更。',
+      autoSyncDescription: '監聽本機項目建立和使用者狀態欄位變更。',
       syncItems: '同步項',
       itemCreate: '建立收藏',
-      itemStatus: '遊玩狀態',
+      itemStatus: '項目狀態',
       itemScore: '評分',
+      itemEpisodes: '單集觀看狀態',
       clearRemoteScore: '允許刪除遠端評分',
       clearRemoteScoreDescription: '本機評分清空時同時清除 Bangumi 評分。',
       manualTitle: '手動同步',
@@ -381,11 +385,12 @@ export const zhHant = {
     },
 
     import: {
-      noProfilesWarning: '尚未設定遊戲刮削設定檔，匯入仍可預覽，但執行本機寫入前需要可用設定檔。',
+      noProfilesWarning:
+        '目前媒體類型尚未設定刮削設定檔，匯入仍可預覽，但執行本機寫入前需要可用設定檔。',
       sourceTitle: '匯入來源',
       sourceDescription: '匯入是一次性任務；選項只用於本次執行，不寫入 Bangumi 偏好。',
       myCollections: '我的收藏',
-      myCollectionsDescription: '按收藏類型匯入目前 Bangumi 使用者的遊戲收藏。',
+      myCollectionsDescription: '按收藏類型匯入目前 Bangumi 使用者所選媒體類型的收藏。',
       bangumiIndex: 'Bangumi 目錄',
       bangumiIndexDescription: '輸入目錄 ID 或連結後設定匯入。',
       indexPlaceholder: '目錄 ID 或 https://bgm.tv/index/...',
@@ -424,8 +429,9 @@ export const zhHant = {
     fullSync: {
       title: '全量同步',
       syncData: '同步資料',
-      itemStatus: '遊玩狀態',
+      itemStatus: '項目狀態',
       itemScore: '評分',
+      itemEpisodes: '單集觀看狀態',
       updateExisting: '更新既有收藏',
       updateExistingDescription: '關閉時只為遠端缺少的條目建立 Bangumi 收藏。',
       clearRemoteScore: '允許刪除遠端評分',
@@ -441,7 +447,7 @@ export const zhHant = {
       profilePlaceholder: '選擇刮削設定檔',
       collectionTypes: '收藏類型',
       dataItems: '匯入使用者狀態欄位',
-      itemStatus: '遊玩狀態',
+      itemStatus: '項目狀態',
       itemScore: '評分',
       itemTags: '標籤',
       patchExisting: '更新既有條目',

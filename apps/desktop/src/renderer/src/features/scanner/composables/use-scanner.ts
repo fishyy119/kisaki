@@ -7,10 +7,9 @@
 
 import type { InjectionKey, Ref } from 'vue'
 import { computed, inject, provide } from 'vue'
-import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
-import { scanners as scannersTable, type Scanner } from '@shared/db'
+import type { Scanner } from '@shared/db'
 import { useDbChanges } from '@renderer/composables/use-db-changes'
 
 // =============================================================================
@@ -31,9 +30,7 @@ export const ScannerKey: InjectionKey<ScannerContext> = Symbol('scanner')
 // =============================================================================
 
 export const scannersData = defineRouteData(async (): Promise<Scanner[]> => {
-  return await db.query.scanners.findMany({
-    where: eq(scannersTable.type, 'game')
-  })
+  return await db.query.scanners.findMany()
 })
 
 /**

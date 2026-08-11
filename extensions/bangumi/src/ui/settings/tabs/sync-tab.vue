@@ -16,6 +16,8 @@ import type { BangumiAutoSyncItem, BangumiSettingsOverview } from '../../../shar
 import { settingsForm } from '../form'
 import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
+import { useScopeSelection } from '../scope'
+import MediaScopeSelect from '../components/media-scope-select.vue'
 import SettingsSection from '../components/settings-section.vue'
 import FullSyncDialog from '../flows/full-sync-dialog.vue'
 
@@ -33,11 +35,13 @@ const emit = defineEmits<{
 const autoSyncItems = computed<readonly { value: BangumiAutoSyncItem; label: string }[]>(() => [
   { value: 'create', label: m.value.ui.sync.itemCreate },
   { value: 'status', label: m.value.ui.sync.itemStatus },
-  { value: 'score', label: m.value.ui.sync.itemScore }
+  { value: 'score', label: m.value.ui.sync.itemScore },
+  { value: 'episodes', label: m.value.ui.sync.itemEpisodes }
 ])
 
 const syncing = ref(false)
 const fullSyncOpen = ref(false)
+const { scope, options: scopeOptions } = useScopeSelection(() => props.overview.scopes)
 
 function toggleAutoSyncItem(item: BangumiAutoSyncItem, checked: boolean): void {
   const next = new Set(settingsForm.autoSyncItems)
@@ -50,9 +54,13 @@ function toggleAutoSyncItem(item: BangumiAutoSyncItem, checked: boolean): void {
 }
 
 async function runChangedSync(): Promise<void> {
+  if (!scope.value) {
+    return
+  }
+
   syncing.value = true
   try {
-    await host.runChangedSync()
+    await host.runChangedSync(scope.value)
     emit('refresh')
   } catch (error) {
     emit('error', toErrorMessage(error))
@@ -117,11 +125,15 @@ async function runChangedSync(): Promise<void> {
       :description="m.ui.sync.manualDescription"
     >
       <div class="flex flex-wrap items-center gap-2">
+        <MediaScopeSelect
+          v-model="scope"
+          :scopes="scopeOptions"
+        />
         <Button
           variant="outline"
           size="sm"
           type="button"
-          :disabled="syncing || props.overview.activeJobs.syncChangedItems"
+          :disabled="!scope || syncing || props.overview.activeJobs.syncChangedItems"
           @click="runChangedSync"
         >
           <Spinner v-if="syncing || props.overview.activeJobs.syncChangedItems" />
@@ -135,7 +147,7 @@ async function runChangedSync(): Promise<void> {
         <Button
           size="sm"
           type="button"
-          :disabled="props.overview.activeJobs.syncFull"
+          :disabled="!scope || props.overview.activeJobs.syncFull"
           @click="fullSyncOpen = true"
         >
           <Icon
@@ -148,9 +160,10 @@ async function runChangedSync(): Promise<void> {
     </SettingsSection>
 
     <FullSyncDialog
-      v-if="fullSyncOpen"
+      v-if="fullSyncOpen && scope"
       v-model:open="fullSyncOpen"
       :overview="props.overview"
+      :scope="scope"
       @refresh="emit('refresh')"
       @error="(message) => emit('error', message)"
     />

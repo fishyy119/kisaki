@@ -3,6 +3,7 @@ import type { Messages } from '../schema'
 export const library = {
   entities: {
     game: '游戏',
+    anime: '动漫',
     character: '角色',
     person: '人物',
     company: '公司',
@@ -52,7 +53,14 @@ export const library = {
     status: '状态',
     playDuration: '游玩时长',
     lastActiveAt: '最近游玩',
-    order: '排序'
+    order: '排序',
+    format: '类型',
+    totalEpisodes: '总话数',
+    episodes: '剧集',
+    extras: '特典',
+    watchDuration: '观看时长',
+    lastWatchedAt: '最近观看',
+    relatedAnimes: '相关动漫'
   },
 
   status: {
@@ -104,11 +112,66 @@ export const library = {
       publisher: '发行',
       distributor: '分销',
       other: '其他'
+    },
+    animePerson: {
+      director: '监督',
+      series: '系列构成',
+      scenario: '脚本',
+      characterDesign: '角色设计',
+      music: '音乐',
+      animationDirector: '作画监督',
+      other: '其他'
+    },
+    animeCharacter: {
+      main: '主角',
+      supporting: '配角',
+      cameo: '客串',
+      other: '其他'
+    },
+    animeCompany: {
+      studio: '制作',
+      producer: '出品',
+      distributor: '发行',
+      other: '其他'
     }
+  },
+
+  animeFormat: {
+    tv: 'TV',
+    movie: '剧场版',
+    ova: 'OVA',
+    ona: 'ONA',
+    special: '特别篇',
+    other: '其他'
+  },
+
+  animeEpisodeType: {
+    regular: '正片',
+    special: '特别篇'
+  },
+
+  animeRelation: {
+    sequel: '续作',
+    prequel: '前作',
+    sideStory: '外传',
+    movie: '剧场版',
+    summary: '总集篇',
+    alternative: '不同版本',
+    other: '其他'
+  },
+
+  animeExtraKind: {
+    trailer: '预告',
+    pv: 'PV',
+    ncop: '无字幕 OP',
+    nced: '无字幕 ED',
+    interview: '访谈',
+    other: '其他'
   },
 
   counts: {
     game: ({ count }: { count: number }) => `${count} 款游戏`,
+    anime: ({ count }: { count: number }) => `${count} 部动漫`,
     character: ({ count }: { count: number }) => `${count} 个角色`,
     person: ({ count }: { count: number }) => `${count} 位人物`,
     company: ({ count }: { count: number }) => `${count} 家公司`,
@@ -441,6 +504,7 @@ export const library = {
     filterConfigUpdated: '筛选配置已更新',
 
     gameLabel: '游戏',
+    animeLabel: '动漫',
     characterLabel: '角色',
     personLabel: '人物',
     companyLabel: '公司',
@@ -454,6 +518,7 @@ export const library = {
 
     linkLabels: {
       game: '游戏关联',
+      anime: '动漫关联',
       character: '角色关联',
       person: '人物关联',
       company: '公司关联',
@@ -565,6 +630,9 @@ export const library = {
       recentlyAdded: { name: '最新添加', description: '按添加时间排序的游戏' },
       allGames: { name: '全部游戏', description: '库中的全部游戏' },
       favoriteGames: { name: '喜欢的游戏', description: '已红心的游戏' },
+      recentlyWatched: { name: '最近观看', description: '按最近观看时间排序的动漫' },
+      topRatedAnime: { name: '高分动漫', description: '按评分排序的动漫' },
+      recentlyAddedAnime: { name: '最新添加的动漫', description: '按添加时间排序的动漫' },
       favoriteCharacters: { name: '喜欢的角色', description: '已红心的角色' },
       favoritePersons: { name: '喜欢的人物', description: '已红心的人物' },
       favoriteCompanies: { name: '喜欢的公司', description: '已红心的公司' },

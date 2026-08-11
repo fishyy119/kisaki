@@ -1,5 +1,11 @@
 import { resolveActiveBangumiJobs } from '../jobs/status'
-import type { BangumiOptionItem, BangumiSettingsOverview } from '../../shared/settings'
+import type {
+  BangumiOptionItem,
+  BangumiScopeOption,
+  BangumiSettingsOverview
+} from '../../shared/settings'
+import { m } from '../i18n'
+import type { LocalMediaAdapter } from '../media/types'
 import { resolveAutomationStates } from './automations'
 import { toFormState } from './forms'
 import type { BangumiSettingsRuntime } from './runtime'
@@ -7,13 +13,13 @@ import type { BangumiSettingsRuntime } from './runtime'
 export async function resolveSettingsOverview(
   runtime: BangumiSettingsRuntime
 ): Promise<BangumiSettingsOverview> {
-  const [settings, tokenState, account, activeJobs, profiles, collections, automations] =
+  const [settings, tokenState, account, activeJobs, scopes, collections, automations] =
     await Promise.all([
       runtime.settingsStore.get(),
       runtime.tokenService.getStoredTokenState(),
       runtime.accountService.getAccountSnapshot(),
       resolveActiveBangumiJobs(),
-      listProfiles(runtime),
+      listScopes(runtime),
       listCollections(runtime),
       resolveAutomationStates()
     ])
@@ -30,15 +36,29 @@ export async function resolveSettingsOverview(
       expired: tokenState.expired
     },
     activeJobs,
-    profiles,
+    scopes,
     collections,
     automations
   }
 }
 
-async function listProfiles(runtime: BangumiSettingsRuntime): Promise<BangumiOptionItem[]> {
+/** Scopes the user can run local jobs against, in registration order. */
+async function listScopes(runtime: BangumiSettingsRuntime): Promise<BangumiScopeOption[]> {
+  const adapters = runtime.mediaRegistry.listLocalAdapters()
+
+  return Promise.all(
+    adapters.map(async (adapter) => ({
+      scope: adapter.scope,
+      label: m().media.scopes[adapter.scope],
+      supportsEpisodes: adapter.supportsEpisodeSync === true,
+      profiles: await listProfiles(adapter)
+    }))
+  )
+}
+
+async function listProfiles(adapter: LocalMediaAdapter): Promise<BangumiOptionItem[]> {
   try {
-    const profiles = (await runtime.mediaRegistry.getLocalAdapter('game')?.listProfiles?.()) ?? []
+    const profiles = (await adapter.listProfiles?.()) ?? []
     return profiles.map((profile) => ({ value: profile.id, label: profile.name }))
   } catch {
     return []
@@ -46,9 +66,13 @@ async function listProfiles(runtime: BangumiSettingsRuntime): Promise<BangumiOpt
 }
 
 async function listCollections(runtime: BangumiSettingsRuntime): Promise<BangumiOptionItem[]> {
+  const adapter = runtime.mediaRegistry.listLocalAdapters()[0]
+  if (!adapter) {
+    return []
+  }
+
   try {
-    const collections =
-      (await runtime.mediaRegistry.getLocalAdapter('game')?.listCollections?.()) ?? []
+    const collections = (await adapter.listCollections?.()) ?? []
     return collections.map((collection) => ({ value: collection.id, label: collection.name }))
   } catch {
     return []

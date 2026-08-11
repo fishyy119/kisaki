@@ -1,8 +1,9 @@
 import type { ExtensionRuntimeHandle } from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
 import type { ExtensionScraperProviderRegistrationInfo } from '@shared/extension'
-import { createExtensionScraperProviderId } from '@shared/scraper'
+import { createExtensionScraperProviderId, type ScraperMediaType } from '@shared/scraper'
 import type {
+  AnimeScraperProvider,
   CharacterScraperProvider,
   CompanyScraperProvider,
   GameScraperProvider,
@@ -15,49 +16,51 @@ import {
   type ExtensionContributionReleaseDiagnostic,
   type ExtensionContributionPointOptions
 } from '../types'
+import { getScraperKey } from './descriptors'
+import type { ScraperDomain, ScraperProviderRegistration, ScraperRegistration } from './domain'
+import { createProviderAdapter } from './registrations'
 
 export interface ExtensionScraperProviderContributionPointOptions extends ExtensionContributionPointOptions {
   scraper: ScraperService
 }
-import { getScraperKey } from './descriptors'
-import type {
-  ScraperDomain,
-  ScraperMediaType,
-  ScraperProviderRegistration,
-  ScraperRegistration
-} from './domain'
-import { createProviderAdapter } from './registrations'
 
 const log = createLogger('Extension')
 
-export class ExtensionScraperProviderContributionPoint {
-  private readonly registrations = new Map<string, ScraperRegistration>()
-  private readonly domainsByMediaType: ReadonlyMap<ScraperMediaType, ScraperDomain>
-  private readonly gameDomain: ScraperDomain = {
+/** Keyed by the closed media-type union so adding a media type fails compilation here. */
+const SCRAPER_DOMAINS = {
+  game: {
     kind: 'games',
     mediaType: 'game',
     registerWithScraper: (scraper, provider) =>
       scraper.game.registerProvider(provider as GameScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
       scraper.game.unregisterProvider(registryProviderId)
-  }
-  private readonly personDomain: ScraperDomain = {
+  },
+  anime: {
+    kind: 'animes',
+    mediaType: 'anime',
+    registerWithScraper: (scraper, provider) =>
+      scraper.anime.registerProvider(provider as AnimeScraperProvider),
+    unregisterFromScraper: (scraper, registryProviderId) =>
+      scraper.anime.unregisterProvider(registryProviderId)
+  },
+  person: {
     kind: 'persons',
     mediaType: 'person',
     registerWithScraper: (scraper, provider) =>
       scraper.person.registerProvider(provider as PersonScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
       scraper.person.unregisterProvider(registryProviderId)
-  }
-  private readonly companyDomain: ScraperDomain = {
+  },
+  company: {
     kind: 'companies',
     mediaType: 'company',
     registerWithScraper: (scraper, provider) =>
       scraper.company.registerProvider(provider as CompanyScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
       scraper.company.unregisterProvider(registryProviderId)
-  }
-  private readonly characterDomain: ScraperDomain = {
+  },
+  character: {
     kind: 'characters',
     mediaType: 'character',
     registerWithScraper: (scraper, provider) =>
@@ -65,15 +68,12 @@ export class ExtensionScraperProviderContributionPoint {
     unregisterFromScraper: (scraper, registryProviderId) =>
       scraper.character.unregisterProvider(registryProviderId)
   }
+} satisfies Record<ScraperMediaType, ScraperDomain>
 
-  constructor(private readonly options: ExtensionScraperProviderContributionPointOptions) {
-    this.domainsByMediaType = new Map<ScraperMediaType, ScraperDomain>([
-      [this.gameDomain.mediaType, this.gameDomain],
-      [this.personDomain.mediaType, this.personDomain],
-      [this.companyDomain.mediaType, this.companyDomain],
-      [this.characterDomain.mediaType, this.characterDomain]
-    ])
-  }
+export class ExtensionScraperProviderContributionPoint {
+  private readonly registrations = new Map<string, ScraperRegistration>()
+
+  constructor(private readonly options: ExtensionScraperProviderContributionPointOptions) {}
 
   registerProvider(
     runtimeHandle: ExtensionRuntimeHandle,
@@ -202,7 +202,9 @@ export class ExtensionScraperProviderContributionPoint {
   }
 
   private requireDomain(mediaType: ScraperMediaType): ScraperDomain {
-    const domain = this.domainsByMediaType.get(mediaType)
+    // The media type crosses the RPC boundary, so genuinely unknown strings
+    // can still arrive at runtime despite the compile-time union.
+    const domain: ScraperDomain | undefined = SCRAPER_DOMAINS[mediaType]
     if (!domain) {
       throw new Error(`Unknown scraper media type "${mediaType}".`)
     }

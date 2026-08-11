@@ -12,6 +12,7 @@ import {
   type ScannerRunStartResult,
   type ScannerRunState
 } from '@shared/scanner'
+import type { MediaType } from '@shared/common'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 
@@ -78,12 +79,12 @@ export const useScannerStore = defineStore('scanner', () => {
     }
   }
 
-  async function startGameScan(scannerId: string): Promise<ScannerRunStartResult> {
-    return unwrapIpcData(await ipcManager.invoke('scanner:start-game-scan', scannerId))
+  async function startScan(scannerId: string): Promise<ScannerRunStartResult> {
+    return unwrapIpcData(await ipcManager.invoke('scanner:start-scan', scannerId))
   }
 
-  async function startAllGameScans(): Promise<ScannerRunStartResult[]> {
-    return unwrapIpcData(await ipcManager.invoke('scanner:start-all-game-scans'))
+  async function startAllScans(mediaType?: MediaType): Promise<ScannerRunStartResult[]> {
+    return unwrapIpcData(await ipcManager.invoke('scanner:start-all-scans', mediaType))
   }
 
   async function pauseScan(scannerId: string): Promise<boolean> {
@@ -129,8 +130,8 @@ export const useScannerStore = defineStore('scanner', () => {
     init,
     refresh,
     getScannerState,
-    startGameScan,
-    startAllGameScans,
+    startScan,
+    startAllScans,
     pauseScan,
     resumeScan,
     cancelScan

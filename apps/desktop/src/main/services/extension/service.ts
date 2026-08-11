@@ -57,8 +57,7 @@ export class ExtensionService implements IService {
     'scraper',
     'ingest',
     'scanner',
-    'launcher',
-    'monitor',
+    'activity',
     'window',
     'command',
     'automation',
@@ -191,8 +190,7 @@ export class ExtensionService implements IService {
         scraper: container.get('scraper').hooks,
         ingest: container.get('ingest').hooks,
         scanner: container.get('scanner').hooks,
-        launcher: container.get('launcher').hooks,
-        monitor: container.get('monitor').hooks
+        activity: container.get('activity').hooks
       },
       sendEventToHost: (name, payload) => this.runtime.sendEventToHost(name, payload),
       onContributionsChanged: () => this.emitContributionSnapshotChanged(),

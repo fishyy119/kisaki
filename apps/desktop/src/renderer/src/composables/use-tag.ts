@@ -27,9 +27,10 @@ import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { usePreferencesStore } from '@renderer/stores'
-import type { Tag, Game, Character, Person, Company } from '@shared/db/schema'
+import type { Tag, Game, Anime, Character, Person, Company } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { ContentEntityType } from '@shared/common'
+import { createEmptyContentEntityCounts } from './types'
 import type { ContentEntityData, ContentEntityCounts } from './types'
 import { useDbChanges } from './use-db-changes'
 
@@ -75,6 +76,8 @@ function getLinkTableName(type: ContentEntityType): string {
   switch (type) {
     case 'game':
       return 'gameTagLinks'
+    case 'anime':
+      return 'animeTagLinks'
     case 'character':
       return 'characterTagLinks'
     case 'person':
@@ -103,62 +106,76 @@ async function fetchTagWithCounts(
     showNsfw ? undefined : eq(schema.tags.isNsfw, false)
   )
 
-  const [[tagData], [gameCountRow], [characterCountRow], [personCountRow], [companyCountRow]] =
-    await Promise.all([
-      db
-        .select()
-        .from(schema.tags)
-        .where(tagWhere as never)
-        .limit(1),
-      db
-        .select({ value: count() })
-        .from(schema.gameTagLinks)
-        .innerJoin(schema.games, eq(schema.gameTagLinks.gameId, schema.games.id))
-        .where(
-          and(
-            eq(schema.gameTagLinks.tagId, tagId),
-            showNsfw ? undefined : eq(schema.games.isNsfw, false)
-          )
-        ),
-      db
-        .select({ value: count() })
-        .from(schema.characterTagLinks)
-        .innerJoin(
-          schema.characters,
-          eq(schema.characterTagLinks.characterId, schema.characters.id)
+  const [
+    [tagData],
+    [gameCountRow],
+    [animeCountRow],
+    [characterCountRow],
+    [personCountRow],
+    [companyCountRow]
+  ] = await Promise.all([
+    db
+      .select()
+      .from(schema.tags)
+      .where(tagWhere as never)
+      .limit(1),
+    db
+      .select({ value: count() })
+      .from(schema.gameTagLinks)
+      .innerJoin(schema.games, eq(schema.gameTagLinks.gameId, schema.games.id))
+      .where(
+        and(
+          eq(schema.gameTagLinks.tagId, tagId),
+          showNsfw ? undefined : eq(schema.games.isNsfw, false)
         )
-        .where(
-          and(
-            eq(schema.characterTagLinks.tagId, tagId),
-            showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-          )
-        ),
-      db
-        .select({ value: count() })
-        .from(schema.personTagLinks)
-        .innerJoin(schema.persons, eq(schema.personTagLinks.personId, schema.persons.id))
-        .where(
-          and(
-            eq(schema.personTagLinks.tagId, tagId),
-            showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-          )
-        ),
-      db
-        .select({ value: count() })
-        .from(schema.companyTagLinks)
-        .innerJoin(schema.companies, eq(schema.companyTagLinks.companyId, schema.companies.id))
-        .where(
-          and(
-            eq(schema.companyTagLinks.tagId, tagId),
-            showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-          )
+      ),
+    db
+      .select({ value: count() })
+      .from(schema.animeTagLinks)
+      .innerJoin(schema.animes, eq(schema.animeTagLinks.animeId, schema.animes.id))
+      .where(
+        and(
+          eq(schema.animeTagLinks.tagId, tagId),
+          showNsfw ? undefined : eq(schema.animes.isNsfw, false)
         )
-    ])
+      ),
+    db
+      .select({ value: count() })
+      .from(schema.characterTagLinks)
+      .innerJoin(schema.characters, eq(schema.characterTagLinks.characterId, schema.characters.id))
+      .where(
+        and(
+          eq(schema.characterTagLinks.tagId, tagId),
+          showNsfw ? undefined : eq(schema.characters.isNsfw, false)
+        )
+      ),
+    db
+      .select({ value: count() })
+      .from(schema.personTagLinks)
+      .innerJoin(schema.persons, eq(schema.personTagLinks.personId, schema.persons.id))
+      .where(
+        and(
+          eq(schema.personTagLinks.tagId, tagId),
+          showNsfw ? undefined : eq(schema.persons.isNsfw, false)
+        )
+      ),
+    db
+      .select({ value: count() })
+      .from(schema.companyTagLinks)
+      .innerJoin(schema.companies, eq(schema.companyTagLinks.companyId, schema.companies.id))
+      .where(
+        and(
+          eq(schema.companyTagLinks.tagId, tagId),
+          showNsfw ? undefined : eq(schema.companies.isNsfw, false)
+        )
+      )
+  ])
 
   return {
     tag: tagData ?? null,
     counts: {
       game: Number(gameCountRow?.value ?? 0),
+      anime: Number(animeCountRow?.value ?? 0),
       character: Number(characterCountRow?.value ?? 0),
       person: Number(personCountRow?.value ?? 0),
       company: Number(companyCountRow?.value ?? 0)
@@ -185,6 +202,20 @@ async function fetchEntitiesByType(
         .orderBy(asc(schema.gameTagLinks.orderInTag))
 
       return rows.map((row) => row.games) as Game[]
+    }
+    case 'anime': {
+      const whereCondition = and(
+        eq(schema.animeTagLinks.tagId, tagId),
+        showNsfw ? undefined : eq(schema.animes.isNsfw, false)
+      )
+      const rows = await db
+        .select()
+        .from(schema.animeTagLinks)
+        .innerJoin(schema.animes, eq(schema.animeTagLinks.animeId, schema.animes.id))
+        .where(whereCondition)
+        .orderBy(asc(schema.animeTagLinks.orderInTag))
+
+      return rows.map((row) => row.animes) as Anime[]
     }
     case 'character': {
       const whereCondition = and(
@@ -286,9 +317,7 @@ function provideTagContext(source: TagDataSource): TagContext {
     tag: computed(() => source.data.value?.tag ?? null),
     entities: computed(() => source.data.value?.entities ?? []),
     entityType: computed(() => source.data.value?.entityType ?? 'game'),
-    entityCounts: computed(
-      () => source.data.value?.counts ?? { game: 0, character: 0, person: 0, company: 0 }
-    ),
+    entityCounts: computed(() => source.data.value?.counts ?? createEmptyContentEntityCounts()),
     setEntityType: source.setEntityType,
     isLoading: source.isLoading,
     isFetching: source.isFetching,

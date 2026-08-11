@@ -1,14 +1,21 @@
 import {
+  ANIME_SCRAPER_SLOTS,
   CHARACTER_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
   GAME_SCRAPER_SLOTS,
   PERSON_SCRAPER_SLOTS,
+  type AnimeScraperSlot,
   type CharacterScraperSlot,
   type CompanyScraperSlot,
   type GameScraperSlot,
   type PersonScraperSlot
 } from './contracts'
 import {
+  LIBRARY_ANIME_CHARACTER_ROLES,
+  LIBRARY_ANIME_COMPANY_ROLES,
+  LIBRARY_ANIME_EPISODE_TYPES,
+  LIBRARY_ANIME_FORMATS,
+  LIBRARY_ANIME_PERSON_ROLES,
   LIBRARY_BLOOD_TYPES,
   LIBRARY_CHARACTER_PERSON_ROLES,
   LIBRARY_CUP_SIZES,
@@ -26,6 +33,7 @@ import {
   validateOptionalString,
   validateRequiredArray,
   validateRequiredEnumString,
+  validateRequiredFiniteNumber,
   validateRequiredFunction,
   validateRequiredString,
   validateUnknownKeys
@@ -43,6 +51,14 @@ const GAME_SEARCH_RESULT_KEYS = new Set<string>([
   'name',
   'originalName',
   'releaseDate',
+  'externalIds'
+])
+const ANIME_SEARCH_RESULT_KEYS = new Set<string>([
+  'id',
+  'name',
+  'originalName',
+  'releaseDate',
+  'format',
   'externalIds'
 ])
 const PERSON_SEARCH_RESULT_KEYS = new Set<string>([
@@ -73,6 +89,25 @@ const GAME_INFO_KEYS = new Set<string>([
   'releaseDate',
   'description',
   'relatedSites'
+])
+const ANIME_INFO_KEYS = new Set<string>([
+  'name',
+  'originalName',
+  'releaseDate',
+  'description',
+  'format',
+  'totalEpisodes',
+  'relatedSites'
+])
+const ANIME_EPISODE_KEYS = new Set<string>([
+  'number',
+  'type',
+  'name',
+  'originalName',
+  'airDate',
+  'description',
+  'durationMs',
+  'externalIds'
 ])
 const PERSON_INFO_KEYS = new Set<string>([
   'name',
@@ -134,6 +169,9 @@ const GAME_CHARACTER_FACT_KEYS = new Set<string>([
   'isSpoiler',
   'note'
 ])
+const ANIME_PERSON_FACT_KEYS = GAME_PERSON_FACT_KEYS
+const ANIME_COMPANY_FACT_KEYS = GAME_COMPANY_FACT_KEYS
+const ANIME_CHARACTER_FACT_KEYS = GAME_CHARACTER_FACT_KEYS
 const CHARACTER_PERSON_FACT_KEYS = new Set<string>([
   ...PERSON_METADATA_KEYS,
   'character',
@@ -142,6 +180,7 @@ const CHARACTER_PERSON_FACT_KEYS = new Set<string>([
   'note'
 ])
 const GAME_SESSION_KEYS: ReadonlySet<GameScraperSlot> = new Set(GAME_SCRAPER_SLOTS)
+const ANIME_SESSION_KEYS: ReadonlySet<AnimeScraperSlot> = new Set(ANIME_SCRAPER_SLOTS)
 const PERSON_SESSION_KEYS: ReadonlySet<PersonScraperSlot> = new Set(PERSON_SCRAPER_SLOTS)
 const COMPANY_SESSION_KEYS: ReadonlySet<CompanyScraperSlot> = new Set(COMPANY_SCRAPER_SLOTS)
 const CHARACTER_SESSION_KEYS: ReadonlySet<CharacterScraperSlot> = new Set(CHARACTER_SCRAPER_SLOTS)
@@ -227,6 +266,10 @@ export function validateGameScraperProviderShape(value: unknown): ValidationIssu
   return validateScraperProviderShape(value, GAME_SCRAPER_SLOTS, 'Game scraper provider')
 }
 
+export function validateAnimeScraperProviderShape(value: unknown): ValidationIssue[] {
+  return validateScraperProviderShape(value, ANIME_SCRAPER_SLOTS, 'Anime scraper provider')
+}
+
 export function validatePersonScraperProviderShape(value: unknown): ValidationIssue[] {
   return validateScraperProviderShape(value, PERSON_SCRAPER_SLOTS, 'Person scraper provider')
 }
@@ -256,6 +299,12 @@ export function validateScraperSessionShape(value: unknown): ValidationIssue[] {
 export function validateGameScraperSearchResults(value: unknown): ValidationIssue[] {
   return validateArrayOf(value, '$', 'Search results must be an array.', (item, path) =>
     validateGameSearchResult(item, path)
+  )
+}
+
+export function validateAnimeScraperSearchResults(value: unknown): ValidationIssue[] {
+  return validateArrayOf(value, '$', 'Search results must be an array.', (item, path) =>
+    validateAnimeSearchResult(item, path)
   )
 }
 
@@ -305,6 +354,10 @@ export function validateGameScraperSessionResults(value: unknown): ValidationIss
   return validateSessionResults(value, GAME_SESSION_KEYS, validateGameSessionSlot)
 }
 
+export function validateAnimeScraperSessionResults(value: unknown): ValidationIssue[] {
+  return validateSessionResults(value, ANIME_SESSION_KEYS, validateAnimeSessionSlot)
+}
+
 export function validatePersonScraperSessionResults(value: unknown): ValidationIssue[] {
   return validateSessionResults(value, PERSON_SESSION_KEYS, validatePersonSessionSlot)
 }
@@ -328,6 +381,26 @@ function validateGameSearchResult(value: unknown, path: string): ValidationIssue
     ...validateUnknownKeys(result, GAME_SEARCH_RESULT_KEYS, path),
     ...validateSearchResultBase(result, path),
     ...validateOptionalPartialDate(result.releaseDate, `${path}.releaseDate`)
+  ]
+}
+
+function validateAnimeSearchResult(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Anime search result must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const result = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(result, ANIME_SEARCH_RESULT_KEYS, path),
+    ...validateSearchResultBase(result, path),
+    ...validateOptionalPartialDate(result.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      result.format,
+      `${path}.format`,
+      LIBRARY_ANIME_FORMATS,
+      'format must be one of the supported anime formats.'
+    )
   ]
 }
 
@@ -400,6 +473,57 @@ function validateGameInfo(value: unknown, path: string): ValidationIssue[] {
 
   const info = value as Record<string, unknown>
   return [...validateUnknownKeys(info, GAME_INFO_KEYS, path), ...validateGameInfoFields(info, path)]
+}
+
+function validateAnimeInfo(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Anime info must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const info = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(info, ANIME_INFO_KEYS, path),
+    ...validateNamedInfoFields(info, path),
+    ...validateOptionalPartialDate(info.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      info.format,
+      `${path}.format`,
+      LIBRARY_ANIME_FORMATS,
+      'format must be one of the supported anime formats.'
+    ),
+    ...validateOptionalInteger(info.totalEpisodes, `${path}.totalEpisodes`)
+  ]
+}
+
+function validateAnimeEpisode(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Anime episode must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const episode = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(episode, ANIME_EPISODE_KEYS, path),
+    ...validateRequiredFiniteNumber(episode.number, `${path}.number`),
+    ...validateRequiredEnumString(
+      episode.type,
+      `${path}.type`,
+      LIBRARY_ANIME_EPISODE_TYPES,
+      'type must be one of the supported anime episode types.'
+    ),
+    ...validateOptionalString(episode.name, `${path}.name`),
+    ...validateOptionalString(episode.originalName, `${path}.originalName`),
+    ...validateOptionalPartialDate(episode.airDate, `${path}.airDate`),
+    ...validateOptionalString(episode.description, `${path}.description`),
+    ...validateOptionalFiniteNumber(episode.durationMs, `${path}.durationMs`),
+    ...validateOptionalArrayOf(
+      episode.externalIds,
+      `${path}.externalIds`,
+      'externalIds must be an array.',
+      validateExternalId
+    )
+  ]
 }
 
 function validatePersonInfo(value: unknown, path: string): ValidationIssue[] {
@@ -581,6 +705,30 @@ function validateGameCharacterFact(value: unknown, path: string): ValidationIssu
   ]
 }
 
+function validateAnimePersonFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, ANIME_PERSON_FACT_KEYS, validatePersonMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactType(value, path, LIBRARY_ANIME_PERSON_ROLES, 'anime person role')
+  ]
+}
+
+function validateAnimeCompanyFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, ANIME_COMPANY_FACT_KEYS, validateCompanyMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactType(value, path, LIBRARY_ANIME_COMPANY_ROLES, 'anime company role')
+  ]
+}
+
+function validateAnimeCharacterFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, ANIME_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactType(value, path, LIBRARY_ANIME_CHARACTER_ROLES, 'anime character role')
+  ]
+}
+
 function validateCharacterPersonFact(value: unknown, path: string): ValidationIssue[] {
   return [
     ...validateFactObject(value, path, CHARACTER_PERSON_FACT_KEYS, validatePersonMetadataFields),
@@ -679,6 +827,29 @@ function validateGameSessionSlot(slot: GameScraperSlot, value: unknown, path: st
     case 'backdrops':
     case 'logos':
     case 'icons':
+      return validateStringArray(value, path, `${slot} must be an array of strings.`)
+  }
+
+  return []
+}
+
+function validateAnimeSessionSlot(slot: AnimeScraperSlot, value: unknown, path: string) {
+  switch (slot) {
+    case 'info':
+      return validateAnimeInfo(value, path)
+    case 'tags':
+      return validateArrayOf(value, path, 'tags must be an array.', validateScrapedTag)
+    case 'episodes':
+      return validateArrayOf(value, path, 'episodes must be an array.', validateAnimeEpisode)
+    case 'characters':
+      return validateArrayOf(value, path, 'characters must be an array.', validateAnimeCharacterFact)
+    case 'persons':
+      return validateArrayOf(value, path, 'persons must be an array.', validateAnimePersonFact)
+    case 'companies':
+      return validateArrayOf(value, path, 'companies must be an array.', validateAnimeCompanyFact)
+    case 'covers':
+    case 'backdrops':
+    case 'logos':
       return validateStringArray(value, path, `${slot} must be an array of strings.`)
   }
 

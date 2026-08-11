@@ -25,8 +25,10 @@ import type { I18nService } from '@main/services/i18n/service'
 import type { ScraperService } from '@main/services/scraper/service'
 import type { IngestService } from '@main/services/ingest/service'
 import type { ScannerService } from '@main/services/scanner/service'
-import type { MonitorService } from '@main/services/monitor/service'
-import type { LauncherService } from '@main/services/launcher/service'
+import type { ProcessService } from '@main/services/process/service'
+import type { PlayerService } from '@main/services/player/service'
+import type { MediaInfoService } from '@main/services/media-info/service'
+import type { ActivityService } from '@main/services/activity/service'
 import type { AttachmentService } from '@main/services/attachment/service'
 import type { ExtensionService } from '@main/services/extension/service'
 import type { NetworkService } from '@main/services/network/service'
@@ -51,8 +53,10 @@ export interface ServiceRegistry {
   scraper: ScraperService
   ingest: IngestService
   scanner: ScannerService
-  monitor: MonitorService
-  launcher: LauncherService
+  process: ProcessService
+  player: PlayerService
+  'media-info': MediaInfoService
+  activity: ActivityService
   attachment: AttachmentService
   extension: ExtensionService
   notify: NotifyService

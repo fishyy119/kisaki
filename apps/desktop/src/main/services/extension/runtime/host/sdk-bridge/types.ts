@@ -1,4 +1,5 @@
 import type {
+  AnimeScraperProvider,
   CardActionContribution,
   CardActionRegistration,
   CharacterScraperProvider,
@@ -37,11 +38,13 @@ import type {
 
 export type ScraperProviderFor<TMediaType extends ScraperMediaType> = TMediaType extends 'game'
   ? GameScraperProvider
-  : TMediaType extends 'person'
-    ? PersonScraperProvider
-    : TMediaType extends 'company'
-      ? CompanyScraperProvider
-      : CharacterScraperProvider
+  : TMediaType extends 'anime'
+    ? AnimeScraperProvider
+    : TMediaType extends 'person'
+      ? PersonScraperProvider
+      : TMediaType extends 'company'
+        ? CompanyScraperProvider
+        : CharacterScraperProvider
 
 /**
  * Identifies the extension runtime currently allowed to call SDK APIs.

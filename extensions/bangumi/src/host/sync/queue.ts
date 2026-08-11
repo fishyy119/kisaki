@@ -1,12 +1,12 @@
 import type { ExtensionStorage } from '@kisaki3/extension-sdk'
-import type { BangumiMediaScope } from '../media/scopes'
+import { isBangumiMediaScope, type BangumiMediaScope } from '../../shared/scopes'
 import { BANGUMI_STORAGE_KEYS } from '../utils/ids'
 
 export interface SyncQueueItem {
   scope: BangumiMediaScope
   localId: string
   queuedAt: number
-  reason: 'created' | 'updated' | 'manual'
+  reason: 'created' | 'updated' | 'manual' | 'episodes'
 }
 
 interface BangumiSyncQueueV1 {
@@ -125,13 +125,13 @@ function normalizeLimit(value: number): number {
 }
 
 function normalizeReason(value: unknown): SyncQueueItem['reason'] {
-  return value === 'created' || value === 'updated' || value === 'manual' ? value : 'updated'
+  return value === 'created' || value === 'updated' || value === 'manual' || value === 'episodes'
+    ? value
+    : 'updated'
 }
 
 function normalizeScope(value: unknown): BangumiMediaScope | undefined {
-  return value === 'book' || value === 'game' || value === 'anime' || value === 'music'
-    ? value
-    : undefined
+  return isBangumiMediaScope(value) ? value : undefined
 }
 
 function createQueueKey(scope: BangumiMediaScope, localId: string): string {

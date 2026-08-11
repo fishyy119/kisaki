@@ -21,6 +21,13 @@ import {
   EXTENSION_UPDATE_POLICY_VALUES
 } from '../contracts/enums'
 import type {
+  AnimeCharacterType,
+  AnimeCompanyType,
+  AnimeEpisodeType,
+  AnimeExtraKind,
+  AnimeFormat,
+  AnimePersonType,
+  AnimeRelationType,
   BloodType,
   CharacterPersonType,
   CupSize,
@@ -101,6 +108,67 @@ export const characterPersonType = createEnumType<CharacterPersonType>(
   CHARACTER_PERSON_TYPE_VALUES,
   'other',
   'characterPersonType'
+)
+
+const ANIME_FORMAT_VALUES = ['tv', 'movie', 'ova', 'ona', 'special', 'other'] as const
+export const animeFormat = createEnumType<AnimeFormat>(ANIME_FORMAT_VALUES, 'tv', 'animeFormat')
+
+const ANIME_EPISODE_TYPE_VALUES = ['regular', 'special'] as const
+export const animeEpisodeType = createEnumType<AnimeEpisodeType>(
+  ANIME_EPISODE_TYPE_VALUES,
+  'regular',
+  'animeEpisodeType'
+)
+
+const ANIME_PERSON_TYPE_VALUES = [
+  'director',
+  'series',
+  'scenario',
+  'characterDesign',
+  'music',
+  'animationDirector',
+  'other'
+] as const
+export const animePersonType = createEnumType<AnimePersonType>(
+  ANIME_PERSON_TYPE_VALUES,
+  'other',
+  'animePersonType'
+)
+
+const ANIME_CHARACTER_TYPE_VALUES = ['main', 'supporting', 'cameo', 'other'] as const
+export const animeCharacterType = createEnumType<AnimeCharacterType>(
+  ANIME_CHARACTER_TYPE_VALUES,
+  'other',
+  'animeCharacterType'
+)
+
+const ANIME_COMPANY_TYPE_VALUES = ['studio', 'producer', 'distributor', 'other'] as const
+export const animeCompanyType = createEnumType<AnimeCompanyType>(
+  ANIME_COMPANY_TYPE_VALUES,
+  'other',
+  'animeCompanyType'
+)
+
+const ANIME_RELATION_TYPE_VALUES = [
+  'sequel',
+  'prequel',
+  'sideStory',
+  'movie',
+  'summary',
+  'alternative',
+  'other'
+] as const
+export const animeRelationType = createEnumType<AnimeRelationType>(
+  ANIME_RELATION_TYPE_VALUES,
+  'other',
+  'animeRelationType'
+)
+
+const ANIME_EXTRA_KIND_VALUES = ['trailer', 'pv', 'ncop', 'nced', 'interview', 'other'] as const
+export const animeExtraKind = createEnumType<AnimeExtraKind>(
+  ANIME_EXTRA_KIND_VALUES,
+  'other',
+  'animeExtraKind'
 )
 
 const BLOOD_TYPE_VALUES = ['a', 'b', 'ab', 'o'] as const

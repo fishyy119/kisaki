@@ -11,14 +11,13 @@ import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header
 import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
-import type { Game, Character, Person, Company } from '@shared/db'
+import type { ContentEntityData } from '@renderer/composables'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import type { ContentEntityType } from '@shared/common'
 import { useUncategorized } from '../composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
-
-type EntityData = Game | Character | Person | Company
 
 // =============================================================================
 // Route
@@ -40,22 +39,9 @@ const { entities } = useUncategorized()
 // Actions
 // =============================================================================
 
-function getDetailPath(type: ContentEntityType, id: string): string {
-  switch (type) {
-    case 'game':
-      return `/library/game/${id}`
-    case 'character':
-      return `/library/character/${id}`
-    case 'person':
-      return `/library/person/${id}`
-    case 'company':
-      return `/library/company/${id}`
-  }
-}
-
-function handleEntityClick(entity: EntityData) {
+function handleEntityClick(entity: ContentEntityData) {
   router.push({
-    path: getDetailPath(entityType.value, entity.id),
+    path: getEntityDetailPath(entityType.value, entity.id),
     query: { from: 'uncategorized' }
   })
 }

@@ -1,5 +1,5 @@
 import type { LibraryEntityType } from '../entities'
-import { LIBRARY_ENTITY_TYPES } from '../entities'
+import { DYNAMIC_COLLECTION_ENTITY_TYPES, LIBRARY_ENTITY_TYPES } from '../entities'
 import { createValidationError } from '../../../shared/errors'
 import { validateJsonObject } from '../../../shared/json'
 import type { ValidationIssue } from '../../../shared/validation'
@@ -21,7 +21,7 @@ const PARTIAL_DATE_KEYS = new Set<string>(['year', 'month', 'day'])
 const EXTERNAL_ID_KEYS = new Set<string>(['source', 'id'])
 const RELATED_SITE_KEYS = new Set<string>(['label', 'url'])
 const SAVE_BACKUP_KEYS = new Set<string>(['backupAt', 'note', 'locked', 'saveFile', 'sizeBytes'])
-const DYNAMIC_COLLECTION_KEYS = new Set<string>(['game', 'character', 'person', 'company'])
+const DYNAMIC_COLLECTION_KEYS = new Set<string>(DYNAMIC_COLLECTION_ENTITY_TYPES)
 const DYNAMIC_ENTITY_CONFIG_KEYS = new Set<string>([
   'enabled',
   'filter',

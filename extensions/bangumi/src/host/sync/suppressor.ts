@@ -1,4 +1,4 @@
-import type { BangumiMediaScope } from '../media/scopes'
+import type { BangumiMediaScope } from '../../shared/scopes'
 
 export type SyncSuppressReason = 'import' | 'fingerprint'
 

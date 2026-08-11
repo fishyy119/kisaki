@@ -32,6 +32,46 @@ export type GameCompanyType = 'developer' | 'publisher' | 'distributor' | 'other
 /** Character-Person relationship type */
 export type CharacterPersonType = 'actor' | 'illustration' | 'designer' | 'other'
 
+/** Anime release format */
+export type AnimeFormat = 'tv' | 'movie' | 'ova' | 'ona' | 'special' | 'other'
+
+/**
+ * Anime episode kind.
+ *
+ * Only episodes worth tracking individually are stored; openings, endings and
+ * trailers are extras, not episodes.
+ */
+export type AnimeEpisodeType = 'regular' | 'special'
+
+/** Anime-Person relationship type */
+export type AnimePersonType =
+  | 'director'
+  | 'series'
+  | 'scenario'
+  | 'characterDesign'
+  | 'music'
+  | 'animationDirector'
+  | 'other'
+
+/** Anime-Character relationship type */
+export type AnimeCharacterType = 'main' | 'supporting' | 'cameo' | 'other'
+
+/** Anime-Company relationship type */
+export type AnimeCompanyType = 'studio' | 'producer' | 'distributor' | 'other'
+
+/** Anime-Anime relationship type */
+export type AnimeRelationType =
+  | 'sequel'
+  | 'prequel'
+  | 'sideStory'
+  | 'movie'
+  | 'summary'
+  | 'alternative'
+  | 'other'
+
+/** Supplementary anime asset kind; these never carry watch state. */
+export type AnimeExtraKind = 'trailer' | 'pv' | 'ncop' | 'nced' | 'interview' | 'other'
+
 /** Blood type */
 export type BloodType = 'a' | 'b' | 'ab' | 'o'
 

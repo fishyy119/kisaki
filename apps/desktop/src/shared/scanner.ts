@@ -24,6 +24,7 @@ export interface EntityEntry {
 export type ScannerRunIssueType =
   | 'asset-persist-failed'
   | 'duplicate-external-id'
+  | 'file-sync-failed'
   | 'metadata-missing'
   | 'path-unavailable'
   | 'scraper-unavailable'
@@ -44,12 +45,18 @@ interface ScannerRunIssueBase {
   fixable: boolean
 }
 
-type ScannerRunIssueGameRef =
-  | { gameId: string; existingGameId?: never }
-  | { gameId?: never; existingGameId: string }
-  | { gameId?: never; existingGameId?: never }
+/**
+ * Library entry an issue points at, in the scanner run's own media type.
+ *
+ * `entityId` is the entry the run created, `existingEntityId` is an unrelated
+ * entry that already claims the identity the run resolved.
+ */
+type ScannerRunIssueEntityRef =
+  | { entityId: string; existingEntityId?: never }
+  | { entityId?: never; existingEntityId: string }
+  | { entityId?: never; existingEntityId?: never }
 
-export type ScannerRunIssue = ScannerRunIssueBase & ScannerRunIssueGameRef
+export type ScannerRunIssue = ScannerRunIssueBase & ScannerRunIssueEntityRef
 
 /**
  * Entity already represented by an existing library entry.
@@ -59,7 +66,7 @@ export interface ScannerRunExisting {
   id: string
   extractedName: string
   path: string
-  gameId: string
+  entityId: string
 }
 
 export type ScannerRunStatus =

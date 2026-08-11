@@ -13,6 +13,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid, VirtualHorizontalScroll } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
 import { GameDetailDialog } from '@renderer/components/shared/game'
+import { AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { CharacterDetailDialog } from '@renderer/components/shared/character'
 import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyDetailDialog } from '@renderer/components/shared/company'
@@ -21,6 +22,7 @@ import { TagDetailDialog } from '@renderer/components/shared/tag'
 import { useSectionData, type SectionEntityData } from '../../composables'
 import { useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import type { ShowcaseSection } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
 
@@ -68,24 +70,7 @@ function handleItemClick(item: SectionEntityData) {
     return
   }
 
-  router.push(getDetailPath(type, item.id))
-}
-
-function getDetailPath(entityType: AllEntityType, id: string): string {
-  switch (entityType) {
-    case 'game':
-      return `/library/game/${id}`
-    case 'character':
-      return `/library/character/${id}`
-    case 'person':
-      return `/library/person/${id}`
-    case 'company':
-      return `/library/company/${id}`
-    case 'collection':
-      return `/library/collection/${id}`
-    case 'tag':
-      return `/library/tag/${id}`
-  }
+  router.push(getEntityDetailPath(type, item.id))
 }
 </script>
 
@@ -191,6 +176,11 @@ function getDetailPath(entityType: AllEntityType, id: string): string {
       v-if="detailDialogOpen && detailEntityId && entityType === 'game' && isDialogMode"
       v-model:open="detailDialogOpen"
       :game-id="selectedEntityId"
+    />
+    <AnimeDetailDialog
+      v-if="detailDialogOpen && detailEntityId && entityType === 'anime' && isDialogMode"
+      v-model:open="detailDialogOpen"
+      :anime-id="selectedEntityId"
     />
     <CharacterDetailDialog
       v-if="detailDialogOpen && detailEntityId && entityType === 'character' && isDialogMode"

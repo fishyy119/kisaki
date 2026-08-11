@@ -97,6 +97,41 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     sortDirection: 'asc'
   },
 
+  // Anime presets
+  {
+    id: 'recently-watched',
+    copyKey: 'recentlyWatched',
+    entityType: 'anime',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'lastActiveAt',
+    sortDirection: 'desc'
+  },
+  {
+    id: 'top-rated-anime',
+    copyKey: 'topRatedAnime',
+    entityType: 'anime',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'score',
+    sortDirection: 'desc'
+  },
+  {
+    id: 'recently-added-anime',
+    copyKey: 'recentlyAddedAnime',
+    entityType: 'anime',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'createdAt',
+    sortDirection: 'desc'
+  },
+
   // Character presets
   {
     id: 'favorite-characters',

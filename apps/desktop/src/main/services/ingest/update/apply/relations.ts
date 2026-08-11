@@ -2,16 +2,30 @@ import { eq } from 'drizzle-orm'
 import type { DbContext } from '@main/services/db'
 import { IngestPersistHandlers } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
-import type { IngestCharacterGraph, IngestGameCharacterNode, IngestGameGraph } from '../../graph'
+import type {
+  IngestAnimeGraph,
+  IngestCharacterGraph,
+  IngestCharacterNode,
+  IngestGameGraph
+} from '../../graph'
 import {
+  animeCharacterLinks,
+  animeCompanyLinks,
+  animePersonLinks,
   characterPersonLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
+  type AnimeCharacterType,
+  type AnimeCompanyType,
+  type AnimePersonType,
   type CharacterPersonType,
   type GameCharacterType,
   type GameCompanyType,
   type GamePersonType,
+  type NewAnimeCharacterLink,
+  type NewAnimeCompanyLink,
+  type NewAnimePersonLink,
   type NewCharacterPersonLink,
   type NewGameCharacterLink,
   type NewGameCompanyLink,
@@ -287,6 +301,141 @@ function replaceGameCharacterRows(
   tx.insert(gameCharacterLinks).values(values).run()
 }
 
+function loadAnimePersonRows(
+  tx: DbContext,
+  animeId: string
+): OrderedRelationRow<AnimePersonType>[] {
+  return tx
+    .select()
+    .from(animePersonLinks)
+    .where(eq(animePersonLinks.animeId, animeId))
+    .all()
+    .sort((a, b) => a.orderInAnime - b.orderInAnime || a.orderInPerson - b.orderInPerson)
+    .map((row) => ({
+      relatedId: row.personId,
+      type: row.type,
+      isSpoiler: row.isSpoiler,
+      note: normalizeRelationNote(row.note)
+    }))
+}
+
+function replaceAnimePersonRows(
+  tx: DbContext,
+  animeId: string,
+  rows: OrderedRelationRow<AnimePersonType>[]
+): void {
+  tx.delete(animePersonLinks).where(eq(animePersonLinks.animeId, animeId)).run()
+  if (rows.length === 0) return
+
+  const personOrderCounters = new Map<string, number>()
+  const values: NewAnimePersonLink[] = rows.map((row, orderInAnime) => {
+    const orderInPerson = personOrderCounters.get(row.relatedId) ?? 0
+    personOrderCounters.set(row.relatedId, orderInPerson + 1)
+
+    return {
+      animeId,
+      personId: row.relatedId,
+      type: row.type,
+      isSpoiler: row.isSpoiler,
+      note: normalizeRelationNote(row.note),
+      orderInAnime,
+      orderInPerson
+    }
+  })
+
+  tx.insert(animePersonLinks).values(values).run()
+}
+
+function loadAnimeCompanyRows(
+  tx: DbContext,
+  animeId: string
+): OrderedRelationRow<AnimeCompanyType>[] {
+  return tx
+    .select()
+    .from(animeCompanyLinks)
+    .where(eq(animeCompanyLinks.animeId, animeId))
+    .all()
+    .sort((a, b) => a.orderInAnime - b.orderInAnime || a.orderInCompany - b.orderInCompany)
+    .map((row) => ({
+      relatedId: row.companyId,
+      type: row.type,
+      isSpoiler: row.isSpoiler,
+      note: normalizeRelationNote(row.note)
+    }))
+}
+
+function replaceAnimeCompanyRows(
+  tx: DbContext,
+  animeId: string,
+  rows: OrderedRelationRow<AnimeCompanyType>[]
+): void {
+  tx.delete(animeCompanyLinks).where(eq(animeCompanyLinks.animeId, animeId)).run()
+  if (rows.length === 0) return
+
+  const companyOrderCounters = new Map<string, number>()
+  const values: NewAnimeCompanyLink[] = rows.map((row, orderInAnime) => {
+    const orderInCompany = companyOrderCounters.get(row.relatedId) ?? 0
+    companyOrderCounters.set(row.relatedId, orderInCompany + 1)
+
+    return {
+      animeId,
+      companyId: row.relatedId,
+      type: row.type,
+      isSpoiler: row.isSpoiler,
+      note: normalizeRelationNote(row.note),
+      orderInAnime,
+      orderInCompany
+    }
+  })
+
+  tx.insert(animeCompanyLinks).values(values).run()
+}
+
+function loadAnimeCharacterRows(
+  tx: DbContext,
+  animeId: string
+): OrderedRelationRow<AnimeCharacterType>[] {
+  return tx
+    .select()
+    .from(animeCharacterLinks)
+    .where(eq(animeCharacterLinks.animeId, animeId))
+    .all()
+    .sort((a, b) => a.orderInAnime - b.orderInAnime || a.orderInCharacter - b.orderInCharacter)
+    .map((row) => ({
+      relatedId: row.characterId,
+      type: row.type,
+      isSpoiler: row.isSpoiler,
+      note: normalizeRelationNote(row.note)
+    }))
+}
+
+function replaceAnimeCharacterRows(
+  tx: DbContext,
+  animeId: string,
+  rows: OrderedRelationRow<AnimeCharacterType>[]
+): void {
+  tx.delete(animeCharacterLinks).where(eq(animeCharacterLinks.animeId, animeId)).run()
+  if (rows.length === 0) return
+
+  const characterOrderCounters = new Map<string, number>()
+  const values: NewAnimeCharacterLink[] = rows.map((row, orderInAnime) => {
+    const orderInCharacter = characterOrderCounters.get(row.relatedId) ?? 0
+    characterOrderCounters.set(row.relatedId, orderInCharacter + 1)
+
+    return {
+      animeId,
+      characterId: row.relatedId,
+      type: row.type,
+      isSpoiler: row.isSpoiler,
+      note: normalizeRelationNote(row.note),
+      orderInAnime,
+      orderInCharacter
+    }
+  })
+
+  tx.insert(animeCharacterLinks).values(values).run()
+}
+
 export function resolvePersonNodes(
   tx: DbContext,
   persistHandlers: IngestPersistHandlers,
@@ -341,7 +490,7 @@ export function resolveCompanyNodes(
 export function resolveCharacterNodes(
   tx: DbContext,
   persistHandlers: IngestPersistHandlers,
-  nodes: IngestGameGraph['characters'] | IngestGameCharacterNode[]
+  nodes: IngestGameGraph['characters'] | IngestCharacterNode[]
 ): {
   idByIdentity: Map<string, string>
   pendingAssets: PendingAssetTask[]
@@ -386,6 +535,105 @@ export function applyCharacterPersonRows(params: {
   const rowPlan = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
   if (rowPlan.rows && !areRelationRowsEqual(currentRows, rowPlan.rows)) {
     replaceCharacterPersonRows(tx, characterId, rowPlan.rows)
+  }
+
+  return rowPlan.preservedRowCount
+}
+
+/** Applies the rows and returns how many stored rows a `replace` would have deleted. */
+export function applyAnimePersonRows(params: {
+  tx: DbContext
+  animeId: string
+  links: ReadonlyArray<IngestAnimeGraph['links']['animePerson'][number]>
+  collectionMode: IngestUpdatePolicy['collectionUpdate']
+  personIdByIdentity: ReadonlyMap<string, string>
+}): number {
+  const { tx, animeId, links, collectionMode, personIdByIdentity } = params
+
+  const incomingRows: OrderedRelationRow<AnimePersonType>[] = links
+    .map((link) => {
+      const personId = personIdByIdentity.get(link.personIdentityKey)
+      if (!personId) return null
+
+      return {
+        relatedId: personId,
+        type: link.type,
+        isSpoiler: link.isSpoiler,
+        note: normalizeRelationNote(link.note)
+      }
+    })
+    .filter((row): row is OrderedRelationRow<AnimePersonType> => row !== null)
+
+  const currentRows = loadAnimePersonRows(tx, animeId)
+  const rowPlan = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
+  if (rowPlan.rows && !areRelationRowsEqual(currentRows, rowPlan.rows)) {
+    replaceAnimePersonRows(tx, animeId, rowPlan.rows)
+  }
+
+  return rowPlan.preservedRowCount
+}
+
+/** Applies the rows and returns how many stored rows a `replace` would have deleted. */
+export function applyAnimeCompanyRows(params: {
+  tx: DbContext
+  animeId: string
+  links: ReadonlyArray<IngestAnimeGraph['links']['animeCompany'][number]>
+  collectionMode: IngestUpdatePolicy['collectionUpdate']
+  companyIdByIdentity: ReadonlyMap<string, string>
+}): number {
+  const { tx, animeId, links, collectionMode, companyIdByIdentity } = params
+
+  const incomingRows: OrderedRelationRow<AnimeCompanyType>[] = links
+    .map((link) => {
+      const companyId = companyIdByIdentity.get(link.companyIdentityKey)
+      if (!companyId) return null
+
+      return {
+        relatedId: companyId,
+        type: link.type,
+        isSpoiler: link.isSpoiler,
+        note: normalizeRelationNote(link.note)
+      }
+    })
+    .filter((row): row is OrderedRelationRow<AnimeCompanyType> => row !== null)
+
+  const currentRows = loadAnimeCompanyRows(tx, animeId)
+  const rowPlan = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
+  if (rowPlan.rows && !areRelationRowsEqual(currentRows, rowPlan.rows)) {
+    replaceAnimeCompanyRows(tx, animeId, rowPlan.rows)
+  }
+
+  return rowPlan.preservedRowCount
+}
+
+/** Applies the rows and returns how many stored rows a `replace` would have deleted. */
+export function applyAnimeCharacterRows(params: {
+  tx: DbContext
+  animeId: string
+  links: ReadonlyArray<IngestAnimeGraph['links']['animeCharacter'][number]>
+  collectionMode: IngestUpdatePolicy['collectionUpdate']
+  characterIdByIdentity: ReadonlyMap<string, string>
+}): number {
+  const { tx, animeId, links, collectionMode, characterIdByIdentity } = params
+
+  const incomingRows: OrderedRelationRow<AnimeCharacterType>[] = links
+    .map((link) => {
+      const characterId = characterIdByIdentity.get(link.characterIdentityKey)
+      if (!characterId) return null
+
+      return {
+        relatedId: characterId,
+        type: link.type,
+        isSpoiler: link.isSpoiler,
+        note: normalizeRelationNote(link.note)
+      }
+    })
+    .filter((row): row is OrderedRelationRow<AnimeCharacterType> => row !== null)
+
+  const currentRows = loadAnimeCharacterRows(tx, animeId)
+  const rowPlan = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
+  if (rowPlan.rows && !areRelationRowsEqual(currentRows, rowPlan.rows)) {
+    replaceAnimeCharacterRows(tx, animeId, rowPlan.rows)
   }
 
   return rowPlan.preservedRowCount

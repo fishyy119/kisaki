@@ -1,6 +1,6 @@
 import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
-import { isBangumiMediaScope, type BangumiMediaScope } from './scopes'
+import { isBangumiMediaScope, type BangumiMediaScope } from '../../shared/scopes'
 import type { BangumiMediaDescriptor, LocalMediaAdapter } from './types'
 
 export class MediaRegistry {

@@ -1,4 +1,5 @@
 import type { JsonObject } from '@kisaki3/extension-sdk'
+import type { BangumiMediaScope } from './scopes'
 
 /**
  * Webview RPC contract between the extension host entry and the settings
@@ -35,9 +36,9 @@ export interface BangumiJobPreviewGroup extends JsonObject {
   rows: readonly BangumiJobPreviewRow[]
 }
 
-export type BangumiAutoSyncItem = 'create' | 'status' | 'score'
+export type BangumiAutoSyncItem = 'create' | 'status' | 'score' | 'episodes'
 
-export type BangumiSyncDataItem = 'status' | 'score'
+export type BangumiSyncDataItem = 'status' | 'score' | 'episodes'
 
 export type BangumiImportDataItem = 'status' | 'score' | 'tags'
 
@@ -81,6 +82,15 @@ export interface BangumiOptionItem {
   label: string
 }
 
+/** One media scope the local library can sync, with its scraper profiles. */
+export interface BangumiScopeOption {
+  scope: BangumiMediaScope
+  label: string
+  /** Whether the scope tracks per-episode watch state. */
+  supportsEpisodes: boolean
+  profiles: readonly BangumiOptionItem[]
+}
+
 export interface BangumiAutomationState {
   kind: BangumiAutomationKind
   status: BangumiAutomationStatus
@@ -90,7 +100,7 @@ export interface BangumiSettingsOverview {
   form: BangumiSettingsFormState
   account: BangumiAccountState
   activeJobs: BangumiActiveJobsState
-  profiles: readonly BangumiOptionItem[]
+  scopes: readonly BangumiScopeOption[]
   collections: readonly BangumiOptionItem[]
   automations: readonly BangumiAutomationState[]
 }
@@ -98,6 +108,7 @@ export interface BangumiSettingsOverview {
 export type BangumiPreviewGroupDto = BangumiJobPreviewGroup
 
 export interface BangumiFullSyncFormArgs {
+  scope: BangumiMediaScope
   items: readonly BangumiSyncDataItem[]
   updateExisting: boolean
   clearRemoteScoreWhenEmpty: boolean
@@ -105,6 +116,7 @@ export interface BangumiFullSyncFormArgs {
 }
 
 export interface BangumiImportCollectionsFormArgs {
+  scope: BangumiMediaScope
   profileId: string
   collectionTypes: readonly number[]
   dataItems: readonly BangumiImportDataItem[]
@@ -115,6 +127,7 @@ export interface BangumiImportCollectionsFormArgs {
 export type BangumiImportIndexTargetMode = 'none' | 'existing' | 'byIndexTitle'
 
 export interface BangumiImportIndexFormArgs {
+  scope: BangumiMediaScope
   profileId: string
   indexInput: string
   patchExisting: boolean
@@ -133,7 +146,7 @@ export interface BangumiSettingsHostFunctions {
   verifyAccount(): Promise<{ nickname: string }>
   refreshCredentials(): Promise<void>
   logout(): Promise<void>
-  runChangedSync(): Promise<void>
+  runChangedSync(scope: BangumiMediaScope): Promise<void>
   previewFullSync(args: BangumiFullSyncFormArgs): Promise<readonly BangumiPreviewGroupDto[]>
   runFullSync(args: BangumiFullSyncFormArgs): Promise<void>
   previewImportCollections(

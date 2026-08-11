@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
 import GameAdderDialog from './game-adder-dialog.vue'
+import AnimeAdderDialog from './anime-adder-dialog.vue'
 import PersonAdderDialog from './person-adder-dialog.vue'
 import CompanyAdderDialog from './company-adder-dialog.vue'
 import CharacterAdderDialog from './character-adder-dialog.vue'
@@ -26,6 +27,7 @@ const { m } = useI18n()
 
 const router = useRouter()
 const gameDialogOpen = ref(false)
+const animeDialogOpen = ref(false)
 const personDialogOpen = ref(false)
 const companyDialogOpen = ref(false)
 const characterDialogOpen = ref(false)
@@ -34,6 +36,11 @@ const dropdownOpen = ref(false)
 function handleAddGame() {
   dropdownOpen.value = false
   gameDialogOpen.value = true
+}
+
+function handleAddAnime() {
+  dropdownOpen.value = false
+  animeDialogOpen.value = true
 }
 
 function handleAddCharacter() {
@@ -102,6 +109,16 @@ function handleAddScanner() {
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2"
+          @select="handleAddAnime"
+        >
+          <Icon
+            :icon="getEntityIcon('anime')"
+            class="size-4"
+          />
+          <span>{{ m.library.detail.addEntity({ label: m.library.entities.anime }) }}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          class="gap-2"
           @select="handleAddCharacter"
         >
           <Icon
@@ -148,6 +165,10 @@ function handleAddScanner() {
   <GameAdderDialog
     v-if="gameDialogOpen"
     v-model:open="gameDialogOpen"
+  />
+  <AnimeAdderDialog
+    v-if="animeDialogOpen"
+    v-model:open="animeDialogOpen"
   />
   <CharacterAdderDialog
     v-if="characterDialogOpen"

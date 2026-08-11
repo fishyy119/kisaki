@@ -40,6 +40,7 @@ import type { TableName } from '@shared/db/table-names'
 import type { DynamicCollectionConfig } from '@shared/db/contracts/json'
 import type { ContentEntityType } from '@shared/common'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
+import { createEmptyContentEntityCounts } from './types'
 import type { ContentEntityData, ContentEntityCounts } from './types'
 import { useDbChanges } from './use-db-changes'
 
@@ -108,10 +109,6 @@ function getDefaultEntityType(
   return candidates.find((type) => counts[type] > 0) ?? candidates[0]
 }
 
-function createEmptyCounts(): ContentEntityCounts {
-  return { game: 0, character: 0, person: 0, company: 0 }
-}
-
 // =============================================================================
 // Data Fetching Functions
 // =============================================================================
@@ -154,7 +151,7 @@ async function fetchCollectionWithCounts(
   if (!collectionData) {
     return {
       collection: null,
-      counts: createEmptyCounts(),
+      counts: createEmptyContentEntityCounts(),
       configuredTypes: [...CONTENT_ENTITY_TYPES]
     }
   }
@@ -167,7 +164,7 @@ async function fetchCollectionWithCounts(
     ? getConfiguredEntityTypes(dynamicConfig)
     : [...CONTENT_ENTITY_TYPES]
 
-  const counts = createEmptyCounts()
+  const counts = createEmptyContentEntityCounts()
 
   if (isDynamic && dynamicConfig) {
     await Promise.all(
@@ -297,9 +294,7 @@ function provideCollectionContext(source: CollectionDataSource): CollectionConte
     collection: computed(() => source.data.value?.collection ?? null),
     entities: computed(() => source.data.value?.entities ?? []),
     entityType: computed(() => source.data.value?.entityType ?? 'game'),
-    entityCounts: computed(
-      () => source.data.value?.counts ?? { game: 0, character: 0, person: 0, company: 0 }
-    ),
+    entityCounts: computed(() => source.data.value?.counts ?? createEmptyContentEntityCounts()),
     configuredEntityTypes: computed(
       () => source.data.value?.configuredTypes ?? [...CONTENT_ENTITY_TYPES]
     ),

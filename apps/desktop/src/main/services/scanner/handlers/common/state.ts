@@ -136,7 +136,7 @@ function toNewIssue(
   result: NewScannerEntityProcessResult,
   index: number
 ): ScannerRunIssue {
-  return { ...toIssueBase(warning, result, index, result.gameId), gameId: result.gameId }
+  return { ...toIssueBase(warning, result, index, result.entityId), entityId: result.entityId }
 }
 
 function toFailedIssue(
@@ -144,9 +144,9 @@ function toFailedIssue(
   result: FailedScannerEntityProcessResult,
   index: number
 ): ScannerRunIssue {
-  const issue = toIssueBase(error, result, index, result.existingGameId)
-  if (result.existingGameId) {
-    return { ...issue, existingGameId: result.existingGameId }
+  const issue = toIssueBase(error, result, index, result.existingEntityId)
+  if (result.existingEntityId) {
+    return { ...issue, existingEntityId: result.existingEntityId }
   }
 
   return issue
@@ -155,6 +155,7 @@ function toFailedIssue(
 function isIssueFixable(type: ScannerRunIssue['type']): boolean {
   switch (type) {
     case 'asset-persist-failed':
+    case 'file-sync-failed':
     case 'path-unavailable':
     case 'unsupported-entry':
       return false

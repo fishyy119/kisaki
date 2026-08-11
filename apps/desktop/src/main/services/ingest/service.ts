@@ -8,43 +8,67 @@ import { createLogger } from '@main/log'
 import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { ContentEntityType } from '@shared/common'
 import { IngestPersistHandlers } from './persist'
-import { CharacterAddHandler, CompanyAddHandler, GameAddHandler, PersonAddHandler } from './add'
 import {
+  AnimeAddHandler,
+  CharacterAddHandler,
+  CompanyAddHandler,
+  GameAddHandler,
+  PersonAddHandler
+} from './add'
+import {
+  AnimeUpdateHandler,
   CharacterUpdateHandler,
   CompanyUpdateHandler,
   GameUpdateHandler,
   PersonUpdateHandler
 } from './update'
 import {
+  AnimeBatchHandler,
   CharacterBatchHandler,
   CompanyBatchHandler,
   GameBatchHandler,
   PersonBatchHandler
 } from './batch'
+import { AnimeFileSyncHandler } from './files'
 import { registerIngestIpc } from './ipc'
 import { createIngestHooks } from './hooks'
 
 const log = createLogger('Ingest')
 
-interface IngestAddHandlers {
+/**
+ * Compile-time coverage guard: handler maps are keyed by the full content
+ * union, so adding a media type does not compile until its add, update, and
+ * batch flows are decided here.
+ */
+type IngestHandlersByContent<THandlers extends Record<ContentEntityType, object>> = THandlers
+
+type IngestAddHandlers = IngestHandlersByContent<{
   game: GameAddHandler
+  anime: AnimeAddHandler
   person: PersonAddHandler
   company: CompanyAddHandler
   character: CharacterAddHandler
-}
+}>
 
-interface IngestUpdateHandlers {
+type IngestUpdateHandlers = IngestHandlersByContent<{
   game: GameUpdateHandler
+  anime: AnimeUpdateHandler
   person: PersonUpdateHandler
   company: CompanyUpdateHandler
   character: CharacterUpdateHandler
-}
+}>
 
-interface IngestBatchHandlers {
+type IngestBatchHandlers = IngestHandlersByContent<{
   game: GameBatchHandler
+  anime: AnimeBatchHandler
   person: PersonBatchHandler
   company: CompanyBatchHandler
   character: CharacterBatchHandler
+}>
+
+/** Handlers that reconcile an entity's local media files with its rows. */
+interface IngestFileHandlers {
+  anime: AnimeFileSyncHandler
 }
 
 export class IngestService implements IContentService {
@@ -53,6 +77,7 @@ export class IngestService implements IContentService {
     'db',
     'i18n',
     'ipc',
+    'media-info',
     'scraper',
     'task-run'
   ] as const satisfies readonly ServiceName[]
@@ -61,6 +86,7 @@ export class IngestService implements IContentService {
   add!: IngestAddHandlers
   update!: IngestUpdateHandlers
   batch!: IngestBatchHandlers
+  files!: IngestFileHandlers
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const dbService = container.get('db')
@@ -78,6 +104,14 @@ export class IngestService implements IContentService {
         taskRunService,
         i18nService,
         this.hooks.game
+      ),
+      anime: new AnimeAddHandler(
+        dbService,
+        scraperService,
+        persist.anime,
+        taskRunService,
+        i18nService,
+        this.hooks.anime
       ),
       person: new PersonAddHandler(
         dbService,
@@ -113,6 +147,14 @@ export class IngestService implements IContentService {
         i18nService,
         this.hooks.game
       ),
+      anime: new AnimeUpdateHandler(
+        dbService,
+        scraperService,
+        persist,
+        taskRunService,
+        i18nService,
+        this.hooks.anime
+      ),
       person: new PersonUpdateHandler(
         dbService,
         scraperService,
@@ -144,6 +186,13 @@ export class IngestService implements IContentService {
         taskRunService,
         i18nService
       ),
+      anime: new AnimeBatchHandler(
+        dbService,
+        scraperService,
+        this.update.anime,
+        taskRunService,
+        i18nService
+      ),
       person: new PersonBatchHandler(
         dbService,
         scraperService,
@@ -167,11 +216,15 @@ export class IngestService implements IContentService {
       )
     }
 
+    this.files = {
+      anime: new AnimeFileSyncHandler(dbService, container.get('media-info'))
+    }
+
     registerIngestIpc(this, ipcService)
     log.info('Initialized')
   }
 
   getSupportedContent(): ContentEntityType[] {
-    return ['game', 'character', 'person', 'company']
+    return ['game', 'anime', 'character', 'person', 'company']
   }
 }

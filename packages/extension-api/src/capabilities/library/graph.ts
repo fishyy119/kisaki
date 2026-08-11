@@ -1,4 +1,6 @@
 import type {
+  LibraryAnimeCreateInput,
+  LibraryAnimeEpisodeCreateInput,
   LibraryCollectionCreateInput,
   LibraryCompanyCreateInput,
   LibraryGameCreateInput,
@@ -7,9 +9,14 @@ import type {
   LibraryPersonCreateInput,
   LibraryTagCreateInput
 } from './entities'
-import type { LibraryGameCompanyRole, LibraryGamePersonRole } from '../../shared/library'
+import type {
+  LibraryAnimeCompanyRole,
+  LibraryAnimePersonRole,
+  LibraryGameCompanyRole,
+  LibraryGamePersonRole
+} from '../../shared/library'
 
-export const LIBRARY_MEDIA_TYPES = ['game'] as const
+export const LIBRARY_MEDIA_TYPES = ['game', 'anime'] as const
 
 export type LibraryMediaType = (typeof LIBRARY_MEDIA_TYPES)[number]
 
@@ -29,6 +36,7 @@ export const LIBRARY_GRAPH_NODE_KINDS = [
   'person',
   'note',
   'session',
+  'episode',
   'attachment'
 ] as const
 
@@ -41,18 +49,34 @@ export const LIBRARY_GRAPH_EDGE_KINDS = [
   'media-person',
   'media-note',
   'media-session',
-  'media-attachment'
+  'media-episode',
+  'media-attachment',
+  'episode-attachment'
 ] as const
 
 export type LibraryGraphEdgeKind = (typeof LIBRARY_GRAPH_EDGE_KINDS)[number]
 
-export const LIBRARY_GRAPH_ATTACHMENT_SLOTS = [
+export const LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS = [
   'cover',
   'backdrop',
   'logo',
   'icon',
   'description-inline',
   'save-backup'
+] as const
+
+export type LibraryGraphMediaAttachmentSlot =
+  (typeof LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS)[number]
+
+/** Episodes own exactly one attachment slot: the still frame. */
+export const LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS = ['still'] as const
+
+export type LibraryGraphEpisodeAttachmentSlot =
+  (typeof LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS)[number]
+
+export const LIBRARY_GRAPH_ATTACHMENT_SLOTS = [
+  ...LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS,
+  ...LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS
 ] as const
 
 export type LibraryGraphAttachmentSlot = (typeof LIBRARY_GRAPH_ATTACHMENT_SLOTS)[number]
@@ -95,6 +119,7 @@ export interface LibraryGraphNodes {
   people?: readonly LibraryGraphPersonNode[]
   notes?: readonly LibraryGraphNoteNode[]
   sessions?: readonly LibraryGraphSessionNode[]
+  episodes?: readonly LibraryGraphEpisodeNode[]
   attachments?: readonly LibraryGraphAttachmentNode[]
 }
 
@@ -102,12 +127,18 @@ export interface LibraryGraphNodeBase {
   key: string
 }
 
-export type LibraryGraphMediaNode = LibraryGraphGameNode
+export type LibraryGraphMediaNode = LibraryGraphGameNode | LibraryGraphAnimeNode
 
 export interface LibraryGraphGameNode extends LibraryGraphNodeBase {
   kind: 'media'
   mediaType: 'game'
   input: LibraryGameCreateInput
+}
+
+export interface LibraryGraphAnimeNode extends LibraryGraphNodeBase {
+  kind: 'media'
+  mediaType: 'anime'
+  input: LibraryAnimeCreateInput
 }
 
 export interface LibraryGraphCollectionNode extends LibraryGraphNodeBase {
@@ -140,6 +171,11 @@ export interface LibraryGraphSessionNode extends LibraryGraphNodeBase {
   input: LibraryGameSessionCreateInput
 }
 
+export interface LibraryGraphEpisodeNode extends LibraryGraphNodeBase {
+  kind: 'episode'
+  input: LibraryAnimeEpisodeCreateInput
+}
+
 export interface LibraryGraphAttachmentNode extends LibraryGraphNodeBase {
   kind: 'attachment'
   path: string
@@ -159,7 +195,9 @@ export type LibraryGraphEdge =
   | LibraryGraphMediaPersonEdge
   | LibraryGraphMediaNoteEdge
   | LibraryGraphMediaSessionEdge
+  | LibraryGraphMediaEpisodeEdge
   | LibraryGraphMediaAttachmentEdge
+  | LibraryGraphEpisodeAttachmentEdge
 
 export interface LibraryGraphCollectionMediaEdge {
   kind: 'collection-media'
@@ -175,11 +213,12 @@ export interface LibraryGraphMediaTagEdge {
   order?: number
 }
 
+/** Role vocabulary is per media type; the host checks it against the `from` node. */
 export interface LibraryGraphMediaCompanyEdge {
   kind: 'media-company'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  role: LibraryGameCompanyRole
+  role: LibraryGameCompanyRole | LibraryAnimeCompanyRole
   order?: number
 }
 
@@ -187,7 +226,7 @@ export interface LibraryGraphMediaPersonEdge {
   kind: 'media-person'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  role: LibraryGamePersonRole
+  role: LibraryGamePersonRole | LibraryAnimePersonRole
   order?: number
   note?: string
 }
@@ -204,13 +243,27 @@ export interface LibraryGraphMediaSessionEdge {
   to: LibraryGraphNodeRef
 }
 
+export interface LibraryGraphMediaEpisodeEdge {
+  kind: 'media-episode'
+  from: LibraryGraphNodeRef
+  to: LibraryGraphNodeRef
+}
+
 export interface LibraryGraphMediaAttachmentEdge {
   kind: 'media-attachment'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  slot: LibraryGraphAttachmentSlot
+  slot: LibraryGraphMediaAttachmentSlot
   replace?: boolean
   saveBackup?: LibraryGraphSaveBackupInput
+}
+
+export interface LibraryGraphEpisodeAttachmentEdge {
+  kind: 'episode-attachment'
+  from: LibraryGraphNodeRef
+  to: LibraryGraphNodeRef
+  slot: LibraryGraphEpisodeAttachmentSlot
+  replace?: boolean
 }
 
 export interface LibraryGraphSaveBackupInput {

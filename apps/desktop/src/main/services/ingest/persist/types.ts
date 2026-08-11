@@ -1,4 +1,5 @@
 import type {
+  IngestAddAnimeResult,
   IngestAddCharacterResult,
   IngestAddCompanyResult,
   IngestAddGameResult,
@@ -7,6 +8,10 @@ import type {
 import type { PendingAssetTask } from '../assets'
 
 export interface PersistGameGraphResult extends IngestAddGameResult {
+  pendingAssets: PendingAssetTask[]
+}
+
+export interface PersistAnimeGraphResult extends IngestAddAnimeResult {
   pendingAssets: PendingAssetTask[]
 }
 

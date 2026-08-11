@@ -1,24 +1,21 @@
 import type {
+  ContentLocale,
   GameScraperSession,
   GameScraperSlot,
   GameSessionResultMap,
-  IdResolvedTarget,
-  ContentLocale
+  IdResolvedTarget
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
-import { BANGUMI_SUBJECT_TYPE_GAME } from '../../../utils/constants'
-import { buildGameCharacters, fetchCharacterDetails, fetchCharacterPersons } from './characters'
-import { parseBangumiId } from './format/ids'
-import {
-  buildGameBackdrops,
-  buildGameCovers,
-  buildGameIcons,
-  fetchSubjectImageVariants
-} from './images'
-import { buildGameIdentity, buildGameInfo, buildGameTags } from './info'
-import { buildGameCompanies, buildGamePersons, fetchPersonDetails } from './people'
-import { isCancellationError } from '../../../utils/errors'
-import type { BangumiGameSessionLoaders } from './types'
+import { parseBangumiId } from '../../format/ids'
+import { mapBangumiGameCompanyRole, mapBangumiGamePersonRole } from '../../format/roles'
+import { getBangumiSubjectType } from '../../../../shared/scopes'
+import { buildSubjectCharacters } from '../../subject/characters'
+import { buildSubjectIdentity, buildSubjectTags } from '../../subject/identity'
+import { buildSubjectBackdrops, buildSubjectCovers, buildSubjectIcons } from '../../subject/images'
+import { buildSubjectCoreInfo } from '../../subject/info'
+import { createSubjectLoaders, memoizeTask } from '../../subject/loaders'
+import { buildSubjectCompanies, buildSubjectPersons } from '../../subject/people'
+import type { BangumiSubjectLoaders } from '../../subject/types'
 
 interface BangumiGameSessionOptions {
   client: BangumiClient
@@ -35,8 +32,8 @@ export function createBangumiGameSession({
   signal
 }: BangumiGameSessionOptions): GameScraperSession {
   const subjectId = parseBangumiId(target.id)
-  const loaders = createSessionLoaders(client, subjectId, signal)
-  const getIdentity = memoizeTask(() => buildGameIdentity(loaders.getSubject))
+  const loaders = createSubjectLoaders({ client, subjectId, scope: 'game', signal })
+  const getIdentity = memoizeTask(() => buildSubjectIdentity(loaders.getSubject))
   const slotTasks = new Map<GameScraperSlot, Promise<unknown>>()
 
   return {
@@ -64,110 +61,47 @@ export function createBangumiGameSession({
   }
 }
 
-function createSessionLoaders(
-  client: BangumiClient,
-  subjectId: number,
-  signal: AbortSignal | undefined
-): BangumiGameSessionLoaders {
-  const getSubject = memoizeTask(async () => {
-    const subject = await client.getSubject(subjectId, { signal })
-
-    if (subject.type !== BANGUMI_SUBJECT_TYPE_GAME) {
-      throw new Error(`Bangumi subject is not a game: ${subject.id}`)
-    }
-
-    return subject
-  })
-  const getSubjectPersons = memoizeTask(() => client.getSubjectPersons(subjectId, { signal }))
-  const getSubjectCharacters = memoizeTask(() => client.getSubjectCharacters(subjectId, { signal }))
-  const getSubjectRelations = memoizeTask(async () => {
-    return client.getSubjectRelations(subjectId, { signal }).catch((error: unknown) => {
-      if (isCancellationError(error)) {
-        throw error
-      }
-
-      return []
-    })
-  })
-  const getPersonDetails = memoizeTask(async () => {
-    const relatedPersons = await getSubjectPersons()
-    const uniqueIds = [...new Set(relatedPersons.map((person) => person.id))]
-    return fetchPersonDetails(client, uniqueIds, signal)
-  })
-  const getCharacterDetails = memoizeTask(async () => {
-    const relatedCharacters = await getSubjectCharacters()
-    return fetchCharacterDetails(
-      client,
-      relatedCharacters.map((character) => character.id),
-      signal
-    )
-  })
-  const getCharacterPersons = memoizeTask(async () => {
-    const relatedCharacters = await getSubjectCharacters()
-    return fetchCharacterPersons(
-      client,
-      relatedCharacters.map((character) => character.id),
-      signal
-    )
-  })
-  const getSubjectImageVariants = memoizeTask(() =>
-    fetchSubjectImageVariants(client, subjectId, signal)
-  )
-
-  return {
-    getSubject,
-    getSubjectPersons,
-    getSubjectCharacters,
-    getSubjectRelations,
-    getPersonDetails,
-    getCharacterDetails,
-    getCharacterPersons,
-    getSubjectImageVariants
-  }
-}
-
 function loadSlot(
   slot: GameScraperSlot,
   subjectId: number,
-  loaders: BangumiGameSessionLoaders,
+  loaders: BangumiSubjectLoaders,
   locale: ContentLocale
 ): Promise<unknown> {
   switch (slot) {
     case 'info':
-      return buildGameInfo({ getSubject: loaders.getSubject, locale })
+      return buildSubjectCoreInfo(loaders.getSubject, locale)
     case 'tags':
-      return buildGameTags(loaders.getSubject)
+      return buildSubjectTags(loaders.getSubject, { includePlatform: true })
     case 'characters':
-      return buildGameCharacters({
+      return buildSubjectCharacters({
         subjectId,
+        subjectType: getBangumiSubjectType('game'),
         getSubjectCharacters: loaders.getSubjectCharacters,
         getCharacterDetails: loaders.getCharacterDetails,
         getCharacterPersons: loaders.getCharacterPersons,
         locale
       })
     case 'persons':
-      return buildGamePersons(loaders.getSubjectPersons, loaders.getPersonDetails, locale)
+      return buildSubjectPersons({
+        getSubjectPersons: loaders.getSubjectPersons,
+        getPersonDetails: loaders.getPersonDetails,
+        mapRole: mapBangumiGamePersonRole,
+        locale
+      })
     case 'companies':
-      return buildGameCompanies(loaders.getSubjectPersons, loaders.getPersonDetails, locale)
+      return buildSubjectCompanies({
+        getSubjectPersons: loaders.getSubjectPersons,
+        getPersonDetails: loaders.getPersonDetails,
+        mapRole: mapBangumiGameCompanyRole,
+        locale
+      })
     case 'covers':
-      return buildGameCovers(loaders.getSubject, loaders.getSubjectImageVariants)
+      return buildSubjectCovers(loaders.getSubject, loaders.getSubjectImageVariants)
     case 'backdrops':
-      return buildGameBackdrops(loaders.getSubject, loaders.getSubjectRelations)
+      return buildSubjectBackdrops(loaders.getSubject, loaders.getSubjectRelations)
     case 'icons':
-      return buildGameIcons(loaders.getSubject, loaders.getSubjectImageVariants)
+      return buildSubjectIcons(loaders.getSubject, loaders.getSubjectImageVariants)
     case 'logos':
       return Promise.resolve(undefined)
-  }
-}
-
-function memoizeTask<T>(loader: () => Promise<T>): () => Promise<T> {
-  let task: Promise<T> | undefined
-
-  return () => {
-    if (!task) {
-      task = loader()
-    }
-
-    return task
   }
 }

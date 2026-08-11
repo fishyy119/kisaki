@@ -22,6 +22,7 @@ import {
 import { useDbChanges, useTagRouteProvider } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 const { m } = useI18n()
@@ -68,23 +69,10 @@ const entityTypeModel = computed({
 // Actions
 // =============================================================================
 
-function getDetailPath(type: ContentEntityType, id: string): string {
-  switch (type) {
-    case 'game':
-      return `/library/game/${id}`
-    case 'character':
-      return `/library/character/${id}`
-    case 'person':
-      return `/library/person/${id}`
-    case 'company':
-      return `/library/company/${id}`
-  }
-}
-
 function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
   if (!tag.value) return
   router.push({
-    path: getDetailPath(payload.type, payload.id),
+    path: getEntityDetailPath(payload.type, payload.id),
     query: { from: `tag:${tag.value.id}` }
   })
 }

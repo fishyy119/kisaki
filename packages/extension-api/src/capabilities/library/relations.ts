@@ -1,5 +1,8 @@
 import type { LibraryEntityReference } from './entities'
 import type {
+  LibraryAnimeCharacterRole,
+  LibraryAnimeCompanyRole,
+  LibraryAnimePersonRole,
   LibraryCharacterPersonRole,
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
@@ -10,12 +13,17 @@ export const LIBRARY_RELATION_KINDS = [
   'game-person',
   'game-company',
   'game-character',
+  'anime-person',
+  'anime-company',
+  'anime-character',
   'character-person',
   'game-tag',
+  'anime-tag',
   'character-tag',
   'person-tag',
   'company-tag',
   'collection-game',
+  'collection-anime',
   'collection-character',
   'collection-person',
   'collection-company'
@@ -44,6 +52,18 @@ export interface GameCharacterRelationMetadata extends LibrarySpoilerRelationMet
   type: LibraryGameCharacterRole
 }
 
+export interface AnimePersonRelationMetadata extends LibrarySpoilerRelationMetadata {
+  type: LibraryAnimePersonRole
+}
+
+export interface AnimeCompanyRelationMetadata extends LibrarySpoilerRelationMetadata {
+  type: LibraryAnimeCompanyRole
+}
+
+export interface AnimeCharacterRelationMetadata extends LibrarySpoilerRelationMetadata {
+  type: LibraryAnimeCharacterRole
+}
+
 export interface CharacterPersonRelationMetadata extends LibrarySpoilerRelationMetadata {
   type: LibraryCharacterPersonRole
 }
@@ -56,12 +76,17 @@ export interface LibraryRelationMetadataMap {
   'game-person': GamePersonRelationMetadata
   'game-company': GameCompanyRelationMetadata
   'game-character': GameCharacterRelationMetadata
+  'anime-person': AnimePersonRelationMetadata
+  'anime-company': AnimeCompanyRelationMetadata
+  'anime-character': AnimeCharacterRelationMetadata
   'character-person': CharacterPersonRelationMetadata
   'game-tag': TagMembershipMetadata
+  'anime-tag': TagMembershipMetadata
   'character-tag': TagMembershipMetadata
   'person-tag': TagMembershipMetadata
   'company-tag': TagMembershipMetadata
   'collection-game': CollectionMembershipMetadata
+  'collection-anime': CollectionMembershipMetadata
   'collection-character': CollectionMembershipMetadata
   'collection-person': CollectionMembershipMetadata
   'collection-company': CollectionMembershipMetadata
@@ -71,12 +96,17 @@ export interface LibraryRelationEndpointMap {
   'game-person': { from: 'game'; to: 'person' }
   'game-company': { from: 'game'; to: 'company' }
   'game-character': { from: 'game'; to: 'character' }
+  'anime-person': { from: 'anime'; to: 'person' }
+  'anime-company': { from: 'anime'; to: 'company' }
+  'anime-character': { from: 'anime'; to: 'character' }
   'character-person': { from: 'character'; to: 'person' }
   'game-tag': { from: 'game'; to: 'tag' }
+  'anime-tag': { from: 'anime'; to: 'tag' }
   'character-tag': { from: 'character'; to: 'tag' }
   'person-tag': { from: 'person'; to: 'tag' }
   'company-tag': { from: 'company'; to: 'tag' }
   'collection-game': { from: 'collection'; to: 'game' }
+  'collection-anime': { from: 'collection'; to: 'anime' }
   'collection-character': { from: 'collection'; to: 'character' }
   'collection-person': { from: 'collection'; to: 'person' }
   'collection-company': { from: 'collection'; to: 'company' }

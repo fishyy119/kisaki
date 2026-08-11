@@ -15,14 +15,17 @@ import {
   companies,
   characters,
   games,
+  animes,
   type Person,
   type Company,
   type Character,
-  type Game
+  type Game,
+  type Anime
 } from '@shared/db/schema'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { DbContext, DbQueryContext } from '../types'
 import {
+  animeExternalIdLink,
   characterExternalIdLink,
   companyExternalIdLink,
   findExternalIdOwners,
@@ -91,6 +94,31 @@ export class DbEntityFinderHelper {
 
     return this.findByExternalIds<Game>(
       { entityTable: games, idColumn: games.id, link: gameExternalIdLink },
+      params.externalIds,
+      ctx
+    )
+  }
+
+  findExistingAnime(
+    params: { externalIds?: ExternalId[]; path?: string },
+    ctx?: DbContext
+  ): Anime | undefined {
+    const db = this.getDb(ctx)
+
+    // The library directory is the most specific identity a local anime has.
+    if (params.path) {
+      const [result] = db
+        .select()
+        .from(animes)
+        .where(eq(animes.animeDirPath, params.path))
+        .limit(1)
+        .all()
+
+      if (result) return result
+    }
+
+    return this.findByExternalIds<Anime>(
+      { entityTable: animes, idColumn: animes.id, link: animeExternalIdLink },
       params.externalIds,
       ctx
     )

@@ -3,6 +3,7 @@ import type { AllEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
 import type { EntityMergeChangeKind } from '@shared/entity-merge'
 import type { ExternalId } from '@shared/identity'
+import type { DbContext } from '../../types'
 import type { ExternalIdLinkTable } from '../external-id'
 
 /**
@@ -29,6 +30,14 @@ export interface ExternalIdMergeConfig {
   entityIdField: string
   orderField: string
 }
+
+/** Moves an entity's owned rows from the source to the target before deletion. */
+export type OwnedDataMerge = (
+  db: DbContext,
+  targetId: string,
+  sourceId: string,
+  now: Date
+) => number
 
 export interface RelationMergeConfig {
   table: SQLiteTable

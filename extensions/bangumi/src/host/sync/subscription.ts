@@ -1,16 +1,18 @@
 import { kisaki, type Disposable, type ExtensionLogger } from '@kisaki3/extension-sdk'
 import type { SettingsStore } from '../config/store'
-import type { BangumiMediaScope } from '../media/scopes'
+import type { BangumiMediaScope } from '../../shared/scopes'
 import type { LocalMediaChangeEvent } from '../media/types'
 import type { MediaRegistry } from '../media/registry'
 import { BangumiExtensionError, isCancellationError } from '../utils/errors'
 import { m } from '../i18n'
 import type { SyncEngine, SyncItemResult } from './engine'
+import type { EpisodeSyncEngine, EpisodeSyncResult } from './episodes'
 import type { SyncQueueStore } from './queue'
 
 export interface SyncSubscriptionDependencies {
   settingsStore: SettingsStore
   engine: SyncEngine
+  episodeEngine: EpisodeSyncEngine
   mediaRegistry: MediaRegistry
   queueStore: SyncQueueStore
   logger?: ExtensionLogger
@@ -65,7 +67,7 @@ export class SyncSubscription implements Disposable {
 
   private async handleLocalChange(event: LocalMediaChangeEvent): Promise<void> {
     const settings = await this.deps.settingsStore.get()
-    const autoSync = settings.game.autoSync
+    const autoSync = settings.autoSync
 
     if (!settings.media[event.scope].localSyncEnabled) {
       return
@@ -114,8 +116,10 @@ export class SyncSubscription implements Disposable {
       localId,
       signal
     })
+    const episodeResult = await this.deps.episodeEngine.syncEpisodes({ scope, localId, signal })
     await this.deps.queueStore.remove([{ scope, localId }])
     this.logResult(result)
+    this.logEpisodeResult(episodeResult)
   }
 
   private async handleSyncError(
@@ -130,7 +134,7 @@ export class SyncSubscription implements Disposable {
     const settings = await this.deps.settingsStore.get()
     this.logError('Bangumi automatic sync failed.', error, { scope, localId })
 
-    if (!settings.game.autoSync.notifyErrors) {
+    if (!settings.autoSync.notifyErrors) {
       return
     }
 
@@ -163,6 +167,20 @@ export class SyncSubscription implements Disposable {
       localId: result.localId,
       subjectId: result.subjectId,
       suppressReason: result.suppressReason
+    })
+  }
+
+  private logEpisodeResult(result: EpisodeSyncResult): void {
+    if (result.status !== 'synced') {
+      return
+    }
+
+    this.deps.logger?.info('Bangumi episode sync completed.', {
+      scope: result.scope,
+      localId: result.localId,
+      subjectId: result.subjectId,
+      markedCount: result.markedCount,
+      unmarkedCount: result.unmarkedCount
     })
   }
 

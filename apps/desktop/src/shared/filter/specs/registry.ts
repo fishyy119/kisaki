@@ -7,6 +7,7 @@ import type { AllEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
 import type { FilterQuerySpec } from '../spec'
 
+import { animeFilterQuerySpec } from './anime'
 import { characterFilterQuerySpec } from './character'
 import { collectionFilterQuerySpec } from './collection'
 import { companyFilterQuerySpec } from './company'
@@ -18,6 +19,8 @@ export function getFilterQuerySpec(entityType: AllEntityType): FilterQuerySpec {
   switch (entityType) {
     case 'game':
       return gameFilterQuerySpec
+    case 'anime':
+      return animeFilterQuerySpec
     case 'character':
       return characterFilterQuerySpec
     case 'person':

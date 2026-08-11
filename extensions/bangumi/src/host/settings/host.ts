@@ -19,6 +19,8 @@ import { runBangumiPreview } from './preview'
 import type { BangumiSettingsRuntime } from './runtime'
 import type { BangumiSettingsSession } from './session'
 
+const CHANGED_SYNC_LIMIT = 500
+
 /**
  * RPC façade exposed to the settings webview. Form/state mapping, overview
  * resolution, previews, and automations live in their own modules.
@@ -61,10 +63,10 @@ export function createBangumiSettingsHostFunctions(
       await runtime.accountService.logout()
     },
 
-    async runChangedSync(): Promise<void> {
+    async runChangedSync(scope): Promise<void> {
       await startCommandJob(BANGUMI_COMMAND_IDS.syncChangedItems, {
-        scope: 'game',
-        limit: 500
+        scope,
+        limit: CHANGED_SYNC_LIMIT
       })
     },
 
@@ -124,7 +126,11 @@ export function createBangumiSettingsHostFunctions(
     },
 
     async clearSyncState(): Promise<void> {
-      await Promise.all([runtime.syncStateStore.clear(), runtime.syncQueueStore.clear()])
+      await Promise.all([
+        runtime.syncStateStore.clear(),
+        runtime.episodeSyncStateStore.clear(),
+        runtime.syncQueueStore.clear()
+      ])
     },
 
     async resetSettings(): Promise<void> {

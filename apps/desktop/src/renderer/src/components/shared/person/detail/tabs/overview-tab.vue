@@ -1,7 +1,7 @@
 <!--
   PersonOverviewTab
   Overview tab with 2-column layout.
-  Left: Description, Characters (horizontal scroll), Games (horizontal scroll), Tags
+  Left: Description, Characters, Games, Anime (horizontal scrolls), Tags
   Right: Related Sites
 -->
 <script setup lang="ts">
@@ -11,6 +11,7 @@ import { usePerson } from '@renderer/composables/use-person'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
+import { AnimeCard } from '@renderer/components/shared/anime'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import {
@@ -21,11 +22,16 @@ import {
   PersonCharactersFormDialog
 } from '../../forms'
 import { useI18n } from '@renderer/composables'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 
 const { m } = useI18n()
 
 const GAME_PERSON_TYPE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gamePerson
+)
+
+const ANIME_PERSON_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.animePerson
 )
 
 const CHARACTER_PERSON_TYPE_LABELS = computed<Record<string, string>>(
@@ -36,7 +42,7 @@ const CHARACTER_PERSON_TYPE_LABELS = computed<Record<string, string>>(
 // State
 // =============================================================================
 
-const { person, tags, games, characters } = usePerson()
+const { person, tags, games, animes, characters } = usePerson()
 
 /** Edit dialog states */
 const editDialogs = ref({
@@ -62,6 +68,7 @@ const hasRelatedSites = computed(
 const hasTags = computed(() => tags.value && tags.value.length > 0)
 
 const gameLinks = computed(() => games.value.filter((link) => link.game))
+const animeLinks = computed(() => animes.value.filter((link) => link.anime))
 const characterLinks = computed(() => characters.value.filter((link) => link.character))
 
 // =============================================================================
@@ -70,6 +77,12 @@ const characterLinks = computed(() => characters.value.filter((link) => link.cha
 
 function openEditDialog(dialog: keyof typeof editDialogs.value) {
   editDialogs.value[dialog] = true
+}
+
+// Shared components stay route-unaware: related anime render as plain hash
+// links that the router picks up, instead of pushing through useRouter().
+function getAnimeDetailHref(animeId: string): string {
+  return `#${getEntityDetailPath('anime', animeId)}`
 }
 
 const gameDialogOpen = computed({
@@ -144,6 +157,27 @@ const tagDialogOpen = computed({
               :badge-label="link.type ? GAME_PERSON_TYPE_LABELS[link.type] : undefined"
               @click="openGameId = link.game!.id"
             />
+          </template>
+        </SectionScroll>
+
+        <SectionScroll
+          v-if="animeLinks.length > 0"
+          :title="m.library.fields.relatedAnimes"
+          :items="animeLinks"
+          :get-key="(item) => item.id"
+        >
+          <template #item="{ item: link }">
+            <a
+              :href="getAnimeDetailHref(link.anime!.id)"
+              class="block"
+            >
+              <AnimeCard
+                :anime="link.anime!"
+                align="left"
+                size="sm"
+                :badge-label="link.type ? ANIME_PERSON_TYPE_LABELS[link.type] : undefined"
+              />
+            </a>
           </template>
         </SectionScroll>
 

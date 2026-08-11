@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { AllEntityType } from '@shared/common'
-import { characters, collections, companies, games, persons, tags } from '@shared/db'
+import { animes, characters, collections, companies, games, persons, tags } from '@shared/db'
 import { db } from '@renderer/core/db'
 import { messages } from '@renderer/core/i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
@@ -28,6 +28,22 @@ export async function fetchEntityMergeSummary(
         subText: getNameSubText(row.name, row.originalName),
         imageUrl: row.coverFile
           ? getAttachmentUrl('games', row.id, row.coverFile, { width: 96, height: 96 })
+          : null
+      }
+    }
+    case 'anime': {
+      const row = await db.query.animes.findFirst({
+        columns: { id: true, name: true, originalName: true, coverFile: true },
+        where: eq(animes.id, id)
+      })
+      if (!row) return null
+      return {
+        entityType,
+        id: row.id,
+        name: row.name,
+        subText: getNameSubText(row.name, row.originalName),
+        imageUrl: row.coverFile
+          ? getAttachmentUrl('animes', row.id, row.coverFile, { width: 96, height: 96 })
           : null
       }
     }

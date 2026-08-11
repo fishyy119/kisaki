@@ -49,6 +49,39 @@ export const LIBRARY_GAME_COMPANY_ROLES = [
 
 export type LibraryGameCompanyRole = (typeof LIBRARY_GAME_COMPANY_ROLES)[number]
 
+export const LIBRARY_ANIME_FORMATS = ['tv', 'movie', 'ova', 'ona', 'special', 'other'] as const
+
+export type LibraryAnimeFormat = (typeof LIBRARY_ANIME_FORMATS)[number]
+
+export const LIBRARY_ANIME_EPISODE_TYPES = ['regular', 'special'] as const
+
+export type LibraryAnimeEpisodeType = (typeof LIBRARY_ANIME_EPISODE_TYPES)[number]
+
+export const LIBRARY_ANIME_PERSON_ROLES = [
+  'director',
+  'series',
+  'scenario',
+  'characterDesign',
+  'music',
+  'animationDirector',
+  'other'
+] as const
+
+export type LibraryAnimePersonRole = (typeof LIBRARY_ANIME_PERSON_ROLES)[number]
+
+export const LIBRARY_ANIME_CHARACTER_ROLES = ['main', 'supporting', 'cameo', 'other'] as const
+
+export type LibraryAnimeCharacterRole = (typeof LIBRARY_ANIME_CHARACTER_ROLES)[number]
+
+export const LIBRARY_ANIME_COMPANY_ROLES = [
+  'studio',
+  'producer',
+  'distributor',
+  'other'
+] as const
+
+export type LibraryAnimeCompanyRole = (typeof LIBRARY_ANIME_COMPANY_ROLES)[number]
+
 export const LIBRARY_CHARACTER_PERSON_ROLES = [
   'actor',
   'illustration',

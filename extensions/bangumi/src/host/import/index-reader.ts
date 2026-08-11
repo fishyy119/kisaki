@@ -1,7 +1,7 @@
 import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiIndex, BangumiIndexSubject } from '../api/types'
-import { getBangumiSubjectType, type BangumiMediaScope } from '../media/scopes'
+import { getBangumiSubjectType, type BangumiMediaScope } from '../../shared/scopes'
 import { m } from '../i18n'
 
 export interface IndexReaderOptions {

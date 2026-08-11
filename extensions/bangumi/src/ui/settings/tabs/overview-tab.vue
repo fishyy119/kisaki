@@ -42,6 +42,10 @@ const accountBadge = computed<{ label: string; variant: BadgeVariants['variant']
 
 const runningJobs = computed(() => Object.values(props.overview.activeJobs).filter(Boolean).length)
 
+const profileCount = computed(() =>
+  props.overview.scopes.reduce((total, scope) => total + scope.profiles.length, 0)
+)
+
 const missingAutomationCount = computed(
   () => props.overview.automations.filter((automation) => automation.status === 'missing').length
 )
@@ -138,7 +142,7 @@ const syncItemsLabel = computed(() => {
             <div class="mt-1 text-sm">
               {{
                 m.ui.overview.localResourcesSummary({
-                  profiles: props.overview.profiles.length,
+                  profiles: profileCount,
                   collections: props.overview.collections.length
                 })
               }}

@@ -13,7 +13,13 @@ export const LIBRARY_ATTACHMENT_KINDS = [
 
 export type LibraryAttachmentKind = (typeof LIBRARY_ATTACHMENT_KINDS)[number]
 
-export type LibraryAttachmentOwnerType = 'game' | 'character' | 'person' | 'company' | 'collection'
+export type LibraryAttachmentOwnerType =
+  | 'game'
+  | 'anime'
+  | 'character'
+  | 'person'
+  | 'company'
+  | 'collection'
 
 export type LibraryAttachmentSource =
   | {

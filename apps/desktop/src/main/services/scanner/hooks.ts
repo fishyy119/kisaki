@@ -11,16 +11,21 @@ import {
   type NotifyHook,
   type WaterfallHook
 } from '@main/hooks'
+import type { MediaType } from '@shared/common'
 import type { ExternalId } from '@shared/identity'
 import type { EntityEntry, ScannerRunFinishedStatus } from '@shared/scanner'
 
 export interface ScannerDiscoveredEntry {
+  /** Media type of the scan run; one hooks instance serves all media handlers. */
+  mediaType: MediaType
   entry: EntityEntry
   /** When set to true the entry is dropped from the scan run. */
   skip: boolean
 }
 
 export interface ScannerMatchedEntry {
+  /** Media type of the scan run; one hooks instance serves all media handlers. */
+  mediaType: MediaType
   entry: EntityEntry
   name: string
   externalIds: ExternalId[]

@@ -1,6 +1,8 @@
 import { relations } from 'drizzle-orm'
 
 import {
+  animeTagLinks,
+  animes,
   characterTagLinks,
   characters,
   companies,
@@ -14,9 +16,21 @@ import {
 
 export const tagsRelations = relations(tags, ({ many }) => ({
   gameTagLinks: many(gameTagLinks),
+  animeTagLinks: many(animeTagLinks),
   characterTagLinks: many(characterTagLinks),
   personTagLinks: many(personTagLinks),
   companyTagLinks: many(companyTagLinks)
+}))
+
+export const animeTagLinksRelations = relations(animeTagLinks, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeTagLinks.animeId],
+    references: [animes.id]
+  }),
+  tag: one(tags, {
+    fields: [animeTagLinks.tagId],
+    references: [tags.id]
+  })
 }))
 
 export const gameTagLinksRelations = relations(gameTagLinks, ({ one }) => ({

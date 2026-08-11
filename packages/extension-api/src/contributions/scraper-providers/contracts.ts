@@ -1,5 +1,10 @@
 import type { Disposable, ExternalId, ContentLocale, PartialDate, RelatedSite } from '../../shared'
 import type {
+  LibraryAnimeCharacterRole,
+  LibraryAnimeCompanyRole,
+  LibraryAnimeEpisodeType,
+  LibraryAnimeFormat,
+  LibraryAnimePersonRole,
   LibraryBloodType,
   LibraryCharacterPersonRole,
   LibraryCupSize,
@@ -9,7 +14,7 @@ import type {
   LibraryGender
 } from '../../shared/library'
 
-export const SCRAPER_MEDIA_TYPES = ['game', 'person', 'company', 'character'] as const
+export const SCRAPER_MEDIA_TYPES = ['game', 'anime', 'person', 'company', 'character'] as const
 
 export type ScraperMediaType = (typeof SCRAPER_MEDIA_TYPES)[number]
 
@@ -27,6 +32,20 @@ export const GAME_SCRAPER_SLOTS = [
 
 export type GameScraperSlot = (typeof GAME_SCRAPER_SLOTS)[number]
 
+export const ANIME_SCRAPER_SLOTS = [
+  'info',
+  'tags',
+  'episodes',
+  'characters',
+  'persons',
+  'companies',
+  'covers',
+  'backdrops',
+  'logos'
+] as const
+
+export type AnimeScraperSlot = (typeof ANIME_SCRAPER_SLOTS)[number]
+
 export const PERSON_SCRAPER_SLOTS = ['info', 'tags', 'photos'] as const
 
 export type PersonScraperSlot = (typeof PERSON_SCRAPER_SLOTS)[number]
@@ -40,7 +59,11 @@ export const CHARACTER_SCRAPER_SLOTS = ['info', 'tags', 'persons', 'photos'] as 
 export type CharacterScraperSlot = (typeof CHARACTER_SCRAPER_SLOTS)[number]
 
 export type ScraperSlot =
-  GameScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
+  | GameScraperSlot
+  | AnimeScraperSlot
+  | PersonScraperSlot
+  | CompanyScraperSlot
+  | CharacterScraperSlot
 
 export type ScraperCapability<TSlot extends ScraperSlot = ScraperSlot> = 'search' | TSlot
 
@@ -90,6 +113,39 @@ export interface ScrapedGameInfo {
   releaseDate?: PartialDate
   description?: string
   relatedSites?: readonly RelatedSite[]
+}
+
+export interface ScrapedAnimeInfo {
+  name: string
+  originalName?: string
+  releaseDate?: PartialDate
+  description?: string
+  format?: LibraryAnimeFormat
+  /** Episode count declared by the source; episode rows stay authoritative. */
+  totalEpisodes?: number
+  relatedSites?: readonly RelatedSite[]
+}
+
+/**
+ * One episode of an anime entry.
+ *
+ * `externalIds` carries per-episode identity so re-scrapes realign existing
+ * rows by id rather than by number, which sources revise. Sources describe
+ * more episode kinds than the library tracks: providers map their source's
+ * vocabulary onto `regular`/`special` and omit the kinds the library does not
+ * track (openings, endings, and trailers are not episodes; local files for
+ * them are recognized as extras by the scanner). Validation rejects unknown
+ * `type` values.
+ */
+export interface ScrapedAnimeEpisode {
+  number: number
+  type: LibraryAnimeEpisodeType
+  name?: string
+  originalName?: string
+  airDate?: PartialDate
+  description?: string
+  durationMs?: number
+  externalIds?: readonly ExternalId[]
 }
 
 export interface ScrapedPersonInfo {
@@ -168,6 +224,24 @@ export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
   note?: string
 }
 
+export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
+  type: LibraryAnimePersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedAnimeCompanyFact extends ScrapedCompanyMetadata {
+  type: LibraryAnimeCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
+  type: LibraryAnimeCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
 export interface ScrapedGameBundle {
   identity: ScrapedEntityIdentity
   core?: ScrapedGameInfo
@@ -179,6 +253,19 @@ export interface ScrapedGameBundle {
   backdrops?: readonly string[]
   logos?: readonly string[]
   icons?: readonly string[]
+}
+
+export interface ScrapedAnimeBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedAnimeInfo
+  tags?: readonly ScrapedTag[]
+  episodes?: readonly ScrapedAnimeEpisode[]
+  persons?: readonly ScrapedAnimePersonFact[]
+  companies?: readonly ScrapedAnimeCompanyFact[]
+  characters?: readonly ScrapedAnimeCharacterFact[]
+  covers?: readonly string[]
+  backdrops?: readonly string[]
+  logos?: readonly string[]
 }
 
 export interface ScrapedPersonBundle {
@@ -238,6 +325,15 @@ export interface GameSearchResult {
   externalIds: readonly ExternalId[]
 }
 
+export interface AnimeSearchResult {
+  id: string
+  name: string
+  originalName?: string
+  releaseDate?: PartialDate
+  format?: LibraryAnimeFormat
+  externalIds: readonly ExternalId[]
+}
+
 export interface PersonSearchResult {
   id: string
   name: string
@@ -275,6 +371,18 @@ export interface GameSessionResultMap {
   icons: string[]
 }
 
+export interface AnimeSessionResultMap {
+  info: ScrapedAnimeInfo
+  tags: ScrapedTag[]
+  episodes: ScrapedAnimeEpisode[]
+  characters: ScrapedAnimeCharacterFact[]
+  persons: ScrapedAnimePersonFact[]
+  companies: ScrapedAnimeCompanyFact[]
+  covers: string[]
+  backdrops: string[]
+  logos: string[]
+}
+
 export interface PersonSessionResultMap {
   info: ScrapedPersonInfo
   tags: ScrapedTag[]
@@ -295,6 +403,8 @@ export interface CharacterSessionResultMap {
 }
 
 export type GameScraperSession = BaseScraperSession<GameScraperSlot, GameSessionResultMap>
+
+export type AnimeScraperSession = BaseScraperSession<AnimeScraperSlot, AnimeSessionResultMap>
 
 export type PersonScraperSession = BaseScraperSession<PersonScraperSlot, PersonSessionResultMap>
 
@@ -317,6 +427,12 @@ export interface GameScraperProvider extends BaseScraperProvider<GameScraperSlot
   search(query: string, ctx: ScraperProviderContext): Promise<readonly GameSearchResult[]>
   resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<GameScraperSession>
+}
+
+export interface AnimeScraperProvider extends BaseScraperProvider<AnimeScraperSlot> {
+  search(query: string, ctx: ScraperProviderContext): Promise<readonly AnimeSearchResult[]>
+  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<AnimeScraperSession>
 }
 
 export interface PersonScraperProvider extends BaseScraperProvider<PersonScraperSlot> {
@@ -348,6 +464,7 @@ export interface ScraperProviderRegistrationPoint<TProvider extends BaseScraperP
 
 export interface ScraperProviderRegistrar {
   readonly game: ScraperProviderRegistrationPoint<GameScraperProvider>
+  readonly anime: ScraperProviderRegistrationPoint<AnimeScraperProvider>
   readonly person: ScraperProviderRegistrationPoint<PersonScraperProvider>
   readonly company: ScraperProviderRegistrationPoint<CompanyScraperProvider>
   readonly character: ScraperProviderRegistrationPoint<CharacterScraperProvider>

@@ -2,7 +2,7 @@
   CollectionDynamicConfigFormDialog
 
   Dialog for configuring dynamic collection filters.
-  All 4 entity types are always shown with filter/sort controls visible.
+  All content entity types are always shown with filter/sort controls visible.
   Checkbox toggles whether the type is included in the collection.
 -->
 <script setup lang="ts">
@@ -62,6 +62,7 @@ interface EntityTypeConfig {
 
 const ENTITY_TYPE_CONFIG = computed<Record<ContentEntityType, EntityTypeConfig>>(() => ({
   game: { label: m.value.library.entities.game },
+  anime: { label: m.value.library.entities.anime },
   character: { label: m.value.library.entities.character },
   person: { label: m.value.library.entities.person },
   company: { label: m.value.library.entities.company }
@@ -164,13 +165,17 @@ function createEntityEnabledModel(type: ContentEntityType) {
   })
 }
 
-// Pre-create enabled models for all entity types
-const entityEnabledModels = {
-  game: createEntityEnabledModel('game'),
-  character: createEntityEnabledModel('character'),
-  person: createEntityEnabledModel('person'),
-  company: createEntityEnabledModel('company')
+/** Builds one model per entity type so the template can index them directly. */
+function createModelsByEntityType<T>(
+  create: (type: ContentEntityType) => T
+): Record<ContentEntityType, T> {
+  return Object.fromEntries(CONTENT_ENTITY_TYPES.map((type) => [type, create(type)])) as Record<
+    ContentEntityType,
+    T
+  >
 }
+
+const entityEnabledModels = createModelsByEntityType(createEntityEnabledModel)
 
 function updateEntityConfig(type: ContentEntityType, updates: Partial<DynamicEntityConfig>) {
   localConfig.value = {
@@ -225,20 +230,8 @@ function createSortDirectionModel(type: ContentEntityType) {
   })
 }
 
-// Pre-create computed models for all entity types
-const sortFieldModels = {
-  game: createSortFieldModel('game'),
-  character: createSortFieldModel('character'),
-  person: createSortFieldModel('person'),
-  company: createSortFieldModel('company')
-}
-
-const sortDirectionModels = {
-  game: createSortDirectionModel('game'),
-  character: createSortDirectionModel('character'),
-  person: createSortDirectionModel('person'),
-  company: createSortDirectionModel('company')
-}
+const sortFieldModels = createModelsByEntityType(createSortFieldModel)
+const sortDirectionModels = createModelsByEntityType(createSortDirectionModel)
 </script>
 
 <template>

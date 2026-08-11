@@ -2,6 +2,7 @@ import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-co
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import {
+  animeFormat,
   baseColumns,
   bloodType,
   cupSize,
@@ -81,6 +82,46 @@ export const gameNotes = sqliteTable(
 
 export type GameNote = InferSelectModel<typeof gameNotes>
 export type NewGameNote = InferInsertModel<typeof gameNotes>
+
+export const animes = sqliteTable(
+  'animes',
+  {
+    ...baseColumns,
+    name: text('name').notNull().default('unknown anime'),
+    originalName: text('original_name'),
+    sortName: text('sort_name'),
+    coverFile: text('cover_file'),
+    backdropFile: text('backdrop_file'),
+    logoFile: text('logo_file'),
+    score: integer('score'),
+    isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+    releaseDate: partialDate('release_date'),
+    description: text('description'),
+    relatedSites: relatedSites('related_sites'),
+    status: status('status').notNull().default('notStarted'),
+    format: animeFormat('format').notNull().default('tv'),
+    /** Episode count declared by metadata; the episode rows remain authoritative. */
+    totalEpisodes: integer('total_episodes'),
+    lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
+    totalDuration: integer('total_duration').notNull().default(0),
+    animeDirPath: text('anime_dir_path'),
+    isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
+    descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
+  },
+  (t) => [
+    index('idx_animes_status').on(t.status),
+    index('idx_animes_format').on(t.format),
+    index('idx_animes_is_favorite').on(t.isFavorite),
+    index('idx_animes_is_nsfw').on(t.isNsfw),
+    index('idx_animes_last_active_at').on(t.lastActiveAt),
+    index('idx_animes_created_at').on(t.createdAt),
+    index('idx_animes_name').on(t.name),
+    index('idx_animes_score').on(t.score)
+  ]
+)
+
+export type Anime = InferSelectModel<typeof animes>
+export type NewAnime = InferInsertModel<typeof animes>
 
 export const persons = sqliteTable(
   'persons',

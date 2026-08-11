@@ -1,5 +1,5 @@
-import type { Disposable, ScraperProfileSummary } from '@kisaki3/extension-sdk'
-import type { BangumiMediaScope, BangumiSupportedSubjectType } from './scopes'
+import type { Disposable, ScraperMediaType, ScraperProfileSummary } from '@kisaki3/extension-sdk'
+import type { BangumiMediaScope, BangumiSupportedSubjectType } from '../../shared/scopes'
 
 export interface ExternalIdRef {
   source: string
@@ -21,7 +21,7 @@ export interface LocalMediaListQuery {
   offset?: number
 }
 
-export type LocalMediaChangeReason = 'created' | 'updated' | 'manual'
+export type LocalMediaChangeReason = 'created' | 'updated' | 'episodes' | 'manual'
 
 export interface LocalMediaChangeEvent {
   scope: BangumiMediaScope
@@ -47,6 +47,18 @@ export interface LocalMediaUserPatch {
   score?: number | null
 }
 
+/**
+ * Watch state of one episode owned by a local entry.
+ *
+ * Only the binary watched flag travels: Bangumi's per-episode wish/dropped
+ * states have no local counterpart.
+ */
+export interface LocalEpisodeItem {
+  localId: string
+  watched: boolean
+  externalIds: readonly ExternalIdRef[]
+}
+
 export interface LocalCollectionSummary {
   id: string
   name: string
@@ -61,11 +73,14 @@ export interface LocalCollectionTarget {
 
 export interface LocalMediaAdapter {
   readonly scope: BangumiMediaScope
-  readonly localMediaType: string
+  readonly localMediaType: ScraperMediaType
   readonly supportsScraperProfile: boolean
   readonly supportsAutoSync: boolean
   readonly supportsImportWrite: boolean
+  /** Set when the media type tracks watch state per episode. */
+  readonly supportsEpisodeSync?: boolean
   listProfiles?(): Promise<readonly ScraperProfileSummary[]>
+  listEpisodes?(localId: string): Promise<readonly LocalEpisodeItem[]>
   subscribeLocalChanges?(listener: LocalMediaChangeListener): Promise<Disposable>
   listLocalItems(query: LocalMediaListQuery): Promise<readonly LocalMediaItem[]>
   getLocalItem(localId: string): Promise<LocalMediaItem | null>
@@ -87,7 +102,12 @@ export interface BangumiMediaDescriptor {
   localAdapter?: LocalMediaAdapter | undefined
 }
 
+/** Scopes backed by a local library adapter; every other scope is remote-only. */
+export const LOCAL_MEDIA_SCOPES = ['game', 'anime'] as const
+
+export type LocalMediaScope = (typeof LOCAL_MEDIA_SCOPES)[number]
+
 export interface RemoteOnlyMediaDescriptor extends BangumiMediaDescriptor {
-  scope: Exclude<BangumiMediaScope, 'game'>
+  scope: Exclude<BangumiMediaScope, LocalMediaScope>
   localAdapter?: undefined
 }

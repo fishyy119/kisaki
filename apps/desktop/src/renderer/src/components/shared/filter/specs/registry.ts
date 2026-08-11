@@ -9,6 +9,7 @@ import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/common'
 import { getFilterQuerySpec } from '@shared/filter'
 import type { FilterUiSpec } from './types'
 
+import { animeFilterUiSpec } from './anime'
 import { characterFilterUiSpec } from './character'
 import { collectionFilterUiSpec } from './collection'
 import { companyFilterUiSpec } from './company'
@@ -20,6 +21,8 @@ export function getFilterUiSpec(entityType: AllEntityType): ComputedRef<FilterUi
   switch (entityType) {
     case 'game':
       return gameFilterUiSpec
+    case 'anime':
+      return animeFilterUiSpec
     case 'character':
       return characterFilterUiSpec
     case 'person':

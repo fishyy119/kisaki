@@ -1,7 +1,305 @@
-import { eq, inArray } from 'drizzle-orm'
-import { gameNotes, gameSessions } from '@shared/db'
+import { eq, inArray, or } from 'drizzle-orm'
+import {
+  animeEpisodeExternalIds,
+  animeEpisodeFiles,
+  animeEpisodes,
+  animeExtras,
+  animeRelations,
+  animeSessions,
+  gameNotes,
+  gameSessions,
+  type AnimeEpisode
+} from '@shared/db'
+import type { AllEntityType } from '@shared/common'
 import type { DbContext, DbQueryContext, DbWriteContext } from '../../types'
-import type { RelationMergeConfig, MergeRow } from './types'
+import type { OwnedDataMerge, RelationMergeConfig, MergeRow } from './types'
+
+/**
+ * Owned-row merges that a plain link-table rewrite cannot express. Keyed by
+ * entity type so adding a media type forces an explicit decision here instead
+ * of silently cascading the source's owned rows away with the source row.
+ */
+export const OWNED_DATA_MERGES: Record<AllEntityType, OwnedDataMerge | null> = {
+  game: mergeGameOwnedData,
+  anime: mergeAnimeOwnedData,
+  character: null,
+  person: null,
+  company: null,
+  collection: null,
+  tag: null
+}
+
+function mergeGameOwnedData(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  return mergeGameSessions(db, targetId, sourceId, now) + mergeGameNotes(db, targetId, sourceId, now)
+}
+
+/**
+ * Merging two entries of the same show must preserve the source's watch data.
+ * Source episodes align to target episodes by shared external id first, then
+ * by (type, episode number); aligned episodes fold their watch state, files,
+ * identities, and sessions into the target row, unmatched episodes move to the
+ * target entry wholesale (keeping their id, so episode attachments stay valid).
+ */
+function mergeAnimeOwnedData(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const targetEpisodes = readAnimeEpisodes(db, targetId)
+  const sourceEpisodes = readAnimeEpisodes(db, sourceId)
+  let changed = 0
+
+  const alignment = buildEpisodeAlignmentIndex(db, targetEpisodes, sourceEpisodes)
+  let nextEpisodeOrder = nextOrderAfter(targetEpisodes.map((episode) => episode.orderInAnime))
+
+  for (const episode of sourceEpisodes) {
+    const alignedId = alignment.get(episode.id)
+    if (alignedId) {
+      foldEpisodeIntoTarget(db, episode, alignedId, now)
+    } else {
+      db.update(animeEpisodes)
+        .set({ animeId: targetId, orderInAnime: nextEpisodeOrder++, updatedAt: now })
+        .where(eq(animeEpisodes.id, episode.id))
+        .run()
+    }
+    changed++
+  }
+
+  changed += mergeAnimeSessions(db, targetId, sourceId, now)
+  changed += mergeAnimeExtras(db, targetId, sourceId, now)
+  changed += mergeAnimeRelations(db, targetId, sourceId, now)
+  return changed
+}
+
+function readAnimeEpisodes(db: DbContext, animeId: string): AnimeEpisode[] {
+  return db.select().from(animeEpisodes).where(eq(animeEpisodes.animeId, animeId)).all()
+}
+
+/** Maps each source episode id to the target episode id it aligns with. */
+function buildEpisodeAlignmentIndex(
+  db: DbContext,
+  targetEpisodes: AnimeEpisode[],
+  sourceEpisodes: AnimeEpisode[]
+): Map<string, string> {
+  const byExternalId = new Map<string, string>()
+  const byNumber = new Map<string, string>()
+  for (const episode of targetEpisodes) {
+    if (episode.episodeNumber !== null) {
+      byNumber.set(`${episode.type}\0${episode.episodeNumber}`, episode.id)
+    }
+  }
+  for (const row of readEpisodeExternalIds(db, targetEpisodes)) {
+    byExternalId.set(`${row.source}\0${row.externalId}`, row.episodeId)
+  }
+
+  const sourceExternalIds = new Map<string, { source: string; externalId: string }[]>()
+  for (const row of readEpisodeExternalIds(db, sourceEpisodes)) {
+    const list = sourceExternalIds.get(row.episodeId) ?? []
+    list.push(row)
+    sourceExternalIds.set(row.episodeId, list)
+  }
+
+  const alignment = new Map<string, string>()
+  const claimed = new Set<string>()
+  for (const episode of sourceEpisodes) {
+    const identityMatch = (sourceExternalIds.get(episode.id) ?? [])
+      .map((row) => byExternalId.get(`${row.source}\0${row.externalId}`))
+      .find((id) => id && !claimed.has(id))
+    const numberMatch =
+      episode.episodeNumber === null
+        ? undefined
+        : byNumber.get(`${episode.type}\0${episode.episodeNumber}`)
+    const alignedId = identityMatch ?? (numberMatch && !claimed.has(numberMatch) ? numberMatch : undefined)
+    if (alignedId) {
+      alignment.set(episode.id, alignedId)
+      claimed.add(alignedId)
+    }
+  }
+  return alignment
+}
+
+function readEpisodeExternalIds(
+  db: DbContext,
+  episodes: AnimeEpisode[]
+): { episodeId: string; source: string; externalId: string }[] {
+  if (episodes.length === 0) return []
+  return (db as DbQueryContext)
+    .select({
+      episodeId: animeEpisodeExternalIds.episodeId,
+      source: animeEpisodeExternalIds.source,
+      externalId: animeEpisodeExternalIds.externalId
+    })
+    .from(animeEpisodeExternalIds)
+    .where(
+      inArray(
+        animeEpisodeExternalIds.episodeId,
+        episodes.map((episode) => episode.id)
+      )
+    )
+    .all()
+}
+
+/**
+ * Folds a source episode into its aligned target episode: watch state merges
+ * field-wise, while files, external ids, and sessions repoint to the target
+ * row before the now-empty source row is removed. The target episode's own
+ * still stays; the source's still would dangle once its attachment row dies.
+ */
+function foldEpisodeIntoTarget(
+  db: DbContext,
+  source: AnimeEpisode,
+  targetEpisodeId: string,
+  now: Date
+): void {
+  const target = db
+    .select()
+    .from(animeEpisodes)
+    .where(eq(animeEpisodes.id, targetEpisodeId))
+    .get()
+  if (!target) return
+
+  db.update(animeEpisodes)
+    .set({
+      watchedAt: target.watchedAt ?? source.watchedAt,
+      playCount: target.playCount + source.playCount,
+      resumePositionMs: target.resumePositionMs ?? source.resumePositionMs,
+      durationMs: target.durationMs ?? source.durationMs,
+      updatedAt: now
+    })
+    .where(eq(animeEpisodes.id, targetEpisodeId))
+    .run()
+
+  const targetHasFiles =
+    (db as DbQueryContext)
+      .select({ id: animeEpisodeFiles.id })
+      .from(animeEpisodeFiles)
+      .where(eq(animeEpisodeFiles.episodeId, targetEpisodeId))
+      .all().length > 0
+  db.update(animeEpisodeFiles)
+    .set({
+      episodeId: targetEpisodeId,
+      // The target's existing primary keeps priority over incoming files.
+      ...(targetHasFiles && { isPrimary: false }),
+      updatedAt: now
+    })
+    .where(eq(animeEpisodeFiles.episodeId, source.id))
+    .run()
+
+  db.update(animeEpisodeExternalIds)
+    .set({ episodeId: targetEpisodeId, updatedAt: now })
+    .where(eq(animeEpisodeExternalIds.episodeId, source.id))
+    .run()
+
+  db.update(animeSessions)
+    .set({ episodeId: targetEpisodeId, updatedAt: now })
+    .where(eq(animeSessions.episodeId, source.id))
+    .run()
+
+  db.delete(animeEpisodes).where(eq(animeEpisodes.id, source.id)).run()
+}
+
+function mergeAnimeSessions(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = (db as DbQueryContext)
+    .select({ id: animeSessions.id })
+    .from(animeSessions)
+    .where(eq(animeSessions.animeId, sourceId))
+    .all()
+  if (rows.length === 0) return 0
+
+  db.update(animeSessions)
+    .set({ animeId: targetId, updatedAt: now })
+    .where(eq(animeSessions.animeId, sourceId))
+    .run()
+  return rows.length
+}
+
+function mergeAnimeExtras(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const sourceRows = db
+    .select()
+    .from(animeExtras)
+    .where(eq(animeExtras.animeId, sourceId))
+    .all()
+    .sort((a, b) => a.orderInAnime - b.orderInAnime || toTime(a.createdAt) - toTime(b.createdAt))
+  if (sourceRows.length === 0) return 0
+
+  const targetOrders = (db as DbQueryContext)
+    .select({ orderInAnime: animeExtras.orderInAnime })
+    .from(animeExtras)
+    .where(eq(animeExtras.animeId, targetId))
+    .all()
+  let nextOrder = nextOrderAfter(targetOrders.map((row) => row.orderInAnime))
+
+  for (const row of sourceRows) {
+    db.update(animeExtras)
+      .set({ animeId: targetId, orderInAnime: nextOrder++, updatedAt: now })
+      .where(eq(animeExtras.id, row.id))
+      .run()
+  }
+  return sourceRows.length
+}
+
+/**
+ * Entry-to-entry links reference animes on both columns, so both are remapped;
+ * links that collapse into self-references disappear and duplicates keep the
+ * earliest row. Only the target's own rows are renumbered — third entries'
+ * link lists were only partially loaded and must keep their ordering.
+ */
+function mergeAnimeRelations(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = db
+    .select()
+    .from(animeRelations)
+    .where(
+      or(
+        inArray(animeRelations.animeId, [targetId, sourceId]),
+        inArray(animeRelations.relatedAnimeId, [targetId, sourceId])
+      )
+    )
+    .all()
+  const sourceCount = rows.filter(
+    (row) => row.animeId === sourceId || row.relatedAnimeId === sourceId
+  ).length
+  if (sourceCount === 0) return 0
+
+  const survivors = new Map<string, (typeof rows)[number]>()
+  for (const row of [...rows].sort((a, b) => toTime(a.createdAt) - toTime(b.createdAt))) {
+    const remapped = {
+      ...row,
+      animeId: row.animeId === sourceId ? targetId : row.animeId,
+      relatedAnimeId: row.relatedAnimeId === sourceId ? targetId : row.relatedAnimeId,
+      updatedAt: now
+    }
+    if (remapped.animeId === remapped.relatedAnimeId) continue
+
+    const key = `${remapped.animeId}\0${remapped.relatedAnimeId}\0${remapped.type}`
+    const existing = survivors.get(key)
+    if (!existing) {
+      survivors.set(key, remapped)
+    } else if (!hasText(existing.note) && hasText(remapped.note)) {
+      existing.note = remapped.note
+    }
+  }
+
+  const finalRows = [...survivors.values()]
+  finalRows
+    .filter((row) => row.animeId === targetId)
+    .sort((a, b) => a.orderInAnime - b.orderInAnime || toTime(a.createdAt) - toTime(b.createdAt))
+    .forEach((row, index) => {
+      row.orderInAnime = index
+    })
+
+  db.delete(animeRelations)
+    .where(
+      inArray(
+        animeRelations.id,
+        rows.map((row) => row.id)
+      )
+    )
+    .run()
+  if (finalRows.length > 0) {
+    db.insert(animeRelations).values(finalRows).run()
+  }
+  return sourceCount
+}
+
+function nextOrderAfter(orders: number[]): number {
+  return orders.reduce((max, order) => Math.max(max, order), -1) + 1
+}
 
 export function mergeRelationRows(
   db: DbContext,
@@ -61,12 +359,7 @@ export function mergeRelationRows(
   return sourceCount
 }
 
-export function mergeGameSessions(
-  db: DbContext,
-  targetId: string,
-  sourceId: string,
-  now: Date
-): number {
+function mergeGameSessions(db: DbContext, targetId: string, sourceId: string, now: Date): number {
   const rows = (db as DbQueryContext)
     .select({ id: gameSessions.id })
     .from(gameSessions)
@@ -81,12 +374,7 @@ export function mergeGameSessions(
   return rows.length
 }
 
-export function mergeGameNotes(
-  db: DbContext,
-  targetId: string,
-  sourceId: string,
-  now: Date
-): number {
+function mergeGameNotes(db: DbContext, targetId: string, sourceId: string, now: Date): number {
   const rows = db
     .select()
     .from(gameNotes)

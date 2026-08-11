@@ -1,4 +1,5 @@
 import {
+  ANIME_SCRAPER_SLOTS,
   CHARACTER_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
   GAME_SCRAPER_SLOTS,
@@ -7,8 +8,6 @@ import {
   type MainToHostRpcMethod,
   type ScraperMediaType
 } from '@kisaki3/extension-api'
-
-export type ScraperProviderRpcMediaType = ScraperMediaType
 
 export interface MainToHostScraperProviderRpcDescriptor {
   search: Extract<MainToHostRpcMethod, 'contributions.scraperProviders.search'>
@@ -38,7 +37,8 @@ export const HOST_TO_MAIN_SCRAPER_RPC = {
 
 export const SCRAPER_PROVIDER_SLOTS = {
   game: GAME_SCRAPER_SLOTS,
+  anime: ANIME_SCRAPER_SLOTS,
   person: PERSON_SCRAPER_SLOTS,
   company: COMPANY_SCRAPER_SLOTS,
   character: CHARACTER_SCRAPER_SLOTS
-} as const satisfies Record<ScraperProviderRpcMediaType, readonly string[]>
+} as const satisfies Record<ScraperMediaType, readonly string[]>

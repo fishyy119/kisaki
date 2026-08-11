@@ -1,4 +1,5 @@
 import type {
+  AnimeScraperProviderRegistrationInfo,
   CharacterScraperProviderRegistrationInfo,
   CompanyScraperProviderRegistrationInfo,
   GameScraperProviderRegistrationInfo,
@@ -8,13 +9,17 @@ import type { ScraperService } from '@main/services/scraper'
 import type { ScraperMediaType } from '@shared/scraper'
 import type { RuntimeContributionOwner } from '../types'
 
-export type ScraperKind = 'games' | 'persons' | 'companies' | 'characters'
-export type { ScraperMediaType } from '@shared/scraper'
+export type ScraperKind = 'games' | 'animes' | 'persons' | 'companies' | 'characters'
 export type ScraperRpcAction =
-  'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close'
+  | 'search'
+  | 'resolve'
+  | 'session.open'
+  | 'session.get'
+  | 'session.close'
 
 export type ScraperProviderRegistration =
   | GameScraperProviderRegistrationInfo
+  | AnimeScraperProviderRegistrationInfo
   | PersonScraperProviderRegistrationInfo
   | CompanyScraperProviderRegistrationInfo
   | CharacterScraperProviderRegistrationInfo

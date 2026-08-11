@@ -6,11 +6,12 @@
  * Each entity is wrapped with its corresponding context menu.
  */
 
-import { computed, inject, type ComputedRef } from 'vue'
+import { computed, inject, type Component, type ComputedRef } from 'vue'
 import { RouterLink, useRoute, type LocationQuery } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { GameContextMenu, GameBatchContextMenu } from '@renderer/components/shared/game'
+import { AnimeContextMenu, AnimeBatchContextMenu } from '@renderer/components/shared/anime'
 import {
   CharacterContextMenu,
   CharacterBatchContextMenu
@@ -19,11 +20,12 @@ import { PersonContextMenu, PersonBatchContextMenu } from '@renderer/components/
 import { CompanyContextMenu, CompanyBatchContextMenu } from '@renderer/components/shared/company'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { useLibraryExplorerStore } from '../../stores'
 import { parseExplorerSelectionKey, toExplorerSelectionKey } from '../../utils/explorer-selection'
 import type { EntityData } from '../../composables'
 import type { ContentEntityType } from '@shared/common'
-import type { Game, Character, Person, Company } from '@shared/db'
+import type { Anime, Game, Character, Person, Company } from '@shared/db'
 
 interface Props {
   entity: EntityData
@@ -41,13 +43,6 @@ const visibleSelectionKeys = inject<ComputedRef<string[]>>(
   computed(() => [])
 )
 
-const ENTITY_PATHS: Record<ContentEntityType, string> = {
-  game: '/library/game',
-  character: '/library/character',
-  person: '/library/person',
-  company: '/library/company'
-} as const
-
 const rowKey = computed(() => toExplorerSelectionKey(props.from, props.entity.id))
 
 const isSelected = computed(() => selectedKeys.value.includes(rowKey.value))
@@ -58,7 +53,7 @@ const selectedEntityIds = computed(() => {
   return [...new Set(ids)]
 })
 
-const detailPath = computed(() => `${ENTITY_PATHS[props.entityType]}/${props.entity.id}`)
+const detailPath = computed(() => getEntityDetailPath(props.entityType, props.entity.id))
 
 const linkQuery = computed(() => ({ from: props.from }))
 
@@ -113,6 +108,13 @@ const imageUrl = computed(() => {
       }
       return null
     }
+    case 'anime': {
+      const anime = props.entity as Anime
+      if (anime.coverFile) {
+        return getAttachmentUrl('animes', anime.id, anime.coverFile, { width: 100, height: 100 })
+      }
+      return null
+    }
     case 'character': {
       const character = props.entity as Character
       if (character.photoFile) {
@@ -150,6 +152,40 @@ const imageUrl = computed(() => {
 
 const entityIcon = computed(() => getEntityIcon(props.entityType))
 
+/**
+ * The row markup is identical for every entity type; only the context menu that
+ * wraps it differs, so the wrapper is resolved here instead of in the template.
+ */
+const contextMenu = computed<{ component: Component; props: Record<string, unknown> }>(() => {
+  const batchIds = selectedEntityIds.value
+  const id = props.entity.id
+
+  switch (props.entityType) {
+    case 'game':
+      return useBatchMenu.value
+        ? { component: GameBatchContextMenu, props: { gameIds: batchIds } }
+        : { component: GameContextMenu, props: { gameId: id } }
+    case 'anime':
+      return useBatchMenu.value
+        ? { component: AnimeBatchContextMenu, props: { animeIds: batchIds } }
+        : { component: AnimeContextMenu, props: { animeId: id } }
+    case 'character':
+      return useBatchMenu.value
+        ? { component: CharacterBatchContextMenu, props: { characterIds: batchIds } }
+        : { component: CharacterContextMenu, props: { characterId: id } }
+    case 'person':
+      return useBatchMenu.value
+        ? { component: PersonBatchContextMenu, props: { personIds: batchIds } }
+        : { component: PersonContextMenu, props: { personId: id } }
+    case 'company':
+      return useBatchMenu.value
+        ? { component: CompanyBatchContextMenu, props: { companyIds: batchIds } }
+        : { component: CompanyContextMenu, props: { companyId: id } }
+    default:
+      return props.entityType satisfies never
+  }
+})
+
 function handleClick(e: MouseEvent) {
   if (e.shiftKey) {
     e.preventDefault()
@@ -170,100 +206,14 @@ function handleClick(e: MouseEvent) {
 </script>
 
 <template>
-  <!-- Game context menu -->
   <component
-    :is="useBatchMenu ? GameBatchContextMenu : GameContextMenu"
-    v-if="props.entityType === 'game'"
-    v-bind="useBatchMenu ? { gameIds: selectedEntityIds } : { gameId: props.entity.id }"
+    :is="contextMenu.component"
+    v-bind="contextMenu.props"
     @deleted="store.clearSelection()"
   >
     <RouterLink
       :to="{ path: detailPath, query: linkQuery }"
       class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/50"
-      :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
-      @click="handleClick"
-    >
-      <img
-        v-if="imageUrl"
-        :src="imageUrl"
-        :alt="props.entity.name"
-        class="size-4 rounded-sm mr-1.5 border shadow-raised object-cover"
-      />
-      <Icon
-        v-else
-        :icon="entityIcon"
-        class="size-4 text-muted-foreground/50 mr-1.5"
-      />
-      <span class="truncate">{{ props.entity.name }}</span>
-    </RouterLink>
-  </component>
-
-  <!-- Character context menu -->
-  <component
-    :is="useBatchMenu ? CharacterBatchContextMenu : CharacterContextMenu"
-    v-else-if="props.entityType === 'character'"
-    v-bind="useBatchMenu ? { characterIds: selectedEntityIds } : { characterId: props.entity.id }"
-    @deleted="store.clearSelection()"
-  >
-    <RouterLink
-      :to="{ path: detailPath, query: linkQuery }"
-      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
-      :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
-      @click="handleClick"
-    >
-      <img
-        v-if="imageUrl"
-        :src="imageUrl"
-        :alt="props.entity.name"
-        class="size-4 rounded-sm mr-1.5 border shadow-raised object-cover"
-      />
-      <Icon
-        v-else
-        :icon="entityIcon"
-        class="size-4 text-muted-foreground/50 mr-1.5"
-      />
-      <span class="truncate">{{ props.entity.name }}</span>
-    </RouterLink>
-  </component>
-
-  <!-- Person context menu -->
-  <component
-    :is="useBatchMenu ? PersonBatchContextMenu : PersonContextMenu"
-    v-else-if="props.entityType === 'person'"
-    v-bind="useBatchMenu ? { personIds: selectedEntityIds } : { personId: props.entity.id }"
-    @deleted="store.clearSelection()"
-  >
-    <RouterLink
-      :to="{ path: detailPath, query: linkQuery }"
-      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
-      :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
-      @click="handleClick"
-    >
-      <img
-        v-if="imageUrl"
-        :src="imageUrl"
-        :alt="props.entity.name"
-        class="size-4 rounded-sm mr-1.5 border shadow-raised object-cover"
-      />
-      <Icon
-        v-else
-        :icon="entityIcon"
-        class="size-4 text-muted-foreground/50 mr-1.5"
-      />
-      <span class="truncate">{{ props.entity.name }}</span>
-    </RouterLink>
-  </component>
-
-  <!-- Company context menu -->
-  <component
-    :is="useBatchMenu ? CompanyBatchContextMenu : CompanyContextMenu"
-    v-else
-    v-bind="useBatchMenu ? { companyIds: selectedEntityIds } : { companyId: props.entity.id }"
-    @deleted="store.clearSelection()"
-  >
-    <RouterLink
-      :to="{ path: detailPath, query: linkQuery }"
-      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
       :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
       @click="handleClick"
     >

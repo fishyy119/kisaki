@@ -198,8 +198,7 @@ const primaryAction = computed(() => {
 // =============================================================================
 
 function getTypeText(type: Scanner['type']): string {
-  if (type === 'game') return m.value.library.entities.game
-  return type
+  return m.value.library.entities[type]
 }
 
 // =============================================================================
@@ -215,7 +214,7 @@ async function handleScan() {
   if (!canStartScan.value) return
 
   try {
-    await scannerStore.startGameScan(props.scanner.id)
+    await scannerStore.startScan(props.scanner.id)
   } catch (error) {
     log.error('Failed to start scan:', error)
   }

@@ -13,6 +13,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { scanners, settings, type Scanner, type NameExtractionRule } from '@shared/db'
+import { MEDIA_TYPES } from '@shared/common'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import {
@@ -72,7 +73,9 @@ const isRulesDialogOpen = ref(false)
 
 const { m } = useI18n()
 
-const typeOptions = computed(() => [{ value: 'game', label: m.value.library.entities.game }])
+const typeOptions = computed(() =>
+  MEDIA_TYPES.map((type) => ({ value: type, label: m.value.library.entities[type] }))
+)
 const entityDepthHelp = computed(() => ({ text: m.value.scanner.form.entityDepthHelp }))
 const scraperProfileHelp = computed(() => ({ text: m.value.scanner.form.scraperProfileHelp }))
 const nameExtractionRulesHelp = computed(() => ({
@@ -164,6 +167,16 @@ watch(
     }
   },
   { immediate: true }
+)
+
+// A profile only serves one media type, so the picked one cannot survive a switch.
+watch(
+  () => formData.value.type,
+  (type, previousType) => {
+    if (previousType && type !== previousType) {
+      formData.value.scraperProfileId = ''
+    }
+  }
 )
 
 // =============================================================================
@@ -376,7 +389,7 @@ async function openLink(link: { href: string }): Promise<void> {
                 <FieldContent>
                   <ScraperProfileSelect
                     v-model="formData.scraperProfileId"
-                    media-type="game"
+                    :media-type="formData.type"
                   />
                 </FieldContent>
               </Field>

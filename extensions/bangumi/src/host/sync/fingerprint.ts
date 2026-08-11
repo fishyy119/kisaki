@@ -1,6 +1,6 @@
 import type { ExtensionStorage } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionPatch } from '../api/types'
-import type { BangumiMediaScope } from '../media/scopes'
+import { isBangumiMediaScope, type BangumiMediaScope } from '../../shared/scopes'
 import { BANGUMI_STORAGE_KEYS } from '../utils/ids'
 
 const SYNC_FINGERPRINT_VERSION = 1
@@ -146,9 +146,7 @@ function normalizeFingerprintRecord(record: SyncFingerprintRecord): SyncFingerpr
 }
 
 function normalizeScope(value: unknown): BangumiMediaScope | undefined {
-  return value === 'book' || value === 'game' || value === 'anime' || value === 'music'
-    ? value
-    : undefined
+  return isBangumiMediaScope(value) ? value : undefined
 }
 
 function createFingerprintKey(scope: BangumiMediaScope, localId: string): string {

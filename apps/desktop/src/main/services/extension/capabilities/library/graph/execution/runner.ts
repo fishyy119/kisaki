@@ -10,14 +10,26 @@ import type {
   NormalizedLibraryGraph
 } from '../types'
 import { applyEntityNodes, previewEntityNodes } from './entities'
-import { applyAttachmentEdge, previewAttachmentEdge } from './media'
-import { applyNoteEdge, applySessionEdge, previewNoteEdge, previewSessionEdge } from './owned-items'
 import {
-  applyCollectionGameEdge,
-  applyGameCompanyEdge,
-  applyGamePersonEdge,
-  applyGameTagEdge,
-  previewCollectionGameEdge,
+  applyAttachmentEdge,
+  applyEpisodeAttachmentEdge,
+  previewAttachmentEdge,
+  previewEpisodeAttachmentEdge
+} from './media'
+import {
+  applyEpisodeEdge,
+  applyNoteEdge,
+  applySessionEdge,
+  previewEpisodeEdge,
+  previewNoteEdge,
+  previewSessionEdge
+} from './owned-items'
+import {
+  applyCollectionMediaEdge,
+  applyMediaCompanyEdge,
+  applyMediaPersonEdge,
+  applyMediaTagEdge,
+  previewCollectionMediaEdge,
   previewRelationEdge
 } from './relationships'
 import {
@@ -37,7 +49,7 @@ export async function previewLibraryGraph(
   options: ExecuteLibraryGraphOptions
 ): Promise<LibraryGraphResult> {
   const draft = createDraft(graph)
-  const state = createApplyState()
+  const state = createApplyState(graph)
 
   previewEntityNodes(graph, matches, draft, state)
   await previewEdges(graph, draft, state, options)
@@ -54,7 +66,7 @@ export async function applyLibraryGraph(
   options: ExecuteLibraryGraphOptions
 ): Promise<LibraryGraphResult> {
   const draft = createDraft(graph)
-  const state = createApplyState()
+  const state = createApplyState(graph)
 
   applyEntityNodes(graph, matches, draft, state, options)
   await applyEdges(graph, draft, state, context, options)
@@ -100,7 +112,7 @@ async function previewEdge(
 ): Promise<LibraryGraphResultAction> {
   switch (edge.kind) {
     case 'collection-media':
-      return previewCollectionGameEdge(edge, state, options)
+      return previewCollectionMediaEdge(edge, state, options)
     case 'media-tag':
     case 'media-company':
     case 'media-person':
@@ -109,8 +121,12 @@ async function previewEdge(
       return previewNoteEdge(edge, graph, draft, state, options)
     case 'media-session':
       return previewSessionEdge(edge, graph, draft, state, options)
+    case 'media-episode':
+      return previewEpisodeEdge(edge, graph, draft, state, options)
     case 'media-attachment':
       return await previewAttachmentEdge(edge, graph, draft, state, options)
+    case 'episode-attachment':
+      return await previewEpisodeAttachmentEdge(edge, graph, draft, state, options)
   }
 }
 
@@ -124,18 +140,22 @@ async function applyEdge(
 ): Promise<LibraryGraphResultAction> {
   switch (edge.kind) {
     case 'collection-media':
-      return applyCollectionGameEdge(edge, state, options)
+      return applyCollectionMediaEdge(edge, state, options)
     case 'media-tag':
-      return applyGameTagEdge(edge, state, options)
+      return applyMediaTagEdge(edge, state, options)
     case 'media-company':
-      return applyGameCompanyEdge(edge, state, options)
+      return applyMediaCompanyEdge(edge, state, options)
     case 'media-person':
-      return applyGamePersonEdge(edge, state, options)
+      return applyMediaPersonEdge(edge, state, options)
     case 'media-note':
       return await applyNoteEdge(edge, graph, draft, state, context, options)
     case 'media-session':
       return applySessionEdge(edge, graph, draft, state, options)
+    case 'media-episode':
+      return applyEpisodeEdge(edge, graph, draft, state, options)
     case 'media-attachment':
       return await applyAttachmentEdge(edge, graph, draft, state, context, options)
+    case 'episode-attachment':
+      return await applyEpisodeAttachmentEdge(edge, graph, draft, state, context, options)
   }
 }

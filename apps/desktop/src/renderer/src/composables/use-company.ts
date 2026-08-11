@@ -26,7 +26,15 @@ import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { usePreferencesStore } from '@renderer/stores'
-import type { Company, GameCompanyLink, CompanyTagLink, Game, Tag } from '@shared/db/schema'
+import type {
+  Company,
+  GameCompanyLink,
+  AnimeCompanyLink,
+  CompanyTagLink,
+  Game,
+  Anime,
+  Tag
+} from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { useDbChanges } from './use-db-changes'
 
@@ -38,12 +46,14 @@ interface CompanyData {
   company: Company
   tags: (CompanyTagLink & { tag: Tag | null })[]
   games: (GameCompanyLink & { game: Game | null })[]
+  animes: (AnimeCompanyLink & { anime: Anime | null })[]
 }
 
 export interface CompanyContext {
   company: ComputedRef<Company | null>
   tags: ComputedRef<(CompanyTagLink & { tag: Tag | null })[]>
   games: ComputedRef<(GameCompanyLink & { game: Game | null })[]>
+  animes: ComputedRef<(AnimeCompanyLink & { anime: Anime | null })[]>
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
   error: Ref<string | null>
@@ -92,8 +102,14 @@ async function fetchCompanyData(
     showNsfw ? undefined : eq(schema.games.isNsfw, false)
   )
 
+  const animeCompanyLinksWhere = and(
+    eq(schema.animeCompanyLinks.companyId, companyId),
+    spoilersRevealed ? undefined : eq(schema.animeCompanyLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.animes.isNsfw, false)
+  )
+
   // Parallel fetch all related data
-  const [tagLinks, gameLinks] = await Promise.all([
+  const [tagLinks, gameLinks, animeLinks] = await Promise.all([
     db
       .select()
       .from(schema.companyTagLinks)
@@ -105,13 +121,20 @@ async function fetchCompanyData(
       .from(schema.gameCompanyLinks)
       .leftJoin(schema.games, eq(schema.gameCompanyLinks.gameId, schema.games.id))
       .where(gameCompanyLinksWhere)
-      .orderBy(asc(schema.gameCompanyLinks.orderInCompany))
+      .orderBy(asc(schema.gameCompanyLinks.orderInCompany)),
+    db
+      .select()
+      .from(schema.animeCompanyLinks)
+      .leftJoin(schema.animes, eq(schema.animeCompanyLinks.animeId, schema.animes.id))
+      .where(animeCompanyLinksWhere)
+      .orderBy(asc(schema.animeCompanyLinks.orderInCompany))
   ])
 
   return {
     company: companyData,
     tags: tagLinks.map((row) => ({ ...row.company_tag_links, tag: row.tags })),
-    games: gameLinks.map((row) => ({ ...row.game_company_links, game: row.games }))
+    games: gameLinks.map((row) => ({ ...row.game_company_links, game: row.games })),
+    animes: animeLinks.map((row) => ({ ...row.anime_company_links, anime: row.animes }))
   }
 }
 
@@ -151,6 +174,7 @@ function provideCompanyContext(source: CompanyDataSource): CompanyContext {
     company: computed(() => source.data.value?.company ?? null),
     tags: computed(() => source.data.value?.tags ?? []),
     games: computed(() => source.data.value?.games ?? []),
+    animes: computed(() => source.data.value?.animes ?? []),
     isLoading: source.isLoading,
     isFetching: source.isFetching,
     error: source.error,
@@ -168,12 +192,20 @@ function useCompanyDbSync(companyId: MaybeRefOrGetter<string>, refetch: () => Pr
       if (table === 'companies' && entityId === toValue(companyId)) {
         refetch()
       }
-      if (table === 'company_tag_links' || table === 'game_company_links') {
+      if (
+        table === 'company_tag_links' ||
+        table === 'game_company_links' ||
+        table === 'anime_company_links'
+      ) {
         refetch()
       }
     }
     if (operation === 'inserted') {
-      if (table === 'company_tag_links' || table === 'game_company_links') {
+      if (
+        table === 'company_tag_links' ||
+        table === 'game_company_links' ||
+        table === 'anime_company_links'
+      ) {
         refetch()
       }
     }

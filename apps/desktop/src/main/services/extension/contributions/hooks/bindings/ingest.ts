@@ -12,6 +12,10 @@ export function bindIngestHookPoints(
   ingest.game.committed.tap((p) => point.notify('ingest.game.committed', p))
   ingest.game.updating.tap(async (p) => (await point.veto('ingest.game.updating', p)) ?? undefined)
   ingest.game.updated.tap((p) => point.notify('ingest.game.updated', p))
+  ingest.anime.committing.tap(
+    async (p) => (await point.veto('ingest.anime.committing', p)) ?? undefined
+  )
+  ingest.anime.committed.tap((p) => point.notify('ingest.anime.committed', p))
   ingest.person.committing.tap(
     async (p) => (await point.veto('ingest.person.committing', p)) ?? undefined
   )

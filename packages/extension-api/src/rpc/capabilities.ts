@@ -12,6 +12,8 @@ import type {
   CommandInvocationRequest
 } from '../capabilities/commands'
 import type {
+  IngestAddAnimeFromScraperOptions,
+  IngestAddAnimeFromScraperResult,
   IngestAddGameFromScraperOptions,
   IngestAddGameFromScraperResult,
   IngestGameUpdateFromScraperInput,
@@ -19,6 +21,13 @@ import type {
   IngestUpdateResult
 } from '../capabilities/ingest'
 import type {
+  LibraryAnime,
+  LibraryAnimeCreateInput,
+  LibraryAnimeEpisode,
+  LibraryAnimeEpisodeQuery,
+  LibraryAnimeEpisodeWatchStatePatch,
+  LibraryAnimePatch,
+  LibraryAnimeQuery,
   LibraryAttachment,
   LibraryAttachmentRemoveInput,
   LibraryAttachmentWriteInput,
@@ -137,6 +146,12 @@ export interface IngestGameAddFromScraperRequest extends ExtensionScopedRpcParam
 
 export interface IngestGameUpdateFromScraperRequest extends ExtensionScopedRpcParams {
   input: IngestGameUpdateFromScraperInput
+}
+
+export interface IngestAnimeAddFromScraperRequest extends ExtensionScopedRpcParams {
+  profileId: string
+  lookup: ScraperLookup
+  options?: IngestAddAnimeFromScraperOptions
 }
 
 export interface LibraryGraphRpcRequest extends ExtensionScopedRpcParams {
@@ -317,6 +332,14 @@ export type HostToMainCapabilityRpcRequestMap = {
     ExtensionScopedRpcParams & { selector: LibraryRelationSelector },
     RpcNoPayload
   >
+  'capabilities.library.animes.episodes.list': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { query: LibraryAnimeEpisodeQuery },
+    { items: readonly LibraryAnimeEpisode[] }
+  >
+  'capabilities.library.animes.episodes.patchWatchState': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { episodeId: string; patch: LibraryAnimeEpisodeWatchStatePatch },
+    { episode: LibraryAnimeEpisode }
+  >
   'capabilities.library.attachments.list': RpcMethodDefinition<
     ExtensionScopedRpcParams & { entity: LibraryAttachment['entity'] },
     { items: readonly LibraryAttachment[] }
@@ -364,6 +387,14 @@ export type HostToMainCapabilityRpcRequestMap = {
   >
   'capabilities.ingest.game.update.startFromScraper': RpcMethodDefinition<
     IngestGameUpdateFromScraperRequest,
+    { start: IngestTaskRunStart }
+  >
+  'capabilities.ingest.anime.add.fromScraper': RpcMethodDefinition<
+    IngestAnimeAddFromScraperRequest,
+    { result: IngestAddAnimeFromScraperResult }
+  >
+  'capabilities.ingest.anime.add.startFromScraper': RpcMethodDefinition<
+    IngestAnimeAddFromScraperRequest,
     { start: IngestTaskRunStart }
   >
   'capabilities.commands.list': RpcMethodDefinition<
@@ -456,6 +487,13 @@ export type HostToMainCapabilityRpcRequestMap = {
   LibraryGamePatch,
   LibraryGameQuery
 > &
+  LibraryEntityRpcRequestMap<
+    'capabilities.library.animes',
+    LibraryAnime,
+    LibraryAnimeCreateInput,
+    LibraryAnimePatch,
+    LibraryAnimeQuery
+  > &
   LibraryEntityRpcRequestMap<
     'capabilities.library.characters',
     LibraryCharacter,

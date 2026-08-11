@@ -3,7 +3,9 @@
  * source: all other locale catalogs must satisfy `BangumiMessages`.
  */
 
-type Scope = 'book' | 'game' | 'anime' | 'music'
+import type { BangumiMediaScope } from '../../scopes'
+
+type Scope = BangumiMediaScope
 type CollectionType = 1 | 2 | 3 | 4 | 5
 
 const NOUNS: Record<Scope, string> = {
@@ -88,8 +90,8 @@ export const en = {
     localWriteUnsupportedGeneric:
       'This media type does not support writing to the local library yet.',
 
-    localGameStatusUnknown: 'Could not recognize the local game status.',
-    localGameMissing: 'The local game does not exist.',
+    localMediaStatusUnknown: 'Could not recognize the local entry status.',
+    localMediaMissing: 'The local entry does not exist.',
     localItemMissing: 'The local entry does not exist.',
     importedItemMissing: 'The imported local entry does not exist.',
     targetCollectionMissing: 'The selected target collection does not exist.',
@@ -100,8 +102,8 @@ export const en = {
       'The Bangumi index must be a numeric ID, or a link like https://bgm.tv/index/<id> or https://bangumi.tv/index/<id>.',
     indexSubjectMissingId: 'The Bangumi index entry is missing a valid subject ID.',
     collectionMissingSubjectId: 'The Bangumi collection is missing a valid subject ID.',
-    profileRequired: 'Select the scraper profile used to create games.',
-    profileNotFound: 'The selected game scraper profile does not exist.'
+    profileRequired: 'Select the scraper profile used to create local entries.',
+    profileNotFound: 'The selected scraper profile does not exist.'
   },
 
   oauth: {
@@ -128,7 +130,7 @@ export const en = {
     },
     syncFull: {
       title: 'Bangumi full sync',
-      description: 'Scan local games and sync Bangumi collection status and ratings'
+      description: 'Scan local entries and sync Bangumi collection status and ratings'
     },
     importCollections: {
       title: 'Import my Bangumi collections',
@@ -280,7 +282,7 @@ export const en = {
     descriptions: {
       'auth-refresh': 'Refreshes and verifies the Bangumi credentials when the app starts.',
       'sync-changed': 'Syncs local changes accumulated during the previous session after startup.',
-      'sync-full-daily': 'Runs a full game sync once a day in the early morning.'
+      'sync-full-daily': 'Runs a full library sync once a day in the early morning.'
     },
     status: {
       missing: 'Not created',
@@ -303,6 +305,8 @@ export const en = {
     discardChanges: 'Discard changes',
     savePreferences: 'Save preferences',
     actionFailed: 'The operation failed. Try again.',
+    mediaScope: 'Media type',
+    mediaScopePlaceholder: 'Select a media type',
 
     tabs: {
       overview: 'Overview',
@@ -373,11 +377,12 @@ export const en = {
     sync: {
       preferencesTitle: 'Auto sync preferences',
       autoSync: 'Auto sync',
-      autoSyncDescription: 'Watches local game creation and user-state field changes.',
+      autoSyncDescription: 'Watches local entry creation and user-state field changes.',
       syncItems: 'Sync items',
       itemCreate: 'Create collections',
-      itemStatus: 'Play status',
+      itemStatus: 'Entry status',
       itemScore: 'Rating',
+      itemEpisodes: 'Episode watch state',
       clearRemoteScore: 'Allow clearing remote ratings',
       clearRemoteScoreDescription:
         'Also clears the Bangumi rating when the local rating is cleared.',
@@ -390,13 +395,13 @@ export const en = {
 
     import: {
       noProfilesWarning:
-        'No game scraper profile is configured. Imports can still be previewed, but a usable profile is required before writing locally.',
+        'No scraper profile is configured for this media type. Imports can still be previewed, but a usable profile is required before writing locally.',
       sourceTitle: 'Import sources',
       sourceDescription:
         'Imports are one-off tasks; options apply to this run only and are not saved to Bangumi preferences.',
       myCollections: 'My collections',
       myCollectionsDescription:
-        'Import the current Bangumi user game collections by collection type.',
+        'Import the current Bangumi user collections of the selected media type by collection type.',
       bangumiIndex: 'Bangumi index',
       bangumiIndexDescription: 'Enter an index ID or link, then configure the import.',
       indexPlaceholder: 'Index ID or https://bgm.tv/index/...',
@@ -438,8 +443,9 @@ export const en = {
     fullSync: {
       title: 'Full sync',
       syncData: 'Sync data',
-      itemStatus: 'Play status',
+      itemStatus: 'Entry status',
       itemScore: 'Rating',
+      itemEpisodes: 'Episode watch state',
       updateExisting: 'Update existing collections',
       updateExistingDescription:
         'When off, Bangumi collections are only created for entries missing remotely.',
@@ -456,7 +462,7 @@ export const en = {
       profilePlaceholder: 'Select a scraper profile',
       collectionTypes: 'Collection types',
       dataItems: 'Imported user-state fields',
-      itemStatus: 'Play status',
+      itemStatus: 'Entry status',
       itemScore: 'Rating',
       itemTags: 'Tags',
       patchExisting: 'Update existing entries',

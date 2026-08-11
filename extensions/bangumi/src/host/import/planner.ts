@@ -1,4 +1,4 @@
-import type { BangumiMediaScope } from '../media/scopes'
+import type { BangumiMediaScope } from '../../shared/scopes'
 import type { BangumiIndexSubject, BangumiUserCollection } from '../api/types'
 import type { LocalCollectionTarget, LocalMediaItem } from '../media/types'
 import { m } from '../i18n'

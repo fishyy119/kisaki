@@ -8,14 +8,15 @@ import type {
 } from '../../shared/settings'
 
 export function toFormState(settings: BangumiSettingsV1): BangumiSettingsFormState {
-  const autoSync = settings.game.autoSync
+  const autoSync = settings.autoSync
 
   return {
     autoSyncEnabled: autoSync.enabled,
     autoSyncItems: [
       ...(autoSync.syncOnCreate ? (['create'] as const) : []),
       ...(autoSync.playStatusEnabled ? (['status'] as const) : []),
-      ...(autoSync.scoreEnabled ? (['score'] as const) : [])
+      ...(autoSync.scoreEnabled ? (['score'] as const) : []),
+      ...(autoSync.episodeStatusEnabled ? (['episodes'] as const) : [])
     ],
     clearRemoteScoreWhenEmpty: autoSync.clearRemoteScoreWhenEmpty,
     loginTimeoutMinutes: Math.round(settings.auth.loginTimeoutMs / 60_000),
@@ -23,7 +24,7 @@ export function toFormState(settings: BangumiSettingsV1): BangumiSettingsFormSta
     rateLimitWindowSeconds: Math.round(settings.client.rateLimit.windowMs / 1000),
     timeoutSeconds: Math.round(settings.client.timeoutMs / 1000),
     retryCount: settings.client.retryCount,
-    debounceSeconds: settings.game.autoSync.debounceMs / 1000,
+    debounceSeconds: settings.autoSync.debounceMs / 1000,
     notifyErrors: autoSync.notifyErrors
   }
 }
@@ -37,17 +38,16 @@ export function applyFormState(
     auth: {
       loginTimeoutMs: form.loginTimeoutMinutes * 60_000
     },
-    game: {
-      autoSync: {
-        ...current.game.autoSync,
-        enabled: form.autoSyncEnabled,
-        syncOnCreate: form.autoSyncItems.includes('create'),
-        playStatusEnabled: form.autoSyncItems.includes('status'),
-        scoreEnabled: form.autoSyncItems.includes('score'),
-        clearRemoteScoreWhenEmpty: form.clearRemoteScoreWhenEmpty,
-        debounceMs: Math.round(form.debounceSeconds * 1000),
-        notifyErrors: form.notifyErrors
-      }
+    autoSync: {
+      ...current.autoSync,
+      enabled: form.autoSyncEnabled,
+      syncOnCreate: form.autoSyncItems.includes('create'),
+      playStatusEnabled: form.autoSyncItems.includes('status'),
+      scoreEnabled: form.autoSyncItems.includes('score'),
+      episodeStatusEnabled: form.autoSyncItems.includes('episodes'),
+      clearRemoteScoreWhenEmpty: form.clearRemoteScoreWhenEmpty,
+      debounceMs: Math.round(form.debounceSeconds * 1000),
+      notifyErrors: form.notifyErrors
     },
     client: {
       rateLimit: {
@@ -62,10 +62,11 @@ export function applyFormState(
 
 export function toFullSyncArgs(args: BangumiFullSyncFormArgs): JsonObject {
   return {
-    scope: 'game',
+    scope: args.scope,
     updateExisting: args.updateExisting,
     playStatusEnabled: args.items.includes('status'),
     scoreEnabled: args.items.includes('score'),
+    episodeStatusEnabled: args.items.includes('episodes'),
     clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
     batchSize: args.batchSize
   }
@@ -73,7 +74,7 @@ export function toFullSyncArgs(args: BangumiFullSyncFormArgs): JsonObject {
 
 export function toImportCollectionsArgs(args: BangumiImportCollectionsFormArgs): JsonObject {
   return {
-    scope: 'game',
+    scope: args.scope,
     profileId: args.profileId,
     collectionTypes: [...args.collectionTypes],
     fields: {
@@ -90,7 +91,7 @@ export function toImportCollectionsArgs(args: BangumiImportCollectionsFormArgs):
 
 export function toImportIndexArgs(args: BangumiImportIndexFormArgs): JsonObject {
   return {
-    scope: 'game',
+    scope: args.scope,
     profileId: args.profileId,
     indexInput: args.indexInput,
     patchExisting: args.patchExisting,

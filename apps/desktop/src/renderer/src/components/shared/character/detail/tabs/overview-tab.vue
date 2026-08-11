@@ -9,6 +9,7 @@ import { useCharacter } from '@renderer/composables/use-character'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
+import { AnimeCard } from '@renderer/components/shared/anime'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import {
@@ -19,6 +20,7 @@ import {
   CharacterGamesFormDialog
 } from '../../forms'
 import { useI18n } from '@renderer/composables'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 
 const { m } = useI18n()
 
@@ -26,7 +28,7 @@ const { m } = useI18n()
 // State
 // =============================================================================
 
-const { character, tags, persons, games } = useCharacter()
+const { character, tags, persons, games, animes } = useCharacter()
 
 // Edit dialog states
 const editDialogs = ref({
@@ -75,6 +77,7 @@ const hasPersons = computed(() => persons.value.length > 0)
 const hasTags = computed(() => tags.value && tags.value.length > 0)
 
 const gameLinks = computed(() => games.value.filter((link) => link.game))
+const animeLinks = computed(() => animes.value.filter((link) => link.anime))
 
 // =============================================================================
 // Helpers
@@ -88,6 +91,18 @@ function getRoleLabel(type: string | null | undefined) {
   if (!type) return undefined
   const labels: Record<string, string> = m.value.library.roles.gameCharacter
   return labels[type]
+}
+
+function getAnimeRoleLabel(type: string | null | undefined) {
+  if (!type) return undefined
+  const labels: Record<string, string> = m.value.library.roles.animeCharacter
+  return labels[type]
+}
+
+// Shared components stay route-unaware: related anime render as plain hash
+// links that the router picks up, instead of pushing through useRouter().
+function getAnimeDetailHref(animeId: string): string {
+  return `#${getEntityDetailPath('anime', animeId)}`
 }
 
 const gameDialogOpen = computed({
@@ -143,6 +158,27 @@ const tagDialogOpen = computed({
               :badge-label="getRoleLabel(link.type)"
               @click="openGameId = link.game!.id"
             />
+          </template>
+        </SectionScroll>
+
+        <SectionScroll
+          v-if="animeLinks.length > 0"
+          :title="m.library.fields.relatedAnimes"
+          :items="animeLinks"
+          :get-key="(item) => item.id"
+        >
+          <template #item="{ item: link }">
+            <a
+              :href="getAnimeDetailHref(link.anime!.id)"
+              class="block"
+            >
+              <AnimeCard
+                :anime="link.anime!"
+                align="left"
+                size="sm"
+                :badge-label="getAnimeRoleLabel(link.type)"
+              />
+            </a>
           </template>
         </SectionScroll>
 

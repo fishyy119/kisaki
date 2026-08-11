@@ -34,8 +34,8 @@ export function getGenderOptions(): { value: string; label: string }[] {
   ]
 }
 
-/** Localized game status options for the current UI locale. */
-export function getGameStatusOptions(): { value: string; label: string }[] {
+/** Localized consumption status options, shared by every media type. */
+export function getMediaStatusOptions(): { value: string; label: string }[] {
   const status = messages.value.library.status
   return [
     { value: 'notStarted', label: status.notStarted },
@@ -44,5 +44,18 @@ export function getGameStatusOptions(): { value: string; label: string }[] {
     { value: 'completed', label: status.completed },
     { value: 'multiple', label: status.multiple },
     { value: 'shelved', label: status.shelved }
+  ]
+}
+
+/** Localized anime format options for the current UI locale. */
+export function getAnimeFormatOptions(): { value: string; label: string }[] {
+  const format = messages.value.library.animeFormat
+  return [
+    { value: 'tv', label: format.tv },
+    { value: 'movie', label: format.movie },
+    { value: 'ova', label: format.ova },
+    { value: 'ona', label: format.ona },
+    { value: 'special', label: format.special },
+    { value: 'other', label: format.other }
   ]
 }

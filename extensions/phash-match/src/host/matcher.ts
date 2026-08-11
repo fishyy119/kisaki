@@ -29,6 +29,12 @@ export class GameEntryMatcher {
   constructor(private readonly options: GameEntryMatcherOptions) {}
 
   async enrich(value: ScannerMatchedEntry): Promise<ScannerMatchedEntry> {
+    // Icon pHashes describe game covers; a stray .exe inside an anime folder
+    // must never turn the entry into a game match.
+    if (value.mediaType !== 'game') {
+      return value
+    }
+
     if (value.matchSource !== BASELINE_MATCH_SOURCE || this.options.store.size === 0) {
       return value
     }

@@ -11,10 +11,12 @@ export {
   type ScraperLookup,
   type ScraperImageSlot,
   type GameImageSlot,
+  type AnimeImageSlot,
   type SlotConfigForSlot,
   type SlotConfigsForMediaType,
   type RelationCollectionScraperSlot,
   GAME_IMAGE_SLOTS,
+  ANIME_IMAGE_SLOTS,
   SCRAPER_IMAGE_SLOTS,
   SLOT_STRATEGIES,
   UNMATCHED_ENTITY_POLICIES,
@@ -49,15 +51,19 @@ export {
   type ScrapedIdentityCarrier,
   type ScraperSessionResult,
   type ScrapedGameInfo,
+  type ScrapedAnimeInfo,
   type ScrapedPersonInfo,
   type ScrapedCompanyInfo,
   type ScrapedCharacterInfo,
   type ScrapedGameCore,
+  type ScrapedAnimeCore,
   type ScrapedPersonCore,
   type ScrapedCompanyCore,
   type ScrapedCharacterCore,
   type ScrapedGameBundle,
   type ScrapedGameRelationFacts,
+  type ScrapedAnimeBundle,
+  type ScrapedAnimeRelationFacts,
   type ScrapedPersonBundle,
   type ScrapedCompanyBundle,
   type ScrapedCharacterBundle,
@@ -65,8 +71,12 @@ export {
   type ScrapedGamePersonFact,
   type ScrapedGameCharacterFact,
   type ScrapedGameCompanyFact,
+  type ScrapedAnimePersonFact,
+  type ScrapedAnimeCharacterFact,
+  type ScrapedAnimeCompanyFact,
   type ScrapedCharacterPersonFact,
   type ScrapedGameMetadata,
+  type ScrapedAnimeMetadata,
   type ScrapedPersonMetadata,
   type ScrapedCompanyMetadata,
   type ScrapedCharacterMetadata
@@ -74,6 +84,9 @@ export {
 
 // Game-specific types
 export { type GameScraperProviderInfo, type GameSearchResult } from './game'
+
+// Anime-specific types
+export { type AnimeScraperProviderInfo, type AnimeSearchResult } from './anime'
 
 // Metadata entity scraper types
 export { type PersonScraperProviderInfo, type PersonSearchResult } from './person'

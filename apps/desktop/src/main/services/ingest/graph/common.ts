@@ -8,6 +8,7 @@ import {
   type ExternalId
 } from '@shared/identity'
 import type {
+  CoreAnimeMetadata,
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
@@ -16,9 +17,9 @@ import type {
 } from '@shared/metadata'
 import type {
   IdentityAliasIndex,
-  NormalizedCharacterNode,
-  NormalizedCompanyNode,
-  NormalizedPersonNode
+  IngestCharacterNode,
+  IngestCompanyNode,
+  IngestPersonNode
 } from './types'
 
 interface IdentityMatchEntity {
@@ -178,6 +179,23 @@ export function normalizeGameCore(raw: Partial<CoreGameMetadata>): CoreGameMetad
     originalName: normalizeOptionalString(raw.originalName),
     releaseDate: raw.releaseDate,
     description: normalizeOptionalString(raw.description),
+    relatedSites: mergeRelatedSites(undefined, raw.relatedSites),
+    externalIds: mergeExternalIds(undefined, raw.externalIds),
+    tags: mergeTags(undefined, raw.tags)
+  }
+}
+
+export function normalizeAnimeCore(raw: Partial<CoreAnimeMetadata>): CoreAnimeMetadata | null {
+  const name = normalizeOptionalString(raw.name)
+  if (!name) return null
+
+  return {
+    name,
+    originalName: normalizeOptionalString(raw.originalName),
+    releaseDate: raw.releaseDate,
+    description: normalizeOptionalString(raw.description),
+    format: raw.format,
+    totalEpisodes: raw.totalEpisodes,
     relatedSites: mergeRelatedSites(undefined, raw.relatedSites),
     externalIds: mergeExternalIds(undefined, raw.externalIds),
     tags: mergeTags(undefined, raw.tags)
@@ -355,7 +373,7 @@ function mergeCharacterCore(
 }
 
 export function upsertPersonNode(
-  nodes: Map<string, NormalizedPersonNode>,
+  nodes: Map<string, IngestPersonNode>,
   identityIndex: IdentityAliasIndex,
   core: CorePersonMetadata,
   photoUrls: string[] | undefined
@@ -381,7 +399,7 @@ export function upsertPersonNode(
 }
 
 export function upsertCompanyNode(
-  nodes: Map<string, NormalizedCompanyNode>,
+  nodes: Map<string, IngestCompanyNode>,
   identityIndex: IdentityAliasIndex,
   core: CoreCompanyMetadata,
   logoUrls: string[] | undefined
@@ -407,7 +425,7 @@ export function upsertCompanyNode(
 }
 
 export function upsertCharacterNode(
-  nodes: Map<string, NormalizedCharacterNode>,
+  nodes: Map<string, IngestCharacterNode>,
   identityIndex: IdentityAliasIndex,
   core: CoreCharacterMetadata,
   photoUrls: string[] | undefined

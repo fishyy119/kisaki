@@ -13,6 +13,8 @@
 import { and, eq } from 'drizzle-orm'
 import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import {
+  animeEpisodeExternalIds,
+  animeExternalIds,
   characterExternalIds,
   companyExternalIds,
   gameExternalIds,
@@ -37,6 +39,22 @@ export const gameExternalIdLink: ExternalIdLinkTable = {
   sourceColumn: gameExternalIds.source,
   externalIdColumn: gameExternalIds.externalId,
   ownerLabel: 'game'
+}
+
+export const animeExternalIdLink: ExternalIdLinkTable = {
+  table: animeExternalIds,
+  entityIdColumn: animeExternalIds.animeId,
+  sourceColumn: animeExternalIds.source,
+  externalIdColumn: animeExternalIds.externalId,
+  ownerLabel: 'anime'
+}
+
+export const animeEpisodeExternalIdLink: ExternalIdLinkTable = {
+  table: animeEpisodeExternalIds,
+  entityIdColumn: animeEpisodeExternalIds.episodeId,
+  sourceColumn: animeEpisodeExternalIds.source,
+  externalIdColumn: animeEpisodeExternalIds.externalId,
+  ownerLabel: 'anime episode'
 }
 
 export const personExternalIdLink: ExternalIdLinkTable = {

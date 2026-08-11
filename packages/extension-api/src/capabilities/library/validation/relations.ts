@@ -7,6 +7,9 @@ import {
   type LibraryRelationSelector
 } from '../relations'
 import {
+  LIBRARY_ANIME_CHARACTER_ROLES,
+  LIBRARY_ANIME_COMPANY_ROLES,
+  LIBRARY_ANIME_PERSON_ROLES,
   LIBRARY_CHARACTER_PERSON_ROLES,
   LIBRARY_GAME_CHARACTER_ROLES,
   LIBRARY_GAME_COMPANY_ROLES,
@@ -31,16 +34,21 @@ const RELATION_ENDPOINTS = {
   'game-person': { from: 'game', to: 'person', roleValues: LIBRARY_GAME_PERSON_ROLES },
   'game-company': { from: 'game', to: 'company', roleValues: LIBRARY_GAME_COMPANY_ROLES },
   'game-character': { from: 'game', to: 'character', roleValues: LIBRARY_GAME_CHARACTER_ROLES },
+  'anime-person': { from: 'anime', to: 'person', roleValues: LIBRARY_ANIME_PERSON_ROLES },
+  'anime-company': { from: 'anime', to: 'company', roleValues: LIBRARY_ANIME_COMPANY_ROLES },
+  'anime-character': { from: 'anime', to: 'character', roleValues: LIBRARY_ANIME_CHARACTER_ROLES },
   'character-person': {
     from: 'character',
     to: 'person',
     roleValues: LIBRARY_CHARACTER_PERSON_ROLES
   },
   'game-tag': { from: 'game', to: 'tag', spoiler: true },
+  'anime-tag': { from: 'anime', to: 'tag', spoiler: true },
   'character-tag': { from: 'character', to: 'tag', spoiler: true },
   'person-tag': { from: 'person', to: 'tag', spoiler: true },
   'company-tag': { from: 'company', to: 'tag', spoiler: true },
   'collection-game': { from: 'collection', to: 'game' },
+  'collection-anime': { from: 'collection', to: 'anime' },
   'collection-character': { from: 'collection', to: 'character' },
   'collection-person': { from: 'collection', to: 'person' },
   'collection-company': { from: 'collection', to: 'company' }

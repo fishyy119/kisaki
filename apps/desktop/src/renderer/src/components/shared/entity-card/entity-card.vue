@@ -14,6 +14,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { GameCard } from '@renderer/components/shared/game'
+import { AnimeCard } from '@renderer/components/shared/anime'
 import { CharacterCard } from '@renderer/components/shared/character'
 import { PersonCard } from '@renderer/components/shared/person'
 import { CompanyCard } from '@renderer/components/shared/company'
@@ -21,13 +22,13 @@ import { CollectionCard } from '@renderer/components/shared/collection'
 import { TagCard } from '@renderer/components/shared/tag'
 import type { ButtonVariants } from '@renderer/components/ui/button'
 import type { AllEntityType } from '@shared/common'
-import type { Game, Character, Person, Company, Collection, Tag } from '@shared/db'
+import type { Anime, Game, Character, Person, Company, Collection, Tag } from '@shared/db'
 
 type CardSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 type CardAlign = 'left' | 'center' | 'right'
 
 // Union type for all possible entity data
-type EntityData = Game | Character | Person | Company | Collection | Tag
+type EntityData = Game | Anime | Character | Person | Company | Collection | Tag
 
 interface Props {
   entityType: AllEntityType
@@ -65,6 +66,22 @@ const emit = defineEmits<{
   <GameCard
     v-if="props.entityType === 'game'"
     :game="props.entity as Game"
+    :variant="props.variant"
+    :size="props.size"
+    :hide-name="props.hideName"
+    :badge-label="props.badgeLabel"
+    :align="props.align"
+    :button-variant="props.buttonVariant"
+    :button-size="props.buttonSize"
+    :clickable="props.clickable"
+    :class="props.class"
+    @click="emit('click')"
+  />
+
+  <!-- Anime -->
+  <AnimeCard
+    v-else-if="props.entityType === 'anime'"
+    :anime="props.entity as Anime"
     :variant="props.variant"
     :size="props.size"
     :hide-name="props.hideName"

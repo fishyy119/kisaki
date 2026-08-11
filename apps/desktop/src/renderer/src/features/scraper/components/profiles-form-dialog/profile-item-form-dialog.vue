@@ -72,6 +72,7 @@ const { m } = useI18n()
 
 const MEDIA_TYPE_LABELS = computed<Record<ContentEntityType, string>>(() => ({
   game: m.value.library.entities.game,
+  anime: m.value.library.entities.anime,
   character: m.value.library.entities.character,
   person: m.value.library.entities.person,
   company: m.value.library.entities.company

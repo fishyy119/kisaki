@@ -1,6 +1,6 @@
 import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import/planner'
 import { m } from '../../i18n'
-import type { BangumiMediaScope } from '../../media/scopes'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import { BangumiExtensionError } from '../../utils/errors'
 import { omitUndefined } from '../../utils/object'
 import type { JobStateController } from '../context'

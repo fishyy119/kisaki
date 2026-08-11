@@ -1,4 +1,5 @@
 import type {
+  AnimeScraperProvider,
   CardActionContribution,
   CardActionRegistrar,
   CharacterScraperProvider,
@@ -72,6 +73,10 @@ export function createEntityMenuRegistrar(
       single: point('game', 'single'),
       batch: point('game', 'batch')
     },
+    anime: {
+      single: point('anime', 'single'),
+      batch: point('anime', 'batch')
+    },
     character: {
       single: point('character', 'single')
     },
@@ -119,6 +124,13 @@ export function createScraperProviderRegistrar(
     game: {
       register(provider: GameScraperProvider) {
         const disposable = bridge.registerScraperProvider(scope, 'game', provider)
+        subscriptions.add(disposable)
+        return disposable
+      }
+    },
+    anime: {
+      register(provider: AnimeScraperProvider) {
+        const disposable = bridge.registerScraperProvider(scope, 'anime', provider)
         subscriptions.add(disposable)
         return disposable
       }

@@ -1,8 +1,13 @@
 import { relations } from 'drizzle-orm'
 
 import {
+  animeCharacterLinks,
+  animeCompanyLinks,
+  animePersonLinks,
+  animes,
   characterPersonLinks,
   characters,
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
@@ -46,6 +51,50 @@ export const gameCharacterLinksRelations = relations(gameCharacterLinks, ({ one 
   character: one(characters, {
     fields: [gameCharacterLinks.characterId],
     references: [characters.id]
+  })
+}))
+
+export const animePersonLinksRelations = relations(animePersonLinks, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animePersonLinks.animeId],
+    references: [animes.id]
+  }),
+  person: one(persons, {
+    fields: [animePersonLinks.personId],
+    references: [persons.id]
+  })
+}))
+
+export const animeCompanyLinksRelations = relations(animeCompanyLinks, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeCompanyLinks.animeId],
+    references: [animes.id]
+  }),
+  company: one(companies, {
+    fields: [animeCompanyLinks.companyId],
+    references: [companies.id]
+  })
+}))
+
+export const animeCharacterLinksRelations = relations(animeCharacterLinks, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeCharacterLinks.animeId],
+    references: [animes.id]
+  }),
+  character: one(characters, {
+    fields: [animeCharacterLinks.characterId],
+    references: [characters.id]
+  })
+}))
+
+export const collectionAnimeLinksRelations = relations(collectionAnimeLinks, ({ one }) => ({
+  collection: one(collections, {
+    fields: [collectionAnimeLinks.collectionId],
+    references: [collections.id]
+  }),
+  anime: one(animes, {
+    fields: [collectionAnimeLinks.animeId],
+    references: [animes.id]
   })
 }))
 

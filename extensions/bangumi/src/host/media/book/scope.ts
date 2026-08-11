@@ -1,4 +1,4 @@
-import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../scopes'
+import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
 import type { RemoteOnlyMediaDescriptor } from '../types'
 
 export function createBookMediaDescriptor(): RemoteOnlyMediaDescriptor {

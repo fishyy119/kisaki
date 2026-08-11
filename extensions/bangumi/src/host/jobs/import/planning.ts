@@ -1,6 +1,6 @@
 import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import/planner'
 import { m } from '../../i18n'
-import type { BangumiMediaScope } from '../../media/scopes'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import type { LocalCollectionTarget, LocalMediaAdapter } from '../../media/types'
 import { BangumiExtensionError, isCancellationError } from '../../utils/errors'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'

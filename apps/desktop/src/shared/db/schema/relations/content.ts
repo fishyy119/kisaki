@@ -1,10 +1,21 @@
 import { relations } from 'drizzle-orm'
 
 import {
+  animeCharacterLinks,
+  animeCompanyLinks,
+  animeEpisodes,
+  animeExternalIds,
+  animeExtras,
+  animePersonLinks,
+  animeRelations,
+  animeSessions,
+  animeTagLinks,
+  animes,
   characterExternalIds,
   characterPersonLinks,
   characterTagLinks,
   characters,
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
@@ -50,8 +61,23 @@ export const gameSessionsRelations = relations(gameSessions, ({ one }) => ({
   })
 }))
 
+export const animesRelations = relations(animes, ({ many }) => ({
+  episodes: many(animeEpisodes),
+  extras: many(animeExtras),
+  sessions: many(animeSessions),
+  animePersonLinks: many(animePersonLinks),
+  animeCompanyLinks: many(animeCompanyLinks),
+  animeCharacterLinks: many(animeCharacterLinks),
+  collectionAnimeLinks: many(collectionAnimeLinks),
+  animeTagLinks: many(animeTagLinks),
+  externalIds: many(animeExternalIds),
+  relations: many(animeRelations, { relationName: 'animeRelationSource' }),
+  relatedBy: many(animeRelations, { relationName: 'animeRelationTarget' })
+}))
+
 export const personsRelations = relations(persons, ({ many }) => ({
   gamePersonLinks: many(gamePersonLinks),
+  animePersonLinks: many(animePersonLinks),
   characterPersonLinks: many(characterPersonLinks),
   collectionPersonLinks: many(collectionPersonLinks),
   personTagLinks: many(personTagLinks),
@@ -60,6 +86,7 @@ export const personsRelations = relations(persons, ({ many }) => ({
 
 export const companiesRelations = relations(companies, ({ many }) => ({
   gameCompanyLinks: many(gameCompanyLinks),
+  animeCompanyLinks: many(animeCompanyLinks),
   collectionCompanyLinks: many(collectionCompanyLinks),
   companyTagLinks: many(companyTagLinks),
   externalIds: many(companyExternalIds)
@@ -67,6 +94,7 @@ export const companiesRelations = relations(companies, ({ many }) => ({
 
 export const charactersRelations = relations(characters, ({ many }) => ({
   gameCharacterLinks: many(gameCharacterLinks),
+  animeCharacterLinks: many(animeCharacterLinks),
   characterPersonLinks: many(characterPersonLinks),
   collectionCharacterLinks: many(collectionCharacterLinks),
   characterTagLinks: many(characterTagLinks),

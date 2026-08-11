@@ -1,3 +1,4 @@
+import type { LibraryMediaType } from '../../../capabilities/library'
 import type { ExternalId } from '../../../shared'
 import type { HookPointSpec } from './point'
 
@@ -16,12 +17,16 @@ export interface ScannerEntry {
 }
 
 export interface ScannerDiscoveredEntry {
+  /** Media type of the scan run that produced the entry. */
+  mediaType: LibraryMediaType
   entry: ScannerEntry
   /** When set to true the entry is dropped from the scan run. */
   skip: boolean
 }
 
 export interface ScannerMatchedEntry {
+  /** Media type of the scan run that produced the entry. */
+  mediaType: LibraryMediaType
   entry: ScannerEntry
   name: string
   externalIds: ExternalId[]

@@ -31,7 +31,8 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
-import { games, settings } from '@shared/db'
+import { animes, games, settings } from '@shared/db'
+import type { MediaType } from '@shared/common'
 import type { ScannerRunIssueType } from '@shared/scanner'
 import ScannerResultFixDialog from './scanner-result-fix-dialog.vue'
 import {
@@ -83,6 +84,7 @@ const issueRowsBase = computed<ScannerIssueRow[]>(() => {
     return state.issues.map((issue) => ({
       scannerId: state.scannerId,
       scannerName: state.scannerName,
+      mediaType: state.mediaType,
       issue
     }))
   }
@@ -93,6 +95,7 @@ const issueRowsBase = computed<ScannerIssueRow[]>(() => {
       ...state.issues.map((issue) => ({
         scannerId: state.scannerId,
         scannerName: state.scannerName,
+        mediaType: state.mediaType,
         issue
       }))
     )
@@ -100,49 +103,73 @@ const issueRowsBase = computed<ScannerIssueRow[]>(() => {
   return rows
 })
 
-const relatedGameIds = computed(() => {
-  return [
-    ...new Set(
-      issueRowsBase.value
-        .map((row) => row.issue.existingGameId ?? row.issue.gameId)
-        .filter((id): id is string => typeof id === 'string' && id.length > 0)
-    )
-  ]
+function readIssueEntityId(row: ScannerIssueRow): string | undefined {
+  const id = row.issue.existingEntityId ?? row.issue.entityId
+  return id && id.length > 0 ? id : undefined
+}
+
+/** Related entity ids grouped by the media type of the scanner that produced them. */
+const relatedEntityIds = computed(() => {
+  const byMediaType = new Map<MediaType, Set<string>>()
+  for (const row of issueRowsBase.value) {
+    const id = readIssueEntityId(row)
+    if (!id) continue
+
+    const ids = byMediaType.get(row.mediaType) ?? new Set<string>()
+    ids.add(id)
+    byMediaType.set(row.mediaType, ids)
+  }
+  return byMediaType
 })
 
-const { data: relatedGameNames, refetch: refetchRelatedGameNames } = useAsyncData(
+const { data: relatedEntityNames, refetch: refetchRelatedEntityNames } = useAsyncData(
   async () => {
-    const ids = relatedGameIds.value
     const names = new Map<string, string>()
-    if (ids.length === 0) return names
 
-    const rows = await db
-      .select({ id: games.id, name: games.name })
-      .from(games)
-      .where(
-        showNsfw.value
-          ? inArray(games.id, ids)
-          : and(inArray(games.id, ids), eq(games.isNsfw, false))
-      )
+    const gameIds = [...(relatedEntityIds.value.get('game') ?? [])]
+    if (gameIds.length > 0) {
+      const rows = await db
+        .select({ id: games.id, name: games.name })
+        .from(games)
+        .where(
+          showNsfw.value
+            ? inArray(games.id, gameIds)
+            : and(inArray(games.id, gameIds), eq(games.isNsfw, false))
+        )
+      for (const row of rows) {
+        names.set(row.id, row.name)
+      }
+    }
 
-    for (const row of rows) {
-      names.set(row.id, row.name)
+    const animeIds = [...(relatedEntityIds.value.get('anime') ?? [])]
+    if (animeIds.length > 0) {
+      const rows = await db
+        .select({ id: animes.id, name: animes.name })
+        .from(animes)
+        .where(
+          showNsfw.value
+            ? inArray(animes.id, animeIds)
+            : and(inArray(animes.id, animeIds), eq(animes.isNsfw, false))
+        )
+      for (const row of rows) {
+        names.set(row.id, row.name)
+      }
     }
 
     return names
   },
   {
-    watch: [relatedGameIds, showNsfw]
+    watch: [relatedEntityIds, showNsfw]
   }
 )
 
 const issueRows = computed<ScannerIssueRow[]>(() => {
-  const names = relatedGameNames.value ?? new Map<string, string>()
+  const names = relatedEntityNames.value ?? new Map<string, string>()
   return issueRowsBase.value.map((row) => {
-    const relatedGameId = row.issue.existingGameId ?? row.issue.gameId
+    const relatedEntityId = readIssueEntityId(row)
     return {
       ...row,
-      existingGameName: relatedGameId ? names.get(relatedGameId) : undefined
+      existingEntityName: relatedEntityId ? names.get(relatedEntityId) : undefined
     }
   })
 })
@@ -161,7 +188,7 @@ const filteredIssueRows = computed(() => {
       row.issue.path,
       row.issue.reason,
       row.scannerName,
-      row.existingGameName,
+      row.existingEntityName,
       getIssueTypeText(row.issue.type)
     ]
       .filter((value): value is string => typeof value === 'string' && value.length > 0)
@@ -184,6 +211,11 @@ async function handleOpenPath(path: string) {
   } catch (error) {
     log.error('Failed to open scanner issue path:', error)
   }
+}
+
+/** Re-scraping an issue needs an update ingest pipeline, which only games have. */
+function canFixIssue(row: ScannerIssueRow): boolean {
+  return row.issue.fixable && row.mediaType === 'game'
 }
 
 function handleFixIssue(row: ScannerIssueRow) {
@@ -219,8 +251,8 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
 }
 
 useDbChanges(({ operation, table }) => {
-  if (operation === 'updated' && table === 'games') {
-    refetchRelatedGameNames()
+  if (operation === 'updated' && (table === 'games' || table === 'animes')) {
+    refetchRelatedEntityNames()
   }
 })
 </script>
@@ -314,7 +346,7 @@ useDbChanges(({ operation, table }) => {
                   <TableHead>{{ m.scanner.issues.table.type }}</TableHead>
                   <TableHead>{{ m.scanner.issues.table.path }}</TableHead>
                   <TableHead>{{ m.scanner.issues.table.reason }}</TableHead>
-                  <TableHead>{{ m.scanner.issues.table.relatedGame }}</TableHead>
+                  <TableHead>{{ m.scanner.issues.table.relatedEntity }}</TableHead>
                   <TableHead class="text-right">{{ m.scanner.issues.table.actions }}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -360,9 +392,9 @@ useDbChanges(({ operation, table }) => {
                 </TableCell>
                 <TableCell
                   class="truncate text-muted-foreground"
-                  :title="row.existingGameName"
+                  :title="row.existingEntityName"
                 >
-                  {{ row.existingGameName || '-' }}
+                  {{ row.existingEntityName || '-' }}
                 </TableCell>
                 <TableCell>
                   <div class="flex items-center justify-end gap-0.5">
@@ -398,7 +430,7 @@ useDbChanges(({ operation, table }) => {
                       size="icon-sm"
                       class="text-muted-foreground hover:text-foreground"
                       :tooltip="m.scanner.issues.fixAndRescrape"
-                      :disabled="!row.issue.fixable"
+                      :disabled="!canFixIssue(row)"
                       @click="handleFixIssue(row)"
                     >
                       <Icon

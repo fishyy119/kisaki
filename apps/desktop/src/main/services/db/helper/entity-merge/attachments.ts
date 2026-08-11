@@ -32,7 +32,7 @@ export async function stageEntityAttachments(
     }
 
     if (
-      entityType === 'game' &&
+      hasDescriptionInlineFiles(entityType) &&
       shouldUseSourceValue(target.description, source.description) &&
       Array.isArray(source.descriptionInlineFiles)
     ) {
@@ -90,6 +90,8 @@ function getEntityTableName(entityType: AllEntityType): TableName {
   switch (entityType) {
     case 'game':
       return 'games'
+    case 'anime':
+      return 'animes'
     case 'person':
       return 'persons'
     case 'company':
@@ -107,6 +109,8 @@ function getSingleFileFields(entityType: AllEntityType): string[] {
   switch (entityType) {
     case 'game':
       return ['coverFile', 'backdropFile', 'logoFile', 'iconFile']
+    case 'anime':
+      return ['coverFile', 'backdropFile', 'logoFile']
     case 'person':
       return ['photoFile']
     case 'company':
@@ -118,6 +122,11 @@ function getSingleFileFields(entityType: AllEntityType): string[] {
     case 'tag':
       return []
   }
+}
+
+/** Entity types whose description is a rich surface with inline attachments. */
+function hasDescriptionInlineFiles(entityType: AllEntityType): boolean {
+  return entityType === 'game' || entityType === 'anime'
 }
 
 async function copyFiles(

@@ -1,15 +1,15 @@
-import type { LauncherHooks } from '@main/services/launcher/hooks'
-import type { MonitorHooks } from '@main/services/monitor/hooks'
+import type { ActivityHooks } from '@main/services/activity'
 import type { ExtensionHookContributionPoint } from '../point'
 
-/** Binds launcher and monitor module hooks to their public play hook points. */
+/** Binds activity module hooks to their public play hook points. */
 export function bindPlayHookPoints(
-  launcher: LauncherHooks,
-  monitor: MonitorHooks,
+  activity: ActivityHooks,
   point: ExtensionHookContributionPoint
 ): void {
-  launcher.gameLaunching.tap((value) => point.transform('play.game.launching', value))
-  monitor.sessionStarted.tap((p) => point.notify('play.session.started', p))
-  monitor.sessionEnding.tap((value) => point.transform('play.session.ending', value))
-  monitor.sessionEnded.tap((p) => point.notify('play.session.ended', p))
+  activity.gameLaunching.tap((value) => point.transform('play.game.launching', value))
+  activity.sessionStarted.tap((payload) => point.notify('play.session.started', payload))
+  activity.sessionEnding.tap((value) => point.transform('play.session.ending', value))
+  activity.sessionEnded.tap((payload) => point.notify('play.session.ended', payload))
+  activity.watchStarted.tap((payload) => point.notify('play.anime.watch.started', payload))
+  activity.watchEnded.tap((payload) => point.notify('play.anime.watch.ended', payload))
 }

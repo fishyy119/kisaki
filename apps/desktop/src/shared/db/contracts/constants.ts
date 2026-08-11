@@ -6,6 +6,7 @@
  */
 
 import type {
+  AnimeScraperSlot,
   CharacterScraperSlot,
   CompanyScraperSlot,
   GameScraperSlot,
@@ -28,6 +29,18 @@ export const GAME_SCRAPER_SLOTS: GameScraperSlot[] = [
   'backdrops',
   'logos',
   'icons'
+]
+
+export const ANIME_SCRAPER_SLOTS: AnimeScraperSlot[] = [
+  'info',
+  'tags',
+  'episodes',
+  'characters',
+  'persons',
+  'companies',
+  'covers',
+  'backdrops',
+  'logos'
 ]
 
 export const PERSON_SCRAPER_SLOTS: PersonScraperSlot[] = ['info', 'tags', 'photos']

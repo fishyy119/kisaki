@@ -21,9 +21,9 @@ const log = createLogger('Deeplink')
 export class DeeplinkService implements IService {
   readonly id = 'deeplink'
   readonly deps = [
+    'activity',
     'i18n',
     'ipc',
-    'launcher',
     'notify',
     'window'
   ] as const satisfies readonly ServiceName[]
@@ -38,13 +38,13 @@ export class DeeplinkService implements IService {
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const ipc = container.get('ipc')
     this.windowService = container.get('window')
-    const launcher = container.get('launcher')
+    const activity = container.get('activity')
     const notify = container.get('notify')
     const i18n = container.get('i18n')
 
     this.router = new DeeplinkRouter()
 
-    this.router.register(LAUNCH_DEEPLINK_ROUTE, new LaunchHandler(launcher, notify, i18n))
+    this.router.register(LAUNCH_DEEPLINK_ROUTE, new LaunchHandler(activity, notify, i18n))
     this.router.register(AUTH_DEEPLINK_ROUTE, new AuthHandler(ipc, this.windowService))
     this.router.register(NAVIGATE_DEEPLINK_ROUTE, new NavigateHandler(ipc, this.windowService))
 
@@ -73,7 +73,9 @@ export class DeeplinkService implements IService {
   async handleDeeplink(url: string): Promise<DeeplinkResult> {
     const parsed = this.parseDeeplink(url)
     if (!parsed) {
-      log.warn('Invalid deeplink format.', { url: url })
+      // Malformed deeplinks may carry token-like query values; log the
+      // pathname only, never the raw URL.
+      log.warn('Invalid deeplink format.', { pathname: describeDeeplinkForLog(url) })
       return {
         success: false,
         message: 'Invalid deeplink format'
@@ -187,5 +189,14 @@ export class DeeplinkService implements IService {
     } catch (error) {
       log.error('Error focusing main window:', error)
     }
+  }
+}
+
+/** Low-sensitivity descriptor of a rejected deeplink: pathname or length only. */
+function describeDeeplinkForLog(url: string): string {
+  try {
+    return new URL(url).pathname
+  } catch {
+    return `<unparsable url, length ${url.length}>`
   }
 }

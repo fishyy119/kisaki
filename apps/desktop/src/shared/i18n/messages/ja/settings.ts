@@ -10,6 +10,12 @@ export const settings = {
   updaterAutoCheckLabel: '更新を自動的に確認',
   updaterAllowPrereleaseLabel: 'プレビュー版の更新を受け取る',
   loadFailed: '設定の読み込みに失敗しました。',
+  player: {
+    audioLanguagesLabel: '優先する音声言語',
+    subtitleLanguagesLabel: '優先する字幕言語',
+    languagesPlaceholder: '例: jpn, eng',
+    languagesHint: 'カンマ区切りの言語タグ。先頭ほど優先されます。'
+  },
   language: {
     followSystem: 'システムに従う',
     uiLanguageLabel: '表示言語'

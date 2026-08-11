@@ -11,6 +11,18 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
     wrapIpc(() => service.add.game.startAddFromScraper(profileId, lookup, options))
   )
 
+  ipc.handle('ingest:add-anime-direct', async (_, seed, options) =>
+    wrapIpc(() => service.add.anime.startAddDirect(seed, options))
+  )
+
+  ipc.handle('ingest:add-anime-from-scraper', async (_, profileId, lookup, options) =>
+    wrapIpc(() => service.add.anime.startAddFromScraper(profileId, lookup, options))
+  )
+
+  ipc.handle('ingest:sync-anime-files', async (_, params) =>
+    wrapIpc(() => service.files.anime.sync(params))
+  )
+
   ipc.handle('ingest:add-person-from-scraper', async (_, profileId, lookup, options) =>
     wrapIpc(() => service.add.person.startAddFromScraper(profileId, lookup, options))
   )
@@ -27,6 +39,10 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
     wrapIpc(() => service.update.game.startUpdateFromScraper(request))
   )
 
+  ipc.handle('ingest:update-anime-from-scraper', async (_, request) =>
+    wrapIpc(() => service.update.anime.startUpdateFromScraper(request))
+  )
+
   ipc.handle('ingest:update-person-from-scraper', async (_, request) =>
     wrapIpc(() => service.update.person.startUpdateFromScraper(request))
   )
@@ -41,6 +57,10 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
 
   ipc.handle('ingest:batch-update-game-from-scraper', async (_, request) =>
     wrapIpc(() => service.batch.game.startUpdateFromScraper(request))
+  )
+
+  ipc.handle('ingest:batch-update-anime-from-scraper', async (_, request) =>
+    wrapIpc(() => service.batch.anime.startUpdateFromScraper(request))
   )
 
   ipc.handle('ingest:batch-update-person-from-scraper', async (_, request) =>

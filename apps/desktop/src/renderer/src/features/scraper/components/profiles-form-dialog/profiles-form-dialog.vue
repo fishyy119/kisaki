@@ -59,12 +59,14 @@ const { data, isLoading, refetch } = useAsyncData(
     const [
       profilesData,
       gameProvidersResult,
+      animeProvidersResult,
       personProvidersResult,
       companyProvidersResult,
       characterProvidersResult
     ] = await Promise.all([
       db.select().from(scraperProfiles).orderBy(scraperProfiles.order),
       ipcManager.invoke('scraper:list-game-providers'),
+      ipcManager.invoke('scraper:list-anime-providers'),
       ipcManager.invoke('scraper:list-person-providers'),
       ipcManager.invoke('scraper:list-company-providers'),
       ipcManager.invoke('scraper:list-character-providers')
@@ -73,6 +75,7 @@ const { data, isLoading, refetch } = useAsyncData(
       profiles: profilesData,
       providersByType: {
         game: gameProvidersResult.success ? gameProvidersResult.data : [],
+        anime: animeProvidersResult.success ? animeProvidersResult.data : [],
         person: personProvidersResult.success ? personProvidersResult.data : [],
         company: companyProvidersResult.success ? companyProvidersResult.data : [],
         character: characterProvidersResult.success ? characterProvidersResult.data : []
@@ -102,6 +105,7 @@ const providersByType = computed<ScraperProvidersByType>(() => {
   return (
     data.value?.providersByType ?? {
       game: [],
+      anime: [],
       person: [],
       company: [],
       character: []

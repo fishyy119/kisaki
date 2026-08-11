@@ -1,8 +1,10 @@
 import type {
+  LibraryAnime,
   LibraryCollection,
   LibraryCompany,
   LibraryGame,
   LibraryGraphDiagnostic,
+  LibraryGraphMediaNode,
   LibraryPerson,
   LibraryTag
 } from '@kisaki3/extension-api'
@@ -16,11 +18,13 @@ import {
 } from '../types'
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
 import {
+  buildAnimePatch,
   buildCollectionPatch,
   buildCompanyPatch,
   buildGamePatch,
   buildPersonPatch,
   buildTagPatch,
+  planAnimeAction,
   planCollectionAction,
   planGameAction,
   planRankedEntityAction,
@@ -41,11 +45,7 @@ export function previewEntityNodes(
       continue
     }
 
-    const action = planGameAction(
-      match?.existing as LibraryGame | undefined,
-      entry.node.input,
-      graph.options.conflictMode
-    )
+    const action = planMediaAction(entry.node, match?.existing, graph.options.conflictMode)
     setEntityNodeResult(draft, state, entry, action, match)
   }
   for (const entry of graph.nodes.collections) {
@@ -106,6 +106,16 @@ export function previewEntityNodes(
   }
 }
 
+function planMediaAction(
+  node: LibraryGraphMediaNode,
+  existing: unknown,
+  conflictMode: NormalizedLibraryGraph['options']['conflictMode']
+): ReturnType<typeof planGameAction> {
+  return node.mediaType === 'anime'
+    ? planAnimeAction(existing as LibraryAnime | undefined, node.input, conflictMode)
+    : planGameAction(existing as LibraryGame | undefined, node.input, conflictMode)
+}
+
 export function applyEntityNodes(
   graph: NormalizedLibraryGraph,
   matches: LibraryGraphMatchSet,
@@ -113,14 +123,14 @@ export function applyEntityNodes(
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): void {
-  applyGameNodes(graph, matches, draft, state, options)
+  applyMediaNodes(graph, matches, draft, state, options)
   applyCollectionNodes(graph, matches, draft, state, options)
   applyTagNodes(graph, matches, draft, state, options)
   applyCompanyNodes(graph, matches, draft, state, options)
   applyPersonNodes(graph, matches, draft, state, options)
 }
 
-function applyGameNodes(
+function applyMediaNodes(
   graph: NormalizedLibraryGraph,
   matches: LibraryGraphMatchSet,
   draft: LibraryGraphResultDraft,
@@ -135,28 +145,51 @@ function applyGameNodes(
     }
 
     try {
-      const existing = match?.existing as LibraryGame | undefined
-      if (!existing) {
-        const entity = options.entities.createGame(entry.node.input)
-        setEntityNodeResult(draft, state, entry, 'create', {
-          entityId: entity.id,
-          diagnostics: match?.diagnostics
-        })
-        continue
-      }
-
-      const patch = buildGamePatch(existing, entry.node.input, graph.options.conflictMode)
-      const entity =
-        Object.keys(patch).length > 0 ? options.entities.updateGame(existing.id, patch) : existing
-      const action = Object.keys(patch).length > 0 ? 'update' : 'skip'
-      setEntityNodeResult(draft, state, entry, action, {
-        entityId: entity.id,
+      const written = writeMediaNode(
+        entry.node,
+        match?.existing,
+        graph.options.conflictMode,
+        options
+      )
+      setEntityNodeResult(draft, state, entry, written.action, {
+        entityId: written.entityId,
         diagnostics: match?.diagnostics
       })
     } catch (error) {
       setEntityWriteFailureResult(draft, state, entry, error, match?.diagnostics)
     }
   }
+}
+
+function writeMediaNode(
+  node: LibraryGraphMediaNode,
+  existingEntity: unknown,
+  conflictMode: NormalizedLibraryGraph['options']['conflictMode'],
+  options: ExecuteLibraryGraphOptions
+): { entityId: string; action: 'create' | 'update' | 'skip' } {
+  if (node.mediaType === 'anime') {
+    const existing = existingEntity as LibraryAnime | undefined
+    if (!existing) {
+      return { entityId: options.entities.createAnime(node.input).id, action: 'create' }
+    }
+
+    const patch = buildAnimePatch(existing, node.input, conflictMode)
+    if (Object.keys(patch).length === 0) {
+      return { entityId: existing.id, action: 'skip' }
+    }
+    return { entityId: options.entities.updateAnime(existing.id, patch).id, action: 'update' }
+  }
+
+  const existing = existingEntity as LibraryGame | undefined
+  if (!existing) {
+    return { entityId: options.entities.createGame(node.input).id, action: 'create' }
+  }
+
+  const patch = buildGamePatch(existing, node.input, conflictMode)
+  if (Object.keys(patch).length === 0) {
+    return { entityId: existing.id, action: 'skip' }
+  }
+  return { entityId: options.entities.updateGame(existing.id, patch).id, action: 'update' }
 }
 
 function applyCollectionNodes(

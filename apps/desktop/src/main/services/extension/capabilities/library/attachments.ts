@@ -18,7 +18,7 @@ import {
 } from '@kisaki3/extension-api'
 import { eq } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
-import { characters, collections, companies, games, persons } from '@shared/db'
+import { animes, characters, collections, companies, games, persons } from '@shared/db'
 import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/contracts/attachment'
 import type { TableName } from '@shared/db/table-names'
 import type { DbService } from '@main/services/db'
@@ -26,7 +26,12 @@ import { assertInsideAnyRoot } from '../../shared/path-confinement'
 
 type AttachmentMode = 'single' | 'multiple'
 type AttachmentTable =
-  typeof games | typeof characters | typeof persons | typeof companies | typeof collections
+  | typeof games
+  | typeof animes
+  | typeof characters
+  | typeof persons
+  | typeof companies
+  | typeof collections
 type AttachmentTableWithId = AttachmentTable & { id: AnySQLiteColumn<{ data: string }> }
 
 interface AttachmentSlotConfigBase {
@@ -87,6 +92,38 @@ const ATTACHMENT_SLOT_CONFIGS: readonly AttachmentSlotConfig[] = [
     mode: 'multiple',
     table: games,
     tableName: 'games',
+    field: 'descriptionInlineFiles'
+  },
+  {
+    entityType: 'anime',
+    slot: 'cover',
+    mode: 'single',
+    table: animes,
+    tableName: 'animes',
+    field: 'coverFile'
+  },
+  {
+    entityType: 'anime',
+    slot: 'backdrop',
+    mode: 'single',
+    table: animes,
+    tableName: 'animes',
+    field: 'backdropFile'
+  },
+  {
+    entityType: 'anime',
+    slot: 'logo',
+    mode: 'single',
+    table: animes,
+    tableName: 'animes',
+    field: 'logoFile'
+  },
+  {
+    entityType: 'anime',
+    slot: 'description-inline',
+    mode: 'multiple',
+    table: animes,
+    tableName: 'animes',
     field: 'descriptionInlineFiles'
   },
   {

@@ -13,7 +13,7 @@ import { ENTITY_MERGE_CONFIGS } from './configs'
 import { cleanupStagedMergeFiles, stageEntityAttachments } from './attachments'
 import { buildEntityFieldPatch } from './fields'
 import { rewriteMergeFilters } from './filters'
-import { mergeGameNotes, mergeGameSessions, mergeRelationRows } from './relations'
+import { OWNED_DATA_MERGES, mergeRelationRows } from './relations'
 import type {
   EntityMergeConfig,
   ExternalIdMergeConfig,
@@ -121,9 +121,9 @@ export class DbEntityMergeCoordinator {
         }
 
         let relationChanges = 0
-        if (entityType === 'game') {
-          relationChanges += mergeGameSessions(tx, targetId, sourceId, now)
-          relationChanges += mergeGameNotes(tx, targetId, sourceId, now)
+        const mergeOwnedData = OWNED_DATA_MERGES[entityType]
+        if (mergeOwnedData) {
+          relationChanges += mergeOwnedData(tx, targetId, sourceId, now)
         }
 
         for (const relationConfig of config.relations) {

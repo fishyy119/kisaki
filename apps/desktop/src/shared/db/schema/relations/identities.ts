@@ -1,6 +1,10 @@
 import { relations } from 'drizzle-orm'
 
 import {
+  animeEpisodeExternalIds,
+  animeEpisodes,
+  animeExternalIds,
+  animes,
   characterExternalIds,
   characters,
   companies,
@@ -15,6 +19,20 @@ export const gameExternalIdsRelations = relations(gameExternalIds, ({ one }) => 
   game: one(games, {
     fields: [gameExternalIds.gameId],
     references: [games.id]
+  })
+}))
+
+export const animeExternalIdsRelations = relations(animeExternalIds, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeExternalIds.animeId],
+    references: [animes.id]
+  })
+}))
+
+export const animeEpisodeExternalIdsRelations = relations(animeEpisodeExternalIds, ({ one }) => ({
+  episode: one(animeEpisodes, {
+    fields: [animeEpisodeExternalIds.episodeId],
+    references: [animeEpisodes.id]
   })
 }))
 

@@ -1,3 +1,4 @@
+export { AnimeUpdateHandler } from './anime'
 export { CharacterUpdateHandler } from './character'
 export { CompanyUpdateHandler } from './company'
 export { GameUpdateHandler } from './game'

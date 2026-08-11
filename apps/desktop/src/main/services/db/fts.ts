@@ -41,6 +41,11 @@ const FTS_TABLES: Record<FtsEntityType, FtsTableConfig> = {
     ftsTableName: 'games_fts',
     columns: ['name', 'original_name', 'sort_name', 'description']
   },
+  anime: {
+    tableName: 'animes',
+    ftsTableName: 'animes_fts',
+    columns: ['name', 'original_name', 'sort_name', 'description']
+  },
   character: {
     tableName: 'characters',
     ftsTableName: 'characters_fts',

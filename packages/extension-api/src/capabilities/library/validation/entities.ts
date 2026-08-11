@@ -1,4 +1,10 @@
 import type {
+  LibraryAnimeCreateInput,
+  LibraryAnimeEpisodeCreateInput,
+  LibraryAnimeEpisodeQuery,
+  LibraryAnimeEpisodeWatchStatePatch,
+  LibraryAnimePatch,
+  LibraryAnimeQuery,
   LibraryCharacterCreateInput,
   LibraryCharacterPatch,
   LibraryCharacterQuery,
@@ -22,9 +28,15 @@ import type {
 import {
   LIBRARY_GAME_LAUNCHER_MODES,
   LIBRARY_GAME_MONITOR_MODES,
-  LIBRARY_GAME_STATUSES
+  LIBRARY_MEDIA_STATUSES
 } from '../entities'
-import { LIBRARY_BLOOD_TYPES, LIBRARY_CUP_SIZES, LIBRARY_GENDERS } from '../../../shared/library'
+import {
+  LIBRARY_ANIME_EPISODE_TYPES,
+  LIBRARY_ANIME_FORMATS,
+  LIBRARY_BLOOD_TYPES,
+  LIBRARY_CUP_SIZES,
+  LIBRARY_GENDERS
+} from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
   validateOptionalBoolean,
@@ -97,6 +109,59 @@ const GAME_PATCH_KEYS = new Set<string>([
   'externalIds',
   'lastActiveAt',
   'totalDuration'
+])
+const ANIME_CREATE_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'releaseDate',
+  'status',
+  'format',
+  'totalEpisodes',
+  'lastActiveAt',
+  'totalDuration',
+  'animeDirPath',
+  'descriptionInlineFiles',
+  'externalIds'
+])
+const ANIME_PATCH_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'releaseDate',
+  'status',
+  'format',
+  'totalEpisodes',
+  'animeDirPath',
+  'descriptionInlineFiles',
+  'externalIds',
+  'lastActiveAt',
+  'totalDuration'
+])
+const ANIME_EPISODE_CREATE_KEYS = new Set<string>([
+  'type',
+  'episodeNumber',
+  'name',
+  'originalName',
+  'airDate',
+  'description',
+  'durationMs',
+  'order',
+  'externalIds'
+])
+const ANIME_EPISODE_WATCH_STATE_KEYS = new Set<string>([
+  'watchedAt',
+  'playCount',
+  'resumePositionMs'
+])
+const ANIME_EPISODE_QUERY_KEYS = new Set<string>([
+  'animeId',
+  'types',
+  'watchedOnly',
+  'unwatchedOnly'
 ])
 const PERSON_CREATE_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
@@ -185,6 +250,15 @@ const TAG_PATCH_KEYS = new Set<string>([...ENTITY_BASE_CREATE_KEYS, 'isNsfw'])
 const SORT_DIRECTIONS = ['asc', 'desc'] as const satisfies readonly SortDirection[]
 const LIST_QUERY_BASE_KEYS = ['ids', 'search', 'limit', 'offset', 'sort'] as const
 const SORT_QUERY_KEYS = new Set<string>(['field', 'direction'])
+const ANIME_QUERY_KEYS = new Set<string>([
+  ...LIST_QUERY_BASE_KEYS,
+  'statuses',
+  'formats',
+  'favoritesOnly',
+  'includeNsfw',
+  'collectionIds',
+  'tagIds'
+])
 const GAME_QUERY_KEYS = new Set<string>([
   ...LIST_QUERY_BASE_KEYS,
   'statuses',
@@ -220,6 +294,54 @@ export function validateLibraryGameCreateInput(value: unknown): ValidationIssue[
 
 export function validateLibraryGamePatch(value: unknown): ValidationIssue[] {
   return validateGameWriteInput(value, '$', false)
+}
+
+export function validateLibraryAnimeCreateInput(value: unknown): ValidationIssue[] {
+  return validateAnimeWriteInput(value, '$', true)
+}
+
+export function validateLibraryAnimePatch(value: unknown): ValidationIssue[] {
+  return validateAnimeWriteInput(value, '$', false)
+}
+
+export function validateLibraryAnimeEpisodeCreateInput(value: unknown): ValidationIssue[] {
+  return validateAnimeEpisodeCreateInput(value, '$')
+}
+
+export function validateLibraryAnimeEpisodeWatchStatePatch(value: unknown): ValidationIssue[] {
+  const input = requireWriteObject(value, '$', 'Anime episode watch state patch')
+  if (!input) {
+    return [{ path: '$', message: 'Anime episode watch state patch must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, ANIME_EPISODE_WATCH_STATE_KEYS),
+    ...validateOptionalNullableFiniteNumber(input.watchedAt, '$.watchedAt'),
+    ...validateOptionalNonNegativeInteger(input.playCount, '$.playCount'),
+    ...validateOptionalNullableFiniteNumber(input.resumePositionMs, '$.resumePositionMs')
+  ]
+}
+
+export function validateLibraryAnimeEpisodeQuery(value: unknown): ValidationIssue[] {
+  if (!isRecord(value)) {
+    return [{ path: '$', message: 'Anime episode query must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, ANIME_EPISODE_QUERY_KEYS),
+    ...validateRequiredString(value.animeId, '$.animeId', {
+      trim: true,
+      valueMessage: 'animeId must be a non-empty string.'
+    }),
+    ...validateOptionalEnumArray(
+      value.types,
+      '$.types',
+      LIBRARY_ANIME_EPISODE_TYPES,
+      'types must be an array of supported anime episode types.'
+    ),
+    ...validateOptionalBoolean(value.watchedOnly, '$.watchedOnly'),
+    ...validateOptionalBoolean(value.unwatchedOnly, '$.unwatchedOnly')
+  ]
 }
 
 export function validateLibraryPersonCreateInput(value: unknown): ValidationIssue[] {
@@ -273,8 +395,35 @@ export function validateLibraryGameQuery(value: unknown): ValidationIssue[] {
     ...validateOptionalEnumArray(
       query.statuses,
       '$.statuses',
-      LIBRARY_GAME_STATUSES,
+      LIBRARY_MEDIA_STATUSES,
       'statuses must be an array of supported game statuses.'
+    ),
+    ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
+    ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
+    ...validateOptionalNonEmptyStringArray(query.collectionIds, '$.collectionIds'),
+    ...validateOptionalNonEmptyStringArray(query.tagIds, '$.tagIds')
+  ]
+}
+
+export function validateLibraryAnimeQuery(value: unknown): ValidationIssue[] {
+  const query = requireQueryObject(value)
+  if (!query) {
+    return value === undefined ? [] : [{ path: '$', message: 'Anime list query must be an object.' }]
+  }
+
+  return [
+    ...validateBaseListQuery(query, ANIME_QUERY_KEYS),
+    ...validateOptionalEnumArray(
+      query.statuses,
+      '$.statuses',
+      LIBRARY_MEDIA_STATUSES,
+      'statuses must be an array of supported media statuses.'
+    ),
+    ...validateOptionalEnumArray(
+      query.formats,
+      '$.formats',
+      LIBRARY_ANIME_FORMATS,
+      'formats must be an array of supported anime formats.'
     ),
     ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
     ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
@@ -378,6 +527,49 @@ export function assertValidLibraryGameCreateInput(
 
 export function assertValidLibraryGamePatch(value: unknown): asserts value is LibraryGamePatch {
   throwIfValidationIssues('library.games.update patch', validateLibraryGamePatch(value))
+}
+
+export function assertValidLibraryAnimeCreateInput(
+  value: unknown
+): asserts value is LibraryAnimeCreateInput {
+  throwIfValidationIssues('library.animes.create input', validateLibraryAnimeCreateInput(value))
+}
+
+export function assertValidLibraryAnimePatch(value: unknown): asserts value is LibraryAnimePatch {
+  throwIfValidationIssues('library.animes.update patch', validateLibraryAnimePatch(value))
+}
+
+export function assertValidLibraryAnimeEpisodeCreateInput(
+  value: unknown
+): asserts value is LibraryAnimeEpisodeCreateInput {
+  throwIfValidationIssues(
+    'library.animes.episodes.create input',
+    validateLibraryAnimeEpisodeCreateInput(value)
+  )
+}
+
+export function assertValidLibraryAnimeEpisodeWatchStatePatch(
+  value: unknown
+): asserts value is LibraryAnimeEpisodeWatchStatePatch {
+  throwIfValidationIssues(
+    'library.animes.episodes.patchWatchState patch',
+    validateLibraryAnimeEpisodeWatchStatePatch(value)
+  )
+}
+
+export function assertValidLibraryAnimeEpisodeQuery(
+  value: unknown
+): asserts value is LibraryAnimeEpisodeQuery {
+  throwIfValidationIssues(
+    'library.animes.episodes.list query',
+    validateLibraryAnimeEpisodeQuery(value)
+  )
+}
+
+export function assertValidLibraryAnimeQuery(
+  value: unknown
+): asserts value is LibraryAnimeQuery | undefined {
+  throwIfValidationIssues('library.animes.list query', validateLibraryAnimeQuery(value))
 }
 
 export function assertValidLibraryPersonCreateInput(
@@ -504,7 +696,7 @@ function validateGameWriteInput(value: unknown, path: string, create: boolean): 
     ...validateOptionalEnumString(
       input.status,
       `${path}.status`,
-      LIBRARY_GAME_STATUSES,
+      LIBRARY_MEDIA_STATUSES,
       'status must be one of the supported game statuses.'
     ),
     ...validateOptionalString(input.savePath, `${path}.savePath`),
@@ -529,6 +721,71 @@ function validateGameWriteInput(value: unknown, path: string, create: boolean): 
     ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
     ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
     ...validateOptionalNonNegativeFiniteNumber(input.totalDuration, `${path}.totalDuration`)
+  ]
+}
+
+function validateAnimeWriteInput(value: unknown, path: string, create: boolean): ValidationIssue[] {
+  const input = requireWriteObject(value, path, create ? 'Anime create input' : 'Anime patch')
+  if (!input) {
+    return [
+      {
+        path,
+        message: create ? 'Anime create input must be an object.' : 'Anime patch must be an object.'
+      }
+    ]
+  }
+
+  return [
+    ...validateUnknownKeys(input, create ? ANIME_CREATE_KEYS : ANIME_PATCH_KEYS, path),
+    ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
+    ...validateOptionalNonEmptyString(input.coverFile, `${path}.coverFile`),
+    ...validateOptionalNonEmptyString(input.backdropFile, `${path}.backdropFile`),
+    ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
+    ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      input.status,
+      `${path}.status`,
+      LIBRARY_MEDIA_STATUSES,
+      'status must be one of the supported media statuses.'
+    ),
+    ...validateOptionalEnumString(
+      input.format,
+      `${path}.format`,
+      LIBRARY_ANIME_FORMATS,
+      'format must be one of the supported anime formats.'
+    ),
+    ...validateOptionalNullableFiniteNumber(input.totalEpisodes, `${path}.totalEpisodes`),
+    ...validateOptionalString(input.animeDirPath, `${path}.animeDirPath`),
+    ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
+    ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
+    ...validateOptionalNonNegativeFiniteNumber(input.totalDuration, `${path}.totalDuration`)
+  ]
+}
+
+function validateAnimeEpisodeCreateInput(value: unknown, path: string): ValidationIssue[] {
+  const input = requireWriteObject(value, path, 'Anime episode create input')
+  if (!input) {
+    return [{ path, message: 'Anime episode create input must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, ANIME_EPISODE_CREATE_KEYS, path),
+    ...validateOptionalEnumString(
+      input.type,
+      `${path}.type`,
+      LIBRARY_ANIME_EPISODE_TYPES,
+      'type must be one of the supported anime episode types.'
+    ),
+    ...validateOptionalNullableFiniteNumber(input.episodeNumber, `${path}.episodeNumber`),
+    ...validateOptionalString(input.name, `${path}.name`),
+    ...validateOptionalString(input.originalName, `${path}.originalName`),
+    ...validateOptionalPartialDate(input.airDate, `${path}.airDate`),
+    ...validateOptionalString(input.description, `${path}.description`),
+    ...validateOptionalNullableFiniteNumber(input.durationMs, `${path}.durationMs`),
+    ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
   ]
 }
 

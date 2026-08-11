@@ -3,8 +3,12 @@
  *
  * Only the shared mechanics live here: duplicate collapsing, per-side sequence
  * allocation, and identity lookup. Which columns a link row carries stays with
- * the entity that owns the table.
+ * the entity that owns the table; character-person links are satellite rows
+ * fed by every root media graph, so their row builder is shared here too.
  */
+
+import type { NewCharacterPersonLink } from '@shared/db'
+import type { IngestCharacterPersonLink } from '../graph'
 
 export interface ResolvedRelationState {
   isSpoiler: boolean
@@ -71,4 +75,43 @@ export function requireOwnerIdentity(
   if (linkOwnerIdentityKey !== ownerIdentityKey) {
     throw new Error(`Link references unexpected ${owner} identity: ${linkOwnerIdentityKey}`)
   }
+}
+
+export function resolveCharacterPersonLinks(params: {
+  links: IngestCharacterPersonLink[]
+  characterIdByIdentity: Map<string, string>
+  personIdByIdentity: Map<string, string>
+}): NewCharacterPersonLink[] {
+  const { links, characterIdByIdentity, personIdByIdentity } = params
+
+  return resolveOrderedLinks({
+    links,
+    resolve: (link) => {
+      const characterId = requirePersistedId(
+        characterIdByIdentity,
+        link.characterIdentityKey,
+        'character'
+      )
+      const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
+      return {
+        key: `${characterId}:${personId}:${link.type}`,
+        value: {
+          characterId,
+          personId,
+          type: link.type,
+          isSpoiler: link.isSpoiler,
+          note: link.note
+        }
+      }
+    },
+    buildRow: (link, _index, counters) => ({
+      characterId: link.characterId,
+      personId: link.personId,
+      type: link.type,
+      isSpoiler: link.isSpoiler,
+      note: link.note ?? null,
+      orderInCharacter: counters.next('character', link.characterId),
+      orderInPerson: counters.next('person', link.personId)
+    })
+  })
 }

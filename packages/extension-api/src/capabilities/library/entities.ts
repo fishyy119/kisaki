@@ -1,5 +1,11 @@
 import type { ExternalId, PartialDate, RelatedSite, JsonObject } from '../../shared'
-import type { LibraryBloodType, LibraryCupSize, LibraryGender } from '../../shared/library'
+import type {
+  LibraryAnimeEpisodeType,
+  LibraryAnimeFormat,
+  LibraryBloodType,
+  LibraryCupSize,
+  LibraryGender
+} from '../../shared/library'
 
 export interface SaveBackup {
   backupAt: number
@@ -52,13 +58,22 @@ export interface DynamicEntityConfig {
   sortDirection: SortDirection
 }
 
+export const DYNAMIC_COLLECTION_ENTITY_TYPES = [
+  'game',
+  'anime',
+  'character',
+  'person',
+  'company'
+] as const
+
 export type DynamicCollectionConfig = Record<
-  'game' | 'character' | 'person' | 'company',
+  (typeof DYNAMIC_COLLECTION_ENTITY_TYPES)[number],
   DynamicEntityConfig
 >
 
 export const LIBRARY_ENTITY_TYPES = [
   'game',
+  'anime',
   'character',
   'person',
   'company',
@@ -68,7 +83,13 @@ export const LIBRARY_ENTITY_TYPES = [
 
 export type LibraryEntityType = (typeof LIBRARY_ENTITY_TYPES)[number]
 
-export const LIBRARY_CONTENT_ENTITY_TYPES = ['game', 'character', 'person', 'company'] as const
+export const LIBRARY_CONTENT_ENTITY_TYPES = [
+  'game',
+  'anime',
+  'character',
+  'person',
+  'company'
+] as const
 
 export type LibraryContentEntityType = (typeof LIBRARY_CONTENT_ENTITY_TYPES)[number]
 
@@ -76,7 +97,8 @@ export const LIBRARY_ORGANIZER_ENTITY_TYPES = ['collection', 'tag'] as const
 
 export type LibraryOrganizerEntityType = (typeof LIBRARY_ORGANIZER_ENTITY_TYPES)[number]
 
-export const LIBRARY_GAME_STATUSES = [
+/** Consumption status; shared by every media type. */
+export const LIBRARY_MEDIA_STATUSES = [
   'notStarted',
   'inProgress',
   'partial',
@@ -85,7 +107,7 @@ export const LIBRARY_GAME_STATUSES = [
   'shelved'
 ] as const
 
-export type LibraryGameStatus = (typeof LIBRARY_GAME_STATUSES)[number]
+export type LibraryMediaStatus = (typeof LIBRARY_MEDIA_STATUSES)[number]
 
 export const LIBRARY_GAME_LAUNCHER_MODES = ['file', 'url', 'exec'] as const
 
@@ -137,7 +159,7 @@ export interface LibraryGame extends LibraryRankedEntityBase {
   logoFile?: string
   iconFile?: string
   releaseDate?: PartialDate
-  status: LibraryGameStatus
+  status: LibraryMediaStatus
   lastActiveAt?: number | null
   totalDuration: number
   savePath?: string
@@ -150,6 +172,74 @@ export interface LibraryGame extends LibraryRankedEntityBase {
   gameDirPath?: string
   descriptionInlineFiles?: readonly string[]
   externalIds: readonly ExternalId[]
+}
+
+export interface LibraryAnime extends LibraryRankedEntityBase {
+  coverFile?: string
+  backdropFile?: string
+  logoFile?: string
+  releaseDate?: PartialDate
+  status: LibraryMediaStatus
+  format: LibraryAnimeFormat
+  totalEpisodes?: number | null
+  lastActiveAt?: number | null
+  totalDuration: number
+  animeDirPath?: string
+  descriptionInlineFiles?: readonly string[]
+  externalIds: readonly ExternalId[]
+}
+
+/**
+ * One episode of an anime entry.
+ *
+ * Episodes are a sub-resource of their anime, not a library entity type:
+ * they are addressed through the anime namespace and never appear in
+ * `LibraryEntityType`.
+ */
+export interface LibraryAnimeEpisode {
+  id: string
+  animeId: string
+  type: LibraryAnimeEpisodeType
+  episodeNumber?: number | null
+  name?: string
+  originalName?: string
+  airDate?: PartialDate
+  description?: string
+  stillFile?: string
+  durationMs?: number | null
+  watchedAt?: number | null
+  playCount: number
+  resumePositionMs?: number | null
+  orderInAnime: number
+  externalIds: readonly ExternalId[]
+  createdAt: number
+  updatedAt: number
+}
+
+export interface LibraryAnimeEpisodeCreateInput {
+  type?: LibraryAnimeEpisodeType
+  episodeNumber?: number | null
+  name?: string
+  originalName?: string
+  airDate?: PartialDate
+  description?: string
+  durationMs?: number | null
+  order?: number
+  externalIds?: readonly ExternalId[]
+}
+
+/** Watch-state patch for one episode; progress fields are optional. */
+export interface LibraryAnimeEpisodeWatchStatePatch {
+  watchedAt?: number | null
+  playCount?: number
+  resumePositionMs?: number | null
+}
+
+export interface LibraryAnimeEpisodeQuery {
+  animeId: string
+  types?: readonly LibraryAnimeEpisodeType[]
+  watchedOnly?: boolean
+  unwatchedOnly?: boolean
 }
 
 export interface LibraryPerson extends LibraryRankedEntityBase {
@@ -218,7 +308,7 @@ export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
   logoFile?: string
   iconFile?: string
   releaseDate?: PartialDate
-  status?: LibraryGameStatus
+  status?: LibraryMediaStatus
   lastActiveAt?: number | null
   totalDuration?: number
   savePath?: string
@@ -234,6 +324,30 @@ export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
 }
 
 export type LibraryGamePatch = Partial<Omit<LibraryGameCreateInput, 'createdAt' | 'updatedAt'>> & {
+  lastActiveAt?: number | null
+  totalDuration?: number
+}
+
+export interface LibraryAnimeCreateInput extends LibraryRankedEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
+  coverFile?: string
+  backdropFile?: string
+  logoFile?: string
+  releaseDate?: PartialDate
+  status?: LibraryMediaStatus
+  format?: LibraryAnimeFormat
+  totalEpisodes?: number | null
+  lastActiveAt?: number | null
+  totalDuration?: number
+  animeDirPath?: string
+  descriptionInlineFiles?: readonly string[]
+  externalIds?: readonly ExternalId[]
+}
+
+export type LibraryAnimePatch = Partial<
+  Omit<LibraryAnimeCreateInput, 'createdAt' | 'updatedAt'>
+> & {
   lastActiveAt?: number | null
   totalDuration?: number
 }
@@ -306,7 +420,16 @@ export interface LibraryTagCreateInput extends LibraryEntityInputBase {
 export type LibraryTagPatch = Partial<Omit<LibraryTagCreateInput, 'createdAt' | 'updatedAt'>>
 
 export interface LibraryGameQuery extends LibraryListQuery {
-  statuses?: readonly LibraryGameStatus[]
+  statuses?: readonly LibraryMediaStatus[]
+  favoritesOnly?: boolean
+  includeNsfw?: boolean
+  collectionIds?: readonly string[]
+  tagIds?: readonly string[]
+}
+
+export interface LibraryAnimeQuery extends LibraryListQuery {
+  statuses?: readonly LibraryMediaStatus[]
+  formats?: readonly LibraryAnimeFormat[]
   favoritesOnly?: boolean
   includeNsfw?: boolean
   collectionIds?: readonly string[]

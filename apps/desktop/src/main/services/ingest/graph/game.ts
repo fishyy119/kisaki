@@ -14,12 +14,12 @@ import type {
 import type {
   IngestGameGraph,
   IngestGameCharacterLink,
-  IngestGameCharacterPersonLink,
+  IngestCharacterPersonLink,
   IngestGameCompanyLink,
   IngestGamePersonLink,
-  NormalizedCharacterNode,
-  NormalizedCompanyNode,
-  NormalizedPersonNode
+  IngestCharacterNode,
+  IngestCompanyNode,
+  IngestPersonNode
 } from './types'
 import type {
   ScrapedCharacterPersonFact,
@@ -259,7 +259,7 @@ function finalizeGameCharacterLinks(
 
 function finalizeCharacterPersonLinks(
   edgeMap: Map<string, PendingCharacterPersonLink>
-): IngestGameCharacterPersonLink[] {
+): IngestCharacterPersonLink[] {
   // Preserve the merged relation order from scraper results.
   const ordered = [...edgeMap.values()]
 
@@ -338,9 +338,9 @@ function buildGameGraphInternal(
   const gameCore = toGameRootCore(bundle, lookup)
   const gameIdentityKey = buildEntityCanonicalIdentityKey(gameCore)
 
-  const personNodes = new Map<string, NormalizedPersonNode>()
-  const companyNodes = new Map<string, NormalizedCompanyNode>()
-  const characterNodes = new Map<string, NormalizedCharacterNode>()
+  const personNodes = new Map<string, IngestPersonNode>()
+  const companyNodes = new Map<string, IngestCompanyNode>()
+  const characterNodes = new Map<string, IngestCharacterNode>()
   const personIdentityIndex = createIdentityAliasIndex()
   const companyIdentityIndex = createIdentityAliasIndex()
   const characterIdentityIndex = createIdentityAliasIndex()

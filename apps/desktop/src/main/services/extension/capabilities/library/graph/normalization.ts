@@ -2,6 +2,7 @@ import {
   type LibraryGraphAttachmentNode,
   type LibraryGraphCollectionNode,
   type LibraryGraphCompanyNode,
+  type LibraryGraphEpisodeNode,
   type LibraryGraphInput,
   type LibraryGraphMediaNode,
   type LibraryGraphNoteNode,
@@ -25,6 +26,7 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
   const people = toEntries(input.nodes.people ?? [], 'person')
   const notes = toEntries(input.nodes.notes ?? [], 'note')
   const sessions = toEntries(input.nodes.sessions ?? [], 'session')
+  const episodes = toEntries(input.nodes.episodes ?? [], 'episode')
   const attachments = toEntries(input.nodes.attachments ?? [], 'attachment')
   const all = [
     ...media,
@@ -34,6 +36,7 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
     ...people,
     ...notes,
     ...sessions,
+    ...episodes,
     ...attachments
   ]
 
@@ -48,6 +51,7 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
     people,
     notes,
     sessions,
+    episodes,
     attachments
   }
 
@@ -91,6 +95,10 @@ function toEntries(
   nodes: readonly LibraryGraphSessionNode[],
   kind: 'session'
 ): LibraryGraphNodeEntry<LibraryGraphSessionNode>[]
+function toEntries(
+  nodes: readonly LibraryGraphEpisodeNode[],
+  kind: 'episode'
+): LibraryGraphNodeEntry<LibraryGraphEpisodeNode>[]
 function toEntries(
   nodes: readonly LibraryGraphAttachmentNode[],
   kind: 'attachment'

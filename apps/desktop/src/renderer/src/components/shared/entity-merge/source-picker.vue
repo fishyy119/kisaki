@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { AllEntityType } from '@shared/common'
 import { useI18n } from '@renderer/composables'
 import GameSelect from '../game/game-select.vue'
+import AnimeSelect from '../anime/anime-select.vue'
 import PersonSelect from '../person/person-select.vue'
 import CompanySelect from '../company/company-select.vue'
 import CharacterSelect from '../character/character-select.vue'
@@ -38,6 +39,14 @@ const collectionSourceId = computed<string | null>({
 <template>
   <GameSelect
     v-if="props.entityType === 'game'"
+    v-model="sourceId"
+    class="w-full"
+    :empty-text="emptyText"
+    :exclude-ids="excludeIds"
+    :disabled="props.disabled"
+  />
+  <AnimeSelect
+    v-else-if="props.entityType === 'anime'"
     v-model="sourceId"
     class="w-full"
     :empty-text="emptyText"

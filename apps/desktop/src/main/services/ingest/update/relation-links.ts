@@ -14,11 +14,17 @@
 
 import type { IngestWarning } from '@shared/ingest'
 import type {
+  AnimeUpdateRelationSurface,
   CharacterUpdateRelationSurface,
   GameUpdateRelationSurface
 } from '@shared/ingest/update'
-import type { ScrapedCharacterRelationFacts, ScrapedGameRelationFacts } from '@shared/scraper'
 import type {
+  ScrapedAnimeRelationFacts,
+  ScrapedCharacterRelationFacts,
+  ScrapedGameRelationFacts
+} from '@shared/scraper'
+import type {
+  AnimeRelationLink,
   CharacterRelationLink,
   CollectionUpdateMode,
   GameRelationLink,
@@ -78,6 +84,53 @@ export const GAME_RELATION_LINKS: Record<
   }
 }
 
+/** Fact sources an anime scrape can answer for, named after the slots that fill them. */
+type AnimeRelationFactSource = 'persons' | 'companies' | 'characters' | 'cast'
+
+const ANIME_FACT_SOURCE_ANSWERED: Record<
+  AnimeRelationFactSource,
+  (facts: ScrapedAnimeRelationFacts) => boolean
+> = {
+  persons: (facts) => facts.animePerson !== undefined,
+  companies: (facts) => facts.animeCompany !== undefined,
+  characters: (facts) => facts.animeCharacter !== undefined,
+  // Character-person facts arrive either as a top-level list or nested in every
+  // character, so one definitive channel answers for the whole set.
+  cast: (facts) =>
+    facts.characterPerson !== undefined ||
+    (facts.animeCharacter !== undefined &&
+      facts.animeCharacter.every((fact) => fact.persons !== undefined))
+}
+
+export const ANIME_RELATION_LINKS: Record<
+  AnimeRelationLink,
+  RelationLinkSpec<AnimeUpdateRelationSurface, AnimeRelationFactSource>
+> = {
+  // Unlike game, cast facts do not feed anime person links: voice actors reach
+  // the anime only through their character, and anime-person rows carry staff
+  // credits alone (see the anime graph builder).
+  animePerson: {
+    surface: 'person',
+    label: 'anime person links',
+    sources: ['persons']
+  },
+  animeCompany: {
+    surface: 'company',
+    label: 'anime company links',
+    sources: ['companies']
+  },
+  animeCharacter: {
+    surface: 'character',
+    label: 'anime character links',
+    sources: ['characters']
+  },
+  characterPerson: {
+    surface: 'characterPerson',
+    label: 'character person links',
+    sources: ['cast']
+  }
+}
+
 type CharacterRelationFactSource = 'cast'
 
 const CHARACTER_FACT_SOURCE_ANSWERED: Record<
@@ -122,6 +175,12 @@ export function buildCompleteGameRelationLinks(
   facts: ScrapedGameRelationFacts
 ): Set<GameRelationLink> {
   return buildCompleteLinks(GAME_RELATION_LINKS, GAME_FACT_SOURCE_ANSWERED, facts)
+}
+
+export function buildCompleteAnimeRelationLinks(
+  facts: ScrapedAnimeRelationFacts
+): Set<AnimeRelationLink> {
+  return buildCompleteLinks(ANIME_RELATION_LINKS, ANIME_FACT_SOURCE_ANSWERED, facts)
 }
 
 export function buildCompleteCharacterRelationLinks(

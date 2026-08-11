@@ -64,7 +64,7 @@ const activeScannerIds = computed(() =>
 
 async function handleScanAll() {
   try {
-    await scannerStore.startAllGameScans()
+    await scannerStore.startAllScans()
   } catch (error) {
     log.error('Failed to scan all:', error)
   }

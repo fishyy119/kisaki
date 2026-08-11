@@ -4,6 +4,7 @@
 
 export type { ExistingReason, IngestAddResult, IngestWarning, IngestWarningCode } from './common'
 export type { IngestUpdateResult } from './common'
+export type { IngestSyncAnimeFilesParams, IngestSyncAnimeFilesResult } from './files'
 export type {
   IngestAddCharacterFromScraperOptions,
   IngestAddCharacterFromScraperParams,
@@ -27,6 +28,11 @@ export type {
   IngestAddPersonResult
 } from './add'
 export {
+  ANIME_UPDATE_CORE_SURFACES,
+  ANIME_UPDATE_MEDIA_SURFACES,
+  ANIME_UPDATE_RELATION_SURFACES,
+  ANIME_UPDATE_SURFACES,
+  ANIME_UPDATE_SURFACE_KEYS,
   CHARACTER_UPDATE_CORE_SURFACES,
   CHARACTER_UPDATE_MEDIA_SURFACES,
   CHARACTER_UPDATE_RELATION_SURFACES,
@@ -52,6 +58,13 @@ export {
   listIngestUpdateSurfaceKeysByGroup
 } from './update'
 export type {
+  AnimeBatchUpdateRequest,
+  AnimeUpdateCoreSurface,
+  AnimeUpdateMediaSurface,
+  AnimeUpdateRelationSurface,
+  AnimeUpdateRequest,
+  AnimeUpdateSelection,
+  AnimeUpdateSurface,
   CharacterUpdateCoreSurface,
   CharacterUpdateMediaSurface,
   CharacterUpdateRelationSurface,

@@ -1,6 +1,7 @@
 import type { RawDbChange } from '@shared/db/changes'
-import type { LibraryGameRelationSnapshot } from '@shared/library'
+import type { LibraryMediaRelationSnapshot } from '@shared/library'
 import type { ExternalId } from '@shared/identity'
+import type { MediaRelationTables } from './types'
 import { stringValue } from './shared/normalization'
 
 export function rebuildExternalIdsBefore(
@@ -59,26 +60,54 @@ export function rebuildIdSetBefore(
 }
 
 export function rebuildRelationSnapshotBefore(
-  after: LibraryGameRelationSnapshot,
+  after: LibraryMediaRelationSnapshot,
+  tables: MediaRelationTables,
   changes: RawDbChange[]
-): LibraryGameRelationSnapshot {
+): LibraryMediaRelationSnapshot {
   return {
     personLinkIds: rebuildIdSetBefore(
       after.personLinkIds,
-      changes.filter((change) => change.table === 'game_person_links'),
+      changes.filter((change) => change.table === tables.person),
       'id'
     ),
     companyLinkIds: rebuildIdSetBefore(
       after.companyLinkIds,
-      changes.filter((change) => change.table === 'game_company_links'),
+      changes.filter((change) => change.table === tables.company),
       'id'
     ),
     characterLinkIds: rebuildIdSetBefore(
       after.characterLinkIds,
-      changes.filter((change) => change.table === 'game_character_links'),
+      changes.filter((change) => change.table === tables.character),
       'id'
     )
   }
+}
+
+/**
+ * Rebuilds the id set of rows whose flag column was set, from the current set
+ * and the raw row changes that produced it.
+ */
+export function rebuildWatchedIdSetBefore(
+  after: string[],
+  changes: RawDbChange[],
+  flagColumn: string
+): string[] {
+  const ids = new Set(after)
+
+  for (const change of [...changes].reverse()) {
+    const id = stringValue(change.old?.id) ?? stringValue(change.next?.id)
+    if (!id) {
+      continue
+    }
+
+    if (change.old && change.old[flagColumn] !== null && change.old[flagColumn] !== undefined) {
+      ids.add(id)
+    } else if (change.operation !== 'deleted') {
+      ids.delete(id)
+    }
+  }
+
+  return [...ids].sort()
 }
 
 function rowToExternalId(row: Record<string, unknown> | undefined): ExternalId | null {

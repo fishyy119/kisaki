@@ -3,7 +3,7 @@ import { m } from '../../i18n'
 import { ImportExecutor } from '../../import/executor'
 import { IndexReader } from '../../import/index-reader'
 import { ImportPlanner } from '../../import/planner'
-import type { BangumiMediaScope } from '../../media/scopes'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import type { LocalMediaAdapter } from '../../media/types'
 import { BangumiExtensionError, isCancellationError } from '../../utils/errors'
 import { omitUndefined } from '../../utils/object'
@@ -554,7 +554,7 @@ export class ImportJobRunner {
     this.deps.syncSuppressor.suppressImport(
       scope,
       localId,
-      createImportSuppressTtlMs(settings.game.autoSync.debounceMs)
+      createImportSuppressTtlMs(settings.autoSync.debounceMs)
     )
   }
 

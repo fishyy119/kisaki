@@ -1,6 +1,7 @@
-import type { DynamicCollectionConfig, LibraryGameStatus } from '../../../capabilities/library'
+import type { DynamicCollectionConfig, LibraryMediaStatus } from '../../../capabilities/library'
 import type {
   ExternalId,
+  LibraryAnimeFormat,
   LibraryBloodType,
   LibraryCupSize,
   LibraryGender,
@@ -9,7 +10,14 @@ import type {
 } from '../../../shared'
 import type { HookPointSpec } from './point'
 
-export type LibraryEntityTopic = 'game' | 'person' | 'company' | 'character' | 'collection' | 'tag'
+export type LibraryEntityTopic =
+  | 'game'
+  | 'anime'
+  | 'person'
+  | 'company'
+  | 'character'
+  | 'collection'
+  | 'tag'
 
 export type LibraryChangeKind = 'created' | 'updated' | 'deleted'
 
@@ -20,6 +28,15 @@ export interface LibraryGameCoreSnapshot {
   releaseDate?: PartialDate | null
 }
 
+export interface LibraryAnimeCoreSnapshot {
+  name?: string
+  originalName?: string | null
+  description?: string | null
+  releaseDate?: PartialDate | null
+  format?: LibraryAnimeFormat
+  totalEpisodes?: number | null
+}
+
 export interface LibraryGameAssetSnapshot {
   coverFile?: string | null
   backdropFile?: string | null
@@ -27,12 +44,19 @@ export interface LibraryGameAssetSnapshot {
   iconFile?: string | null
 }
 
-export interface LibraryGameActivitySnapshot {
+export interface LibraryAnimeAssetSnapshot {
+  coverFile?: string | null
+  backdropFile?: string | null
+  logoFile?: string | null
+}
+
+/** Consumption counters shared by every playable media type. */
+export interface LibraryMediaActivitySnapshot {
   totalDuration?: number
   lastActiveAt?: number | null
 }
 
-export interface LibraryGameRelationSnapshot {
+export interface LibraryMediaRelationSnapshot {
   personLinkIds: readonly string[]
   companyLinkIds: readonly string[]
   characterLinkIds: readonly string[]
@@ -118,6 +142,7 @@ export interface LibraryCollectionAssetSnapshot {
 
 export interface LibraryCollectionMembershipSnapshot {
   gameIds?: readonly string[]
+  animeIds?: readonly string[]
   personIds?: readonly string[]
   companyIds?: readonly string[]
   characterIds?: readonly string[]
@@ -179,31 +204,62 @@ export type LibraryDynamicConfigChange = {
   fields?: readonly string[]
 }
 
+export type LibraryStatusChange = {
+  facet: 'status'
+  before: { status: LibraryMediaStatus }
+  after: { status: LibraryMediaStatus }
+  fields?: readonly ['status']
+}
+
+export type LibraryActivityChange = {
+  facet: 'activity'
+  before: LibraryMediaActivitySnapshot
+  after: LibraryMediaActivitySnapshot
+  fields?: readonly string[]
+}
+
+export type LibraryCollectionsChange = {
+  facet: 'collections'
+  before: { collectionIds: readonly string[] }
+  after: { collectionIds: readonly string[] }
+  fields?: readonly string[]
+}
+
+/**
+ * Watch-state transitions of an anime's episodes.
+ *
+ * Only the watched set is carried: resume positions and play counts churn
+ * during playback and would turn the feed into a progress stream.
+ */
+export type LibraryEpisodesChange = {
+  facet: 'episodes'
+  before: { watchedEpisodeIds: readonly string[] }
+  after: { watchedEpisodeIds: readonly string[] }
+  fields?: readonly ['watchedEpisodeIds']
+}
+
 export type LibraryGameChange =
   | LibraryCoreChange<LibraryGameCoreSnapshot>
-  | {
-      facet: 'status'
-      before: { status: LibraryGameStatus }
-      after: { status: LibraryGameStatus }
-      fields?: readonly ['status']
-    }
+  | LibraryStatusChange
   | LibraryScoreChange
   | LibraryIdentityChange
-  | {
-      facet: 'activity'
-      before: LibraryGameActivitySnapshot
-      after: LibraryGameActivitySnapshot
-      fields?: readonly string[]
-    }
+  | LibraryActivityChange
   | LibraryTagsChange
-  | {
-      facet: 'collections'
-      before: { collectionIds: readonly string[] }
-      after: { collectionIds: readonly string[] }
-      fields?: readonly string[]
-    }
+  | LibraryCollectionsChange
   | LibraryAssetChange<LibraryGameAssetSnapshot>
-  | LibraryRelationsChange<LibraryGameRelationSnapshot>
+  | LibraryRelationsChange<LibraryMediaRelationSnapshot>
+
+export type LibraryAnimeChange =
+  | LibraryCoreChange<LibraryAnimeCoreSnapshot>
+  | LibraryStatusChange
+  | LibraryScoreChange
+  | LibraryIdentityChange
+  | LibraryActivityChange
+  | LibraryTagsChange
+  | LibraryCollectionsChange
+  | LibraryAssetChange<LibraryAnimeAssetSnapshot>
+  | LibraryRelationsChange<LibraryMediaRelationSnapshot>
+  | LibraryEpisodesChange
 
 export type LibraryPersonChange =
   | LibraryCoreChange<LibraryPersonCoreSnapshot>
@@ -236,6 +292,7 @@ export type LibraryTagChange = LibraryCoreChange<LibraryTagCoreSnapshot>
 
 export type LibraryChange =
   | LibraryGameChange
+  | LibraryAnimeChange
   | LibraryPersonChange
   | LibraryCompanyChange
   | LibraryCharacterChange

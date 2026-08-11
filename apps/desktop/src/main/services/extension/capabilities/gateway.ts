@@ -221,6 +221,24 @@ export class ExtensionCapabilityGateway {
         start: this.ingest.startUpdateGameFromScraper(runtimeHandle, input)
       })
     )
+    rpc.handleHostRequest(
+      'capabilities.ingest.anime.add.fromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }, context) => ({
+        result: await this.ingest.addAnimeFromScraper(
+          runtimeHandle,
+          profileId,
+          lookup,
+          options,
+          context.signal
+        )
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.anime.add.startFromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }) => ({
+        start: this.ingest.startAddAnimeFromScraper(runtimeHandle, profileId, lookup, options)
+      })
+    )
 
     rpc.handleHostRequest('capabilities.commands.list', async ({ runtimeHandle }) => ({
       items: this.commands.list(runtimeHandle)

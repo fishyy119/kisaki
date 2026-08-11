@@ -20,11 +20,17 @@ const ATTACHMENT_REMOVE_KEYS = new Set<string>(['entity', 'slot', 'fileName'])
 
 const ATTACHMENT_SLOTS_BY_OWNER = {
   game: ['cover', 'backdrop', 'logo', 'icon', 'description-inline'],
+  anime: ['cover', 'backdrop', 'logo', 'description-inline'],
   character: ['photo'],
   person: ['photo'],
   company: ['logo'],
   collection: ['cover']
 } as const satisfies Record<LibraryAttachmentOwnerType, readonly LibraryAttachmentKind[]>
+
+/** Owner vocabulary derives from the slot table so the two can never drift. */
+const ATTACHMENT_OWNER_TYPES = Object.keys(
+  ATTACHMENT_SLOTS_BY_OWNER
+) as readonly LibraryAttachmentOwnerType[]
 
 export function validateLibraryAttachmentWriteInput(value: unknown): ValidationIssue[] {
   if (!isRecord(value)) {
@@ -116,7 +122,7 @@ function validateLibraryAttachmentEntityReference(value: unknown, path: string):
     ...validateRequiredEnumString(
       value.entityType,
       `${path}.entityType`,
-      ['game', 'character', 'person', 'company', 'collection'] as const,
+      ATTACHMENT_OWNER_TYPES,
       'entityType must be one of the supported library attachment owner types.'
     ),
     ...validateRequiredString(value.id, `${path}.id`, {

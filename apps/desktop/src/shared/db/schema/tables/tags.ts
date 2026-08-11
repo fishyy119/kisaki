@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-co
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import { baseColumns, identityKeyText } from '../../columns'
-import { characters, companies, persons, games } from './content'
+import { animes, characters, companies, persons, games } from './content'
 
 export const tags = sqliteTable(
   'tags',
@@ -46,6 +46,28 @@ export const gameTagLinks = sqliteTable(
     unique().on(t.gameId, t.tagId),
     index('idx_game_tag_links_game_id').on(t.gameId),
     index('idx_game_tag_links_tag_id').on(t.tagId)
+  ]
+)
+
+export const animeTagLinks = sqliteTable(
+  'anime_tag_links',
+  {
+    ...baseColumns,
+    animeId: text('anime_id')
+      .notNull()
+      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    note: text('note'),
+    orderInAnime: integer('order_in_anime').notNull().default(0),
+    orderInTag: integer('order_in_tag').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.animeId, t.tagId),
+    index('idx_anime_tag_links_anime_id').on(t.animeId),
+    index('idx_anime_tag_links_tag_id').on(t.tagId)
   ]
 )
 
@@ -119,6 +141,8 @@ export type Tag = InferSelectModel<typeof tags>
 export type NewTag = InferInsertModel<typeof tags>
 export type GameTagLink = InferSelectModel<typeof gameTagLinks>
 export type NewGameTagLink = InferInsertModel<typeof gameTagLinks>
+export type AnimeTagLink = InferSelectModel<typeof animeTagLinks>
+export type NewAnimeTagLink = InferInsertModel<typeof animeTagLinks>
 export type CharacterTagLink = InferSelectModel<typeof characterTagLinks>
 export type NewCharacterTagLink = InferInsertModel<typeof characterTagLinks>
 export type PersonTagLink = InferSelectModel<typeof personTagLinks>

@@ -6,7 +6,7 @@ import type {
   ScrapedCharacterPersonFact,
   ScraperLookup
 } from '@shared/scraper'
-import type { IngestCharacterGraph, IngestCharacterPersonLink, NormalizedPersonNode } from './types'
+import type { IngestCharacterGraph, IngestCharacterPersonLink, IngestPersonNode } from './types'
 import {
   compareText,
   createIdentityAliasIndex,
@@ -112,7 +112,7 @@ export function buildCharacterGraph(
   const characterCore = toCharacterRootCore(bundle, lookup)
   const characterIdentityKey = buildEntityCanonicalIdentityKey(characterCore)
 
-  const personNodes = new Map<string, NormalizedPersonNode>()
+  const personNodes = new Map<string, IngestPersonNode>()
   const personIdentityIndex = createIdentityAliasIndex()
   const characterPersonLinks = new Map<string, PendingCharacterPersonLink>()
 

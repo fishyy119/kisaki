@@ -1,0 +1,59 @@
+import { relations } from 'drizzle-orm'
+
+import {
+  animeEpisodeExternalIds,
+  animeEpisodeFiles,
+  animeEpisodes,
+  animeExtras,
+  animeRelations,
+  animeSessions,
+  animes
+} from '../tables'
+
+export const animeEpisodesRelations = relations(animeEpisodes, ({ one, many }) => ({
+  anime: one(animes, {
+    fields: [animeEpisodes.animeId],
+    references: [animes.id]
+  }),
+  files: many(animeEpisodeFiles),
+  sessions: many(animeSessions),
+  externalIds: many(animeEpisodeExternalIds)
+}))
+
+export const animeEpisodeFilesRelations = relations(animeEpisodeFiles, ({ one }) => ({
+  episode: one(animeEpisodes, {
+    fields: [animeEpisodeFiles.episodeId],
+    references: [animeEpisodes.id]
+  })
+}))
+
+export const animeExtrasRelations = relations(animeExtras, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeExtras.animeId],
+    references: [animes.id]
+  })
+}))
+
+export const animeSessionsRelations = relations(animeSessions, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeSessions.animeId],
+    references: [animes.id]
+  }),
+  episode: one(animeEpisodes, {
+    fields: [animeSessions.episodeId],
+    references: [animeEpisodes.id]
+  })
+}))
+
+export const animeRelationsRelations = relations(animeRelations, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeRelations.animeId],
+    references: [animes.id],
+    relationName: 'animeRelationSource'
+  }),
+  relatedAnime: one(animes, {
+    fields: [animeRelations.relatedAnimeId],
+    references: [animes.id],
+    relationName: 'animeRelationTarget'
+  })
+}))

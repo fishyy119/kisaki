@@ -23,9 +23,11 @@ import {
   Spinner,
   Switch
 } from '@kisaki3/extension-ui-vue'
+import type { BangumiMediaScope } from '../../../shared/scopes'
 import type {
   BangumiImportCollectionsFormArgs,
   BangumiImportDataItem,
+  BangumiOptionItem,
   BangumiPreviewGroupDto,
   BangumiSettingsOverview
 } from '../../../shared/settings'
@@ -35,6 +37,8 @@ import JobPreviewDialog from '../components/job-preview-dialog.vue'
 
 interface Props {
   overview: BangumiSettingsOverview
+  scope: BangumiMediaScope
+  profiles: readonly BangumiOptionItem[]
 }
 
 interface CollectionsForm {
@@ -59,7 +63,7 @@ const COLLECTION_TYPE_VALUES = [1, 2, 3, 4, 5] as const
 const collectionTypes = computed<readonly { value: number; label: string }[]>(() =>
   COLLECTION_TYPE_VALUES.map((value) => ({
     value,
-    label: m.value.media.collections.game[value]
+    label: m.value.media.collections[props.scope][value]
   }))
 )
 
@@ -69,7 +73,7 @@ const dataItems = computed<readonly { value: BangumiImportDataItem; label: strin
   { value: 'tags', label: m.value.ui.importCollections.itemTags }
 ])
 
-const defaultProfileId = computed(() => props.overview.profiles[0]?.value ?? '')
+const defaultProfileId = computed(() => props.profiles[0]?.value ?? '')
 const defaultCollectionId = computed(() => props.overview.collections[0]?.value ?? '')
 
 const busy = ref<'preview' | 'run' | null>(null)
@@ -161,6 +165,7 @@ async function runCollections(): Promise<void> {
 
 function snapshotArgs(): BangumiImportCollectionsFormArgs {
   return {
+    scope: props.scope,
     profileId: collectionsForm.profileId,
     collectionTypes: [...collectionsForm.collectionTypes],
     dataItems: [...collectionsForm.dataItems],
@@ -190,7 +195,7 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem
-                  v-for="profile in props.overview.profiles"
+                  v-for="profile in props.profiles"
                   :key="profile.value"
                   :value="profile.value"
                 >

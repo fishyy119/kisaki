@@ -1,11 +1,16 @@
 import {
-  LIBRARY_GRAPH_ATTACHMENT_SLOTS,
+  LIBRARY_ANIME_COMPANY_ROLES,
+  LIBRARY_ANIME_PERSON_ROLES,
   LIBRARY_GRAPH_CONFLICT_MODES,
   LIBRARY_GRAPH_EDGE_KINDS,
+  LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS,
+  LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS,
   LIBRARY_GRAPH_NODE_KINDS,
   LIBRARY_GAME_COMPANY_ROLES,
   LIBRARY_GAME_PERSON_ROLES,
   LIBRARY_MEDIA_TYPES,
+  assertValidLibraryAnimeCreateInput,
+  assertValidLibraryAnimeEpisodeCreateInput,
   assertValidLibraryCollectionCreateInput,
   assertValidLibraryCompanyCreateInput,
   assertValidLibraryGameCreateInput,
@@ -14,7 +19,8 @@ import {
   createValidationError,
   type LibraryGraphEdge,
   type LibraryGraphInput,
-  type LibraryGraphNodeKind
+  type LibraryGraphNodeKind,
+  type LibraryMediaType
 } from '@kisaki3/extension-api'
 import { edgeIdentity, graphNodeIdentity } from './identity'
 
@@ -30,6 +36,7 @@ const NODES_KEYS = new Set<string>([
   'people',
   'notes',
   'sessions',
+  'episodes',
   'attachments'
 ])
 const NODE_BASE_KEYS = new Set<string>([
@@ -107,6 +114,13 @@ function validateNodes(value: unknown): void {
     validateSessionNode
   )
   validateNodeArray(
+    nodes.episodes,
+    'episode',
+    'library.graph.nodes.episodes',
+    keys,
+    validateEpisodeNode
+  )
+  validateNodeArray(
     nodes.attachments,
     'attachment',
     'library.graph.nodes.attachments',
@@ -149,6 +163,12 @@ function validateMediaNode(node: JsonRecord, label: string): void {
   if (!LIBRARY_MEDIA_TYPES.includes(node.mediaType as never)) {
     throw createValidationError(`${label}.mediaType is not supported.`)
   }
+
+  if (node.mediaType === 'anime') {
+    assertValidLibraryAnimeCreateInput(node.input)
+    return
+  }
+
   assertValidLibraryGameCreateInput(node.input)
 }
 
@@ -197,6 +217,10 @@ function validateSessionNode(node: JsonRecord, label: string): void {
   }
 }
 
+function validateEpisodeNode(node: JsonRecord): void {
+  assertValidLibraryAnimeEpisodeCreateInput(node.input)
+}
+
 function validateAttachmentNode(node: JsonRecord, label: string): void {
   requireNonEmptyString(node.path, `${label}.path`)
   validateOptionalString(node.fileName, `${label}.fileName`)
@@ -212,12 +236,13 @@ function validateEdges(value: unknown, nodesValue: unknown): void {
   }
 
   const nodeKinds = collectNodeKinds(nodesValue)
+  const mediaTypes = collectMediaTypes(nodesValue)
   const edgeKeys = new Set<string>()
   const singleOwnerKeys = new Set<string>()
 
   for (const [index, item] of value.entries()) {
     const edge = requireRecord(item, `library.graph.edges[${index}]`) as unknown as LibraryGraphEdge
-    validateEdge(edge, index, nodeKinds)
+    validateEdge(edge, index, nodeKinds, mediaTypes)
 
     const identity = edgeIdentity(edge)
     if (edgeKeys.has(identity)) {
@@ -225,7 +250,11 @@ function validateEdges(value: unknown, nodesValue: unknown): void {
     }
     edgeKeys.add(identity)
 
-    if (edge.kind === 'media-note' || edge.kind === 'media-session') {
+    if (
+      edge.kind === 'media-note' ||
+      edge.kind === 'media-session' ||
+      edge.kind === 'media-episode'
+    ) {
       const ownerKey = graphNodeIdentity(edge.to.kind, edge.to.key)
       if (singleOwnerKeys.has(ownerKey)) {
         throw createValidationError(`${edge.to.kind} node "${edge.to.key}" has multiple owners.`)
@@ -238,7 +267,8 @@ function validateEdges(value: unknown, nodesValue: unknown): void {
 function validateEdge(
   edge: LibraryGraphEdge,
   index: number,
-  nodeKinds: ReadonlyMap<string, LibraryGraphNodeKind>
+  nodeKinds: ReadonlyMap<string, LibraryGraphNodeKind>,
+  mediaTypes: ReadonlyMap<string, LibraryMediaType>
 ): void {
   const label = `library.graph.edges[${index}]`
   const raw = edge as unknown as JsonRecord
@@ -259,24 +289,42 @@ function validateEdge(
       return
     case 'media-company':
       validateEndpointKinds(edge, label, 'media', 'company')
-      validateRole(edge.role, LIBRARY_GAME_COMPANY_ROLES, `${label}.role`)
+      validateRole(
+        edge.role,
+        mediaTypes.get(edge.from.key) === 'anime'
+          ? LIBRARY_ANIME_COMPANY_ROLES
+          : LIBRARY_GAME_COMPANY_ROLES,
+        `${label}.role`
+      )
       validateOptionalFiniteNumber(edge.order, `${label}.order`)
       return
     case 'media-person':
       validateEndpointKinds(edge, label, 'media', 'person')
-      validateRole(edge.role, LIBRARY_GAME_PERSON_ROLES, `${label}.role`)
+      validateRole(
+        edge.role,
+        mediaTypes.get(edge.from.key) === 'anime'
+          ? LIBRARY_ANIME_PERSON_ROLES
+          : LIBRARY_GAME_PERSON_ROLES,
+        `${label}.role`
+      )
       validateOptionalFiniteNumber(edge.order, `${label}.order`)
       validateOptionalString(edge.note, `${label}.note`)
       return
     case 'media-note':
       validateEndpointKinds(edge, label, 'media', 'note')
+      requireMediaType(edge.from.key, 'game', mediaTypes, label)
       return
     case 'media-session':
       validateEndpointKinds(edge, label, 'media', 'session')
+      requireMediaType(edge.from.key, 'game', mediaTypes, label)
+      return
+    case 'media-episode':
+      validateEndpointKinds(edge, label, 'media', 'episode')
+      requireMediaType(edge.from.key, 'anime', mediaTypes, label)
       return
     case 'media-attachment':
       validateEndpointKinds(edge, label, 'media', 'attachment')
-      if (!LIBRARY_GRAPH_ATTACHMENT_SLOTS.includes(edge.slot as never)) {
+      if (!LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS.includes(edge.slot as never)) {
         throw createValidationError(`${label}.slot is not supported.`)
       }
       if (edge.replace !== undefined && typeof edge.replace !== 'boolean') {
@@ -284,6 +332,26 @@ function validateEdge(
       }
       validateSaveBackup(edge.saveBackup, `${label}.saveBackup`)
       return
+    case 'episode-attachment':
+      validateEndpointKinds(edge, label, 'episode', 'attachment')
+      if (!LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS.includes(edge.slot as never)) {
+        throw createValidationError(`${label}.slot is not supported.`)
+      }
+      if (edge.replace !== undefined && typeof edge.replace !== 'boolean') {
+        throw createValidationError(`${label}.replace must be a boolean.`)
+      }
+      return
+  }
+}
+
+function requireMediaType(
+  key: string,
+  mediaType: LibraryMediaType,
+  mediaTypes: ReadonlyMap<string, LibraryMediaType>,
+  label: string
+): void {
+  if (mediaTypes.get(key) !== mediaType) {
+    throw createValidationError(`${label} requires a ${mediaType} media node.`)
   }
 }
 
@@ -365,6 +433,7 @@ function collectNodeKinds(nodesValue: unknown): Map<string, LibraryGraphNodeKind
     [nodes.people, 'person'],
     [nodes.notes, 'note'],
     [nodes.sessions, 'session'],
+    [nodes.episodes, 'episode'],
     [nodes.attachments, 'attachment']
   ]
   const result = new Map<string, LibraryGraphNodeKind>()
@@ -377,6 +446,22 @@ function collectNodeKinds(nodesValue: unknown): Map<string, LibraryGraphNodeKind
       if (node && typeof node === 'object' && 'key' in node && typeof node.key === 'string') {
         result.set(node.key, kind)
       }
+    }
+  }
+
+  return result
+}
+
+function collectMediaTypes(nodesValue: unknown): Map<string, LibraryMediaType> {
+  const nodes = requireRecord(nodesValue, 'library.graph.nodes')
+  const result = new Map<string, LibraryMediaType>()
+  if (!Array.isArray(nodes.media)) {
+    return result
+  }
+
+  for (const node of nodes.media) {
+    if (node && typeof node === 'object' && 'key' in node && typeof node.key === 'string') {
+      result.set(node.key, (node as { mediaType: LibraryMediaType }).mediaType)
     }
   }
 

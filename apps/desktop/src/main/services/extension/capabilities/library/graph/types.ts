@@ -1,5 +1,6 @@
 import type {
   ExtensionRuntimeMetadata,
+  LibraryAnime,
   LibraryCollection,
   LibraryCompany,
   LibraryGame,
@@ -10,6 +11,7 @@ import type {
   LibraryGraphDiagnostic,
   LibraryGraphEdge,
   LibraryGraphEdgeResult,
+  LibraryGraphEpisodeNode,
   LibraryGraphInput,
   LibraryGraphMediaNode,
   LibraryGraphNodeKind,
@@ -32,6 +34,7 @@ export type LibraryGraphNode =
   | LibraryGraphPersonNode
   | LibraryGraphNoteNode
   | LibraryGraphSessionNode
+  | LibraryGraphEpisodeNode
   | LibraryGraphAttachmentNode
 
 export interface LibraryGraphNodeEntry<TNode extends LibraryGraphNode = LibraryGraphNode> {
@@ -57,6 +60,7 @@ export interface NormalizedLibraryGraphNodes {
   people: readonly LibraryGraphNodeEntry<LibraryGraphPersonNode>[]
   notes: readonly LibraryGraphNodeEntry<LibraryGraphNoteNode>[]
   sessions: readonly LibraryGraphNodeEntry<LibraryGraphSessionNode>[]
+  episodes: readonly LibraryGraphNodeEntry<LibraryGraphEpisodeNode>[]
   attachments: readonly LibraryGraphNodeEntry<LibraryGraphAttachmentNode>[]
 }
 
@@ -69,7 +73,12 @@ export interface NormalizedLibraryGraph {
 }
 
 export type LibraryGraphEntity =
-  LibraryGame | LibraryCollection | LibraryTag | LibraryCompany | LibraryPerson
+  | LibraryGame
+  | LibraryAnime
+  | LibraryCollection
+  | LibraryTag
+  | LibraryCompany
+  | LibraryPerson
 
 export type LibraryGraphMatchReason = 'externalId' | 'path' | 'name'
 

@@ -16,18 +16,22 @@ import type { LibraryEntityChangeSummary } from '@shared/library'
 import type { DbHooks } from '../hooks'
 import {
   ENTITY_PROJECTIONS,
-  gameExists,
+  MEDIA_PROJECTIONS,
   getEntityProjectionForTopic,
-  getGameCreatedName,
-  getGameIdsFromChange,
+  getMediaCreatedName,
+  getMediaIdsFromChange,
+  getMediaProjectionForTable,
+  getMediaProjectionForTopic,
+  mediaExists,
   projectEntityChanges,
-  projectGameChanges
+  projectMediaChanges
 } from './entities'
 import {
   FEED_DEBOUNCE_MS,
   FEED_PUSH_CHUNK_SIZE,
   type ConfiguredEntityTopic,
-  type EntityGroup
+  type EntityGroup,
+  type MediaFeedProjection
 } from './types'
 import { SETTINGS_PROJECTIONS, type SettingsColumnProjection } from './settings'
 import { stringValue } from './shared/normalization'
@@ -101,10 +105,10 @@ export class DbChangeFeed {
     const changes: LibraryEntityChangeSummary[] = []
     for (const group of groups) {
       try {
-        const summary =
-          group.entity === 'game'
-            ? this.projectGameGroup(group.id, group.changes)
-            : this.projectEntityGroup(group.entity, group.id, group.changes)
+        const mediaProjection = getMediaProjectionForTopic(group.entity)
+        const summary = mediaProjection
+          ? this.projectMediaGroup(mediaProjection, group.id, group.changes)
+          : this.projectEntityGroup(group.entity as ConfiguredEntityTopic, group.id, group.changes)
         if (summary) {
           changes.push(summary)
         }
@@ -121,13 +125,15 @@ export class DbChangeFeed {
   private getTargets(change: RawDbChange): Array<{ entity: EntityGroup['entity']; id: string }> {
     const targets: Array<{ entity: EntityGroup['entity']; id: string }> = []
 
-    if (change.table === 'games') {
-      targets.push({ entity: 'game', id: change.id })
+    const changedMedia = getMediaProjectionForTable(change.table)
+    if (changedMedia) {
+      targets.push({ entity: changedMedia.entity, id: change.id })
     }
 
-    const gameIds = getGameIdsFromChange(change)
-    for (const gameId of gameIds) {
-      targets.push({ entity: 'game', id: gameId })
+    for (const projection of MEDIA_PROJECTIONS) {
+      for (const mediaId of getMediaIdsFromChange(projection, change)) {
+        targets.push({ entity: projection.entity, id: mediaId })
+      }
     }
 
     const entityProjection = ENTITY_PROJECTIONS[change.table]
@@ -159,42 +165,43 @@ export class DbChangeFeed {
     }
   }
 
-  private projectGameGroup(
-    gameId: string,
+  private projectMediaGroup(
+    projection: MediaFeedProjection,
+    mediaId: string,
     changes: RawDbChange[]
   ): LibraryEntityChangeSummary | null {
-    const directGameChanges = changes.filter((change) => change.table === 'games')
-    const created = directGameChanges.some((change) => change.operation === 'inserted')
-    const deleted = directGameChanges.some((change) => change.operation === 'deleted')
+    const directChanges = changes.filter((change) => change.table === projection.table)
+    const created = directChanges.some((change) => change.operation === 'inserted')
+    const deleted = directChanges.some((change) => change.operation === 'deleted')
     const occurredAt = Math.max(...changes.map((change) => change.occurredAt))
 
     if (deleted) {
-      return { entity: 'game', id: gameId, kind: 'deleted', occurredAt }
+      return { entity: projection.entity, id: mediaId, kind: 'deleted', occurredAt }
     }
 
     if (created) {
-      const next = directGameChanges.findLast((change) => change.next)?.next
+      const next = directChanges.findLast((change) => change.next)?.next
       return {
-        entity: 'game',
-        id: gameId,
+        entity: projection.entity,
+        id: mediaId,
         kind: 'created',
-        name: getGameCreatedName(this.sqlite, gameId, next),
+        name: getMediaCreatedName(this.sqlite, projection, mediaId, next),
         occurredAt
       }
     }
 
-    if (!gameExists(this.sqlite, gameId)) {
+    if (!mediaExists(this.sqlite, projection, mediaId)) {
       return null
     }
 
-    const projectedChanges = projectGameChanges(this.sqlite, gameId, changes)
+    const projectedChanges = projectMediaChanges(this.sqlite, projection, mediaId, changes)
     if (projectedChanges.length === 0) {
       return null
     }
 
     return {
-      entity: 'game',
-      id: gameId,
+      entity: projection.entity,
+      id: mediaId,
       kind: 'updated',
       changes: projectedChanges,
       occurredAt

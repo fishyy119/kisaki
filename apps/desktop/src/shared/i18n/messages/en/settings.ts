@@ -9,6 +9,12 @@ export const settings = {
   updaterAutoCheckLabel: 'Check for updates automatically',
   updaterAllowPrereleaseLabel: 'Receive preview updates',
   loadFailed: 'Failed to load settings.',
+  player: {
+    audioLanguagesLabel: 'Preferred audio languages',
+    subtitleLanguagesLabel: 'Preferred subtitle languages',
+    languagesPlaceholder: 'For example: jpn, eng',
+    languagesHint: 'Language tags separated by commas, most preferred first.'
+  },
   language: {
     followSystem: 'Follow system',
     uiLanguageLabel: 'Interface language'

@@ -1,3 +1,4 @@
+export * from './anime'
 export * from './collections'
 export * from './content'
 export * from './identities'

@@ -29,8 +29,6 @@ export type GameScraperResult =
   | GameScraperLogosResult
   | GameScraperIconsResult
 
-export type GameScraperImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons'
-
 export type GameScraperImageResult =
   | GameScraperCoversResult
   | GameScraperBackdropsResult

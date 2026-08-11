@@ -60,6 +60,7 @@ export const scraper = {
     slots: {
       info: 'Basic info',
       tags: 'Tags',
+      episodes: 'Episodes',
       characters: 'Characters',
       persons: 'People',
       companies: 'Companies',

@@ -1,11 +1,12 @@
 /**
- * Library entity domain: shared copy for the six entity types
- * (game/character/person/company/collection/tag) across menus, searchers,
+ * Library entity domain: shared copy for the seven entity types
+ * (game/anime/character/person/company/collection/tag) across menus, searchers,
  * selects, detail views, and form dialogs.
  */
 export const library = {
   entities: {
     game: 'Game',
+    anime: 'Anime',
     character: 'Character',
     person: 'Person',
     company: 'Company',
@@ -55,7 +56,14 @@ export const library = {
     status: 'Status',
     playDuration: 'Play time',
     lastActiveAt: 'Last played',
-    order: 'Order'
+    order: 'Order',
+    format: 'Format',
+    totalEpisodes: 'Episode count',
+    episodes: 'Episodes',
+    extras: 'Extras',
+    watchDuration: 'Watch time',
+    lastWatchedAt: 'Last watched',
+    relatedAnimes: 'Related anime'
   },
 
   status: {
@@ -107,11 +115,66 @@ export const library = {
       publisher: 'Publisher',
       distributor: 'Distributor',
       other: 'Other'
+    },
+    animePerson: {
+      director: 'Director',
+      series: 'Series composition',
+      scenario: 'Scenario',
+      characterDesign: 'Character design',
+      music: 'Music',
+      animationDirector: 'Animation director',
+      other: 'Other'
+    },
+    animeCharacter: {
+      main: 'Main',
+      supporting: 'Supporting',
+      cameo: 'Cameo',
+      other: 'Other'
+    },
+    animeCompany: {
+      studio: 'Studio',
+      producer: 'Producer',
+      distributor: 'Distributor',
+      other: 'Other'
     }
+  },
+
+  animeFormat: {
+    tv: 'TV',
+    movie: 'Movie',
+    ova: 'OVA',
+    ona: 'ONA',
+    special: 'Special',
+    other: 'Other'
+  },
+
+  animeEpisodeType: {
+    regular: 'Episode',
+    special: 'Special'
+  },
+
+  animeRelation: {
+    sequel: 'Sequel',
+    prequel: 'Prequel',
+    sideStory: 'Side story',
+    movie: 'Movie',
+    summary: 'Summary',
+    alternative: 'Alternative version',
+    other: 'Other'
+  },
+
+  animeExtraKind: {
+    trailer: 'Trailer',
+    pv: 'PV',
+    ncop: 'Creditless opening',
+    nced: 'Creditless ending',
+    interview: 'Interview',
+    other: 'Other'
   },
 
   counts: {
     game: ({ count }: { count: number }) => (count === 1 ? '1 game' : `${count} games`),
+    anime: ({ count }: { count: number }) => (count === 1 ? '1 anime' : `${count} anime`),
     character: ({ count }: { count: number }) =>
       count === 1 ? '1 character' : `${count} characters`,
     person: ({ count }: { count: number }) => (count === 1 ? '1 person' : `${count} people`),
@@ -478,6 +541,7 @@ export const library = {
 
     // Link relation labels
     gameLabel: 'Game',
+    animeLabel: 'Anime',
     characterLabel: 'Character',
     personLabel: 'Person',
     companyLabel: 'Company',
@@ -492,6 +556,7 @@ export const library = {
     // Link association delete labels (used with delete-confirm dialog entity-label)
     linkLabels: {
       game: 'Game link',
+      anime: 'Anime link',
       character: 'Character link',
       person: 'Person link',
       company: 'Company link',
@@ -606,6 +671,12 @@ export const library = {
       recentlyAdded: { name: 'Recently added', description: 'Games sorted by date added' },
       allGames: { name: 'All games', description: 'Every game in the library' },
       favoriteGames: { name: 'Favorite games', description: 'Games you favorited' },
+      recentlyWatched: { name: 'Recently watched', description: 'Anime sorted by last watched' },
+      topRatedAnime: { name: 'Top rated anime', description: 'Anime sorted by score' },
+      recentlyAddedAnime: {
+        name: 'Recently added anime',
+        description: 'Anime sorted by date added'
+      },
       favoriteCharacters: { name: 'Favorite characters', description: 'Characters you favorited' },
       favoritePersons: { name: 'Favorite people', description: 'People you favorited' },
       favoriteCompanies: { name: 'Favorite companies', description: 'Companies you favorited' },

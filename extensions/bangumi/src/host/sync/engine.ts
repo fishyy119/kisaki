@@ -2,11 +2,14 @@ import type { ExtensionLogger } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { BangumiApiError } from '../api/errors'
 import type { BangumiCollectionPatch, BangumiUserCollection } from '../api/types'
-import type { BangumiMediaScope } from '../media/scopes'
+import type { BangumiMediaScope } from '../../shared/scopes'
 import type { LocalMediaItem } from '../media/types'
 import type { MediaRegistry } from '../media/registry'
 import type { SettingsStore } from '../config/store'
-import { createBangumiSubjectRef } from '../identity/subject-ref'
+import {
+  createBangumiSubjectRef,
+  readBangumiSubjectIdFromExternalIds
+} from '../identity/subject-ref'
 import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
@@ -14,10 +17,9 @@ import { createSyncFingerprint, type SyncStateStore } from './fingerprint'
 import {
   createSyncMappingOptions,
   createSyncPayloadPlan,
-  readBangumiSubjectId,
   syncPayloadMatchesRemote,
   type SyncMappingOverrides
-} from '../media/game/mapping'
+} from './mapping'
 import type { SyncSuppressor } from './suppressor'
 
 export type SyncItemResultStatus =
@@ -90,7 +92,7 @@ export class SyncEngine {
       return { status: 'skippedMissingLocalItem', scope: options.scope, localId }
     }
 
-    const subjectId = readBangumiSubjectId(item)
+    const subjectId = readBangumiSubjectIdFromExternalIds(item)
     if (!subjectId) {
       return { status: 'skippedNoBangumiId', scope: options.scope, localId: item.localId, item }
     }
@@ -234,7 +236,7 @@ export class SyncEngine {
       result.scope,
       result.localId,
       result.fingerprint,
-      Math.max(30_000, settings.game.autoSync.debounceMs * 2)
+      Math.max(30_000, settings.autoSync.debounceMs * 2)
     )
 
     return {

@@ -2,8 +2,9 @@
   Library Search Dialog
 
   Modal dialog for searching across all entity types within the library.
-  Displays results in 4 columns: Games, Characters, Persons, Companies.
-  Opens with Ctrl+K shortcut or via button trigger.
+  Displays one result column per content entity type (games, anime,
+  characters, persons, companies). Opens with Ctrl+K shortcut or via button
+  trigger.
 -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
@@ -20,28 +21,38 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { useLibrarySearch } from '../composables'
+import { useLibrarySearch, type LibrarySearchResult } from '../composables'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { cn } from '@renderer/utils/cn'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { Game, Character, Person, Company } from '@shared/db'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import type { Game, Anime, Character, Person, Company } from '@shared/db'
 
 // =============================================================================
 // Types
 // =============================================================================
 
-type EntityType = 'game' | 'character' | 'person' | 'company'
+type SearchResultItem = Game | Anime | Character | Person | Company
 
 interface ColumnConfig {
-  type: EntityType
+  type: ContentEntityType
   title: string
   emptyText: string
+}
+
+const RESULT_KEYS: Record<ContentEntityType, keyof LibrarySearchResult> = {
+  game: 'games',
+  anime: 'animes',
+  character: 'characters',
+  person: 'persons',
+  company: 'companies'
 }
 
 const { m } = useI18n()
 
 const COLUMNS = computed<ColumnConfig[]>(() =>
-  (['game', 'character', 'person', 'company'] as const).map((type) => ({
+  CONTENT_ENTITY_TYPES.map((type) => ({
     type,
     title: m.value.library.entities[type],
     emptyText: m.value.library.search.emptyResult({ label: m.value.library.entities[type] })
@@ -74,9 +85,7 @@ const prevDebouncedQuery = ref('')
 // Build flattened list of all results with column info for keyboard navigation
 const flatResults = computed(() => {
   return COLUMNS.value.flatMap((config, columnIndex) => {
-    const items = (results.value[`${config.type}s` as keyof typeof results.value] ?? []) as Array<
-      Game | Character | Person | Company
-    >
+    const items = results.value[RESULT_KEYS[config.type]] as SearchResultItem[]
     return items.map((item, itemIndex) => ({
       item,
       type: config.type,
@@ -99,6 +108,7 @@ const columnItems = computed(() => {
 const totalResultCount = computed(() => {
   return (
     results.value.games.length +
+    results.value.animes.length +
     results.value.characters.length +
     results.value.persons.length +
     results.value.companies.length
@@ -109,12 +119,18 @@ const totalResultCount = computed(() => {
 // Methods
 // =============================================================================
 
-function getThumbnailUrl(item: Game | Character | Person | Company, type: EntityType) {
+function getThumbnailUrl(item: SearchResultItem, type: ContentEntityType) {
   switch (type) {
     case 'game': {
       const game = item as Game
       return game.coverFile
         ? getAttachmentUrl('games', game.id, game.coverFile, { width: 100, height: 100 })
+        : null
+    }
+    case 'anime': {
+      const anime = item as Anime
+      return anime.coverFile
+        ? getAttachmentUrl('animes', anime.id, anime.coverFile, { width: 100, height: 100 })
         : null
     }
     case 'character': {
@@ -141,22 +157,9 @@ function getThumbnailUrl(item: Game | Character | Person | Company, type: Entity
   }
 }
 
-function handleResultClick(type: EntityType, id: string) {
+function handleResultClick(type: ContentEntityType, id: string) {
   closeDialog()
-  switch (type) {
-    case 'game':
-      router.push({ name: 'game-detail', params: { gameId: id } })
-      break
-    case 'character':
-      router.push({ name: 'character-detail', params: { characterId: id } })
-      break
-    case 'person':
-      router.push({ name: 'person-detail', params: { personId: id } })
-      break
-    case 'company':
-      router.push({ name: 'company-detail', params: { companyId: id } })
-      break
-  }
+  router.push(getEntityDetailPath(type, id))
 }
 
 function closeDialog() {
@@ -206,7 +209,7 @@ function handleKeyDown(e: KeyboardEvent) {
       if (focusedIndex.value === -1) return
       const current = flatResults.value[focusedIndex.value]
       // Find next non-empty column
-      for (let col = current.columnIndex + 1; col < 4; col++) {
+      for (let col = current.columnIndex + 1; col < COLUMNS.value.length; col++) {
         const targetCol = columnItems.value[col]
         if (targetCol.length > 0) {
           // Try to match row index, clamp to column length
@@ -243,9 +246,7 @@ function handleKeyDown(e: KeyboardEvent) {
 }
 
 function getColumnItems(config: ColumnConfig) {
-  return (results.value[`${config.type}s` as keyof typeof results.value] ?? []) as Array<
-    Game | Character | Person | Company
-  >
+  return results.value[RESULT_KEYS[config.type]] as SearchResultItem[]
 }
 
 function getGlobalIndex(columnIndex: number, itemIndex: number) {
@@ -337,7 +338,7 @@ watch(
       <!-- Results grid -->
       <div
         ref="contentRef"
-        class="grid grid-cols-4 divide-x"
+        class="grid grid-cols-5 divide-x"
       >
         <div
           v-for="(config, columnIndex) in COLUMNS"

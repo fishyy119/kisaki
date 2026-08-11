@@ -31,14 +31,19 @@ type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
 
 type LibraryEntityPrefix =
   | 'capabilities.library.games'
+  | 'capabilities.library.animes'
   | 'capabilities.library.characters'
   | 'capabilities.library.persons'
   | 'capabilities.library.companies'
   | 'capabilities.library.collections'
   | 'capabilities.library.tags'
 
+/** Anime owns an `episodes` sub-namespace that the generic CRUD facade does not build. */
+type LibraryAnimeEntityFacade = Omit<LibraryCapability['animes'], 'episodes'>
+
 type LibraryEntityNamespaceFacade =
   | LibraryCapability['games']
+  | LibraryAnimeEntityFacade
   | LibraryCapability['characters']
   | LibraryCapability['persons']
   | LibraryCapability['companies']
@@ -274,6 +279,26 @@ export function createKisakiApi(
         update: 'capabilities.library.games.update',
         remove: 'capabilities.library.games.remove'
       }),
+      animes: {
+        ...createEntityNamespace<LibraryAnimeEntityFacade>({
+          get: 'capabilities.library.animes.get',
+          list: 'capabilities.library.animes.list',
+          create: 'capabilities.library.animes.create',
+          update: 'capabilities.library.animes.update',
+          remove: 'capabilities.library.animes.remove'
+        }),
+        episodes: {
+          list: async (query) =>
+            (await requestMain('capabilities.library.animes.episodes.list', { query })).items,
+          patchWatchState: async (episodeId, patch) =>
+            (
+              await requestMain('capabilities.library.animes.episodes.patchWatchState', {
+                episodeId,
+                patch
+              })
+            ).episode
+        }
+      },
       characters: createEntityNamespace<LibraryCapability['characters']>({
         get: 'capabilities.library.characters.get',
         list: 'capabilities.library.characters.list',
@@ -471,6 +496,26 @@ export function createKisakiApi(
             (await requestMain('capabilities.ingest.game.update.fromScraper', { input })).result,
           startFromScraper: async (input) =>
             (await requestMain('capabilities.ingest.game.update.startFromScraper', { input })).start
+        }
+      },
+      anime: {
+        add: {
+          fromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.anime.add.fromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).result,
+          startFromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.anime.add.startFromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).start
         }
       }
     },

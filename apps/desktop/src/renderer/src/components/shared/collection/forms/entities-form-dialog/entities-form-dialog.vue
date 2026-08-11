@@ -2,7 +2,7 @@
   CollectionEntitiesFormDialog
 
   Dialog for editing entities in a collection.
-  Supports all entity types (game, character, person, company).
+  Supports all content entity types (game, anime, character, person, company).
   Features inline add/edit dialog with note field and reordering.
 -->
 <script setup lang="ts">
@@ -13,6 +13,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import {
   collectionGameLinks,
+  collectionAnimeLinks,
   collectionCharacterLinks,
   collectionPersonLinks,
   collectionCompanyLinks
@@ -58,6 +59,7 @@ interface EntityConfig {
 
 const ENTITY_CONFIG = computed<Record<ContentEntityType, EntityConfig>>(() => ({
   game: { label: m.value.library.entities.game },
+  anime: { label: m.value.library.entities.anime },
   character: { label: m.value.library.entities.character },
   person: { label: m.value.library.entities.person },
   company: { label: m.value.library.entities.company }
@@ -87,11 +89,16 @@ const {
   refetch
 } = useAsyncData(
   async () => {
-    const [gameLinks, characterLinks, personLinks, companyLinks] = await Promise.all([
+    const [gameLinks, animeLinks, characterLinks, personLinks, companyLinks] = await Promise.all([
       db.query.collectionGameLinks.findMany({
         where: eq(collectionGameLinks.collectionId, props.collectionId),
         with: { game: true },
         orderBy: asc(collectionGameLinks.orderInCollection)
+      }),
+      db.query.collectionAnimeLinks.findMany({
+        where: eq(collectionAnimeLinks.collectionId, props.collectionId),
+        with: { anime: true },
+        orderBy: asc(collectionAnimeLinks.orderInCollection)
       }),
       db.query.collectionCharacterLinks.findMany({
         where: eq(collectionCharacterLinks.collectionId, props.collectionId),
@@ -116,6 +123,14 @@ const {
         entityId: link.gameId,
         entityName: link.game?.name || 'Unknown',
         entityType: 'game' as ContentEntityType,
+        note: link.note || '',
+        orderInCollection: link.orderInCollection
+      })),
+      ...animeLinks.map((link) => ({
+        id: link.id,
+        entityId: link.animeId,
+        entityName: link.anime?.name || 'Unknown',
+        entityType: 'anime' as ContentEntityType,
         note: link.note || '',
         orderInCollection: link.orderInCollection
       })),
@@ -254,6 +269,9 @@ async function handleSave() {
         .delete(collectionGameLinks)
         .where(eq(collectionGameLinks.collectionId, props.collectionId)),
       db
+        .delete(collectionAnimeLinks)
+        .where(eq(collectionAnimeLinks.collectionId, props.collectionId)),
+      db
         .delete(collectionCharacterLinks)
         .where(eq(collectionCharacterLinks.collectionId, props.collectionId)),
       db
@@ -272,6 +290,16 @@ async function handleSave() {
         id: l.isNew ? nanoid() : l.id,
         collectionId: props.collectionId,
         gameId: l.entityId,
+        note: l.note || null,
+        orderInCollection: index
+      }))
+    const animeLinksToInsert = entityLinks.value
+      .filter((l) => l.entityType === 'anime')
+      .sort((a, b) => a.orderInCollection - b.orderInCollection)
+      .map((l, index) => ({
+        id: l.isNew ? nanoid() : l.id,
+        collectionId: props.collectionId,
+        animeId: l.entityId,
         note: l.note || null,
         orderInCollection: index
       }))
@@ -309,6 +337,9 @@ async function handleSave() {
     // Insert new links
     if (gameLinksToInsert.length > 0) {
       await db.insert(collectionGameLinks).values(gameLinksToInsert)
+    }
+    if (animeLinksToInsert.length > 0) {
+      await db.insert(collectionAnimeLinks).values(animeLinksToInsert)
     }
     if (characterLinksToInsert.length > 0) {
       await db.insert(collectionCharacterLinks).values(characterLinksToInsert)

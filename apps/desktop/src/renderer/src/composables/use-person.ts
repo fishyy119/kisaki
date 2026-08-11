@@ -29,9 +29,11 @@ import { usePreferencesStore } from '@renderer/stores'
 import type {
   Person,
   GamePersonLink,
+  AnimePersonLink,
   CharacterPersonLink,
   PersonTagLink,
   Game,
+  Anime,
   Character,
   Tag
 } from '@shared/db/schema'
@@ -46,6 +48,7 @@ interface PersonData {
   person: Person
   tags: (PersonTagLink & { tag: Tag | null })[]
   games: (GamePersonLink & { game: Game | null })[]
+  animes: (AnimePersonLink & { anime: Anime | null })[]
   characters: (CharacterPersonLink & { character: Character | null })[]
 }
 
@@ -53,6 +56,7 @@ export interface PersonContext {
   person: ComputedRef<Person | null>
   tags: ComputedRef<(PersonTagLink & { tag: Tag | null })[]>
   games: ComputedRef<(GamePersonLink & { game: Game | null })[]>
+  animes: ComputedRef<(AnimePersonLink & { anime: Anime | null })[]>
   characters: ComputedRef<(CharacterPersonLink & { character: Character | null })[]>
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
@@ -102,6 +106,12 @@ async function fetchPersonData(
     showNsfw ? undefined : eq(schema.games.isNsfw, false)
   )
 
+  const animePersonLinksWhere = and(
+    eq(schema.animePersonLinks.personId, personId),
+    spoilersRevealed ? undefined : eq(schema.animePersonLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.animes.isNsfw, false)
+  )
+
   const characterPersonLinksWhere = and(
     eq(schema.characterPersonLinks.personId, personId),
     spoilersRevealed ? undefined : eq(schema.characterPersonLinks.isSpoiler, false),
@@ -109,7 +119,7 @@ async function fetchPersonData(
   )
 
   // Parallel fetch all related data
-  const [tagLinks, gameLinks, charLinks] = await Promise.all([
+  const [tagLinks, gameLinks, animeLinks, charLinks] = await Promise.all([
     db
       .select()
       .from(schema.personTagLinks)
@@ -122,6 +132,12 @@ async function fetchPersonData(
       .leftJoin(schema.games, eq(schema.gamePersonLinks.gameId, schema.games.id))
       .where(gamePersonLinksWhere)
       .orderBy(asc(schema.gamePersonLinks.orderInPerson)),
+    db
+      .select()
+      .from(schema.animePersonLinks)
+      .leftJoin(schema.animes, eq(schema.animePersonLinks.animeId, schema.animes.id))
+      .where(animePersonLinksWhere)
+      .orderBy(asc(schema.animePersonLinks.orderInPerson)),
     db
       .select()
       .from(schema.characterPersonLinks)
@@ -137,6 +153,7 @@ async function fetchPersonData(
     person: personData,
     tags: tagLinks.map((row) => ({ ...row.person_tag_links, tag: row.tags })),
     games: gameLinks.map((row) => ({ ...row.game_person_links, game: row.games })),
+    animes: animeLinks.map((row) => ({ ...row.anime_person_links, anime: row.animes })),
     characters: charLinks.map((row) => ({
       ...row.character_person_links,
       character: row.characters
@@ -180,6 +197,7 @@ function providePersonContext(source: PersonDataSource): PersonContext {
     person: computed(() => source.data.value?.person ?? null),
     tags: computed(() => source.data.value?.tags ?? []),
     games: computed(() => source.data.value?.games ?? []),
+    animes: computed(() => source.data.value?.animes ?? []),
     characters: computed(() => source.data.value?.characters ?? []),
     isLoading: source.isLoading,
     isFetching: source.isFetching,
@@ -201,6 +219,7 @@ function usePersonDbSync(personId: MaybeRefOrGetter<string>, refetch: () => Prom
       if (
         table === 'person_tag_links' ||
         table === 'game_person_links' ||
+        table === 'anime_person_links' ||
         table === 'character_person_links'
       ) {
         refetch()
@@ -210,6 +229,7 @@ function usePersonDbSync(personId: MaybeRefOrGetter<string>, refetch: () => Prom
       if (
         table === 'person_tag_links' ||
         table === 'game_person_links' ||
+        table === 'anime_person_links' ||
         table === 'character_person_links'
       ) {
         refetch()

@@ -206,10 +206,48 @@ Reference implementations: `shared/db/columns/json/filter.ts` (`filterState`) an
 `shared/db/columns/json/collection.ts` (`dynamicCollectionConfig`, which also deep-normalizes and
 fills missing entity keys with disabled defaults).
 
+## Target Media Types
+
+Kisaki targets eight root media types. The list is the product's closed growth plan: a new root
+media type is added only when it fails every existing type's split test below.
+
+| Media type | Consumption unit               | Playback/technical layer    | Status  |
+| ---------- | ------------------------------ | --------------------------- | ------- |
+| game       | Session on an installed build  | Process launch + monitoring | Shipped |
+| anime      | Episode within a season entry  | Video playback (mpv)        | Shipped |
+| tv         | Episode within a season entry  | Video playback (mpv)        | Planned |
+| movie      | Single feature                 | Video playback (mpv)        | Planned |
+| music      | Track within a release         | Audio playback              | Planned |
+| audio      | Track within a release (voice) | Audio playback              | Planned |
+| comic      | Page within a volume/chapter   | Image reading               | Planned |
+| book       | Page/position within a volume  | Text reading                | Planned |
+
+Splitting rules, in the order they decide:
+
+1. **Consumption unit differs.** The unit a user finishes, resumes, and counts progress against
+   (session, episode, track, page) drives the owned-item table and the progress model. Two media
+   with different units are different types.
+2. **Technical layer differs.** Process launch, video playback, audio playback, and reading are
+   distinct engines with distinct capabilities; a type never straddles two.
+3. **Metadata graph differs.** Distinct role vocabularies and satellite link semantics (staff roles,
+   studios vs. labels vs. publishers) justify a split even when unit and engine match.
+4. **Otherwise it is a format, not a type.** Anime films stay `anime` with `format: 'movie'`;
+   drama CDs stay `audio`. Formats are enum values on the entry, never new tables.
+
+Consequences of the taxonomy:
+
+- `anime` and `tv` share the season-with-episodes shape and the video engine, but keep separate
+  entries because their metadata graphs and sources differ; whatever they prove invariant may be
+  extracted once both exist.
+- `movie` has one playable file per entry, so it owns no episode table.
+- `comic` and `book` split on the technical layer (image reading vs. text reflow), not on genre.
+- Seasons are separate entries linked by media relations; trailers and creditless openings are
+  extras of an entry, not episodes.
+
 ## Precise Abstraction & Media-Type Extensibility
 
-Kisaki is designed to grow from games to more media types (book, movie, music, tv). Entity-generic
-code must scale by declaration, not by copy-paste.
+Kisaki grows along the media-type axis above. Entity-generic code must scale by declaration, not by
+copy-paste.
 
 ### Declare Per-Entity Behavior as Data
 
@@ -264,10 +302,12 @@ Distinguish the two growth axes:
 - Satellite entities (person, company, character) are cross-media and shared; media types attach to
   them through per-media link tables. Deduplicating genuinely uniform mechanics across satellites
   is safe — they are structurally identical, not coincidentally similar.
-- Root media types (game today; anime, book, music later) have one exemplar. Never extract a
-  generic root-media flow, engine, or entity spec from a single sample — with one sample you cannot
-  tell invariants from game-specific accidents. Wait until the second media type exists, then
-  extract only what both proved invariant.
+- Root media types grow one exemplar at a time (game and anime are shipped; the rest of the
+  taxonomy above is planned). Never extract a generic root-media flow, engine, or entity spec from
+  a single sample — with one sample you cannot tell invariants from media-specific accidents. When
+  the second sample lands, extract only what both proved invariant (the scanner's shared
+  media-handler mechanics and the feed's media projection descriptors are the game+anime
+  precedents); every further media type re-earns its place in a shared mechanism the same way.
 
 Keep registries per consumer (merge config, feed projection, delete config, query spec). Each
 consumer declares only the schema facts it needs. Do not merge them into one grand all-consumer
@@ -500,7 +540,7 @@ Kisaki provides a unified `notify` API that is callable from both main and rende
   - Capability code that more than one flow can invoke (media service handlers, domain modules,
     pure utilities) stays silent: return a result union for expected outcomes, throw stable
     errors for unexpected ones, and log detail once at the layer that owns the context.
-  - Folder names do not decide this; ownership does. `launcher/handlers/game.ts` is a shared
+  - Folder names do not decide this; ownership does. `activity/handlers/game.ts` is a shared
     capability (play button, deeplinks, automations) and must not notify;
     `deeplink/handlers/launch.ts` is the entry adapter of one flow and owns its notifications.
 - Keep `ipc.handle(...)` functions as **thin adapters**: forward typed arguments to a service/use-case method + map to `IpcResult`.

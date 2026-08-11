@@ -1,6 +1,6 @@
-import type { LibraryGameStatus } from '@kisaki3/extension-sdk'
+import { LIBRARY_MEDIA_STATUSES, type LibraryMediaStatus } from '@kisaki3/extension-sdk'
 import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
-import { BANGUMI_MEDIA_SCOPES, type BangumiMediaScope } from '../media/scopes'
+import { BANGUMI_MEDIA_SCOPES, type BangumiMediaScope } from '../../shared/scopes'
 
 export type BangumiCollectionType = 1 | 2 | 3 | 4 | 5
 export type BangumiStatusMappingValue = BangumiCollectionType | 'skip'
@@ -17,17 +17,18 @@ export interface BangumiSettingsV1 {
       localSyncEnabled: boolean
     }
   >
-  game: {
-    autoSync: {
-      enabled: boolean
-      syncOnCreate: boolean
-      playStatusEnabled: boolean
-      scoreEnabled: boolean
-      clearRemoteScoreWhenEmpty: boolean
-      debounceMs: number
-      notifyErrors: boolean
-      statusToBangumi: Record<LibraryGameStatus, BangumiStatusMappingValue>
-    }
+  /** One policy for every locally synced scope. */
+  autoSync: {
+    enabled: boolean
+    syncOnCreate: boolean
+    playStatusEnabled: boolean
+    scoreEnabled: boolean
+    /** Pushes per-episode watch state for scopes that track episodes. */
+    episodeStatusEnabled: boolean
+    clearRemoteScoreWhenEmpty: boolean
+    debounceMs: number
+    notifyErrors: boolean
+    statusToBangumi: Record<LibraryMediaStatus, BangumiStatusMappingValue>
   }
   client: {
     rateLimit: {
@@ -40,14 +41,6 @@ export interface BangumiSettingsV1 {
 }
 
 const BANGUMI_COLLECTION_TYPES = [1, 2, 3, 4, 5] as const
-const LIBRARY_GAME_STATUS_VALUES = [
-  'notStarted',
-  'inProgress',
-  'partial',
-  'completed',
-  'multiple',
-  'shelved'
-] as const satisfies readonly LibraryGameStatus[]
 
 export function normalizeBangumiSettings(value: unknown): BangumiSettingsV1 {
   const input = isRecord(value) && value.version === 1 ? value : undefined
@@ -57,12 +50,7 @@ export function normalizeBangumiSettings(value: unknown): BangumiSettingsV1 {
     version: 1,
     auth: normalizeAuthSettings(input?.auth, defaults.auth),
     media: normalizeMediaSettings(input?.media, defaults.media),
-    game: {
-      autoSync: normalizeAutoSyncSettings(
-        asRecord(input?.game)?.autoSync ?? input?.autoSync,
-        defaults.game.autoSync
-      )
-    },
+    autoSync: normalizeAutoSyncSettings(input?.autoSync, defaults.autoSync),
     client: normalizeClientSettings(input?.client, defaults.client)
   }
 }
@@ -108,8 +96,8 @@ function normalizeMediaSettings(
 
 function normalizeAutoSyncSettings(
   value: unknown,
-  defaults: BangumiSettingsV1['game']['autoSync']
-): BangumiSettingsV1['game']['autoSync'] {
+  defaults: BangumiSettingsV1['autoSync']
+): BangumiSettingsV1['autoSync'] {
   const input = asRecord(value)
 
   return {
@@ -117,6 +105,10 @@ function normalizeAutoSyncSettings(
     syncOnCreate: normalizeBoolean(input?.syncOnCreate, defaults.syncOnCreate),
     playStatusEnabled: normalizeBoolean(input?.playStatusEnabled, defaults.playStatusEnabled),
     scoreEnabled: normalizeBoolean(input?.scoreEnabled, defaults.scoreEnabled),
+    episodeStatusEnabled: normalizeBoolean(
+      input?.episodeStatusEnabled,
+      defaults.episodeStatusEnabled
+    ),
     clearRemoteScoreWhenEmpty: normalizeBoolean(
       input?.clearRemoteScoreWhenEmpty,
       defaults.clearRemoteScoreWhenEmpty
@@ -170,12 +162,12 @@ function normalizeRateLimitSettings(
 
 function normalizeStatusToBangumi(
   value: unknown,
-  defaults: BangumiSettingsV1['game']['autoSync']['statusToBangumi']
-): BangumiSettingsV1['game']['autoSync']['statusToBangumi'] {
+  defaults: BangumiSettingsV1['autoSync']['statusToBangumi']
+): BangumiSettingsV1['autoSync']['statusToBangumi'] {
   const input = asRecord(value)
   const output = { ...defaults }
 
-  for (const status of LIBRARY_GAME_STATUS_VALUES) {
+  for (const status of LIBRARY_MEDIA_STATUSES) {
     output[status] = normalizeStatusMappingValue(input?.[status], defaults[status])
   }
 

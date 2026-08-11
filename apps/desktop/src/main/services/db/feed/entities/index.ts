@@ -6,7 +6,15 @@ import { personEntityProjection } from './person'
 import { tagEntityProjection } from './tag'
 
 export { projectEntityChanges } from './common'
-export { gameExists, getGameCreatedName, getGameIdsFromChange, projectGameChanges } from './game'
+export {
+  MEDIA_PROJECTIONS,
+  getMediaCreatedName,
+  getMediaIdsFromChange,
+  getMediaProjectionForTable,
+  getMediaProjectionForTopic,
+  mediaExists,
+  projectMediaChanges
+} from './media'
 
 export const ENTITY_PROJECTIONS: Record<string, EntityProjection> = {
   persons: personEntityProjection,

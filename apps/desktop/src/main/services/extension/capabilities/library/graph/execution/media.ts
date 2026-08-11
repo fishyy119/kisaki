@@ -1,12 +1,14 @@
 import { eq } from 'drizzle-orm'
 import type {
   LibraryGraphAttachmentNode,
+  LibraryGraphEdge,
   LibraryGraphMediaAttachmentEdge,
-  LibraryGraphResultAction
+  LibraryGraphResultAction,
+  LibraryMediaType
 } from '@kisaki3/extension-api'
-import { games } from '@shared/db'
+import { animeEpisodes, animes, games } from '@shared/db'
 import type { DbService } from '@main/services/db'
-import { persistSaveBackup, validateGraphFile } from '../attachments'
+import { persistEpisodeStill, persistSaveBackup, validateGraphFile } from '../attachments'
 import { createAttachmentPersistDiagnostic } from '../diagnostics'
 import type {
   LibraryGraphExecutionContext,
@@ -22,6 +24,14 @@ import {
   requireNodeEntry
 } from './state'
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
+
+type EpisodeAttachmentEdge = Extract<LibraryGraphEdge, { kind: 'episode-attachment' }>
+
+/** Slots that live on a media row column rather than in a list or backup set. */
+type MediaFileSlot = Exclude<
+  LibraryGraphMediaAttachmentEdge['slot'],
+  'description-inline' | 'save-backup'
+>
 
 export async function previewAttachmentEdge(
   edge: LibraryGraphMediaAttachmentEdge,
@@ -72,14 +82,14 @@ export async function applyAttachmentEdge(
   }
 
   try {
-    const gameId = requireEntityId(state, edge.from.kind, edge.from.key)
+    const mediaId = requireEntityId(state, edge.from.kind, edge.from.key)
     if (edge.slot === 'save-backup') {
-      await applySaveBackupAttachment(options.db, gameId, attachment, edge, context.signal)
+      await applySaveBackupAttachment(options.db, mediaId, attachment, edge, context.signal)
     } else {
       await options.attachments.put(
         context.runtimeHandle,
         {
-          entity: { entityType: 'game', id: gameId },
+          entity: { entityType: state.mediaTypes.get(edge.from.key) ?? 'game', id: mediaId },
           slot: edge.slot,
           source: { kind: 'path', path: attachment.path },
           replace: shouldReplaceAttachment(edge.replace, graph.options.conflictMode)
@@ -87,6 +97,65 @@ export async function applyAttachmentEdge(
         context.signal
       )
     }
+    recordAttachmentAction(state, edge.to.key, action)
+    return action
+  } catch (error) {
+    const diagnostic = createAttachmentPersistDiagnostic(error, edge.to.key)
+    recordAttachmentDiagnostic(draft, state, edge.to.key, diagnostic)
+    const actionOnError = graph.options.strictAttachments ? 'fail' : 'skip'
+    recordAttachmentAction(state, edge.to.key, actionOnError)
+    return actionOnError
+  }
+}
+
+export async function previewEpisodeAttachmentEdge(
+  edge: EpisodeAttachmentEdge,
+  graph: NormalizedLibraryGraph,
+  draft: LibraryGraphResultDraft,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): Promise<LibraryGraphResultAction> {
+  const attachment = requireNodeEntry(graph, 'attachment', edge.to.key).node
+  const fileDiagnostic = await validateGraphFile(attachment.path, edge.to.key)
+  if (fileDiagnostic) {
+    recordAttachmentDiagnostic(draft, state, edge.to.key, fileDiagnostic)
+    if (graph.options.strictAttachments) {
+      recordAttachmentAction(state, edge.to.key, 'fail')
+      return 'fail'
+    }
+  }
+
+  const action = previewEpisodeStillAction(edge, graph.options.conflictMode, state, options)
+  recordAttachmentAction(state, edge.to.key, action)
+  return action
+}
+
+export async function applyEpisodeAttachmentEdge(
+  edge: EpisodeAttachmentEdge,
+  graph: NormalizedLibraryGraph,
+  draft: LibraryGraphResultDraft,
+  state: ApplyState,
+  context: LibraryGraphExecutionContext,
+  options: ExecuteLibraryGraphOptions
+): Promise<LibraryGraphResultAction> {
+  const attachment = requireNodeEntry(graph, 'attachment', edge.to.key).node
+  const fileDiagnostic = await validateGraphFile(attachment.path, edge.to.key)
+  if (fileDiagnostic) {
+    recordAttachmentDiagnostic(draft, state, edge.to.key, fileDiagnostic)
+    const actionOnMissing = graph.options.strictAttachments ? 'fail' : 'skip'
+    recordAttachmentAction(state, edge.to.key, actionOnMissing)
+    return actionOnMissing
+  }
+
+  const action = previewEpisodeStillAction(edge, graph.options.conflictMode, state, options)
+  if (action === 'skip') {
+    recordAttachmentAction(state, edge.to.key, 'skip')
+    return 'skip'
+  }
+
+  try {
+    const episodeId = requireEntityId(state, edge.from.kind, edge.from.key)
+    await persistEpisodeStill(options.db, episodeId, attachment.path, context.signal)
     recordAttachmentAction(state, edge.to.key, action)
     return action
   } catch (error) {
@@ -133,50 +202,96 @@ function previewAttachmentAction(
     return 'skip'
   }
 
-  const gameId = getEntityId(state, edge.from.kind, edge.from.key)
-  if (!gameId) {
+  const mediaId = getEntityId(state, edge.from.kind, edge.from.key)
+  if (!mediaId) {
     return 'create'
   }
 
-  const game = options.db.client.select().from(games).where(eq(games.id, gameId)).get()
-  if (!game) {
+  const mediaType = state.mediaTypes.get(edge.from.key) ?? 'game'
+  const media = readMediaRow(mediaType, mediaId, options)
+  if (!media) {
     return 'fail'
   }
 
   if (edge.slot === 'save-backup') {
     const backupAt = edge.saveBackup?.backupAt
     return backupAt !== undefined &&
-      (game.saveBackups ?? []).some((backup) => backup.backupAt === backupAt)
+      (media.saveBackups ?? []).some((backup) => backup.backupAt === backupAt)
       ? 'skip'
       : 'create'
   }
 
   if (edge.slot === 'description-inline') {
     return shouldReplaceAttachment(edge.replace, conflictMode) ||
-      (game.descriptionInlineFiles ?? []).length === 0
+      media.descriptionInlineFiles.length === 0
       ? 'create'
       : 'skip'
   }
 
-  const currentFile = readGameAttachmentSlot(game, edge.slot)
+  const currentFile = media.files[edge.slot as MediaFileSlot]
   if (!currentFile) {
     return 'create'
   }
   return shouldReplaceAttachment(edge.replace, conflictMode) ? 'update' : 'skip'
 }
 
-function readGameAttachmentSlot(
-  game: typeof games.$inferSelect,
-  slot: Exclude<LibraryGraphMediaAttachmentEdge['slot'], 'description-inline' | 'save-backup'>
-): string | undefined {
-  switch (slot) {
-    case 'cover':
-      return game.coverFile ?? undefined
-    case 'backdrop':
-      return game.backdropFile ?? undefined
-    case 'logo':
-      return game.logoFile ?? undefined
-    case 'icon':
-      return game.iconFile ?? undefined
+function previewEpisodeStillAction(
+  edge: EpisodeAttachmentEdge,
+  conflictMode: NormalizedLibraryGraph['options']['conflictMode'],
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  const episodeId = getEntityId(state, edge.from.kind, edge.from.key)
+  if (!episodeId) {
+    return 'create'
   }
+
+  const episode = options.db.client
+    .select({ stillFile: animeEpisodes.stillFile })
+    .from(animeEpisodes)
+    .where(eq(animeEpisodes.id, episodeId))
+    .get()
+  if (!episode) {
+    return 'fail'
+  }
+  if (!episode.stillFile) {
+    return 'create'
+  }
+  return shouldReplaceAttachment(edge.replace, conflictMode) ? 'update' : 'skip'
+}
+
+interface MediaAttachmentRow {
+  files: Partial<Record<MediaFileSlot, string | null>>
+  descriptionInlineFiles: readonly string[]
+  saveBackups?: readonly { backupAt: number }[]
+}
+
+function readMediaRow(
+  mediaType: LibraryMediaType,
+  mediaId: string,
+  options: ExecuteLibraryGraphOptions
+): MediaAttachmentRow | undefined {
+  if (mediaType === 'anime') {
+    const row = options.db.client.select().from(animes).where(eq(animes.id, mediaId)).get()
+    return row
+      ? {
+          files: { cover: row.coverFile, backdrop: row.backdropFile, logo: row.logoFile },
+          descriptionInlineFiles: row.descriptionInlineFiles ?? []
+        }
+      : undefined
+  }
+
+  const row = options.db.client.select().from(games).where(eq(games.id, mediaId)).get()
+  return row
+    ? {
+        files: {
+          cover: row.coverFile,
+          backdrop: row.backdropFile,
+          logo: row.logoFile,
+          icon: row.iconFile
+        },
+        descriptionInlineFiles: row.descriptionInlineFiles ?? [],
+        saveBackups: row.saveBackups ?? []
+      }
+    : undefined
 }
