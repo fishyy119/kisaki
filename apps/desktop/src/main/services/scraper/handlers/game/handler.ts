@@ -23,7 +23,7 @@ import type {
 } from '@shared/scraper'
 import type { ContentLocale } from '@shared/i18n'
 import type { I18nService } from '@main/services/i18n'
-import { ensureProviderExternalId, ensureProviderIdentity } from '../../shared'
+import { ensureProviderExternalId, ensureProviderIdentity, ScrapeFailure } from '../../shared'
 import { executeScraperPlan } from '../common/executor'
 import {
   buildExecutionPlan,
@@ -153,12 +153,7 @@ export class GameScraperHandler {
         state.collectIdentity(this.createTargetIdentity(searchProvider.id, searchTarget))
       }
 
-      const resolveProviderId = async (
-        providerId: string,
-        locale: ContentLocale
-      ): Promise<GameResolvedTarget | null> => {
-        void locale
-
+      const resolveProviderId = async (providerId: string): Promise<GameResolvedTarget | null> => {
         const provider = this.providers.get(providerId)
         if (!provider) {
           log.warn('Provider not available.', { mediaType: 'game', providerId: providerId })
@@ -186,8 +181,8 @@ export class GameScraperHandler {
         resolveProviderTarget: resolveProviderId,
         collectResolvedIdentity: ({ providerId, target }) =>
           state.collectIdentity(this.createTargetIdentity(providerId, target)),
-        buildResult: ({ providerId, target, entry, data }) =>
-          this.createGameResult(providerId, target, entry, data),
+        buildResult: ({ providerId, entry, data }) =>
+          this.createGameResult(providerId, entry, data),
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly GameScraperResult[]
 
@@ -256,8 +251,8 @@ export class GameScraperHandler {
             ctx: { locale, signal: options.signal }
           })
         },
-        buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
-          this.createGameResult(resolvedProviderId, target, entry, data),
+        buildResult: ({ providerId: resolvedProviderId, entry, data }) =>
+          this.createGameResult(resolvedProviderId, entry, data),
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly GameScraperImageResult[]
 
@@ -280,12 +275,9 @@ export class GameScraperHandler {
 
   private createGameResult<S extends GameScraperSlot>(
     providerId: string,
-    target: GameResolvedTarget,
     entry: PlannedSlotEntry<S>,
     data: GameSessionResultMap[S]
   ): SlotResult<S, GameSessionResultMap[S]> | null {
-    void target
-
     if (entry.slot === 'info') {
       const normalized = data as GameSessionResultMap['info']
 
@@ -330,9 +322,14 @@ export class GameScraperHandler {
       .all()
 
     const profile = rows[0]
-    if (!profile) throw new Error(`Profile not found: ${profileId}`)
+    if (!profile) {
+      throw new ScrapeFailure('profile-unavailable', `Profile not found: ${profileId}`)
+    }
     if (profile.mediaType !== 'game') {
-      throw new Error(`Profile '${profileId}' is not a game scraper profile`)
+      throw new ScrapeFailure(
+        'profile-unavailable',
+        `Profile '${profileId}' is not a game scraper profile`
+      )
     }
     return profile
   }
@@ -340,18 +337,13 @@ export class GameScraperHandler {
   private requireProvider(providerId: string): GameScraperProvider {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      throw new Error(`Provider not found: ${providerId}`)
+      throw new ScrapeFailure('provider-unavailable', `Provider not found: ${providerId}`)
     }
     return provider
   }
 
   private requireProviderExternalIdSource(providerId: string): string {
-    const provider = this.providers.get(providerId)
-    if (!provider) {
-      throw new Error(`Provider not found: ${providerId}`)
-    }
-
-    return provider.externalIdSource
+    return this.requireProvider(providerId).externalIdSource
   }
 
   private getProfileLocale(profile: ScraperProfile): ContentLocale {

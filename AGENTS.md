@@ -98,7 +98,11 @@ old internal shapes.
   database rows, full HTTP bodies, unbounded arrays, private keys, or signing keys.
 - Catch errors only to add business context, recover, change the boundary message, or log once at the
   layer that owns the failure.
-- Throw stable safe English errors for user-facing boundaries.
+- Throw safe English errors in our own wording. Messages may embed the dynamic values a reader
+  needs to act (ids, paths, names, enum values); they never embed secrets, raw library/system error
+  text (wrap with `cause` and log instead), remote-sourced content, or unbounded collections.
+- Never branch on `error.message` text in any process; classify errors with typed classes or reason
+  fields.
 
 ## Language And Comments
 

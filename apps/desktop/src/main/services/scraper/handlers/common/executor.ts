@@ -3,7 +3,6 @@
  */
 
 import { assertNotAborted, isAbortError } from '@main/utils/async'
-import type { ContentLocale } from '@shared/i18n'
 import type { SlotStrategy } from '@shared/db'
 import type { BaseResolvedTarget, BaseScraperSession, ScraperProviderContext } from '../../types'
 import type { PlannedProviderTask, ScraperExecutionPlan } from './planner'
@@ -32,11 +31,11 @@ export interface ExecuteScraperPlanOptions<
   /** Cancels every provider call this plan makes; unset means uncancellable. */
   signal?: AbortSignal
   getProvider(providerId: string): TProvider | undefined
-  resolveProviderTarget(providerId: string, locale: ContentLocale): Promise<TTarget | null>
+  /** Resolve locale is an invocation-level concern of the handler, not per task. */
+  resolveProviderTarget(providerId: string): Promise<TTarget | null>
   collectResolvedIdentity?(context: { providerId: string; target: TTarget }): void
   buildResult(context: {
     providerId: string
-    target: TTarget
     entry: PlannedProviderTask<TSlot>['entries'][number]
     data: TResultMap[TSlot]
   }): TResult | null
@@ -153,7 +152,7 @@ async function runProviderTask<
   try {
     assertNotAborted(options.signal)
 
-    const target = await options.resolveProviderTarget(task.providerId, task.locale)
+    const target = await options.resolveProviderTarget(task.providerId)
     if (!target) {
       return { attemptedEntries: pendingEntries }
     }
@@ -180,7 +179,6 @@ async function runProviderTask<
 
       const result = options.buildResult({
         providerId: task.providerId,
-        target,
         entry,
         data: data as TResultMap[TSlot]
       })

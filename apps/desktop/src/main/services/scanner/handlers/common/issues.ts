@@ -5,6 +5,7 @@
  * renderer can render one issues table regardless of what was scanned.
  */
 
+import { ScrapeFailure } from '@main/services/scraper'
 import type { IngestWarning } from '@shared/ingest/common'
 import type { EntityEntry, ScannerRunExisting } from '@shared/scanner'
 import type {
@@ -18,33 +19,15 @@ import type {
 /**
  * Failures worth reporting as an issue instead of aborting the whole run.
  *
- * Anything else is a defect in our own code and must surface as a run failure.
+ * The scrape pipeline states expected failures as typed `ScrapeFailure`s;
+ * anything else is a defect in our own code and must surface as a run failure.
  */
-const RECOVERABLE_SCRAPER_MARKERS = [
-  'profile not found',
-  'search provider',
-  'provider',
-  'scrape',
-  'network',
-  'timeout',
-  'timed out',
-  'econn',
-  'enotfound',
-  'eai_again'
-]
-
-/** Matches the "no data for this lookup" error raised by every add handler. */
-const MISSING_METADATA_PATTERN = /returned no \S+ data/
-
 export function isRecoverableScraperFailure(error: unknown): boolean {
-  if (!(error instanceof Error)) return false
-
-  const message = error.message.toLowerCase()
-  return RECOVERABLE_SCRAPER_MARKERS.some((marker) => message.includes(marker))
+  return error instanceof ScrapeFailure
 }
 
 export function isMissingMetadataScraperFailure(error: unknown): boolean {
-  return error instanceof Error && MISSING_METADATA_PATTERN.test(error.message.toLowerCase())
+  return error instanceof ScrapeFailure && error.reason === 'metadata-missing'
 }
 
 export function getScraperProblemType(

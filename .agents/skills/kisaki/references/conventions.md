@@ -65,6 +65,26 @@ if (!result.success) {
 }
 ```
 
+### Error Messages
+
+Write error messages in our own safe English wording:
+
+- Messages may embed the dynamic values a reader needs to act on the failure: entity ids, file
+  paths, directory and entry names, enum values, counts. A value that lets the user fix the problem
+  (`Save directory not found: ${savePath}`) or lets a developer trace it belongs in the message.
+- Messages never embed secrets or credentials, raw library/system error text (wrap it: throw our
+  own wording, keep the original as `cause`, and log it at the owning layer), remote-sourced
+  content such as scraped text or response bodies (ids and entry names from remote sources are
+  fine), or unbounded collections and full rows.
+- Renderer-facing notifications own their localized title and context; `result.error` is diagnostic
+  detail, not primary UI copy. Expected, actionable outcomes belong in typed result unions (see
+  Notifications), not in richer error messages.
+
+Message text is never a contract. No process branches on `error.message` content; cross-module
+classification uses typed error classes or reason fields, e.g. `ScrapeFailure` with
+`reason: 'profile-unavailable' | 'provider-unavailable' | 'metadata-missing'` for the
+scraper → ingest → scanner pipeline.
+
 ### IPC Boundaries
 
 - IPC handlers return `IpcResult` format
@@ -74,7 +94,7 @@ if (!result.success) {
 - IPC adapters forward arguments to service/domain methods; business branching and orchestration belong in service/domain code
 - `wrapIpc` / `wrapIpcVoid` accept only the operation; define user-facing error semantics in the service/domain layer, not in IPC registration
 - `IpcError` has only `error: string`; do not add `code` or `details`
-- Renderer code must not compare `error` strings for control flow
+- No process compares `error` message strings for control flow; classify with typed errors (see Error Messages)
 
 ## Import Boundaries
 

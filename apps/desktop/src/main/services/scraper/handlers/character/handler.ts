@@ -22,7 +22,7 @@ import type {
 } from '@shared/scraper'
 import type { ContentLocale } from '@shared/i18n'
 import type { I18nService } from '@main/services/i18n'
-import { ensureProviderExternalId, ensureProviderIdentity } from '../../shared'
+import { ensureProviderExternalId, ensureProviderIdentity, ScrapeFailure } from '../../shared'
 import { executeScraperPlan } from '../common/executor'
 import {
   buildExecutionPlan,
@@ -166,11 +166,8 @@ export class CharacterScraperHandler {
       }
 
       const resolveProviderId = async (
-        providerId: string,
-        locale: ContentLocale
+        providerId: string
       ): Promise<CharacterResolvedTarget | null> => {
-        void locale
-
         const provider = this.providers.get(providerId)
         if (!provider) {
           log.warn('Provider not available.', { mediaType: 'character', providerId: providerId })
@@ -198,8 +195,8 @@ export class CharacterScraperHandler {
         resolveProviderTarget: resolveProviderId,
         collectResolvedIdentity: ({ providerId, target }) =>
           state.collectIdentity(this.createTargetIdentity(providerId, target)),
-        buildResult: ({ providerId, target, entry, data }) =>
-          this.createCharacterResult(providerId, target, entry, data),
+        buildResult: ({ providerId, entry, data }) =>
+          this.createCharacterResult(providerId, entry, data),
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly CharacterScraperResult[]
 
@@ -268,8 +265,8 @@ export class CharacterScraperHandler {
             ctx: { locale, signal: options.signal }
           })
         },
-        buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
-          this.createCharacterResult(resolvedProviderId, target, entry, data),
+        buildResult: ({ providerId: resolvedProviderId, entry, data }) =>
+          this.createCharacterResult(resolvedProviderId, entry, data),
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly CharacterScraperImageResult[]
 
@@ -292,12 +289,9 @@ export class CharacterScraperHandler {
 
   private createCharacterResult<S extends CharacterScraperSlot>(
     providerId: string,
-    target: CharacterResolvedTarget,
     entry: PlannedSlotEntry<S>,
     data: CharacterSessionResultMap[S]
   ): SlotResult<S, CharacterSessionResultMap[S]> | null {
-    void target
-
     if (entry.slot === 'info') {
       const normalized = data as CharacterSessionResultMap['info']
 
@@ -342,9 +336,14 @@ export class CharacterScraperHandler {
       .all()
 
     const profile = rows[0]
-    if (!profile) throw new Error(`Profile not found: ${profileId}`)
+    if (!profile) {
+      throw new ScrapeFailure('profile-unavailable', `Profile not found: ${profileId}`)
+    }
     if (profile.mediaType !== 'character') {
-      throw new Error(`Profile '${profileId}' is not a character scraper profile`)
+      throw new ScrapeFailure(
+        'profile-unavailable',
+        `Profile '${profileId}' is not a character scraper profile`
+      )
     }
     return profile
   }
@@ -352,18 +351,13 @@ export class CharacterScraperHandler {
   private requireProvider(providerId: string): CharacterScraperProvider {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      throw new Error(`Provider not found: ${providerId}`)
+      throw new ScrapeFailure('provider-unavailable', `Provider not found: ${providerId}`)
     }
     return provider
   }
 
   private requireProviderExternalIdSource(providerId: string): string {
-    const provider = this.providers.get(providerId)
-    if (!provider) {
-      throw new Error(`Provider not found: ${providerId}`)
-    }
-
-    return provider.externalIdSource
+    return this.requireProvider(providerId).externalIdSource
   }
 
   private getProfileLocale(profile: ScraperProfile): ContentLocale {

@@ -1,4 +1,9 @@
-export { createProviderHttpError, type ProviderHttpFailure } from './errors'
+export {
+  createProviderHttpError,
+  ScrapeFailure,
+  type ProviderHttpFailure,
+  type ScrapeFailureReason
+} from './errors'
 export {
   createProviderIdentity,
   ensureProviderExternalId,

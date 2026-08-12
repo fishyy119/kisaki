@@ -7,6 +7,25 @@
  * message carries only the provider, the operation and the HTTP status.
  */
 
+export type ScrapeFailureReason = 'profile-unavailable' | 'provider-unavailable' | 'metadata-missing'
+
+/**
+ * Expected scrape-pipeline failure.
+ *
+ * Carries a typed reason so consumers such as scanner ingest classify by
+ * `instanceof` and `reason` instead of matching message text. Anything else
+ * escaping the pipeline is treated as a defect by those consumers.
+ */
+export class ScrapeFailure extends Error {
+  constructor(
+    readonly reason: ScrapeFailureReason,
+    message: string
+  ) {
+    super(message)
+    this.name = 'ScrapeFailure'
+  }
+}
+
 export interface ProviderHttpFailure {
   status: number
   statusText: string

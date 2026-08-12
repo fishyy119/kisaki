@@ -91,6 +91,8 @@ const NON_EPISODE_TOKEN_PATTERN =
 export interface AnimeEpisodeCandidate {
   path: string
   fileName: string
+  /** Display title derived from the filename, without release tags or extension. */
+  name: string
   type: AnimeEpisodeType
   /** Absent when the filename states no trustworthy episode number. */
   number?: number
@@ -185,24 +187,25 @@ export function classifyReleaseFile(
   const fileName = path.basename(filePath)
   const cleaned = stripNoise(fileName)
   const extraKind = readExtraKind(cleaned)
+  const name = cleaned || path.basename(fileName, path.extname(fileName))
 
   if (inExtraDirectory || extraKind) {
     return {
       path: filePath,
-      name: cleaned || fileName,
+      name,
       kind: extraKind ?? 'other'
     }
   }
 
   const specialNumber = readSpecialEpisodeNumber(cleaned)
   if (specialNumber !== undefined) {
-    return { path: filePath, fileName, type: 'special', number: specialNumber }
+    return { path: filePath, fileName, name, type: 'special', number: specialNumber }
   }
 
   const number = readEpisodeNumber(cleaned)
   return number === undefined
-    ? { path: filePath, fileName, type: 'regular' }
-    : { path: filePath, fileName, type: 'regular', number }
+    ? { path: filePath, fileName, name, type: 'regular' }
+    : { path: filePath, fileName, name, type: 'regular', number }
 }
 
 export function isExtraCandidate(

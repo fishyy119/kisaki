@@ -161,7 +161,10 @@ export class MpvIpcClient {
       if (message['error'] === 'success') {
         pending.resolve(message['data'])
       } else {
-        pending.reject(new Error(`mpv command failed: ${String(message['error'])}`))
+        // mpv's own error text is a library message; it belongs in the log,
+        // not in the error that may surface to the renderer.
+        log.warn('mpv command failed.', { mpvError: String(message['error']) })
+        pending.reject(new Error('mpv command failed.'))
       }
     })
   }

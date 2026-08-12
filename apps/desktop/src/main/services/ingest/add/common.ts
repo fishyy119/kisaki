@@ -1,5 +1,6 @@
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { ScraperLookup } from '@shared/scraper'
+import { ScrapeFailure } from '@main/services/scraper'
 import type { DbService } from '@main/services/db'
 import {
   collectionAnimeLinks,
@@ -56,7 +57,10 @@ export function requireScrapedBundle<T>(bundle: T | null, entityType: string): T
     return bundle
   }
 
-  throw new Error(`Scraper returned no ${entityType} data for the requested lookup`)
+  throw new ScrapeFailure(
+    'metadata-missing',
+    `Scraper returned no ${entityType} data for the requested lookup.`
+  )
 }
 
 export function addGameToCollection(

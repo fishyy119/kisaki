@@ -273,7 +273,7 @@ export class AnimeFileSyncHandler {
         animeId,
         type: candidate.type,
         episodeNumber: candidate.number ?? null,
-        name: candidate.number === undefined ? candidate.fileName : null,
+        name: candidate.number === undefined ? candidate.name : null,
         durationMs: info?.durationMs ?? null,
         orderInAnime: nextOrder++
       }

@@ -72,8 +72,14 @@ export type AnimeImageSlot = 'covers' | 'backdrops' | 'logos'
 /** Anime image slot list. */
 export const ANIME_IMAGE_SLOTS: AnimeImageSlot[] = ['covers', 'backdrops', 'logos']
 
-/** Image slot types. */
-export const SCRAPER_IMAGE_SLOTS: ScraperImageSlot[] = [...GAME_IMAGE_SLOTS, 'photos']
+/** Every image slot across media types; must stay in sync with ScraperImageSlot. */
+export const SCRAPER_IMAGE_SLOTS: ScraperImageSlot[] = [
+  'covers',
+  'backdrops',
+  'logos',
+  'icons',
+  'photos'
+]
 
 const RELATION_COLLECTION_SCRAPER_SLOTS: readonly RelationCollectionScraperSlot[] = [
   'characters',
