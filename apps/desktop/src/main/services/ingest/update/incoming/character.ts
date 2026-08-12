@@ -3,10 +3,10 @@ import type { CoreCharacterMetadata } from '@shared/metadata'
 import type { IngestUpdateLookup } from '@shared/ingest/update'
 import type { ScrapedCharacterBundle } from '@shared/scraper'
 import type { CharacterIncomingBuildResult } from '../types'
-import { buildCompleteCharacterRelationLinks } from '../relation-links'
+import { buildCompleteCharacterLinks } from '../link-topology'
 import {
   normalizeOptionalString,
-  normalizeRelatedSites,
+  normalizeExternalSites,
   normalizeTags,
   normalizeUrlCandidates
 } from '../shared/normalization'
@@ -38,8 +38,8 @@ function buildCharacterCore(
   const description = normalizeOptionalString(bundleCore?.description)
   if (description) core.description = description
 
-  const relatedSites = normalizeRelatedSites(bundleCore?.relatedSites)
-  if (relatedSites) core.relatedSites = relatedSites
+  const externalSites = normalizeExternalSites(bundleCore?.externalSites)
+  if (externalSites) core.externalSites = externalSites
 
   const identityIds = bundle?.identity.externalIds
   if (identityIds || lookup.knownIds) {
@@ -65,7 +65,7 @@ export function buildCharacterIncoming(
   // needs more, so completeness is resolved from the link topology.
   const availability: CharacterIncomingBuildResult['availability'] = {
     surfaces: new Set(),
-    completeRelationLinks: buildCompleteCharacterRelationLinks(relationFacts)
+    completeLinks: buildCompleteCharacterLinks(relationFacts)
   }
 
   if (core.name) availability.surfaces.add('name')
@@ -81,7 +81,7 @@ export function buildCharacterIncoming(
   if (typeof core.hips === 'number') availability.surfaces.add('hips')
   if (core.cup) availability.surfaces.add('cup')
   if (core.description) availability.surfaces.add('description')
-  if (core.relatedSites) availability.surfaces.add('relatedSites')
+  if (core.externalSites) availability.surfaces.add('externalSites')
   if (core.externalIds) availability.surfaces.add('externalIds')
   if (core.tags) availability.surfaces.add('tags')
   if (relationFacts.characterPerson) availability.surfaces.add('person')

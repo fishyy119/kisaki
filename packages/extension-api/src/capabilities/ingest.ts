@@ -3,7 +3,10 @@ import type { ExternalId } from '../shared'
 
 export type IngestExistingReason = 'externalId' | 'path'
 
-export type IngestWarningCode = 'asset-persist-failed' | 'collection-replace-degraded'
+export type IngestWarningCode =
+  | 'asset-persist-failed'
+  | 'collection-replace-degraded'
+  | 'related-entry-not-in-library'
 
 export type IngestUpdateSurfaceGroup = 'core' | 'media' | 'relation'
 
@@ -42,13 +45,14 @@ export const GAME_UPDATE_SURFACES = [
   { key: 'originalName', group: 'core', cardinality: 'singular' },
   { key: 'releaseDate', group: 'core', cardinality: 'singular' },
   { key: 'description', group: 'core', cardinality: 'singular' },
-  { key: 'relatedSites', group: 'core', cardinality: 'collection' },
+  { key: 'externalSites', group: 'core', cardinality: 'collection' },
   { key: 'externalIds', group: 'core', cardinality: 'collection' },
   { key: 'tags', group: 'core', cardinality: 'collection' },
   { key: 'person', group: 'relation', cardinality: 'collection' },
   { key: 'company', group: 'relation', cardinality: 'collection' },
   { key: 'character', group: 'relation', cardinality: 'collection' },
   { key: 'characterPerson', group: 'relation', cardinality: 'collection' },
+  { key: 'relatedEntries', group: 'relation', cardinality: 'collection' },
   { key: 'covers', group: 'media', cardinality: 'singular' },
   { key: 'backdrops', group: 'media', cardinality: 'singular' },
   { key: 'logos', group: 'media', cardinality: 'singular' },

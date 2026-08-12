@@ -7,7 +7,7 @@ export { CharacterDeleteFormDialog, CharacterBatchDeleteFormDialog } from './del
 export { default as CharacterMetadataUpdateFormDialog } from './metadata-update-form-dialog/metadata-update-form-dialog.vue'
 export { default as CharacterBatchMetadataUpdateFormDialog } from './metadata-update-form-dialog/batch-metadata-update-form-dialog.vue'
 export { CharacterExternalIdsFormDialog } from './external-ids-form-dialog'
-export { CharacterRelatedSitesFormDialog } from './related-sites-form-dialog'
+export { CharacterExternalSitesFormDialog } from './external-sites-form-dialog'
 export { CharacterTagsFormDialog } from './tags-form-dialog'
 export { CharacterPersonsFormDialog } from './persons-form-dialog'
 export { CharacterGamesFormDialog } from './games-form-dialog'

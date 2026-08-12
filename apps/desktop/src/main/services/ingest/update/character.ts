@@ -20,7 +20,7 @@ import { applyCharacterPlan } from './apply'
 import { loadCharacterCurrent } from './current'
 import { buildCharacterIncoming } from './incoming'
 import { buildCharacterPlan } from './plan'
-import { CHARACTER_RELATION_LINKS, createRelationDegradeWarnings } from './relation-links'
+import { CHARACTER_LINK_TOPOLOGY, createLinkDegradeWarnings } from './link-topology'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
@@ -128,7 +128,7 @@ export class CharacterUpdateHandler {
     })
     // Read, plan and apply share one synchronous transaction: planning against a
     // snapshot taken outside it would overwrite concurrent edits.
-    const { applyResult, degradedRelationLinks } = this.dbService.client.transaction((tx) => {
+    const { applyResult, degradedLinks } = this.dbService.client.transaction((tx) => {
       const current = loadCharacterCurrent(tx, request.rootId, selection)
       const plan = buildCharacterPlan({
         current,
@@ -139,7 +139,7 @@ export class CharacterUpdateHandler {
       })
       return {
         applyResult: applyCharacterPlan(tx, request.rootId, plan, this.persistHandlers),
-        degradedRelationLinks: plan.degradedRelationLinks
+        degradedLinks: plan.degradedLinks
       }
     })
 
@@ -150,10 +150,10 @@ export class CharacterUpdateHandler {
       })
     }
     const warnings = [
-      ...createRelationDegradeWarnings({
-        links: CHARACTER_RELATION_LINKS,
-        degraded: degradedRelationLinks,
-        preservedRows: applyResult.preservedRelationRows
+      ...createLinkDegradeWarnings({
+        topology: CHARACTER_LINK_TOPOLOGY,
+        degraded: degradedLinks,
+        preservedRows: applyResult.preservedLinkRows
       }),
       ...(await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
         signal: options?.signal

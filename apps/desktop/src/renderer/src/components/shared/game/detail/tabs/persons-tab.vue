@@ -21,9 +21,9 @@ const { m } = useI18n()
 // Constants
 // =============================================================================
 
-const PERSON_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.gamePerson)
+const PERSON_ROLE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.gamePerson)
 
-const PERSON_TYPE_ORDER = [
+const PERSON_ROLE_ORDER = [
   'director',
   'scenario',
   'illustration',
@@ -53,9 +53,9 @@ const groupedPersons = computed(() => {
   if (!hasPersons.value) return {}
   return persons.value.reduce(
     (acc, link) => {
-      const type = link.type || 'other'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(link)
+      const role = link.role || 'other'
+      if (!acc[role]) acc[role] = []
+      acc[role].push(link)
       return acc
     },
     {} as Record<string, typeof persons.value>
@@ -114,16 +114,16 @@ const personDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="type in PERSON_TYPE_ORDER"
-          :key="type"
+          v-for="role in PERSON_ROLE_ORDER"
+          :key="role"
         >
-          <div v-if="groupedPersons[type]?.length">
+          <div v-if="groupedPersons[role]?.length">
             <h4 class="text-xs font-medium text-muted-foreground mb-2">
-              {{ PERSON_TYPE_LABELS[type] || type }}
+              {{ PERSON_ROLE_LABELS[role] || role }}
             </h4>
             <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
               <template
-                v-for="link in groupedPersons[type]"
+                v-for="link in groupedPersons[role]"
                 :key="link.id"
               >
                 <PersonCard

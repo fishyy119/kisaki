@@ -1,7 +1,8 @@
-import type {
-  ContentLocale,
-  ScrapedCompanyMetadata,
-  ScrapedPersonMetadata
+import {
+  isCancellationError,
+  type ContentLocale,
+  type ScrapedCompanyMetadata,
+  type ScrapedPersonMetadata
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../api/client'
 import type {
@@ -10,11 +11,10 @@ import type {
   BangumiRelatedPerson
 } from '../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
-import { isCancellationError } from '../../utils/errors'
 import { omitUndefined } from '../../utils/object'
 import { dedupeExternalIds } from '../format/dedupe'
 import { toPartialDateFromParts } from '../format/dates'
-import { extractExternalIdsFromSites, extractRelatedSitesFromInfobox } from '../format/infobox'
+import { extractExternalIdsFromSites, extractExternalSitesFromInfobox } from '../format/infobox'
 import { extractImageUrls } from '../format/images'
 import { resolveLocalizedEntityName } from '../format/names'
 import {
@@ -23,16 +23,16 @@ import {
   mapBangumiGender
 } from '../format/roles'
 import { normalizeDescription } from '../format/text'
-import { buildBangumiPersonUrl, dedupeRelatedSites, dedupeUrls } from '../format/urls'
+import { buildBangumiPersonUrl, dedupeExternalSites, dedupeUrls } from '../format/urls'
 
 /** Person credit of a subject, before a media scope assigns its role union. */
 export type SubjectPersonFact<TRole extends string> = ScrapedPersonMetadata & {
-  type: TRole
+  role: TRole
   note?: string
 }
 
 export type SubjectCompanyFact<TRole extends string> = ScrapedCompanyMetadata & {
-  type: TRole
+  role: TRole
   note?: string
 }
 
@@ -128,14 +128,14 @@ function mapSubjectPerson<TRole extends string>(
     locale
   )
 
-  const relatedSites = dedupeRelatedSites([
+  const externalSites = dedupeExternalSites([
     { label: 'Bangumi', url: buildBangumiPersonUrl(relatedPerson.id) },
-    ...extractRelatedSitesFromInfobox(detail?.infobox)
+    ...extractExternalSitesFromInfobox(detail?.infobox)
   ])
 
   const externalIds = dedupeExternalIds([
     { source: BANGUMI_SOURCE_ID, id: String(relatedPerson.id) },
-    ...extractExternalIdsFromSites(relatedSites)
+    ...extractExternalIdsFromSites(externalSites)
   ])
 
   const photos = dedupeUrls(extractImageUrls(detail?.images || relatedPerson.images))
@@ -147,7 +147,7 @@ function mapSubjectPerson<TRole extends string>(
       name,
       originalName,
       description: normalizeDescription(detail?.summary),
-      relatedSites,
+      externalSites,
       identity: { externalIds },
       photos: photos.length > 0 ? photos : undefined,
       tags: tags.length > 0 ? tags : undefined,
@@ -155,7 +155,7 @@ function mapSubjectPerson<TRole extends string>(
       birthDate: toPartialDateFromParts(detail?.birth_year, detail?.birth_mon, detail?.birth_day),
       note: composeBangumiRoleNote(relatedPerson.relation, relatedPerson.eps)
     }),
-    type: mapRole(relatedPerson.relation, careers)
+    role: mapRole(relatedPerson.relation, careers)
   }
 }
 
@@ -171,14 +171,14 @@ function mapSubjectCompany<TRole extends string>(
     locale
   )
 
-  const relatedSites = dedupeRelatedSites([
+  const externalSites = dedupeExternalSites([
     { label: 'Bangumi', url: buildBangumiPersonUrl(relatedCompany.id) },
-    ...extractRelatedSitesFromInfobox(detail?.infobox)
+    ...extractExternalSitesFromInfobox(detail?.infobox)
   ])
 
   const externalIds = dedupeExternalIds([
     { source: BANGUMI_SOURCE_ID, id: String(relatedCompany.id) },
-    ...extractExternalIdsFromSites(relatedSites)
+    ...extractExternalIdsFromSites(externalSites)
   ])
 
   const logos = dedupeUrls(extractImageUrls(detail?.images || relatedCompany.images))
@@ -189,12 +189,12 @@ function mapSubjectCompany<TRole extends string>(
       name,
       originalName,
       description: normalizeDescription(detail?.summary),
-      relatedSites,
+      externalSites,
       identity: { externalIds },
       logos: logos.length > 0 ? logos : undefined,
       tags: tags.length > 0 ? tags : undefined,
       note: composeBangumiRoleNote(relatedCompany.relation, relatedCompany.eps)
     }),
-    type: mapRole(relatedCompany.relation)
+    role: mapRole(relatedCompany.relation)
   }
 }

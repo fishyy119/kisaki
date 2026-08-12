@@ -2,14 +2,14 @@ import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-co
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import {
-  animeCharacterType,
-  animeCompanyType,
-  animePersonType,
+  animeCharacterRole,
+  animeCompanyRole,
+  animePersonRole,
   baseColumns,
-  characterPersonType,
-  gameCharacterType,
-  gameCompanyType,
-  gamePersonType
+  characterPersonRole,
+  gameCharacterRole,
+  gameCompanyRole,
+  gamePersonRole
 } from '../../columns'
 import { collections } from './collections'
 import { animes, characters, companies, games, persons } from './content'
@@ -25,13 +25,13 @@ export const gamePersonLinks = sqliteTable(
       .notNull()
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    type: gamePersonType('type').notNull().default('other'),
+    role: gamePersonRole('role').notNull().default('other'),
     note: text('note'),
     orderInGame: integer('order_in_game').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)
   },
   (t) => [
-    unique().on(t.gameId, t.personId, t.type),
+    unique().on(t.gameId, t.personId, t.role),
     index('idx_game_person_links_game_id').on(t.gameId),
     index('idx_game_person_links_person_id').on(t.personId)
   ]
@@ -48,13 +48,13 @@ export const gameCompanyLinks = sqliteTable(
       .notNull()
       .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    type: gameCompanyType('type').notNull().default('other'),
+    role: gameCompanyRole('role').notNull().default('other'),
     note: text('note'),
     orderInGame: integer('order_in_game').notNull().default(0),
     orderInCompany: integer('order_in_company').notNull().default(0)
   },
   (t) => [
-    unique().on(t.gameId, t.companyId, t.type),
+    unique().on(t.gameId, t.companyId, t.role),
     index('idx_game_company_links_game_id').on(t.gameId),
     index('idx_game_company_links_company_id').on(t.companyId)
   ]
@@ -71,13 +71,13 @@ export const gameCharacterLinks = sqliteTable(
       .notNull()
       .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    type: gameCharacterType('type').notNull().default('other'),
+    role: gameCharacterRole('role').notNull().default('other'),
     note: text('note'),
     orderInGame: integer('order_in_game').notNull().default(0),
     orderInCharacter: integer('order_in_character').notNull().default(0)
   },
   (t) => [
-    unique().on(t.gameId, t.characterId, t.type),
+    unique().on(t.gameId, t.characterId, t.role),
     index('idx_game_character_links_game_id').on(t.gameId),
     index('idx_game_character_links_character_id').on(t.characterId)
   ]
@@ -94,13 +94,13 @@ export const animePersonLinks = sqliteTable(
       .notNull()
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    type: animePersonType('type').notNull().default('other'),
+    role: animePersonRole('role').notNull().default('other'),
     note: text('note'),
     orderInAnime: integer('order_in_anime').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)
   },
   (t) => [
-    unique().on(t.animeId, t.personId, t.type),
+    unique().on(t.animeId, t.personId, t.role),
     index('idx_anime_person_links_anime_id').on(t.animeId),
     index('idx_anime_person_links_person_id').on(t.personId)
   ]
@@ -117,13 +117,13 @@ export const animeCompanyLinks = sqliteTable(
       .notNull()
       .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    type: animeCompanyType('type').notNull().default('other'),
+    role: animeCompanyRole('role').notNull().default('other'),
     note: text('note'),
     orderInAnime: integer('order_in_anime').notNull().default(0),
     orderInCompany: integer('order_in_company').notNull().default(0)
   },
   (t) => [
-    unique().on(t.animeId, t.companyId, t.type),
+    unique().on(t.animeId, t.companyId, t.role),
     index('idx_anime_company_links_anime_id').on(t.animeId),
     index('idx_anime_company_links_company_id').on(t.companyId)
   ]
@@ -140,13 +140,13 @@ export const animeCharacterLinks = sqliteTable(
       .notNull()
       .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    type: animeCharacterType('type').notNull().default('other'),
+    role: animeCharacterRole('role').notNull().default('other'),
     note: text('note'),
     orderInAnime: integer('order_in_anime').notNull().default(0),
     orderInCharacter: integer('order_in_character').notNull().default(0)
   },
   (t) => [
-    unique().on(t.animeId, t.characterId, t.type),
+    unique().on(t.animeId, t.characterId, t.role),
     index('idx_anime_character_links_anime_id').on(t.animeId),
     index('idx_anime_character_links_character_id').on(t.characterId)
   ]
@@ -263,13 +263,13 @@ export const characterPersonLinks = sqliteTable(
       .notNull()
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    type: characterPersonType('type').notNull().default('other'),
+    role: characterPersonRole('role').notNull().default('other'),
     note: text('note'),
     orderInCharacter: integer('order_in_character').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)
   },
   (t) => [
-    unique('unique_character_person').on(t.characterId, t.personId, t.type),
+    unique().on(t.characterId, t.personId, t.role),
     index('idx_character_person_links_character_id').on(t.characterId),
     index('idx_character_person_links_person_id').on(t.personId)
   ]

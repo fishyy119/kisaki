@@ -2,21 +2,21 @@ import type { ExternalId, ScrapedEntityIdentity, ScrapedTag } from '@kisaki3/ext
 import type { BangumiSubject } from '../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 import { dedupeExternalIds, dedupeTags } from '../format/dedupe'
-import { extractExternalIdsFromSites, extractRelatedSitesFromInfobox } from '../format/infobox'
-import { buildBangumiSubjectUrl, dedupeRelatedSites, type RelatedSite } from '../format/urls'
+import { extractExternalIdsFromSites, extractExternalSitesFromInfobox } from '../format/infobox'
+import { buildBangumiSubjectUrl, dedupeExternalSites, type ExternalSite } from '../format/urls'
 
 /** Bangumi entry link plus the outbound links its infobox declares. */
-export function buildSubjectRelatedSites(subject: BangumiSubject): RelatedSite[] {
-  return dedupeRelatedSites([
+export function buildSubjectExternalSites(subject: BangumiSubject): ExternalSite[] {
+  return dedupeExternalSites([
     { label: 'Bangumi', url: buildBangumiSubjectUrl(subject.id) },
-    ...extractRelatedSitesFromInfobox(subject.infobox)
+    ...extractExternalSitesFromInfobox(subject.infobox)
   ])
 }
 
 export function buildSubjectExternalIds(subject: BangumiSubject): ExternalId[] {
   return dedupeExternalIds([
     { source: BANGUMI_SOURCE_ID, id: String(subject.id) },
-    ...extractExternalIdsFromSites(buildSubjectRelatedSites(subject))
+    ...extractExternalIdsFromSites(buildSubjectExternalSites(subject))
   ])
 }
 

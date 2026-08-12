@@ -92,7 +92,7 @@ const SURFACE_LABELS = computed<Record<CharacterUpdateSurface, string>>(() => ({
   hips: m.value.library.fields.hips,
   cup: m.value.library.fields.cup,
   description: m.value.library.fields.description,
-  relatedSites: m.value.library.fields.relatedSites,
+  externalSites: m.value.library.fields.externalSites,
   externalIds: m.value.library.fields.externalIds,
   tags: m.value.library.fields.tags,
   person: m.value.library.entities.person,

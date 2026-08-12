@@ -31,13 +31,13 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-type PersonType =
+type PersonRole =
   'director' | 'scenario' | 'illustration' | 'music' | 'programmer' | 'actor' | 'other'
 
 interface PersonLinkData {
   personId: string
   personName: string
-  type: PersonType
+  role: PersonRole
   note: string
   isSpoiler: boolean
 }
@@ -55,7 +55,7 @@ const emit = defineEmits<{
   submit: [data: PersonLinkData]
 }>()
 
-const PERSON_TYPE_OPTIONS = computed<{ value: PersonType; label: string }[]>(() => [
+const PERSON_ROLE_OPTIONS = computed<{ value: PersonRole; label: string }[]>(() => [
   { value: 'director', label: m.value.library.roles.gamePerson.director },
   { value: 'scenario', label: m.value.library.roles.gamePerson.scenario },
   { value: 'illustration', label: m.value.library.roles.gamePerson.illustration },
@@ -69,7 +69,7 @@ const PERSON_TYPE_OPTIONS = computed<{ value: PersonType; label: string }[]>(() 
 const formData = ref<PersonLinkData>({
   personId: '',
   personName: '',
-  type: 'director',
+  role: 'director',
   note: '',
   isSpoiler: false
 })
@@ -84,13 +84,13 @@ watch(
       if (props.initialData) {
         formData.value.personId = props.initialData.personId
         formData.value.personName = props.initialData.personName
-        formData.value.type = props.initialData.type
+        formData.value.role = props.initialData.role
         formData.value.note = props.initialData.note
         formData.value.isSpoiler = props.initialData.isSpoiler
       } else {
         formData.value.personId = ''
         formData.value.personName = ''
-        formData.value.type = 'director'
+        formData.value.role = 'director'
         formData.value.note = ''
         formData.value.isSpoiler = false
       }
@@ -134,7 +134,7 @@ function handleSubmit() {
   emit('submit', {
     personId: formData.value.personId,
     personName: formData.value.personName || 'Unknown',
-    type: formData.value.type,
+    role: formData.value.role,
     note: formData.value.note.trim(),
     isSpoiler: formData.value.isSpoiler
   })
@@ -174,13 +174,13 @@ function handleCancel() {
             <Field>
               <FieldLabel>{{ m.library.forms.personRoleLabel }}</FieldLabel>
               <FieldContent>
-                <Select v-model="formData.type">
+                <Select v-model="formData.role">
                   <SelectTrigger class="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="opt in PERSON_TYPE_OPTIONS"
+                      v-for="opt in PERSON_ROLE_OPTIONS"
                       :key="opt.value"
                       :value="opt.value"
                     >

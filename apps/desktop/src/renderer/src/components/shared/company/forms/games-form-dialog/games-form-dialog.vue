@@ -10,7 +10,7 @@ import { eq, asc } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from '@renderer/core/db'
 import { gameCompanyLinks } from '@shared/db'
-import type { GameCompanyType } from '@shared/db'
+import type { GameCompanyRole } from '@shared/db'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import {
   Dialog,
@@ -37,8 +37,8 @@ const { m } = useI18n()
 
 const log = createLogger('Company')
 
-const COMPANY_TYPE_ORDER: GameCompanyType[] = ['developer', 'publisher', 'distributor', 'other']
-const COMPANY_TYPE_LABELS = computed<Record<string, string>>(() => ({
+const COMPANY_ROLE_ORDER: GameCompanyRole[] = ['developer', 'publisher', 'distributor', 'other']
+const COMPANY_ROLE_LABELS = computed<Record<string, string>>(() => ({
   developer: m.value.library.roles.gameCompany.developer,
   publisher: m.value.library.roles.gameCompany.publisher,
   distributor: m.value.library.roles.gameCompany.distributor,
@@ -50,7 +50,7 @@ interface GameLinkItem {
   gameId: string
   gameName: string
   gameCover: string | null
-  type: GameCompanyType
+  role: GameCompanyRole
   note: string
   isSpoiler: boolean
   orderInCompany: number
@@ -102,7 +102,7 @@ const {
       gameId: link.gameId,
       gameName: link.game?.name || '',
       gameCover: link.game?.coverFile || null,
-      type: link.type as GameCompanyType,
+      role: link.role as GameCompanyRole,
       note: link.note || '',
       isSpoiler: link.isSpoiler,
       orderInCompany: link.orderInCompany
@@ -135,14 +135,14 @@ function withSpoiler(links: GameLinkItem[]) {
 
 // Group items by type
 const groupedItems = computed(() => {
-  const groups: Record<GameCompanyType, GameLinkItem[]> = {
+  const groups: Record<GameCompanyRole, GameLinkItem[]> = {
     developer: [],
     publisher: [],
     distributor: [],
     other: []
   }
   for (const item of items.value) {
-    groups[item.type].push(item)
+    groups[item.role].push(item)
   }
   return groups
 })
@@ -161,19 +161,19 @@ async function handleSave() {
         companyId: string
         gameId: string
         isSpoiler: boolean
-        type: GameCompanyType
+        role: GameCompanyRole
         note: string | null
         orderInCompany: number
       }[] = []
 
-      for (const type of COMPANY_TYPE_ORDER) {
-        for (const item of groupedItems.value[type]) {
+      for (const role of COMPANY_ROLE_ORDER) {
+        for (const item of groupedItems.value[role]) {
           values.push({
             id: item.isNew ? nanoid() : item.id,
             companyId: props.companyId,
             gameId: item.gameId,
             isSpoiler: item.isSpoiler,
-            type: item.type,
+            role: item.role,
             note: item.note || null,
             orderInCompany: globalOrder++
           })
@@ -240,12 +240,12 @@ function handleDeleteConfirm() {
   }
 }
 
-function handleMoveUp(type: GameCompanyType, index: number) {
-  const typeItems = groupedItems.value[type]
+function handleMoveUp(role: GameCompanyRole, index: number) {
+  const roleItems = groupedItems.value[role]
   if (index > 0) {
     // Find items in main array and swap
-    const itemA = typeItems[index]
-    const itemB = typeItems[index - 1]
+    const itemA = roleItems[index]
+    const itemB = roleItems[index - 1]
     const indexA = items.value.findIndex((i) => i.id === itemA.id)
     const indexB = items.value.findIndex((i) => i.id === itemB.id)
     if (indexA !== -1 && indexB !== -1) {
@@ -256,11 +256,11 @@ function handleMoveUp(type: GameCompanyType, index: number) {
   }
 }
 
-function handleMoveDown(type: GameCompanyType, index: number) {
-  const typeItems = groupedItems.value[type]
-  if (index < typeItems.length - 1) {
-    const itemA = typeItems[index]
-    const itemB = typeItems[index + 1]
+function handleMoveDown(role: GameCompanyRole, index: number) {
+  const roleItems = groupedItems.value[role]
+  if (index < roleItems.length - 1) {
+    const itemA = roleItems[index]
+    const itemB = roleItems[index + 1]
     const indexA = items.value.findIndex((i) => i.id === itemA.id)
     const indexB = items.value.findIndex((i) => i.id === itemB.id)
     if (indexA !== -1 && indexB !== -1) {
@@ -307,16 +307,16 @@ const deleteDialogOpen = computed({
             class="space-y-2"
           >
             <template
-              v-for="type in COMPANY_TYPE_ORDER"
-              :key="type"
+              v-for="role in COMPANY_ROLE_ORDER"
+              :key="role"
             >
-              <div v-if="groupedItems[type].length > 0">
+              <div v-if="groupedItems[role].length > 0">
                 <h4 class="text-xs font-medium text-muted-foreground mb-2">
-                  {{ COMPANY_TYPE_LABELS[type] }}
+                  {{ COMPANY_ROLE_LABELS[role] }}
                 </h4>
                 <div class="space-y-1">
                   <ListItem
-                    v-for="({ link, spoiler, coverUrl }, index) in withSpoiler(groupedItems[type])"
+                    v-for="({ link, spoiler, coverUrl }, index) in withSpoiler(groupedItems[role])"
                     :key="link.id"
                     :icon="spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('game')"
                     :title="spoiler.name"
@@ -339,9 +339,9 @@ const deleteDialogOpen = computed({
                       <ListItemActions
                         movable
                         :is-first="index === 0"
-                        :is-last="index === groupedItems[type].length - 1"
-                        @move-up="handleMoveUp(type, index)"
-                        @move-down="handleMoveDown(type, index)"
+                        :is-last="index === groupedItems[role].length - 1"
+                        @move-up="handleMoveUp(role, index)"
+                        @move-down="handleMoveDown(role, index)"
                         @edit="handleEditClick(link)"
                         @delete="deleteId = link.id"
                       />

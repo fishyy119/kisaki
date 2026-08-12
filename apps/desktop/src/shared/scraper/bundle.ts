@@ -1,11 +1,13 @@
+import type { MediaType } from '@shared/common'
 import type {
-  AnimeCharacterType,
-  AnimeCompanyType,
-  AnimePersonType,
-  CharacterPersonType,
-  GameCharacterType,
-  GameCompanyType,
-  GamePersonType
+  AnimeCharacterRole,
+  AnimeCompanyRole,
+  AnimePersonRole,
+  CharacterPersonRole,
+  GameCharacterRole,
+  GameCompanyRole,
+  GamePersonRole,
+  MediaRelationType
 } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
 import type {
@@ -84,7 +86,7 @@ export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
    * Character flow may omit this because the root character is implicit.
    */
   character?: ScrapedCharacterCore & ScrapedIdentityCarrier
-  type: CharacterPersonType
+  role: CharacterPersonRole
   isSpoiler?: boolean
   note?: string
 }
@@ -101,7 +103,7 @@ export interface ScrapedCharacterMetadata extends ScrapedCharacterCore, ScrapedI
  * Scraped game-person relation fact.
  */
 export interface ScrapedGamePersonFact extends ScrapedPersonMetadata {
-  type: GamePersonType
+  role: GamePersonRole
   isSpoiler?: boolean
   note?: string
 }
@@ -110,7 +112,7 @@ export interface ScrapedGamePersonFact extends ScrapedPersonMetadata {
  * Scraped game-character relation fact.
  */
 export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
-  type: GameCharacterType
+  role: GameCharacterRole
   isSpoiler?: boolean
   note?: string
 }
@@ -119,7 +121,7 @@ export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
  * Scraped game-company relation fact.
  */
 export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
-  type: GameCompanyType
+  role: GameCompanyRole
   isSpoiler?: boolean
   note?: string
 }
@@ -131,6 +133,7 @@ export interface ScrapedGameMetadata extends ScrapedGameCore, ScrapedIdentityCar
   persons?: ScrapedGamePersonFact[]
   characters?: ScrapedGameCharacterFact[]
   companies?: ScrapedGameCompanyFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
   covers?: string[]
   backdrops?: string[]
   logos?: string[]
@@ -141,7 +144,7 @@ export interface ScrapedGameMetadata extends ScrapedGameCore, ScrapedIdentityCar
  * Scraped anime-person relation fact.
  */
 export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
-  type: AnimePersonType
+  role: AnimePersonRole
   isSpoiler?: boolean
   note?: string
 }
@@ -150,7 +153,7 @@ export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
  * Scraped anime-character relation fact.
  */
 export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
-  type: AnimeCharacterType
+  role: AnimeCharacterRole
   isSpoiler?: boolean
   note?: string
 }
@@ -159,8 +162,23 @@ export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
  * Scraped anime-company relation fact.
  */
 export interface ScrapedAnimeCompanyFact extends ScrapedCompanyMetadata {
-  type: AnimeCompanyType
+  role: AnimeCompanyRole
   isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped media-to-media relation fact.
+ *
+ * The target is referenced by external identity only: ingest resolves it
+ * against library entries and never creates media entries for scraped
+ * references. Providers map their vocabulary onto `MediaRelationType`.
+ */
+export interface ScrapedRelatedEntryFact {
+  mediaType: MediaType
+  source: string
+  externalId: string
+  type: MediaRelationType
   note?: string
 }
 
@@ -172,6 +190,7 @@ export interface ScrapedAnimeMetadata extends ScrapedAnimeCore, ScrapedIdentityC
   persons?: ScrapedAnimePersonFact[]
   characters?: ScrapedAnimeCharacterFact[]
   companies?: ScrapedAnimeCompanyFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
   covers?: string[]
   backdrops?: string[]
   logos?: string[]
@@ -188,6 +207,7 @@ export interface ScrapedGameRelationFacts {
   gameCompany?: ScrapedGameCompanyFact[]
   gameCharacter?: ScrapedGameCharacterFact[]
   characterPerson?: ScrapedCharacterPersonFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
 }
 
 export interface ScrapedGameBundle {
@@ -208,6 +228,7 @@ export interface ScrapedAnimeRelationFacts {
   animeCompany?: ScrapedAnimeCompanyFact[]
   animeCharacter?: ScrapedAnimeCharacterFact[]
   characterPerson?: ScrapedCharacterPersonFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
 }
 
 export interface ScrapedAnimeBundle {

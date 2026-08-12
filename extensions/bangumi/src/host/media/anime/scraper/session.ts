@@ -14,6 +14,7 @@ import { buildSubjectIdentity, buildSubjectTags } from '../../subject/identity'
 import { buildSubjectBackdrops, buildSubjectCovers } from '../../subject/images'
 import { createSubjectLoaders, memoizeTask } from '../../subject/loaders'
 import { buildSubjectCompanies, buildSubjectPersons } from '../../subject/people'
+import { buildSubjectRelatedEntries } from '../../subject/related-entries'
 import type { BangumiSubjectLoaders } from '../../subject/types'
 import { buildAnimeEpisodes } from './episodes'
 import { buildAnimeInfo } from './info'
@@ -98,6 +99,8 @@ function loadSlot(
         mapRole: mapBangumiAnimeCompanyRole,
         locale
       })
+    case 'relatedEntries':
+      return buildSubjectRelatedEntries('anime', loaders.getSubjectRelations)
     case 'covers':
       return buildSubjectCovers(loaders.getSubject, loaders.getSubjectImageVariants)
     case 'backdrops':

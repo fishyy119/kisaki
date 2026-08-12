@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { db } from '@renderer/core/db'
-import type { CharacterPersonType } from '@shared/db'
+import type { CharacterPersonRole } from '@shared/db'
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ const { m } = useI18n()
 interface PersonLinkData {
   personId: string
   personName: string
-  type: CharacterPersonType
+  role: CharacterPersonRole
   note: string
   isSpoiler: boolean
 }
@@ -53,7 +53,7 @@ const emit = defineEmits<{
   submit: [data: PersonLinkData]
 }>()
 
-const PERSON_TYPE_OPTIONS = computed<{ value: CharacterPersonType; label: string }[]>(() => [
+const PERSON_ROLE_OPTIONS = computed<{ value: CharacterPersonRole; label: string }[]>(() => [
   { value: 'actor', label: m.value.library.roles.characterPerson.actor },
   { value: 'illustration', label: m.value.library.roles.characterPerson.illustration },
   { value: 'designer', label: m.value.library.roles.characterPerson.designer },
@@ -64,7 +64,7 @@ const PERSON_TYPE_OPTIONS = computed<{ value: CharacterPersonType; label: string
 const formData = ref<PersonLinkData>({
   personId: '',
   personName: '',
-  type: 'actor',
+  role: 'actor',
   note: '',
   isSpoiler: false
 })
@@ -79,13 +79,13 @@ watch(
       if (props.initialData) {
         formData.value.personId = props.initialData.personId
         formData.value.personName = props.initialData.personName
-        formData.value.type = props.initialData.type
+        formData.value.role = props.initialData.role
         formData.value.note = props.initialData.note
         formData.value.isSpoiler = props.initialData.isSpoiler
       } else {
         formData.value.personId = ''
         formData.value.personName = ''
-        formData.value.type = 'actor'
+        formData.value.role = 'actor'
         formData.value.note = ''
         formData.value.isSpoiler = false
       }
@@ -129,7 +129,7 @@ function handleSubmit() {
   emit('submit', {
     personId: formData.value.personId,
     personName: formData.value.personName || 'Unknown',
-    type: formData.value.type,
+    role: formData.value.role,
     note: formData.value.note.trim(),
     isSpoiler: formData.value.isSpoiler
   })
@@ -169,13 +169,13 @@ function handleCancel() {
             <Field>
               <FieldLabel>{{ m.library.fields.type }}</FieldLabel>
               <FieldContent>
-                <Select v-model="formData.type">
+                <Select v-model="formData.role">
                   <SelectTrigger class="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="opt in PERSON_TYPE_OPTIONS"
+                      v-for="opt in PERSON_ROLE_OPTIONS"
                       :key="opt.value"
                       :value="opt.value"
                     >

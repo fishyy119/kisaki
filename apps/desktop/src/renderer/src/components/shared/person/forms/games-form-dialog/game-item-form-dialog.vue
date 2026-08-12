@@ -6,7 +6,7 @@
 import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { games, type GamePersonType } from '@shared/db'
+import { games, type GamePersonRole } from '@shared/db'
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ interface GameLinkData {
   gameId: string
   gameName: string
   gameCover: string | null
-  type: GamePersonType
+  role: GamePersonRole
   note: string
   isSpoiler: boolean
 }
@@ -55,7 +55,7 @@ const emit = defineEmits<{
   submit: [data: GameLinkData]
 }>()
 
-const PERSON_TYPE_OPTIONS = computed<{ value: GamePersonType; label: string }[]>(() => [
+const PERSON_ROLE_OPTIONS = computed<{ value: GamePersonRole; label: string }[]>(() => [
   { value: 'director', label: m.value.library.roles.gamePerson.director },
   { value: 'scenario', label: m.value.library.roles.gamePerson.scenario },
   { value: 'illustration', label: m.value.library.roles.gamePerson.illustration },
@@ -70,7 +70,7 @@ const formData = ref<GameLinkData>({
   gameId: '',
   gameName: '',
   gameCover: null,
-  type: 'other',
+  role: 'other',
   note: '',
   isSpoiler: false
 })
@@ -86,14 +86,14 @@ watch(
         formData.value.gameId = props.initialData.gameId
         formData.value.gameName = props.initialData.gameName
         formData.value.gameCover = props.initialData.gameCover
-        formData.value.type = props.initialData.type
+        formData.value.role = props.initialData.role
         formData.value.note = props.initialData.note
         formData.value.isSpoiler = props.initialData.isSpoiler
       } else {
         formData.value.gameId = ''
         formData.value.gameName = ''
         formData.value.gameCover = null
-        formData.value.type = 'other'
+        formData.value.role = 'other'
         formData.value.note = ''
         formData.value.isSpoiler = false
       }
@@ -138,7 +138,7 @@ function handleSubmit() {
     gameId: formData.value.gameId,
     gameName: formData.value.gameName,
     gameCover: formData.value.gameCover,
-    type: formData.value.type,
+    role: formData.value.role,
     note: formData.value.note.trim(),
     isSpoiler: formData.value.isSpoiler
   })
@@ -178,13 +178,13 @@ function handleCancel() {
             <Field>
               <FieldLabel>{{ m.library.forms.creditRoleLabel }}</FieldLabel>
               <FieldContent>
-                <Select v-model="formData.type">
+                <Select v-model="formData.role">
                   <SelectTrigger class="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="opt in PERSON_TYPE_OPTIONS"
+                      v-for="opt in PERSON_ROLE_OPTIONS"
                       :key="opt.value"
                       :value="opt.value"
                     >

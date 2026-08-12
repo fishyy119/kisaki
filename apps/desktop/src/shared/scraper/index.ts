@@ -75,6 +75,7 @@ export {
   type ScrapedAnimeCharacterFact,
   type ScrapedAnimeCompanyFact,
   type ScrapedCharacterPersonFact,
+  type ScrapedRelatedEntryFact,
   type ScrapedGameMetadata,
   type ScrapedAnimeMetadata,
   type ScrapedPersonMetadata,

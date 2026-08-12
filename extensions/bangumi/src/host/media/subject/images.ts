@@ -1,6 +1,6 @@
+import { isCancellationError } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../api/client'
 import type { BangumiSubject, BangumiSubjectRelation } from '../../api/types'
-import { isCancellationError } from '../../utils/errors'
 import { omitUndefined } from '../../utils/object'
 import { extractImageUrls } from '../format/images'
 import { dedupeUrls } from '../format/urls'

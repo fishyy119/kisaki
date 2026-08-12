@@ -16,11 +16,11 @@ import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
 
-const GAME_COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+const GAME_COMPANY_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gameCompany
 )
 
-const GAME_COMPANY_TYPE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
+const GAME_COMPANY_ROLE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
 
 const { company, games } = useCompany()
 
@@ -40,9 +40,9 @@ const gameDialogOpen = computed({
 const groupedGames = computed(() => {
   const groups: Record<string, typeof games.value> = {}
   for (const link of games.value) {
-    const type = link.type || 'other'
-    if (!groups[type]) groups[type] = []
-    groups[type].push(link)
+    const role = link.role || 'other'
+    if (!groups[role]) groups[role] = []
+    groups[role].push(link)
   }
   return groups
 })
@@ -92,16 +92,16 @@ const groupedGames = computed(() => {
 
       <div class="space-y-4">
         <template
-          v-for="type in GAME_COMPANY_TYPE_ORDER"
-          :key="type"
+          v-for="role in GAME_COMPANY_ROLE_ORDER"
+          :key="role"
         >
-          <div v-if="groupedGames[type] && groupedGames[type].length > 0">
+          <div v-if="groupedGames[role] && groupedGames[role].length > 0">
             <h4 class="text-xs font-medium text-muted-foreground mb-2">
-              {{ GAME_COMPANY_TYPE_LABELS[type] || type }}
+              {{ GAME_COMPANY_ROLE_LABELS[role] || role }}
             </h4>
             <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
               <template
-                v-for="link in groupedGames[type]"
+                v-for="link in groupedGames[role]"
                 :key="link.id"
               >
                 <GameCard

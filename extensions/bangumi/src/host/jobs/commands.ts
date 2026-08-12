@@ -6,7 +6,7 @@ import type {
   TaskRunHandle,
   JsonObject
 } from '@kisaki3/extension-sdk'
-import { kisaki, isTaskRunCancellation } from '@kisaki3/extension-sdk'
+import { createCancellationError, kisaki, isTaskRunCancellation } from '@kisaki3/extension-sdk'
 import { m } from '../i18n'
 import {
   normalizeAuthRefreshArgs,
@@ -17,7 +17,6 @@ import {
 } from './args'
 import type { BangumiJobEvents } from './events'
 import type { JobRunner } from './runner'
-import { BangumiExtensionError } from '../utils/errors'
 
 export const BANGUMI_COMMAND_IDS = {
   authRefresh: 'bangumi.auth.refresh',
@@ -248,7 +247,7 @@ async function startBangumiTaskRun(options: {
   run(run: TaskRunHandle): Promise<unknown>
 }): Promise<JsonObject> {
   if (options.signal.aborted) {
-    throw new BangumiExtensionError('job_cancelled', m().errors.jobCancelled)
+    throw createCancellationError(m().errors.jobCancelled)
   }
 
   const run = await kisaki.taskRuns.create({

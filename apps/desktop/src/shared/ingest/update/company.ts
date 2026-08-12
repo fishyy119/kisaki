@@ -14,7 +14,7 @@ export const COMPANY_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'originalName', group: 'core', cardinality: 'singular' },
   { key: 'foundedDate', group: 'core', cardinality: 'singular' },
   { key: 'description', group: 'core', cardinality: 'singular' },
-  { key: 'relatedSites', group: 'core', cardinality: 'collection' },
+  { key: 'externalSites', group: 'core', cardinality: 'collection' },
   { key: 'externalIds', group: 'core', cardinality: 'collection' },
   { key: 'tags', group: 'core', cardinality: 'collection' },
   { key: 'logos', group: 'media', cardinality: 'singular' }

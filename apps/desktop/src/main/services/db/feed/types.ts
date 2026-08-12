@@ -22,7 +22,7 @@ export interface MediaRow {
   name: string
 }
 
-export interface MediaRelationTables {
+export interface MediaLinkTables {
   person: string
   company: string
   character: string
@@ -39,7 +39,7 @@ export interface MediaFeedProjection {
   externalIdsTable: string
   tagLinksTable: string
   collectionLinksTable: string
-  relationTables: MediaRelationTables
+  linkTables: MediaLinkTables
   /** Owned rows that only redirect the feed at their media row. */
   ownedTables: readonly string[]
   coreFields: Record<string, string>

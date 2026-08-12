@@ -44,9 +44,9 @@ const hasGames = computed(() => games.value.length > 0)
 const groupedGames = computed(() => {
   return games.value.reduce(
     (acc, link) => {
-      const type = link.type || 'other'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(link)
+      const role = link.role || 'other'
+      if (!acc[role]) acc[role] = []
+      acc[role].push(link)
       return acc
     },
     {} as Record<string, typeof games.value>
@@ -109,16 +109,16 @@ const gameDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="type in CHARACTER_ROLE_ORDER"
-          :key="type"
+          v-for="role in CHARACTER_ROLE_ORDER"
+          :key="role"
         >
-          <div v-if="groupedGames[type]?.length">
+          <div v-if="groupedGames[role]?.length">
             <h4 class="text-xs font-medium text-muted-foreground mb-2">
-              {{ CHARACTER_ROLE_LABELS[type] || type }}
+              {{ CHARACTER_ROLE_LABELS[role] || role }}
             </h4>
             <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
               <template
-                v-for="link in groupedGames[type]"
+                v-for="link in groupedGames[role]"
                 :key="link.id"
               >
                 <GameCard

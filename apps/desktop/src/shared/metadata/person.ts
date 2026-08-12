@@ -4,7 +4,7 @@
  * Core metadata type definitions for person entities.
  */
 
-import type { PartialDate, RelatedSite } from '@shared/db'
+import type { PartialDate, ExternalSite } from '@shared/db'
 import type { Gender } from '@shared/db'
 import type { ExternalId, Tag } from './common'
 
@@ -24,7 +24,7 @@ export interface PersonInfo {
   deathDate?: PartialDate
   gender?: Gender
   description?: string
-  relatedSites?: RelatedSite[]
+  externalSites?: ExternalSite[]
   externalIds: ExternalId[]
 }
 

@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import type {
   ExternalId,
   LibraryAnime,
+  LibraryCharacter,
   LibraryCollection,
   LibraryCompany,
   LibraryGame,
@@ -14,6 +15,7 @@ import type {
 import {
   animeExternalIds,
   animes,
+  characterExternalIds,
   collections,
   companyExternalIds,
   gameExternalIds,
@@ -77,6 +79,12 @@ export function matchLibraryGraph(
     byIdentity.set(
       graphNodeIdentity(entry.kind, entry.key),
       matchPersonNode(entry.key, entry.node.input.externalIds, options)
+    )
+  }
+  for (const entry of graph.nodes.characters) {
+    byIdentity.set(
+      graphNodeIdentity(entry.kind, entry.key),
+      matchCharacterNode(entry.key, entry.node.input.externalIds, options)
     )
   }
 
@@ -242,6 +250,29 @@ function matchPersonNode(
   return { key, kind: 'person', diagnostics: [] }
 }
 
+function matchCharacterNode(
+  key: string,
+  externalIds: readonly ExternalId[] | undefined,
+  options: MatchLibraryGraphOptions
+): LibraryGraphNodeMatch {
+  const matches = findCharacterExternalIdMatches(externalIds, options)
+  const conflict = createExternalIdConflictDiagnostic(key, 'character', matches)
+  if (conflict) {
+    return { key, kind: 'character', blocked: true, diagnostics: [conflict] }
+  }
+  const unavailable = createExternalIdUnavailableDiagnostic(key, 'character', matches)
+  if (unavailable) {
+    return { key, kind: 'character', blocked: true, diagnostics: [unavailable] }
+  }
+
+  const match = matches[0]?.existing ?? undefined
+  if (match) {
+    return toExternalIdMatch(key, 'character', match)
+  }
+
+  return { key, kind: 'character', diagnostics: [] }
+}
+
 function findMediaExternalIdMatches(
   mediaType: LibraryMediaType,
   externalIds: readonly ExternalId[] | undefined,
@@ -368,6 +399,35 @@ function findPersonExternalIdMatches(
   return matches
 }
 
+function findCharacterExternalIdMatches(
+  externalIds: readonly ExternalId[] | undefined,
+  options: MatchLibraryGraphOptions
+): ExternalIdEntityMatch<LibraryCharacter>[] {
+  const matches: ExternalIdEntityMatch<LibraryCharacter>[] = []
+  for (const externalId of normalizeExternalIds([...(externalIds ?? [])])) {
+    const rows = options.db.client
+      .select({ characterId: characterExternalIds.characterId })
+      .from(characterExternalIds)
+      .where(
+        and(
+          eq(characterExternalIds.source, externalId.source),
+          eq(characterExternalIds.externalId, externalId.id)
+        )
+      )
+      .all()
+
+    for (const row of rows) {
+      matches.push({
+        externalId,
+        entityId: row.characterId,
+        existing: options.entities.getCharacter(row.characterId)
+      })
+    }
+  }
+
+  return matches
+}
+
 function findGameByPath(
   gameDirPath: string | undefined,
   options: MatchLibraryGraphOptions
@@ -486,8 +546,13 @@ function toExternalIdMatch(
 ): LibraryGraphNodeMatch
 function toExternalIdMatch(
   key: string,
-  kind: 'company' | 'person',
-  existing: LibraryCompany | LibraryPerson
+  kind: 'character',
+  existing: LibraryCharacter
+): LibraryGraphNodeMatch
+function toExternalIdMatch(
+  key: string,
+  kind: 'company' | 'person' | 'character',
+  existing: LibraryCompany | LibraryPerson | LibraryCharacter
 ): LibraryGraphNodeMatch {
   return {
     key,
@@ -508,12 +573,12 @@ function toExternalIdMatch(
 
 interface IncomingExternalIdClaim {
   nodeKey: string
-  nodeKind: 'media' | 'company' | 'person'
+  nodeKind: 'media' | 'company' | 'person' | 'character'
   nodeLabel: string
 }
 
 interface IncomingExternalIdClaimGroup {
-  scopeLabel: LibraryMediaType | 'company' | 'person'
+  scopeLabel: LibraryMediaType | 'company' | 'person' | 'character'
   externalId: ExternalId
   claims: IncomingExternalIdClaim[]
 }
@@ -601,6 +666,24 @@ function applyExternalIdAvailabilityConflicts(
       entityLabel: 'person',
       targetEntityId: match?.entityId,
       owners: findPersonExternalIdMatches(
+        normalizeExternalIds([
+          ...(existing?.externalIds ?? []),
+          ...(entry.node.input.externalIds ?? [])
+        ]),
+        options
+      )
+    })
+  }
+
+  for (const entry of graph.nodes.characters) {
+    const match = byIdentity.get(graphNodeIdentity(entry.kind, entry.key))
+    const existing = match?.existing as LibraryCharacter | undefined
+    applyNodeExternalIdAvailabilityConflicts({
+      match,
+      key: entry.key,
+      entityLabel: 'character',
+      targetEntityId: match?.entityId,
+      owners: findCharacterExternalIdMatches(
         normalizeExternalIds([
           ...(existing?.externalIds ?? []),
           ...(entry.node.input.externalIds ?? [])
@@ -698,13 +781,24 @@ function collectIncomingExternalIdClaimGroups(
     )
   }
 
+  for (const entry of graph.nodes.characters) {
+    collectIncomingExternalIdClaims(
+      groups,
+      'character',
+      'character',
+      entry.key,
+      readEntityLabel(entry.node.input.name, entry.key),
+      entry.node.input.externalIds
+    )
+  }
+
   return groups
 }
 
 function collectIncomingExternalIdClaims(
   groups: Map<string, IncomingExternalIdClaimGroup>,
-  scopeLabel: LibraryMediaType | 'company' | 'person',
-  nodeKind: 'media' | 'company' | 'person',
+  scopeLabel: IncomingExternalIdClaimGroup['scopeLabel'],
+  nodeKind: IncomingExternalIdClaim['nodeKind'],
   nodeKey: string,
   nodeLabel: string,
   externalIds: readonly ExternalId[] | undefined

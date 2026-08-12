@@ -1,21 +1,21 @@
 import type { ExternalId } from '@kisaki3/extension-sdk'
 import type { BangumiInfoboxItem, BangumiInfoboxValue } from '../../api/types'
 import {
-  dedupeRelatedSites,
+  dedupeExternalSites,
   extractUrls,
-  normalizeRelatedSiteLabel,
-  type RelatedSite
+  normalizeExternalSiteLabel,
+  type ExternalSite
 } from './urls'
 
-export function extractRelatedSitesFromInfobox(
+export function extractExternalSitesFromInfobox(
   infobox: BangumiInfoboxItem[] | null | undefined
-): RelatedSite[] {
+): ExternalSite[] {
   if (!infobox?.length) return []
 
-  const sites: RelatedSite[] = []
+  const sites: ExternalSite[] = []
 
   for (const item of infobox) {
-    const itemLabel = normalizeRelatedSiteLabel(item.key) || 'Website'
+    const itemLabel = normalizeExternalSiteLabel(item.key) || 'Website'
     if (typeof item.value === 'string') {
       for (const url of extractUrls(item.value)) {
         sites.push({ label: itemLabel, url })
@@ -26,7 +26,7 @@ export function extractRelatedSitesFromInfobox(
     if (!Array.isArray(item.value)) continue
 
     for (const entry of item.value) {
-      const entryLabel = normalizeRelatedSiteLabel(entry.k) || itemLabel
+      const entryLabel = normalizeExternalSiteLabel(entry.k) || itemLabel
       const value = entry.v?.trim()
       if (!value) continue
 
@@ -36,10 +36,10 @@ export function extractRelatedSitesFromInfobox(
     }
   }
 
-  return dedupeRelatedSites(sites)
+  return dedupeExternalSites(sites)
 }
 
-export function extractExternalIdsFromSites(sites: RelatedSite[]): ExternalId[] {
+export function extractExternalIdsFromSites(sites: ExternalSite[]): ExternalId[] {
   const externalIds: ExternalId[] = []
 
   for (const site of sites) {

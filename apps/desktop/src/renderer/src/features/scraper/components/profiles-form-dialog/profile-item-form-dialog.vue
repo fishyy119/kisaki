@@ -12,7 +12,7 @@ import type {
   ScraperSlot,
   SlotStrategy
 } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 import type { ContentLocale } from '@shared/i18n'
 
 import { ref, watch, computed } from 'vue'
@@ -184,8 +184,8 @@ function handleSubmit() {
 const mediaTypeModel = computed({
   get: () => formData.value.mediaType,
   set: (value: unknown) => {
-    if (value === 'game' || value === 'character' || value === 'person' || value === 'company') {
-      formData.value.mediaType = value
+    if (CONTENT_ENTITY_TYPES.includes(value as ContentEntityType)) {
+      formData.value.mediaType = value as ContentEntityType
     }
   }
 })
@@ -266,6 +266,7 @@ async function handleCopyProfileId() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="game">{{ MEDIA_TYPE_LABELS.game }}</SelectItem>
+                    <SelectItem value="anime">{{ MEDIA_TYPE_LABELS.anime }}</SelectItem>
                     <SelectItem value="character">{{ MEDIA_TYPE_LABELS.character }}</SelectItem>
                     <SelectItem value="person">{{ MEDIA_TYPE_LABELS.person }}</SelectItem>
                     <SelectItem value="company">{{ MEDIA_TYPE_LABELS.company }}</SelectItem>

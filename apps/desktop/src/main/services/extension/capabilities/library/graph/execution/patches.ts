@@ -2,6 +2,9 @@ import type {
   LibraryAnime,
   LibraryAnimeCreateInput,
   LibraryAnimePatch,
+  LibraryCharacter,
+  LibraryCharacterCreateInput,
+  LibraryCharacterPatch,
   LibraryCollection,
   LibraryCollectionCreateInput,
   LibraryCollectionPatch,
@@ -69,8 +72,8 @@ export function planTagAction(
 }
 
 export function planRankedEntityAction(
-  existing: LibraryCompany | LibraryPerson | undefined,
-  input: LibraryCompanyCreateInput | LibraryPersonCreateInput,
+  existing: LibraryCharacter | LibraryCompany | LibraryPerson | undefined,
+  input: LibraryCharacterCreateInput | LibraryCompanyCreateInput | LibraryPersonCreateInput,
   conflictMode: ConflictMode
 ): LibraryGraphResultAction {
   if (!existing) return 'create'
@@ -178,6 +181,26 @@ export function buildPersonPatch(
   return patch
 }
 
+export function buildCharacterPatch(
+  existing: LibraryCharacter,
+  input: LibraryCharacterCreateInput,
+  conflictMode: ConflictMode
+): LibraryCharacterPatch {
+  const patch = buildRankedEntityPatch(existing, input, conflictMode) as LibraryCharacterPatch
+  assignPatchValue(patch, existing, input, 'photoFile', conflictMode)
+  assignPatchValue(patch, existing, input, 'birthDate', conflictMode)
+  assignPatchValue(patch, existing, input, 'gender', conflictMode)
+  assignPatchValue(patch, existing, input, 'bloodType', conflictMode)
+  assignPatchValue(patch, existing, input, 'height', conflictMode)
+  assignPatchValue(patch, existing, input, 'weight', conflictMode)
+  assignPatchValue(patch, existing, input, 'bust', conflictMode)
+  assignPatchValue(patch, existing, input, 'waist', conflictMode)
+  assignPatchValue(patch, existing, input, 'hips', conflictMode)
+  assignPatchValue(patch, existing, input, 'cup', conflictMode)
+  assignPatchValue(patch, existing, input, 'age', conflictMode)
+  return patch
+}
+
 export function shouldOverwriteValue(
   existing: unknown,
   incoming: unknown,
@@ -216,16 +239,24 @@ export function stripUndefined<T extends Record<string, unknown>>(value: T): T {
   return result as T
 }
 
+type RankedEntityPatch =
+  | LibraryAnimePatch
+  | LibraryCharacterPatch
+  | LibraryCompanyPatch
+  | LibraryGamePatch
+  | LibraryPersonPatch
+
 function buildRankedEntityPatch(
-  existing: LibraryAnime | LibraryCompany | LibraryGame | LibraryPerson,
+  existing: LibraryAnime | LibraryCharacter | LibraryCompany | LibraryGame | LibraryPerson,
   input:
     | LibraryAnimeCreateInput
+    | LibraryCharacterCreateInput
     | LibraryCompanyCreateInput
     | LibraryGameCreateInput
     | LibraryPersonCreateInput,
   conflictMode: ConflictMode
-): LibraryAnimePatch | LibraryCompanyPatch | LibraryGamePatch | LibraryPersonPatch {
-  const patch: LibraryAnimePatch | LibraryCompanyPatch | LibraryGamePatch | LibraryPersonPatch = {}
+): RankedEntityPatch {
+  const patch: RankedEntityPatch = {}
   assignPatchValue(patch, existing, input, 'name', conflictMode)
   assignPatchValue(patch, existing, input, 'description', conflictMode)
   assignPatchValue(patch, existing, input, 'originalName', conflictMode)
@@ -233,7 +264,7 @@ function buildRankedEntityPatch(
   assignPatchValue(patch, existing, input, 'score', conflictMode)
   assignPatchValue(patch, existing, input, 'isFavorite', conflictMode)
   assignPatchValue(patch, existing, input, 'isNsfw', conflictMode)
-  assignPatchValue(patch, existing, input, 'relatedSites', conflictMode)
+  assignPatchValue(patch, existing, input, 'externalSites', conflictMode)
   patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
   if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
     delete patch.externalIds

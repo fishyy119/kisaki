@@ -333,6 +333,60 @@ Keep registries per consumer (merge config, feed projection, delete config, quer
 consumer declares only the schema facts it needs. Do not merge them into one grand all-consumer
 entity spec that every future media type must fully satisfy.
 
+## Relationship Families
+
+Entity-to-entity relationships split into two families with different shapes. Classify by the
+question the row answers, not by table name.
+
+### Links: cross-class attachments
+
+- A **link** attaches entities of *different* classes: media↔metadata (`game_person_links`),
+  organizer↔content (`collection_game_links`, `game_tag_links`), and metadata↔metadata across
+  kinds (`character_person_links`). One table per ordered pair; rows carry `role` (where a role
+  vocabulary exists), `is_spoiler`, `note`, and an order column per side. Links have real FKs.
+- Links stay per-pair. Do not fold them into a polymorphic table: their vocabularies, spoiler
+  semantics, and satellite resolution differ per pair, and the per-pair tables are what the merge
+  config, feed projection, and extension link store key on.
+- Reserved future pairs follow the same shape: `person_company_links` (employment) when needed.
+
+### Relations: same-class entry graphs
+
+- A **relation** connects entries of the *same* class: media↔media lives in the single polymorphic
+  `media_relations` table (`from_type`/`from_id`/`to_type`/`to_id` + `type` + `note` +
+  `order_in_from`, unique on the five identity columns). Polymorphic ends cannot carry FKs, so
+  referential integrity is owned by the application choke points: entity delete clears both ends,
+  entity merge remaps them.
+- Rows are **directed** and stored exactly as written. Readers merge both directions: out-edges
+  keep their stored `type`, in-edges are labelled through the total `MEDIA_RELATION_TYPE_INVERSE`
+  map. Never write mirror rows to make a pair visible from both sides.
+- The ordered endpoint pair constrains the vocabulary (`MEDIA_RELATION_TYPE_RULES`): same-type
+  pairs carry the structural words (sequel/prequel, sideStory/parentStory, summary/fullStory,
+  alternative), cross-type pairs carry provenance only (adaptation/sourceMaterial). Adding a media
+  type forces new pair entries at compile time.
+- A same-class metadata graph (for example `company_relations` for corporate succession) would
+  follow the same polymorphic directed shape if the product ever needs it.
+
+### Vocabulary: kind / role / type
+
+- **kind** identifies *which relationship table or edge shape*: `LibraryLinkKind`
+  (`'game-person'`), graph edge kinds, `GameLinkKind` in the ingest topology.
+- **role** is the vocabulary a link row carries: the `role` column, `GamePersonRole`,
+  `metadata.role` in the extension link protocol, `role` fields on scraped link facts.
+- **type** is reserved for relation vocabulary (`MediaRelationType` on `media_relations.type`) and
+  for genuine type-of-thing enums (`AnimeEpisodeType`, media type discriminators). Never name a
+  link's role column or field `type`.
+- Table names put the subject first: `<owner>_<related>_links` from the owning side
+  (`game_person_links`), `media_relations` for the polymorphic entry graph.
+
+### Scraped related entries never create media entries
+
+Scraper facts reference related media by external identity only
+(`ScrapedRelatedEntryFact { mediaType, source, externalId, type }`). Ingest resolves them against
+library entries and drops the rest with a `related-entry-not-in-library` warning. Creating a media
+entry is always an explicit user or import decision — a scrape must never fabricate library
+entries as a side effect of relating to them. Bidirectional reads make this converge: once the
+other entry is imported and scraped, its own out-edges surface on both detail pages.
+
 ## CLI Command Naming
 
 - Keep Commander declarations in `cli/commands/`, CLI workflows in `cli/actions/`, and reusable rules in their owning domain modules.

@@ -21,7 +21,7 @@ export {
   CompanyBatchMetadataUpdateFormDialog,
   CompanyExternalIdsFormDialog,
   CompanyMediaFormDialog,
-  CompanyRelatedSitesFormDialog,
+  CompanyExternalSitesFormDialog,
   CompanyTagsFormDialog,
   CompanyGamesFormDialog
 } from './forms'

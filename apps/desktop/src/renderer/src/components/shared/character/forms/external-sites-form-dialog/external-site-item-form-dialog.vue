@@ -1,5 +1,5 @@
 <!--
-  GameRelatedSitesItemFormDialog
+  CharacterExternalSitesItemFormDialog
   Dialog for adding/editing a related site link.
 -->
 <script setup lang="ts">
@@ -38,7 +38,6 @@ const emit = defineEmits<{
   submit: [data: SiteData]
 }>()
 
-// Form state
 const formData = ref<SiteData>({
   label: '',
   url: ''

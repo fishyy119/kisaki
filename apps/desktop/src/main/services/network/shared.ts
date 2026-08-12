@@ -6,6 +6,21 @@ const log = createLogger('Network')
 export const DEFAULT_NETWORK_TIMEOUT_MS = 30000
 export const DEFAULT_NETWORK_RETRY_COUNT = 3
 
+/**
+ * Raised when a request exceeds its time budget. Deliberately not an
+ * `AbortError`: retry loops and the extension boundary treat aborts as "the
+ * caller asked to stop", while a timeout is a transient fault that may retry.
+ */
+export class NetworkTimeoutError extends Error {
+  readonly name = 'TimeoutError'
+  /** Lets boundaries (e.g. extension capabilities) classify this without message matching. */
+  readonly code = 'timeout'
+
+  constructor(host: string, timeoutMs: number, options?: ErrorOptions) {
+    super(`Network request to ${host} timed out after ${timeoutMs}ms.`, options)
+  }
+}
+
 export interface NetworkRetryOptions {
   retries: number
   signal?: AbortSignal

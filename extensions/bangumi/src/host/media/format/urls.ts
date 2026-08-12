@@ -1,7 +1,7 @@
 const DEFAULT_SUBJECT_PLACEHOLDER_URL = 'https://lain.bgm.tv/img/no_icon_subject.png'
 const URL_REGEX = /https?:\/\/[^\s<>"'()]+/gi
 
-export type RelatedSite = { label: string; url: string }
+export type ExternalSite = { label: string; url: string }
 
 export function buildBangumiSubjectUrl(subjectId: number): string {
   return `https://bgm.tv/subject/${subjectId}`
@@ -30,8 +30,8 @@ export function dedupeUrls(urls: Array<string | undefined | null>): string[] {
   return result
 }
 
-export function dedupeRelatedSites(sites: RelatedSite[]): RelatedSite[] {
-  const map = new Map<string, RelatedSite>()
+export function dedupeExternalSites(sites: ExternalSite[]): ExternalSite[] {
+  const map = new Map<string, ExternalSite>()
 
   for (const site of sites) {
     const url = normalizeUrl(site.url)
@@ -53,7 +53,7 @@ export function extractUrls(text: string): string[] {
   return matches.map((url) => normalizeUrl(url)).filter((url): url is string => !!url)
 }
 
-export function normalizeRelatedSiteLabel(raw: string | undefined | null): string | undefined {
+export function normalizeExternalSiteLabel(raw: string | undefined | null): string | undefined {
   const label = raw?.trim()
   if (!label) return undefined
 

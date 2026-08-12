@@ -14,6 +14,7 @@ export type AnimeScraperEpisodesResult = AnimeSlotResult<'episodes'>
 export type AnimeScraperCharactersResult = AnimeSlotResult<'characters'>
 export type AnimeScraperPersonsResult = AnimeSlotResult<'persons'>
 export type AnimeScraperCompaniesResult = AnimeSlotResult<'companies'>
+export type AnimeScraperRelatedEntriesResult = AnimeSlotResult<'relatedEntries'>
 export type AnimeScraperCoversResult = AnimeSlotResult<'covers'>
 export type AnimeScraperBackdropsResult = AnimeSlotResult<'backdrops'>
 export type AnimeScraperLogosResult = AnimeSlotResult<'logos'>
@@ -25,6 +26,7 @@ export type AnimeScraperResult =
   | AnimeScraperCharactersResult
   | AnimeScraperPersonsResult
   | AnimeScraperCompaniesResult
+  | AnimeScraperRelatedEntriesResult
   | AnimeScraperCoversResult
   | AnimeScraperBackdropsResult
   | AnimeScraperLogosResult

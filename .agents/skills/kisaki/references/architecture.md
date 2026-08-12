@@ -324,16 +324,15 @@ change in the library. Two contracts hold the seam together:
   the `replace` collection policy may therefore clear tags, external ids, related sites, and
   relations. An empty answer never satisfies a `first` strategy slot, so the remaining providers are
   still consulted.
-- **Writing and clearing need different authority.** Several fact sources can feed one relation link
-  table: `game_person_links` takes the `persons` slot plus the cast stated by characters. So
-  `availability` carries two sets: `surfaces` (any source answered, gates writing) and
-  `completeRelationLinks` (every source answered, gates deleting). `update/relation-links.ts` declares
-  the topology once — each link table with the surface that selects it and the fact sources that feed
-  it — keyed by the graph builder's link output so a new link table cannot skip its declaration.
-  `resolveRelationLinks` downgrades `replace` to `merge` for an incomplete table, and the update
-  coordinator reports a `collection-replace-degraded` warning when the downgrade actually preserved
-  rows. Without this, a profile that cannot ask about staff would delete staff rows no source
-  contradicted.
+- **Writing and clearing need different authority.** Several fact sources can feed one link table:
+  `game_person_links` takes the `persons` slot plus the cast stated by characters. So `availability`
+  carries two sets: `surfaces` (any source answered, gates writing) and `completeLinks` (every source
+  answered, gates deleting). `update/link-topology.ts` declares the topology once — each link table
+  with the surface that selects it and the fact sources that feed it — keyed by the graph builder's
+  link output so a new link table cannot skip its declaration. `resolveLinkWrites` downgrades
+  `replace` to `merge` for an incomplete table, and the update coordinator reports a
+  `collection-replace-degraded` warning when the downgrade actually preserved rows. Without this, a
+  profile that cannot ask about staff would delete staff rows no source contradicted.
 - **Cancellation is a signal, not a status poll.** Every provider entry point takes
   `ScraperProviderContext` (`{ locale, signal }`), and ingest threads the same signal down to network
   calls and asset flushes. `AbortError` propagates instead of degrading into a partial scrape, and

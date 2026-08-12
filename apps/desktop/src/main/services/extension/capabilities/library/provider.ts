@@ -23,10 +23,14 @@ import {
   assertValidLibraryPersonCreateInput,
   assertValidLibraryPersonPatch,
   assertValidLibraryPersonQuery,
-  assertValidLibraryRelationCreateInput,
-  assertValidLibraryRelationQuery,
-  assertValidLibraryRelationSelector,
-  assertValidLibraryRelationUpdateInput,
+  assertValidLibraryLinkCreateInput,
+  assertValidLibraryLinkQuery,
+  assertValidLibraryLinkSelector,
+  assertValidLibraryLinkUpdateInput,
+  assertValidLibraryMediaRelationCreateInput,
+  assertValidLibraryMediaRelationQuery,
+  assertValidLibraryMediaRelationSelector,
+  assertValidLibraryMediaRelationUpdateInput,
   assertValidLibraryTagCreateInput,
   assertValidLibraryTagPatch,
   assertValidLibraryTagQuery,
@@ -68,7 +72,8 @@ import type { ExtensionHostRpcClient } from '../../runtime'
 import { ExtensionLibraryAttachmentStore } from './attachments'
 import { ExtensionLibraryEntityStore, ExtensionLibraryEpisodeStore } from './entities'
 import { ExtensionLibraryGraphManager } from './graph'
-import { ExtensionLibraryRelationStore } from './relations'
+import { ExtensionLibraryLinkStore } from './links'
+import { ExtensionLibraryMediaRelationStore } from './relations'
 
 type LibraryEntityNamespaceName =
   'games' | 'animes' | 'characters' | 'persons' | 'companies' | 'collections' | 'tags'
@@ -110,14 +115,16 @@ export interface ExtensionLibraryCapabilityProviderOptions {
 export class ExtensionLibraryCapabilityProvider {
   readonly entities: ExtensionLibraryEntityStore
   readonly episodes: ExtensionLibraryEpisodeStore
-  readonly relations: ExtensionLibraryRelationStore
+  readonly links: ExtensionLibraryLinkStore
+  readonly relations: ExtensionLibraryMediaRelationStore
   readonly attachments: ExtensionLibraryAttachmentStore
   readonly graph: ExtensionLibraryGraphManager
 
   constructor(private readonly options: ExtensionLibraryCapabilityProviderOptions) {
     this.entities = new ExtensionLibraryEntityStore({ db: options.db })
     this.episodes = new ExtensionLibraryEpisodeStore({ db: options.db })
-    this.relations = new ExtensionLibraryRelationStore({ db: options.db })
+    this.links = new ExtensionLibraryLinkStore({ db: options.db })
+    this.relations = new ExtensionLibraryMediaRelationStore({ db: options.db })
     this.attachments = new ExtensionLibraryAttachmentStore({
       db: options.db,
       resolveRuntimeHandle: options.resolveRuntimeHandle
@@ -173,9 +180,41 @@ export class ExtensionLibraryCapabilityProvider {
         })
     )
 
+    rpc.handleHostRequest('capabilities.library.links.list', async ({ runtimeHandle, query }) =>
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryLinkQuery(query)
+        return { items: this.links.list(query) }
+      })
+    )
+    rpc.handleHostRequest('capabilities.library.links.create', async ({ runtimeHandle, input }) =>
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryLinkCreateInput(input)
+        return { link: this.links.create(input) }
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.links.update',
+      async ({ runtimeHandle, selector, patch }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryLinkUpdateInput(selector, patch)
+          return {
+            link: this.links.update(selector, patch)
+          }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.links.remove',
+      async ({ runtimeHandle, selector }) => {
+        return this.withRuntimeAction(runtimeHandle, () => {
+          assertValidLibraryLinkSelector(selector)
+          this.links.remove(selector)
+        })
+      }
+    )
+
     rpc.handleHostRequest('capabilities.library.relations.list', async ({ runtimeHandle, query }) =>
       this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryRelationQuery(query)
+        assertValidLibraryMediaRelationQuery(query)
         return { items: this.relations.list(query) }
       })
     )
@@ -183,7 +222,7 @@ export class ExtensionLibraryCapabilityProvider {
       'capabilities.library.relations.create',
       async ({ runtimeHandle, input }) =>
         this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryRelationCreateInput(input)
+          assertValidLibraryMediaRelationCreateInput(input)
           return { relation: this.relations.create(input) }
         })
     )
@@ -191,7 +230,7 @@ export class ExtensionLibraryCapabilityProvider {
       'capabilities.library.relations.update',
       async ({ runtimeHandle, selector, patch }) =>
         this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryRelationUpdateInput(selector, patch)
+          assertValidLibraryMediaRelationUpdateInput(selector, patch)
           return {
             relation: this.relations.update(selector, patch)
           }
@@ -201,7 +240,7 @@ export class ExtensionLibraryCapabilityProvider {
       'capabilities.library.relations.remove',
       async ({ runtimeHandle, selector }) => {
         return this.withRuntimeAction(runtimeHandle, () => {
-          assertValidLibraryRelationSelector(selector)
+          assertValidLibraryMediaRelationSelector(selector)
           this.relations.remove(selector)
         })
       }

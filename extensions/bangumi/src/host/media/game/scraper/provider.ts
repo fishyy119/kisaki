@@ -24,6 +24,7 @@ export class BangumiGameProvider
     'characters',
     'persons',
     'companies',
+    'relatedEntries',
     'covers',
     'backdrops',
     'icons'

@@ -1,4 +1,4 @@
-import type { GameCharacterType, GamePersonType, Gender } from '@shared/db'
+import type { GameCharacterRole, GamePersonRole, Gender } from '@shared/db'
 import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
 import type { ExternalId } from '@shared/identity'
@@ -9,7 +9,7 @@ const YMGAL_CDN_BASE_URL = 'https://cdn.ymgal.games'
 const YMGAL_ID_REGEX = /^\d+$/
 const DEFAULT_IMAGE_URL = '/archive/def_img.webp'
 
-type RelatedSite = { label: string; url: string }
+type ExternalSite = { label: string; url: string }
 
 function trimValue(value: string | undefined | null): string | undefined {
   if (typeof value !== 'string') return undefined
@@ -17,7 +17,7 @@ function trimValue(value: string | undefined | null): string | undefined {
   return normalized || undefined
 }
 
-function formatRelatedSiteLabel(value: string | undefined | null): string | undefined {
+function formatExternalSiteLabel(value: string | undefined | null): string | undefined {
   const normalized = trimValue(value)
   if (!normalized) return undefined
 
@@ -124,13 +124,13 @@ export function mapYmgalGender(value?: number | string | null): Gender | undefin
   }
 }
 
-export function mapYmgalCharacterType(position?: number | null): GameCharacterType {
+export function mapYmgalCharacterRole(position?: number | null): GameCharacterRole {
   if (position === 1) return 'main'
   if (position === 2) return 'supporting'
   return 'other'
 }
 
-export function mapYmgalStaffRole(jobName?: string | null): GamePersonType {
+export function mapYmgalStaffRole(jobName?: string | null): GamePersonRole {
   const raw = (jobName || '').trim().toLowerCase()
   if (!raw) return 'other'
 
@@ -265,8 +265,8 @@ export function dedupeUrls(values: Array<string | undefined | null>): string[] {
   return output
 }
 
-export function dedupeRelatedSites(sites: RelatedSite[]): RelatedSite[] {
-  const map = new Map<string, RelatedSite>()
+export function dedupeExternalSites(sites: ExternalSite[]): ExternalSite[] {
+  const map = new Map<string, ExternalSite>()
 
   for (const site of sites) {
     const url = normalizeUrl(site.url)
@@ -322,24 +322,24 @@ export function dedupeTags(tags: Tag[]): Tag[] {
   return output
 }
 
-export function extractRelatedSitesFromWebsites(websites?: YmgalWebsite[] | null): RelatedSite[] {
+export function extractExternalSitesFromWebsites(websites?: YmgalWebsite[] | null): ExternalSite[] {
   if (!websites?.length) return []
 
-  return dedupeRelatedSites(
+  return dedupeExternalSites(
     websites
       .map((site) => {
         const url = normalizeUrl(site.link)
         if (!url) return null
         return {
-          label: formatRelatedSiteLabel(site.title) || 'Website',
+          label: formatExternalSiteLabel(site.title) || 'Website',
           url
         }
       })
-      .filter((site): site is RelatedSite => !!site)
+      .filter((site): site is ExternalSite => !!site)
   )
 }
 
-export function extractExternalIdsFromSites(sites: RelatedSite[]): ExternalId[] {
+export function extractExternalIdsFromSites(sites: ExternalSite[]): ExternalId[] {
   const externalIds: ExternalId[] = []
 
   for (const site of sites) {

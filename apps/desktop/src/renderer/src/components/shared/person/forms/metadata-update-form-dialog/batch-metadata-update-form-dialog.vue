@@ -74,7 +74,7 @@ const SURFACE_LABELS = computed<Record<PersonUpdateSurface, string>>(() => ({
   deathDate: m.value.library.fields.deathDate,
   gender: m.value.library.fields.gender,
   description: m.value.library.fields.description,
-  relatedSites: m.value.library.fields.relatedSites,
+  externalSites: m.value.library.fields.externalSites,
   externalIds: m.value.library.fields.externalIds,
   tags: m.value.library.fields.tags,
   photos: m.value.library.fields.photos

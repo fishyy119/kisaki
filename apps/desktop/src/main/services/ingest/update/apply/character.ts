@@ -15,12 +15,8 @@ import {
   type NewCharacterTagLink
 } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import type {
-  CharacterRelationLink,
-  CharacterUpdatePlan,
-  UpdateRelationApplyResult
-} from '../types'
-import { applyCharacterPersonRows, filterNodesByIdentity, resolvePersonNodes } from './relations'
+import type { CharacterLinkKind, CharacterUpdatePlan, UpdateLinkApplyResult } from '../types'
+import { applyLinkRows, filterNodesByIdentity, resolvePersonNodes } from './links'
 
 function replaceCharacterExternalIds(
   tx: DbContext,
@@ -74,11 +70,11 @@ function applyCharacterRelationGraph(
   characterId: string,
   plan: CharacterUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): UpdateRelationApplyResult<CharacterRelationLink> {
+): UpdateLinkApplyResult<CharacterLinkKind> {
   const relationGraph = plan.relationGraph
-  const collectionMode = plan.relationLinks.characterPerson
+  const collectionMode = plan.links.characterPerson
   if (!relationGraph || !collectionMode) {
-    return { pendingAssets: [], preservedRelationRows: {} }
+    return { pendingAssets: [], preservedLinkRows: {} }
   }
 
   const personIdentityKeys = new Set(relationGraph.links.map((link) => link.personIdentityKey))
@@ -88,15 +84,17 @@ function applyCharacterRelationGraph(
     filterNodesByIdentity(relationGraph.persons, personIdentityKeys)
   )
 
-  const preserved = applyCharacterPersonRows({
+  const preserved = applyLinkRows({
     tx,
-    characterId,
+    kind: 'characterPerson',
+    entityId: characterId,
     links: relationGraph.links,
-    collectionMode,
-    personIdByIdentity: idByIdentity
+    relatedIdentityKeyOf: (link) => link.personIdentityKey,
+    relatedIdByIdentity: idByIdentity,
+    collectionMode
   })
 
-  return { pendingAssets, preservedRelationRows: { characterPerson: preserved } }
+  return { pendingAssets, preservedLinkRows: { characterPerson: preserved } }
 }
 
 export function applyCharacterPlan(
@@ -104,7 +102,7 @@ export function applyCharacterPlan(
   characterId: string,
   plan: CharacterUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): UpdateRelationApplyResult<CharacterRelationLink> {
+): UpdateLinkApplyResult<CharacterLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, characterExternalIdLink, [characterId], plan.externalIds)
     replaceCharacterExternalIds(tx, characterId, plan.externalIds)
@@ -128,5 +126,5 @@ export function applyCharacterPlan(
   const relations = applyCharacterRelationGraph(tx, characterId, plan, persistHandlers)
   pendingAssets.push(...relations.pendingAssets)
 
-  return { pendingAssets, preservedRelationRows: relations.preservedRelationRows }
+  return { pendingAssets, preservedLinkRows: relations.preservedLinkRows }
 }

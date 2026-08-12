@@ -16,8 +16,8 @@ export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter {
   readonly supportsEpisodeSync = true
 
   protected readonly entityType = 'anime' as const
-  protected readonly tagRelationKind = 'anime-tag' as const
-  protected readonly collectionRelationKind = 'collection-anime' as const
+  protected readonly tagLinkKind = 'anime-tag' as const
+  protected readonly collectionLinkKind = 'collection-anime' as const
 
   async listEpisodes(localId: string): Promise<readonly LocalEpisodeItem[]> {
     const episodes = await kisaki.library.animes.episodes.list({ animeId: localId })
@@ -53,8 +53,8 @@ export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter {
     await kisaki.library.animes.update(localId, patch)
   }
 
-  protected async createTagRelation(localId: string, tagId: string): Promise<void> {
-    await kisaki.library.relations.create({
+  protected async createTagLink(localId: string, tagId: string): Promise<void> {
+    await kisaki.library.links.create({
       kind: 'anime-tag',
       from: { entityType: 'anime', id: localId },
       to: { entityType: 'tag', id: tagId },
@@ -62,8 +62,8 @@ export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter {
     })
   }
 
-  protected async createCollectionRelation(collectionId: string, localId: string): Promise<void> {
-    await kisaki.library.relations.create({
+  protected async createCollectionLink(collectionId: string, localId: string): Promise<void> {
+    await kisaki.library.links.create({
       kind: 'collection-anime',
       from: { entityType: 'collection', id: collectionId },
       to: { entityType: 'anime', id: localId },

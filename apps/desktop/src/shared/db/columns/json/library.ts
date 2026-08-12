@@ -1,6 +1,6 @@
 import { customType } from 'drizzle-orm/sqlite-core'
 
-import type { FailedScan, RelatedSite, SaveBackup } from '../../contracts/json'
+import type { FailedScan, ExternalSite, SaveBackup } from '../../contracts/json'
 
 export const stringArrayJson = customType<{
   data: string[]
@@ -34,15 +34,15 @@ export const stringArrayJson = customType<{
   }
 })
 
-export const relatedSites = customType<{
-  data: RelatedSite[]
+export const externalSites = customType<{
+  data: ExternalSite[]
   driverData: string
 }>({
   dataType() {
     return 'text'
   },
 
-  fromDriver(value: string): RelatedSite[] {
+  fromDriver(value: string): ExternalSite[] {
     if (!value || value === '[]') return []
 
     try {
@@ -51,7 +51,7 @@ export const relatedSites = customType<{
         return []
       }
 
-      const validated = parsed.filter((item): item is RelatedSite => {
+      const validated = parsed.filter((item): item is ExternalSite => {
         if (!item || typeof item !== 'object') return false
         if (typeof item.label !== 'string' || !item.label.trim()) return false
         if (typeof item.url !== 'string' || !item.url.trim()) return false
@@ -69,9 +69,9 @@ export const relatedSites = customType<{
     }
   },
 
-  toDriver(value: RelatedSite[]): string {
+  toDriver(value: ExternalSite[]): string {
     if (!Array.isArray(value)) {
-      throw new Error('RelatedSites must be an array')
+      throw new Error('ExternalSites must be an array')
     }
 
     const errors: string[] = []
@@ -95,7 +95,7 @@ export const relatedSites = customType<{
     })
 
     if (errors.length > 0) {
-      throw new Error(`RelatedSites validation failed:\n${errors.join('\n')}`)
+      throw new Error(`ExternalSites validation failed:\n${errors.join('\n')}`)
     }
 
     const uniqueSites = Array.from(new Map(value.map((site) => [site.url, site])).values())

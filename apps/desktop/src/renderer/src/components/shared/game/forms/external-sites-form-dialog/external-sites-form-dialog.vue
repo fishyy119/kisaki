@@ -1,13 +1,13 @@
 <!--
-  PersonRelatedSitesFormDialog
-  Dialog for editing person related sites/links.
+  GameExternalSitesFormDialog
+  Dialog for editing game related sites/links.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
-import { persons } from '@shared/db'
+import { games } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
 import {
   Dialog,
@@ -18,23 +18,32 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { StateView } from '@renderer/components/ui/state-view'
-import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@renderer/components/ui/alert-dialog'
 import { Button } from '@renderer/components/ui/button'
 import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
-import PersonRelatedSitesItemFormDialog from './related-site-item-form-dialog.vue'
+import GameExternalSitesItemFormDialog from './external-site-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Person')
+const log = createLogger('Game')
 
 interface Props {
-  personId: string
+  gameId: string
 }
 
-interface RelatedSite {
+interface ExternalSite {
   label: string
   url: string
 }
@@ -44,25 +53,25 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 // Form state
-const sites = ref<RelatedSite[]>([])
+const sites = ref<ExternalSite[]>([])
 const deleteIndex = ref<number | null>(null)
 const formOpen = ref(false)
 const editingIndex = ref<number | null>(null)
 const isSaving = ref(false)
 
-// Fetch person data when dialog opens
-const { data: person, isLoading } = useAsyncData(
-  () => db.query.persons.findFirst({ where: eq(persons.id, props.personId) }),
+// Fetch game data when dialog opens
+const { data: game, isLoading } = useAsyncData(
+  () => db.query.games.findFirst({ where: eq(games.id, props.gameId) }),
   {
-    watch: [() => props.personId],
+    watch: [() => props.gameId],
     enabled: () => open.value
   }
 )
 
 // Initialize form state when data loads
-watch(person, (personData) => {
-  if (personData) {
-    sites.value = personData.relatedSites || []
+watch(game, (gameData) => {
+  if (gameData) {
+    sites.value = gameData.externalSites || []
   }
 })
 
@@ -84,9 +93,9 @@ async function handleSave() {
   try {
     const validSites = sites.value.filter((s) => s.label.trim() && s.url.trim())
     await db
-      .update(persons)
-      .set({ relatedSites: validSites.length > 0 ? validSites : null })
-      .where(eq(persons.id, props.personId))
+      .update(games)
+      .set({ externalSites: validSites.length > 0 ? validSites : null })
+      .where(eq(games.id, props.gameId))
 
     notify.success(m.value.common.saved)
     open.value = false
@@ -108,7 +117,7 @@ function handleEditClick(index: number) {
   formOpen.value = true
 }
 
-function handleFormSubmit(data: RelatedSite) {
+function handleFormSubmit(data: ExternalSite) {
   if (editingIndex.value !== null) {
     sites.value[editingIndex.value] = data
   } else {
@@ -118,11 +127,9 @@ function handleFormSubmit(data: RelatedSite) {
   editingIndex.value = null
 }
 
-function handleRemoveSite() {
-  if (deleteIndex.value !== null) {
-    sites.value.splice(deleteIndex.value, 1)
-    deleteIndex.value = null
-  }
+function handleRemoveSite(index: number) {
+  sites.value.splice(index, 1)
+  deleteIndex.value = null
 }
 
 function handleMoveUp(index: number) {
@@ -148,7 +155,7 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <!-- Loading state -->
-      <template v-if="isLoading || !person">
+      <template v-if="isLoading || !game">
         <DialogBody>
           <StateView
             state="loading"
@@ -160,7 +167,7 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>{{ m.library.forms.editRelatedSites }}</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editExternalSites }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
@@ -223,7 +230,7 @@ function handleCancel() {
   </Dialog>
 
   <!-- Site form dialog -->
-  <PersonRelatedSitesItemFormDialog
+  <GameExternalSitesItemFormDialog
     v-if="formOpen"
     v-model:open="formOpen"
     :initial-data="formInitialData"
@@ -231,10 +238,20 @@ function handleCancel() {
   />
 
   <!-- Delete confirmation dialog -->
-  <DeleteConfirmDialog
-    v-if="deleteDialogOpen"
-    v-model:open="deleteDialogOpen"
-    :entity-label="m.library.forms.linkLabels.link"
-    @confirm="handleRemoveSite"
-  />
+  <AlertDialog v-model:open="deleteDialogOpen">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{{ m.library.forms.deleteLinkConfirmTitle }}</AlertDialogTitle>
+      </AlertDialogHeader>
+      <AlertDialogDescription>{{
+        m.library.forms.deleteLinkConfirmDescription
+      }}</AlertDialogDescription>
+      <AlertDialogFooter>
+        <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogAction @click="deleteIndex !== null && handleRemoveSite(deleteIndex)">
+          {{ m.common.delete }}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>

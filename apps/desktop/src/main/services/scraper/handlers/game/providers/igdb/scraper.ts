@@ -8,7 +8,7 @@
  * - https://igdb-openapi.s-crypt.co/IGDB-OpenAPI.yaml
  */
 
-import type { GameCompanyType, GameScraperSlot } from '@shared/db'
+import type { GameCompanyRole, GameScraperSlot } from '@shared/db'
 import type { Tag } from '@shared/metadata'
 import type {
   GameSearchResult,
@@ -431,6 +431,7 @@ export class IGDBProvider implements GameScraperProvider {
         case 'backdrops':
           return this.buildBackdrops(getScreenshots, getArtworks)
         case 'persons':
+        case 'relatedEntries':
         case 'logos':
         case 'icons':
           return Promise.resolve(undefined)
@@ -502,16 +503,16 @@ export class IGDBProvider implements GameScraperProvider {
       externalSourceMap.set(item.id, item.name.trim())
     }
 
-    const relatedSites: Array<{ label: string; url: string }> = []
+    const externalSites: Array<{ label: string; url: string }> = []
     if (game.url?.trim()) {
-      relatedSites.push({ label: 'IGDB', url: game.url })
+      externalSites.push({ label: 'IGDB', url: game.url })
     } else {
-      relatedSites.push({ label: 'IGDB', url: `https://www.igdb.com/games/${game.id}` })
+      externalSites.push({ label: 'IGDB', url: `https://www.igdb.com/games/${game.id}` })
     }
 
     for (const website of websites) {
       if (!website.url?.trim()) continue
-      relatedSites.push({
+      externalSites.push({
         label: websiteTypeMap.get(website.type ?? -1) ?? 'Website',
         url: website.url
       })
@@ -520,7 +521,7 @@ export class IGDBProvider implements GameScraperProvider {
     for (const ext of externalGames) {
       const sourceName = externalSourceMap.get(ext.external_game_source ?? -1)
       if (ext.url?.trim()) {
-        relatedSites.push({
+        externalSites.push({
           label: sourceName ?? 'External',
           url: ext.url
         })
@@ -529,7 +530,7 @@ export class IGDBProvider implements GameScraperProvider {
 
     for (const video of videos) {
       if (!video.video_id?.trim()) continue
-      relatedSites.push({
+      externalSites.push({
         label: video.name?.trim() ? `YouTube: ${video.name.trim()}` : 'YouTube',
         url: `https://www.youtube.com/watch?v=${video.video_id.trim()}`
       })
@@ -558,7 +559,7 @@ export class IGDBProvider implements GameScraperProvider {
       name: game.name,
       releaseDate,
       description,
-      relatedSites: this.dedupeRelatedSites(relatedSites)
+      externalSites: this.dedupeExternalSites(externalSites)
     }
   }
 
@@ -755,7 +756,7 @@ export class IGDBProvider implements GameScraperProvider {
         name: character.name,
         originalName: character.akas?.find((aka) => aka?.trim() && aka.trim() !== character.name),
         description: this.normalizeDescription(character.description),
-        relatedSites: this.dedupeRelatedSites([
+        externalSites: this.dedupeExternalSites([
           {
             label: 'IGDB',
             url: character.url?.trim() || `https://www.igdb.com/characters/${character.id}`
@@ -765,7 +766,7 @@ export class IGDBProvider implements GameScraperProvider {
         photos: photo ? [photo] : undefined,
         gender: mapIgdbGender(genderMap.get(character.character_gender ?? -1)),
         tags: tags.length > 0 ? this.dedupeTags(tags) : undefined,
-        type: 'main'
+        role: 'main'
       }
     })
   }
@@ -812,27 +813,27 @@ export class IGDBProvider implements GameScraperProvider {
       if (!company || !company.name?.trim()) continue
 
       const logo = resolveIgdbImageUrl(logoMap.get(company.logo ?? -1), 'logo_med')
-      const relatedSites: Array<{ label: string; url: string }> = []
+      const externalSites: Array<{ label: string; url: string }> = []
 
       if (company.url?.trim()) {
-        relatedSites.push({ label: 'IGDB', url: company.url })
+        externalSites.push({ label: 'IGDB', url: company.url })
       } else {
-        relatedSites.push({ label: 'IGDB', url: `https://www.igdb.com/companies/${company.id}` })
+        externalSites.push({ label: 'IGDB', url: `https://www.igdb.com/companies/${company.id}` })
       }
 
       for (const websiteId of company.websites ?? []) {
         const site = companyWebsiteMap.get(websiteId)
         if (!site?.url?.trim()) continue
-        relatedSites.push({
+        externalSites.push({
           label: websiteTypeMap.get(site.type ?? -1) ?? 'Website',
           url: site.url
         })
       }
 
-      const base: Omit<ScrapedGameCompanyFact, 'type' | 'note'> = {
+      const base: Omit<ScrapedGameCompanyFact, 'role' | 'note'> = {
         name: company.name.trim(),
         description: this.normalizeDescription(company.description),
-        relatedSites: this.dedupeRelatedSites(relatedSites),
+        externalSites: this.dedupeExternalSites(externalSites),
         identity: { externalIds: [{ source: this.externalIdSource, id: String(company.id) }] },
         logos: logo ? [logo] : undefined
       }
@@ -840,7 +841,7 @@ export class IGDBProvider implements GameScraperProvider {
       for (const relation of this.mapCompanyRelations(involved)) {
         companies.push({
           ...base,
-          type: relation.type,
+          role: relation.role,
           note: relation.note
         })
       }
@@ -930,7 +931,7 @@ export class IGDBProvider implements GameScraperProvider {
     return rows[0] ?? null
   }
 
-  private dedupeRelatedSites(
+  private dedupeExternalSites(
     sites: Array<{ label: string; url: string }>
   ): Array<{ label: string; url: string }> {
     const map = new Map<string, { label: string; url: string }>()
@@ -985,16 +986,16 @@ export class IGDBProvider implements GameScraperProvider {
 
   private mapCompanyRelations(
     involved: IgdbInvolvedCompany
-  ): Array<{ type: GameCompanyType; note?: string }> {
-    const relations: Array<{ type: GameCompanyType; note?: string }> = []
+  ): Array<{ role: GameCompanyRole; note?: string }> {
+    const relations: Array<{ role: GameCompanyRole; note?: string }> = []
 
-    if (involved.developer) relations.push({ type: 'developer' })
-    if (involved.publisher) relations.push({ type: 'publisher' })
-    if (involved.porting) relations.push({ type: 'distributor', note: 'Porting' })
-    if (involved.supporting) relations.push({ type: 'other', note: 'Supporting' })
+    if (involved.developer) relations.push({ role: 'developer' })
+    if (involved.publisher) relations.push({ role: 'publisher' })
+    if (involved.porting) relations.push({ role: 'distributor', note: 'Porting' })
+    if (involved.supporting) relations.push({ role: 'other', note: 'Supporting' })
 
     if (relations.length === 0) {
-      relations.push({ type: 'other' })
+      relations.push({ role: 'other' })
     }
 
     return relations

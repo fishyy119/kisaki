@@ -16,7 +16,7 @@ export const PERSON_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'deathDate', group: 'core', cardinality: 'singular' },
   { key: 'gender', group: 'core', cardinality: 'singular' },
   { key: 'description', group: 'core', cardinality: 'singular' },
-  { key: 'relatedSites', group: 'core', cardinality: 'collection' },
+  { key: 'externalSites', group: 'core', cardinality: 'collection' },
   { key: 'externalIds', group: 'core', cardinality: 'collection' },
   { key: 'tags', group: 'core', cardinality: 'collection' },
   { key: 'photos', group: 'media', cardinality: 'singular' }

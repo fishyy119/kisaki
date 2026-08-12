@@ -1,5 +1,5 @@
 import type { AllEntityType } from '@shared/common'
-import type { RelatedSite } from '@shared/db/contracts/json'
+import type { ExternalSite } from '@shared/db/contracts/json'
 import { normalizeKeyText } from '@shared/identity'
 import type { MergeRow } from './types'
 
@@ -86,7 +86,7 @@ function applyCommonFields(
     applyFirst(patch, target, source, 'score')
     patch.isFavorite = Boolean(target.isFavorite || source.isFavorite)
     patch.isNsfw = Boolean(target.isNsfw || source.isNsfw)
-    patch.relatedSites = mergeRelatedSites(target.relatedSites, source.relatedSites)
+    patch.externalSites = mergeExternalSites(target.externalSites, source.externalSites)
   }
 
   patch.createdAt = earliestDateValue(target.createdAt, source.createdAt)
@@ -110,11 +110,11 @@ function hasValue(value: unknown): boolean {
 
 // Rows arrive through the column's lenient read parser, so the array shape is
 // trusted; only presence needs checking.
-function mergeRelatedSites(targetSites: unknown, sourceSites: unknown): RelatedSite[] {
-  const merged: RelatedSite[] = []
+function mergeExternalSites(targetSites: unknown, sourceSites: unknown): ExternalSite[] {
+  const merged: ExternalSite[] = []
   const seen = new Set<string>()
 
-  for (const site of [...toRelatedSites(targetSites), ...toRelatedSites(sourceSites)]) {
+  for (const site of [...toExternalSites(targetSites), ...toExternalSites(sourceSites)]) {
     if (!site?.url) continue
     const key = normalizeKeyText(site.url)
     if (!key || seen.has(key)) continue
@@ -125,8 +125,8 @@ function mergeRelatedSites(targetSites: unknown, sourceSites: unknown): RelatedS
   return merged
 }
 
-function toRelatedSites(value: unknown): RelatedSite[] {
-  return Array.isArray(value) ? (value as RelatedSite[]) : []
+function toExternalSites(value: unknown): ExternalSite[] {
+  return Array.isArray(value) ? (value as ExternalSite[]) : []
 }
 
 function toDuration(value: unknown): number {

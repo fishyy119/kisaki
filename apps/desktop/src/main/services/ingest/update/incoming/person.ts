@@ -5,7 +5,7 @@ import type { ScrapedPersonBundle } from '@shared/scraper'
 import type { PersonIncomingBuildResult } from '../types'
 import {
   normalizeOptionalString,
-  normalizeRelatedSites,
+  normalizeExternalSites,
   normalizeTags,
   normalizeUrlCandidates
 } from '../shared/normalization'
@@ -30,8 +30,8 @@ function buildPersonCore(
   const description = normalizeOptionalString(bundleCore?.description)
   if (description) core.description = description
 
-  const relatedSites = normalizeRelatedSites(bundleCore?.relatedSites)
-  if (relatedSites) core.relatedSites = relatedSites
+  const externalSites = normalizeExternalSites(bundleCore?.externalSites)
+  if (externalSites) core.externalSites = externalSites
 
   const identityIds = bundle?.identity.externalIds
   if (identityIds || lookup.knownIds) {
@@ -63,7 +63,7 @@ export function buildPersonIncoming(
   if (core.deathDate) availability.surfaces.add('deathDate')
   if (core.gender) availability.surfaces.add('gender')
   if (core.description) availability.surfaces.add('description')
-  if (core.relatedSites) availability.surfaces.add('relatedSites')
+  if (core.externalSites) availability.surfaces.add('externalSites')
   if (core.externalIds) availability.surfaces.add('externalIds')
   if (core.tags) availability.surfaces.add('tags')
   if (photoUrls) availability.surfaces.add('photos')

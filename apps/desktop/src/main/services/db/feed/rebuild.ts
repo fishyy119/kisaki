@@ -1,7 +1,7 @@
 import type { RawDbChange } from '@shared/db/changes'
-import type { LibraryMediaRelationSnapshot } from '@shared/library'
+import type { LibraryMediaLinkSnapshot, LibraryMediaRelationEdge } from '@shared/library'
 import type { ExternalId } from '@shared/identity'
-import type { MediaRelationTables } from './types'
+import type { MediaLinkTables } from './types'
 import { stringValue } from './shared/normalization'
 
 export function rebuildExternalIdsBefore(
@@ -59,11 +59,11 @@ export function rebuildIdSetBefore(
   return [...ids].sort()
 }
 
-export function rebuildRelationSnapshotBefore(
-  after: LibraryMediaRelationSnapshot,
-  tables: MediaRelationTables,
+export function rebuildLinkSnapshotBefore(
+  after: LibraryMediaLinkSnapshot,
+  tables: MediaLinkTables,
   changes: RawDbChange[]
-): LibraryMediaRelationSnapshot {
+): LibraryMediaLinkSnapshot {
   return {
     personLinkIds: rebuildIdSetBefore(
       after.personLinkIds,
@@ -81,6 +81,56 @@ export function rebuildRelationSnapshotBefore(
       'id'
     )
   }
+}
+
+/**
+ * Rebuilds an entity's outgoing relation edges before the given raw changes,
+ * by reverse-applying them onto the current edge set.
+ */
+export function rebuildMediaRelationEdgesBefore(
+  after: LibraryMediaRelationEdge[],
+  changes: RawDbChange[],
+  mediaType: string,
+  mediaId: string
+): LibraryMediaRelationEdge[] {
+  const edges = new Map(after.map((edge) => [mediaRelationEdgeKey(edge), edge]))
+
+  for (const change of [...changes].reverse()) {
+    const nextEdge = toOutgoingEdge(change.next, mediaType, mediaId)
+    if (nextEdge) {
+      edges.delete(mediaRelationEdgeKey(nextEdge))
+    }
+
+    const oldEdge = toOutgoingEdge(change.old, mediaType, mediaId)
+    if (oldEdge) {
+      edges.set(mediaRelationEdgeKey(oldEdge), oldEdge)
+    }
+  }
+
+  return [...edges.values()]
+}
+
+function mediaRelationEdgeKey(edge: LibraryMediaRelationEdge): string {
+  return `${edge.toType}\0${edge.toId}\0${edge.type}`
+}
+
+function toOutgoingEdge(
+  row: Record<string, unknown> | undefined,
+  mediaType: string,
+  mediaId: string
+): LibraryMediaRelationEdge | null {
+  if (!row || row.from_type !== mediaType || stringValue(row.from_id) !== mediaId) {
+    return null
+  }
+
+  const toType = stringValue(row.to_type)
+  const toId = stringValue(row.to_id)
+  const type = stringValue(row.type)
+  if (!toType || !toId || !type) {
+    return null
+  }
+
+  return { toType, toId, type } as LibraryMediaRelationEdge
 }
 
 /**

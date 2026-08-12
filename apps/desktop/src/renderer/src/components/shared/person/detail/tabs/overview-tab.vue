@@ -16,7 +16,7 @@ import { CharacterCard, CharacterDetailDialog } from '@renderer/components/share
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import {
   PersonDescriptionFormDialog,
-  PersonRelatedSitesFormDialog,
+  PersonExternalSitesFormDialog,
   PersonTagsFormDialog,
   PersonGamesFormDialog,
   PersonCharactersFormDialog
@@ -26,15 +26,15 @@ import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 
 const { m } = useI18n()
 
-const GAME_PERSON_TYPE_LABELS = computed<Record<string, string>>(
+const GAME_PERSON_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gamePerson
 )
 
-const ANIME_PERSON_TYPE_LABELS = computed<Record<string, string>>(
+const ANIME_PERSON_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.animePerson
 )
 
-const CHARACTER_PERSON_TYPE_LABELS = computed<Record<string, string>>(
+const CHARACTER_PERSON_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.characterPerson
 )
 
@@ -62,8 +62,8 @@ const openTagId = ref<string | null>(null)
 // Computed
 // =============================================================================
 
-const hasRelatedSites = computed(
-  () => person.value?.relatedSites && person.value.relatedSites.length > 0
+const hasExternalSites = computed(
+  () => person.value?.externalSites && person.value.externalSites.length > 0
 )
 const hasTags = computed(() => tags.value && tags.value.length > 0)
 
@@ -135,7 +135,7 @@ const tagDialogOpen = computed({
               :character="link.character!"
               size="sm"
               align="left"
-              :badge-label="link.type ? CHARACTER_PERSON_TYPE_LABELS[link.type] : undefined"
+              :badge-label="link.role ? CHARACTER_PERSON_ROLE_LABELS[link.role] : undefined"
               @click="openCharacterId = link.character!.id"
             />
           </template>
@@ -154,7 +154,7 @@ const tagDialogOpen = computed({
               :game="link.game!"
               align="left"
               size="sm"
-              :badge-label="link.type ? GAME_PERSON_TYPE_LABELS[link.type] : undefined"
+              :badge-label="link.role ? GAME_PERSON_ROLE_LABELS[link.role] : undefined"
               @click="openGameId = link.game!.id"
             />
           </template>
@@ -175,7 +175,7 @@ const tagDialogOpen = computed({
                 :anime="link.anime!"
                 align="left"
                 size="sm"
-                :badge-label="link.type ? ANIME_PERSON_TYPE_LABELS[link.type] : undefined"
+                :badge-label="link.role ? ANIME_PERSON_ROLE_LABELS[link.role] : undefined"
               />
             </a>
           </template>
@@ -208,15 +208,15 @@ const tagDialogOpen = computed({
       <!-- Right column: Related Sites -->
       <div class="space-y-6 min-w-0">
         <Section
-          :title="m.library.fields.relatedSites"
+          :title="m.library.fields.externalSites"
           editable
-          :empty="!hasRelatedSites"
-          :empty-text="m.library.detail.empty.relatedSites"
+          :empty="!hasExternalSites"
+          :empty-text="m.library.detail.empty.externalSites"
           @edit="openEditDialog('sites')"
         >
           <div class="flex flex-col gap-1.5">
             <a
-              v-for="(site, index) in person.relatedSites"
+              v-for="(site, index) in person.externalSites"
               :key="index"
               :href="site.url"
               target="_blank"
@@ -240,7 +240,7 @@ const tagDialogOpen = computed({
       v-model:open="editDialogs.description"
       :person-id="person.id"
     />
-    <PersonRelatedSitesFormDialog
+    <PersonExternalSitesFormDialog
       v-if="editDialogs.sites"
       v-model:open="editDialogs.sites"
       :person-id="person.id"

@@ -1,12 +1,17 @@
-import type { DynamicCollectionConfig, LibraryMediaStatus } from '../../../capabilities/library'
+import type {
+  DynamicCollectionConfig,
+  LibraryMediaStatus,
+  LibraryMediaType
+} from '../../../capabilities/library'
 import type {
   ExternalId,
   LibraryAnimeFormat,
   LibraryBloodType,
   LibraryCupSize,
   LibraryGender,
+  LibraryMediaRelationType,
   PartialDate,
-  RelatedSite
+  ExternalSite
 } from '../../../shared'
 import type { HookPointSpec } from './point'
 
@@ -56,10 +61,21 @@ export interface LibraryMediaActivitySnapshot {
   lastActiveAt?: number | null
 }
 
-export interface LibraryMediaRelationSnapshot {
+export interface LibraryMediaLinkSnapshot {
   personLinkIds: readonly string[]
   companyLinkIds: readonly string[]
   characterLinkIds: readonly string[]
+}
+
+/** One outgoing entry-to-entry edge as seen from the changed entity. */
+export interface LibraryMediaRelationEdge {
+  toType: LibraryMediaType
+  toId: string
+  type: LibraryMediaRelationType
+}
+
+export interface LibraryMediaRelationsSnapshot {
+  relations: readonly LibraryMediaRelationEdge[]
 }
 
 export interface LibraryPersonCoreSnapshot {
@@ -72,7 +88,7 @@ export interface LibraryPersonCoreSnapshot {
   birthDate?: PartialDate | null
   deathDate?: PartialDate | null
   gender?: LibraryGender | null
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface LibraryCompanyCoreSnapshot {
@@ -83,7 +99,7 @@ export interface LibraryCompanyCoreSnapshot {
   isFavorite?: boolean
   isNsfw?: boolean
   foundedDate?: PartialDate | null
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface LibraryCharacterCoreSnapshot {
@@ -103,7 +119,7 @@ export interface LibraryCharacterCoreSnapshot {
   hips?: number | null
   cup?: LibraryCupSize | null
   age?: number | null
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface LibraryCollectionCoreSnapshot {
@@ -183,6 +199,13 @@ export type LibraryAssetChange<TSnapshot extends object> = {
   fields?: readonly string[]
 }
 
+export type LibraryLinksChange<TSnapshot extends object> = {
+  facet: 'links'
+  before: TSnapshot
+  after: TSnapshot
+  fields?: readonly string[]
+}
+
 export type LibraryRelationsChange<TSnapshot extends object> = {
   facet: 'relations'
   before: TSnapshot
@@ -247,7 +270,8 @@ export type LibraryGameChange =
   | LibraryTagsChange
   | LibraryCollectionsChange
   | LibraryAssetChange<LibraryGameAssetSnapshot>
-  | LibraryRelationsChange<LibraryMediaRelationSnapshot>
+  | LibraryLinksChange<LibraryMediaLinkSnapshot>
+  | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
 
 export type LibraryAnimeChange =
   | LibraryCoreChange<LibraryAnimeCoreSnapshot>
@@ -258,7 +282,8 @@ export type LibraryAnimeChange =
   | LibraryTagsChange
   | LibraryCollectionsChange
   | LibraryAssetChange<LibraryAnimeAssetSnapshot>
-  | LibraryRelationsChange<LibraryMediaRelationSnapshot>
+  | LibraryLinksChange<LibraryMediaLinkSnapshot>
+  | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
   | LibraryEpisodesChange
 
 export type LibraryPersonChange =

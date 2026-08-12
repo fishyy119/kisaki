@@ -1,5 +1,6 @@
 import type {
   LibraryAnime,
+  LibraryCharacter,
   LibraryCollection,
   LibraryCompany,
   LibraryGame,
@@ -19,6 +20,7 @@ import {
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
 import {
   buildAnimePatch,
+  buildCharacterPatch,
   buildCollectionPatch,
   buildCompanyPatch,
   buildGamePatch,
@@ -104,6 +106,20 @@ export function previewEntityNodes(
     )
     setEntityNodeResult(draft, state, entry, action, match)
   }
+  for (const entry of graph.nodes.characters) {
+    const match = matches.byIdentity.get(graphNodeIdentity(entry.kind, entry.key))
+    if (match?.blocked) {
+      setEntityNodeResult(draft, state, entry, 'fail', match)
+      continue
+    }
+
+    const action = planRankedEntityAction(
+      match?.existing as LibraryCharacter | undefined,
+      entry.node.input,
+      graph.options.conflictMode
+    )
+    setEntityNodeResult(draft, state, entry, action, match)
+  }
 }
 
 function planMediaAction(
@@ -128,6 +144,7 @@ export function applyEntityNodes(
   applyTagNodes(graph, matches, draft, state, options)
   applyCompanyNodes(graph, matches, draft, state, options)
   applyPersonNodes(graph, matches, draft, state, options)
+  applyCharacterNodes(graph, matches, draft, state, options)
 }
 
 function applyMediaNodes(
@@ -341,6 +358,47 @@ function applyPersonNodes(
       const patch = buildPersonPatch(existing, entry.node.input, graph.options.conflictMode)
       const entity =
         Object.keys(patch).length > 0 ? options.entities.updatePerson(existing.id, patch) : existing
+      const action = Object.keys(patch).length > 0 ? 'update' : 'skip'
+      setEntityNodeResult(draft, state, entry, action, {
+        entityId: entity.id,
+        diagnostics: match?.diagnostics
+      })
+    } catch (error) {
+      setEntityWriteFailureResult(draft, state, entry, error, match?.diagnostics)
+    }
+  }
+}
+
+function applyCharacterNodes(
+  graph: NormalizedLibraryGraph,
+  matches: LibraryGraphMatchSet,
+  draft: LibraryGraphResultDraft,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): void {
+  for (const entry of graph.nodes.characters) {
+    const match = matches.byIdentity.get(graphNodeIdentity(entry.kind, entry.key))
+    if (match?.blocked) {
+      setEntityNodeResult(draft, state, entry, 'fail', match)
+      continue
+    }
+
+    try {
+      const existing = match?.existing as LibraryCharacter | undefined
+      if (!existing) {
+        const entity = options.entities.createCharacter(entry.node.input)
+        setEntityNodeResult(draft, state, entry, 'create', {
+          entityId: entity.id,
+          diagnostics: match?.diagnostics
+        })
+        continue
+      }
+
+      const patch = buildCharacterPatch(existing, entry.node.input, graph.options.conflictMode)
+      const entity =
+        Object.keys(patch).length > 0
+          ? options.entities.updateCharacter(existing.id, patch)
+          : existing
       const action = Object.keys(patch).length > 0 ? 'update' : 'skip'
       setEntityNodeResult(draft, state, entry, action, {
         entityId: entity.id,

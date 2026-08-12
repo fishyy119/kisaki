@@ -94,11 +94,11 @@ export function resolveCharacterPersonLinks(params: {
       )
       const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
       return {
-        key: `${characterId}:${personId}:${link.type}`,
+        key: `${characterId}:${personId}:${link.role}`,
         value: {
           characterId,
           personId,
-          type: link.type,
+          role: link.role,
           isSpoiler: link.isSpoiler,
           note: link.note
         }
@@ -107,7 +107,7 @@ export function resolveCharacterPersonLinks(params: {
     buildRow: (link, _index, counters) => ({
       characterId: link.characterId,
       personId: link.personId,
-      type: link.type,
+      role: link.role,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInCharacter: counters.next('character', link.characterId),

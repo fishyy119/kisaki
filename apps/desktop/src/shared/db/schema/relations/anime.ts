@@ -5,7 +5,6 @@ import {
   animeEpisodeFiles,
   animeEpisodes,
   animeExtras,
-  animeRelations,
   animeSessions,
   animes
 } from '../tables'
@@ -45,15 +44,3 @@ export const animeSessionsRelations = relations(animeSessions, ({ one }) => ({
   })
 }))
 
-export const animeRelationsRelations = relations(animeRelations, ({ one }) => ({
-  anime: one(animes, {
-    fields: [animeRelations.animeId],
-    references: [animes.id],
-    relationName: 'animeRelationSource'
-  }),
-  relatedAnime: one(animes, {
-    fields: [animeRelations.relatedAnimeId],
-    references: [animes.id],
-    relationName: 'animeRelationTarget'
-  })
-}))

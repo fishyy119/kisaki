@@ -9,17 +9,15 @@ import { IngestPersistHandlers } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
 import { gameExternalIds, gameTagLinks, games, type NewGame, type NewGameTagLink } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import type { GameRelationLink, GameUpdatePlan, UpdateRelationApplyResult } from '../types'
+import type { GameLinkKind, GameUpdatePlan, UpdateLinkApplyResult } from '../types'
+import { applyMediaRelationFacts } from '../../media-relations'
 import {
-  applyCharacterPersonRows,
-  applyGameCharacterRows,
-  applyGameCompanyRows,
-  applyGamePersonRows,
+  applyLinkRows,
   filterNodesByIdentity,
   resolveCharacterNodes,
   resolveCompanyNodes,
   resolvePersonNodes
-} from './relations'
+} from './links'
 
 function replaceGameExternalIds(tx: DbContext, gameId: string, externalIds: ExternalId[]): void {
   tx.delete(gameExternalIds).where(eq(gameExternalIds.gameId, gameId)).run()
@@ -65,13 +63,13 @@ function applyGameRelationGraph(
   gameId: string,
   plan: GameUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): UpdateRelationApplyResult<GameRelationLink> {
+): UpdateLinkApplyResult<GameLinkKind> {
   const relationGraph = plan.relationGraph
   if (!relationGraph) {
-    return { pendingAssets: [], preservedRelationRows: {} }
+    return { pendingAssets: [], preservedLinkRows: {} }
   }
 
-  const { gamePerson, gameCompany, gameCharacter, characterPerson } = plan.relationLinks
+  const { gamePerson, gameCompany, gameCharacter, characterPerson } = plan.links
 
   const personIdentityKeys = new Set<string>()
   if (gamePerson) {
@@ -105,7 +103,7 @@ function applyGameRelationGraph(
   }
 
   const pendingAssets: PendingAssetTask[] = []
-  const preservedRelationRows: Partial<Record<GameRelationLink, number>> = {}
+  const preservedLinkRows: Partial<Record<GameLinkKind, number>> = {}
 
   const personResolution =
     personIdentityKeys.size > 0
@@ -138,32 +136,38 @@ function applyGameRelationGraph(
   pendingAssets.push(...characterResolution.pendingAssets)
 
   if (gamePerson) {
-    preservedRelationRows.gamePerson = applyGamePersonRows({
+    preservedLinkRows.gamePerson = applyLinkRows({
       tx,
-      gameId,
+      kind: 'gamePerson',
+      entityId: gameId,
       links: relationGraph.links.gamePerson,
-      collectionMode: gamePerson,
-      personIdByIdentity: personResolution.idByIdentity
+      relatedIdentityKeyOf: (link) => link.personIdentityKey,
+      relatedIdByIdentity: personResolution.idByIdentity,
+      collectionMode: gamePerson
     })
   }
 
   if (gameCompany) {
-    preservedRelationRows.gameCompany = applyGameCompanyRows({
+    preservedLinkRows.gameCompany = applyLinkRows({
       tx,
-      gameId,
+      kind: 'gameCompany',
+      entityId: gameId,
       links: relationGraph.links.gameCompany,
-      collectionMode: gameCompany,
-      companyIdByIdentity: companyResolution.idByIdentity
+      relatedIdentityKeyOf: (link) => link.companyIdentityKey,
+      relatedIdByIdentity: companyResolution.idByIdentity,
+      collectionMode: gameCompany
     })
   }
 
   if (gameCharacter) {
-    preservedRelationRows.gameCharacter = applyGameCharacterRows({
+    preservedLinkRows.gameCharacter = applyLinkRows({
       tx,
-      gameId,
+      kind: 'gameCharacter',
+      entityId: gameId,
       links: relationGraph.links.gameCharacter,
-      collectionMode: gameCharacter,
-      characterIdByIdentity: characterResolution.idByIdentity
+      relatedIdentityKeyOf: (link) => link.characterIdentityKey,
+      relatedIdByIdentity: characterResolution.idByIdentity,
+      collectionMode: gameCharacter
     })
   }
 
@@ -180,18 +184,20 @@ function applyGameRelationGraph(
 
     let preserved = 0
     for (const [characterId, links] of linksByCharacterId) {
-      preserved += applyCharacterPersonRows({
+      preserved += applyLinkRows({
         tx,
-        characterId,
+        kind: 'characterPerson',
+        entityId: characterId,
         links,
-        collectionMode: characterPerson,
-        personIdByIdentity: personResolution.idByIdentity
+        relatedIdentityKeyOf: (link) => link.personIdentityKey,
+        relatedIdByIdentity: personResolution.idByIdentity,
+        collectionMode: characterPerson
       })
     }
-    preservedRelationRows.characterPerson = preserved
+    preservedLinkRows.characterPerson = preserved
   }
 
-  return { pendingAssets, preservedRelationRows }
+  return { pendingAssets, preservedLinkRows }
 }
 
 export function applyGamePlan(
@@ -199,7 +205,7 @@ export function applyGamePlan(
   gameId: string,
   plan: GameUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): UpdateRelationApplyResult<GameRelationLink> {
+): UpdateLinkApplyResult<GameLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, gameExternalIdLink, [gameId], plan.externalIds)
     replaceGameExternalIds(tx, gameId, plan.externalIds)
@@ -229,5 +235,23 @@ export function applyGamePlan(
   const relations = applyGameRelationGraph(tx, gameId, plan, persistHandlers)
   pendingAssets.push(...relations.pendingAssets)
 
-  return { pendingAssets, preservedRelationRows: relations.preservedRelationRows }
+  let unresolvedRelatedEntries: number | undefined
+  if (plan.relatedEntries) {
+    const relatedResult = applyMediaRelationFacts({
+      tx,
+      mediaType: 'game',
+      entityId: gameId,
+      facts: plan.relatedEntries.facts,
+      collectionMode: plan.relatedEntries.mode
+    })
+    if (relatedResult.unresolvedCount > 0) {
+      unresolvedRelatedEntries = relatedResult.unresolvedCount
+    }
+  }
+
+  return {
+    pendingAssets,
+    preservedLinkRows: relations.preservedLinkRows,
+    ...(unresolvedRelatedEntries !== undefined && { unresolvedRelatedEntries })
+  }
 }

@@ -82,7 +82,7 @@ const SURFACE_LABELS = computed<Record<AnimeUpdateSurface, string>>(() => ({
   description: m.value.library.fields.description,
   format: m.value.library.fields.format,
   totalEpisodes: m.value.library.fields.totalEpisodes,
-  relatedSites: m.value.library.fields.relatedSites,
+  externalSites: m.value.library.fields.externalSites,
   externalIds: m.value.library.fields.externalIds,
   tags: m.value.library.fields.tags,
   episodes: m.value.library.fields.episodes,
@@ -90,6 +90,7 @@ const SURFACE_LABELS = computed<Record<AnimeUpdateSurface, string>>(() => ({
   company: m.value.library.entities.company,
   character: m.value.library.entities.character,
   characterPerson: m.value.library.fields.characterPersons,
+  relatedEntries: m.value.library.fields.relatedEntries,
   covers: m.value.library.fields.covers,
   backdrops: m.value.library.fields.backdrops,
   logos: m.value.library.fields.logos

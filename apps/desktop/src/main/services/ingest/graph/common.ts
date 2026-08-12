@@ -1,4 +1,4 @@
-import type { RelatedSite } from '@shared/db'
+import type { ExternalSite } from '@shared/db'
 import {
   buildEntityCanonicalIdentityKey,
   buildEntityExternalIdKeys,
@@ -56,7 +56,7 @@ export function firstNonEmpty(...values: Array<string | undefined | null>): stri
   return undefined
 }
 
-function toRelatedSiteKey(url: string): string {
+function toExternalSiteKey(url: string): string {
   return normalizeKeyText(url)
 }
 
@@ -67,25 +67,25 @@ export function mergeExternalIds(
   return normalizeExternalIds([...(existing ?? []), ...(incoming ?? [])])
 }
 
-function normalizeRelatedSite(site: RelatedSite): RelatedSite | null {
+function normalizeExternalSite(site: ExternalSite): ExternalSite | null {
   const label = normalizeOptionalString(site.label)
   const url = normalizeOptionalString(site.url)
   if (!url) return null
   return { label: label ?? url, url }
 }
 
-export function mergeRelatedSites(
-  existing: RelatedSite[] | undefined,
-  incoming: RelatedSite[] | undefined
-): RelatedSite[] {
+export function mergeExternalSites(
+  existing: ExternalSite[] | undefined,
+  incoming: ExternalSite[] | undefined
+): ExternalSite[] {
   const merged = [...(existing ?? []), ...(incoming ?? [])]
-  const byKey = new Map<string, RelatedSite>()
+  const byKey = new Map<string, ExternalSite>()
 
   for (const site of merged) {
-    const normalized = normalizeRelatedSite(site)
+    const normalized = normalizeExternalSite(site)
     if (!normalized) continue
 
-    const key = toRelatedSiteKey(normalized.url)
+    const key = toExternalSiteKey(normalized.url)
     const current = byKey.get(key)
     if (!current) {
       byKey.set(key, normalized)
@@ -179,7 +179,7 @@ export function normalizeGameCore(raw: Partial<CoreGameMetadata>): CoreGameMetad
     originalName: normalizeOptionalString(raw.originalName),
     releaseDate: raw.releaseDate,
     description: normalizeOptionalString(raw.description),
-    relatedSites: mergeRelatedSites(undefined, raw.relatedSites),
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
     externalIds: mergeExternalIds(undefined, raw.externalIds),
     tags: mergeTags(undefined, raw.tags)
   }
@@ -196,7 +196,7 @@ export function normalizeAnimeCore(raw: Partial<CoreAnimeMetadata>): CoreAnimeMe
     description: normalizeOptionalString(raw.description),
     format: raw.format,
     totalEpisodes: raw.totalEpisodes,
-    relatedSites: mergeRelatedSites(undefined, raw.relatedSites),
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
     externalIds: mergeExternalIds(undefined, raw.externalIds),
     tags: mergeTags(undefined, raw.tags)
   }
@@ -213,7 +213,7 @@ export function normalizePersonCore(raw: Partial<CorePersonMetadata>): CorePerso
     deathDate: raw.deathDate,
     gender: raw.gender,
     description: normalizeOptionalString(raw.description),
-    relatedSites: mergeRelatedSites(undefined, raw.relatedSites),
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
     externalIds: mergeExternalIds(undefined, raw.externalIds),
     tags: mergeTags(undefined, raw.tags)
   }
@@ -230,7 +230,7 @@ export function normalizeCompanyCore(
     originalName: normalizeOptionalString(raw.originalName),
     foundedDate: raw.foundedDate,
     description: normalizeOptionalString(raw.description),
-    relatedSites: mergeRelatedSites(undefined, raw.relatedSites),
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
     externalIds: mergeExternalIds(undefined, raw.externalIds),
     tags: mergeTags(undefined, raw.tags)
   }
@@ -256,7 +256,7 @@ export function normalizeCharacterCore(
     hips: raw.hips,
     cup: raw.cup,
     description: normalizeOptionalString(raw.description),
-    relatedSites: mergeRelatedSites(undefined, raw.relatedSites),
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
     externalIds: mergeExternalIds(undefined, raw.externalIds),
     tags: mergeTags(undefined, raw.tags)
   }
@@ -327,7 +327,7 @@ function mergePersonCore(
     deathDate: existing.deathDate ?? incoming.deathDate,
     gender: existing.gender ?? incoming.gender,
     description: firstNonEmpty(existing.description, incoming.description),
-    relatedSites: mergeRelatedSites(existing.relatedSites, incoming.relatedSites),
+    externalSites: mergeExternalSites(existing.externalSites, incoming.externalSites),
     externalIds: mergeExternalIds(existing.externalIds, incoming.externalIds),
     tags: mergeTags(existing.tags, incoming.tags)
   }
@@ -342,7 +342,7 @@ function mergeCompanyCore(
     originalName: firstNonEmpty(existing.originalName, incoming.originalName),
     foundedDate: existing.foundedDate ?? incoming.foundedDate,
     description: firstNonEmpty(existing.description, incoming.description),
-    relatedSites: mergeRelatedSites(existing.relatedSites, incoming.relatedSites),
+    externalSites: mergeExternalSites(existing.externalSites, incoming.externalSites),
     externalIds: mergeExternalIds(existing.externalIds, incoming.externalIds),
     tags: mergeTags(existing.tags, incoming.tags)
   }
@@ -366,7 +366,7 @@ function mergeCharacterCore(
     hips: existing.hips ?? incoming.hips,
     cup: existing.cup ?? incoming.cup,
     description: firstNonEmpty(existing.description, incoming.description),
-    relatedSites: mergeRelatedSites(existing.relatedSites, incoming.relatedSites),
+    externalSites: mergeExternalSites(existing.externalSites, incoming.externalSites),
     externalIds: mergeExternalIds(existing.externalIds, incoming.externalIds),
     tags: mergeTags(existing.tags, incoming.tags)
   }

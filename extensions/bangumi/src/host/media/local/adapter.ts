@@ -6,7 +6,7 @@ import {
   type LibraryEntityChangeSummary,
   type LibraryEntityType,
   type LibraryMediaStatus,
-  type LibraryRelationKind,
+  type LibraryLinkKind,
   type ScraperMediaType,
   LIBRARY_MEDIA_STATUSES
 } from '@kisaki3/extension-sdk'
@@ -67,8 +67,8 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   abstract readonly localMediaType: ScraperMediaType
 
   protected abstract readonly entityType: LibraryEntityType
-  protected abstract readonly tagRelationKind: LibraryRelationKind
-  protected abstract readonly collectionRelationKind: LibraryRelationKind
+  protected abstract readonly tagLinkKind: LibraryLinkKind
+  protected abstract readonly collectionLinkKind: LibraryLinkKind
 
   constructor(private readonly hooks: HooksRegistrar) {}
 
@@ -165,11 +165,11 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   async listTagNames(localId: string): Promise<ReadonlySet<string>> {
-    const relations = await kisaki.library.relations.list({
+    const links = await kisaki.library.links.list({
       entity: { entityType: this.entityType, id: localId },
-      kinds: [this.tagRelationKind]
+      kinds: [this.tagLinkKind]
     })
-    const tagIds = [...new Set(relations.map((relation) => relation.to.id))]
+    const tagIds = [...new Set(links.map((link) => link.to.id))]
     if (tagIds.length === 0) {
       return new Set()
     }
@@ -180,16 +180,16 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
 
   async ensureTag(localId: string, tagName: string): Promise<void> {
     const tag = await ensureTag(tagName)
-    const relations = await kisaki.library.relations.list({
+    const links = await kisaki.library.links.list({
       entity: { entityType: this.entityType, id: localId },
       relatedEntity: { entityType: 'tag', id: tag.id },
-      kinds: [this.tagRelationKind]
+      kinds: [this.tagLinkKind]
     })
-    if (relations.length > 0) {
+    if (links.length > 0) {
       return
     }
 
-    await this.createTagRelation(localId, tag.id)
+    await this.createTagLink(localId, tag.id)
   }
 
   async listCollections(): Promise<readonly LocalCollectionSummary[]> {
@@ -216,7 +216,7 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   async hasCollectionMembership(localId: string, target: LocalCollectionTarget): Promise<boolean> {
-    return target.id ? this.hasCollectionRelation(localId, target.id) : false
+    return target.id ? this.hasCollectionLink(localId, target.id) : false
   }
 
   async ensureInCollection(localId: string, target: LocalCollectionTarget): Promise<void> {
@@ -229,11 +229,11 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
       collectionId = collection.id
     }
 
-    if (await this.hasCollectionRelation(localId, collectionId)) {
+    if (await this.hasCollectionLink(localId, collectionId)) {
       return
     }
 
-    await this.createCollectionRelation(collectionId, localId)
+    await this.createCollectionLink(collectionId, localId)
   }
 
   abstract addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult>
@@ -243,19 +243,16 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   ): Promise<readonly LocalMediaEntity[]>
   protected abstract getEntity(localId: string): Promise<LocalMediaEntity | null>
   protected abstract updateEntity(localId: string, patch: LocalMediaEntityPatch): Promise<void>
-  protected abstract createTagRelation(localId: string, tagId: string): Promise<void>
-  protected abstract createCollectionRelation(
-    collectionId: string,
-    localId: string
-  ): Promise<void>
+  protected abstract createTagLink(localId: string, tagId: string): Promise<void>
+  protected abstract createCollectionLink(collectionId: string, localId: string): Promise<void>
 
-  private async hasCollectionRelation(localId: string, collectionId: string): Promise<boolean> {
-    const relations = await kisaki.library.relations.list({
+  private async hasCollectionLink(localId: string, collectionId: string): Promise<boolean> {
+    const links = await kisaki.library.links.list({
       entity: { entityType: this.entityType, id: localId },
       relatedEntity: { entityType: 'collection', id: collectionId },
-      kinds: [this.collectionRelationKind]
+      kinds: [this.collectionLinkKind]
     })
-    return relations.length > 0
+    return links.length > 0
   }
 
   private toLocalItem(entity: LocalMediaEntity): LocalMediaItem {

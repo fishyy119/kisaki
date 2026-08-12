@@ -10,6 +10,7 @@ import type {
   ScrapedAnimeCharacterFact,
   ScrapedAnimeCompanyFact,
   ScrapedAnimePersonFact,
+  ScrapedRelatedEntryFact,
   ScraperCapability,
   ScraperLookup
 } from '@shared/scraper'
@@ -28,6 +29,7 @@ export interface AnimeSessionResultMap {
   characters: ScrapedAnimeCharacterFact[]
   persons: ScrapedAnimePersonFact[]
   companies: ScrapedAnimeCompanyFact[]
+  relatedEntries: ScrapedRelatedEntryFact[]
   covers: string[]
   backdrops: string[]
   logos: string[]

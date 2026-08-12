@@ -6,9 +6,10 @@
  */
 
 import type { AnimeFormat, BloodType, CupSize, Gender, Status } from './db/contracts/enums'
-import type { DynamicCollectionConfig, PartialDate, RelatedSite } from './db/contracts/json'
+import type { DynamicCollectionConfig, PartialDate, ExternalSite } from './db/contracts/json'
+import type { MediaRelationType } from './db/contracts/media-relations'
 import type { ExternalId } from './identity'
-import type { AllEntityType } from './common'
+import type { AllEntityType, MediaType } from './common'
 
 export type LibraryEntityTopic =
   | 'game'
@@ -56,10 +57,21 @@ export interface LibraryMediaActivitySnapshot {
   lastActiveAt?: number | null
 }
 
-export interface LibraryMediaRelationSnapshot {
+export interface LibraryMediaLinkSnapshot {
   personLinkIds: string[]
   companyLinkIds: string[]
   characterLinkIds: string[]
+}
+
+/** One outgoing entry-to-entry edge as seen from the changed entity. */
+export interface LibraryMediaRelationEdge {
+  toType: MediaType
+  toId: string
+  type: MediaRelationType
+}
+
+export interface LibraryMediaRelationsSnapshot {
+  relations: LibraryMediaRelationEdge[]
 }
 
 export type LibraryStatusChange = {
@@ -106,7 +118,7 @@ export interface LibraryPersonCoreSnapshot {
   birthDate?: PartialDate | null
   deathDate?: PartialDate | null
   gender?: Gender | null
-  relatedSites?: RelatedSite[]
+  externalSites?: ExternalSite[]
 }
 
 export interface LibraryCompanyCoreSnapshot {
@@ -117,7 +129,7 @@ export interface LibraryCompanyCoreSnapshot {
   isFavorite?: boolean
   isNsfw?: boolean
   foundedDate?: PartialDate | null
-  relatedSites?: RelatedSite[]
+  externalSites?: ExternalSite[]
 }
 
 export interface LibraryCharacterCoreSnapshot {
@@ -137,7 +149,7 @@ export interface LibraryCharacterCoreSnapshot {
   hips?: number | null
   cup?: CupSize | null
   age?: number | null
-  relatedSites?: RelatedSite[]
+  externalSites?: ExternalSite[]
 }
 
 export interface LibraryCollectionCoreSnapshot {
@@ -217,6 +229,13 @@ export type LibraryAssetChange<TSnapshot extends object> = {
   fields?: string[]
 }
 
+export type LibraryLinksChange<TSnapshot extends object> = {
+  facet: 'links'
+  before: TSnapshot
+  after: TSnapshot
+  fields?: string[]
+}
+
 export type LibraryRelationsChange<TSnapshot extends object> = {
   facet: 'relations'
   before: TSnapshot
@@ -247,7 +266,8 @@ export type LibraryGameChange =
   | LibraryTagsChange
   | LibraryCollectionsChange
   | LibraryAssetChange<LibraryGameAssetSnapshot>
-  | LibraryRelationsChange<LibraryMediaRelationSnapshot>
+  | LibraryLinksChange<LibraryMediaLinkSnapshot>
+  | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
 
 export type LibraryAnimeChange =
   | LibraryCoreChange<LibraryAnimeCoreSnapshot>
@@ -258,7 +278,8 @@ export type LibraryAnimeChange =
   | LibraryTagsChange
   | LibraryCollectionsChange
   | LibraryAssetChange<LibraryAnimeAssetSnapshot>
-  | LibraryRelationsChange<LibraryMediaRelationSnapshot>
+  | LibraryLinksChange<LibraryMediaLinkSnapshot>
+  | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
   | LibraryEpisodesChange
 
 export type LibraryPersonChange =

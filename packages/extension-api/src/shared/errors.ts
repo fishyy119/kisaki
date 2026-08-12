@@ -183,7 +183,7 @@ export function normalizeExtensionError(
       return createCancellationError('The host capability request was cancelled.')
     }
 
-    if (isTimeoutLikeError(error)) {
+    if (code === 'timeout' || isTimeoutLikeError(error)) {
       return createTimeoutError(options.timeoutMessage ?? 'The host capability request timed out.')
     }
   }

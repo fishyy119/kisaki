@@ -30,6 +30,7 @@ import type {
   IngestGamePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
+import { applyMediaRelationFacts } from '../media-relations'
 import {
   requireOwnerIdentity,
   requirePersistedId,
@@ -60,10 +61,10 @@ function resolveGamePersonLinks(params: {
       requireOwnerIdentity(link.gameIdentityKey, gameIdentityKey, 'game')
       const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
       return {
-        key: `${personId}:${link.type}`,
+        key: `${personId}:${link.role}`,
         value: {
           personId,
-          type: link.type,
+          role: link.role,
           isSpoiler: link.isSpoiler,
           note: link.note
         }
@@ -72,7 +73,7 @@ function resolveGamePersonLinks(params: {
     buildRow: (link, orderInGame, counters) => ({
       gameId,
       personId: link.personId,
-      type: link.type,
+      role: link.role,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInGame,
@@ -95,10 +96,10 @@ function resolveGameCompanyLinks(params: {
       requireOwnerIdentity(link.gameIdentityKey, gameIdentityKey, 'game')
       const companyId = requirePersistedId(companyIdByIdentity, link.companyIdentityKey, 'company')
       return {
-        key: `${companyId}:${link.type}`,
+        key: `${companyId}:${link.role}`,
         value: {
           companyId,
-          type: link.type,
+          role: link.role,
           isSpoiler: link.isSpoiler,
           note: link.note
         }
@@ -107,7 +108,7 @@ function resolveGameCompanyLinks(params: {
     buildRow: (link, orderInGame, counters) => ({
       gameId,
       companyId: link.companyId,
-      type: link.type,
+      role: link.role,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInGame,
@@ -134,10 +135,10 @@ function resolveGameCharacterLinks(params: {
         'character'
       )
       return {
-        key: `${characterId}:${link.type}`,
+        key: `${characterId}:${link.role}`,
         value: {
           characterId,
-          type: link.type,
+          role: link.role,
           isSpoiler: link.isSpoiler,
           note: link.note
         }
@@ -146,7 +147,7 @@ function resolveGameCharacterLinks(params: {
     buildRow: (link, orderInGame, counters) => ({
       gameId,
       characterId: link.characterId,
-      type: link.type,
+      role: link.role,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInGame,
@@ -310,10 +311,28 @@ export class GameIngestPersistHandler {
       tx.insert(characterPersonLinks).values(link).onConflictDoNothing().run()
     }
 
+    const warnings: IngestWarning[] = []
+    if (graph.relatedEntries?.length) {
+      const related = applyMediaRelationFacts({
+        tx,
+        mediaType: 'game',
+        entityId: gameId,
+        facts: graph.relatedEntries,
+        collectionMode: 'replace'
+      })
+      if (related.unresolvedCount > 0) {
+        warnings.push({
+          code: 'related-entry-not-in-library',
+          message: `Skipped ${related.unresolvedCount} related entries because their targets are not in the library.`
+        })
+      }
+    }
+
     return {
       gameId,
       isNew: true,
-      pendingAssets
+      pendingAssets,
+      ...(warnings.length > 0 && { warnings })
     }
   }
 
@@ -342,7 +361,7 @@ export class GameIngestPersistHandler {
       originalName: gameCore.originalName,
       releaseDate: gameCore.releaseDate,
       description: gameCore.description,
-      relatedSites: gameCore.relatedSites || [],
+      externalSites: gameCore.externalSites || [],
       gameDirPath: options?.gameDirPath,
       launcherPath: options?.gameFilePath
     }
@@ -478,8 +497,9 @@ export class GameIngestPersistHandler {
     if (result.existingReason) {
       publicResult.existingReason = result.existingReason
     }
-    if (warnings.length > 0) {
-      publicResult.warnings = warnings
+    const combinedWarnings = [...(result.warnings ?? []), ...warnings]
+    if (combinedWarnings.length > 0) {
+      publicResult.warnings = combinedWarnings
     }
     return publicResult
   }

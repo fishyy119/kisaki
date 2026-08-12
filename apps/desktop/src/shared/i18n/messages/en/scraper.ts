@@ -24,6 +24,10 @@ export const scraper = {
     videoGame: {
       name: 'Video games',
       description: 'A general-purpose preset for video games'
+    },
+    anime: {
+      name: 'Anime',
+      description: 'Chinese anime metadata backed by Bangumi'
     }
   },
 
@@ -64,6 +68,7 @@ export const scraper = {
       characters: 'Characters',
       persons: 'People',
       companies: 'Companies',
+      relatedEntries: 'Related entries',
       covers: 'Covers',
       backdrops: 'Backdrops',
       logos: 'Logos',

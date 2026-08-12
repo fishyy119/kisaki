@@ -10,6 +10,7 @@ import type {
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGamePersonFact,
+  ScrapedRelatedEntryFact,
   ScraperCapability,
   ScraperLookup
 } from '@shared/scraper'
@@ -27,6 +28,7 @@ export interface GameSessionResultMap {
   characters: ScrapedGameCharacterFact[]
   persons: ScrapedGamePersonFact[]
   companies: ScrapedGameCompanyFact[]
+  relatedEntries: ScrapedRelatedEntryFact[]
   covers: string[]
   backdrops: string[]
   logos: string[]

@@ -1,15 +1,15 @@
 /**
- * Relation link topology for metadata updates.
+ * Link-table topology for metadata updates.
  *
  * Each link table is declared once with the surface that owns it and the fact
  * sources that feed it. Writing a table needs its surface answered; clearing it
  * needs every source answered, so `replace` degrades to `merge` when the scrape
  * could not speak for one of them.
  *
- * Link keys come from the graph builder's output, so a new link table cannot be
- * added without declaring its surface and sources here. Adding another source to
- * an existing table is not compiler-checked: keep `sources` in step with the
- * graph builders in `../graph`.
+ * Link kinds come from the graph builder's output, so a new link table cannot
+ * be added without declaring its surface and sources here. Adding another
+ * source to an existing table is not compiler-checked: keep `sources` in step
+ * with the graph builders in `../graph`.
  */
 
 import type { IngestWarning } from '@shared/ingest'
@@ -24,14 +24,14 @@ import type {
   ScrapedGameRelationFacts
 } from '@shared/scraper'
 import type {
-  AnimeRelationLink,
-  CharacterRelationLink,
+  AnimeLinkKind,
+  CharacterLinkKind,
   CollectionUpdateMode,
-  GameRelationLink,
+  GameLinkKind,
   UpdateIncomingRelationAvailability
 } from './types'
 
-interface RelationLinkSpec<TSurface extends string, TFactSource extends string> {
+interface LinkTopologySpec<TSurface extends string, TFactSource extends string> {
   /** Update surface that selects this link table. */
   surface: TSurface
   /** Stable English noun used when reporting a downgraded replace. */
@@ -58,9 +58,9 @@ const GAME_FACT_SOURCE_ANSWERED: Record<
       facts.gameCharacter.every((fact) => fact.persons !== undefined))
 }
 
-export const GAME_RELATION_LINKS: Record<
-  GameRelationLink,
-  RelationLinkSpec<GameUpdateRelationSurface, GameRelationFactSource>
+export const GAME_LINK_TOPOLOGY: Record<
+  GameLinkKind,
+  LinkTopologySpec<GameUpdateRelationSurface, GameRelationFactSource>
 > = {
   gamePerson: {
     surface: 'person',
@@ -102,9 +102,9 @@ const ANIME_FACT_SOURCE_ANSWERED: Record<
       facts.animeCharacter.every((fact) => fact.persons !== undefined))
 }
 
-export const ANIME_RELATION_LINKS: Record<
-  AnimeRelationLink,
-  RelationLinkSpec<AnimeUpdateRelationSurface, AnimeRelationFactSource>
+export const ANIME_LINK_TOPOLOGY: Record<
+  AnimeLinkKind,
+  LinkTopologySpec<AnimeUpdateRelationSurface, AnimeRelationFactSource>
 > = {
   // Unlike game, cast facts do not feed anime person links: voice actors reach
   // the anime only through their character, and anime-person rows carry staff
@@ -140,9 +140,9 @@ const CHARACTER_FACT_SOURCE_ANSWERED: Record<
   cast: (facts) => facts.characterPerson !== undefined
 }
 
-export const CHARACTER_RELATION_LINKS: Record<
-  CharacterRelationLink,
-  RelationLinkSpec<CharacterUpdateRelationSurface, CharacterRelationFactSource>
+export const CHARACTER_LINK_TOPOLOGY: Record<
+  CharacterLinkKind,
+  LinkTopologySpec<CharacterUpdateRelationSurface, CharacterRelationFactSource>
 > = {
   characterPerson: {
     surface: 'person',
@@ -152,48 +152,44 @@ export const CHARACTER_RELATION_LINKS: Record<
 }
 
 /** Collects the link tables whose every fact source answered. */
-function buildCompleteLinks<
+function collectCompleteLinks<
   TSurface extends string,
   TFactSource extends string,
-  TRelationLink extends string,
+  TLinkKind extends string,
   TFacts
 >(
-  links: Record<TRelationLink, RelationLinkSpec<TSurface, TFactSource>>,
+  topology: Record<TLinkKind, LinkTopologySpec<TSurface, TFactSource>>,
   answered: Record<TFactSource, (facts: TFacts) => boolean>,
   facts: TFacts
-): Set<TRelationLink> {
-  const complete = new Set<TRelationLink>()
+): Set<TLinkKind> {
+  const complete = new Set<TLinkKind>()
 
-  for (const link of Object.keys(links) as TRelationLink[]) {
-    if (links[link].sources.every((source) => answered[source](facts))) complete.add(link)
+  for (const kind of Object.keys(topology) as TLinkKind[]) {
+    if (topology[kind].sources.every((source) => answered[source](facts))) complete.add(kind)
   }
 
   return complete
 }
 
-export function buildCompleteGameRelationLinks(
-  facts: ScrapedGameRelationFacts
-): Set<GameRelationLink> {
-  return buildCompleteLinks(GAME_RELATION_LINKS, GAME_FACT_SOURCE_ANSWERED, facts)
+export function buildCompleteGameLinks(facts: ScrapedGameRelationFacts): Set<GameLinkKind> {
+  return collectCompleteLinks(GAME_LINK_TOPOLOGY, GAME_FACT_SOURCE_ANSWERED, facts)
 }
 
-export function buildCompleteAnimeRelationLinks(
-  facts: ScrapedAnimeRelationFacts
-): Set<AnimeRelationLink> {
-  return buildCompleteLinks(ANIME_RELATION_LINKS, ANIME_FACT_SOURCE_ANSWERED, facts)
+export function buildCompleteAnimeLinks(facts: ScrapedAnimeRelationFacts): Set<AnimeLinkKind> {
+  return collectCompleteLinks(ANIME_LINK_TOPOLOGY, ANIME_FACT_SOURCE_ANSWERED, facts)
 }
 
-export function buildCompleteCharacterRelationLinks(
+export function buildCompleteCharacterLinks(
   facts: ScrapedCharacterRelationFacts
-): Set<CharacterRelationLink> {
-  return buildCompleteLinks(CHARACTER_RELATION_LINKS, CHARACTER_FACT_SOURCE_ANSWERED, facts)
+): Set<CharacterLinkKind> {
+  return collectCompleteLinks(CHARACTER_LINK_TOPOLOGY, CHARACTER_FACT_SOURCE_ANSWERED, facts)
 }
 
-export interface ResolvedRelationLinks<TRelationLink extends string> {
+export interface ResolvedLinkWrites<TLinkKind extends string> {
   /** Link tables to write, each with the mode resolved for that table. */
-  links: Partial<Record<TRelationLink, CollectionUpdateMode>>
+  links: Partial<Record<TLinkKind, CollectionUpdateMode>>
   /** Link tables where the requested `replace` was downgraded to `merge`. */
-  degraded: TRelationLink[]
+  degraded: TLinkKind[]
 }
 
 /**
@@ -204,28 +200,28 @@ export interface ResolvedRelationLinks<TRelationLink extends string> {
  * merge, because deleting rows the scrape was never asked about would drop data
  * no source contradicted.
  */
-export function resolveRelationLinks<
+export function resolveLinkWrites<
   TSurface extends string,
   TFactSource extends string,
-  TRelationLink extends string
+  TLinkKind extends string
 >(params: {
-  links: Record<TRelationLink, RelationLinkSpec<TSurface, TFactSource>>
+  topology: Record<TLinkKind, LinkTopologySpec<TSurface, TFactSource>>
   selectedSurfaces: readonly TSurface[]
-  availability: UpdateIncomingRelationAvailability<TSurface, TRelationLink>
+  availability: UpdateIncomingRelationAvailability<TSurface, TLinkKind>
   mode: CollectionUpdateMode
-}): ResolvedRelationLinks<TRelationLink> {
-  const { links, selectedSurfaces, availability, mode } = params
-  const resolved: Partial<Record<TRelationLink, CollectionUpdateMode>> = {}
-  const degraded: TRelationLink[] = []
+}): ResolvedLinkWrites<TLinkKind> {
+  const { topology, selectedSurfaces, availability, mode } = params
+  const resolved: Partial<Record<TLinkKind, CollectionUpdateMode>> = {}
+  const degraded: TLinkKind[] = []
 
-  for (const link of Object.keys(links) as TRelationLink[]) {
-    const { surface } = links[link]
+  for (const kind of Object.keys(topology) as TLinkKind[]) {
+    const { surface } = topology[kind]
     if (!selectedSurfaces.includes(surface)) continue
     if (!availability.surfaces.has(surface)) continue
 
-    const downgraded = mode === 'replace' && !availability.completeRelationLinks.has(link)
-    resolved[link] = downgraded ? 'merge' : mode
-    if (downgraded) degraded.push(link)
+    const downgraded = mode === 'replace' && !availability.completeLinks.has(kind)
+    resolved[kind] = downgraded ? 'merge' : mode
+    if (downgraded) degraded.push(kind)
   }
 
   return { links: resolved, degraded }
@@ -236,25 +232,25 @@ export function resolveRelationLinks<
  *
  * A downgrade that kept nothing is invisible to the user, so it stays silent.
  */
-export function createRelationDegradeWarnings<
+export function createLinkDegradeWarnings<
   TSurface extends string,
   TFactSource extends string,
-  TRelationLink extends string
+  TLinkKind extends string
 >(params: {
-  links: Record<TRelationLink, RelationLinkSpec<TSurface, TFactSource>>
-  degraded: readonly TRelationLink[]
-  preservedRows: Partial<Record<TRelationLink, number>>
+  topology: Record<TLinkKind, LinkTopologySpec<TSurface, TFactSource>>
+  degraded: readonly TLinkKind[]
+  preservedRows: Partial<Record<TLinkKind, number>>
 }): IngestWarning[] {
-  const { links, degraded, preservedRows } = params
+  const { topology, degraded, preservedRows } = params
 
-  return degraded.flatMap((link) => {
-    const preserved = preservedRows[link] ?? 0
+  return degraded.flatMap((kind) => {
+    const preserved = preservedRows[kind] ?? 0
     if (preserved === 0) return []
 
     return [
       {
         code: 'collection-replace-degraded' as const,
-        message: `Replace fell back to merge for ${links[link].label}: kept ${preserved} stored rows because the scrape did not answer every source feeding them.`
+        message: `Replace fell back to merge for ${topology[kind].label}: kept ${preserved} stored rows because the scrape did not answer every source feeding them.`
       }
     ]
   })

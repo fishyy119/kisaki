@@ -7,7 +7,6 @@ import {
   animeExternalIds,
   animeExtras,
   animePersonLinks,
-  animeRelations,
   animeSessions,
   animeTagLinks,
   animes,
@@ -70,9 +69,7 @@ export const animesRelations = relations(animes, ({ many }) => ({
   animeCharacterLinks: many(animeCharacterLinks),
   collectionAnimeLinks: many(collectionAnimeLinks),
   animeTagLinks: many(animeTagLinks),
-  externalIds: many(animeExternalIds),
-  relations: many(animeRelations, { relationName: 'animeRelationSource' }),
-  relatedBy: many(animeRelations, { relationName: 'animeRelationTarget' })
+  externalIds: many(animeExternalIds)
 }))
 
 export const personsRelations = relations(persons, ({ many }) => ({

@@ -11,7 +11,7 @@ export const companyEntityProjection = {
     is_favorite: 'isFavorite',
     is_nsfw: 'isNsfw',
     founded_date: 'foundedDate',
-    related_sites: 'relatedSites'
+    external_sites: 'externalSites'
   },
   assetFields: {
     logo_file: 'logoFile'

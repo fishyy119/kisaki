@@ -7,7 +7,7 @@ export { default as PersonMetadataUpdateFormDialog } from './metadata-update-for
 export { default as PersonBatchMetadataUpdateFormDialog } from './metadata-update-form-dialog/batch-metadata-update-form-dialog.vue'
 export { PersonExternalIdsFormDialog } from './external-ids-form-dialog'
 export { PersonMediaFormDialog } from './media-form-dialog'
-export { PersonRelatedSitesFormDialog } from './related-sites-form-dialog'
+export { PersonExternalSitesFormDialog } from './external-sites-form-dialog'
 export { PersonTagsFormDialog } from './tags-form-dialog'
 export { PersonGamesFormDialog } from './games-form-dialog'
 export { PersonCharactersFormDialog } from './characters-form-dialog'

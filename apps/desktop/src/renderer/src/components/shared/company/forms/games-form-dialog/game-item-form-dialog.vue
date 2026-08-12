@@ -27,13 +27,13 @@ import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { GameSelect } from '@renderer/components/shared/game'
 import { db } from '@renderer/core/db'
-import type { GameCompanyType } from '@shared/db'
+import type { GameCompanyRole } from '@shared/db'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const COMPANY_TYPE_OPTIONS = computed<{ value: GameCompanyType; label: string }[]>(() => [
+const COMPANY_ROLE_OPTIONS = computed<{ value: GameCompanyRole; label: string }[]>(() => [
   { value: 'developer', label: m.value.library.roles.gameCompany.developer },
   { value: 'publisher', label: m.value.library.roles.gameCompany.publisher },
   { value: 'distributor', label: m.value.library.roles.gameCompany.distributor },
@@ -45,7 +45,7 @@ interface GameLinkItem {
   gameId: string
   gameName: string
   gameCover: string | null
-  type: GameCompanyType
+  role: GameCompanyRole
   note: string
   isSpoiler: boolean
   orderInCompany: number
@@ -69,14 +69,14 @@ const emit = defineEmits<{
 // Form state
 type FormData = Pick<
   GameLinkItem,
-  'gameId' | 'gameName' | 'gameCover' | 'type' | 'note' | 'isSpoiler'
+  'gameId' | 'gameName' | 'gameCover' | 'role' | 'note' | 'isSpoiler'
 >
 
 const formData = ref<FormData>({
   gameId: '',
   gameName: '',
   gameCover: null,
-  type: 'developer',
+  role: 'developer',
   note: '',
   isSpoiler: false
 })
@@ -89,7 +89,7 @@ watch(
       formData.value.gameId = props.initialData?.gameId ?? ''
       formData.value.gameName = props.initialData?.gameName ?? ''
       formData.value.gameCover = props.initialData?.gameCover ?? null
-      formData.value.type = props.initialData?.type ?? 'developer'
+      formData.value.role = props.initialData?.role ?? 'developer'
       formData.value.note = props.initialData?.note ?? ''
       formData.value.isSpoiler = props.initialData?.isSpoiler ?? false
     }
@@ -134,7 +134,7 @@ function handleSubmit() {
     gameId: formData.value.gameId,
     gameName: formData.value.gameName,
     gameCover: formData.value.gameCover,
-    type: formData.value.type,
+    role: formData.value.role,
     note: formData.value.note.trim(),
     isSpoiler: formData.value.isSpoiler,
     orderInCompany: props.initialData?.orderInCompany ?? 0,
@@ -176,13 +176,13 @@ function handleCancel() {
             <Field>
               <FieldLabel>{{ m.library.forms.relationTypeLabel }}</FieldLabel>
               <FieldContent>
-                <Select v-model="formData.type">
+                <Select v-model="formData.role">
                   <SelectTrigger class="w-full">
                     <SelectValue :placeholder="m.library.forms.selectTypePlaceholder" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="option in COMPANY_TYPE_OPTIONS"
+                      v-for="option in COMPANY_ROLE_OPTIONS"
                       :key="option.value"
                       :value="option.value"
                     >

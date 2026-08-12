@@ -51,11 +51,15 @@ export class ExtensionNetworkCapabilityProvider {
       const timeoutMs = readOptionalTimeout(input.timeoutMs, 'network.request.timeoutMs')
       const headers = normalizeHeaders(input.headers, 'network.request.headers') ?? {}
       const body = normalizeRequestBody(input.body, headers)
+      // `network.request` proxies exactly one HTTP exchange: retry policy
+      // (attempt counts, backoff, Retry-After) belongs to the extension, so
+      // the host client must not layer its own retries underneath it.
       const response = await this.options.network.request.fetch(url, {
         method,
         headers: Object.keys(headers).length > 0 ? headers : undefined,
         body,
         timeout: timeoutMs,
+        retries: 0,
         signal
       } as FetchOptions)
 

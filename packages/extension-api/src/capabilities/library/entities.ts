@@ -1,4 +1,4 @@
-import type { ExternalId, PartialDate, RelatedSite, JsonObject } from '../../shared'
+import type { ExternalId, PartialDate, ExternalSite, JsonObject } from '../../shared'
 import type {
   LibraryAnimeEpisodeType,
   LibraryAnimeFormat,
@@ -150,7 +150,7 @@ export interface LibraryRankedEntityBase extends LibraryNamedEntityBase {
   score?: number | null
   isFavorite: boolean
   isNsfw: boolean
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface LibraryGame extends LibraryRankedEntityBase {
@@ -297,7 +297,7 @@ export interface LibraryRankedEntityInputBase extends LibraryNamedEntityInputBas
   score?: number | null
   isFavorite?: boolean
   isNsfw?: boolean
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {

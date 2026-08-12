@@ -13,7 +13,7 @@ import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useCompany } from '@renderer/composables'
 import {
   CompanyDescriptionFormDialog,
-  CompanyRelatedSitesFormDialog,
+  CompanyExternalSitesFormDialog,
   CompanyTagsFormDialog,
   CompanyGamesFormDialog
 } from '../../forms'
@@ -22,11 +22,11 @@ import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 
 const { m } = useI18n()
 
-const GAME_COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+const GAME_COMPANY_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gameCompany
 )
 
-const ANIME_COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+const ANIME_COMPANY_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.animeCompany
 )
 
@@ -49,8 +49,8 @@ const gameDialogOpen = computed({
   }
 })
 
-const hasRelatedSites = computed(
-  () => company.value?.relatedSites && company.value.relatedSites.length > 0
+const hasExternalSites = computed(
+  () => company.value?.externalSites && company.value.externalSites.length > 0
 )
 const hasTags = computed(() => tags.value && tags.value.length > 0)
 
@@ -99,7 +99,7 @@ function getAnimeDetailHref(animeId: string): string {
               :game="link.game!"
               align="left"
               size="sm"
-              :badge-label="link.type ? GAME_COMPANY_TYPE_LABELS[link.type] : undefined"
+              :badge-label="link.role ? GAME_COMPANY_ROLE_LABELS[link.role] : undefined"
               @click="openGameId = link.game!.id"
             />
           </template>
@@ -120,7 +120,7 @@ function getAnimeDetailHref(animeId: string): string {
                 :anime="link.anime!"
                 align="left"
                 size="sm"
-                :badge-label="link.type ? ANIME_COMPANY_TYPE_LABELS[link.type] : undefined"
+                :badge-label="link.role ? ANIME_COMPANY_ROLE_LABELS[link.role] : undefined"
               />
             </a>
           </template>
@@ -153,15 +153,15 @@ function getAnimeDetailHref(animeId: string): string {
       <!-- Right column: Related Sites -->
       <div class="space-y-6 min-w-0">
         <Section
-          :title="m.library.fields.relatedSites"
+          :title="m.library.fields.externalSites"
           editable
-          :empty="!hasRelatedSites"
-          :empty-text="m.library.detail.empty.relatedSites"
+          :empty="!hasExternalSites"
+          :empty-text="m.library.detail.empty.externalSites"
           @edit="sitesDialogOpen = true"
         >
           <div class="flex flex-col gap-1.5">
             <a
-              v-for="(site, index) in company.relatedSites"
+              v-for="(site, index) in company.externalSites"
               :key="index"
               :href="site.url"
               target="_blank"
@@ -185,7 +185,7 @@ function getAnimeDetailHref(animeId: string): string {
       v-model:open="descriptionDialogOpen"
       :company-id="company.id"
     />
-    <CompanyRelatedSitesFormDialog
+    <CompanyExternalSitesFormDialog
       v-if="sitesDialogOpen"
       v-model:open="sitesDialogOpen"
       :company-id="company.id"

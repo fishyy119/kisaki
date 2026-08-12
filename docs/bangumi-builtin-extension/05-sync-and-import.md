@@ -10,7 +10,7 @@
 - 所有 Bangumi 读取和写入经过 `BangumiClient`。
 - 所有本地库读取和写入经过 `LocalMediaAdapter`。
 - 当前只有 `game` 有 local adapter；`book` / `anime` / `music` 不写本地库。
-- 导入不得修改任何已有条目的资料元数据，包括 name、originalName、description、releaseDate、assets、relatedSites 和 externalIds。
+- 导入不得修改任何已有条目的资料元数据，包括 name、originalName、description、releaseDate、assets、externalSites 和 externalIds。
 - 导入默认只创建缺失条目；只有单次 command args 显式开启 `patchExisting` 时，才按 Bangumi subject ID 匹配并更新已有本地条目的用户态字段。
 - status、score、tag 和目标本地合集属于用户态写入；新建条目按本次 args 写入，已有条目只在 `patchExisting=true` 时写入。
 - 导入配置是单次 command args，不写入 `settings.v1`；导入类 automation 需要持久配置时由 automation args 保存。

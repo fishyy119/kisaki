@@ -25,11 +25,16 @@ import {
   previewSessionEdge
 } from './owned-items'
 import {
+  applyCharacterPersonEdge,
   applyCollectionMediaEdge,
+  applyMediaCharacterEdge,
   applyMediaCompanyEdge,
+  applyMediaMediaEdge,
   applyMediaPersonEdge,
   applyMediaTagEdge,
+  previewCharacterPersonEdge,
   previewCollectionMediaEdge,
+  previewMediaMediaEdge,
   previewRelationEdge
 } from './relationships'
 import {
@@ -116,7 +121,12 @@ async function previewEdge(
     case 'media-tag':
     case 'media-company':
     case 'media-person':
+    case 'media-character':
       return previewRelationEdge(edge, state, options)
+    case 'character-person':
+      return previewCharacterPersonEdge(edge, state, options)
+    case 'media-media':
+      return previewMediaMediaEdge(edge, state, options)
     case 'media-note':
       return previewNoteEdge(edge, graph, draft, state, options)
     case 'media-session':
@@ -147,6 +157,12 @@ async function applyEdge(
       return applyMediaCompanyEdge(edge, state, options)
     case 'media-person':
       return applyMediaPersonEdge(edge, state, options)
+    case 'media-character':
+      return applyMediaCharacterEdge(edge, state, options)
+    case 'character-person':
+      return applyCharacterPersonEdge(edge, state, options)
+    case 'media-media':
+      return applyMediaMediaEdge(edge, state, options)
     case 'media-note':
       return await applyNoteEdge(edge, graph, draft, state, context, options)
     case 'media-session':

@@ -1,10 +1,9 @@
-import { index, integer, real, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
+import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import {
   animeEpisodeType,
   animeExtraKind,
-  animeRelationType,
   audioTracks,
   baseColumns,
   partialDate,
@@ -121,28 +120,3 @@ export const animeSessions = sqliteTable(
 
 export type AnimeSession = InferSelectModel<typeof animeSessions>
 export type NewAnimeSession = InferInsertModel<typeof animeSessions>
-
-/** Entry-to-entry links; seasons are separate entries, so sequels live here. */
-export const animeRelations = sqliteTable(
-  'anime_relations',
-  {
-    ...baseColumns,
-    animeId: text('anime_id')
-      .notNull()
-      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    relatedAnimeId: text('related_anime_id')
-      .notNull()
-      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    type: animeRelationType('type').notNull().default('other'),
-    note: text('note'),
-    orderInAnime: integer('order_in_anime').notNull().default(0)
-  },
-  (t) => [
-    unique('unique_anime_relation').on(t.animeId, t.relatedAnimeId, t.type),
-    index('idx_anime_relations_anime_id').on(t.animeId),
-    index('idx_anime_relations_related_anime_id').on(t.relatedAnimeId)
-  ]
-)
-
-export type AnimeRelation = InferSelectModel<typeof animeRelations>
-export type NewAnimeRelation = InferInsertModel<typeof animeRelations>

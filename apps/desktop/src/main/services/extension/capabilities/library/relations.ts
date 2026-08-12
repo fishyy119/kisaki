@@ -1,408 +1,130 @@
 import type {
-  LibraryRelation,
-  LibraryRelationCreateInput,
-  LibraryRelationKind,
-  LibraryRelationPatch,
-  LibraryRelationQuery,
-  LibraryRelationSelector
+  LibraryMediaRelation,
+  LibraryMediaRelationCreateInput,
+  LibraryMediaRelationPatch,
+  LibraryMediaRelationQuery,
+  LibraryMediaRelationSelector
 } from '@kisaki3/extension-api'
-import {
-  createNotFoundError,
-  createValidationError,
-  normalizeCapabilityError
-} from '@kisaki3/extension-api'
+import { createNotFoundError, normalizeCapabilityError } from '@kisaki3/extension-api'
 import { and, eq, or, type SQL } from 'drizzle-orm'
-import {
-  animeCharacterLinks,
-  animeCompanyLinks,
-  animePersonLinks,
-  animeTagLinks,
-  characterPersonLinks,
-  characterTagLinks,
-  collectionAnimeLinks,
-  collectionCharacterLinks,
-  collectionCompanyLinks,
-  collectionGameLinks,
-  collectionPersonLinks,
-  companyTagLinks,
-  gameCharacterLinks,
-  gameCompanyLinks,
-  gamePersonLinks,
-  gameTagLinks,
-  personTagLinks
-} from '@shared/db'
+import { nanoid } from 'nanoid'
+import { mediaRelations, type MediaRelation } from '@shared/db'
 import type { DbService } from '@main/services/db'
-import type {
-  AnySQLiteColumn,
-  SQLiteInsertValue,
-  SQLiteTable,
-  SQLiteUpdateSetSource
-} from 'drizzle-orm/sqlite-core'
 
-interface RelationConfig {
-  kind: LibraryRelationKind
-  table: SQLiteTable
-  fromType: string
-  toType: string
-  fromIdField: string
-  toIdField: string
-  orderField?: string
-  secondaryOrderField?: string
-  noteField?: string
-  spoilerField?: string
-  typeField?: string
-}
-
-const RELATION_CONFIGS: Record<LibraryRelationKind, RelationConfig> = {
-  'game-person': {
-    kind: 'game-person',
-    table: gamePersonLinks,
-    fromType: 'game',
-    toType: 'person',
-    fromIdField: 'gameId',
-    toIdField: 'personId',
-    orderField: 'orderInGame',
-    secondaryOrderField: 'orderInPerson',
-    noteField: 'note',
-    spoilerField: 'isSpoiler',
-    typeField: 'type'
-  },
-  'game-company': {
-    kind: 'game-company',
-    table: gameCompanyLinks,
-    fromType: 'game',
-    toType: 'company',
-    fromIdField: 'gameId',
-    toIdField: 'companyId',
-    orderField: 'orderInGame',
-    secondaryOrderField: 'orderInCompany',
-    noteField: 'note',
-    spoilerField: 'isSpoiler',
-    typeField: 'type'
-  },
-  'game-character': {
-    kind: 'game-character',
-    table: gameCharacterLinks,
-    fromType: 'game',
-    toType: 'character',
-    fromIdField: 'gameId',
-    toIdField: 'characterId',
-    orderField: 'orderInGame',
-    secondaryOrderField: 'orderInCharacter',
-    noteField: 'note',
-    spoilerField: 'isSpoiler',
-    typeField: 'type'
-  },
-  'anime-person': {
-    kind: 'anime-person',
-    table: animePersonLinks,
-    fromType: 'anime',
-    toType: 'person',
-    fromIdField: 'animeId',
-    toIdField: 'personId',
-    orderField: 'orderInAnime',
-    secondaryOrderField: 'orderInPerson',
-    noteField: 'note',
-    spoilerField: 'isSpoiler',
-    typeField: 'type'
-  },
-  'anime-company': {
-    kind: 'anime-company',
-    table: animeCompanyLinks,
-    fromType: 'anime',
-    toType: 'company',
-    fromIdField: 'animeId',
-    toIdField: 'companyId',
-    orderField: 'orderInAnime',
-    secondaryOrderField: 'orderInCompany',
-    noteField: 'note',
-    spoilerField: 'isSpoiler',
-    typeField: 'type'
-  },
-  'anime-character': {
-    kind: 'anime-character',
-    table: animeCharacterLinks,
-    fromType: 'anime',
-    toType: 'character',
-    fromIdField: 'animeId',
-    toIdField: 'characterId',
-    orderField: 'orderInAnime',
-    secondaryOrderField: 'orderInCharacter',
-    noteField: 'note',
-    spoilerField: 'isSpoiler',
-    typeField: 'type'
-  },
-  'character-person': {
-    kind: 'character-person',
-    table: characterPersonLinks,
-    fromType: 'character',
-    toType: 'person',
-    fromIdField: 'characterId',
-    toIdField: 'personId',
-    orderField: 'orderInCharacter',
-    secondaryOrderField: 'orderInPerson',
-    noteField: 'note',
-    spoilerField: 'isSpoiler',
-    typeField: 'type'
-  },
-  'game-tag': {
-    kind: 'game-tag',
-    table: gameTagLinks,
-    fromType: 'game',
-    toType: 'tag',
-    fromIdField: 'gameId',
-    toIdField: 'tagId',
-    orderField: 'orderInGame',
-    secondaryOrderField: 'orderInTag',
-    noteField: 'note',
-    spoilerField: 'isSpoiler'
-  },
-  'anime-tag': {
-    kind: 'anime-tag',
-    table: animeTagLinks,
-    fromType: 'anime',
-    toType: 'tag',
-    fromIdField: 'animeId',
-    toIdField: 'tagId',
-    orderField: 'orderInAnime',
-    secondaryOrderField: 'orderInTag',
-    noteField: 'note',
-    spoilerField: 'isSpoiler'
-  },
-  'character-tag': {
-    kind: 'character-tag',
-    table: characterTagLinks,
-    fromType: 'character',
-    toType: 'tag',
-    fromIdField: 'characterId',
-    toIdField: 'tagId',
-    orderField: 'orderInCharacter',
-    secondaryOrderField: 'orderInTag',
-    noteField: 'note',
-    spoilerField: 'isSpoiler'
-  },
-  'person-tag': {
-    kind: 'person-tag',
-    table: personTagLinks,
-    fromType: 'person',
-    toType: 'tag',
-    fromIdField: 'personId',
-    toIdField: 'tagId',
-    orderField: 'orderInPerson',
-    secondaryOrderField: 'orderInTag',
-    noteField: 'note',
-    spoilerField: 'isSpoiler'
-  },
-  'company-tag': {
-    kind: 'company-tag',
-    table: companyTagLinks,
-    fromType: 'company',
-    toType: 'tag',
-    fromIdField: 'companyId',
-    toIdField: 'tagId',
-    orderField: 'orderInCompany',
-    secondaryOrderField: 'orderInTag',
-    noteField: 'note',
-    spoilerField: 'isSpoiler'
-  },
-  'collection-game': {
-    kind: 'collection-game',
-    table: collectionGameLinks,
-    fromType: 'collection',
-    toType: 'game',
-    fromIdField: 'collectionId',
-    toIdField: 'gameId',
-    orderField: 'orderInCollection',
-    noteField: 'note'
-  },
-  'collection-anime': {
-    kind: 'collection-anime',
-    table: collectionAnimeLinks,
-    fromType: 'collection',
-    toType: 'anime',
-    fromIdField: 'collectionId',
-    toIdField: 'animeId',
-    orderField: 'orderInCollection',
-    noteField: 'note'
-  },
-  'collection-character': {
-    kind: 'collection-character',
-    table: collectionCharacterLinks,
-    fromType: 'collection',
-    toType: 'character',
-    fromIdField: 'collectionId',
-    toIdField: 'characterId',
-    orderField: 'orderInCollection',
-    noteField: 'note'
-  },
-  'collection-person': {
-    kind: 'collection-person',
-    table: collectionPersonLinks,
-    fromType: 'collection',
-    toType: 'person',
-    fromIdField: 'collectionId',
-    toIdField: 'personId',
-    orderField: 'orderInCollection',
-    noteField: 'note'
-  },
-  'collection-company': {
-    kind: 'collection-company',
-    table: collectionCompanyLinks,
-    fromType: 'collection',
-    toType: 'company',
-    fromIdField: 'collectionId',
-    toIdField: 'companyId',
-    orderField: 'orderInCollection',
-    noteField: 'note'
-  }
-}
-
-export interface ExtensionLibraryRelationStoreOptions {
+export interface ExtensionLibraryMediaRelationStoreOptions {
   db: DbService
 }
 
-export class ExtensionLibraryRelationStore {
-  constructor(private readonly options: ExtensionLibraryRelationStoreOptions) {}
+/**
+ * Extension-facing CRUD over `media_relations`.
+ *
+ * Rows are directed edges; an extension manages the edges it writes, and
+ * readers merge both directions through the inverse vocabulary. Endpoint pair
+ * and vocabulary validity are enforced by the shared validators at the RPC
+ * boundary.
+ */
+export class ExtensionLibraryMediaRelationStore {
+  constructor(private readonly options: ExtensionLibraryMediaRelationStoreOptions) {}
 
-  list(query?: LibraryRelationQuery): readonly LibraryRelation[] {
+  list(query?: LibraryMediaRelationQuery): readonly LibraryMediaRelation[] {
     try {
-      const kinds = query?.kinds?.length
-        ? query.kinds
-        : (Object.keys(RELATION_CONFIGS) as LibraryRelationKind[])
-      const relations: LibraryRelation[] = []
+      const condition = buildListCondition(query)
+      const rows = condition
+        ? this.options.db.client.select().from(mediaRelations).where(condition).all()
+        : this.options.db.client.select().from(mediaRelations).all()
 
-      for (const kind of kinds) {
-        const config = RELATION_CONFIGS[kind]
-        const condition = buildListCondition(config, query)
-        if (condition === null) {
-          continue
-        }
-
-        const rows = condition
-          ? this.options.db.client.select().from(config.table).where(condition).all()
-          : this.options.db.client.select().from(config.table).all()
-
-        for (const row of rows) {
-          relations.push(toRelation(config, row))
-        }
-      }
-
-      return relations
+      return rows.map(toRelation)
     } catch (error) {
-      throw normalizeCapabilityError(error, 'Failed to list library relations.')
+      throw normalizeCapabilityError(error, 'Failed to list library media relations.')
     }
   }
 
-  create<K extends LibraryRelationKind>(input: LibraryRelationCreateInput<K>): LibraryRelation<K> {
-    const config = RELATION_CONFIGS[input.kind]
-    validateRelationInput(config, input)
-
+  create(input: LibraryMediaRelationCreateInput): LibraryMediaRelation {
     try {
-      this.options.db.client.insert(config.table).values(buildInsertValues(config, input)).run()
-      const row = this.selectOne(
-        config,
-        input as unknown as LibraryRelationSelector<LibraryRelationKind>
-      )
-      return toRelation(config, row) as LibraryRelation<K>
+      this.options.db.client
+        .insert(mediaRelations)
+        .values({
+          id: nanoid(),
+          fromType: input.from.entityType,
+          fromId: input.from.id,
+          toType: input.to.entityType,
+          toId: input.to.id,
+          type: input.type,
+          note: input.note ?? null,
+          orderInFrom: input.order ?? 0
+        })
+        .run()
+
+      return toRelation(this.selectOne(input))
     } catch (error) {
-      throw normalizeCapabilityError(error, 'Failed to create the library relation.')
+      throw normalizeCapabilityError(error, 'Failed to create the library media relation.')
     }
   }
 
-  update<K extends LibraryRelationKind>(
-    selector: LibraryRelationSelector<K>,
-    patch: LibraryRelationPatch<K>
-  ): LibraryRelation<K> {
-    const config = RELATION_CONFIGS[selector.kind]
-
+  update(
+    selector: LibraryMediaRelationSelector,
+    patch: LibraryMediaRelationPatch
+  ): LibraryMediaRelation {
     try {
-      const existing = this.selectOne(
-        config,
-        selector as unknown as LibraryRelationSelector<LibraryRelationKind>
-      )
-      void existing
+      const existing = this.selectOne(selector)
 
-      const values = buildUpdateValues(config, patch)
+      const values: Partial<MediaRelation> = {}
+      if (patch.type !== undefined) values.type = patch.type
+      if (patch.note !== undefined) values.note = patch.note ?? null
+      if (patch.order !== undefined) values.orderInFrom = patch.order
+
       if (Object.keys(values).length === 0) {
-        return toRelation(config, existing) as LibraryRelation<K>
+        return toRelation(existing)
       }
 
       this.options.db.client
-        .update(config.table)
+        .update(mediaRelations)
         .set(values)
-        .where(buildSelectorCondition(config, selector))
+        .where(buildSelectorCondition(selector))
         .run()
 
-      const updatedSelector =
-        config.typeField && 'type' in patch && typeof patch.type === 'string'
-          ? ({ ...selector, type: patch.type } as LibraryRelationSelector<K>)
-          : selector
-      const row = this.selectOne(
-        config,
-        updatedSelector as unknown as LibraryRelationSelector<LibraryRelationKind>
-      )
-      return toRelation(config, row) as LibraryRelation<K>
+      const updatedSelector = patch.type !== undefined ? { ...selector, type: patch.type } : selector
+      return toRelation(this.selectOne(updatedSelector))
     } catch (error) {
-      throw normalizeCapabilityError(error, 'Failed to update the library relation.')
+      throw normalizeCapabilityError(error, 'Failed to update the library media relation.')
     }
   }
 
-  remove<K extends LibraryRelationKind>(selector: LibraryRelationSelector<K>): void {
-    const config = RELATION_CONFIGS[selector.kind]
-
+  remove(selector: LibraryMediaRelationSelector): void {
     try {
-      this.selectOne(config, selector as unknown as LibraryRelationSelector<LibraryRelationKind>)
-      this.options.db.client
-        .delete(config.table)
-        .where(
-          buildSelectorCondition(
-            config,
-            selector as unknown as LibraryRelationSelector<LibraryRelationKind>
-          )
-        )
-        .run()
+      this.selectOne(selector)
+      this.options.db.client.delete(mediaRelations).where(buildSelectorCondition(selector)).run()
     } catch (error) {
-      throw normalizeCapabilityError(error, 'Failed to remove the library relation.')
+      throw normalizeCapabilityError(error, 'Failed to remove the library media relation.')
     }
   }
 
-  private selectOne(
-    config: RelationConfig,
-    selector: LibraryRelationSelector<LibraryRelationKind>
-  ): Record<string, unknown> {
+  private selectOne(selector: LibraryMediaRelationSelector): MediaRelation {
     const row = this.options.db.client
       .select()
-      .from(config.table)
-      .where(buildSelectorCondition(config, selector))
+      .from(mediaRelations)
+      .where(buildSelectorCondition(selector))
       .get()
 
     if (!row) {
-      throw createNotFoundError(`Library relation "${selector.kind}" was not found.`)
+      throw createNotFoundError('Library media relation was not found.')
     }
 
-    return row as Record<string, unknown>
+    return row
   }
 }
 
-function validateRelationInput(
-  config: RelationConfig,
-  input: LibraryRelationCreateInput<LibraryRelationKind>
-): void {
-  if (input.from.entityType !== config.fromType || input.to.entityType !== config.toType) {
-    throw createValidationError(
-      `Relation "${input.kind}" must connect ${config.fromType} -> ${config.toType}.`
-    )
-  }
-
-  if (config.typeField && typeof (input.metadata as Record<string, unknown>).type !== 'string') {
-    throw createValidationError(`Relation "${input.kind}" requires a metadata.type value.`)
-  }
+function buildSelectorCondition(selector: LibraryMediaRelationSelector): SQL {
+  return and(
+    eq(mediaRelations.fromType, selector.from.entityType),
+    eq(mediaRelations.fromId, selector.from.id),
+    eq(mediaRelations.toType, selector.to.entityType),
+    eq(mediaRelations.toId, selector.to.id),
+    eq(mediaRelations.type, selector.type)
+  ) as SQL
 }
 
-function buildListCondition(
-  config: RelationConfig,
-  query: LibraryRelationQuery | undefined
-): SQL | undefined | null {
+function buildListCondition(query: LibraryMediaRelationQuery | undefined): SQL | undefined {
   if (!query) {
     return undefined
   }
@@ -410,168 +132,33 @@ function buildListCondition(
   const conditions: SQL[] = []
 
   if (query.entity) {
-    const entityConditions: SQL[] = []
-    if (query.entity.entityType === config.fromType) {
-      entityConditions.push(eq(getRelationColumn(config, config.fromIdField), query.entity.id))
-    }
-    if (query.entity.entityType === config.toType) {
-      entityConditions.push(eq(getRelationColumn(config, config.toIdField), query.entity.id))
-    }
-    if (entityConditions.length === 0) {
-      return null
-    }
-    conditions.push(
-      entityConditions.length === 1 ? entityConditions[0] : (or(...entityConditions) as SQL)
-    )
+    conditions.push(endpointCondition(query.entity.entityType, query.entity.id))
   }
-
   if (query.relatedEntity) {
-    const relatedConditions: SQL[] = []
-    if (query.relatedEntity.entityType === config.fromType) {
-      relatedConditions.push(
-        eq(getRelationColumn(config, config.fromIdField), query.relatedEntity.id)
-      )
-    }
-    if (query.relatedEntity.entityType === config.toType) {
-      relatedConditions.push(
-        eq(getRelationColumn(config, config.toIdField), query.relatedEntity.id)
-      )
-    }
-    if (relatedConditions.length === 0) {
-      return null
-    }
-    conditions.push(
-      relatedConditions.length === 1 ? relatedConditions[0] : (or(...relatedConditions) as SQL)
-    )
+    conditions.push(endpointCondition(query.relatedEntity.entityType, query.relatedEntity.id))
   }
 
-  return conditions.length > 0 ? (and(...conditions) as SQL) : undefined
+  if (conditions.length === 0) {
+    return undefined
+  }
+  return conditions.length === 1 ? conditions[0] : (and(...conditions) as SQL)
 }
 
-function buildSelectorCondition<K extends LibraryRelationKind>(
-  config: RelationConfig,
-  selector: LibraryRelationSelector<K>
-): SQL {
-  if (selector.from.entityType !== config.fromType || selector.to.entityType !== config.toType) {
-    throw createValidationError(
-      `Relation selector "${selector.kind}" must target ${config.fromType} -> ${config.toType}.`
-    )
-  }
-
-  const conditions: SQL[] = [
-    eq(getRelationColumn(config, config.fromIdField), selector.from.id),
-    eq(getRelationColumn(config, config.toIdField), selector.to.id)
-  ]
-
-  if (config.typeField) {
-    if (!('type' in selector) || typeof selector.type !== 'string') {
-      throw createValidationError(`Relation selector "${selector.kind}" requires a type value.`)
-    }
-
-    conditions.push(eq(getRelationColumn(config, config.typeField), selector.type))
-  }
-
-  return and(...conditions) as SQL
+function endpointCondition(mediaType: MediaRelation['fromType'], id: string): SQL {
+  return or(
+    and(eq(mediaRelations.fromType, mediaType), eq(mediaRelations.fromId, id)),
+    and(eq(mediaRelations.toType, mediaType), eq(mediaRelations.toId, id))
+  ) as SQL
 }
 
-function buildInsertValues(
-  config: RelationConfig,
-  input: LibraryRelationCreateInput<LibraryRelationKind>
-): SQLiteInsertValue<SQLiteTable> {
-  const metadata = input.metadata as Record<string, unknown>
-  const values: Record<string, unknown> = {
-    [config.fromIdField]: input.from.id,
-    [config.toIdField]: input.to.id
-  }
-
-  if (config.typeField) {
-    values[config.typeField] = metadata.type
-  }
-  if (config.spoilerField) {
-    values[config.spoilerField] = metadata.isSpoiler ?? false
-  }
-  if (config.noteField) {
-    values[config.noteField] = metadata.note ?? null
-  }
-  if (config.orderField) {
-    values[config.orderField] = metadata.order ?? 0
-  }
-  if (config.secondaryOrderField) {
-    values[config.secondaryOrderField] = 0
-  }
-
-  return values as SQLiteInsertValue<SQLiteTable>
-}
-
-function buildUpdateValues(
-  config: RelationConfig,
-  patch: LibraryRelationPatch<LibraryRelationKind>
-): SQLiteUpdateSetSource<SQLiteTable> {
-  const input = patch as Record<string, unknown>
-  const values: Record<string, unknown> = {}
-
-  if (config.typeField && input.type !== undefined) {
-    values[config.typeField] = input.type
-  }
-  if (config.spoilerField && input.isSpoiler !== undefined) {
-    values[config.spoilerField] = input.isSpoiler
-  }
-  if (config.noteField && input.note !== undefined) {
-    values[config.noteField] = input.note ?? null
-  }
-  if (config.orderField && input.order !== undefined) {
-    values[config.orderField] = input.order
-  }
-
-  return values as SQLiteUpdateSetSource<SQLiteTable>
-}
-
-function getRelationColumn(config: RelationConfig, field: string): AnySQLiteColumn {
-  const columns = config.table as unknown as Record<string, AnySQLiteColumn | undefined>
-  const column = columns[field]
-  if (!column) {
-    throw createValidationError(`Relation "${config.kind}" does not define column "${field}".`)
-  }
-
-  return column
-}
-
-function toRelation(config: RelationConfig, row: Record<string, unknown>): LibraryRelation {
-  const metadata: Record<string, unknown> = {}
-
-  if (config.typeField) {
-    metadata.type = row[config.typeField]
-  }
-  if (config.spoilerField) {
-    metadata.isSpoiler = Boolean(row[config.spoilerField])
-  }
-  if (config.noteField && typeof row[config.noteField] === 'string') {
-    metadata.note = row[config.noteField]
-  }
-  if (config.orderField && typeof row[config.orderField] === 'number') {
-    metadata.order = row[config.orderField]
-  }
-
+function toRelation(row: MediaRelation): LibraryMediaRelation {
   return {
-    kind: config.kind,
-    from: {
-      entityType: config.fromType as LibraryRelation['from']['entityType'],
-      id: String(row[config.fromIdField])
-    },
-    to: {
-      entityType: config.toType as LibraryRelation['to']['entityType'],
-      id: String(row[config.toIdField])
-    },
-    metadata: metadata as LibraryRelation['metadata'],
-    createdAt: toTimestampMs(row.createdAt),
-    updatedAt: toTimestampMs(row.updatedAt)
+    from: { entityType: row.fromType, id: row.fromId },
+    to: { entityType: row.toType, id: row.toId },
+    type: row.type,
+    ...(row.note !== null && { note: row.note }),
+    order: row.orderInFrom,
+    createdAt: row.createdAt.getTime(),
+    updatedAt: row.updatedAt.getTime()
   }
-}
-
-function toTimestampMs(value: unknown): number | undefined {
-  if (value instanceof Date) {
-    return value.getTime()
-  }
-
-  return typeof value === 'number' ? value : undefined
 }

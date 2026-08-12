@@ -260,7 +260,7 @@ export const GAME_CONFIG = {
       score: input.score,
       isFavorite: input.isFavorite,
       isNsfw: input.isNsfw,
-      relatedSites: copyReadonlyArray(input.relatedSites)
+      externalSites: copyReadonlyArray(input.externalSites)
     }
   },
   buildPatchValues(patch) {
@@ -287,7 +287,7 @@ export const GAME_CONFIG = {
       score: patch.score,
       isFavorite: patch.isFavorite,
       isNsfw: patch.isNsfw,
-      relatedSites: copyReadonlyArray(patch.relatedSites),
+      externalSites: copyReadonlyArray(patch.externalSites),
       lastActiveAt:
         patch.lastActiveAt === undefined
           ? undefined
@@ -367,7 +367,7 @@ export const ANIME_CONFIG = {
       score: input.score,
       isFavorite: input.isFavorite,
       isNsfw: input.isNsfw,
-      relatedSites: copyReadonlyArray(input.relatedSites)
+      externalSites: copyReadonlyArray(input.externalSites)
     }
   },
   buildPatchValues(patch) {
@@ -388,7 +388,7 @@ export const ANIME_CONFIG = {
       score: patch.score,
       isFavorite: patch.isFavorite,
       isNsfw: patch.isNsfw,
-      relatedSites: copyReadonlyArray(patch.relatedSites),
+      externalSites: copyReadonlyArray(patch.externalSites),
       lastActiveAt:
         patch.lastActiveAt === undefined
           ? undefined
@@ -447,7 +447,7 @@ export const PERSON_CONFIG = {
       score: input.score,
       isFavorite: input.isFavorite,
       isNsfw: input.isNsfw,
-      relatedSites: copyReadonlyArray(input.relatedSites)
+      externalSites: copyReadonlyArray(input.externalSites)
     }
   },
   buildPatchValues(patch) {
@@ -463,7 +463,7 @@ export const PERSON_CONFIG = {
       score: patch.score,
       isFavorite: patch.isFavorite,
       isNsfw: patch.isNsfw,
-      relatedSites: copyReadonlyArray(patch.relatedSites)
+      externalSites: copyReadonlyArray(patch.externalSites)
     })
   },
   buildExtraConditions(query) {
@@ -510,7 +510,7 @@ export const COMPANY_CONFIG = {
       score: input.score,
       isFavorite: input.isFavorite,
       isNsfw: input.isNsfw,
-      relatedSites: copyReadonlyArray(input.relatedSites)
+      externalSites: copyReadonlyArray(input.externalSites)
     }
   },
   buildPatchValues(patch) {
@@ -524,7 +524,7 @@ export const COMPANY_CONFIG = {
       score: patch.score,
       isFavorite: patch.isFavorite,
       isNsfw: patch.isNsfw,
-      relatedSites: copyReadonlyArray(patch.relatedSites)
+      externalSites: copyReadonlyArray(patch.externalSites)
     })
   },
   buildExtraConditions(query) {
@@ -590,7 +590,7 @@ export const CHARACTER_CONFIG = {
       score: input.score,
       isFavorite: input.isFavorite,
       isNsfw: input.isNsfw,
-      relatedSites: copyReadonlyArray(input.relatedSites)
+      externalSites: copyReadonlyArray(input.externalSites)
     }
   },
   buildPatchValues(patch) {
@@ -613,7 +613,7 @@ export const CHARACTER_CONFIG = {
       score: patch.score,
       isFavorite: patch.isFavorite,
       isNsfw: patch.isNsfw,
-      relatedSites: copyReadonlyArray(patch.relatedSites)
+      externalSites: copyReadonlyArray(patch.externalSites)
     })
   },
   buildExtraConditions(query) {

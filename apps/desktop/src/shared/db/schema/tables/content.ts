@@ -10,7 +10,7 @@ import {
   gameMonitorMode,
   gender,
   partialDate,
-  relatedSites,
+  externalSites,
   saveBackups,
   status,
   stringArrayJson
@@ -31,7 +31,7 @@ export const games = sqliteTable(
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
     releaseDate: partialDate('release_date'),
     description: text('description'),
-    relatedSites: relatedSites('related_sites'),
+    externalSites: externalSites('external_sites'),
     status: status('status').notNull().default('notStarted'),
     lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
     totalDuration: integer('total_duration').notNull().default(0),
@@ -97,7 +97,7 @@ export const animes = sqliteTable(
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
     releaseDate: partialDate('release_date'),
     description: text('description'),
-    relatedSites: relatedSites('related_sites'),
+    externalSites: externalSites('external_sites'),
     status: status('status').notNull().default('notStarted'),
     format: animeFormat('format').notNull().default('tv'),
     /** Episode count declared by metadata; the episode rows remain authoritative. */
@@ -138,7 +138,7 @@ export const persons = sqliteTable(
     deathDate: partialDate('death_date'),
     gender: gender('gender'),
     description: text('description'),
-    relatedSites: relatedSites('related_sites')
+    externalSites: externalSites('external_sites')
   },
   (t) => [
     index('idx_persons_is_favorite').on(t.isFavorite),
@@ -165,7 +165,7 @@ export const companies = sqliteTable(
     score: integer('score'),
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
     isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
-    relatedSites: relatedSites('related_sites'),
+    externalSites: externalSites('external_sites'),
     description: text('description')
   },
   (t) => [
@@ -202,7 +202,7 @@ export const characters = sqliteTable(
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
     isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
     description: text('description'),
-    relatedSites: relatedSites('related_sites')
+    externalSites: externalSites('external_sites')
   },
   (t) => [
     index('idx_characters_is_favorite').on(t.isFavorite),

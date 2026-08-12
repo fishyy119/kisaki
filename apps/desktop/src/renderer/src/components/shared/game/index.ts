@@ -32,7 +32,7 @@ export {
   GameLastActiveFormDialog,
   GameTagsFormDialog,
   GameDurationFormDialog,
-  GameRelatedSitesFormDialog,
+  GameExternalSitesFormDialog,
   GameLaunchConfigFormDialog,
   GameCharactersFormDialog,
   GameCompaniesFormDialog,

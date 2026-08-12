@@ -44,6 +44,7 @@ const selectedMediaType = ref<ContentEntityType | null>(null)
 // Media type options
 const mediaTypeOptions = computed<{ value: ContentEntityType; label: string }[]>(() => [
   { value: 'game', label: m.value.library.entities.game },
+  { value: 'anime', label: m.value.library.entities.anime },
   { value: 'character', label: m.value.library.entities.character },
   { value: 'person', label: m.value.library.entities.person },
   { value: 'company', label: m.value.library.entities.company }

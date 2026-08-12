@@ -14,8 +14,8 @@ export class GameLocalMediaAdapter extends BangumiLocalMediaAdapter {
   readonly localMediaType = 'game' as const
 
   protected readonly entityType = 'game' as const
-  protected readonly tagRelationKind = 'game-tag' as const
-  protected readonly collectionRelationKind = 'collection-game' as const
+  protected readonly tagLinkKind = 'game-tag' as const
+  protected readonly collectionLinkKind = 'collection-game' as const
 
   async addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult> {
     const result = await kisaki.ingest.game.add.fromScraper(input.profileId, {
@@ -38,8 +38,8 @@ export class GameLocalMediaAdapter extends BangumiLocalMediaAdapter {
     await kisaki.library.games.update(localId, patch)
   }
 
-  protected async createTagRelation(localId: string, tagId: string): Promise<void> {
-    await kisaki.library.relations.create({
+  protected async createTagLink(localId: string, tagId: string): Promise<void> {
+    await kisaki.library.links.create({
       kind: 'game-tag',
       from: { entityType: 'game', id: localId },
       to: { entityType: 'tag', id: tagId },
@@ -47,8 +47,8 @@ export class GameLocalMediaAdapter extends BangumiLocalMediaAdapter {
     })
   }
 
-  protected async createCollectionRelation(collectionId: string, localId: string): Promise<void> {
-    await kisaki.library.relations.create({
+  protected async createCollectionLink(collectionId: string, localId: string): Promise<void> {
+    await kisaki.library.links.create({
       kind: 'collection-game',
       from: { entityType: 'collection', id: collectionId },
       to: { entityType: 'game', id: localId },

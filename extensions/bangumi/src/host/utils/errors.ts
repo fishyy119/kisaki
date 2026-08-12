@@ -1,4 +1,4 @@
-import { isCancellationError as isHostCancellation } from '@kisaki3/extension-sdk'
+import { createCancellationError } from '@kisaki3/extension-sdk'
 
 export type BangumiErrorCode =
   | 'auth_required'
@@ -13,7 +13,6 @@ export type BangumiErrorCode =
   | 'profile_missing'
   | 'ingest_failed'
   | 'library_update_failed'
-  | 'job_cancelled'
   | 'bangumi_job_running'
 
 export class BangumiExtensionError extends Error {
@@ -27,25 +26,12 @@ export class BangumiExtensionError extends Error {
 }
 
 /**
- * Cancellation reaches extension code either as our own job error or in one of
- * the shapes the host uses: a cancelled capability call or a DOM-style
- * `AbortError` from an aborted local operation.
+ * Cancellations must carry the host's shared `cancelled` code: these errors
+ * cross the RPC boundary, and the host only recognizes coded cancellations
+ * when deciding to abandon (rather than fail) the surrounding operation.
  */
-export function isCancellationError(error: unknown): boolean {
-  return (
-    (error instanceof BangumiExtensionError && error.code === 'job_cancelled') ||
-    isHostCancellation(error)
-  )
-}
-
-export function createAbortError(): Error {
-  const error = new Error('Operation was cancelled.')
-  error.name = 'AbortError'
-  return error
-}
-
 export function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) {
-    throw createAbortError()
+    throw createCancellationError('The operation was cancelled.')
   }
 }

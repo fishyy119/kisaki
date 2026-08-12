@@ -10,7 +10,8 @@ import type {
   ScrapedGameMetadata,
   ScrapedGamePersonFact,
   ScrapedGameBundle,
-  ScrapedEntityIdentity
+  ScrapedEntityIdentity,
+  ScrapedRelatedEntryFact
 } from '@shared/scraper'
 import {
   applyEntityCollectionStrategy,
@@ -32,6 +33,7 @@ import type {
   GameScraperImageResult,
   GameScraperInfoResult,
   GameScraperPersonsResult,
+  GameScraperRelatedEntriesResult,
   GameScraperResult,
   GameScraperTagsResult
 } from './types'
@@ -55,7 +57,7 @@ function mergeGamePerson(
 ): ScrapedGamePersonFact {
   return {
     ...mergePersonMetadataFields(existing, incoming),
-    type: existing.type,
+    role: existing.role,
     isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
@@ -68,7 +70,7 @@ function mergeGameCharacter(
 ): ScrapedGameCharacterFact {
   return {
     ...mergeCharacterMetadataFields(existing, incoming, options),
-    type: existing.type,
+    role: existing.role,
     isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
@@ -80,7 +82,7 @@ function mergeGameCompany(
 ): ScrapedGameCompanyFact {
   return {
     ...mergeCompanyMetadataFields(existing, incoming),
-    type: existing.type,
+    role: existing.role,
     isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
@@ -125,6 +127,13 @@ export function mergeGameScraperMetadata(
           strategy: slotConfigs.companies.strategy,
           unmatchedEntityPolicy: slotConfigs.companies.unmatchedEntityPolicy
         })
+        break
+      case 'relatedEntries':
+        mergeRelatedEntries(
+          metadata,
+          filterBySlot(results, 'relatedEntries'),
+          slotConfigs.relatedEntries.strategy
+        )
         break
       case 'covers':
         mergeImages(metadata, slot, filterByImageSlot(results, slot), slotConfigs.covers.strategy)
@@ -197,10 +206,10 @@ function mergeInfo(
 
     // Presence is authority: a provider that reports no sites at all keeps the
     // collection empty instead of leaving it unknown.
-    if (info.relatedSites) {
-      metadata.relatedSites = applyStrategy(
-        metadata.relatedSites,
-        info.relatedSites,
+    if (info.externalSites) {
+      metadata.externalSites = applyStrategy(
+        metadata.externalSites,
+        info.externalSites,
         strategy,
         (site) => site.url
       )
@@ -249,7 +258,7 @@ function mergePersons(
       (person) =>
         buildScrapedEntityAliasKeys(person, {
           includeCompactFallbackKeys: true,
-          type: person.type
+          type: person.role
         }),
       mergeGamePerson
     )
@@ -269,10 +278,25 @@ function mergeCompanies(
       (company) =>
         buildScrapedEntityAliasKeys(company, {
           includeCompactFallbackKeys: true,
-          type: company.type
+          type: company.role
         }),
       mergeGameCompany
     )
+  )
+}
+
+/** Related entries are keyed by target identity and relation type. */
+function relatedEntryKey(fact: ScrapedRelatedEntryFact): string {
+  return `${fact.mediaType}#${fact.source}#${fact.externalId}#${fact.type}`
+}
+
+function mergeRelatedEntries(
+  metadata: Partial<ScrapedGameMetadata>,
+  results: GameScraperRelatedEntriesResult[],
+  strategy: SlotStrategy
+): void {
+  metadata.relatedEntries = foldCollectionResults(results, strategy, (merged, result) =>
+    applyStrategy(merged, result.data, strategy, relatedEntryKey)
   )
 }
 
@@ -298,11 +322,12 @@ function finalize(partial: Partial<ScrapedGameMetadata>): ScrapedGameMetadata | 
     originalName: partial.originalName,
     releaseDate: partial.releaseDate,
     description: partial.description,
-    relatedSites: partial.relatedSites,
+    externalSites: partial.externalSites,
     tags: partial.tags,
     persons: partial.persons,
     characters: partial.characters,
     companies: partial.companies,
+    relatedEntries: partial.relatedEntries,
     covers: partial.covers,
     backdrops: partial.backdrops,
     logos: partial.logos,
@@ -320,6 +345,7 @@ export function toScrapedGameBundle(metadata: ScrapedGameMetadata): ScrapedGameB
   if (metadata.persons) relationFacts.gamePerson = metadata.persons
   if (metadata.companies) relationFacts.gameCompany = metadata.companies
   if (metadata.characters) relationFacts.gameCharacter = metadata.characters
+  if (metadata.relatedEntries) relationFacts.relatedEntries = metadata.relatedEntries
 
   const characterPersonFacts = metadata.characters?.flatMap((character) =>
     (character.persons ?? []).map((personFact) => ({
@@ -338,7 +364,7 @@ export function toScrapedGameBundle(metadata: ScrapedGameMetadata): ScrapedGameB
         hips: character.hips,
         cup: character.cup,
         description: character.description,
-        relatedSites: character.relatedSites,
+        externalSites: character.externalSites,
         identity: character.identity,
         tags: character.tags
       }
@@ -361,7 +387,7 @@ export function toScrapedGameBundle(metadata: ScrapedGameMetadata): ScrapedGameB
       originalName: metadata.originalName,
       releaseDate: metadata.releaseDate,
       description: metadata.description,
-      relatedSites: metadata.relatedSites,
+      externalSites: metadata.externalSites,
       tags: metadata.tags
     },
     relationFacts: Object.keys(relationFacts).length > 0 ? relationFacts : undefined,

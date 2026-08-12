@@ -23,7 +23,7 @@ export {
   mergeExternalIds,
   mergeImageUrls,
   mergePersonMetadataFields,
-  mergeRelatedSites,
+  mergeExternalSites,
   mergeScalarFields,
   mergeTagsArray,
   reconcileEntitiesByKeys,

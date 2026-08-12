@@ -1,4 +1,4 @@
-import type { Disposable, ExternalId, ContentLocale, PartialDate, RelatedSite } from '../../shared'
+import type { Disposable, ExternalId, ContentLocale, PartialDate, ExternalSite } from '../../shared'
 import type {
   LibraryAnimeCharacterRole,
   LibraryAnimeCompanyRole,
@@ -11,8 +11,10 @@ import type {
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
-  LibraryGender
+  LibraryGender,
+  LibraryMediaRelationType
 } from '../../shared/library'
+import type { LibraryMediaType } from '../../capabilities/library/graph'
 
 export const SCRAPER_MEDIA_TYPES = ['game', 'anime', 'person', 'company', 'character'] as const
 
@@ -24,6 +26,7 @@ export const GAME_SCRAPER_SLOTS = [
   'characters',
   'persons',
   'companies',
+  'relatedEntries',
   'covers',
   'backdrops',
   'logos',
@@ -39,6 +42,7 @@ export const ANIME_SCRAPER_SLOTS = [
   'characters',
   'persons',
   'companies',
+  'relatedEntries',
   'covers',
   'backdrops',
   'logos'
@@ -112,7 +116,7 @@ export interface ScrapedGameInfo {
   originalName?: string
   releaseDate?: PartialDate
   description?: string
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface ScrapedAnimeInfo {
@@ -123,7 +127,7 @@ export interface ScrapedAnimeInfo {
   format?: LibraryAnimeFormat
   /** Episode count declared by the source; episode rows stay authoritative. */
   totalEpisodes?: number
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 /**
@@ -155,7 +159,7 @@ export interface ScrapedPersonInfo {
   deathDate?: PartialDate
   gender?: LibraryGender
   description?: string
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface ScrapedCompanyInfo {
@@ -163,7 +167,7 @@ export interface ScrapedCompanyInfo {
   originalName?: string
   foundedDate?: PartialDate
   description?: string
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface ScrapedCharacterInfo {
@@ -180,7 +184,7 @@ export interface ScrapedCharacterInfo {
   hips?: number
   cup?: LibraryCupSize
   description?: string
-  relatedSites?: readonly RelatedSite[]
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface ScrapedPersonMetadata extends ScrapedPersonInfo, ScrapedIdentityCarrier {
@@ -200,44 +204,59 @@ export interface ScrapedCharacterMetadata extends ScrapedCharacterInfo, ScrapedI
 }
 
 export interface ScrapedGamePersonFact extends ScrapedPersonMetadata {
-  type: LibraryGamePersonRole
+  role: LibraryGamePersonRole
   isSpoiler?: boolean
   note?: string
 }
 
 export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
-  type: LibraryGameCompanyRole
+  role: LibraryGameCompanyRole
   isSpoiler?: boolean
   note?: string
 }
 
 export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
   character?: ScrapedCharacterInfo & ScrapedIdentityCarrier
-  type: LibraryCharacterPersonRole
+  role: LibraryCharacterPersonRole
   isSpoiler?: boolean
   note?: string
 }
 
 export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
-  type: LibraryGameCharacterRole
+  role: LibraryGameCharacterRole
   isSpoiler?: boolean
   note?: string
 }
 
+/**
+ * Scraped media-to-media relation fact.
+ *
+ * The target is referenced by external identity only; the host resolves it
+ * against library entries and never creates media entries for scraped
+ * references.
+ */
+export interface ScrapedRelatedEntryFact {
+  mediaType: LibraryMediaType
+  source: string
+  externalId: string
+  type: LibraryMediaRelationType
+  note?: string
+}
+
 export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
-  type: LibraryAnimePersonRole
+  role: LibraryAnimePersonRole
   isSpoiler?: boolean
   note?: string
 }
 
 export interface ScrapedAnimeCompanyFact extends ScrapedCompanyMetadata {
-  type: LibraryAnimeCompanyRole
+  role: LibraryAnimeCompanyRole
   isSpoiler?: boolean
   note?: string
 }
 
 export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
-  type: LibraryAnimeCharacterRole
+  role: LibraryAnimeCharacterRole
   isSpoiler?: boolean
   note?: string
 }
@@ -249,6 +268,7 @@ export interface ScrapedGameBundle {
   persons?: readonly ScrapedGamePersonFact[]
   companies?: readonly ScrapedGameCompanyFact[]
   characters?: readonly ScrapedGameCharacterFact[]
+  relatedEntries?: readonly ScrapedRelatedEntryFact[]
   covers?: readonly string[]
   backdrops?: readonly string[]
   logos?: readonly string[]
@@ -263,6 +283,7 @@ export interface ScrapedAnimeBundle {
   persons?: readonly ScrapedAnimePersonFact[]
   companies?: readonly ScrapedAnimeCompanyFact[]
   characters?: readonly ScrapedAnimeCharacterFact[]
+  relatedEntries?: readonly ScrapedRelatedEntryFact[]
   covers?: readonly string[]
   backdrops?: readonly string[]
   logos?: readonly string[]
@@ -365,6 +386,7 @@ export interface GameSessionResultMap {
   characters: ScrapedGameCharacterFact[]
   persons: ScrapedGamePersonFact[]
   companies: ScrapedGameCompanyFact[]
+  relatedEntries: ScrapedRelatedEntryFact[]
   covers: string[]
   backdrops: string[]
   logos: string[]
@@ -378,6 +400,7 @@ export interface AnimeSessionResultMap {
   characters: ScrapedAnimeCharacterFact[]
   persons: ScrapedAnimePersonFact[]
   companies: ScrapedAnimeCompanyFact[]
+  relatedEntries: ScrapedRelatedEntryFact[]
   covers: string[]
   backdrops: string[]
   logos: string[]

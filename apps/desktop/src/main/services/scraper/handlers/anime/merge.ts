@@ -11,7 +11,8 @@ import type {
   ScrapedAnimeCompanyFact,
   ScrapedAnimeMetadata,
   ScrapedAnimePersonFact,
-  ScrapedEntityIdentity
+  ScrapedEntityIdentity,
+  ScrapedRelatedEntryFact
 } from '@shared/scraper'
 import {
   applyEntityCollectionStrategy,
@@ -34,6 +35,7 @@ import type {
   AnimeScraperImageResult,
   AnimeScraperInfoResult,
   AnimeScraperPersonsResult,
+  AnimeScraperRelatedEntriesResult,
   AnimeScraperResult,
   AnimeScraperTagsResult
 } from './types'
@@ -57,7 +59,7 @@ function mergeAnimePerson(
 ): ScrapedAnimePersonFact {
   return {
     ...mergePersonMetadataFields(existing, incoming),
-    type: existing.type,
+    role: existing.role,
     isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
@@ -70,7 +72,7 @@ function mergeAnimeCharacter(
 ): ScrapedAnimeCharacterFact {
   return {
     ...mergeCharacterMetadataFields(existing, incoming, options),
-    type: existing.type,
+    role: existing.role,
     isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
@@ -82,7 +84,7 @@ function mergeAnimeCompany(
 ): ScrapedAnimeCompanyFact {
   return {
     ...mergeCompanyMetadataFields(existing, incoming),
-    type: existing.type,
+    role: existing.role,
     isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
@@ -130,6 +132,13 @@ export function mergeAnimeScraperMetadata(
           strategy: slotConfigs.companies.strategy,
           unmatchedEntityPolicy: slotConfigs.companies.unmatchedEntityPolicy
         })
+        break
+      case 'relatedEntries':
+        mergeRelatedEntries(
+          metadata,
+          filterBySlot(results, 'relatedEntries'),
+          slotConfigs.relatedEntries.strategy
+        )
         break
       case 'covers':
         mergeImages(metadata, slot, filterByImageSlot(results, slot), slotConfigs.covers.strategy)
@@ -201,10 +210,10 @@ function mergeInfo(
 
     // Presence is authority: a provider that reports no sites at all keeps the
     // collection empty instead of leaving it unknown.
-    if (info.relatedSites) {
-      metadata.relatedSites = applyStrategy(
-        metadata.relatedSites,
-        info.relatedSites,
+    if (info.externalSites) {
+      metadata.externalSites = applyStrategy(
+        metadata.externalSites,
+        info.externalSites,
         strategy,
         (site) => site.url
       )
@@ -268,7 +277,7 @@ function mergePersons(
       (person) =>
         buildScrapedEntityAliasKeys(person, {
           includeCompactFallbackKeys: true,
-          type: person.type
+          type: person.role
         }),
       mergeAnimePerson
     )
@@ -288,10 +297,25 @@ function mergeCompanies(
       (company) =>
         buildScrapedEntityAliasKeys(company, {
           includeCompactFallbackKeys: true,
-          type: company.type
+          type: company.role
         }),
       mergeAnimeCompany
     )
+  )
+}
+
+/** Related entries are keyed by target identity and relation type. */
+function relatedEntryKey(fact: ScrapedRelatedEntryFact): string {
+  return `${fact.mediaType}#${fact.source}#${fact.externalId}#${fact.type}`
+}
+
+function mergeRelatedEntries(
+  metadata: Partial<ScrapedAnimeMetadata>,
+  results: AnimeScraperRelatedEntriesResult[],
+  strategy: SlotStrategy
+): void {
+  metadata.relatedEntries = foldCollectionResults(results, strategy, (merged, result) =>
+    applyStrategy(merged, result.data, strategy, relatedEntryKey)
   )
 }
 
@@ -319,12 +343,13 @@ function finalize(partial: Partial<ScrapedAnimeMetadata>): ScrapedAnimeMetadata 
     description: partial.description,
     format: partial.format,
     totalEpisodes: partial.totalEpisodes,
-    relatedSites: partial.relatedSites,
+    externalSites: partial.externalSites,
     tags: partial.tags,
     episodes: partial.episodes,
     persons: partial.persons,
     characters: partial.characters,
     companies: partial.companies,
+    relatedEntries: partial.relatedEntries,
     covers: partial.covers,
     backdrops: partial.backdrops,
     logos: partial.logos
@@ -341,6 +366,7 @@ export function toScrapedAnimeBundle(metadata: ScrapedAnimeMetadata): ScrapedAni
   if (metadata.persons) relationFacts.animePerson = metadata.persons
   if (metadata.companies) relationFacts.animeCompany = metadata.companies
   if (metadata.characters) relationFacts.animeCharacter = metadata.characters
+  if (metadata.relatedEntries) relationFacts.relatedEntries = metadata.relatedEntries
 
   const characterPersonFacts = metadata.characters?.flatMap((character) =>
     (character.persons ?? []).map((personFact) => ({
@@ -359,7 +385,7 @@ export function toScrapedAnimeBundle(metadata: ScrapedAnimeMetadata): ScrapedAni
         hips: character.hips,
         cup: character.cup,
         description: character.description,
-        relatedSites: character.relatedSites,
+        externalSites: character.externalSites,
         identity: character.identity,
         tags: character.tags
       }
@@ -383,7 +409,7 @@ export function toScrapedAnimeBundle(metadata: ScrapedAnimeMetadata): ScrapedAni
       description: metadata.description,
       format: metadata.format,
       totalEpisodes: metadata.totalEpisodes,
-      relatedSites: metadata.relatedSites,
+      externalSites: metadata.externalSites,
       tags: metadata.tags
     },
     episodes: metadata.episodes,

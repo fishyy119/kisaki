@@ -26,6 +26,7 @@ export class BangumiAnimeProvider
     'characters',
     'persons',
     'companies',
+    'relatedEntries',
     'covers',
     'backdrops'
   ] as const

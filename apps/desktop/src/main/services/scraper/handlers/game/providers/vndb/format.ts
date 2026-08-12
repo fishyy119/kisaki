@@ -2,9 +2,10 @@ import type {
   PartialDate,
   BloodType,
   CupSize,
-  GameCharacterType,
-  GamePersonType,
-  Gender
+  GameCharacterRole,
+  GamePersonRole,
+  Gender,
+  MediaRelationType
 } from '@shared/db'
 import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
@@ -22,7 +23,7 @@ const EXTLINK_SOURCE_MAP: Record<string, string> = {
   vndb: 'vndb'
 }
 
-type RelatedSite = { label: string; url: string }
+type ExternalSite = { label: string; url: string }
 
 export function buildVndbVnUrl(id: string): string {
   return `${VNDB_BASE_URL}/${id}`
@@ -308,7 +309,7 @@ export function mapVndbCup(value?: string | null): CupSize | undefined {
   return validCupSizes.includes(normalized as CupSize) ? (normalized as CupSize) : undefined
 }
 
-export function mapVndbCharacterRole(role?: string | null): GameCharacterType {
+export function mapVndbCharacterRole(role?: string | null): GameCharacterRole {
   switch ((role || '').trim().toLowerCase()) {
     case 'main':
     case 'primary':
@@ -322,7 +323,7 @@ export function mapVndbCharacterRole(role?: string | null): GameCharacterType {
   }
 }
 
-export function mapVndbStaffRole(role?: string | null): GamePersonType {
+export function mapVndbStaffRole(role?: string | null): GamePersonRole {
   switch ((role || '').trim().toLowerCase()) {
     case 'scenario':
       return 'scenario'
@@ -334,6 +335,25 @@ export function mapVndbStaffRole(role?: string | null): GamePersonType {
     case 'music':
     case 'songs':
       return 'music'
+    default:
+      return 'other'
+  }
+}
+
+/** VN-to-VN relation vocabulary; unmapped values fall back to `other`. */
+export function mapVndbVnRelation(relation?: string | null): MediaRelationType {
+  switch ((relation || '').trim().toLowerCase()) {
+    case 'seq':
+      return 'sequel'
+    case 'preq':
+      return 'prequel'
+    case 'side':
+    case 'fan':
+      return 'sideStory'
+    case 'par':
+      return 'parentStory'
+    case 'alt':
+      return 'alternative'
     default:
       return 'other'
   }
@@ -382,12 +402,12 @@ export function mapVndbLength(value?: number | null): string | undefined {
   }
 }
 
-export function extractRelatedSitesFromExtlinks(extlinks?: VndbExtlink[] | null): RelatedSite[] {
+export function extractExternalSitesFromExtlinks(extlinks?: VndbExtlink[] | null): ExternalSite[] {
   if (!extlinks?.length) {
     return []
   }
 
-  return dedupeRelatedSites(
+  return dedupeExternalSites(
     extlinks
       .map((entry) => {
         const url = normalizeUrl(entry.url)
@@ -397,7 +417,7 @@ export function extractRelatedSitesFromExtlinks(extlinks?: VndbExtlink[] | null)
           url
         }
       })
-      .filter((item): item is RelatedSite => !!item)
+      .filter((item): item is ExternalSite => !!item)
   )
 }
 
@@ -515,8 +535,8 @@ export function dedupeUrls(urls: Array<string | undefined | null>): string[] {
   return output
 }
 
-export function dedupeRelatedSites(sites: RelatedSite[]): RelatedSite[] {
-  const map = new Map<string, RelatedSite>()
+export function dedupeExternalSites(sites: ExternalSite[]): ExternalSite[] {
+  const map = new Map<string, ExternalSite>()
   for (const site of sites) {
     const url = normalizeUrl(site.url)
     if (!url) continue

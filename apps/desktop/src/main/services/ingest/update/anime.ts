@@ -20,7 +20,7 @@ import { applyAnimePlan } from './apply'
 import { loadAnimeCurrent } from './current'
 import { buildAnimeIncoming } from './incoming'
 import { buildAnimePlan } from './plan'
-import { ANIME_RELATION_LINKS, createRelationDegradeWarnings } from './relation-links'
+import { ANIME_LINK_TOPOLOGY, createLinkDegradeWarnings } from './link-topology'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
@@ -130,7 +130,7 @@ export class AnimeUpdateHandler {
     })
     // Read, plan and apply share one synchronous transaction: planning against a
     // snapshot taken outside it would overwrite concurrent edits.
-    const { applyResult, degradedRelationLinks } = this.dbService.client.transaction((tx) => {
+    const { applyResult, degradedLinks } = this.dbService.client.transaction((tx) => {
       const current = loadAnimeCurrent(tx, request.rootId, selection)
       const plan = buildAnimePlan({
         current,
@@ -141,7 +141,7 @@ export class AnimeUpdateHandler {
       })
       return {
         applyResult: applyAnimePlan(tx, request.rootId, plan, this.persistHandlers),
-        degradedRelationLinks: plan.degradedRelationLinks
+        degradedLinks: plan.degradedLinks
       }
     })
 
@@ -152,11 +152,19 @@ export class AnimeUpdateHandler {
       })
     }
     const warnings = [
-      ...createRelationDegradeWarnings({
-        links: ANIME_RELATION_LINKS,
-        degraded: degradedRelationLinks,
-        preservedRows: applyResult.preservedRelationRows
+      ...createLinkDegradeWarnings({
+        topology: ANIME_LINK_TOPOLOGY,
+        degraded: degradedLinks,
+        preservedRows: applyResult.preservedLinkRows
       }),
+      ...(applyResult.unresolvedRelatedEntries
+        ? [
+            {
+              code: 'related-entry-not-in-library' as const,
+              message: `Skipped ${applyResult.unresolvedRelatedEntries} related entries because their targets are not in the library.`
+            }
+          ]
+        : []),
       ...(await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
         signal: options?.signal
       }))

@@ -9,7 +9,7 @@
  * - https://vndb.org/d9#4
  */
 
-import type { GameCompanyType, GameScraperSlot } from '@shared/db'
+import type { GameCompanyRole, GameScraperSlot } from '@shared/db'
 import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
 import type {
@@ -20,6 +20,7 @@ import type {
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGamePersonFact,
+  ScrapedRelatedEntryFact,
   ScraperLookup
 } from '@shared/scraper'
 import type { ScraperProviderContext, ScraperProviderDeps } from '../../../../types'
@@ -37,11 +38,11 @@ import {
   buildVndbStaffUrl,
   buildVndbVnUrl,
   dedupeExternalIds,
-  dedupeRelatedSites,
+  dedupeExternalSites,
   dedupeTags,
   dedupeUrls,
   extractExternalIdsFromExtlinks,
-  extractRelatedSitesFromExtlinks,
+  extractExternalSitesFromExtlinks,
   mapVndbBloodType,
   mapVndbCharacterRole,
   mapVndbCup,
@@ -50,6 +51,7 @@ import {
   mapVndbProducerType,
   mapVndbStaffRole,
   mapVndbTagCategory,
+  mapVndbVnRelation,
   mapVndbGender,
   mergeNotes,
   normalizeVndbId,
@@ -72,7 +74,8 @@ import type {
 
 const VN_CORE_FIELDS =
   'id,title,alttitle,titles{lang,title,main,official,latin},released,description,extlinks{id,name,label,url},devstatus,length,length_minutes,languages,platforms,olang,tags{id,rating,spoiler,lie},image{id,url,thumbnail},screenshots{id,url,thumbnail}'
-const VN_RELATION_FIELDS = 'id,va{note,staff{id},character{id}},staff{id,role,note},developers{id}'
+const VN_RELATION_FIELDS =
+  'id,va{note,staff{id},character{id}},staff{id,role,note},developers{id},relations{id,relation,relation_official}'
 const CHARACTER_FIELDS =
   'id,name,original,description,sex,gender,birthday,blood_type,height,weight,bust,waist,hips,cup,image{id,url},traits{id,spoiler,lie,sexual},vns{id,role,spoiler}'
 const STAFF_FIELDS =
@@ -93,6 +96,7 @@ export class VNDBProvider implements GameScraperProvider {
     'characters',
     'persons',
     'companies',
+    'relatedEntries',
     'covers',
     'backdrops'
   ] as const
@@ -237,6 +241,8 @@ export class VNDBProvider implements GameScraperProvider {
           return this.buildPersons(getVnRelations, getSchema, getStaffMap, locale)
         case 'companies':
           return this.buildCompanies(getVnRelations, getReleases, getSchema, getProducerMap, locale)
+        case 'relatedEntries':
+          return this.buildRelatedEntries(getVnRelations)
         case 'covers':
           return this.buildCovers(getVnCore)
         case 'backdrops':
@@ -286,16 +292,16 @@ export class VNDBProvider implements GameScraperProvider {
     }
 
     const { name, originalName } = resolveLocalizedVnName(vn, locale)
-    const relatedSites = dedupeRelatedSites([
+    const externalSites = dedupeExternalSites([
       { label: 'VNDB', url: buildVndbVnUrl(vn.id) },
-      ...extractRelatedSitesFromExtlinks(vn.extlinks)
+      ...extractExternalSitesFromExtlinks(vn.extlinks)
     ])
     return {
       name,
       originalName,
       releaseDate: this.parsePartialDate(vn.released),
       description: this.normalizeDescription(sanitizeVndbText(vn.description)),
-      relatedSites
+      externalSites
     }
   }
 
@@ -418,13 +424,13 @@ export class VNDBProvider implements GameScraperProvider {
 
     for (const link of staffLinks) {
       const staffId = link.id
-      const type = mapVndbStaffRole(link.role)
+      const role = mapVndbStaffRole(link.role)
       const roleLabel = link.role ? roleMap.get(link.role) || link.role : undefined
       const roleNote = sanitizeVndbText(link.note)
 
       persons.push({
         ...this.buildStaffPersonBase(staffId, staffMap.get(staffId), locale),
-        type,
+        role,
         note: mergeNotes(roleLabel, roleNote)
       })
     }
@@ -435,7 +441,7 @@ export class VNDBProvider implements GameScraperProvider {
 
       persons.push({
         ...this.buildStaffPersonBase(staffId, staffMap.get(staffId), locale),
-        type: 'actor',
+        role: 'actor',
         note: sanitizeVndbText(link.note)
       })
     }
@@ -463,7 +469,7 @@ export class VNDBProvider implements GameScraperProvider {
     if (!vn) return undefined
 
     const languageMap = buildEnumLabelMap(schema.enums?.language)
-    const relationMap = new Map<string, Set<GameCompanyType>>()
+    const relationMap = new Map<string, Set<GameCompanyRole>>()
 
     for (const developer of vn.developers ?? []) {
       this.addCompanyRelation(relationMap, developer.id, 'developer')
@@ -493,15 +499,35 @@ export class VNDBProvider implements GameScraperProvider {
       const producer = producerMap.get(producerId)
       const base = this.buildCompanyBase(producerId, producer, languageMap, locale)
 
-      for (const type of relationMap.get(producerId) ?? []) {
+      for (const role of relationMap.get(producerId) ?? []) {
         companies.push({
           ...base,
-          type
+          role
         })
       }
     }
 
     return companies
+  }
+
+  // ===========================================================================
+  // Related Entries
+  // ===========================================================================
+
+  private async buildRelatedEntries(
+    getVnRelations: () => Promise<VndbVn | null>
+  ): Promise<ScrapedRelatedEntryFact[] | undefined> {
+    const vn = await getVnRelations()
+    if (!vn) return undefined
+
+    return (vn.relations ?? [])
+      .filter((relation) => relation.id)
+      .map((relation) => ({
+        mediaType: 'game' as const,
+        source: this.externalIdSource,
+        externalId: relation.id,
+        type: mapVndbVnRelation(relation.relation)
+      }))
   }
 
   // ===========================================================================
@@ -565,7 +591,7 @@ export class VNDBProvider implements GameScraperProvider {
       name,
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(character.description)),
-      relatedSites: [{ label: 'VNDB', url: buildVndbCharacterUrl(character.id) }],
+      externalSites: [{ label: 'VNDB', url: buildVndbCharacterUrl(character.id) }],
       identity: { externalIds: [{ source: this.externalIdSource, id: character.id }] },
       photos: photos.length > 0 ? photos : undefined,
       gender: mapVndbGender(character.sex ?? character.gender),
@@ -578,7 +604,7 @@ export class VNDBProvider implements GameScraperProvider {
       hips: toFiniteNumber(character.hips),
       cup: mapVndbCup(character.cup),
       tags: tags.length > 0 ? dedupeTags(tags) : undefined,
-      type: mapVndbCharacterRole(role),
+      role: mapVndbCharacterRole(role),
       persons: actors.length > 0 ? actors : undefined
     }
   }
@@ -617,9 +643,9 @@ export class VNDBProvider implements GameScraperProvider {
       staff?.original,
       locale
     )
-    const relatedSites = dedupeRelatedSites([
+    const externalSites = dedupeExternalSites([
       { label: 'VNDB', url: buildVndbStaffUrl(staffId) },
-      ...extractRelatedSitesFromExtlinks(staff?.extlinks)
+      ...extractExternalSitesFromExtlinks(staff?.extlinks)
     ])
     const externalIds = dedupeExternalIds([
       { source: this.externalIdSource, id: staffId },
@@ -630,10 +656,10 @@ export class VNDBProvider implements GameScraperProvider {
       name,
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(staff?.description)),
-      relatedSites,
+      externalSites,
       identity: { externalIds },
       gender: mapVndbGender(staff?.gender),
-      type: 'actor',
+      role: 'actor',
       note
     }
   }
@@ -642,15 +668,15 @@ export class VNDBProvider implements GameScraperProvider {
     staffId: string,
     staff: VndbStaff | undefined,
     locale?: ContentLocale
-  ): Omit<ScrapedGamePersonFact, 'type' | 'note'> {
+  ): Omit<ScrapedGamePersonFact, 'role' | 'note'> {
     const { name, originalName } = resolveVndbEntityName(
       staff?.name || staffId,
       staff?.original,
       locale
     )
-    const relatedSites = dedupeRelatedSites([
+    const externalSites = dedupeExternalSites([
       { label: 'VNDB', url: buildVndbStaffUrl(staffId) },
-      ...extractRelatedSitesFromExtlinks(staff?.extlinks)
+      ...extractExternalSitesFromExtlinks(staff?.extlinks)
     ])
     const externalIds = dedupeExternalIds([
       { source: this.externalIdSource, id: staffId },
@@ -661,20 +687,20 @@ export class VNDBProvider implements GameScraperProvider {
       name,
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(staff?.description)),
-      relatedSites,
+      externalSites,
       identity: { externalIds },
       gender: mapVndbGender(staff?.gender)
     }
   }
 
   private addCompanyRelation(
-    relationMap: Map<string, Set<GameCompanyType>>,
+    relationMap: Map<string, Set<GameCompanyRole>>,
     producerId: string,
-    relation: GameCompanyType
+    relation: GameCompanyRole
   ): void {
     if (!producerId) return
     if (!relationMap.has(producerId)) {
-      relationMap.set(producerId, new Set<GameCompanyType>())
+      relationMap.set(producerId, new Set<GameCompanyRole>())
     }
     relationMap.get(producerId)!.add(relation)
   }
@@ -684,15 +710,15 @@ export class VNDBProvider implements GameScraperProvider {
     producer: VndbProducer | undefined,
     languageMap: Map<string, string>,
     locale?: ContentLocale
-  ): Omit<ScrapedGameCompanyFact, 'type'> {
+  ): Omit<ScrapedGameCompanyFact, 'role'> {
     const { name, originalName } = resolveVndbEntityName(
       producer?.name || producerId,
       producer?.original,
       locale
     )
-    const relatedSites = dedupeRelatedSites([
+    const externalSites = dedupeExternalSites([
       { label: 'VNDB', url: buildVndbProducerUrl(producerId) },
-      ...extractRelatedSitesFromExtlinks(producer?.extlinks)
+      ...extractExternalSitesFromExtlinks(producer?.extlinks)
     ])
     const externalIds = dedupeExternalIds([
       { source: this.externalIdSource, id: producerId },
@@ -716,7 +742,7 @@ export class VNDBProvider implements GameScraperProvider {
       name,
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(producer?.description)),
-      relatedSites,
+      externalSites,
       identity: { externalIds },
       tags: tags.length > 0 ? dedupeTags(tags) : undefined
     }

@@ -1,4 +1,4 @@
-import type { RelatedSite, SlotStrategy, UnmatchedEntityPolicy } from '@shared/db'
+import type { ExternalSite, SlotStrategy, UnmatchedEntityPolicy } from '@shared/db'
 import type {
   ScrapedEntityIdentity,
   ScrapedCharacterMetadata,
@@ -260,15 +260,15 @@ export function mergeExternalIds(
 }
 
 /**
- * Merge RelatedSite arrays with deduplication by url.
+ * Merge ExternalSite arrays with deduplication by url.
  *
  * Presence is preserved: the result is `undefined` only when neither side knows
  * the collection, so an authoritative empty answer stays empty.
  */
-export function mergeRelatedSites(
-  existing: RelatedSite[] | undefined,
-  incoming: RelatedSite[] | undefined
-): RelatedSite[] | undefined {
+export function mergeExternalSites(
+  existing: ExternalSite[] | undefined,
+  incoming: ExternalSite[] | undefined
+): ExternalSite[] | undefined {
   if (!existing && !incoming) return undefined
   return mergeArrays(existing ?? [], incoming ?? [], (s) => s.url)
 }
@@ -408,7 +408,7 @@ export function mergePersonMetadataFields(
 ): ScrapedPersonMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'identity',
-    'relatedSites',
+    'externalSites',
     'tags',
     'photos'
   ])
@@ -416,7 +416,7 @@ export function mergePersonMetadataFields(
   return {
     ...merged,
     identity: mergeScrapedIdentities(existing.identity, incoming.identity),
-    relatedSites: mergeRelatedSites(existing.relatedSites, incoming.relatedSites),
+    externalSites: mergeExternalSites(existing.externalSites, incoming.externalSites),
     tags: mergeTagsArray(existing.tags, incoming.tags),
     photos: mergeImageUrls(existing.photos, incoming.photos)
   }
@@ -431,7 +431,7 @@ export function mergeCompanyMetadataFields(
 ): ScrapedCompanyMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'identity',
-    'relatedSites',
+    'externalSites',
     'tags',
     'logos'
   ])
@@ -439,7 +439,7 @@ export function mergeCompanyMetadataFields(
   return {
     ...merged,
     identity: mergeScrapedIdentities(existing.identity, incoming.identity),
-    relatedSites: mergeRelatedSites(existing.relatedSites, incoming.relatedSites),
+    externalSites: mergeExternalSites(existing.externalSites, incoming.externalSites),
     tags: mergeTagsArray(existing.tags, incoming.tags),
     logos: mergeImageUrls(existing.logos, incoming.logos)
   }
@@ -462,11 +462,11 @@ export function mergeCharacterPersons(
     (person) =>
       buildScrapedEntityAliasKeys(person, {
         includeCompactFallbackKeys: true,
-        type: person.type
+        type: person.role
       }),
     (existingPerson, incomingPerson) => ({
       ...mergePersonMetadataFields(existingPerson, incomingPerson),
-      type: existingPerson.type,
+      role: existingPerson.role,
       isSpoiler: !!existingPerson.isSpoiler || !!incomingPerson.isSpoiler,
       note: existingPerson.note || incomingPerson.note
     })
@@ -483,7 +483,7 @@ export function mergeCharacterMetadataFields(
 ): ScrapedCharacterMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'identity',
-    'relatedSites',
+    'externalSites',
     'tags',
     'persons',
     'photos'
@@ -492,7 +492,7 @@ export function mergeCharacterMetadataFields(
   return {
     ...merged,
     identity: mergeScrapedIdentities(existing.identity, incoming.identity),
-    relatedSites: mergeRelatedSites(existing.relatedSites, incoming.relatedSites),
+    externalSites: mergeExternalSites(existing.externalSites, incoming.externalSites),
     tags: mergeTagsArray(existing.tags, incoming.tags),
     persons: mergeCharacterPersons(existing.persons, incoming.persons, relationCollectionOptions),
     photos: mergeImageUrls(existing.photos, incoming.photos)

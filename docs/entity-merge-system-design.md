@@ -319,7 +319,7 @@ interface EntityMergeConfig {
 | `score`        | 目标非空优先，否则来源补齐               |
 | `isFavorite`   | OR                                       |
 | `isNsfw`       | OR                                       |
-| `relatedSites` | 按 URL 规范化去重，目标顺序优先          |
+| `externalSites` | 按 URL 规范化去重，目标顺序优先          |
 | `createdAt`    | 取最早                                   |
 | `updatedAt`    | transaction 内自然更新或显式设为当前时间 |
 

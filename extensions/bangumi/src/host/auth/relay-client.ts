@@ -1,11 +1,11 @@
-import type { NetworkCapability, JsonObject } from '@kisaki3/extension-sdk'
-import { BANGUMI_OAUTH_RELAY_BASE_URL } from '../utils/constants'
 import {
-  BangumiExtensionError,
-  createAbortError,
+  createCancellationError,
   isCancellationError,
-  throwIfAborted
-} from '../utils/errors'
+  type NetworkCapability,
+  type JsonObject
+} from '@kisaki3/extension-sdk'
+import { BANGUMI_OAUTH_RELAY_BASE_URL } from '../utils/constants'
+import { BangumiExtensionError, throwIfAborted } from '../utils/errors'
 import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 
@@ -124,7 +124,7 @@ export class OAuthRelayClient {
       })
     } catch {
       if (signal?.aborted) {
-        throw createAbortError()
+        throw createCancellationError('The operation was cancelled.')
       }
 
       return {
@@ -165,11 +165,7 @@ export class OAuthRelayClient {
 
       return response.data
     } catch (error) {
-      if (isCancellationError(error)) {
-        throw createAbortError()
-      }
-
-      if (error instanceof BangumiExtensionError) {
+      if (isCancellationError(error) || error instanceof BangumiExtensionError) {
         throw error
       }
 

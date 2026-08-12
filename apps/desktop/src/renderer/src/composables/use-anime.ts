@@ -33,7 +33,6 @@ import type {
   AnimeEpisode,
   AnimeEpisodeFile,
   AnimeExtra,
-  AnimeRelation,
   AnimeSession,
   AnimeCharacterLink,
   AnimePersonLink,
@@ -45,6 +44,7 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
 import { useDbChanges } from './use-db-changes'
 
 // =============================================================================
@@ -64,7 +64,7 @@ interface AnimeData {
   characters: (AnimeCharacterLink & { character: Character | null })[]
   persons: (AnimePersonLink & { person: Person | null })[]
   companies: (AnimeCompanyLink & { company: Company | null })[]
-  relations: (AnimeRelation & { relatedAnime: Anime | null })[]
+  relations: MediaRelationEntry[]
   sessions: AnimeSession[]
 }
 
@@ -83,8 +83,8 @@ export interface AnimeContext {
   persons: ComputedRef<(AnimePersonLink & { person: Person | null })[]>
   /** Company links with company data */
   companies: ComputedRef<(AnimeCompanyLink & { company: Company | null })[]>
-  /** Outgoing entry-to-entry relations with the related anime rows */
-  relations: ComputedRef<(AnimeRelation & { relatedAnime: Anime | null })[]>
+  /** Entry-to-entry relations merged from both edge directions */
+  relations: ComputedRef<MediaRelationEntry[]>
   /** Anime sessions (watch history) */
   sessions: ComputedRef<AnimeSession[]>
   /** Initial loading state (always false on the route surface after mount) */
@@ -151,12 +151,7 @@ async function fetchAnimeData(
     showNsfw ? undefined : eq(schema.companies.isNsfw, false)
   )
 
-  const animeRelationsWhere = and(
-    eq(schema.animeRelations.animeId, animeId),
-    showNsfw ? undefined : eq(schema.animes.isNsfw, false)
-  )
-
-  const [episodes, extras, tagLinks, charLinks, personLinks, companyLinks, relationRows, sessions] =
+  const [episodes, extras, tagLinks, charLinks, personLinks, companyLinks, relations, sessions] =
     await Promise.all([
       db
         .select()
@@ -195,12 +190,7 @@ async function fetchAnimeData(
         .leftJoin(schema.companies, eq(schema.animeCompanyLinks.companyId, schema.companies.id))
         .where(animeCompanyLinksWhere)
         .orderBy(asc(schema.animeCompanyLinks.orderInAnime)),
-      db
-        .select()
-        .from(schema.animeRelations)
-        .leftJoin(schema.animes, eq(schema.animeRelations.relatedAnimeId, schema.animes.id))
-        .where(animeRelationsWhere)
-        .orderBy(asc(schema.animeRelations.orderInAnime)),
+      fetchMediaRelations('anime', animeId, showNsfw),
       db
         .select()
         .from(schema.animeSessions)
@@ -222,7 +212,7 @@ async function fetchAnimeData(
       ...row.anime_company_links,
       company: row.companies
     })),
-    relations: relationRows.map((row) => ({ ...row.anime_relations, relatedAnime: row.animes })),
+    relations,
     sessions
   }
 }
@@ -312,12 +302,12 @@ const ANIME_OWNED_TABLES = [
   'anime_episodes',
   'anime_episode_files',
   'anime_extras',
-  'anime_relations',
   'anime_sessions',
   'anime_tag_links',
   'anime_character_links',
   'anime_person_links',
-  'anime_company_links'
+  'anime_company_links',
+  'media_relations'
 ]
 
 function useAnimeDbSync(animeId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {

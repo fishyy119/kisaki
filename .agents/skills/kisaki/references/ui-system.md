@@ -463,7 +463,7 @@ function handleSubmit() {
 
 - `game-characters-form-dialog/` - Grouped list with type categories + reordering
 - `game-tags-form-dialog/` - Simple list with reordering
-- `company-related-sites-form-dialog/` - Array field editing
+- `company-external-sites-form-dialog/` - Array field editing
 
 ### List Item Hover
 

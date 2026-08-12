@@ -489,16 +489,16 @@ async function loadSessionSlots<
     })()
 
     for (const slot of missingSlots) {
-      options.state.setPayloadTask(
-        options.providerId,
-        options.target,
-        slot,
-        locale,
-        fetchTask.then((result) => {
-          const payload = result[slot]
-          return payload === undefined ? null : (payload as TResultMap[typeof slot])
-        })
-      )
+      const payloadTask = fetchTask.then((result) => {
+        const payload = result[slot]
+        return payload === undefined ? null : (payload as TResultMap[typeof slot])
+      })
+
+      // The await loop below exits on the first rejection, so sibling payload
+      // tasks of a failed fetch would otherwise become unhandled rejections.
+      payloadTask.catch(() => undefined)
+
+      options.state.setPayloadTask(options.providerId, options.target, slot, locale, payloadTask)
     }
   }
 

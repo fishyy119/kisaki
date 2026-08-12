@@ -1,5 +1,5 @@
 <!--
-  CompanyRelatedSitesFormDialog
+  CompanyExternalSitesFormDialog
   Dialog for editing company related sites/links.
   Uses two-layer pattern: outer handles data fetching, inner handles form state.
 -->
@@ -23,7 +23,7 @@ import { Button } from '@renderer/components/ui/button'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
-import CompanyRelatedSitesItemFormDialog from './related-site-item-form-dialog.vue'
+import CompanyExternalSitesItemFormDialog from './external-site-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
@@ -31,7 +31,7 @@ const { m } = useI18n()
 
 const log = createLogger('Company')
 
-interface RelatedSite {
+interface ExternalSite {
   label: string
   url: string
 }
@@ -45,7 +45,7 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 // Form state
-const sites = ref<RelatedSite[]>([])
+const sites = ref<ExternalSite[]>([])
 const deleteIndex = ref<number | null>(null)
 const formOpen = ref(false)
 const editingIndex = ref<number | null>(null)
@@ -63,7 +63,7 @@ const { data: company, isLoading } = useAsyncData(
 // Initialize form state when data loads
 watch(company, (companyData) => {
   if (companyData) {
-    sites.value = companyData.relatedSites ? [...companyData.relatedSites] : []
+    sites.value = companyData.externalSites ? [...companyData.externalSites] : []
   }
 })
 
@@ -73,7 +73,7 @@ async function handleSave() {
     const validSites = sites.value.filter((s) => s.label.trim() && s.url.trim())
     await db
       .update(companies)
-      .set({ relatedSites: validSites.length > 0 ? validSites : null })
+      .set({ externalSites: validSites.length > 0 ? validSites : null })
       .where(eq(companies.id, props.companyId))
     notify.success(m.value.common.saved)
     open.value = false
@@ -95,7 +95,7 @@ function handleEditClick(index: number) {
   formOpen.value = true
 }
 
-function handleFormSubmit(data: RelatedSite) {
+function handleFormSubmit(data: ExternalSite) {
   if (editingIndex.value !== null) {
     sites.value[editingIndex.value] = data
   } else {
@@ -136,7 +136,7 @@ const deleteDialogOpen = computed({
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>{{ m.library.forms.editRelatedSites }}</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editExternalSites }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
@@ -192,7 +192,7 @@ const deleteDialogOpen = computed({
     </DialogContent>
   </Dialog>
 
-  <CompanyRelatedSitesItemFormDialog
+  <CompanyExternalSitesItemFormDialog
     v-if="formOpen"
     v-model:open="formOpen"
     :initial-data="editingData"

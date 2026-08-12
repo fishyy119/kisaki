@@ -1,24 +1,14 @@
+import { LIBRARY_MEDIA_TYPES, type LibraryMediaType } from '../graph'
 import {
-  LIBRARY_RELATION_KINDS,
-  type LibraryRelationCreateInput,
-  type LibraryRelationKind,
-  type LibraryRelationPatch,
-  type LibraryRelationQuery,
-  type LibraryRelationSelector
+  LIBRARY_MEDIA_RELATION_TYPE_RULES,
+  type LibraryMediaRelationCreateInput,
+  type LibraryMediaRelationPatch,
+  type LibraryMediaRelationQuery,
+  type LibraryMediaRelationSelector
 } from '../relations'
-import {
-  LIBRARY_ANIME_CHARACTER_ROLES,
-  LIBRARY_ANIME_COMPANY_ROLES,
-  LIBRARY_ANIME_PERSON_ROLES,
-  LIBRARY_CHARACTER_PERSON_ROLES,
-  LIBRARY_GAME_CHARACTER_ROLES,
-  LIBRARY_GAME_COMPANY_ROLES,
-  LIBRARY_GAME_PERSON_ROLES
-} from '../../../shared/library'
+import { LIBRARY_MEDIA_RELATION_TYPES } from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
-  validateOptionalBoolean,
-  validateOptionalEnumString,
   validateOptionalFiniteNumber,
   validateOptionalString,
   validateRequiredEnumString,
@@ -26,288 +16,192 @@ import {
 } from '../../../shared/validation'
 import { isRecord, throwIfValidationIssues, validateLibraryEntityReference } from './common'
 
-const RELATION_CREATE_KEYS = new Set<string>(['kind', 'from', 'to', 'metadata'])
-const RELATION_QUERY_SELECTOR_KEYS = new Set<string>(['kind', 'from', 'to', 'type'])
-const RELATION_LIST_QUERY_KEYS = new Set<string>(['entity', 'relatedEntity', 'kinds'])
+const RELATION_CREATE_KEYS = new Set<string>(['from', 'to', 'type', 'note', 'order'])
+const RELATION_SELECTOR_KEYS = new Set<string>(['from', 'to', 'type'])
+const RELATION_PATCH_KEYS = new Set<string>(['type', 'note', 'order'])
+const RELATION_QUERY_KEYS = new Set<string>(['entity', 'relatedEntity'])
 
-const RELATION_ENDPOINTS = {
-  'game-person': { from: 'game', to: 'person', roleValues: LIBRARY_GAME_PERSON_ROLES },
-  'game-company': { from: 'game', to: 'company', roleValues: LIBRARY_GAME_COMPANY_ROLES },
-  'game-character': { from: 'game', to: 'character', roleValues: LIBRARY_GAME_CHARACTER_ROLES },
-  'anime-person': { from: 'anime', to: 'person', roleValues: LIBRARY_ANIME_PERSON_ROLES },
-  'anime-company': { from: 'anime', to: 'company', roleValues: LIBRARY_ANIME_COMPANY_ROLES },
-  'anime-character': { from: 'anime', to: 'character', roleValues: LIBRARY_ANIME_CHARACTER_ROLES },
-  'character-person': {
-    from: 'character',
-    to: 'person',
-    roleValues: LIBRARY_CHARACTER_PERSON_ROLES
-  },
-  'game-tag': { from: 'game', to: 'tag', spoiler: true },
-  'anime-tag': { from: 'anime', to: 'tag', spoiler: true },
-  'character-tag': { from: 'character', to: 'tag', spoiler: true },
-  'person-tag': { from: 'person', to: 'tag', spoiler: true },
-  'company-tag': { from: 'company', to: 'tag', spoiler: true },
-  'collection-game': { from: 'collection', to: 'game' },
-  'collection-anime': { from: 'collection', to: 'anime' },
-  'collection-character': { from: 'collection', to: 'character' },
-  'collection-person': { from: 'collection', to: 'person' },
-  'collection-company': { from: 'collection', to: 'company' }
-} as const
-
-export function validateLibraryRelationCreateInput(value: unknown): ValidationIssue[] {
+export function validateLibraryMediaRelationCreateInput(value: unknown): ValidationIssue[] {
   if (!isRecord(value)) {
-    return [{ path: '$', message: 'Library relation input must be an object.' }]
-  }
-
-  const issues = [
-    ...validateUnknownKeys(value, RELATION_CREATE_KEYS),
-    ...validateRequiredEnumString(
-      value.kind,
-      '$.kind',
-      LIBRARY_RELATION_KINDS,
-      'kind must be one of the supported library relation kinds.'
-    )
-  ]
-
-  if (!isLibraryRelationKind(value.kind)) {
-    return issues
-  }
-
-  const endpoint = RELATION_ENDPOINTS[value.kind]
-  issues.push(
-    ...validateLibraryEntityReference(value.from, '$.from', endpoint.from),
-    ...validateLibraryEntityReference(value.to, '$.to', endpoint.to),
-    ...validateRelationMetadata(value.kind, value.metadata, '$.metadata', true)
-  )
-  return issues
-}
-
-export function validateLibraryRelationSelector(value: unknown): ValidationIssue[] {
-  if (!isRecord(value)) {
-    return [{ path: '$', message: 'Library relation selector must be an object.' }]
-  }
-
-  const issues = [
-    ...validateRequiredEnumString(
-      value.kind,
-      '$.kind',
-      LIBRARY_RELATION_KINDS,
-      'kind must be one of the supported library relation kinds.'
-    )
-  ]
-
-  if (!isLibraryRelationKind(value.kind)) {
-    issues.push(...validateUnknownKeys(value, RELATION_QUERY_SELECTOR_KEYS))
-    return issues
-  }
-
-  const endpoint = RELATION_ENDPOINTS[value.kind]
-  const allowedKeys = relationHasRole(value.kind)
-    ? RELATION_QUERY_SELECTOR_KEYS
-    : new Set<string>(['kind', 'from', 'to'])
-
-  issues.push(
-    ...validateUnknownKeys(value, allowedKeys),
-    ...validateLibraryEntityReference(value.from, '$.from', endpoint.from),
-    ...validateLibraryEntityReference(value.to, '$.to', endpoint.to)
-  )
-
-  if (relationHasRole(value.kind)) {
-    const roleValues = getRelationRoleValues(value.kind)
-    issues.push(
-      ...validateRequiredEnumString(
-        value.type,
-        '$.type',
-        roleValues,
-        'type must be one of the supported relation roles.'
-      )
-    )
-  }
-
-  return issues
-}
-
-export function validateLibraryRelationPatchForKind(
-  kind: LibraryRelationKind,
-  value: unknown
-): ValidationIssue[] {
-  return validateRelationMetadata(kind, value, '$', false)
-}
-
-export function validateLibraryRelationUpdateInput(
-  selector: unknown,
-  patch: unknown
-): ValidationIssue[] {
-  const issues = validateLibraryRelationSelector(selector)
-  if (isRecord(selector) && isLibraryRelationKind(selector.kind)) {
-    issues.push(...validateLibraryRelationPatchForKind(selector.kind, patch))
-  } else {
-    issues.push(...validatePatchObject(patch, '$'))
-  }
-  return issues
-}
-
-export function validateLibraryRelationQuery(value: unknown): ValidationIssue[] {
-  if (value === undefined) {
-    return []
-  }
-
-  if (!isRecord(value)) {
-    return [{ path: '$', message: 'Library relation query must be an object.' }]
+    return [{ path: '$', message: 'Library media relation input must be an object.' }]
   }
 
   return [
-    ...validateUnknownKeys(value, RELATION_LIST_QUERY_KEYS),
-    ...validateOptionalLibraryEntityReference(value.entity, '$.entity'),
-    ...validateOptionalLibraryEntityReference(value.relatedEntity, '$.relatedEntity'),
-    ...validateOptionalRelationKindArray(value.kinds, '$.kinds')
+    ...validateUnknownKeys(value, RELATION_CREATE_KEYS),
+    ...validateRelationEndpoints(value),
+    ...validateRequiredEnumString(
+      value.type,
+      '$.type',
+      LIBRARY_MEDIA_RELATION_TYPES,
+      'type must be one of the supported media relation types.'
+    ),
+    ...validateTypeAgainstPair(value),
+    ...validateOptionalString(value.note, '$.note'),
+    ...validateOptionalFiniteNumber(value.order, '$.order', 'order must be a finite number.')
   ]
 }
 
-export function assertValidLibraryRelationCreateInput(
-  value: unknown
-): asserts value is LibraryRelationCreateInput {
-  throwIfValidationIssues(
-    'library.relations.create input',
-    validateLibraryRelationCreateInput(value)
-  )
+export function validateLibraryMediaRelationSelector(value: unknown): ValidationIssue[] {
+  if (!isRecord(value)) {
+    return [{ path: '$', message: 'Library media relation selector must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, RELATION_SELECTOR_KEYS),
+    ...validateRelationEndpoints(value),
+    ...validateRequiredEnumString(
+      value.type,
+      '$.type',
+      LIBRARY_MEDIA_RELATION_TYPES,
+      'type must be one of the supported media relation types.'
+    )
+  ]
 }
 
-export function assertValidLibraryRelationSelector(
-  value: unknown
-): asserts value is LibraryRelationSelector {
-  throwIfValidationIssues('library relation selector', validateLibraryRelationSelector(value))
-}
-
-export function assertValidLibraryRelationUpdateInput(
+export function validateLibraryMediaRelationUpdateInput(
   selector: unknown,
   patch: unknown
-): asserts selector is LibraryRelationSelector {
-  throwIfValidationIssues(
-    'library.relations.update input',
-    validateLibraryRelationUpdateInput(selector, patch)
-  )
-}
-
-export function assertValidLibraryRelationQuery(
-  value: unknown
-): asserts value is LibraryRelationQuery | undefined {
-  throwIfValidationIssues('library.relations.list query', validateLibraryRelationQuery(value))
-}
-
-export function assertValidLibraryRelationPatchForKind(
-  kind: LibraryRelationKind,
-  value: unknown
-): asserts value is LibraryRelationPatch {
-  throwIfValidationIssues(
-    'library relation patch',
-    validateLibraryRelationPatchForKind(kind, value)
-  )
-}
-
-function validateRelationMetadata(
-  kind: LibraryRelationKind,
-  value: unknown,
-  path: string,
-  create: boolean
 ): ValidationIssue[] {
-  if (!isRecord(value)) {
-    return [{ path, message: 'Relation metadata must be an object.' }]
+  const issues = validateLibraryMediaRelationSelector(selector)
+
+  if (!isRecord(patch)) {
+    issues.push({ path: '$', message: 'Patch must be an object.' })
+    return issues
   }
 
-  const role = relationHasRole(kind)
-  const hasSpoiler = hasSpoilerMetadata(kind)
-  const allowedKeys = new Set<string>([
-    ...(role ? ['type'] : []),
-    ...(role || hasSpoiler ? ['isSpoiler'] : []),
-    'note',
-    'order'
-  ])
+  issues.push(
+    ...validateUnknownKeys(patch, RELATION_PATCH_KEYS),
+    ...validateOptionalString(patch.note, '$.note'),
+    ...validateOptionalFiniteNumber(patch.order, '$.order', 'order must be a finite number.')
+  )
 
-  const issues = [
-    ...validateUnknownKeys(value, allowedKeys, path),
-    ...validateOptionalString(value.note, `${path}.note`),
-    ...validateOptionalFiniteNumber(value.order, `${path}.order`, 'order must be a finite number.')
-  ]
-
-  if (role) {
-    const roleValues = getRelationRoleValues(kind)
-    issues.push(
-      ...(create
-        ? validateRequiredEnumString(
-            value.type,
-            `${path}.type`,
-            roleValues,
-            'type must be one of the supported relation roles.'
-          )
-        : validateOptionalEnumString(
-            value.type,
-            `${path}.type`,
-            roleValues,
-            'type must be one of the supported relation roles.'
-          ))
-    )
-  }
-
-  if (role || hasSpoiler) {
-    issues.push(...validateOptionalBoolean(value.isSpoiler, `${path}.isSpoiler`))
-  }
-
-  return issues
-}
-
-function validatePatchObject(value: unknown, path: string): ValidationIssue[] {
-  return isRecord(value) ? [] : [{ path, message: 'Patch must be an object.' }]
-}
-
-function validateOptionalLibraryEntityReference(value: unknown, path: string): ValidationIssue[] {
-  if (value === undefined) {
-    return []
-  }
-
-  return validateLibraryEntityReference(value, path)
-}
-
-function validateOptionalRelationKindArray(value: unknown, path: string): ValidationIssue[] {
-  if (value === undefined) {
-    return []
-  }
-
-  if (!Array.isArray(value)) {
-    return [{ path, message: 'kinds must be an array of supported library relation kinds.' }]
-  }
-
-  const issues: ValidationIssue[] = []
-  for (const [index, item] of value.entries()) {
+  if (patch.type !== undefined) {
     issues.push(
       ...validateRequiredEnumString(
-        item,
-        `${path}[${index}]`,
-        LIBRARY_RELATION_KINDS,
-        'kind must be one of the supported library relation kinds.'
+        patch.type,
+        '$.type',
+        LIBRARY_MEDIA_RELATION_TYPES,
+        'type must be one of the supported media relation types.'
       )
     )
+    if (isRecord(selector)) {
+      issues.push(...validateTypeAgainstPair({ ...selector, type: patch.type }))
+    }
+  }
+
+  return issues
+}
+
+export function validateLibraryMediaRelationQuery(value: unknown): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  if (!isRecord(value)) {
+    return [{ path: '$', message: 'Library media relation query must be an object.' }]
+  }
+
+  const issues = validateUnknownKeys(value, RELATION_QUERY_KEYS)
+  if (value.entity !== undefined) {
+    issues.push(...validateMediaEntityReference(value.entity, '$.entity'))
+  }
+  if (value.relatedEntity !== undefined) {
+    issues.push(...validateMediaEntityReference(value.relatedEntity, '$.relatedEntity'))
   }
   return issues
 }
 
-function isLibraryRelationKind(value: unknown): value is LibraryRelationKind {
-  return typeof value === 'string' && LIBRARY_RELATION_KINDS.includes(value as LibraryRelationKind)
+export function assertValidLibraryMediaRelationCreateInput(
+  value: unknown
+): asserts value is LibraryMediaRelationCreateInput {
+  throwIfValidationIssues(
+    'library.relations.create input',
+    validateLibraryMediaRelationCreateInput(value)
+  )
 }
 
-function relationHasRole(
-  kind: LibraryRelationKind
-): kind is 'game-person' | 'game-company' | 'game-character' | 'character-person' {
-  return 'roleValues' in RELATION_ENDPOINTS[kind]
+export function assertValidLibraryMediaRelationSelector(
+  value: unknown
+): asserts value is LibraryMediaRelationSelector {
+  throwIfValidationIssues('library media relation selector', validateLibraryMediaRelationSelector(value))
 }
 
-function getRelationRoleValues(
-  kind: 'game-person' | 'game-company' | 'game-character' | 'character-person'
-): readonly string[] {
-  return RELATION_ENDPOINTS[kind].roleValues
+export function assertValidLibraryMediaRelationUpdateInput(
+  selector: unknown,
+  patch: unknown
+): asserts selector is LibraryMediaRelationSelector {
+  throwIfValidationIssues(
+    'library.relations.update input',
+    validateLibraryMediaRelationUpdateInput(selector, patch)
+  )
 }
 
-function hasSpoilerMetadata(kind: LibraryRelationKind): boolean {
-  const endpoint = RELATION_ENDPOINTS[kind]
-  return 'spoiler' in endpoint && endpoint.spoiler === true
+export function assertValidLibraryMediaRelationQuery(
+  value: unknown
+): asserts value is LibraryMediaRelationQuery | undefined {
+  throwIfValidationIssues('library.relations.list query', validateLibraryMediaRelationQuery(value))
+}
+
+export function assertValidLibraryMediaRelationPatch(
+  value: unknown
+): asserts value is LibraryMediaRelationPatch {
+  if (!isRecord(value)) {
+    throwIfValidationIssues('library media relation patch', [
+      { path: '$', message: 'Patch must be an object.' }
+    ])
+  }
+}
+
+function validateRelationEndpoints(value: Record<string, unknown>): ValidationIssue[] {
+  return [
+    ...validateMediaEntityReference(value.from, '$.from'),
+    ...validateMediaEntityReference(value.to, '$.to')
+  ]
+}
+
+function validateMediaEntityReference(value: unknown, path: string): ValidationIssue[] {
+  const issues = validateLibraryEntityReference(value, path)
+  if (
+    isRecord(value) &&
+    typeof value.entityType === 'string' &&
+    !LIBRARY_MEDIA_TYPES.includes(value.entityType as LibraryMediaType)
+  ) {
+    issues.push({
+      path: `${path}.entityType`,
+      message: 'entityType must be one of the supported media types.'
+    })
+  }
+  return issues
+}
+
+/** The ordered endpoint pair constrains the relation vocabulary. */
+function validateTypeAgainstPair(value: Record<string, unknown>): ValidationIssue[] {
+  const fromType = readMediaType(value.from)
+  const toType = readMediaType(value.to)
+  if (!fromType || !toType || typeof value.type !== 'string') {
+    return []
+  }
+
+  const allowed = LIBRARY_MEDIA_RELATION_TYPE_RULES[`${fromType}-${toType}`]
+  if (allowed.includes(value.type as (typeof allowed)[number])) {
+    return []
+  }
+
+  return [
+    {
+      path: '$.type',
+      message: `type "${value.type}" is not allowed for the ${fromType}-${toType} endpoint pair.`
+    }
+  ]
+}
+
+function readMediaType(value: unknown): LibraryMediaType | undefined {
+  if (
+    isRecord(value) &&
+    typeof value.entityType === 'string' &&
+    LIBRARY_MEDIA_TYPES.includes(value.entityType as LibraryMediaType)
+  ) {
+    return value.entityType as LibraryMediaType
+  }
+  return undefined
 }

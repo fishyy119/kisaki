@@ -1,6 +1,7 @@
 import type {
   LibraryAnimeCreateInput,
   LibraryAnimeEpisodeCreateInput,
+  LibraryCharacterCreateInput,
   LibraryCollectionCreateInput,
   LibraryCompanyCreateInput,
   LibraryGameCreateInput,
@@ -10,10 +11,14 @@ import type {
   LibraryTagCreateInput
 } from './entities'
 import type {
+  LibraryAnimeCharacterRole,
   LibraryAnimeCompanyRole,
   LibraryAnimePersonRole,
+  LibraryCharacterPersonRole,
+  LibraryGameCharacterRole,
   LibraryGameCompanyRole,
-  LibraryGamePersonRole
+  LibraryGamePersonRole,
+  LibraryMediaRelationType
 } from '../../shared/library'
 
 export const LIBRARY_MEDIA_TYPES = ['game', 'anime'] as const
@@ -34,6 +39,7 @@ export const LIBRARY_GRAPH_NODE_KINDS = [
   'tag',
   'company',
   'person',
+  'character',
   'note',
   'session',
   'episode',
@@ -47,6 +53,9 @@ export const LIBRARY_GRAPH_EDGE_KINDS = [
   'media-tag',
   'media-company',
   'media-person',
+  'media-character',
+  'character-person',
+  'media-media',
   'media-note',
   'media-session',
   'media-episode',
@@ -117,6 +126,7 @@ export interface LibraryGraphNodes {
   tags?: readonly LibraryGraphTagNode[]
   companies?: readonly LibraryGraphCompanyNode[]
   people?: readonly LibraryGraphPersonNode[]
+  characters?: readonly LibraryGraphCharacterNode[]
   notes?: readonly LibraryGraphNoteNode[]
   sessions?: readonly LibraryGraphSessionNode[]
   episodes?: readonly LibraryGraphEpisodeNode[]
@@ -161,6 +171,11 @@ export interface LibraryGraphPersonNode extends LibraryGraphNodeBase {
   input: LibraryPersonCreateInput
 }
 
+export interface LibraryGraphCharacterNode extends LibraryGraphNodeBase {
+  kind: 'character'
+  input: LibraryCharacterCreateInput
+}
+
 export interface LibraryGraphNoteNode extends LibraryGraphNodeBase {
   kind: 'note'
   input: LibraryGameNoteCreateInput
@@ -193,6 +208,9 @@ export type LibraryGraphEdge =
   | LibraryGraphMediaTagEdge
   | LibraryGraphMediaCompanyEdge
   | LibraryGraphMediaPersonEdge
+  | LibraryGraphMediaCharacterEdge
+  | LibraryGraphCharacterPersonEdge
+  | LibraryGraphMediaMediaEdge
   | LibraryGraphMediaNoteEdge
   | LibraryGraphMediaSessionEdge
   | LibraryGraphMediaEpisodeEdge
@@ -229,6 +247,41 @@ export interface LibraryGraphMediaPersonEdge {
   role: LibraryGamePersonRole | LibraryAnimePersonRole
   order?: number
   note?: string
+}
+
+/** Role vocabulary is per media type; the host checks it against the `from` node. */
+export interface LibraryGraphMediaCharacterEdge {
+  kind: 'media-character'
+  from: LibraryGraphNodeRef
+  to: LibraryGraphNodeRef
+  role: LibraryGameCharacterRole | LibraryAnimeCharacterRole
+  order?: number
+  note?: string
+}
+
+export interface LibraryGraphCharacterPersonEdge {
+  kind: 'character-person'
+  from: LibraryGraphNodeRef
+  to: LibraryGraphNodeRef
+  role: LibraryCharacterPersonRole
+  order?: number
+  note?: string
+}
+
+/**
+ * Directed entry-to-entry relation between two media nodes. The endpoint pair
+ * constrains the vocabulary; the host validates it against the resolved media
+ * types. Both endpoints must be graph media nodes — matching an existing
+ * library entry through its node identity is how existing entries join edges,
+ * so the graph never fabricates a media entry just to relate to it.
+ */
+export interface LibraryGraphMediaMediaEdge {
+  kind: 'media-media'
+  from: LibraryGraphNodeRef
+  to: LibraryGraphNodeRef
+  type: LibraryMediaRelationType
+  note?: string
+  order?: number
 }
 
 export interface LibraryGraphMediaNoteEdge {

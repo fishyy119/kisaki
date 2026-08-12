@@ -1,4 +1,4 @@
-import type { CharacterPersonType } from '@shared/db'
+import type { CharacterPersonRole } from '@shared/db'
 import { buildEntityCanonicalIdentityKey } from '@shared/identity'
 import type { CoreCharacterMetadata, CorePersonMetadata } from '@shared/metadata'
 import type {
@@ -22,7 +22,7 @@ import {
 interface PendingCharacterPersonLink {
   characterIdentityKey: string
   personIdentityKey: string
-  type: CharacterPersonType
+  role: CharacterPersonRole
   isSpoiler: boolean
   note?: string
 }
@@ -31,17 +31,17 @@ function upsertCharacterPersonLink(
   edgeMap: Map<string, PendingCharacterPersonLink>,
   characterIdentityKey: string,
   personIdentityKey: string,
-  type: CharacterPersonType,
+  role: CharacterPersonRole,
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${characterIdentityKey}:${personIdentityKey}:${type}`
+  const key = `${characterIdentityKey}:${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       characterIdentityKey,
       personIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -70,7 +70,7 @@ function finalizeCharacterGraphLinks(
     return {
       characterIdentityKey,
       personIdentityKey: edge.personIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInCharacter,
@@ -125,7 +125,7 @@ export function buildCharacterGraph(
       characterPersonLinks,
       characterIdentityKey,
       personIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       normalizeOptionalString(fact.note)
     )

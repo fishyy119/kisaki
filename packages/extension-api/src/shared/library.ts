@@ -90,3 +90,18 @@ export const LIBRARY_CHARACTER_PERSON_ROLES = [
 ] as const
 
 export type LibraryCharacterPersonRole = (typeof LIBRARY_CHARACTER_PERSON_ROLES)[number]
+
+export const LIBRARY_MEDIA_RELATION_TYPES = [
+  'sequel',
+  'prequel',
+  'sideStory',
+  'parentStory',
+  'summary',
+  'fullStory',
+  'adaptation',
+  'sourceMaterial',
+  'alternative',
+  'other'
+] as const
+
+export type LibraryMediaRelationType = (typeof LIBRARY_MEDIA_RELATION_TYPES)[number]

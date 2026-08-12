@@ -127,10 +127,10 @@ function mergeInfo(
 
     // Presence is authority: a provider that reports no sites at all keeps the
     // collection empty instead of leaving it unknown.
-    if (info.relatedSites) {
-      metadata.relatedSites = applyStrategy(
-        metadata.relatedSites,
-        info.relatedSites,
+    if (info.externalSites) {
+      metadata.externalSites = applyStrategy(
+        metadata.externalSites,
+        info.externalSites,
         strategy,
         (s) => s.url
       )
@@ -191,7 +191,7 @@ function finalize(partial: Partial<ScrapedCharacterMetadata>): ScrapedCharacterM
     hips: partial.hips,
     cup: partial.cup,
     description: partial.description,
-    relatedSites: partial.relatedSites,
+    externalSites: partial.externalSites,
     tags: partial.tags,
     persons: partial.persons,
     photos: partial.photos
@@ -220,7 +220,7 @@ export function toScrapedCharacterBundle(
       hips: metadata.hips,
       cup: metadata.cup,
       description: metadata.description,
-      relatedSites: metadata.relatedSites,
+      externalSites: metadata.externalSites,
       tags: metadata.tags
     },
     // Slot presence, not slot content: an empty array is an authoritative

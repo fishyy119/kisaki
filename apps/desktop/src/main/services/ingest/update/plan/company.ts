@@ -1,11 +1,11 @@
 import type { CompanyPlanContext, CompanyUpdatePlan } from '../types'
 import {
   areExternalIdsEqual,
-  areRelatedSitesEqual,
+  areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
   mergeExternalIds,
-  mergeRelatedSites,
+  mergeExternalSites,
   mergeTags
 } from '../shared/merge'
 import { pickFirstUrl } from '../shared/normalization'
@@ -32,15 +32,15 @@ export function buildCompanyPlan(context: CompanyPlanContext): CompanyUpdatePlan
         break
       }
 
-      case 'relatedSites': {
-        const next = mergeRelatedSites(
-          current.company.relatedSites ?? [],
-          incoming.incoming.core.relatedSites ?? [],
+      case 'externalSites': {
+        const next = mergeExternalSites(
+          current.company.externalSites ?? [],
+          incoming.incoming.core.externalSites ?? [],
           policy.collectionUpdate
         )
         if (!next) break
-        if (areRelatedSitesEqual(current.company.relatedSites ?? [], next)) break
-        plan.patch.relatedSites = next
+        if (areExternalSitesEqual(current.company.externalSites ?? [], next)) break
+        plan.patch.externalSites = next
         break
       }
 

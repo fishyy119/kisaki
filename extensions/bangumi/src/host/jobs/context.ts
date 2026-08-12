@@ -1,5 +1,6 @@
 import {
   createTaskRunProgressWork,
+  isCancellationError,
   type ExtensionLogger,
   type JsonObject,
   type TaskRunProgressUpdate,
@@ -23,7 +24,7 @@ import {
   type BangumiJobError,
   type BangumiJobSummary
 } from './summary'
-import { BangumiExtensionError, isCancellationError } from '../utils/errors'
+import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
 
 /**

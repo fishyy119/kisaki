@@ -20,7 +20,7 @@ export const characterEntityProjection = {
     hips: 'hips',
     cup: 'cup',
     age: 'age',
-    related_sites: 'relatedSites'
+    external_sites: 'externalSites'
   },
   assetFields: {
     photo_file: 'photoFile'

@@ -13,8 +13,13 @@ export type ExistingReason = 'externalId' | 'path'
  * - `asset-persist-failed`: a deferred asset download failed past the commit point.
  * - `collection-replace-degraded`: the replace policy fell back to merge because
  *   the scraper did not answer every fact source feeding that collection.
+ * - `related-entry-not-in-library`: scraped related entries were skipped because
+ *   their targets did not resolve to library entries.
  */
-export type IngestWarningCode = 'asset-persist-failed' | 'collection-replace-degraded'
+export type IngestWarningCode =
+  | 'asset-persist-failed'
+  | 'collection-replace-degraded'
+  | 'related-entry-not-in-library'
 
 /** Warning reported with a successful ingest result. */
 export interface IngestWarning {

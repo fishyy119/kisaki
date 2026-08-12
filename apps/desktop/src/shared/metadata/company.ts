@@ -4,7 +4,7 @@
  * Core metadata type definitions for company entities.
  */
 
-import type { PartialDate, RelatedSite } from '@shared/db'
+import type { PartialDate, ExternalSite } from '@shared/db'
 import type { ExternalId, Tag } from './common'
 
 // =============================================================================
@@ -21,7 +21,7 @@ export interface CompanyInfo {
   originalName?: string
   foundedDate?: PartialDate
   description?: string
-  relatedSites?: RelatedSite[]
+  externalSites?: ExternalSite[]
   externalIds: ExternalId[]
 }
 

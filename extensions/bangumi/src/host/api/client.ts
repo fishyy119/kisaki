@@ -1,10 +1,12 @@
-import type {
-  ExtensionLogger,
-  NetworkCapability,
-  NetworkMethod,
-  NetworkResponse,
-  NetworkResponseType,
-  JsonValue
+import {
+  createCancellationError,
+  isCancellationError,
+  type ExtensionLogger,
+  type NetworkCapability,
+  type NetworkMethod,
+  type NetworkResponse,
+  type NetworkResponseType,
+  type JsonValue
 } from '@kisaki3/extension-sdk'
 import { BangumiApiError, normalizeBangumiApiError, readRetryAfterMs } from './errors'
 import { BangumiRateLimiter, delay, normalizeRateLimitConfig } from './limiter'
@@ -35,7 +37,7 @@ import type {
 } from './types'
 import type { BangumiSettingsV1 } from '../config/schema'
 import { BANGUMI_API_BASE_URL, BANGUMI_EPISODE_PAGE_LIMIT } from '../utils/constants'
-import { BangumiExtensionError, isCancellationError, throwIfAborted } from '../utils/errors'
+import { BangumiExtensionError, throwIfAborted } from '../utils/errors'
 import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 import type { TokenService } from '../auth/token-service'
@@ -489,7 +491,7 @@ export class BangumiClient {
         // Must precede the retry branches: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
         if (isCancellationError(error)) {
-          throw new BangumiExtensionError('job_cancelled', m().errors.operationCancelled)
+          throw createCancellationError(m().errors.operationCancelled)
         }
 
         if (error instanceof BangumiExtensionError) {

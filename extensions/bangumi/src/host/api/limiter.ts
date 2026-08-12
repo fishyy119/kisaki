@@ -1,4 +1,5 @@
-import { createAbortError, throwIfAborted } from '../utils/errors'
+import { createCancellationError } from '@kisaki3/extension-sdk'
+import { throwIfAborted } from '../utils/errors'
 
 export interface BangumiRateLimitConfig {
   maxRequests: number
@@ -94,7 +95,7 @@ export function delay(ms: number, signal?: AbortSignal): Promise<void> {
 
     function onAbort(): void {
       cleanup()
-      reject(createAbortError())
+      reject(createCancellationError('The operation was cancelled.'))
     }
 
     function cleanup(): void {

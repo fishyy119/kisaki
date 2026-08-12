@@ -5,7 +5,8 @@ import type { NetworkRateLimitGate } from './rate-limits'
 import {
   DEFAULT_NETWORK_RETRY_COUNT,
   DEFAULT_NETWORK_TIMEOUT_MS,
-  executeWithNetworkRetry
+  executeWithNetworkRetry,
+  NetworkTimeoutError
 } from './shared'
 
 export interface NetworkRequestClientOptions {
@@ -56,7 +57,11 @@ export class NetworkRequestClient {
   ): Promise<Response> {
     const controller = new AbortController()
     const cleanupAbort = linkAbortSignal(signal, () => controller.abort())
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+    let timedOut = false
+    const timeoutId = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, timeoutMs)
 
     try {
       assertNotAborted(signal)
@@ -64,6 +69,12 @@ export class NetworkRequestClient {
         ...options,
         signal: controller.signal
       })
+    } catch (error) {
+      if (timedOut && !signal?.aborted) {
+        throw new NetworkTimeoutError(new URL(url).host, timeoutMs, { cause: error })
+      }
+
+      throw error
     } finally {
       clearTimeout(timeoutId)
       cleanupAbort()

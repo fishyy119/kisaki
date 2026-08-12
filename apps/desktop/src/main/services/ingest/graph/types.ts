@@ -1,12 +1,13 @@
 import type {
-  AnimeCharacterType,
-  AnimeCompanyType,
-  AnimePersonType,
-  CharacterPersonType,
-  GameCharacterType,
-  GameCompanyType,
-  GamePersonType
+  AnimeCharacterRole,
+  AnimeCompanyRole,
+  AnimePersonRole,
+  CharacterPersonRole,
+  GameCharacterRole,
+  GameCompanyRole,
+  GamePersonRole
 } from '@shared/db'
+import type { ScrapedRelatedEntryFact } from '@shared/scraper'
 import type {
   AnimeEpisodeInfo,
   CoreAnimeMetadata,
@@ -45,7 +46,7 @@ export interface IngestCharacterNode extends IngestEntityNode<CoreCharacterMetad
 export interface IngestCharacterPersonLink extends IngestLinkBase {
   characterIdentityKey: string
   personIdentityKey: string
-  type: CharacterPersonType
+  role: CharacterPersonRole
   orderInCharacter: number
   orderInPerson: number
 }
@@ -53,7 +54,7 @@ export interface IngestCharacterPersonLink extends IngestLinkBase {
 export interface IngestGamePersonLink extends IngestLinkBase {
   gameIdentityKey: string
   personIdentityKey: string
-  type: GamePersonType
+  role: GamePersonRole
   orderInGame: number
   orderInPerson: number
 }
@@ -61,7 +62,7 @@ export interface IngestGamePersonLink extends IngestLinkBase {
 export interface IngestGameCompanyLink extends IngestLinkBase {
   gameIdentityKey: string
   companyIdentityKey: string
-  type: GameCompanyType
+  role: GameCompanyRole
   orderInGame: number
   orderInCompany: number
 }
@@ -69,7 +70,7 @@ export interface IngestGameCompanyLink extends IngestLinkBase {
 export interface IngestGameCharacterLink extends IngestLinkBase {
   gameIdentityKey: string
   characterIdentityKey: string
-  type: GameCharacterType
+  role: GameCharacterRole
   orderInGame: number
   orderInCharacter: number
 }
@@ -88,6 +89,8 @@ export interface IngestGameGraph {
   companies: IngestCompanyNode[]
   characters: IngestCharacterNode[]
   links: IngestGameGraphLinks
+  /** Media-relation facts pass through unresolved; persist resolves against the library. */
+  relatedEntries?: ScrapedRelatedEntryFact[]
   media: {
     coverUrl?: string
     backdropUrl?: string
@@ -99,7 +102,7 @@ export interface IngestGameGraph {
 export interface IngestAnimePersonLink extends IngestLinkBase {
   animeIdentityKey: string
   personIdentityKey: string
-  type: AnimePersonType
+  role: AnimePersonRole
   orderInAnime: number
   orderInPerson: number
 }
@@ -107,7 +110,7 @@ export interface IngestAnimePersonLink extends IngestLinkBase {
 export interface IngestAnimeCompanyLink extends IngestLinkBase {
   animeIdentityKey: string
   companyIdentityKey: string
-  type: AnimeCompanyType
+  role: AnimeCompanyRole
   orderInAnime: number
   orderInCompany: number
 }
@@ -115,7 +118,7 @@ export interface IngestAnimeCompanyLink extends IngestLinkBase {
 export interface IngestAnimeCharacterLink extends IngestLinkBase {
   animeIdentityKey: string
   characterIdentityKey: string
-  type: AnimeCharacterType
+  role: AnimeCharacterRole
   orderInAnime: number
   orderInCharacter: number
 }
@@ -136,6 +139,8 @@ export interface IngestAnimeGraph {
   companies: IngestCompanyNode[]
   characters: IngestCharacterNode[]
   links: IngestAnimeGraphLinks
+  /** Media-relation facts pass through unresolved; persist resolves against the library. */
+  relatedEntries?: ScrapedRelatedEntryFact[]
   media: {
     coverUrl?: string
     backdropUrl?: string

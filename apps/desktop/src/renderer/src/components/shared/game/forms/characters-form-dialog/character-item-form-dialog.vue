@@ -4,7 +4,7 @@
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { GameCharacterType } from '@shared/db'
+import type { GameCharacterRole } from '@shared/db'
 import { db } from '@renderer/core/db'
 import {
   Dialog,
@@ -36,7 +36,7 @@ interface CharacterLinkData {
   characterId: string
   characterName: string
   characterPhoto: string | null
-  type: GameCharacterType
+  role: GameCharacterRole
   note: string
   isSpoiler: boolean
 }
@@ -56,7 +56,7 @@ const emit = defineEmits<{
   submit: [data: CharacterLinkData]
 }>()
 
-const CHARACTER_TYPE_OPTIONS = computed<{ value: GameCharacterType; label: string }[]>(() => [
+const CHARACTER_ROLE_OPTIONS = computed<{ value: GameCharacterRole; label: string }[]>(() => [
   { value: 'main', label: m.value.library.roles.gameCharacter.main },
   { value: 'supporting', label: m.value.library.roles.gameCharacter.supporting },
   { value: 'cameo', label: m.value.library.roles.gameCharacter.cameo },
@@ -68,7 +68,7 @@ const formData = ref<CharacterLinkData>({
   characterId: '',
   characterName: '',
   characterPhoto: null,
-  type: 'main',
+  role: 'main',
   note: '',
   isSpoiler: false
 })
@@ -84,14 +84,14 @@ watch(
         formData.value.characterId = props.initialData.characterId
         formData.value.characterName = props.initialData.characterName
         formData.value.characterPhoto = props.initialData.characterPhoto
-        formData.value.type = props.initialData.type
+        formData.value.role = props.initialData.role
         formData.value.note = props.initialData.note
         formData.value.isSpoiler = props.initialData.isSpoiler
       } else {
         formData.value.characterId = ''
         formData.value.characterName = ''
         formData.value.characterPhoto = null
-        formData.value.type = 'main'
+        formData.value.role = 'main'
         formData.value.note = ''
         formData.value.isSpoiler = false
       }
@@ -139,7 +139,7 @@ function handleSubmit() {
     characterId: formData.value.characterId,
     characterName: formData.value.characterName || 'Unknown',
     characterPhoto: formData.value.characterPhoto,
-    type: formData.value.type,
+    role: formData.value.role,
     note: formData.value.note.trim(),
     isSpoiler: formData.value.isSpoiler
   })
@@ -179,13 +179,13 @@ function handleCancel() {
             <Field>
               <FieldLabel>{{ m.library.forms.characterRoleLabel }}</FieldLabel>
               <FieldContent>
-                <Select v-model="formData.type">
+                <Select v-model="formData.role">
                   <SelectTrigger class="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="opt in CHARACTER_TYPE_OPTIONS"
+                      v-for="opt in CHARACTER_ROLE_OPTIONS"
                       :key="opt.value"
                       :value="opt.value"
                     >

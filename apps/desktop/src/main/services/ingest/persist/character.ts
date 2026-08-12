@@ -42,10 +42,10 @@ function resolveCharacterPersonLinks(params: {
       requireOwnerIdentity(link.characterIdentityKey, characterIdentityKey, 'character')
       const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
       return {
-        key: `${personId}:${link.type}`,
+        key: `${personId}:${link.role}`,
         value: {
           personId,
-          type: link.type,
+          role: link.role,
           isSpoiler: link.isSpoiler,
           note: link.note
         }
@@ -54,7 +54,7 @@ function resolveCharacterPersonLinks(params: {
     buildRow: (link, orderInCharacter, counters) => ({
       characterId,
       personId: link.personId,
-      type: link.type,
+      role: link.role,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInCharacter,
@@ -185,7 +185,7 @@ export class CharacterIngestPersistHandler {
       hips: core.hips,
       cup: core.cup,
       description: core.description,
-      relatedSites: core.relatedSites || []
+      externalSites: core.externalSites || []
     }
 
     tx.insert(characters).values(newCharacter).run()

@@ -1,12 +1,12 @@
 import type { GamePlanContext, GameUpdatePlan } from '../types'
-import { GAME_RELATION_LINKS, resolveRelationLinks } from '../relation-links'
+import { GAME_LINK_TOPOLOGY, resolveLinkWrites } from '../link-topology'
 import {
   areExternalIdsEqual,
-  areRelatedSitesEqual,
+  areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
   mergeExternalIds,
-  mergeRelatedSites,
+  mergeExternalSites,
   mergeTags
 } from '../shared/merge'
 import { pickFirstUrl } from '../shared/normalization'
@@ -14,16 +14,16 @@ import { shouldApplyMediaUpdate, shouldApplyScalarUpdate } from '../shared/polic
 
 export function buildGamePlan(context: GamePlanContext): GameUpdatePlan {
   const { current, incoming, relationGraph, selection, policy } = context
-  const relations = resolveRelationLinks({
-    links: GAME_RELATION_LINKS,
+  const relations = resolveLinkWrites({
+    topology: GAME_LINK_TOPOLOGY,
     selectedSurfaces: selection.relationSurfaces,
     availability: incoming.availability,
     mode: policy.collectionUpdate
   })
   const plan: GameUpdatePlan = {
     patch: {},
-    relationLinks: relations.links,
-    degradedRelationLinks: relations.degraded
+    links: relations.links,
+    degradedLinks: relations.degraded
   }
 
   for (const surface of selection.coreSurfaces) {
@@ -43,15 +43,15 @@ export function buildGamePlan(context: GamePlanContext): GameUpdatePlan {
         break
       }
 
-      case 'relatedSites': {
-        const next = mergeRelatedSites(
-          current.game.relatedSites ?? [],
-          incoming.incoming.core.relatedSites ?? [],
+      case 'externalSites': {
+        const next = mergeExternalSites(
+          current.game.externalSites ?? [],
+          incoming.incoming.core.externalSites ?? [],
           policy.collectionUpdate
         )
         if (!next) break
-        if (areRelatedSitesEqual(current.game.relatedSites ?? [], next)) break
-        plan.patch.relatedSites = next
+        if (areExternalSitesEqual(current.game.externalSites ?? [], next)) break
+        plan.patch.externalSites = next
         break
       }
 
@@ -114,6 +114,16 @@ export function buildGamePlan(context: GamePlanContext): GameUpdatePlan {
 
   if (Object.keys(relations.links).length > 0 && relationGraph) {
     plan.relationGraph = relationGraph
+  }
+
+  if (
+    selection.relationSurfaces.includes('relatedEntries') &&
+    incoming.availability.surfaces.has('relatedEntries')
+  ) {
+    plan.relatedEntries = {
+      facts: incoming.incoming.relationFacts.relatedEntries ?? [],
+      mode: policy.collectionUpdate
+    }
   }
 
   return plan

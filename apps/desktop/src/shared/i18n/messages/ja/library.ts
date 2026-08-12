@@ -40,7 +40,7 @@ export const library = {
     relatedCharacters: '関連キャラクター',
     relatedCompanies: '関連会社',
     characterPersons: 'キャラクター関連人物',
-    relatedSites: '関連リンク',
+    externalSites: '外部リンク',
     externalIds: '外部 ID',
     photos: '写真',
     covers: 'カバー',
@@ -60,7 +60,8 @@ export const library = {
     extras: '特典映像',
     watchDuration: '視聴時間',
     lastWatchedAt: '最終視聴',
-    relatedAnimes: '関連アニメ'
+    relatedAnimes: '関連アニメ',
+    relatedEntries: '関連エントリー'
   },
 
   status: {
@@ -150,12 +151,15 @@ export const library = {
     special: 'スペシャル'
   },
 
-  animeRelation: {
+  mediaRelation: {
     sequel: '続編',
     prequel: '前作',
     sideStory: '外伝',
-    movie: '劇場版',
+    parentStory: '本編',
     summary: '総集編',
+    fullStory: '完全版',
+    adaptation: 'メディア化作品',
+    sourceMaterial: '原作',
     alternative: '別バージョン',
     other: 'その他'
   },
@@ -285,16 +289,17 @@ export const library = {
     sections: {
       description: '概要',
       tags: 'タグ',
-      relatedSites: '関連リンク',
+      externalSites: '外部リンク',
       details: '詳細情報'
     },
     empty: {
       description: '概要はまだありません',
       tags: 'タグはまだありません',
-      relatedSites: '関連リンクはまだありません',
+      externalSites: '外部リンクはまだありません',
       relatedGames: '関連ゲームはまだありません',
       relatedPersons: '関連人物はまだいません',
       relatedCharacters: '関連キャラクターはまだいません',
+      relatedEntries: '関連エントリーはまだありません',
       characters: 'キャラクターはまだいません',
       persons: '人物はまだいません',
       companies: '会社はまだありません'
@@ -319,7 +324,7 @@ export const library = {
     editName: '名前を編集',
     editOriginalName: '原名を編集',
     editTags: 'タグを編集',
-    editRelatedSites: '関連リンクを編集',
+    editExternalSites: '関連リンクを編集',
     editTag: 'タグを編集',
     manageMedia: 'メディア管理',
     manageExternalIds: '外部 ID を管理',
@@ -524,6 +529,8 @@ export const library = {
     companyLabel: '会社',
     tagLabel: 'タグ',
     relationTypeLabel: '関係の種類',
+    mediaTypeLabel: 'メディアタイプ',
+    editRelatedEntries: '関連エントリーを編集',
     selectTypePlaceholder: '種類を選択',
     characterRoleLabel: 'キャラクターの役割',
     personRoleLabel: '人物の役割',

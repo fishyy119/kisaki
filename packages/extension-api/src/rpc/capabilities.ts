@@ -49,15 +49,20 @@ import type {
   LibraryGameQuery,
   LibraryGraphInput,
   LibraryGraphResult,
+  LibraryLink,
+  LibraryLinkCreateInput,
+  LibraryLinkPatch,
+  LibraryLinkQuery,
+  LibraryLinkSelector,
+  LibraryMediaRelation,
+  LibraryMediaRelationCreateInput,
+  LibraryMediaRelationPatch,
+  LibraryMediaRelationQuery,
+  LibraryMediaRelationSelector,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
   LibraryPersonQuery,
-  LibraryRelation,
-  LibraryRelationCreateInput,
-  LibraryRelationPatch,
-  LibraryRelationQuery,
-  LibraryRelationSelector,
   LibraryTag,
   LibraryTagCreateInput,
   LibraryTagPatch,
@@ -316,20 +321,39 @@ export type HostToMainCapabilityRpcRequestMap = {
     LibraryGraphRpcRequest,
     { result: LibraryGraphResult }
   >
+  'capabilities.library.links.list': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { query?: LibraryLinkQuery },
+    { items: readonly LibraryLink[] }
+  >
+  'capabilities.library.links.create': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { input: LibraryLinkCreateInput },
+    { link: LibraryLink }
+  >
+  'capabilities.library.links.update': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { selector: LibraryLinkSelector; patch: LibraryLinkPatch },
+    { link: LibraryLink }
+  >
+  'capabilities.library.links.remove': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { selector: LibraryLinkSelector },
+    RpcNoPayload
+  >
   'capabilities.library.relations.list': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { query?: LibraryRelationQuery },
-    { items: readonly LibraryRelation[] }
+    ExtensionScopedRpcParams & { query?: LibraryMediaRelationQuery },
+    { items: readonly LibraryMediaRelation[] }
   >
   'capabilities.library.relations.create': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { input: LibraryRelationCreateInput },
-    { relation: LibraryRelation }
+    ExtensionScopedRpcParams & { input: LibraryMediaRelationCreateInput },
+    { relation: LibraryMediaRelation }
   >
   'capabilities.library.relations.update': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { selector: LibraryRelationSelector; patch: LibraryRelationPatch },
-    { relation: LibraryRelation }
+    ExtensionScopedRpcParams & {
+      selector: LibraryMediaRelationSelector
+      patch: LibraryMediaRelationPatch
+    },
+    { relation: LibraryMediaRelation }
   >
   'capabilities.library.relations.remove': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { selector: LibraryRelationSelector },
+    ExtensionScopedRpcParams & { selector: LibraryMediaRelationSelector },
     RpcNoPayload
   >
   'capabilities.library.animes.episodes.list': RpcMethodDefinition<

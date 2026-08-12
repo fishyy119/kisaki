@@ -1,169 +1,87 @@
 import type { LibraryEntityReference } from './entities'
-import type {
-  LibraryAnimeCharacterRole,
-  LibraryAnimeCompanyRole,
-  LibraryAnimePersonRole,
-  LibraryCharacterPersonRole,
-  LibraryGameCharacterRole,
-  LibraryGameCompanyRole,
-  LibraryGamePersonRole
-} from '../../shared/library'
+import type { LibraryMediaType } from './graph'
+import type { LibraryMediaRelationType } from '../../shared/library'
 
-export const LIBRARY_RELATION_KINDS = [
-  'game-person',
-  'game-company',
-  'game-character',
-  'anime-person',
-  'anime-company',
-  'anime-character',
-  'character-person',
-  'game-tag',
-  'anime-tag',
-  'character-tag',
-  'person-tag',
-  'company-tag',
-  'collection-game',
-  'collection-anime',
-  'collection-character',
-  'collection-person',
-  'collection-company'
-] as const
+export type LibraryMediaTypePair = `${LibraryMediaType}-${LibraryMediaType}`
 
-export type LibraryRelationKind = (typeof LIBRARY_RELATION_KINDS)[number]
+const SAME_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
+  'sequel',
+  'prequel',
+  'sideStory',
+  'parentStory',
+  'summary',
+  'fullStory',
+  'alternative',
+  'other'
+]
 
-export interface LibraryOrderedRelationMetadata {
+const CROSS_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
+  'adaptation',
+  'sourceMaterial',
+  'other'
+]
+
+/**
+ * Allowed relation types per ordered endpoint pair. Same-type pairs carry the
+ * structural vocabulary; cross-type pairs carry provenance only.
+ */
+export const LIBRARY_MEDIA_RELATION_TYPE_RULES: Record<
+  LibraryMediaTypePair,
+  readonly LibraryMediaRelationType[]
+> = {
+  'game-game': SAME_TYPE_RELATION_TYPES,
+  'anime-anime': SAME_TYPE_RELATION_TYPES,
+  'game-anime': CROSS_TYPE_RELATION_TYPES,
+  'anime-game': CROSS_TYPE_RELATION_TYPES
+}
+
+/**
+ * One directed entry-to-entry relation between media entries.
+ *
+ * Rows are stored exactly as written; readers merge both directions through
+ * the inverse vocabulary, so an extension only manages the edges it writes.
+ */
+export interface LibraryMediaRelation {
+  from: LibraryEntityReference<LibraryMediaType>
+  to: LibraryEntityReference<LibraryMediaType>
+  type: LibraryMediaRelationType
   note?: string
   order?: number
-}
-
-export interface LibrarySpoilerRelationMetadata extends LibraryOrderedRelationMetadata {
-  isSpoiler?: boolean
-}
-
-export interface GamePersonRelationMetadata extends LibrarySpoilerRelationMetadata {
-  type: LibraryGamePersonRole
-}
-
-export interface GameCompanyRelationMetadata extends LibrarySpoilerRelationMetadata {
-  type: LibraryGameCompanyRole
-}
-
-export interface GameCharacterRelationMetadata extends LibrarySpoilerRelationMetadata {
-  type: LibraryGameCharacterRole
-}
-
-export interface AnimePersonRelationMetadata extends LibrarySpoilerRelationMetadata {
-  type: LibraryAnimePersonRole
-}
-
-export interface AnimeCompanyRelationMetadata extends LibrarySpoilerRelationMetadata {
-  type: LibraryAnimeCompanyRole
-}
-
-export interface AnimeCharacterRelationMetadata extends LibrarySpoilerRelationMetadata {
-  type: LibraryAnimeCharacterRole
-}
-
-export interface CharacterPersonRelationMetadata extends LibrarySpoilerRelationMetadata {
-  type: LibraryCharacterPersonRole
-}
-
-export type CollectionMembershipMetadata = LibraryOrderedRelationMetadata
-
-export type TagMembershipMetadata = LibrarySpoilerRelationMetadata
-
-export interface LibraryRelationMetadataMap {
-  'game-person': GamePersonRelationMetadata
-  'game-company': GameCompanyRelationMetadata
-  'game-character': GameCharacterRelationMetadata
-  'anime-person': AnimePersonRelationMetadata
-  'anime-company': AnimeCompanyRelationMetadata
-  'anime-character': AnimeCharacterRelationMetadata
-  'character-person': CharacterPersonRelationMetadata
-  'game-tag': TagMembershipMetadata
-  'anime-tag': TagMembershipMetadata
-  'character-tag': TagMembershipMetadata
-  'person-tag': TagMembershipMetadata
-  'company-tag': TagMembershipMetadata
-  'collection-game': CollectionMembershipMetadata
-  'collection-anime': CollectionMembershipMetadata
-  'collection-character': CollectionMembershipMetadata
-  'collection-person': CollectionMembershipMetadata
-  'collection-company': CollectionMembershipMetadata
-}
-
-export interface LibraryRelationEndpointMap {
-  'game-person': { from: 'game'; to: 'person' }
-  'game-company': { from: 'game'; to: 'company' }
-  'game-character': { from: 'game'; to: 'character' }
-  'anime-person': { from: 'anime'; to: 'person' }
-  'anime-company': { from: 'anime'; to: 'company' }
-  'anime-character': { from: 'anime'; to: 'character' }
-  'character-person': { from: 'character'; to: 'person' }
-  'game-tag': { from: 'game'; to: 'tag' }
-  'anime-tag': { from: 'anime'; to: 'tag' }
-  'character-tag': { from: 'character'; to: 'tag' }
-  'person-tag': { from: 'person'; to: 'tag' }
-  'company-tag': { from: 'company'; to: 'tag' }
-  'collection-game': { from: 'collection'; to: 'game' }
-  'collection-anime': { from: 'collection'; to: 'anime' }
-  'collection-character': { from: 'collection'; to: 'character' }
-  'collection-person': { from: 'collection'; to: 'person' }
-  'collection-company': { from: 'collection'; to: 'company' }
-}
-
-export type LibraryRelationFromType<K extends LibraryRelationKind> =
-  LibraryRelationEndpointMap[K]['from']
-
-export type LibraryRelationToType<K extends LibraryRelationKind> =
-  LibraryRelationEndpointMap[K]['to']
-
-export type LibraryRelationMetadata<K extends LibraryRelationKind = LibraryRelationKind> =
-  LibraryRelationMetadataMap[K]
-
-export type LibraryRelationPatch<K extends LibraryRelationKind = LibraryRelationKind> = Partial<
-  LibraryRelationMetadataMap[K]
->
-
-export type LibraryRelationSelectorExtra<K extends LibraryRelationKind> =
-  LibraryRelationMetadataMap[K] extends { type: infer T } ? { type: T } : Record<string, never>
-
-export interface LibraryRelation<K extends LibraryRelationKind = LibraryRelationKind> {
-  kind: K
-  from: LibraryEntityReference<LibraryRelationFromType<K>>
-  to: LibraryEntityReference<LibraryRelationToType<K>>
-  metadata: LibraryRelationMetadataMap[K]
   createdAt?: number
   updatedAt?: number
 }
 
-export interface LibraryRelationCreateInput<K extends LibraryRelationKind = LibraryRelationKind> {
-  kind: K
-  from: LibraryEntityReference<LibraryRelationFromType<K>>
-  to: LibraryEntityReference<LibraryRelationToType<K>>
-  metadata: LibraryRelationMetadataMap[K]
+export interface LibraryMediaRelationCreateInput {
+  from: LibraryEntityReference<LibraryMediaType>
+  to: LibraryEntityReference<LibraryMediaType>
+  type: LibraryMediaRelationType
+  note?: string
+  order?: number
 }
 
-export type LibraryRelationSelector<K extends LibraryRelationKind = LibraryRelationKind> = {
-  kind: K
-  from: LibraryEntityReference<LibraryRelationFromType<K>>
-  to: LibraryEntityReference<LibraryRelationToType<K>>
-} & LibraryRelationSelectorExtra<K>
-
-export interface LibraryRelationQuery {
-  entity?: LibraryEntityReference
-  relatedEntity?: LibraryEntityReference
-  kinds?: readonly LibraryRelationKind[]
+export interface LibraryMediaRelationSelector {
+  from: LibraryEntityReference<LibraryMediaType>
+  to: LibraryEntityReference<LibraryMediaType>
+  type: LibraryMediaRelationType
 }
 
-export interface LibraryRelationCapability {
-  list(query?: LibraryRelationQuery): Promise<readonly LibraryRelation[]>
-  create<K extends LibraryRelationKind>(
-    input: LibraryRelationCreateInput<K>
-  ): Promise<LibraryRelation<K>>
-  update<K extends LibraryRelationKind>(
-    selector: LibraryRelationSelector<K>,
-    patch: LibraryRelationPatch<K>
-  ): Promise<LibraryRelation<K>>
-  remove<K extends LibraryRelationKind>(selector: LibraryRelationSelector<K>): Promise<void>
+export interface LibraryMediaRelationPatch {
+  type?: LibraryMediaRelationType
+  note?: string
+  order?: number
+}
+
+export interface LibraryMediaRelationQuery {
+  entity?: LibraryEntityReference<LibraryMediaType>
+  relatedEntity?: LibraryEntityReference<LibraryMediaType>
+}
+
+export interface LibraryMediaRelationCapability {
+  list(query?: LibraryMediaRelationQuery): Promise<readonly LibraryMediaRelation[]>
+  create(input: LibraryMediaRelationCreateInput): Promise<LibraryMediaRelation>
+  update(
+    selector: LibraryMediaRelationSelector,
+    patch: LibraryMediaRelationPatch
+  ): Promise<LibraryMediaRelation>
+  remove(selector: LibraryMediaRelationSelector): Promise<void>
 }

@@ -20,7 +20,7 @@ import { applyGamePlan } from './apply'
 import { loadGameCurrent } from './current'
 import { buildGameIncoming } from './incoming'
 import { buildGamePlan } from './plan'
-import { createRelationDegradeWarnings, GAME_RELATION_LINKS } from './relation-links'
+import { createLinkDegradeWarnings, GAME_LINK_TOPOLOGY } from './link-topology'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
@@ -130,7 +130,7 @@ export class GameUpdateHandler {
     })
     // Read, plan and apply share one synchronous transaction: planning against a
     // snapshot taken outside it would overwrite concurrent edits.
-    const { applyResult, degradedRelationLinks } = this.dbService.client.transaction((tx) => {
+    const { applyResult, degradedLinks } = this.dbService.client.transaction((tx) => {
       const current = loadGameCurrent(tx, request.rootId, selection)
       const plan = buildGamePlan({
         current,
@@ -141,7 +141,7 @@ export class GameUpdateHandler {
       })
       return {
         applyResult: applyGamePlan(tx, request.rootId, plan, this.persistHandlers),
-        degradedRelationLinks: plan.degradedRelationLinks
+        degradedLinks: plan.degradedLinks
       }
     })
 
@@ -152,11 +152,19 @@ export class GameUpdateHandler {
       })
     }
     const warnings = [
-      ...createRelationDegradeWarnings({
-        links: GAME_RELATION_LINKS,
-        degraded: degradedRelationLinks,
-        preservedRows: applyResult.preservedRelationRows
+      ...createLinkDegradeWarnings({
+        topology: GAME_LINK_TOPOLOGY,
+        degraded: degradedLinks,
+        preservedRows: applyResult.preservedLinkRows
       }),
+      ...(applyResult.unresolvedRelatedEntries
+        ? [
+            {
+              code: 'related-entry-not-in-library' as const,
+              message: `Skipped ${applyResult.unresolvedRelatedEntries} related entries because their targets are not in the library.`
+            }
+          ]
+        : []),
       ...(await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
         signal: options?.signal
       }))

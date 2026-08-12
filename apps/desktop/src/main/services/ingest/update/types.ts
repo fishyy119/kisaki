@@ -25,7 +25,8 @@ import type { ExternalId } from '@shared/identity'
 import type {
   ScrapedAnimeRelationFacts,
   ScrapedCharacterRelationFacts,
-  ScrapedGameRelationFacts
+  ScrapedGameRelationFacts,
+  ScrapedRelatedEntryFact
 } from '@shared/scraper'
 import type { PendingAssetTask } from '../assets'
 import type {
@@ -69,10 +70,10 @@ export interface UpdateIncomingAvailability<TSurface extends string> {
  */
 export interface UpdateIncomingRelationAvailability<
   TSurface extends string,
-  TRelationLink extends string
+  TLinkKind extends string
 > extends UpdateIncomingAvailability<TSurface> {
   /** Link tables whose every fact source answered; only these may be cleared. */
-  completeRelationLinks: Set<TRelationLink>
+  completeLinks: Set<TLinkKind>
 }
 
 export interface UpdateIncomingBuildResult<TAvailability, TCore, TRelationFacts, TMediaCandidates> {
@@ -84,20 +85,20 @@ export interface UpdateIncomingBuildResult<TAvailability, TCore, TRelationFacts,
  * Link tables a game update can write.
  *
  * Derived from the graph builder's output, so a new link table forces a
- * declaration in `GAME_RELATION_LINKS`.
+ * declaration in `GAME_LINK_TOPOLOGY`.
  */
-export type GameRelationLink = keyof IngestGameGraphLinks
+export type GameLinkKind = keyof IngestGameGraphLinks
 
 /**
  * Link tables an anime update can write.
  *
  * Derived from the graph builder's output, so a new link table forces a
- * declaration in `ANIME_RELATION_LINKS`.
+ * declaration in `ANIME_LINK_TOPOLOGY`.
  */
-export type AnimeRelationLink = keyof IngestAnimeGraphLinks
+export type AnimeLinkKind = keyof IngestAnimeGraphLinks
 
 /** Link tables a character update can write; the graph carries a single set. */
-export type CharacterRelationLink = 'characterPerson'
+export type CharacterLinkKind = 'characterPerson'
 
 export interface PersonIncomingMediaCandidates {
   photoUrls?: string[]
@@ -139,14 +140,14 @@ export type CompanyIncomingBuildResult = UpdateIncomingBuildResult<
 >
 
 export type CharacterIncomingBuildResult = UpdateIncomingBuildResult<
-  UpdateIncomingRelationAvailability<CharacterUpdateSurface, CharacterRelationLink>,
+  UpdateIncomingRelationAvailability<CharacterUpdateSurface, CharacterLinkKind>,
   CoreCharacterMetadata,
   ScrapedCharacterRelationFacts,
   CharacterIncomingMediaCandidates
 >
 
 export type GameIncomingBuildResult = UpdateIncomingBuildResult<
-  UpdateIncomingRelationAvailability<GameUpdateSurface, GameRelationLink>,
+  UpdateIncomingRelationAvailability<GameUpdateSurface, GameLinkKind>,
   CoreGameMetadata,
   ScrapedGameRelationFacts,
   GameIncomingMediaCandidates
@@ -154,7 +155,7 @@ export type GameIncomingBuildResult = UpdateIncomingBuildResult<
 
 export interface AnimeIncomingBuildResult
   extends UpdateIncomingBuildResult<
-    UpdateIncomingRelationAvailability<AnimeUpdateSurface, AnimeRelationLink>,
+    UpdateIncomingRelationAvailability<AnimeUpdateSurface, AnimeLinkKind>,
     CoreAnimeMetadata,
     ScrapedAnimeRelationFacts,
     AnimeIncomingMediaCandidates
@@ -213,9 +214,9 @@ export interface CharacterUpdatePlan {
   tags?: Tag[]
   photoUrl?: string
   /** Link tables to write, each with the mode resolved for that table. */
-  relationLinks: Partial<Record<CharacterRelationLink, CollectionUpdateMode>>
+  links: Partial<Record<CharacterLinkKind, CollectionUpdateMode>>
   /** Link tables where `replace` was downgraded because a fact source stayed silent. */
-  degradedRelationLinks: CharacterRelationLink[]
+  degradedLinks: CharacterLinkKind[]
   relationGraph?: IngestCharacterGraph
 }
 
@@ -228,10 +229,11 @@ export interface GameUpdatePlan {
   logoUrl?: string
   iconUrl?: string
   /** Link tables to write, each with the mode resolved for that table. */
-  relationLinks: Partial<Record<GameRelationLink, CollectionUpdateMode>>
+  links: Partial<Record<GameLinkKind, CollectionUpdateMode>>
   /** Link tables where `replace` was downgraded because a fact source stayed silent. */
-  degradedRelationLinks: GameRelationLink[]
+  degradedLinks: GameLinkKind[]
   relationGraph?: IngestGameGraph
+  relatedEntries?: RelatedEntriesUpdatePlan
 }
 
 /**
@@ -247,6 +249,15 @@ export interface AnimeEpisodeUpdatePlan {
   mode: CollectionUpdateMode
 }
 
+/**
+ * Related-entry write resolved for one update. A single fact source feeds the
+ * table, so an answered slot is always complete and `replace` never degrades.
+ */
+export interface RelatedEntriesUpdatePlan {
+  facts: ScrapedRelatedEntryFact[]
+  mode: CollectionUpdateMode
+}
+
 export interface AnimeUpdatePlan {
   patch: Partial<Anime>
   externalIds?: ExternalId[]
@@ -256,19 +267,22 @@ export interface AnimeUpdatePlan {
   logoUrl?: string
   episodes?: AnimeEpisodeUpdatePlan
   /** Link tables to write, each with the mode resolved for that table. */
-  relationLinks: Partial<Record<AnimeRelationLink, CollectionUpdateMode>>
+  links: Partial<Record<AnimeLinkKind, CollectionUpdateMode>>
   /** Link tables where `replace` was downgraded because a fact source stayed silent. */
-  degradedRelationLinks: AnimeRelationLink[]
+  degradedLinks: AnimeLinkKind[]
   relationGraph?: IngestAnimeGraph
+  relatedEntries?: RelatedEntriesUpdatePlan
 }
 
 export interface UpdateApplyResult {
   pendingAssets: PendingAssetTask[]
 }
 
-export interface UpdateRelationApplyResult<TRelationLink extends string> extends UpdateApplyResult {
+export interface UpdateLinkApplyResult<TLinkKind extends string> extends UpdateApplyResult {
   /** Stored rows per link table that a `replace` would have deleted but merge kept. */
-  preservedRelationRows: Partial<Record<TRelationLink, number>>
+  preservedLinkRows: Partial<Record<TLinkKind, number>>
+  /** Scraped related entries skipped because their targets are not in the library. */
+  unresolvedRelatedEntries?: number
 }
 
 export interface UpdateResolvedSelection<

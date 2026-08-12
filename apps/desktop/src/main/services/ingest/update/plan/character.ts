@@ -1,12 +1,12 @@
 import type { CharacterPlanContext, CharacterUpdatePlan } from '../types'
-import { CHARACTER_RELATION_LINKS, resolveRelationLinks } from '../relation-links'
+import { CHARACTER_LINK_TOPOLOGY, resolveLinkWrites } from '../link-topology'
 import {
   areExternalIdsEqual,
-  areRelatedSitesEqual,
+  areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
   mergeExternalIds,
-  mergeRelatedSites,
+  mergeExternalSites,
   mergeTags
 } from '../shared/merge'
 import { pickFirstUrl } from '../shared/normalization'
@@ -14,16 +14,16 @@ import { shouldApplyMediaUpdate, shouldApplyScalarUpdate } from '../shared/polic
 
 export function buildCharacterPlan(context: CharacterPlanContext): CharacterUpdatePlan {
   const { current, incoming, relationGraph, selection, policy } = context
-  const relations = resolveRelationLinks({
-    links: CHARACTER_RELATION_LINKS,
+  const relations = resolveLinkWrites({
+    topology: CHARACTER_LINK_TOPOLOGY,
     selectedSurfaces: selection.relationSurfaces,
     availability: incoming.availability,
     mode: policy.collectionUpdate
   })
   const plan: CharacterUpdatePlan = {
     patch: {},
-    relationLinks: relations.links,
-    degradedRelationLinks: relations.degraded
+    links: relations.links,
+    degradedLinks: relations.degraded
   }
 
   for (const surface of selection.coreSurfaces) {
@@ -52,15 +52,15 @@ export function buildCharacterPlan(context: CharacterPlanContext): CharacterUpda
         break
       }
 
-      case 'relatedSites': {
-        const next = mergeRelatedSites(
-          current.character.relatedSites ?? [],
-          incoming.incoming.core.relatedSites ?? [],
+      case 'externalSites': {
+        const next = mergeExternalSites(
+          current.character.externalSites ?? [],
+          incoming.incoming.core.externalSites ?? [],
           policy.collectionUpdate
         )
         if (!next) break
-        if (areRelatedSitesEqual(current.character.relatedSites ?? [], next)) break
-        plan.patch.relatedSites = next
+        if (areExternalSitesEqual(current.character.externalSites ?? [], next)) break
+        plan.patch.externalSites = next
         break
       }
 

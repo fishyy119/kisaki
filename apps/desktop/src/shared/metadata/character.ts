@@ -4,7 +4,7 @@
  * Core metadata type definitions for character entities.
  */
 
-import type { PartialDate, RelatedSite } from '@shared/db'
+import type { PartialDate, ExternalSite } from '@shared/db'
 import type { Gender, BloodType, CupSize } from '@shared/db'
 import type { ExternalId, Tag } from './common'
 
@@ -31,7 +31,7 @@ export interface CharacterInfo {
   hips?: number
   cup?: CupSize
   description?: string
-  relatedSites?: RelatedSite[]
+  externalSites?: ExternalSite[]
   externalIds: ExternalId[]
 }
 

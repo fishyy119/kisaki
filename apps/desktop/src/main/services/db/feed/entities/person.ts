@@ -13,7 +13,7 @@ export const personEntityProjection = {
     birth_date: 'birthDate',
     death_date: 'deathDate',
     gender: 'gender',
-    related_sites: 'relatedSites'
+    external_sites: 'externalSites'
   },
   assetFields: {
     photo_file: 'photoFile'

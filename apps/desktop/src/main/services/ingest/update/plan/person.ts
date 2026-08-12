@@ -1,11 +1,11 @@
 import type { PersonPlanContext, PersonUpdatePlan } from '../types'
 import {
   areExternalIdsEqual,
-  areRelatedSitesEqual,
+  areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
   mergeExternalIds,
-  mergeRelatedSites,
+  mergeExternalSites,
   mergeTags
 } from '../shared/merge'
 import { pickFirstUrl } from '../shared/normalization'
@@ -34,15 +34,15 @@ export function buildPersonPlan(context: PersonPlanContext): PersonUpdatePlan {
         break
       }
 
-      case 'relatedSites': {
-        const next = mergeRelatedSites(
-          current.person.relatedSites ?? [],
-          incoming.incoming.core.relatedSites ?? [],
+      case 'externalSites': {
+        const next = mergeExternalSites(
+          current.person.externalSites ?? [],
+          incoming.incoming.core.externalSites ?? [],
           policy.collectionUpdate
         )
         if (!next) break
-        if (areRelatedSitesEqual(current.person.relatedSites ?? [], next)) break
-        plan.patch.relatedSites = next
+        if (areExternalSitesEqual(current.person.externalSites ?? [], next)) break
+        plan.patch.externalSites = next
         break
       }
 

@@ -189,5 +189,5 @@ Automation 只能绑定本扩展拥有的 command。宿主会校验：
 - `kisaki.library.games.get/list/update`
 - `kisaki.library.collections.get/list/create/update`
 - `kisaki.library.tags.get/list/create/update`
-- `kisaki.library.relations.list/create/update/remove`
+- `kisaki.library.links.list/create/update/remove`
 - `kisaki.ingest.game.add.fromScraper`

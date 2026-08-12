@@ -1,10 +1,12 @@
 import type {
   ExtensionRuntimeMetadata,
   LibraryAnime,
+  LibraryCharacter,
   LibraryCollection,
   LibraryCompany,
   LibraryGame,
   LibraryGraphAttachmentNode,
+  LibraryGraphCharacterNode,
   LibraryGraphCollectionNode,
   LibraryGraphCompanyNode,
   LibraryGraphConflictMode,
@@ -32,6 +34,7 @@ export type LibraryGraphNode =
   | LibraryGraphTagNode
   | LibraryGraphCompanyNode
   | LibraryGraphPersonNode
+  | LibraryGraphCharacterNode
   | LibraryGraphNoteNode
   | LibraryGraphSessionNode
   | LibraryGraphEpisodeNode
@@ -58,6 +61,7 @@ export interface NormalizedLibraryGraphNodes {
   tags: readonly LibraryGraphNodeEntry<LibraryGraphTagNode>[]
   companies: readonly LibraryGraphNodeEntry<LibraryGraphCompanyNode>[]
   people: readonly LibraryGraphNodeEntry<LibraryGraphPersonNode>[]
+  characters: readonly LibraryGraphNodeEntry<LibraryGraphCharacterNode>[]
   notes: readonly LibraryGraphNodeEntry<LibraryGraphNoteNode>[]
   sessions: readonly LibraryGraphNodeEntry<LibraryGraphSessionNode>[]
   episodes: readonly LibraryGraphNodeEntry<LibraryGraphEpisodeNode>[]
@@ -79,6 +83,7 @@ export type LibraryGraphEntity =
   | LibraryTag
   | LibraryCompany
   | LibraryPerson
+  | LibraryCharacter
 
 export type LibraryGraphMatchReason = 'externalId' | 'path' | 'name'
 

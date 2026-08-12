@@ -1,5 +1,5 @@
+import { isCancellationError } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../api/client'
-import { isCancellationError } from '../../utils/errors'
 import { getBangumiSubjectType, type BangumiMediaScope } from '../../../shared/scopes'
 import { fetchCharacterDetails, fetchCharacterPersons } from './characters'
 import { fetchSubjectImageVariants } from './images'

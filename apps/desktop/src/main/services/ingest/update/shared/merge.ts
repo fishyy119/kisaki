@@ -5,11 +5,11 @@
  * incoming clears it. `undefined` means the plan carries no change.
  */
 
-import type { RelatedSite } from '@shared/db'
+import type { ExternalSite } from '@shared/db'
 import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import type { Tag } from '@shared/metadata'
-import { normalizeRelatedSites, normalizeTags } from './normalization'
+import { normalizeExternalSites, normalizeTags } from './normalization'
 
 export function mergeExternalIds(
   current: ExternalId[],
@@ -21,12 +21,12 @@ export function mergeExternalIds(
   return normalizeExternalIds([...current, ...incoming])
 }
 
-export function mergeRelatedSites(
-  current: RelatedSite[],
-  incoming: RelatedSite[],
+export function mergeExternalSites(
+  current: ExternalSite[],
+  incoming: ExternalSite[],
   mode: IngestUpdatePolicy['collectionUpdate']
-): RelatedSite[] | undefined {
-  const normalizedIncoming = normalizeRelatedSites(incoming) ?? []
+): ExternalSite[] | undefined {
+  const normalizedIncoming = normalizeExternalSites(incoming) ?? []
   if (mode === 'replace') return normalizedIncoming
   if (normalizedIncoming.length === 0) return undefined
 
@@ -57,10 +57,10 @@ export function areExternalIdsEqual(current: ExternalId[], next: ExternalId[]): 
   return areScalarValuesEqual(normalizeExternalIds(current), normalizeExternalIds(next))
 }
 
-export function areRelatedSitesEqual(current: RelatedSite[], next: RelatedSite[]): boolean {
+export function areExternalSitesEqual(current: ExternalSite[], next: ExternalSite[]): boolean {
   return areScalarValuesEqual(
-    normalizeRelatedSites(current) ?? [],
-    normalizeRelatedSites(next) ?? []
+    normalizeExternalSites(current) ?? [],
+    normalizeExternalSites(next) ?? []
   )
 }
 

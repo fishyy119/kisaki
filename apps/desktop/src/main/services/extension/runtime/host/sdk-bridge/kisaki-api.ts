@@ -7,11 +7,13 @@ import type {
   HostToMainRpcRequestMap,
   KisakiApi,
   LibraryCapability,
-  LibraryRelation,
-  LibraryRelationCreateInput,
-  LibraryRelationKind,
-  LibraryRelationPatch,
-  LibraryRelationSelector,
+  LibraryLink,
+  LibraryLinkCreateInput,
+  LibraryLinkKind,
+  LibraryLinkPatch,
+  LibraryLinkSelector,
+  LibraryMediaRelationPatch,
+  LibraryMediaRelationSelector,
   NetworkCallOptions,
   NetworkDownloadRequest,
   NetworkRequest,
@@ -334,6 +336,35 @@ export function createKisakiApi(
         update: 'capabilities.library.tags.update',
         remove: 'capabilities.library.tags.remove'
       }),
+      links: {
+        list: async (query) =>
+          (
+            await requestMain('capabilities.library.links.list', {
+              query
+            })
+          ).items,
+        create: async <K extends LibraryLinkKind>(input: LibraryLinkCreateInput<K>) =>
+          (
+            await requestMain('capabilities.library.links.create', {
+              input
+            })
+          ).link as LibraryLink<K>,
+        update: async <K extends LibraryLinkKind>(
+          selector: LibraryLinkSelector<K>,
+          patch: LibraryLinkPatch<K>
+        ) =>
+          (
+            await requestMain('capabilities.library.links.update', {
+              selector: selector as unknown as LibraryLinkSelector,
+              patch: patch as unknown as LibraryLinkPatch
+            })
+          ).link as LibraryLink<K>,
+        remove: async (selector) => {
+          await requestMain('capabilities.library.links.remove', {
+            selector: selector as unknown as LibraryLinkSelector
+          })
+        }
+      },
       relations: {
         list: async (query) =>
           (
@@ -341,25 +372,22 @@ export function createKisakiApi(
               query
             })
           ).items,
-        create: async <K extends LibraryRelationKind>(input: LibraryRelationCreateInput<K>) =>
+        create: async (input) =>
           (
             await requestMain('capabilities.library.relations.create', {
               input
             })
-          ).relation as LibraryRelation<K>,
-        update: async <K extends LibraryRelationKind>(
-          selector: LibraryRelationSelector<K>,
-          patch: LibraryRelationPatch<K>
-        ) =>
+          ).relation,
+        update: async (selector, patch) =>
           (
             await requestMain('capabilities.library.relations.update', {
-              selector: selector as unknown as LibraryRelationSelector,
-              patch: patch as unknown as LibraryRelationPatch
+              selector: selector as LibraryMediaRelationSelector,
+              patch: patch as LibraryMediaRelationPatch
             })
-          ).relation as LibraryRelation<K>,
+          ).relation,
         remove: async (selector) => {
           await requestMain('capabilities.library.relations.remove', {
-            selector: selector as unknown as LibraryRelationSelector
+            selector: selector as LibraryMediaRelationSelector
           })
         }
       },

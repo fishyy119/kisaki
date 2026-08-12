@@ -1,9 +1,14 @@
-import { kisaki, type Disposable, type ExtensionLogger } from '@kisaki3/extension-sdk'
+import {
+  isCancellationError,
+  kisaki,
+  type Disposable,
+  type ExtensionLogger
+} from '@kisaki3/extension-sdk'
 import type { SettingsStore } from '../config/store'
 import type { BangumiMediaScope } from '../../shared/scopes'
 import type { LocalMediaChangeEvent } from '../media/types'
 import type { MediaRegistry } from '../media/registry'
-import { BangumiExtensionError, isCancellationError } from '../utils/errors'
+import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
 import type { SyncEngine, SyncItemResult } from './engine'
 import type { EpisodeSyncEngine, EpisodeSyncResult } from './episodes'

@@ -12,13 +12,15 @@ import type {
   LibraryChange,
   LibraryEntityTopic,
   LibraryMediaActivitySnapshot,
-  LibraryMediaRelationSnapshot
+  LibraryMediaLinkSnapshot,
+  LibraryMediaRelationEdge
 } from '@shared/library'
 import type { ExternalId } from '@shared/identity'
 import {
   rebuildExternalIdsBefore,
   rebuildIdSetBefore,
-  rebuildRelationSnapshotBefore,
+  rebuildLinkSnapshotBefore,
+  rebuildMediaRelationEdgesBefore,
   rebuildWatchedIdSetBefore
 } from '../rebuild'
 import type { MediaFeedProjection, MediaRow } from '../types'
@@ -40,7 +42,7 @@ const GAME_PROJECTION: MediaFeedProjection = {
   externalIdsTable: 'game_external_ids',
   tagLinksTable: 'game_tag_links',
   collectionLinksTable: 'collection_game_links',
-  relationTables: {
+  linkTables: {
     person: 'game_person_links',
     company: 'game_company_links',
     character: 'game_character_links'
@@ -68,7 +70,7 @@ const ANIME_PROJECTION: MediaFeedProjection = {
   externalIdsTable: 'anime_external_ids',
   tagLinksTable: 'anime_tag_links',
   collectionLinksTable: 'collection_anime_links',
-  relationTables: {
+  linkTables: {
     person: 'anime_person_links',
     company: 'anime_company_links',
     character: 'anime_character_links'
@@ -105,11 +107,22 @@ export function getMediaProjectionForTopic(
   return MEDIA_PROJECTIONS.find((projection) => projection.entity === entity)
 }
 
-/** Media rows reached indirectly, through a link or owned row that changed. */
+const MEDIA_RELATIONS_TABLE = 'media_relations'
+
+/** Media rows reached indirectly, through a link, relation, or owned row that changed. */
 export function getMediaIdsFromChange(
   projection: MediaFeedProjection,
   change: RawDbChange
 ): string[] {
+  // Relation rows are polymorphic on both ends, so each end routes to its own
+  // media type instead of a fixed owner column.
+  if (change.table === MEDIA_RELATIONS_TABLE) {
+    return uniqueStrings([
+      ...mediaRelationEndIds(projection.entity, change.old),
+      ...mediaRelationEndIds(projection.entity, change.next)
+    ])
+  }
+
   if (!relatedTables(projection).has(change.table)) {
     return []
   }
@@ -118,6 +131,18 @@ export function getMediaIdsFromChange(
     stringValue(change.old?.[projection.ownerColumn]),
     stringValue(change.next?.[projection.ownerColumn])
   ])
+}
+
+function mediaRelationEndIds(
+  mediaType: MediaFeedProjection['entity'],
+  row: Record<string, unknown> | undefined
+): Array<string | undefined> {
+  if (!row) return []
+
+  return [
+    row.from_type === mediaType ? stringValue(row.from_id) : undefined,
+    row.to_type === mediaType ? stringValue(row.to_id) : undefined
+  ]
 }
 
 export function getMediaCreatedName(
@@ -201,17 +226,31 @@ export function projectMediaChanges(
     })
   }
 
-  const relationTables = Object.values(projection.relationTables)
-  const relationChanges = changes.filter((change) => relationTables.includes(change.table))
-  if (relationChanges.length > 0) {
-    const after = readRelationSnapshot(sqlite, projection, mediaId)
-    const before = rebuildRelationSnapshotBefore(after, projection.relationTables, relationChanges)
+  const linkTables = Object.values(projection.linkTables)
+  const linkChanges = changes.filter((change) => linkTables.includes(change.table))
+  if (linkChanges.length > 0) {
+    const after = readLinkSnapshot(sqlite, projection, mediaId)
+    const before = rebuildLinkSnapshotBefore(after, projection.linkTables, linkChanges)
     if (!sameJson(before, after)) {
       projected.push({
-        facet: 'relations',
+        facet: 'links',
         before,
         after,
         fields: ['personLinkIds', 'companyLinkIds', 'characterLinkIds']
+      })
+    }
+  }
+
+  const relationChanges = changes.filter((change) => change.table === MEDIA_RELATIONS_TABLE)
+  if (relationChanges.length > 0) {
+    const after = readMediaRelationEdges(sqlite, projection.entity, mediaId)
+    const before = rebuildMediaRelationEdgesBefore(after, relationChanges, projection.entity, mediaId)
+    if (!sameJson(before, after)) {
+      projected.push({
+        facet: 'relations',
+        before: { relations: before },
+        after: { relations: after },
+        fields: ['relations']
       })
     }
   }
@@ -359,7 +398,7 @@ function relatedTables(projection: MediaFeedProjection): Set<string> {
     projection.externalIdsTable,
     projection.tagLinksTable,
     projection.collectionLinksTable,
-    ...Object.values(projection.relationTables),
+    ...Object.values(projection.linkTables),
     ...projection.ownedTables
   ])
 }
@@ -389,11 +428,11 @@ function readExternalIds(
   return rows.map((row) => ({ source: row.source, id: row.external_id }))
 }
 
-function readRelationSnapshot(
+function readLinkSnapshot(
   sqlite: Database.Database,
   projection: MediaFeedProjection,
   mediaId: string
-): LibraryMediaRelationSnapshot {
+): LibraryMediaLinkSnapshot {
   const readLinkIds = (table: string): string[] =>
     readIds(
       sqlite,
@@ -402,10 +441,28 @@ function readRelationSnapshot(
     )
 
   return {
-    personLinkIds: readLinkIds(projection.relationTables.person),
-    companyLinkIds: readLinkIds(projection.relationTables.company),
-    characterLinkIds: readLinkIds(projection.relationTables.character)
+    personLinkIds: readLinkIds(projection.linkTables.person),
+    companyLinkIds: readLinkIds(projection.linkTables.company),
+    characterLinkIds: readLinkIds(projection.linkTables.character)
   }
+}
+
+function readMediaRelationEdges(
+  sqlite: Database.Database,
+  mediaType: MediaFeedProjection['entity'],
+  mediaId: string
+): LibraryMediaRelationEdge[] {
+  const rows = sqlite
+    .prepare(
+      'SELECT to_type, to_id, type FROM media_relations WHERE from_type = ? AND from_id = ? ORDER BY order_in_from ASC, id ASC'
+    )
+    .all(mediaType, mediaId) as Array<{ to_type: string; to_id: string; type: string }>
+
+  return rows.map((row) => ({
+    toType: row.to_type,
+    toId: row.to_id,
+    type: row.type
+  })) as LibraryMediaRelationEdge[]
 }
 
 function readIds(sqlite: Database.Database, sql: string, entityId: string): string[] {

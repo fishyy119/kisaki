@@ -3,7 +3,15 @@
  */
 
 export { DbService } from './service'
-export type { ThumbnailFit, ThumbnailOptions, FileColumns, FilesColumns, DbContext } from './types'
+export type {
+  ThumbnailFit,
+  ThumbnailOptions,
+  FileColumns,
+  FilesColumns,
+  DbContext,
+  DbQueryContext,
+  DbWriteContext
+} from './types'
 
 // Sub-modules
 export { AttachmentStore } from './attachment'

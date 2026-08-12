@@ -25,6 +25,10 @@ export const scraper = {
     videoGame: {
       name: '電子遊戲',
       description: '適合電子遊戲的通用預設'
+    },
+    anime: {
+      name: '動漫',
+      description: '基於 Bangumi 獲取動漫的中文元資料'
     }
   },
 
@@ -64,6 +68,7 @@ export const scraper = {
       characters: '角色',
       persons: '人物',
       companies: '公司',
+      relatedEntries: '關聯條目',
       covers: '封面',
       backdrops: '背景圖',
       logos: '標誌',

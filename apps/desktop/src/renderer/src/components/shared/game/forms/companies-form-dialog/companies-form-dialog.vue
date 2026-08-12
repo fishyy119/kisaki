@@ -41,27 +41,27 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-type CompanyType = 'developer' | 'publisher' | 'distributor' | 'other'
+type CompanyRole = 'developer' | 'publisher' | 'distributor' | 'other'
 
 interface CompanyLinkItem {
   id: string
   companyId: string
   companyName: string
-  type: CompanyType
+  role: CompanyRole
   note: string
   isSpoiler: boolean
   orderInGame: number
   isNew?: boolean
 }
 
-const COMPANY_TYPE_LABELS = computed<Record<string, string>>(() => ({
+const COMPANY_ROLE_LABELS = computed<Record<string, string>>(() => ({
   developer: m.value.library.roles.gameCompany.developer,
   publisher: m.value.library.roles.gameCompany.publisher,
   distributor: m.value.library.roles.gameCompany.distributor,
   other: m.value.library.roles.gameCompany.other
 }))
 
-const COMPANY_TYPE_ORDER: CompanyType[] = ['developer', 'publisher', 'distributor', 'other']
+const COMPANY_ROLE_ORDER: CompanyRole[] = ['developer', 'publisher', 'distributor', 'other']
 
 // Form state
 const items = ref<CompanyLinkItem[]>([])
@@ -106,7 +106,7 @@ watch(results, (data) => {
         id: link.id,
         companyId: link.companyId,
         companyName: link.company!.name,
-        type: link.type as CompanyType,
+        role: link.role as CompanyRole,
         note: link.note || '',
         isSpoiler: link.isSpoiler,
         orderInGame: link.orderInGame
@@ -116,17 +116,17 @@ watch(results, (data) => {
 
 // Grouped companies by type
 const groupedCompanies = computed(() => {
-  const grouped: Record<CompanyType, CompanyLinkItem[]> = {
+  const grouped: Record<CompanyRole, CompanyLinkItem[]> = {
     developer: [],
     publisher: [],
     distributor: [],
     other: []
   }
   items.value.forEach((item) => {
-    grouped[item.type].push(item)
+    grouped[item.role].push(item)
   })
-  for (const type of COMPANY_TYPE_ORDER) {
-    grouped[type].sort((a, b) => a.orderInGame - b.orderInGame)
+  for (const role of COMPANY_ROLE_ORDER) {
+    grouped[role].sort((a, b) => a.orderInGame - b.orderInGame)
   }
   return grouped
 })
@@ -156,7 +156,7 @@ const itemFormInitialData = computed(() => {
   return {
     companyId: editingItem.value.companyId,
     companyName: editingItem.value.companyName,
-    type: editingItem.value.type,
+    role: editingItem.value.role,
     note: editingItem.value.note,
     isSpoiler: editingItem.value.isSpoiler
   }
@@ -173,20 +173,20 @@ async function handleSave() {
         gameId: string
         companyId: string
         isSpoiler: boolean
-        type: CompanyType
+        role: CompanyRole
         note: string | null
         orderInGame: number
       }[] = []
 
-      for (const type of COMPANY_TYPE_ORDER) {
-        const typeLinks = groupedCompanies.value[type]
-        typeLinks.forEach((link, index) => {
+      for (const role of COMPANY_ROLE_ORDER) {
+        const roleLinks = groupedCompanies.value[role]
+        roleLinks.forEach((link, index) => {
           linksToInsert.push({
             id: link.isNew ? nanoid() : link.id,
             gameId: props.gameId,
             companyId: link.companyId,
             isSpoiler: link.isSpoiler,
-            type: link.type,
+            role: link.role,
             note: link.note || null,
             orderInGame: index
           })
@@ -208,26 +208,26 @@ async function handleSave() {
   }
 }
 
-function handleMoveUp(type: CompanyType, index: number) {
+function handleMoveUp(role: CompanyRole, index: number) {
   if (index <= 0) return
-  const typeLinks = [...groupedCompanies.value[type]]
-  ;[typeLinks[index - 1], typeLinks[index]] = [typeLinks[index], typeLinks[index - 1]]
-  typeLinks.forEach((link, i) => {
+  const roleLinks = [...groupedCompanies.value[role]]
+  ;[roleLinks[index - 1], roleLinks[index]] = [roleLinks[index], roleLinks[index - 1]]
+  roleLinks.forEach((link, i) => {
     link.orderInGame = i
   })
-  const otherItems = items.value.filter((item) => item.type !== type)
-  items.value = [...otherItems, ...typeLinks]
+  const otherItems = items.value.filter((item) => item.role !== role)
+  items.value = [...otherItems, ...roleLinks]
 }
 
-function handleMoveDown(type: CompanyType, index: number) {
-  const typeLinks = [...groupedCompanies.value[type]]
-  if (index >= typeLinks.length - 1) return
-  ;[typeLinks[index], typeLinks[index + 1]] = [typeLinks[index + 1], typeLinks[index]]
-  typeLinks.forEach((link, i) => {
+function handleMoveDown(role: CompanyRole, index: number) {
+  const roleLinks = [...groupedCompanies.value[role]]
+  if (index >= roleLinks.length - 1) return
+  ;[roleLinks[index], roleLinks[index + 1]] = [roleLinks[index + 1], roleLinks[index]]
+  roleLinks.forEach((link, i) => {
     link.orderInGame = i
   })
-  const otherItems = items.value.filter((item) => item.type !== type)
-  items.value = [...otherItems, ...typeLinks]
+  const otherItems = items.value.filter((item) => item.role !== role)
+  items.value = [...otherItems, ...roleLinks]
 }
 
 function handleRemove(id: string) {
@@ -246,7 +246,7 @@ function handleAddNew() {
     id: nanoid(),
     companyId: '',
     companyName: '',
-    type: 'developer',
+    role: 'developer',
     note: '',
     isSpoiler: false,
     orderInGame: items.value.length,
@@ -259,7 +259,7 @@ function handleAddNew() {
 function handleItemFormSubmit(data: {
   companyId: string
   companyName: string
-  type: CompanyType
+  role: CompanyRole
   note: string
   isSpoiler: boolean
 }) {
@@ -267,7 +267,7 @@ function handleItemFormSubmit(data: {
     id: editingItem.value!.id,
     companyId: data.companyId,
     companyName: data.companyName,
-    type: data.type,
+    role: data.role,
     note: data.note,
     isSpoiler: data.isSpoiler,
     orderInGame: editingItem.value!.orderInGame,
@@ -275,15 +275,15 @@ function handleItemFormSubmit(data: {
   }
 
   if (isAddMode.value) {
-    const typeLinks = groupedCompanies.value[updatedItem.type]
-    updatedItem.orderInGame = typeLinks.length
+    const roleLinks = groupedCompanies.value[updatedItem.role]
+    updatedItem.orderInGame = roleLinks.length
     items.value.push(updatedItem)
   } else {
     const index = items.value.findIndex((item) => item.id === updatedItem.id)
     if (index !== -1) {
-      if (editingItem.value && editingItem.value.type !== updatedItem.type) {
-        const newTypeLinks = groupedCompanies.value[updatedItem.type]
-        updatedItem.orderInGame = newTypeLinks.length
+      if (editingItem.value && editingItem.value.role !== updatedItem.role) {
+        const newRoleLinks = groupedCompanies.value[updatedItem.role]
+        updatedItem.orderInGame = newRoleLinks.length
       }
       items.value[index] = updatedItem
     }
@@ -339,16 +339,16 @@ function handleRevealSpoilersConfirm() {
             </p>
             <template v-else>
               <template
-                v-for="type in COMPANY_TYPE_ORDER"
-                :key="type"
+                v-for="role in COMPANY_ROLE_ORDER"
+                :key="role"
               >
-                <div v-if="groupedCompanies[type].length > 0">
+                <div v-if="groupedCompanies[role].length > 0">
                   <h4 class="text-xs font-medium text-muted-foreground mb-2">
-                    {{ COMPANY_TYPE_LABELS[type] }}
+                    {{ COMPANY_ROLE_LABELS[role] }}
                   </h4>
                   <div class="space-y-1">
                     <ListItem
-                      v-for="({ link, spoiler }, index) in withSpoiler(groupedCompanies[type])"
+                      v-for="({ link, spoiler }, index) in withSpoiler(groupedCompanies[role])"
                       :key="link.id"
                       :icon="
                         spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('company')
@@ -363,9 +363,9 @@ function handleRevealSpoilersConfirm() {
                         <ListItemActions
                           movable
                           :is-first="index === 0"
-                          :is-last="index === groupedCompanies[type].length - 1"
-                          @move-up="handleMoveUp(type, index)"
-                          @move-down="handleMoveDown(type, index)"
+                          :is-last="index === groupedCompanies[role].length - 1"
+                          @move-up="handleMoveUp(role, index)"
+                          @move-down="handleMoveDown(role, index)"
                           @edit="handleEdit(link)"
                           @delete="deleteId = link.id"
                         />

@@ -35,12 +35,12 @@ import {
   buildYmgalOrganizationUrl,
   buildYmgalPersonUrl,
   dedupeExternalIds,
-  dedupeRelatedSites,
+  dedupeExternalSites,
   dedupeTags,
   dedupeUrls,
   extractExternalIdsFromSites,
-  extractRelatedSitesFromWebsites,
-  mapYmgalCharacterType,
+  extractExternalSitesFromWebsites,
+  mapYmgalCharacterRole,
   mapYmgalGender,
   mapYmgalStaffRole,
   normalizeYmgalId,
@@ -218,6 +218,7 @@ export class YmgalProvider implements GameScraperProvider {
         case 'covers':
           return this.buildCovers(getArchive)
         case 'tags':
+        case 'relatedEntries':
         case 'backdrops':
         case 'logos':
         case 'icons':
@@ -262,25 +263,25 @@ export class YmgalProvider implements GameScraperProvider {
     const game = archive.game
 
     const { name, originalName } = resolveLocalizedName(game.name, game.chineseName, locale)
-    const relatedSites = this.buildGameRelatedSites(game)
+    const externalSites = this.buildGameExternalSites(game)
 
     return {
       name,
       originalName,
       releaseDate: this.parsePartialDate(game.releaseDate),
       description: this.normalizeDescription(game.introduction),
-      relatedSites
+      externalSites
     }
   }
 
   private buildIdentity(game: YmgalGame): ScrapedEntityIdentity {
     const gameId = normalizeYmgalId(toYmgalId(game.gid) || game.gid || '', 'YMGal game id')
-    const relatedSites = this.buildGameRelatedSites(game)
+    const externalSites = this.buildGameExternalSites(game)
 
     return {
       externalIds: dedupeExternalIds([
         { source: this.externalIdSource, id: gameId },
-        ...extractExternalIdsFromSites(relatedSites)
+        ...extractExternalIdsFromSites(externalSites)
       ])
     }
   }
@@ -318,12 +319,12 @@ export class YmgalProvider implements GameScraperProvider {
         locale
       )
 
-      const relatedSites = dedupeRelatedSites([
+      const externalSites = dedupeExternalSites([
         { label: 'YMGal', url: buildYmgalCharacterUrl(characterId) }
       ])
       const externalIds = dedupeExternalIds([
         { source: this.externalIdSource, id: characterId },
-        ...extractExternalIdsFromSites(relatedSites)
+        ...extractExternalIdsFromSites(externalSites)
       ])
 
       const photos = dedupeUrls([detail?.mainImg, mapping?.mainImg])
@@ -333,12 +334,12 @@ export class YmgalProvider implements GameScraperProvider {
         name,
         originalName,
         description: this.normalizeDescription(detail?.introduction),
-        relatedSites,
+        externalSites,
         identity: { externalIds },
         photos: photos.length > 0 ? photos : undefined,
         gender: mapYmgalGender(detail?.gender),
         birthDate: this.parsePartialDate(detail?.birthday),
-        type: mapYmgalCharacterType(relation.characterPosition ?? undefined),
+        role: mapYmgalCharacterRole(relation.characterPosition ?? undefined),
         persons: persons.length > 0 ? persons : undefined
       })
     }
@@ -378,7 +379,7 @@ export class YmgalProvider implements GameScraperProvider {
       const snapshot = this.findPersonMapping(archive.pidMapping, personId)
       persons.push({
         ...this.buildGamePersonBase(personId, detail, snapshot, locale),
-        type: 'actor'
+        role: 'actor'
       })
     }
 
@@ -402,13 +403,13 @@ export class YmgalProvider implements GameScraperProvider {
       locale
     )
 
-    const relatedSites = dedupeRelatedSites([
+    const externalSites = dedupeExternalSites([
       { label: 'YMGal', url: buildYmgalOrganizationUrl(developerId) },
-      ...extractRelatedSitesFromWebsites(organization?.website)
+      ...extractExternalSitesFromWebsites(organization?.website)
     ])
     const externalIds = dedupeExternalIds([
       { source: this.externalIdSource, id: developerId },
-      ...extractExternalIdsFromSites(relatedSites)
+      ...extractExternalIdsFromSites(externalSites)
     ])
     const logos = dedupeUrls([organization?.mainImg])
 
@@ -422,11 +423,11 @@ export class YmgalProvider implements GameScraperProvider {
         name,
         originalName,
         description: this.normalizeDescription(organization?.introduction),
-        relatedSites,
+        externalSites,
         identity: { externalIds },
         logos: logos.length > 0 ? logos : undefined,
         tags: tags.length > 0 ? dedupeTags(tags) : undefined,
-        type: 'developer',
+        role: 'developer',
         note: relatedGames.length > 0 ? `Known games in YMGal: ${relatedGames.length}` : undefined
       }
     ]
@@ -489,7 +490,7 @@ export class YmgalProvider implements GameScraperProvider {
     }
   }
 
-  private buildGameRelatedSites(game: YmgalGame): Array<{ label: string; url: string }> {
+  private buildGameExternalSites(game: YmgalGame): Array<{ label: string; url: string }> {
     const sites: Array<{ label: string; url: string }> = []
 
     const rawGameId = toYmgalId(game.gid)
@@ -497,9 +498,9 @@ export class YmgalProvider implements GameScraperProvider {
       sites.push({ label: 'YMGal', url: buildYmgalGameUrl(rawGameId) })
     }
 
-    sites.push(...extractRelatedSitesFromWebsites(game.website))
+    sites.push(...extractExternalSitesFromWebsites(game.website))
 
-    return dedupeRelatedSites(sites)
+    return dedupeExternalSites(sites)
   }
 
   private buildCharacterPersons(
@@ -519,13 +520,13 @@ export class YmgalProvider implements GameScraperProvider {
       locale
     )
 
-    const relatedSites = dedupeRelatedSites([
+    const externalSites = dedupeExternalSites([
       { label: 'YMGal', url: buildYmgalPersonUrl(actorId) },
-      ...extractRelatedSitesFromWebsites(detail?.website)
+      ...extractExternalSitesFromWebsites(detail?.website)
     ])
     const externalIds = dedupeExternalIds([
       { source: this.externalIdSource, id: actorId },
-      ...extractExternalIdsFromSites(relatedSites)
+      ...extractExternalIdsFromSites(externalSites)
     ])
     const photos = dedupeUrls([detail?.mainImg, mapping?.mainImg])
 
@@ -534,12 +535,12 @@ export class YmgalProvider implements GameScraperProvider {
         name,
         originalName,
         description: this.normalizeDescription(detail?.introduction),
-        relatedSites,
+        externalSites,
         identity: { externalIds },
         photos: photos.length > 0 ? photos : undefined,
         gender: mapYmgalGender(detail?.gender),
         birthDate: this.parsePartialDate(detail?.birthday),
-        type: 'actor'
+        role: 'actor'
       }
     ]
   }
@@ -557,7 +558,7 @@ export class YmgalProvider implements GameScraperProvider {
 
     return {
       ...base,
-      type: mapYmgalStaffRole(role),
+      role: mapYmgalStaffRole(role),
       note
     }
   }
@@ -567,20 +568,20 @@ export class YmgalProvider implements GameScraperProvider {
     detail: YmgalPerson | undefined,
     snapshot: YmgalPersonMapping | undefined,
     locale?: ContentLocale
-  ): Omit<ScrapedGamePersonFact, 'type' | 'note'> {
+  ): Omit<ScrapedGamePersonFact, 'role' | 'note'> {
     const { name, originalName } = resolveLocalizedName(
       detail?.name || snapshot?.name || personId,
       detail?.chineseName || snapshot?.chineseName,
       locale
     )
 
-    const relatedSites = dedupeRelatedSites([
+    const externalSites = dedupeExternalSites([
       { label: 'YMGal', url: buildYmgalPersonUrl(personId) },
-      ...extractRelatedSitesFromWebsites(detail?.website)
+      ...extractExternalSitesFromWebsites(detail?.website)
     ])
     const externalIds = dedupeExternalIds([
       { source: this.externalIdSource, id: personId },
-      ...extractExternalIdsFromSites(relatedSites)
+      ...extractExternalIdsFromSites(externalSites)
     ])
     const photos = dedupeUrls([detail?.mainImg, snapshot?.mainImg])
 
@@ -593,7 +594,7 @@ export class YmgalProvider implements GameScraperProvider {
       name,
       originalName,
       description: this.normalizeDescription(detail?.introduction),
-      relatedSites,
+      externalSites,
       identity: { externalIds },
       photos: photos.length > 0 ? photos : undefined,
       gender: mapYmgalGender(detail?.gender),

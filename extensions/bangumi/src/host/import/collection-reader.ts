@@ -1,8 +1,8 @@
+import { createCancellationError } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiCollectionType, BangumiUserCollection } from '../api/types'
 import type { BangumiMediaScope } from '../../shared/scopes'
-import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
 
 export interface CollectionReaderOptions {
@@ -51,6 +51,6 @@ export class CollectionReader {
 
 function assertNotCancelled(signal: AbortSignal): void {
   if (signal.aborted) {
-    throw new BangumiExtensionError('job_cancelled', m().errors.jobCancelled)
+    throw createCancellationError(m().errors.jobCancelled)
   }
 }

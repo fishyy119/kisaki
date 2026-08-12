@@ -80,7 +80,7 @@ const SURFACE_LABELS = computed<Record<CompanyUpdateSurface, string>>(() => ({
   originalName: m.value.library.fields.originalName,
   foundedDate: m.value.library.fields.foundedDate,
   description: m.value.library.fields.description,
-  relatedSites: m.value.library.fields.relatedSites,
+  externalSites: m.value.library.fields.externalSites,
   externalIds: m.value.library.fields.externalIds,
   tags: m.value.library.fields.tags,
   logos: m.value.library.fields.logos

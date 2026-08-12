@@ -20,7 +20,7 @@ export {
   CharacterMetadataUpdateFormDialog,
   CharacterBatchMetadataUpdateFormDialog,
   CharacterExternalIdsFormDialog,
-  CharacterRelatedSitesFormDialog,
+  CharacterExternalSitesFormDialog,
   CharacterTagsFormDialog,
   CharacterPersonsFormDialog,
   CharacterGamesFormDialog,

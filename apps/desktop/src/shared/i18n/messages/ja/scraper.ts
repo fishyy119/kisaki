@@ -25,6 +25,10 @@ export const scraper = {
     videoGame: {
       name: 'ビデオゲーム',
       description: 'ビデオゲーム向けの汎用プリセット'
+    },
+    anime: {
+      name: 'アニメ',
+      description: 'Bangumi をベースにしたアニメ用プリセット'
     }
   },
 
@@ -64,6 +68,7 @@ export const scraper = {
       characters: 'キャラクター',
       persons: '人物',
       companies: '会社',
+      relatedEntries: '関連エントリー',
       covers: 'カバー',
       backdrops: '背景画像',
       logos: 'ロゴ',

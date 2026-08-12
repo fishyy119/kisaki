@@ -9,7 +9,7 @@ import type { ContentLocale } from '@shared/i18n'
 import type { FilterState } from '@shared/filter/model'
 
 /** Related site link */
-export interface RelatedSite {
+export interface ExternalSite {
   label: string
   url: string
 }
@@ -108,6 +108,7 @@ export type GameScraperSlot =
   | 'characters'
   | 'persons'
   | 'companies'
+  | 'relatedEntries'
   | 'covers'
   | 'backdrops'
   | 'logos'
@@ -120,6 +121,7 @@ export type AnimeScraperSlot =
   | 'characters'
   | 'persons'
   | 'companies'
+  | 'relatedEntries'
   | 'covers'
   | 'backdrops'
   | 'logos'
@@ -186,6 +188,7 @@ export type GameScraperSlotConfigs = {
   characters: RelationCollectionSlotConfig
   persons: RelationCollectionSlotConfig
   companies: RelationCollectionSlotConfig
+  relatedEntries: BasicSlotConfig
   covers: BasicSlotConfig
   backdrops: BasicSlotConfig
   logos: BasicSlotConfig
@@ -199,6 +202,7 @@ export type AnimeScraperSlotConfigs = {
   characters: RelationCollectionSlotConfig
   persons: RelationCollectionSlotConfig
   companies: RelationCollectionSlotConfig
+  relatedEntries: BasicSlotConfig
   covers: BasicSlotConfig
   backdrops: BasicSlotConfig
   logos: BasicSlotConfig

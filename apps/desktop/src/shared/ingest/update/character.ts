@@ -23,7 +23,7 @@ export const CHARACTER_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'hips', group: 'core', cardinality: 'singular' },
   { key: 'cup', group: 'core', cardinality: 'singular' },
   { key: 'description', group: 'core', cardinality: 'singular' },
-  { key: 'relatedSites', group: 'core', cardinality: 'collection' },
+  { key: 'externalSites', group: 'core', cardinality: 'collection' },
   { key: 'externalIds', group: 'core', cardinality: 'collection' },
   { key: 'tags', group: 'core', cardinality: 'collection' },
   { key: 'person', group: 'relation', cardinality: 'collection' },

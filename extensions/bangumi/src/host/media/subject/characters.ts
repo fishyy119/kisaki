@@ -1,8 +1,9 @@
-import type {
-  ContentLocale,
-  ScrapedCharacterMetadata,
-  ScrapedCharacterPersonFact,
-  ScrapedTag
+import {
+  isCancellationError,
+  type ContentLocale,
+  type ScrapedCharacterMetadata,
+  type ScrapedCharacterPersonFact,
+  type ScrapedTag
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../api/client'
 import type {
@@ -12,7 +13,6 @@ import type {
   BangumiSubjectType
 } from '../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
-import { isCancellationError } from '../../utils/errors'
 import { omitUndefined } from '../../utils/object'
 import { dedupeTags } from '../format/dedupe'
 import { toPartialDateFromParts } from '../format/dates'
@@ -31,7 +31,7 @@ import { buildBangumiCharacterUrl, buildBangumiPersonUrl, dedupeUrls } from '../
 
 /** Character credit of a subject; game and anime share the role union. */
 export type SubjectCharacterFact = ScrapedCharacterMetadata & {
-  type: BangumiCharacterRole
+  role: BangumiCharacterRole
   note?: string
 }
 
@@ -170,7 +170,7 @@ function mapSubjectCharacter({
     name,
     originalName,
     description: normalizeDescription(detail?.summary || relatedCharacter.summary),
-    relatedSites: [{ label: 'Bangumi', url: buildBangumiCharacterUrl(relatedCharacter.id) }],
+    externalSites: [{ label: 'Bangumi', url: buildBangumiCharacterUrl(relatedCharacter.id) }],
     identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(relatedCharacter.id) }] },
     photos: photos.length > 0 ? photos : undefined,
     gender: mapBangumiGender(detail?.gender),
@@ -182,7 +182,7 @@ function mapSubjectCharacter({
     waist: measurements.waist,
     hips: measurements.hips,
     tags: tags.length > 0 ? dedupeTags(tags) : undefined,
-    type: mapBangumiCharacterRole(relatedCharacter.relation),
+    role: mapBangumiCharacterRole(relatedCharacter.relation),
     persons: persons.length > 0 ? persons : undefined
   })
 }
@@ -201,11 +201,11 @@ function buildCharacterPersons(
         name: actor.name,
         originalName: actor.name,
         description: normalizeDescription(actor.short_summary),
-        relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(actor.id) }],
+        externalSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(actor.id) }],
         identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(actor.id) }] },
         photos: dedupeUrls(extractImageUrls(actor.images)),
         tags: mapBangumiCareersToTags(actor.career),
-        type: 'actor'
+        role: 'actor'
       })
     )
   }
@@ -219,10 +219,10 @@ function buildCharacterPersons(
       omitUndefined({
         name: personRef.name,
         originalName: personRef.name,
-        relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(personRef.id) }],
+        externalSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(personRef.id) }],
         identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(personRef.id) }] },
         photos: dedupeUrls(extractImageUrls(personRef.images)),
-        type: 'actor',
+        role: 'actor',
         note: personRef.staff?.trim() || undefined
       })
     )

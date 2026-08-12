@@ -40,7 +40,7 @@ export const library = {
     relatedCharacters: '相关角色',
     relatedCompanies: '相关公司',
     characterPersons: '角色关联人物',
-    relatedSites: '相关链接',
+    externalSites: '外部链接',
     externalIds: '外部 ID',
     photos: '照片',
     covers: '封面',
@@ -60,7 +60,8 @@ export const library = {
     extras: '特典',
     watchDuration: '观看时长',
     lastWatchedAt: '最近观看',
-    relatedAnimes: '相关动漫'
+    relatedAnimes: '相关动漫',
+    relatedEntries: '关联条目'
   },
 
   status: {
@@ -150,12 +151,15 @@ export const library = {
     special: '特别篇'
   },
 
-  animeRelation: {
+  mediaRelation: {
     sequel: '续作',
     prequel: '前作',
     sideStory: '外传',
-    movie: '剧场版',
+    parentStory: '本篇',
     summary: '总集篇',
+    fullStory: '完整版',
+    adaptation: '改编作品',
+    sourceMaterial: '原作',
     alternative: '不同版本',
     other: '其他'
   },
@@ -284,16 +288,17 @@ export const library = {
     sections: {
       description: '简介',
       tags: '标签',
-      relatedSites: '相关链接',
+      externalSites: '外部链接',
       details: '详细信息'
     },
     empty: {
       description: '暂无简介',
       tags: '暂无标签',
-      relatedSites: '暂无相关链接',
+      externalSites: '暂无外部链接',
       relatedGames: '暂无相关游戏',
       relatedPersons: '暂无相关人物',
       relatedCharacters: '暂无相关角色',
+      relatedEntries: '暂无关联条目',
       characters: '暂无角色',
       persons: '暂无人物',
       companies: '暂无公司'
@@ -316,7 +321,7 @@ export const library = {
     editName: '编辑名称',
     editOriginalName: '编辑原名',
     editTags: '编辑标签',
-    editRelatedSites: '编辑相关链接',
+    editExternalSites: '编辑相关链接',
     editTag: '编辑标签',
     manageMedia: '媒体管理',
     manageExternalIds: '管理外部 ID',
@@ -510,6 +515,8 @@ export const library = {
     companyLabel: '公司',
     tagLabel: '标签',
     relationTypeLabel: '关系类型',
+    mediaTypeLabel: '媒体类型',
+    editRelatedEntries: '编辑关联条目',
     selectTypePlaceholder: '选择类型',
     characterRoleLabel: '角色类型',
     personRoleLabel: '人物类型',

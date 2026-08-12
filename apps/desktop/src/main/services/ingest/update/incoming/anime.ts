@@ -4,10 +4,10 @@ import type { IngestUpdateLookup } from '@shared/ingest/update'
 import type { ScrapedAnimeBundle } from '@shared/scraper'
 import { normalizeAnimeEpisodes } from '../../graph'
 import type { AnimeIncomingBuildResult } from '../types'
-import { buildCompleteAnimeRelationLinks } from '../relation-links'
+import { buildCompleteAnimeLinks } from '../link-topology'
 import {
   normalizeOptionalString,
-  normalizeRelatedSites,
+  normalizeExternalSites,
   normalizeTags,
   normalizeUrlCandidates
 } from '../shared/normalization'
@@ -36,8 +36,8 @@ function buildAnimeCore(
     core.totalEpisodes = bundleCore.totalEpisodes
   }
 
-  const relatedSites = normalizeRelatedSites(bundleCore?.relatedSites)
-  if (relatedSites) core.relatedSites = relatedSites
+  const externalSites = normalizeExternalSites(bundleCore?.externalSites)
+  if (externalSites) core.externalSites = externalSites
 
   const identityIds = bundle?.identity.externalIds
   if (identityIds || lookup.knownIds) {
@@ -69,7 +69,7 @@ export function buildAnimeIncoming(
   // needs more, so completeness is resolved from the link topology.
   const availability: AnimeIncomingBuildResult['availability'] = {
     surfaces: new Set(),
-    completeRelationLinks: buildCompleteAnimeRelationLinks(relationFacts)
+    completeLinks: buildCompleteAnimeLinks(relationFacts)
   }
 
   if (core.name) availability.surfaces.add('name')
@@ -78,7 +78,7 @@ export function buildAnimeIncoming(
   if (core.description) availability.surfaces.add('description')
   if (core.format) availability.surfaces.add('format')
   if (core.totalEpisodes !== undefined) availability.surfaces.add('totalEpisodes')
-  if (core.relatedSites) availability.surfaces.add('relatedSites')
+  if (core.externalSites) availability.surfaces.add('externalSites')
   if (core.externalIds) availability.surfaces.add('externalIds')
   if (core.tags) availability.surfaces.add('tags')
   // An empty episode list is an authoritative "none", so presence is what counts.
@@ -89,6 +89,7 @@ export function buildAnimeIncoming(
   if (relationFacts.animeCompany !== undefined) availability.surfaces.add('company')
   if (relationFacts.animeCharacter !== undefined) availability.surfaces.add('character')
   if (characterPersonAnswered) availability.surfaces.add('characterPerson')
+  if (relationFacts.relatedEntries !== undefined) availability.surfaces.add('relatedEntries')
   if (coverUrls) availability.surfaces.add('covers')
   if (backdropUrls) availability.surfaces.add('backdrops')
   if (logoUrls) availability.surfaces.add('logos')

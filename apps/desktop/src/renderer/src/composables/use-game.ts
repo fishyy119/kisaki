@@ -42,6 +42,7 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
 import { useDbChanges } from './use-db-changes'
 
 // =============================================================================
@@ -55,6 +56,7 @@ interface GameData {
   characters: (GameCharacterLink & { character: Character | null })[]
   persons: (GamePersonLink & { person: Person | null })[]
   companies: (GameCompanyLink & { company: Company | null })[]
+  relations: MediaRelationEntry[]
   sessions: GameSession[]
 }
 
@@ -71,6 +73,8 @@ export interface GameContext {
   persons: ComputedRef<(GamePersonLink & { person: Person | null })[]>
   /** Company links with company data */
   companies: ComputedRef<(GameCompanyLink & { company: Company | null })[]>
+  /** Entry-to-entry relations merged from both edge directions */
+  relations: ComputedRef<MediaRelationEntry[]>
   /** Game sessions (play history) */
   sessions: ComputedRef<GameSession[]>
   /** Initial loading state (always false on the route surface after mount) */
@@ -139,7 +143,8 @@ async function fetchGameData(
   )
 
   // Parallel fetch all related data
-  const [notes, tagLinks, charLinks, personLinks, companyLinks, sessions] = await Promise.all([
+  const [notes, tagLinks, charLinks, personLinks, companyLinks, relations, sessions] =
+    await Promise.all([
     db
       .select()
       .from(schema.gameNotes)
@@ -163,18 +168,19 @@ async function fetchGameData(
       .leftJoin(schema.persons, eq(schema.gamePersonLinks.personId, schema.persons.id))
       .where(gamePersonLinksWhere)
       .orderBy(asc(schema.gamePersonLinks.orderInGame)),
-    db
-      .select()
-      .from(schema.gameCompanyLinks)
-      .leftJoin(schema.companies, eq(schema.gameCompanyLinks.companyId, schema.companies.id))
-      .where(gameCompanyLinksWhere)
-      .orderBy(asc(schema.gameCompanyLinks.orderInGame)),
-    db
-      .select()
-      .from(schema.gameSessions)
-      .where(eq(schema.gameSessions.gameId, gameId))
-      .orderBy(desc(schema.gameSessions.startedAt))
-  ])
+      db
+        .select()
+        .from(schema.gameCompanyLinks)
+        .leftJoin(schema.companies, eq(schema.gameCompanyLinks.companyId, schema.companies.id))
+        .where(gameCompanyLinksWhere)
+        .orderBy(asc(schema.gameCompanyLinks.orderInGame)),
+      fetchMediaRelations('game', gameId, showNsfw),
+      db
+        .select()
+        .from(schema.gameSessions)
+        .where(eq(schema.gameSessions.gameId, gameId))
+        .orderBy(desc(schema.gameSessions.startedAt))
+    ])
 
   return {
     game: gameData,
@@ -189,6 +195,7 @@ async function fetchGameData(
       ...row.game_company_links,
       company: row.companies
     })),
+    relations,
     sessions
   }
 }
@@ -232,6 +239,7 @@ function provideGameContext(source: GameDataSource): GameContext {
     characters: computed(() => source.data.value?.characters ?? []),
     persons: computed(() => source.data.value?.persons ?? []),
     companies: computed(() => source.data.value?.companies ?? []),
+    relations: computed(() => source.data.value?.relations ?? []),
     sessions: computed(() => source.data.value?.sessions ?? []),
     isLoading: source.isLoading,
     isFetching: source.isFetching,
@@ -244,42 +252,24 @@ function provideGameContext(source: GameDataSource): GameContext {
   return context
 }
 
+const GAME_OWNED_TABLES = [
+  'game_notes',
+  'game_sessions',
+  'game_tag_links',
+  'game_character_links',
+  'game_person_links',
+  'game_company_links',
+  'media_relations'
+]
+
 function useGameDbSync(gameId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
   useDbChanges(({ operation, table, id: entityId }) => {
-    if (operation === 'updated') {
-      if (table === 'games' && entityId === toValue(gameId)) {
-        refetch()
-      }
-      if (
-        table === 'game_notes' ||
-        table === 'game_tag_links' ||
-        table === 'game_character_links' ||
-        table === 'game_person_links' ||
-        table === 'game_company_links' ||
-        table === 'game_sessions'
-      ) {
-        refetch()
-      }
+    if (GAME_OWNED_TABLES.includes(table)) {
+      refetch()
+      return
     }
-    if (operation === 'inserted') {
-      if (
-        table === 'game_notes' ||
-        table === 'game_tag_links' ||
-        table === 'game_character_links' ||
-        table === 'game_person_links' ||
-        table === 'game_company_links' ||
-        table === 'game_sessions'
-      ) {
-        refetch()
-      }
-    }
-    if (operation === 'deleted') {
-      if (table === 'games' && entityId === toValue(gameId)) {
-        refetch()
-      }
-      if (table === 'game_notes' || table === 'game_sessions') {
-        refetch()
-      }
+    if (table === 'games' && entityId === toValue(gameId) && operation !== 'inserted') {
+      refetch()
     }
   })
 }

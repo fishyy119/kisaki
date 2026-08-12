@@ -6,6 +6,7 @@ import {
   type ContentEntityType,
   type MediaType
 } from '../../common'
+import { MEDIA_RELATION_TYPES, type MediaRelationType } from '../contracts/media-relations'
 import { CONTENT_LOCALES, UI_LOCALES, type ContentLocale, type UiLocale } from '../../i18n'
 import {
   SCANNER_INGEST_MODE_VALUES,
@@ -21,25 +22,24 @@ import {
   EXTENSION_UPDATE_POLICY_VALUES
 } from '../contracts/enums'
 import type {
-  AnimeCharacterType,
-  AnimeCompanyType,
+  AnimeCharacterRole,
+  AnimeCompanyRole,
   AnimeEpisodeType,
   AnimeExtraKind,
   AnimeFormat,
-  AnimePersonType,
-  AnimeRelationType,
+  AnimePersonRole,
   BloodType,
-  CharacterPersonType,
+  CharacterPersonRole,
   CupSize,
   ExtensionInstallReason,
   ExtensionRepositoryState,
   ExtensionSignerAlgorithm,
   ExtensionUpdatePolicy,
-  GameCharacterType,
-  GameCompanyType,
+  GameCharacterRole,
+  GameCompanyRole,
   GameLauncherMode,
   GameMonitorMode,
-  GamePersonType,
+  GamePersonRole,
   Gender,
   MainWindowCloseAction,
   ScannerIngestMode,
@@ -74,7 +74,7 @@ export const gameMonitorMode = createEnumType<GameMonitorMode>(
 const GENDER_VALUES = ['male', 'female', 'other'] as const
 export const gender = createNullableEnumType<Gender>(GENDER_VALUES, 'gender')
 
-const GAME_PERSON_TYPE_VALUES = [
+const GAME_PERSON_ROLE_VALUES = [
   'director',
   'scenario',
   'illustration',
@@ -83,31 +83,31 @@ const GAME_PERSON_TYPE_VALUES = [
   'actor',
   'other'
 ] as const
-export const gamePersonType = createEnumType<GamePersonType>(
-  GAME_PERSON_TYPE_VALUES,
+export const gamePersonRole = createEnumType<GamePersonRole>(
+  GAME_PERSON_ROLE_VALUES,
   'other',
-  'gamePersonType'
+  'gamePersonRole'
 )
 
-const GAME_CHARACTER_TYPE_VALUES = ['main', 'supporting', 'cameo', 'other'] as const
-export const gameCharacterType = createEnumType<GameCharacterType>(
-  GAME_CHARACTER_TYPE_VALUES,
+const GAME_CHARACTER_ROLE_VALUES = ['main', 'supporting', 'cameo', 'other'] as const
+export const gameCharacterRole = createEnumType<GameCharacterRole>(
+  GAME_CHARACTER_ROLE_VALUES,
   'other',
-  'gameCharacterType'
+  'gameCharacterRole'
 )
 
-const GAME_COMPANY_TYPE_VALUES = ['developer', 'publisher', 'distributor', 'other'] as const
-export const gameCompanyType = createEnumType<GameCompanyType>(
-  GAME_COMPANY_TYPE_VALUES,
+const GAME_COMPANY_ROLE_VALUES = ['developer', 'publisher', 'distributor', 'other'] as const
+export const gameCompanyRole = createEnumType<GameCompanyRole>(
+  GAME_COMPANY_ROLE_VALUES,
   'other',
-  'gameCompanyType'
+  'gameCompanyRole'
 )
 
-const CHARACTER_PERSON_TYPE_VALUES = ['actor', 'illustration', 'designer', 'other'] as const
-export const characterPersonType = createEnumType<CharacterPersonType>(
-  CHARACTER_PERSON_TYPE_VALUES,
+const CHARACTER_PERSON_ROLE_VALUES = ['actor', 'illustration', 'designer', 'other'] as const
+export const characterPersonRole = createEnumType<CharacterPersonRole>(
+  CHARACTER_PERSON_ROLE_VALUES,
   'other',
-  'characterPersonType'
+  'characterPersonRole'
 )
 
 const ANIME_FORMAT_VALUES = ['tv', 'movie', 'ova', 'ona', 'special', 'other'] as const
@@ -120,7 +120,7 @@ export const animeEpisodeType = createEnumType<AnimeEpisodeType>(
   'animeEpisodeType'
 )
 
-const ANIME_PERSON_TYPE_VALUES = [
+const ANIME_PERSON_ROLE_VALUES = [
   'director',
   'series',
   'scenario',
@@ -129,39 +129,24 @@ const ANIME_PERSON_TYPE_VALUES = [
   'animationDirector',
   'other'
 ] as const
-export const animePersonType = createEnumType<AnimePersonType>(
-  ANIME_PERSON_TYPE_VALUES,
+export const animePersonRole = createEnumType<AnimePersonRole>(
+  ANIME_PERSON_ROLE_VALUES,
   'other',
-  'animePersonType'
+  'animePersonRole'
 )
 
-const ANIME_CHARACTER_TYPE_VALUES = ['main', 'supporting', 'cameo', 'other'] as const
-export const animeCharacterType = createEnumType<AnimeCharacterType>(
-  ANIME_CHARACTER_TYPE_VALUES,
+const ANIME_CHARACTER_ROLE_VALUES = ['main', 'supporting', 'cameo', 'other'] as const
+export const animeCharacterRole = createEnumType<AnimeCharacterRole>(
+  ANIME_CHARACTER_ROLE_VALUES,
   'other',
-  'animeCharacterType'
+  'animeCharacterRole'
 )
 
-const ANIME_COMPANY_TYPE_VALUES = ['studio', 'producer', 'distributor', 'other'] as const
-export const animeCompanyType = createEnumType<AnimeCompanyType>(
-  ANIME_COMPANY_TYPE_VALUES,
+const ANIME_COMPANY_ROLE_VALUES = ['studio', 'producer', 'distributor', 'other'] as const
+export const animeCompanyRole = createEnumType<AnimeCompanyRole>(
+  ANIME_COMPANY_ROLE_VALUES,
   'other',
-  'animeCompanyType'
-)
-
-const ANIME_RELATION_TYPE_VALUES = [
-  'sequel',
-  'prequel',
-  'sideStory',
-  'movie',
-  'summary',
-  'alternative',
-  'other'
-] as const
-export const animeRelationType = createEnumType<AnimeRelationType>(
-  ANIME_RELATION_TYPE_VALUES,
-  'other',
-  'animeRelationType'
+  'animeCompanyRole'
 )
 
 const ANIME_EXTRA_KIND_VALUES = ['trailer', 'pv', 'ncop', 'nced', 'interview', 'other'] as const
@@ -192,6 +177,12 @@ const CUP_SIZE_VALUES = [
 export const cupSize = createNullableEnumType<CupSize>(CUP_SIZE_VALUES, 'cupSize')
 
 export const mediaType = createEnumType<MediaType>(MEDIA_TYPES, 'game', 'mediaType')
+
+export const mediaRelationType = createEnumType<MediaRelationType>(
+  MEDIA_RELATION_TYPES,
+  'other',
+  'mediaRelationType'
+)
 export const contentLocale = createNullableEnumType<ContentLocale>(CONTENT_LOCALES, 'contentLocale')
 export const uiLocale = createNullableEnumType<UiLocale>(UI_LOCALES, 'uiLocale')
 

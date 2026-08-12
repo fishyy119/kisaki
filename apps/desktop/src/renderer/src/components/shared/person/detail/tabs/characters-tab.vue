@@ -15,11 +15,11 @@ import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
 
-const CHARACTER_PERSON_TYPE_LABELS = computed<Record<string, string>>(
+const CHARACTER_PERSON_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.characterPerson
 )
 
-const CHARACTER_PERSON_TYPE_ORDER = ['actor', 'illustration', 'designer', 'other'] as const
+const CHARACTER_PERSON_ROLE_ORDER = ['actor', 'illustration', 'designer', 'other'] as const
 
 const { person, characters } = usePerson()
 
@@ -32,9 +32,9 @@ const groupedCharacters = computed(() => {
   if (!hasCharacters.value) return {}
   return characters.value.reduce(
     (acc, link) => {
-      const type = link.type || 'other'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(link)
+      const role = link.role || 'other'
+      if (!acc[role]) acc[role] = []
+      acc[role].push(link)
       return acc
     },
     {} as Record<string, typeof characters.value>
@@ -93,16 +93,16 @@ const characterDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="type in CHARACTER_PERSON_TYPE_ORDER"
-          :key="type"
+          v-for="role in CHARACTER_PERSON_ROLE_ORDER"
+          :key="role"
         >
-          <div v-if="groupedCharacters[type]?.length">
+          <div v-if="groupedCharacters[role]?.length">
             <h4 class="text-xs font-medium text-muted-foreground mb-2">
-              {{ CHARACTER_PERSON_TYPE_LABELS[type] || type }}
+              {{ CHARACTER_PERSON_ROLE_LABELS[role] || role }}
             </h4>
             <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
               <template
-                v-for="link in groupedCharacters[type]"
+                v-for="link in groupedCharacters[role]"
                 :key="link.id"
               >
                 <CharacterCard

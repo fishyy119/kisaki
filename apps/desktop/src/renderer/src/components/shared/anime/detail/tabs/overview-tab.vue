@@ -12,15 +12,17 @@ import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
 import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
+import {
+  MediaRelationsFormDialog,
+  MediaRelationsSection
+} from '@renderer/components/shared/media-relations'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { AnimeDescriptionFormDialog, AnimeInfoFormDialog } from '../../forms'
-import AnimeCard from '../../anime-card.vue'
 
-const PERSON_TYPE_ORDER = [
+const PERSON_ROLE_ORDER = [
   'director',
   'series',
   'scenario',
@@ -30,36 +32,26 @@ const PERSON_TYPE_ORDER = [
   'other'
 ] as const
 
-const COMPANY_TYPE_ORDER = ['studio', 'producer', 'distributor', 'other'] as const
+const COMPANY_ROLE_ORDER = ['studio', 'producer', 'distributor', 'other'] as const
 
-const CHARACTER_TYPE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
-
-const RELATION_TYPE_ORDER = [
-  'sequel',
-  'prequel',
-  'sideStory',
-  'movie',
-  'summary',
-  'alternative',
-  'other'
-] as const
+const CHARACTER_ROLE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
 
 const { anime, tags, characters, persons, companies, relations } = useAnime()
 const { m, f } = useI18n()
 
-const PERSON_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.animePerson)
-const COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+const PERSON_ROLE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.animePerson)
+const COMPANY_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.animeCompany
 )
-const CHARACTER_TYPE_LABELS = computed<Record<string, string>>(
+const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.animeCharacter
 )
-const RELATION_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.animeRelation)
 
 /** Edit dialog states */
 const editDialogs = ref({
   description: false,
-  details: false
+  details: false,
+  relations: false
 })
 
 function openEditDialog(dialog: keyof typeof editDialogs.value) {
@@ -71,26 +63,26 @@ const openPersonId = ref<string | null>(null)
 const openCompanyId = ref<string | null>(null)
 const openTagId = ref<string | null>(null)
 
-const hasRelatedSites = computed(
-  () => anime.value?.relatedSites && anime.value.relatedSites.length > 0
+const hasExternalSites = computed(
+  () => anime.value?.externalSites && anime.value.externalSites.length > 0
 )
 
 const sortedCharacters = computed(() =>
   [...characters.value]
     .sort((a, b) => {
-      const typeIndexA = CHARACTER_TYPE_ORDER.indexOf(
-        (a.type || 'other') as (typeof CHARACTER_TYPE_ORDER)[number]
+      const roleIndexA = CHARACTER_ROLE_ORDER.indexOf(
+        (a.role || 'other') as (typeof CHARACTER_ROLE_ORDER)[number]
       )
-      const typeIndexB = CHARACTER_TYPE_ORDER.indexOf(
-        (b.type || 'other') as (typeof CHARACTER_TYPE_ORDER)[number]
+      const roleIndexB = CHARACTER_ROLE_ORDER.indexOf(
+        (b.role || 'other') as (typeof CHARACTER_ROLE_ORDER)[number]
       )
-      if (typeIndexA !== typeIndexB) return typeIndexA - typeIndexB
+      if (roleIndexA !== roleIndexB) return roleIndexA - roleIndexB
       return a.orderInAnime - b.orderInAnime
     })
     .map((link) => ({
       link,
       character: link.character,
-      roleLabel: link.type ? CHARACTER_TYPE_LABELS.value[link.type] : undefined
+      roleLabel: link.role ? CHARACTER_ROLE_LABELS.value[link.role] : undefined
     }))
     .filter((item) => item.character !== null)
 )
@@ -98,9 +90,9 @@ const sortedCharacters = computed(() =>
 const groupedPersons = computed(() =>
   persons.value.reduce(
     (acc, link) => {
-      const type = link.type || 'other'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(link)
+      const role = link.role || 'other'
+      if (!acc[role]) acc[role] = []
+      acc[role].push(link)
       return acc
     },
     {} as Record<string, typeof persons.value>
@@ -110,29 +102,14 @@ const groupedPersons = computed(() =>
 const groupedCompanies = computed(() =>
   companies.value.reduce(
     (acc, link) => {
-      const type = link.type || 'other'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(link)
+      const role = link.role || 'other'
+      if (!acc[role]) acc[role] = []
+      acc[role].push(link)
       return acc
     },
     {} as Record<string, typeof companies.value>
   )
 )
-
-// Rows are already ordered by orderInAnime; grouping only buckets them by type.
-const relationGroups = computed(() =>
-  RELATION_TYPE_ORDER.map((type) => ({
-    type,
-    links: relations.value.filter((link) => link.type === type && link.relatedAnime)
-  })).filter((group) => group.links.length > 0)
-)
-
-// Related entries navigate to the anime detail route instead of a nested
-// dialog. Shared components stay route-unaware, so they render as plain hash
-// links that the router picks up.
-function getAnimeDetailHref(animeId: string): string {
-  return `#${getEntityDetailPath('anime', animeId)}`
-}
 
 const characterDialogOpen = computed({
   get: () => openCharacterId.value !== null,
@@ -195,35 +172,11 @@ const tagDialogOpen = computed({
           </template>
         </SectionScroll>
 
-        <Section
-          v-if="relationGroups.length > 0"
-          :title="m.library.fields.relatedAnimes"
-        >
-          <div class="space-y-4">
-            <div
-              v-for="group in relationGroups"
-              :key="group.type"
-            >
-              <div class="text-muted-foreground text-xs mb-2">
-                {{ RELATION_TYPE_LABELS[group.type] || group.type }}
-              </div>
-              <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3">
-                <a
-                  v-for="link in group.links"
-                  :key="link.id"
-                  :href="getAnimeDetailHref(link.relatedAnime!.id)"
-                  class="block"
-                >
-                  <AnimeCard
-                    :anime="link.relatedAnime!"
-                    size="sm"
-                    align="left"
-                  />
-                </a>
-              </div>
-            </div>
-          </div>
-        </Section>
+        <MediaRelationsSection
+          :relations="relations"
+          editable
+          @edit="openEditDialog('relations')"
+        />
 
         <Section
           :title="m.library.fields.tags"
@@ -272,16 +225,16 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="type in PERSON_TYPE_ORDER"
-              :key="type"
+              v-for="role in PERSON_ROLE_ORDER"
+              :key="role"
             >
-              <div v-if="groupedPersons[type]?.length">
+              <div v-if="groupedPersons[role]?.length">
                 <div class="text-muted-foreground text-xs mb-1">
-                  {{ PERSON_TYPE_LABELS[type] || type }}
+                  {{ PERSON_ROLE_LABELS[role] || role }}
                 </div>
                 <div class="flex flex-wrap gap-x-1 gap-y-0.5">
                   <template
-                    v-for="(link, index) in groupedPersons[type]"
+                    v-for="(link, index) in groupedPersons[role]"
                     :key="link.id"
                   >
                     <span class="inline-flex items-center max-w-full min-w-0">
@@ -294,7 +247,7 @@ const tagDialogOpen = computed({
                         @click="openPersonId = link.person.id"
                       />
                       <span
-                        v-if="index < groupedPersons[type].length - 1"
+                        v-if="index < groupedPersons[role].length - 1"
                         class="text-muted-foreground/50"
                         >,</span
                       >
@@ -313,16 +266,16 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="type in COMPANY_TYPE_ORDER"
-              :key="type"
+              v-for="role in COMPANY_ROLE_ORDER"
+              :key="role"
             >
-              <div v-if="groupedCompanies[type]?.length">
+              <div v-if="groupedCompanies[role]?.length">
                 <div class="text-muted-foreground text-xs mb-1">
-                  {{ COMPANY_TYPE_LABELS[type] || type }}
+                  {{ COMPANY_ROLE_LABELS[role] || role }}
                 </div>
                 <div class="flex flex-wrap gap-x-1 gap-y-0.5">
                   <template
-                    v-for="(link, index) in groupedCompanies[type]"
+                    v-for="(link, index) in groupedCompanies[role]"
                     :key="link.id"
                   >
                     <span class="inline-flex items-center max-w-full min-w-0">
@@ -335,7 +288,7 @@ const tagDialogOpen = computed({
                         @click="openCompanyId = link.company.id"
                       />
                       <span
-                        v-if="index < groupedCompanies[type].length - 1"
+                        v-if="index < groupedCompanies[role].length - 1"
                         class="text-muted-foreground/50"
                         >,</span
                       >
@@ -348,13 +301,13 @@ const tagDialogOpen = computed({
         </Section>
 
         <Section
-          :title="m.library.fields.relatedSites"
-          :empty="!hasRelatedSites"
-          :empty-text="m.library.detail.empty.relatedSites"
+          :title="m.library.fields.externalSites"
+          :empty="!hasExternalSites"
+          :empty-text="m.library.detail.empty.externalSites"
         >
           <div class="flex flex-col gap-1.5">
             <a
-              v-for="(site, index) in anime.relatedSites"
+              v-for="(site, index) in anime.externalSites"
               :key="index"
               :href="site.url"
               target="_blank"
@@ -382,6 +335,12 @@ const tagDialogOpen = computed({
       v-if="editDialogs.details"
       v-model:open="editDialogs.details"
       :anime-id="anime.id"
+    />
+    <MediaRelationsFormDialog
+      v-if="editDialogs.relations"
+      v-model:open="editDialogs.relations"
+      media-type="anime"
+      :entity-id="anime.id"
     />
 
     <CharacterDetailDialog

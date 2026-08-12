@@ -95,7 +95,7 @@ export class CompanyIngestPersistHandler {
       originalName: core.originalName,
       foundedDate: core.foundedDate,
       description: core.description,
-      relatedSites: core.relatedSites || []
+      externalSites: core.externalSites || []
     }
 
     tx.insert(companies).values(newCompany).run()

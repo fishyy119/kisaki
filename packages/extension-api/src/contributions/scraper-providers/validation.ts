@@ -22,8 +22,10 @@ import {
   LIBRARY_GAME_CHARACTER_ROLES,
   LIBRARY_GAME_COMPANY_ROLES,
   LIBRARY_GAME_PERSON_ROLES,
-  LIBRARY_GENDERS
+  LIBRARY_GENDERS,
+  LIBRARY_MEDIA_RELATION_TYPES
 } from '../../shared/library'
+import { LIBRARY_MEDIA_TYPES } from '../../capabilities/library/graph'
 import type { ValidationIssue } from '../../shared/validation'
 import {
   isPlainObject,
@@ -88,7 +90,7 @@ const GAME_INFO_KEYS = new Set<string>([
   'originalName',
   'releaseDate',
   'description',
-  'relatedSites'
+  'externalSites'
 ])
 const ANIME_INFO_KEYS = new Set<string>([
   'name',
@@ -97,7 +99,7 @@ const ANIME_INFO_KEYS = new Set<string>([
   'description',
   'format',
   'totalEpisodes',
-  'relatedSites'
+  'externalSites'
 ])
 const ANIME_EPISODE_KEYS = new Set<string>([
   'number',
@@ -116,7 +118,7 @@ const PERSON_INFO_KEYS = new Set<string>([
   'deathDate',
   'gender',
   'description',
-  'relatedSites'
+  'externalSites'
 ])
 const PERSON_METADATA_KEYS = new Set<string>([...PERSON_INFO_KEYS, 'identity', 'tags', 'photos'])
 const COMPANY_INFO_KEYS = new Set<string>([
@@ -124,7 +126,7 @@ const COMPANY_INFO_KEYS = new Set<string>([
   'originalName',
   'foundedDate',
   'description',
-  'relatedSites'
+  'externalSites'
 ])
 const COMPANY_METADATA_KEYS = new Set<string>([...COMPANY_INFO_KEYS, 'identity', 'tags', 'logos'])
 const CHARACTER_INFO_KEYS = new Set<string>([
@@ -141,7 +143,7 @@ const CHARACTER_INFO_KEYS = new Set<string>([
   'hips',
   'cup',
   'description',
-  'relatedSites'
+  'externalSites'
 ])
 const CHARACTER_REFERENCE_KEYS = new Set<string>([...CHARACTER_INFO_KEYS, 'identity'])
 const CHARACTER_METADATA_KEYS = new Set<string>([
@@ -153,19 +155,19 @@ const CHARACTER_METADATA_KEYS = new Set<string>([
 ])
 const GAME_PERSON_FACT_KEYS = new Set<string>([
   ...PERSON_METADATA_KEYS,
-  'type',
+  'role',
   'isSpoiler',
   'note'
 ])
 const GAME_COMPANY_FACT_KEYS = new Set<string>([
   ...COMPANY_METADATA_KEYS,
-  'type',
+  'role',
   'isSpoiler',
   'note'
 ])
 const GAME_CHARACTER_FACT_KEYS = new Set<string>([
   ...CHARACTER_METADATA_KEYS,
-  'type',
+  'role',
   'isSpoiler',
   'note'
 ])
@@ -175,8 +177,15 @@ const ANIME_CHARACTER_FACT_KEYS = GAME_CHARACTER_FACT_KEYS
 const CHARACTER_PERSON_FACT_KEYS = new Set<string>([
   ...PERSON_METADATA_KEYS,
   'character',
-  'type',
+  'role',
   'isSpoiler',
+  'note'
+])
+const RELATED_ENTRY_FACT_KEYS = new Set<string>([
+  'mediaType',
+  'source',
+  'externalId',
+  'type',
   'note'
 ])
 const GAME_SESSION_KEYS: ReadonlySet<GameScraperSlot> = new Set(GAME_SCRAPER_SLOTS)
@@ -677,7 +686,7 @@ function validateNamedInfoFields(info: Record<string, unknown>, path: string): V
     }),
     ...validateOptionalString(info.originalName, `${path}.originalName`),
     ...validateOptionalString(info.description, `${path}.description`),
-    ...validateOptionalRelatedSites(info.relatedSites, `${path}.relatedSites`)
+    ...validateOptionalExternalSites(info.externalSites, `${path}.externalSites`)
   ]
 }
 
@@ -685,7 +694,7 @@ function validateGamePersonFact(value: unknown, path: string): ValidationIssue[]
   return [
     ...validateFactObject(value, path, GAME_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
-    ...validateRequiredFactType(value, path, LIBRARY_GAME_PERSON_ROLES, 'game person role')
+    ...validateRequiredFactRole(value, path, LIBRARY_GAME_PERSON_ROLES, 'game person role')
   ]
 }
 
@@ -693,7 +702,7 @@ function validateGameCompanyFact(value: unknown, path: string): ValidationIssue[
   return [
     ...validateFactObject(value, path, GAME_COMPANY_FACT_KEYS, validateCompanyMetadataFields),
     ...validateFactFields(value, path),
-    ...validateRequiredFactType(value, path, LIBRARY_GAME_COMPANY_ROLES, 'game company role')
+    ...validateRequiredFactRole(value, path, LIBRARY_GAME_COMPANY_ROLES, 'game company role')
   ]
 }
 
@@ -701,7 +710,7 @@ function validateGameCharacterFact(value: unknown, path: string): ValidationIssu
   return [
     ...validateFactObject(value, path, GAME_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
     ...validateFactFields(value, path),
-    ...validateRequiredFactType(value, path, LIBRARY_GAME_CHARACTER_ROLES, 'game character role')
+    ...validateRequiredFactRole(value, path, LIBRARY_GAME_CHARACTER_ROLES, 'game character role')
   ]
 }
 
@@ -709,7 +718,7 @@ function validateAnimePersonFact(value: unknown, path: string): ValidationIssue[
   return [
     ...validateFactObject(value, path, ANIME_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
-    ...validateRequiredFactType(value, path, LIBRARY_ANIME_PERSON_ROLES, 'anime person role')
+    ...validateRequiredFactRole(value, path, LIBRARY_ANIME_PERSON_ROLES, 'anime person role')
   ]
 }
 
@@ -717,7 +726,7 @@ function validateAnimeCompanyFact(value: unknown, path: string): ValidationIssue
   return [
     ...validateFactObject(value, path, ANIME_COMPANY_FACT_KEYS, validateCompanyMetadataFields),
     ...validateFactFields(value, path),
-    ...validateRequiredFactType(value, path, LIBRARY_ANIME_COMPANY_ROLES, 'anime company role')
+    ...validateRequiredFactRole(value, path, LIBRARY_ANIME_COMPANY_ROLES, 'anime company role')
   ]
 }
 
@@ -725,7 +734,7 @@ function validateAnimeCharacterFact(value: unknown, path: string): ValidationIss
   return [
     ...validateFactObject(value, path, ANIME_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
     ...validateFactFields(value, path),
-    ...validateRequiredFactType(value, path, LIBRARY_ANIME_CHARACTER_ROLES, 'anime character role')
+    ...validateRequiredFactRole(value, path, LIBRARY_ANIME_CHARACTER_ROLES, 'anime character role')
   ]
 }
 
@@ -734,12 +743,45 @@ function validateCharacterPersonFact(value: unknown, path: string): ValidationIs
     ...validateFactObject(value, path, CHARACTER_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
     ...validateOptionalCharacterInfo(value, path),
-    ...validateRequiredFactType(
+    ...validateRequiredFactRole(
       value,
       path,
       LIBRARY_CHARACTER_PERSON_ROLES,
       'character person role'
     )
+  ]
+}
+
+function validateRelatedEntryFact(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Scraped related entry must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const fact = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(fact, RELATED_ENTRY_FACT_KEYS, path),
+    ...validateRequiredEnumString(
+      fact.mediaType,
+      `${path}.mediaType`,
+      LIBRARY_MEDIA_TYPES,
+      'mediaType must be one of the supported media types.'
+    ),
+    ...validateRequiredString(fact.source, `${path}.source`, {
+      trim: true,
+      valueMessage: 'source must be a non-empty string.'
+    }),
+    ...validateRequiredString(fact.externalId, `${path}.externalId`, {
+      trim: true,
+      valueMessage: 'externalId must be a non-empty string.'
+    }),
+    ...validateRequiredEnumString(
+      fact.type,
+      `${path}.type`,
+      LIBRARY_MEDIA_RELATION_TYPES,
+      'type must be one of the supported media relation types.'
+    ),
+    ...validateOptionalString(fact.note, `${path}.note`)
   ]
 }
 
@@ -793,7 +835,7 @@ function validateOptionalCharacterInfo(value: unknown, path: string): Validation
   ]
 }
 
-function validateRequiredFactType<TValue extends string>(
+function validateRequiredFactRole<TValue extends string>(
   value: unknown,
   path: string,
   allowedValues: readonly TValue[],
@@ -804,10 +846,10 @@ function validateRequiredFactType<TValue extends string>(
   }
 
   return validateRequiredEnumString(
-    value.type,
-    `${path}.type`,
+    value.role,
+    `${path}.role`,
     allowedValues,
-    `type must be one of the supported ${label}s.`
+    `role must be one of the supported ${label}s.`
   )
 }
 
@@ -823,6 +865,13 @@ function validateGameSessionSlot(slot: GameScraperSlot, value: unknown, path: st
       return validateArrayOf(value, path, 'persons must be an array.', validateGamePersonFact)
     case 'companies':
       return validateArrayOf(value, path, 'companies must be an array.', validateGameCompanyFact)
+    case 'relatedEntries':
+      return validateArrayOf(
+        value,
+        path,
+        'relatedEntries must be an array.',
+        validateRelatedEntryFact
+      )
     case 'covers':
     case 'backdrops':
     case 'logos':
@@ -847,6 +896,13 @@ function validateAnimeSessionSlot(slot: AnimeScraperSlot, value: unknown, path: 
       return validateArrayOf(value, path, 'persons must be an array.', validateAnimePersonFact)
     case 'companies':
       return validateArrayOf(value, path, 'companies must be an array.', validateAnimeCompanyFact)
+    case 'relatedEntries':
+      return validateArrayOf(
+        value,
+        path,
+        'relatedEntries must be an array.',
+        validateRelatedEntryFact
+      )
     case 'covers':
     case 'backdrops':
     case 'logos':
@@ -994,15 +1050,15 @@ function validateExternalId(value: unknown, path: string): ValidationIssue[] {
   ]
 }
 
-function validateOptionalRelatedSites(value: unknown, path: string): ValidationIssue[] {
+function validateOptionalExternalSites(value: unknown, path: string): ValidationIssue[] {
   if (value === undefined) {
     return []
   }
 
-  return validateArrayOf(value, path, 'relatedSites must be an array.', validateRelatedSite)
+  return validateArrayOf(value, path, 'externalSites must be an array.', validateExternalSite)
 }
 
-function validateRelatedSite(value: unknown, path: string): ValidationIssue[] {
+function validateExternalSite(value: unknown, path: string): ValidationIssue[] {
   const recordIssues = validateRecord(value, path, 'Related site must be an object.')
   if (recordIssues) {
     return recordIssues

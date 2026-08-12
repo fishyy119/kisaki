@@ -93,6 +93,12 @@ export interface VndbVnVaEntry {
   } | null
 }
 
+export interface VndbVnRelationEntry {
+  id: string
+  relation?: string | null
+  relation_official?: boolean | null
+}
+
 export interface VndbVn {
   id: string
   title: string
@@ -112,6 +118,7 @@ export interface VndbVn {
   tags?: VndbVnTagRelation[] | null
   staff?: VndbVnStaffEntry[] | null
   va?: VndbVnVaEntry[] | null
+  relations?: VndbVnRelationEntry[] | null
   developers?: Array<{
     id: string
   }> | null

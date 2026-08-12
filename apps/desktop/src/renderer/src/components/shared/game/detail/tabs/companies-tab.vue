@@ -21,11 +21,11 @@ const { m } = useI18n()
 // Constants
 // =============================================================================
 
-const COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+const COMPANY_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gameCompany
 )
 
-const COMPANY_TYPE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
+const COMPANY_ROLE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
 
 // =============================================================================
 // State
@@ -47,9 +47,9 @@ const groupedCompanies = computed(() => {
   if (!hasCompanies.value) return {}
   return companies.value.reduce(
     (acc, link) => {
-      const type = link.type || 'other'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(link)
+      const role = link.role || 'other'
+      if (!acc[role]) acc[role] = []
+      acc[role].push(link)
       return acc
     },
     {} as Record<string, typeof companies.value>
@@ -108,16 +108,16 @@ const companyDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="type in COMPANY_TYPE_ORDER"
-          :key="type"
+          v-for="role in COMPANY_ROLE_ORDER"
+          :key="role"
         >
-          <div v-if="groupedCompanies[type]?.length">
+          <div v-if="groupedCompanies[role]?.length">
             <h4 class="text-xs font-medium text-muted-foreground mb-2">
-              {{ COMPANY_TYPE_LABELS[type] || type }}
+              {{ COMPANY_ROLE_LABELS[role] || role }}
             </h4>
             <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
               <template
-                v-for="link in groupedCompanies[type]"
+                v-for="link in groupedCompanies[role]"
                 :key="link.id"
               >
                 <CompanyCard

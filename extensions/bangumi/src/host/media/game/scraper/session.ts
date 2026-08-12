@@ -15,6 +15,7 @@ import { buildSubjectBackdrops, buildSubjectCovers, buildSubjectIcons } from '..
 import { buildSubjectCoreInfo } from '../../subject/info'
 import { createSubjectLoaders, memoizeTask } from '../../subject/loaders'
 import { buildSubjectCompanies, buildSubjectPersons } from '../../subject/people'
+import { buildSubjectRelatedEntries } from '../../subject/related-entries'
 import type { BangumiSubjectLoaders } from '../../subject/types'
 
 interface BangumiGameSessionOptions {
@@ -95,6 +96,8 @@ function loadSlot(
         mapRole: mapBangumiGameCompanyRole,
         locale
       })
+    case 'relatedEntries':
+      return buildSubjectRelatedEntries('game', loaders.getSubjectRelations)
     case 'covers':
       return buildSubjectCovers(loaders.getSubject, loaders.getSubjectImageVariants)
     case 'backdrops':

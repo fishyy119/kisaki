@@ -1,9 +1,9 @@
 <!--
-  CharacterRelatedSitesItemFormDialog
-  Dialog for adding/editing a related site link.
+  CompanySitesItemFormDialog
+  Dialog for adding/editing a single related site link.
 -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import {
   Dialog,
   DialogContent,
@@ -12,22 +12,22 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { Form } from '@renderer/components/ui/form'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
-import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-interface SiteData {
+interface ExternalSite {
   label: string
   url: string
 }
 
 interface Props {
-  initialData?: SiteData
+  initialData?: ExternalSite
 }
 
 const props = defineProps<Props>()
@@ -35,28 +35,22 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 const emit = defineEmits<{
-  submit: [data: SiteData]
+  submit: [data: ExternalSite]
 }>()
 
-const formData = ref<SiteData>({
+// Form state
+const formData = ref<ExternalSite>({
   label: '',
   url: ''
 })
-
-const isAddMode = computed(() => !props.initialData)
 
 // Initialize form state when dialog opens
 watch(
   () => open.value,
   (isOpen) => {
     if (isOpen) {
-      if (props.initialData) {
-        formData.value.label = props.initialData.label
-        formData.value.url = props.initialData.url
-      } else {
-        formData.value.label = ''
-        formData.value.url = ''
-      }
+      formData.value.label = props.initialData?.label ?? ''
+      formData.value.url = props.initialData?.url ?? ''
     }
   },
   { immediate: true }
@@ -69,7 +63,6 @@ function handleSubmit() {
     notify.error(m.value.library.forms.requiredFieldsMissing)
     return
   }
-
   emit('submit', { label: trimmedLabel, url: trimmedUrl })
   open.value = false
 }
@@ -84,7 +77,7 @@ function handleCancel() {
     <DialogContent class="max-w-sm">
       <DialogHeader>
         <DialogTitle>{{
-          isAddMode ? m.library.forms.addLink : m.library.forms.editLink
+          props.initialData ? m.library.forms.editLink : m.library.forms.addLink
         }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">

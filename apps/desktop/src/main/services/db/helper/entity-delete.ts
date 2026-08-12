@@ -5,10 +5,10 @@
  * direct-related entity cleanup inside a single DB transaction.
  */
 
-import { inArray } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType, MediaType } from '@shared/common'
 import type {
   EntityDeletePreview,
   EntityDeletePreviewItem,
@@ -40,6 +40,7 @@ import {
   games,
   gamePersonLinks,
   gameTagLinks,
+  mediaRelations,
   persons,
   personTagLinks,
   tags
@@ -401,9 +402,11 @@ export class DbEntityDeleteHelper {
     switch (entityType) {
       case 'game':
         db.delete(games).where(inArray(games.id, entityIds)).run()
+        this.deleteMediaRelationEnds(db, 'game', entityIds)
         return
       case 'anime':
         db.delete(animes).where(inArray(animes.id, entityIds)).run()
+        this.deleteMediaRelationEnds(db, 'anime', entityIds)
         return
       case 'character':
         db.delete(characters).where(inArray(characters.id, entityIds)).run()
@@ -421,6 +424,22 @@ export class DbEntityDeleteHelper {
         db.delete(collections).where(inArray(collections.id, entityIds)).run()
         return
     }
+  }
+
+  /** media_relations carries no FKs; both polymorphic ends clear at this choke point. */
+  private deleteMediaRelationEnds(
+    db: DbContext | BetterSQLite3Database<typeof schema>,
+    mediaType: MediaType,
+    entityIds: string[]
+  ): void {
+    db.delete(mediaRelations)
+      .where(
+        or(
+          and(eq(mediaRelations.fromType, mediaType), inArray(mediaRelations.fromId, entityIds)),
+          and(eq(mediaRelations.toType, mediaType), inArray(mediaRelations.toId, entityIds))
+        )
+      )
+      .run()
   }
 
   private normalizeIds(ids: readonly string[]): string[] {

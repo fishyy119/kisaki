@@ -27,9 +27,9 @@ const CHARACTER_TYPE_LABELS = computed<Record<string, string>>(
 const groupedCharacters = computed(() =>
   characters.value.reduce(
     (acc, link) => {
-      const type = link.type || 'other'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(link)
+      const role = link.role || 'other'
+      if (!acc[role]) acc[role] = []
+      acc[role].push(link)
       return acc
     },
     {} as Record<string, typeof characters.value>

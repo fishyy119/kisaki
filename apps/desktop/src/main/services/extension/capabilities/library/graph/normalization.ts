@@ -1,5 +1,6 @@
 import {
   type LibraryGraphAttachmentNode,
+  type LibraryGraphCharacterNode,
   type LibraryGraphCollectionNode,
   type LibraryGraphCompanyNode,
   type LibraryGraphEpisodeNode,
@@ -24,6 +25,7 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
   const tags = toEntries(input.nodes.tags ?? [], 'tag')
   const companies = toEntries(input.nodes.companies ?? [], 'company')
   const people = toEntries(input.nodes.people ?? [], 'person')
+  const characters = toEntries(input.nodes.characters ?? [], 'character')
   const notes = toEntries(input.nodes.notes ?? [], 'note')
   const sessions = toEntries(input.nodes.sessions ?? [], 'session')
   const episodes = toEntries(input.nodes.episodes ?? [], 'episode')
@@ -34,6 +36,7 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
     ...tags,
     ...companies,
     ...people,
+    ...characters,
     ...notes,
     ...sessions,
     ...episodes,
@@ -49,6 +52,7 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
     tags,
     companies,
     people,
+    characters,
     notes,
     sessions,
     episodes,
@@ -87,6 +91,10 @@ function toEntries(
   nodes: readonly LibraryGraphPersonNode[],
   kind: 'person'
 ): LibraryGraphNodeEntry<LibraryGraphPersonNode>[]
+function toEntries(
+  nodes: readonly LibraryGraphCharacterNode[],
+  kind: 'character'
+): LibraryGraphNodeEntry<LibraryGraphCharacterNode>[]
 function toEntries(
   nodes: readonly LibraryGraphNoteNode[],
   kind: 'note'

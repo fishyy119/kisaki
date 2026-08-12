@@ -19,18 +19,18 @@ export type GameMonitorMode = 'file' | 'folder' | 'process'
 /** Person gender */
 export type Gender = 'male' | 'female' | 'other'
 
-/** Game-Person relationship type */
-export type GamePersonType =
+/** Game-person link role */
+export type GamePersonRole =
   'director' | 'scenario' | 'illustration' | 'music' | 'programmer' | 'actor' | 'other'
 
-/** Game-Character relationship type */
-export type GameCharacterType = 'main' | 'supporting' | 'cameo' | 'other'
+/** Game-character link role */
+export type GameCharacterRole = 'main' | 'supporting' | 'cameo' | 'other'
 
-/** Game-Company relationship type */
-export type GameCompanyType = 'developer' | 'publisher' | 'distributor' | 'other'
+/** Game-company link role */
+export type GameCompanyRole = 'developer' | 'publisher' | 'distributor' | 'other'
 
-/** Character-Person relationship type */
-export type CharacterPersonType = 'actor' | 'illustration' | 'designer' | 'other'
+/** Character-person link role */
+export type CharacterPersonRole = 'actor' | 'illustration' | 'designer' | 'other'
 
 /** Anime release format */
 export type AnimeFormat = 'tv' | 'movie' | 'ova' | 'ona' | 'special' | 'other'
@@ -43,8 +43,8 @@ export type AnimeFormat = 'tv' | 'movie' | 'ova' | 'ona' | 'special' | 'other'
  */
 export type AnimeEpisodeType = 'regular' | 'special'
 
-/** Anime-Person relationship type */
-export type AnimePersonType =
+/** Anime-person link role */
+export type AnimePersonRole =
   | 'director'
   | 'series'
   | 'scenario'
@@ -53,21 +53,11 @@ export type AnimePersonType =
   | 'animationDirector'
   | 'other'
 
-/** Anime-Character relationship type */
-export type AnimeCharacterType = 'main' | 'supporting' | 'cameo' | 'other'
+/** Anime-character link role */
+export type AnimeCharacterRole = 'main' | 'supporting' | 'cameo' | 'other'
 
-/** Anime-Company relationship type */
-export type AnimeCompanyType = 'studio' | 'producer' | 'distributor' | 'other'
-
-/** Anime-Anime relationship type */
-export type AnimeRelationType =
-  | 'sequel'
-  | 'prequel'
-  | 'sideStory'
-  | 'movie'
-  | 'summary'
-  | 'alternative'
-  | 'other'
+/** Anime-company link role */
+export type AnimeCompanyRole = 'studio' | 'producer' | 'distributor' | 'other'
 
 /** Supplementary anime asset kind; these never carry watch state. */
 export type AnimeExtraKind = 'trailer' | 'pv' | 'ncop' | 'nced' | 'interview' | 'other'

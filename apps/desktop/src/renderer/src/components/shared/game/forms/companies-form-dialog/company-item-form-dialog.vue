@@ -31,12 +31,12 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-type CompanyType = 'developer' | 'publisher' | 'distributor' | 'other'
+type CompanyRole = 'developer' | 'publisher' | 'distributor' | 'other'
 
 interface CompanyLinkData {
   companyId: string
   companyName: string
-  type: CompanyType
+  role: CompanyRole
   note: string
   isSpoiler: boolean
 }
@@ -54,7 +54,7 @@ const emit = defineEmits<{
   submit: [data: CompanyLinkData]
 }>()
 
-const COMPANY_TYPE_OPTIONS = computed<{ value: CompanyType; label: string }[]>(() => [
+const COMPANY_ROLE_OPTIONS = computed<{ value: CompanyRole; label: string }[]>(() => [
   { value: 'developer', label: m.value.library.roles.gameCompany.developer },
   { value: 'publisher', label: m.value.library.roles.gameCompany.publisher },
   { value: 'distributor', label: m.value.library.roles.gameCompany.distributor },
@@ -65,7 +65,7 @@ const COMPANY_TYPE_OPTIONS = computed<{ value: CompanyType; label: string }[]>((
 const formData = ref<CompanyLinkData>({
   companyId: '',
   companyName: '',
-  type: 'developer',
+  role: 'developer',
   note: '',
   isSpoiler: false
 })
@@ -80,13 +80,13 @@ watch(
       if (props.initialData) {
         formData.value.companyId = props.initialData.companyId
         formData.value.companyName = props.initialData.companyName
-        formData.value.type = props.initialData.type
+        formData.value.role = props.initialData.role
         formData.value.note = props.initialData.note
         formData.value.isSpoiler = props.initialData.isSpoiler
       } else {
         formData.value.companyId = ''
         formData.value.companyName = ''
-        formData.value.type = 'developer'
+        formData.value.role = 'developer'
         formData.value.note = ''
         formData.value.isSpoiler = false
       }
@@ -130,7 +130,7 @@ function handleSubmit() {
   emit('submit', {
     companyId: formData.value.companyId,
     companyName: formData.value.companyName || 'Unknown',
-    type: formData.value.type,
+    role: formData.value.role,
     note: formData.value.note.trim(),
     isSpoiler: formData.value.isSpoiler
   })
@@ -170,13 +170,13 @@ function handleCancel() {
             <Field>
               <FieldLabel>{{ m.library.forms.companyRoleLabel }}</FieldLabel>
               <FieldContent>
-                <Select v-model="formData.type">
+                <Select v-model="formData.role">
                   <SelectTrigger class="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="opt in COMPANY_TYPE_OPTIONS"
+                      v-for="opt in COMPANY_ROLE_OPTIONS"
                       :key="opt.value"
                       :value="opt.value"
                     >

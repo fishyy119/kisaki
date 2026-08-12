@@ -1,8 +1,8 @@
 import type {
-  CharacterPersonType,
-  GameCharacterType,
-  GameCompanyType,
-  GamePersonType
+  CharacterPersonRole,
+  GameCharacterRole,
+  GameCompanyRole,
+  GamePersonRole
 } from '@shared/db'
 import { buildEntityCanonicalIdentityKey } from '@shared/identity'
 import type {
@@ -47,21 +47,21 @@ import {
 
 interface PendingGamePersonLink {
   personIdentityKey: string
-  type: GamePersonType
+  role: GamePersonRole
   isSpoiler: boolean
   note?: string
 }
 
 interface PendingGameCompanyLink {
   companyIdentityKey: string
-  type: GameCompanyType
+  role: GameCompanyRole
   isSpoiler: boolean
   note?: string
 }
 
 interface PendingGameCharacterLink {
   characterIdentityKey: string
-  type: GameCharacterType
+  role: GameCharacterRole
   isSpoiler: boolean
   note?: string
 }
@@ -69,13 +69,13 @@ interface PendingGameCharacterLink {
 interface PendingCharacterPersonLink {
   characterIdentityKey: string
   personIdentityKey: string
-  type: CharacterPersonType
+  role: CharacterPersonRole
   isSpoiler: boolean
   note?: string
 }
 
-function toGamePersonTypeFromCharacterPerson(type: CharacterPersonType): GamePersonType {
-  switch (type) {
+function toGamePersonRoleFromCharacterPerson(role: CharacterPersonRole): GamePersonRole {
+  switch (role) {
     case 'actor':
       return 'actor'
     case 'illustration':
@@ -89,16 +89,16 @@ function toGamePersonTypeFromCharacterPerson(type: CharacterPersonType): GamePer
 function upsertGamePersonLink(
   edgeMap: Map<string, PendingGamePersonLink>,
   personIdentityKey: string,
-  type: GamePersonType,
+  role: GamePersonRole,
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${personIdentityKey}:${type}`
+  const key = `${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       personIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -112,16 +112,16 @@ function upsertGamePersonLink(
 function upsertGameCompanyLink(
   edgeMap: Map<string, PendingGameCompanyLink>,
   companyIdentityKey: string,
-  type: GameCompanyType,
+  role: GameCompanyRole,
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${companyIdentityKey}:${type}`
+  const key = `${companyIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       companyIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -135,16 +135,16 @@ function upsertGameCompanyLink(
 function upsertGameCharacterLink(
   edgeMap: Map<string, PendingGameCharacterLink>,
   characterIdentityKey: string,
-  type: GameCharacterType,
+  role: GameCharacterRole,
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${characterIdentityKey}:${type}`
+  const key = `${characterIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       characterIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -159,17 +159,17 @@ function upsertCharacterPersonLink(
   edgeMap: Map<string, PendingCharacterPersonLink>,
   characterIdentityKey: string,
   personIdentityKey: string,
-  type: CharacterPersonType,
+  role: CharacterPersonRole,
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${characterIdentityKey}:${personIdentityKey}:${type}`
+  const key = `${characterIdentityKey}:${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       characterIdentityKey,
       personIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -198,7 +198,7 @@ function finalizeGamePersonLinks(
     return {
       gameIdentityKey,
       personIdentityKey: edge.personIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInGame,
@@ -223,7 +223,7 @@ function finalizeGameCompanyLinks(
     return {
       gameIdentityKey,
       companyIdentityKey: edge.companyIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInGame,
@@ -248,7 +248,7 @@ function finalizeGameCharacterLinks(
     return {
       gameIdentityKey,
       characterIdentityKey: edge.characterIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInGame,
@@ -276,7 +276,7 @@ function finalizeCharacterPersonLinks(
     return {
       characterIdentityKey: edge.characterIdentityKey,
       personIdentityKey: edge.personIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInCharacter,
@@ -357,7 +357,7 @@ function buildGameGraphInternal(
     upsertGamePersonLink(
       gamePersonLinks,
       personIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       normalizeOptionalString(fact.note)
     )
@@ -376,7 +376,7 @@ function buildGameGraphInternal(
     upsertGameCompanyLink(
       gameCompanyLinks,
       companyIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       normalizeOptionalString(fact.note)
     )
@@ -395,7 +395,7 @@ function buildGameGraphInternal(
     upsertGameCharacterLink(
       gameCharacterLinks,
       characterIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       normalizeOptionalString(fact.note)
     )
@@ -415,14 +415,14 @@ function buildGameGraphInternal(
         characterPersonLinks,
         characterIdentityKey,
         personIdentityKey,
-        personFact.type,
+        personFact.role,
         personFact.isSpoiler,
         note
       )
       upsertGamePersonLink(
         gamePersonLinks,
         personIdentityKey,
-        toGamePersonTypeFromCharacterPerson(personFact.type),
+        toGamePersonRoleFromCharacterPerson(personFact.role),
         personFact.isSpoiler,
         note
       )
@@ -459,14 +459,14 @@ function buildGameGraphInternal(
       characterPersonLinks,
       characterIdentityKey,
       personIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       note
     )
     upsertGamePersonLink(
       gamePersonLinks,
       personIdentityKey,
-      toGamePersonTypeFromCharacterPerson(fact.type),
+      toGamePersonRoleFromCharacterPerson(fact.role),
       fact.isSpoiler,
       note
     )
@@ -490,6 +490,7 @@ function buildGameGraphInternal(
       gameCharacter: finalizeGameCharacterLinks(gameIdentityKey, gameCharacterLinks),
       characterPerson: finalizeCharacterPersonLinks(characterPersonLinks)
     },
+    relatedEntries: bundle?.relationFacts?.relatedEntries,
     media: {
       coverUrl: pickFirstUrl(media?.coverUrls),
       backdropUrl: pickFirstUrl(media?.backdropUrls),

@@ -68,6 +68,9 @@ const VISUAL_NOVEL_CN: ScraperPresetDefinition = {
     }),
     persons: createSlotConfig('persons', ['ymgal', 'vndb', BANGUMI_PROVIDER_ID]),
     companies: createSlotConfig('companies', ['ymgal', 'vndb', BANGUMI_PROVIDER_ID]),
+    relatedEntries: createSlotConfig('relatedEntries', ['vndb', BANGUMI_PROVIDER_ID], {
+      strategy: 'enrich'
+    }),
     covers: createSlotConfig('covers', ['vndb', 'ymgal', BANGUMI_PROVIDER_ID]),
     backdrops: createSlotConfig('backdrops', ['vndb']),
     logos: createEmptySlotConfig('logos'),
@@ -87,6 +90,7 @@ const VIDEO_GAME: ScraperPresetDefinition = {
     characters: createSlotConfig('characters', ['igdb'], { strategy: 'enrich' }),
     persons: createSlotConfig('persons', ['igdb']),
     companies: createSlotConfig('companies', ['igdb']),
+    relatedEntries: createEmptySlotConfig('relatedEntries'),
     covers: createSlotConfig('covers', ['igdb']),
     backdrops: createSlotConfig('backdrops', ['igdb']),
     logos: createEmptySlotConfig('logos'),
@@ -95,10 +99,35 @@ const VIDEO_GAME: ScraperPresetDefinition = {
 }
 
 // =============================================================================
+// Anime Presets
+// =============================================================================
+
+/** Anime preset using Bangumi as the sole data source */
+const ANIME_CN: ScraperPresetDefinition = {
+  id: 'anime-cn',
+  copy: (m) => m.scraper.presets.anime,
+  mediaType: 'anime',
+  defaultLocale: 'zh-Hans',
+  searchProviderId: BANGUMI_PROVIDER_ID,
+  slotConfigs: {
+    info: createSlotConfig('info', [BANGUMI_PROVIDER_ID]),
+    tags: createSlotConfig('tags', [BANGUMI_PROVIDER_ID]),
+    episodes: createSlotConfig('episodes', [BANGUMI_PROVIDER_ID]),
+    characters: createSlotConfig('characters', [BANGUMI_PROVIDER_ID]),
+    persons: createSlotConfig('persons', [BANGUMI_PROVIDER_ID]),
+    companies: createSlotConfig('companies', [BANGUMI_PROVIDER_ID]),
+    relatedEntries: createSlotConfig('relatedEntries', [BANGUMI_PROVIDER_ID]),
+    covers: createSlotConfig('covers', [BANGUMI_PROVIDER_ID]),
+    backdrops: createSlotConfig('backdrops', [BANGUMI_PROVIDER_ID]),
+    logos: createEmptySlotConfig('logos')
+  }
+}
+
+// =============================================================================
 // Preset Registry
 // =============================================================================
 
-const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [VISUAL_NOVEL_CN, VIDEO_GAME]
+const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [VISUAL_NOVEL_CN, VIDEO_GAME, ANIME_CN]
 
 function resolvePreset({ copy, ...preset }: ScraperPresetDefinition): ScraperPreset {
   return { ...preset, ...copy(messages.value) }

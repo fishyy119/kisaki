@@ -37,7 +37,7 @@ export const RANKED_ENTITY_KEYS = [
   'score',
   'isFavorite',
   'isNsfw',
-  'relatedSites'
+  'externalSites'
 ] as const
 
 export function assertValidLibraryEntityId(
@@ -89,7 +89,7 @@ export function validateRankedEntityFields(
     ...validateOptionalNullableFiniteNumber(input.score, `${path}.score`),
     ...validateOptionalBoolean(input.isFavorite, `${path}.isFavorite`),
     ...validateOptionalBoolean(input.isNsfw, `${path}.isNsfw`),
-    ...validateOptionalRelatedSites(input.relatedSites, `${path}.relatedSites`)
+    ...validateOptionalExternalSites(input.externalSites, `${path}.externalSites`)
   ]
 }
 
@@ -160,9 +160,9 @@ export function validateOptionalExternalIds(value: unknown, path: string): Valid
   )
 }
 
-export function validateOptionalRelatedSites(value: unknown, path: string): ValidationIssue[] {
-  return validateOptionalArrayOf(value, path, 'relatedSites must be an array.', (item, itemPath) =>
-    validateRelatedSite(item, itemPath)
+export function validateOptionalExternalSites(value: unknown, path: string): ValidationIssue[] {
+  return validateOptionalArrayOf(value, path, 'externalSites must be an array.', (item, itemPath) =>
+    validateExternalSite(item, itemPath)
   )
 }
 
@@ -350,7 +350,7 @@ function validateExternalId(value: unknown, path: string): ValidationIssue[] {
   ]
 }
 
-function validateRelatedSite(value: unknown, path: string): ValidationIssue[] {
+function validateExternalSite(value: unknown, path: string): ValidationIssue[] {
   if (!isRecord(value)) {
     return [{ path, message: 'Related site must be an object.' }]
   }

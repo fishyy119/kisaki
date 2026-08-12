@@ -27,21 +27,19 @@ import { normalizeExternalIds, toExternalIdKey, type ExternalId } from '@shared/
 import type { AnimeEpisodeInfo } from '@shared/metadata'
 import type {
   AnimeEpisodeUpdatePlan,
-  AnimeRelationLink,
+  AnimeLinkKind,
   AnimeUpdatePlan,
-  UpdateRelationApplyResult
+  UpdateLinkApplyResult
 } from '../types'
 import { areScalarValuesEqual } from '../shared/merge'
+import { applyMediaRelationFacts } from '../../media-relations'
 import {
-  applyAnimeCharacterRows,
-  applyAnimeCompanyRows,
-  applyAnimePersonRows,
-  applyCharacterPersonRows,
+  applyLinkRows,
   filterNodesByIdentity,
   resolveCharacterNodes,
   resolveCompanyNodes,
   resolvePersonNodes
-} from './relations'
+} from './links'
 
 function replaceAnimeExternalIds(tx: DbContext, animeId: string, externalIds: ExternalId[]): void {
   tx.delete(animeExternalIds).where(eq(animeExternalIds.animeId, animeId)).run()
@@ -255,13 +253,13 @@ function applyAnimeRelationGraph(
   animeId: string,
   plan: AnimeUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): UpdateRelationApplyResult<AnimeRelationLink> {
+): UpdateLinkApplyResult<AnimeLinkKind> {
   const relationGraph = plan.relationGraph
   if (!relationGraph) {
-    return { pendingAssets: [], preservedRelationRows: {} }
+    return { pendingAssets: [], preservedLinkRows: {} }
   }
 
-  const { animePerson, animeCompany, animeCharacter, characterPerson } = plan.relationLinks
+  const { animePerson, animeCompany, animeCharacter, characterPerson } = plan.links
 
   const personIdentityKeys = new Set<string>()
   if (animePerson) {
@@ -295,7 +293,7 @@ function applyAnimeRelationGraph(
   }
 
   const pendingAssets: PendingAssetTask[] = []
-  const preservedRelationRows: Partial<Record<AnimeRelationLink, number>> = {}
+  const preservedLinkRows: Partial<Record<AnimeLinkKind, number>> = {}
 
   const personResolution =
     personIdentityKeys.size > 0
@@ -328,32 +326,38 @@ function applyAnimeRelationGraph(
   pendingAssets.push(...characterResolution.pendingAssets)
 
   if (animePerson) {
-    preservedRelationRows.animePerson = applyAnimePersonRows({
+    preservedLinkRows.animePerson = applyLinkRows({
       tx,
-      animeId,
+      kind: 'animePerson',
+      entityId: animeId,
       links: relationGraph.links.animePerson,
-      collectionMode: animePerson,
-      personIdByIdentity: personResolution.idByIdentity
+      relatedIdentityKeyOf: (link) => link.personIdentityKey,
+      relatedIdByIdentity: personResolution.idByIdentity,
+      collectionMode: animePerson
     })
   }
 
   if (animeCompany) {
-    preservedRelationRows.animeCompany = applyAnimeCompanyRows({
+    preservedLinkRows.animeCompany = applyLinkRows({
       tx,
-      animeId,
+      kind: 'animeCompany',
+      entityId: animeId,
       links: relationGraph.links.animeCompany,
-      collectionMode: animeCompany,
-      companyIdByIdentity: companyResolution.idByIdentity
+      relatedIdentityKeyOf: (link) => link.companyIdentityKey,
+      relatedIdByIdentity: companyResolution.idByIdentity,
+      collectionMode: animeCompany
     })
   }
 
   if (animeCharacter) {
-    preservedRelationRows.animeCharacter = applyAnimeCharacterRows({
+    preservedLinkRows.animeCharacter = applyLinkRows({
       tx,
-      animeId,
+      kind: 'animeCharacter',
+      entityId: animeId,
       links: relationGraph.links.animeCharacter,
-      collectionMode: animeCharacter,
-      characterIdByIdentity: characterResolution.idByIdentity
+      relatedIdentityKeyOf: (link) => link.characterIdentityKey,
+      relatedIdByIdentity: characterResolution.idByIdentity,
+      collectionMode: animeCharacter
     })
   }
 
@@ -370,18 +374,20 @@ function applyAnimeRelationGraph(
 
     let preserved = 0
     for (const [characterId, links] of linksByCharacterId) {
-      preserved += applyCharacterPersonRows({
+      preserved += applyLinkRows({
         tx,
-        characterId,
+        kind: 'characterPerson',
+        entityId: characterId,
         links,
-        collectionMode: characterPerson,
-        personIdByIdentity: personResolution.idByIdentity
+        relatedIdentityKeyOf: (link) => link.personIdentityKey,
+        relatedIdByIdentity: personResolution.idByIdentity,
+        collectionMode: characterPerson
       })
     }
-    preservedRelationRows.characterPerson = preserved
+    preservedLinkRows.characterPerson = preserved
   }
 
-  return { pendingAssets, preservedRelationRows }
+  return { pendingAssets, preservedLinkRows }
 }
 
 export function applyAnimePlan(
@@ -389,7 +395,7 @@ export function applyAnimePlan(
   animeId: string,
   plan: AnimeUpdatePlan,
   persistHandlers: IngestPersistHandlers
-): UpdateRelationApplyResult<AnimeRelationLink> {
+): UpdateLinkApplyResult<AnimeLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, animeExternalIdLink, [animeId], plan.externalIds)
     replaceAnimeExternalIds(tx, animeId, plan.externalIds)
@@ -422,5 +428,23 @@ export function applyAnimePlan(
   const relations = applyAnimeRelationGraph(tx, animeId, plan, persistHandlers)
   pendingAssets.push(...relations.pendingAssets)
 
-  return { pendingAssets, preservedRelationRows: relations.preservedRelationRows }
+  let unresolvedRelatedEntries: number | undefined
+  if (plan.relatedEntries) {
+    const relatedResult = applyMediaRelationFacts({
+      tx,
+      mediaType: 'anime',
+      entityId: animeId,
+      facts: plan.relatedEntries.facts,
+      collectionMode: plan.relatedEntries.mode
+    })
+    if (relatedResult.unresolvedCount > 0) {
+      unresolvedRelatedEntries = relatedResult.unresolvedCount
+    }
+  }
+
+  return {
+    pendingAssets,
+    preservedLinkRows: relations.preservedLinkRows,
+    ...(unresolvedRelatedEntries !== undefined && { unresolvedRelatedEntries })
+  }
 }

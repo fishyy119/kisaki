@@ -1,12 +1,12 @@
 import type { AnimePlanContext, AnimeUpdatePlan } from '../types'
-import { ANIME_RELATION_LINKS, resolveRelationLinks } from '../relation-links'
+import { ANIME_LINK_TOPOLOGY, resolveLinkWrites } from '../link-topology'
 import {
   areExternalIdsEqual,
-  areRelatedSitesEqual,
+  areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
   mergeExternalIds,
-  mergeRelatedSites,
+  mergeExternalSites,
   mergeTags
 } from '../shared/merge'
 import { pickFirstUrl } from '../shared/normalization'
@@ -14,16 +14,16 @@ import { shouldApplyMediaUpdate, shouldApplyScalarUpdate } from '../shared/polic
 
 export function buildAnimePlan(context: AnimePlanContext): AnimeUpdatePlan {
   const { current, incoming, relationGraph, selection, policy } = context
-  const relations = resolveRelationLinks({
-    links: ANIME_RELATION_LINKS,
+  const relations = resolveLinkWrites({
+    topology: ANIME_LINK_TOPOLOGY,
     selectedSurfaces: selection.relationSurfaces,
     availability: incoming.availability,
     mode: policy.collectionUpdate
   })
   const plan: AnimeUpdatePlan = {
     patch: {},
-    relationLinks: relations.links,
-    degradedRelationLinks: relations.degraded
+    links: relations.links,
+    degradedLinks: relations.degraded
   }
 
   for (const surface of selection.coreSurfaces) {
@@ -45,15 +45,15 @@ export function buildAnimePlan(context: AnimePlanContext): AnimeUpdatePlan {
         break
       }
 
-      case 'relatedSites': {
-        const next = mergeRelatedSites(
-          current.anime.relatedSites ?? [],
-          incoming.incoming.core.relatedSites ?? [],
+      case 'externalSites': {
+        const next = mergeExternalSites(
+          current.anime.externalSites ?? [],
+          incoming.incoming.core.externalSites ?? [],
           policy.collectionUpdate
         )
         if (!next) break
-        if (areRelatedSitesEqual(current.anime.relatedSites ?? [], next)) break
-        plan.patch.relatedSites = next
+        if (areExternalSitesEqual(current.anime.externalSites ?? [], next)) break
+        plan.patch.externalSites = next
         break
       }
 
@@ -120,6 +120,16 @@ export function buildAnimePlan(context: AnimePlanContext): AnimeUpdatePlan {
 
   if (Object.keys(relations.links).length > 0 && relationGraph) {
     plan.relationGraph = relationGraph
+  }
+
+  if (
+    selection.relationSurfaces.includes('relatedEntries') &&
+    incoming.availability.surfaces.has('relatedEntries')
+  ) {
+    plan.relatedEntries = {
+      facts: incoming.incoming.relationFacts.relatedEntries ?? [],
+      mode: policy.collectionUpdate
+    }
   }
 
   return plan

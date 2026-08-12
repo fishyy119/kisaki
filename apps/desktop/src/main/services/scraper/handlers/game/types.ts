@@ -13,6 +13,7 @@ export type GameScraperTagsResult = GameSlotResult<'tags'>
 export type GameScraperCharactersResult = GameSlotResult<'characters'>
 export type GameScraperPersonsResult = GameSlotResult<'persons'>
 export type GameScraperCompaniesResult = GameSlotResult<'companies'>
+export type GameScraperRelatedEntriesResult = GameSlotResult<'relatedEntries'>
 export type GameScraperCoversResult = GameSlotResult<'covers'>
 export type GameScraperBackdropsResult = GameSlotResult<'backdrops'>
 export type GameScraperLogosResult = GameSlotResult<'logos'>
@@ -24,6 +25,7 @@ export type GameScraperResult =
   | GameScraperCharactersResult
   | GameScraperPersonsResult
   | GameScraperCompaniesResult
+  | GameScraperRelatedEntriesResult
   | GameScraperCoversResult
   | GameScraperBackdropsResult
   | GameScraperLogosResult

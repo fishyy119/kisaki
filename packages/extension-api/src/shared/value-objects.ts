@@ -3,7 +3,7 @@ export interface ExternalId {
   id: string
 }
 
-export interface RelatedSite {
+export interface ExternalSite {
   label: string
   url: string
 }

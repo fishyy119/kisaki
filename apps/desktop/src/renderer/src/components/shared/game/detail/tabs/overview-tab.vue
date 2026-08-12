@@ -14,6 +14,10 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
+import {
+  MediaRelationsFormDialog,
+  MediaRelationsSection
+} from '@renderer/components/shared/media-relations'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
@@ -24,20 +28,20 @@ import {
   GameCharactersFormDialog,
   GamePersonsFormDialog,
   GameCompaniesFormDialog,
-  GameRelatedSitesFormDialog
+  GameExternalSitesFormDialog
 } from '../../forms'
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+const COMPANY_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gameCompany
 )
 
-const PERSON_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.gamePerson)
+const PERSON_ROLE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.gamePerson)
 
-const PERSON_TYPE_ORDER = [
+const PERSON_ROLE_ORDER = [
   'director',
   'scenario',
   'illustration',
@@ -47,11 +51,11 @@ const PERSON_TYPE_ORDER = [
   'other'
 ] as const
 
-const COMPANY_TYPE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
+const COMPANY_ROLE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
 
-const CHARACTER_TYPE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
+const CHARACTER_ROLE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
 
-const CHARACTER_TYPE_LABELS = computed<Record<string, string>>(
+const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gameCharacter
 )
 
@@ -59,7 +63,7 @@ const CHARACTER_TYPE_LABELS = computed<Record<string, string>>(
 // State
 // =============================================================================
 
-const { game, tags, characters, persons, companies } = useGame()
+const { game, tags, characters, persons, companies, relations } = useGame()
 const { m, f } = useI18n()
 
 /** Edit dialog states */
@@ -70,7 +74,8 @@ const editDialogs = ref({
   characters: false,
   staff: false,
   companies: false,
-  relatedSites: false
+  externalSites: false,
+  relations: false
 })
 
 /** Entity detail dialog states */
@@ -83,8 +88,8 @@ const openTagId = ref<string | null>(null)
 // Computed
 // =============================================================================
 
-const hasRelatedSites = computed(
-  () => game.value?.relatedSites && game.value.relatedSites.length > 0
+const hasExternalSites = computed(
+  () => game.value?.externalSites && game.value.externalSites.length > 0
 )
 const hasTags = computed(() => tags.value && tags.value.length > 0)
 const hasCharacters = computed(() => characters.value && characters.value.length > 0)
@@ -96,19 +101,19 @@ const sortedCharacters = computed(() => {
   if (!hasCharacters.value) return []
   return [...characters.value]
     .sort((a, b) => {
-      const typeIndexA = CHARACTER_TYPE_ORDER.indexOf(
-        (a.type || 'other') as (typeof CHARACTER_TYPE_ORDER)[number]
+      const roleIndexA = CHARACTER_ROLE_ORDER.indexOf(
+        (a.role || 'other') as (typeof CHARACTER_ROLE_ORDER)[number]
       )
-      const typeIndexB = CHARACTER_TYPE_ORDER.indexOf(
-        (b.type || 'other') as (typeof CHARACTER_TYPE_ORDER)[number]
+      const roleIndexB = CHARACTER_ROLE_ORDER.indexOf(
+        (b.role || 'other') as (typeof CHARACTER_ROLE_ORDER)[number]
       )
-      if (typeIndexA !== typeIndexB) return typeIndexA - typeIndexB
+      if (roleIndexA !== roleIndexB) return roleIndexA - roleIndexB
       return a.orderInGame - b.orderInGame
     })
     .map((link) => ({
       link,
       character: link.character,
-      roleLabel: link.type ? CHARACTER_TYPE_LABELS.value[link.type] : undefined
+      roleLabel: link.role ? CHARACTER_ROLE_LABELS.value[link.role] : undefined
     }))
     .filter((item) => item.character !== null)
 })
@@ -118,9 +123,9 @@ const groupedPersons = computed(() => {
   if (!hasPersons.value) return {}
   return persons.value.reduce(
     (acc, link) => {
-      const type = link.type || 'other'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(link)
+      const role = link.role || 'other'
+      if (!acc[role]) acc[role] = []
+      acc[role].push(link)
       return acc
     },
     {} as Record<string, typeof persons.value>
@@ -200,6 +205,12 @@ const tagDialogOpen = computed({
           </template>
         </SectionScroll>
 
+        <MediaRelationsSection
+          :relations="relations"
+          editable
+          @edit="openEditDialog('relations')"
+        />
+
         <Section
           :title="m.library.fields.tags"
           editable
@@ -248,16 +259,16 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="type in PERSON_TYPE_ORDER"
-              :key="type"
+              v-for="role in PERSON_ROLE_ORDER"
+              :key="role"
             >
-              <div v-if="groupedPersons[type]?.length">
+              <div v-if="groupedPersons[role]?.length">
                 <div class="text-muted-foreground text-xs mb-1">
-                  {{ PERSON_TYPE_LABELS[type] || type }}
+                  {{ PERSON_ROLE_LABELS[role] || role }}
                 </div>
                 <div class="flex flex-wrap gap-x-1 gap-y-0.5">
                   <template
-                    v-for="(link, index) in groupedPersons[type]"
+                    v-for="(link, index) in groupedPersons[role]"
                     :key="link.id"
                   >
                     <span class="inline-flex items-center max-w-full min-w-0">
@@ -270,7 +281,7 @@ const tagDialogOpen = computed({
                         @click="openPersonId = link.person.id"
                       />
                       <span
-                        v-if="index < groupedPersons[type].length - 1"
+                        v-if="index < groupedPersons[role].length - 1"
                         class="text-muted-foreground/50"
                         >,</span
                       >
@@ -291,16 +302,16 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="type in COMPANY_TYPE_ORDER"
-              :key="type"
+              v-for="role in COMPANY_ROLE_ORDER"
+              :key="role"
             >
-              <div v-if="companies.filter((c) => (c.type || 'other') === type).length > 0">
+              <div v-if="companies.filter((c) => (c.role || 'other') === role).length > 0">
                 <div class="text-muted-foreground text-xs mb-1">
-                  {{ COMPANY_TYPE_LABELS[type] || type }}
+                  {{ COMPANY_ROLE_LABELS[role] || role }}
                 </div>
                 <div class="flex flex-wrap gap-x-1 gap-y-0.5">
                   <template
-                    v-for="(link, index) in companies.filter((c) => (c.type || 'other') === type)"
+                    v-for="(link, index) in companies.filter((c) => (c.role || 'other') === role)"
                     :key="link.id"
                   >
                     <span class="inline-flex items-center max-w-full min-w-0">
@@ -314,7 +325,7 @@ const tagDialogOpen = computed({
                       />
                       <span
                         v-if="
-                          index < companies.filter((c) => (c.type || 'other') === type).length - 1
+                          index < companies.filter((c) => (c.role || 'other') === role).length - 1
                         "
                         class="text-muted-foreground/50"
                         >,</span
@@ -328,15 +339,15 @@ const tagDialogOpen = computed({
         </Section>
 
         <Section
-          :title="m.library.fields.relatedSites"
+          :title="m.library.fields.externalSites"
           editable
-          :empty="!hasRelatedSites"
-          :empty-text="m.library.detail.empty.relatedSites"
-          @edit="openEditDialog('relatedSites')"
+          :empty="!hasExternalSites"
+          :empty-text="m.library.detail.empty.externalSites"
+          @edit="openEditDialog('externalSites')"
         >
           <div class="flex flex-col gap-1.5">
             <a
-              v-for="(site, index) in game.relatedSites"
+              v-for="(site, index) in game.externalSites"
               :key="index"
               :href="site.url"
               target="_blank"
@@ -385,10 +396,16 @@ const tagDialogOpen = computed({
       v-model:open="editDialogs.companies"
       :game-id="game.id"
     />
-    <GameRelatedSitesFormDialog
-      v-if="editDialogs.relatedSites"
-      v-model:open="editDialogs.relatedSites"
+    <GameExternalSitesFormDialog
+      v-if="editDialogs.externalSites"
+      v-model:open="editDialogs.externalSites"
       :game-id="game.id"
+    />
+    <MediaRelationsFormDialog
+      v-if="editDialogs.relations"
+      v-model:open="editDialogs.relations"
+      media-type="game"
+      :entity-id="game.id"
     />
 
     <!-- Entity Detail Dialogs -->

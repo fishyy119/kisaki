@@ -79,7 +79,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: gamePersonLinks,
         mergeField: 'gameId',
         mergeColumn: gamePersonLinks.gameId,
-        uniqueKeyFields: ['gameId', 'personId', 'type'],
+        uniqueKeyFields: ['gameId', 'personId', 'role'],
         orderField: 'orderInGame',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -88,7 +88,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: gameCompanyLinks,
         mergeField: 'gameId',
         mergeColumn: gameCompanyLinks.gameId,
-        uniqueKeyFields: ['gameId', 'companyId', 'type'],
+        uniqueKeyFields: ['gameId', 'companyId', 'role'],
         orderField: 'orderInGame',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -97,7 +97,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: gameCharacterLinks,
         mergeField: 'gameId',
         mergeColumn: gameCharacterLinks.gameId,
-        uniqueKeyFields: ['gameId', 'characterId', 'type'],
+        uniqueKeyFields: ['gameId', 'characterId', 'role'],
         orderField: 'orderInGame',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -130,7 +130,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: animePersonLinks,
         mergeField: 'animeId',
         mergeColumn: animePersonLinks.animeId,
-        uniqueKeyFields: ['animeId', 'personId', 'type'],
+        uniqueKeyFields: ['animeId', 'personId', 'role'],
         orderField: 'orderInAnime',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -139,7 +139,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: animeCompanyLinks,
         mergeField: 'animeId',
         mergeColumn: animeCompanyLinks.animeId,
-        uniqueKeyFields: ['animeId', 'companyId', 'type'],
+        uniqueKeyFields: ['animeId', 'companyId', 'role'],
         orderField: 'orderInAnime',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -148,7 +148,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: animeCharacterLinks,
         mergeField: 'animeId',
         mergeColumn: animeCharacterLinks.animeId,
-        uniqueKeyFields: ['animeId', 'characterId', 'type'],
+        uniqueKeyFields: ['animeId', 'characterId', 'role'],
         orderField: 'orderInAnime',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -181,7 +181,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: gameCharacterLinks,
         mergeField: 'characterId',
         mergeColumn: gameCharacterLinks.characterId,
-        uniqueKeyFields: ['gameId', 'characterId', 'type'],
+        uniqueKeyFields: ['gameId', 'characterId', 'role'],
         orderField: 'orderInCharacter',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -190,7 +190,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: animeCharacterLinks,
         mergeField: 'characterId',
         mergeColumn: animeCharacterLinks.characterId,
-        uniqueKeyFields: ['animeId', 'characterId', 'type'],
+        uniqueKeyFields: ['animeId', 'characterId', 'role'],
         orderField: 'orderInCharacter',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -199,7 +199,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: characterPersonLinks,
         mergeField: 'characterId',
         mergeColumn: characterPersonLinks.characterId,
-        uniqueKeyFields: ['characterId', 'personId', 'type'],
+        uniqueKeyFields: ['characterId', 'personId', 'role'],
         orderField: 'orderInCharacter',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -232,7 +232,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: gamePersonLinks,
         mergeField: 'personId',
         mergeColumn: gamePersonLinks.personId,
-        uniqueKeyFields: ['gameId', 'personId', 'type'],
+        uniqueKeyFields: ['gameId', 'personId', 'role'],
         orderField: 'orderInPerson',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -241,7 +241,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: animePersonLinks,
         mergeField: 'personId',
         mergeColumn: animePersonLinks.personId,
-        uniqueKeyFields: ['animeId', 'personId', 'type'],
+        uniqueKeyFields: ['animeId', 'personId', 'role'],
         orderField: 'orderInPerson',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -250,7 +250,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: characterPersonLinks,
         mergeField: 'personId',
         mergeColumn: characterPersonLinks.personId,
-        uniqueKeyFields: ['characterId', 'personId', 'type'],
+        uniqueKeyFields: ['characterId', 'personId', 'role'],
         orderField: 'orderInPerson',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -283,7 +283,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: gameCompanyLinks,
         mergeField: 'companyId',
         mergeColumn: gameCompanyLinks.companyId,
-        uniqueKeyFields: ['gameId', 'companyId', 'type'],
+        uniqueKeyFields: ['gameId', 'companyId', 'role'],
         orderField: 'orderInCompany',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -292,7 +292,7 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         table: animeCompanyLinks,
         mergeField: 'companyId',
         mergeColumn: animeCompanyLinks.companyId,
-        uniqueKeyFields: ['animeId', 'companyId', 'type'],
+        uniqueKeyFields: ['animeId', 'companyId', 'role'],
         orderField: 'orderInCompany',
         spoilerField: 'isSpoiler',
         noteField: 'note'

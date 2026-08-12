@@ -4,7 +4,7 @@
  * that may be empty ("authoritatively none").
  */
 
-import type { RelatedSite } from '@shared/db'
+import type { ExternalSite } from '@shared/db'
 import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
 import type { IngestUpdateLookup } from '@shared/ingest/update'
 import type { Tag } from '@shared/metadata'
@@ -44,9 +44,9 @@ export function pickFirstUrl(urls: string[] | null | undefined): string | undefi
   return normalizeUrlCandidates(urls)?.[0]
 }
 
-export function normalizeRelatedSites(
-  sites: RelatedSite[] | null | undefined
-): RelatedSite[] | undefined {
+export function normalizeExternalSites(
+  sites: ExternalSite[] | null | undefined
+): ExternalSite[] | undefined {
   if (!sites) return undefined
 
   return uniqueByKey(
@@ -58,9 +58,9 @@ export function normalizeRelatedSites(
         return {
           url,
           label: normalizeOptionalString(site.label) ?? url
-        } satisfies RelatedSite
+        } satisfies ExternalSite
       })
-      .filter((site): site is RelatedSite => site !== null),
+      .filter((site): site is ExternalSite => site !== null),
     (site) => normalizeKeyText(site.url)
   )
 }

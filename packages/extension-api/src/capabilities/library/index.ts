@@ -33,7 +33,8 @@ import type {
   LibraryTagPatch,
   LibraryTagQuery
 } from './entities'
-import type { LibraryRelationCapability } from './relations'
+import type { LibraryLinkCapability } from './links'
+import type { LibraryMediaRelationCapability } from './relations'
 
 export interface LibraryEntityNamespace<TEntity, TCreate, TPatch, TQuery> {
   get(id: string): Promise<TEntity | null>
@@ -102,12 +103,14 @@ export interface LibraryCapability {
     LibraryCollectionQuery
   >
   tags: LibraryEntityNamespace<LibraryTag, LibraryTagCreateInput, LibraryTagPatch, LibraryTagQuery>
-  relations: LibraryRelationCapability
+  links: LibraryLinkCapability
+  relations: LibraryMediaRelationCapability
   attachments: LibraryAttachmentCapability
 }
 
 export * from './attachments'
 export * from './entities'
 export * from './graph'
+export * from './links'
 export * from './relations'
 export * from './validation'

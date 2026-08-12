@@ -10,7 +10,7 @@ import {
 } from './common'
 
 // Episodes are anime-owned child rows, not satellite links, so they sit in the
-// core group next to the other owned collections (relatedSites/externalIds/tags)
+// core group next to the other owned collections (externalSites/externalIds/tags)
 // rather than in the relation group, whose replace semantics are tied to the
 // multi-source link topology.
 export const ANIME_UPDATE_SURFACES = defineIngestUpdateSurfaces([
@@ -20,7 +20,7 @@ export const ANIME_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'description', group: 'core', cardinality: 'singular' },
   { key: 'format', group: 'core', cardinality: 'singular' },
   { key: 'totalEpisodes', group: 'core', cardinality: 'singular' },
-  { key: 'relatedSites', group: 'core', cardinality: 'collection' },
+  { key: 'externalSites', group: 'core', cardinality: 'collection' },
   { key: 'externalIds', group: 'core', cardinality: 'collection' },
   { key: 'tags', group: 'core', cardinality: 'collection' },
   { key: 'episodes', group: 'core', cardinality: 'collection' },
@@ -28,6 +28,7 @@ export const ANIME_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'company', group: 'relation', cardinality: 'collection' },
   { key: 'character', group: 'relation', cardinality: 'collection' },
   { key: 'characterPerson', group: 'relation', cardinality: 'collection' },
+  { key: 'relatedEntries', group: 'relation', cardinality: 'collection' },
   { key: 'covers', group: 'media', cardinality: 'singular' },
   { key: 'backdrops', group: 'media', cardinality: 'singular' },
   { key: 'logos', group: 'media', cardinality: 'singular' }

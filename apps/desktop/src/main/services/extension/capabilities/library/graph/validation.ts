@@ -1,16 +1,21 @@
 import {
+  LIBRARY_ANIME_CHARACTER_ROLES,
   LIBRARY_ANIME_COMPANY_ROLES,
   LIBRARY_ANIME_PERSON_ROLES,
+  LIBRARY_CHARACTER_PERSON_ROLES,
   LIBRARY_GRAPH_CONFLICT_MODES,
   LIBRARY_GRAPH_EDGE_KINDS,
   LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS,
   LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS,
   LIBRARY_GRAPH_NODE_KINDS,
+  LIBRARY_GAME_CHARACTER_ROLES,
   LIBRARY_GAME_COMPANY_ROLES,
   LIBRARY_GAME_PERSON_ROLES,
+  LIBRARY_MEDIA_RELATION_TYPE_RULES,
   LIBRARY_MEDIA_TYPES,
   assertValidLibraryAnimeCreateInput,
   assertValidLibraryAnimeEpisodeCreateInput,
+  assertValidLibraryCharacterCreateInput,
   assertValidLibraryCollectionCreateInput,
   assertValidLibraryCompanyCreateInput,
   assertValidLibraryGameCreateInput,
@@ -34,6 +39,7 @@ const NODES_KEYS = new Set<string>([
   'tags',
   'companies',
   'people',
+  'characters',
   'notes',
   'sessions',
   'episodes',
@@ -105,6 +111,13 @@ function validateNodes(value: unknown): void {
     validateCompanyNode
   )
   validateNodeArray(nodes.people, 'person', 'library.graph.nodes.people', keys, validatePersonNode)
+  validateNodeArray(
+    nodes.characters,
+    'character',
+    'library.graph.nodes.characters',
+    keys,
+    validateCharacterNode
+  )
   validateNodeArray(nodes.notes, 'note', 'library.graph.nodes.notes', keys, validateNoteNode)
   validateNodeArray(
     nodes.sessions,
@@ -186,6 +199,10 @@ function validateCompanyNode(node: JsonRecord): void {
 
 function validatePersonNode(node: JsonRecord): void {
   assertValidLibraryPersonCreateInput(node.input)
+}
+
+function validateCharacterNode(node: JsonRecord): void {
+  assertValidLibraryCharacterCreateInput(node.input)
 }
 
 function validateNoteNode(node: JsonRecord, label: string): void {
@@ -310,6 +327,37 @@ function validateEdge(
       validateOptionalFiniteNumber(edge.order, `${label}.order`)
       validateOptionalString(edge.note, `${label}.note`)
       return
+    case 'media-character':
+      validateEndpointKinds(edge, label, 'media', 'character')
+      validateRole(
+        edge.role,
+        mediaTypes.get(edge.from.key) === 'anime'
+          ? LIBRARY_ANIME_CHARACTER_ROLES
+          : LIBRARY_GAME_CHARACTER_ROLES,
+        `${label}.role`
+      )
+      validateOptionalFiniteNumber(edge.order, `${label}.order`)
+      validateOptionalString(edge.note, `${label}.note`)
+      return
+    case 'character-person':
+      validateEndpointKinds(edge, label, 'character', 'person')
+      validateRole(edge.role, LIBRARY_CHARACTER_PERSON_ROLES, `${label}.role`)
+      validateOptionalFiniteNumber(edge.order, `${label}.order`)
+      validateOptionalString(edge.note, `${label}.note`)
+      return
+    case 'media-media': {
+      validateEndpointKinds(edge, label, 'media', 'media')
+      const fromType = mediaTypes.get(edge.from.key) ?? 'game'
+      const toType = mediaTypes.get(edge.to.key) ?? 'game'
+      validateRole(
+        edge.type,
+        LIBRARY_MEDIA_RELATION_TYPE_RULES[`${fromType}-${toType}`],
+        `${label}.type`
+      )
+      validateOptionalString(edge.note, `${label}.note`)
+      validateOptionalFiniteNumber(edge.order, `${label}.order`)
+      return
+    }
     case 'media-note':
       validateEndpointKinds(edge, label, 'media', 'note')
       requireMediaType(edge.from.key, 'game', mediaTypes, label)
@@ -431,6 +479,7 @@ function collectNodeKinds(nodesValue: unknown): Map<string, LibraryGraphNodeKind
     [nodes.tags, 'tag'],
     [nodes.companies, 'company'],
     [nodes.people, 'person'],
+    [nodes.characters, 'character'],
     [nodes.notes, 'note'],
     [nodes.sessions, 'session'],
     [nodes.episodes, 'episode'],

@@ -97,7 +97,7 @@ export class PersonIngestPersistHandler {
       deathDate: core.deathDate,
       gender: core.gender,
       description: core.description,
-      relatedSites: core.relatedSites || []
+      externalSites: core.externalSites || []
     }
 
     tx.insert(persons).values(newPerson).run()

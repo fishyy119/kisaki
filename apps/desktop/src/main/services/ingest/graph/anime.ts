@@ -1,4 +1,4 @@
-import type { AnimeCharacterType, AnimeCompanyType, AnimePersonType } from '@shared/db'
+import type { AnimeCharacterRole, AnimeCompanyRole, AnimePersonRole } from '@shared/db'
 import { buildEntityCanonicalIdentityKey } from '@shared/identity'
 import type {
   AnimeEpisodeInfo,
@@ -43,21 +43,21 @@ import {
 
 interface PendingAnimePersonLink {
   personIdentityKey: string
-  type: AnimePersonType
+  role: AnimePersonRole
   isSpoiler: boolean
   note?: string
 }
 
 interface PendingAnimeCompanyLink {
   companyIdentityKey: string
-  type: AnimeCompanyType
+  role: AnimeCompanyRole
   isSpoiler: boolean
   note?: string
 }
 
 interface PendingAnimeCharacterLink {
   characterIdentityKey: string
-  type: AnimeCharacterType
+  role: AnimeCharacterRole
   isSpoiler: boolean
   note?: string
 }
@@ -65,7 +65,7 @@ interface PendingAnimeCharacterLink {
 interface PendingCharacterPersonLink {
   characterIdentityKey: string
   personIdentityKey: string
-  type: ScrapedCharacterPersonFact['type']
+  role: ScrapedCharacterPersonFact['role']
   isSpoiler: boolean
   note?: string
 }
@@ -73,16 +73,16 @@ interface PendingCharacterPersonLink {
 function upsertAnimePersonLink(
   edgeMap: Map<string, PendingAnimePersonLink>,
   personIdentityKey: string,
-  type: AnimePersonType,
+  role: AnimePersonRole,
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${personIdentityKey}:${type}`
+  const key = `${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       personIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -96,16 +96,16 @@ function upsertAnimePersonLink(
 function upsertAnimeCompanyLink(
   edgeMap: Map<string, PendingAnimeCompanyLink>,
   companyIdentityKey: string,
-  type: AnimeCompanyType,
+  role: AnimeCompanyRole,
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${companyIdentityKey}:${type}`
+  const key = `${companyIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       companyIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -119,16 +119,16 @@ function upsertAnimeCompanyLink(
 function upsertAnimeCharacterLink(
   edgeMap: Map<string, PendingAnimeCharacterLink>,
   characterIdentityKey: string,
-  type: AnimeCharacterType,
+  role: AnimeCharacterRole,
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${characterIdentityKey}:${type}`
+  const key = `${characterIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       characterIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -143,17 +143,17 @@ function upsertCharacterPersonLink(
   edgeMap: Map<string, PendingCharacterPersonLink>,
   characterIdentityKey: string,
   personIdentityKey: string,
-  type: ScrapedCharacterPersonFact['type'],
+  role: ScrapedCharacterPersonFact['role'],
   isSpoiler: boolean | undefined,
   note: string | undefined
 ): void {
-  const key = `${characterIdentityKey}:${personIdentityKey}:${type}`
+  const key = `${characterIdentityKey}:${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
     edgeMap.set(key, {
       characterIdentityKey,
       personIdentityKey,
-      type,
+      role,
       isSpoiler: !!isSpoiler,
       note: normalizeOptionalString(note)
     })
@@ -178,7 +178,7 @@ function finalizeAnimePersonLinks(
     return {
       animeIdentityKey,
       personIdentityKey: edge.personIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInAnime,
@@ -200,7 +200,7 @@ function finalizeAnimeCompanyLinks(
     return {
       animeIdentityKey,
       companyIdentityKey: edge.companyIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInAnime,
@@ -222,7 +222,7 @@ function finalizeAnimeCharacterLinks(
     return {
       animeIdentityKey,
       characterIdentityKey: edge.characterIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInAnime,
@@ -247,7 +247,7 @@ function finalizeCharacterPersonLinks(
     return {
       characterIdentityKey: edge.characterIdentityKey,
       personIdentityKey: edge.personIdentityKey,
-      type: edge.type,
+      role: edge.role,
       isSpoiler: edge.isSpoiler,
       note: edge.note,
       orderInCharacter,
@@ -365,7 +365,7 @@ function buildAnimeGraphInternal(
     upsertAnimePersonLink(
       animePersonLinks,
       personIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       normalizeOptionalString(fact.note)
     )
@@ -384,7 +384,7 @@ function buildAnimeGraphInternal(
     upsertAnimeCompanyLink(
       animeCompanyLinks,
       companyIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       normalizeOptionalString(fact.note)
     )
@@ -403,7 +403,7 @@ function buildAnimeGraphInternal(
     upsertAnimeCharacterLink(
       animeCharacterLinks,
       characterIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       normalizeOptionalString(fact.note)
     )
@@ -424,7 +424,7 @@ function buildAnimeGraphInternal(
         characterPersonLinks,
         characterIdentityKey,
         personIdentityKey,
-        personFact.type,
+        personFact.role,
         personFact.isSpoiler,
         normalizeOptionalString(personFact.note)
       )
@@ -460,7 +460,7 @@ function buildAnimeGraphInternal(
       characterPersonLinks,
       characterIdentityKey,
       personIdentityKey,
-      fact.type,
+      fact.role,
       fact.isSpoiler,
       normalizeOptionalString(fact.note)
     )
@@ -485,6 +485,7 @@ function buildAnimeGraphInternal(
       animeCharacter: finalizeAnimeCharacterLinks(animeIdentityKey, animeCharacterLinks),
       characterPerson: finalizeCharacterPersonLinks(characterPersonLinks)
     },
+    relatedEntries: bundle?.relationFacts?.relatedEntries,
     media: {
       coverUrl: pickFirstUrl(media?.coverUrls),
       backdropUrl: pickFirstUrl(media?.backdropUrls),

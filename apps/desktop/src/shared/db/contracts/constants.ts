@@ -25,6 +25,7 @@ export const GAME_SCRAPER_SLOTS: GameScraperSlot[] = [
   'characters',
   'persons',
   'companies',
+  'relatedEntries',
   'covers',
   'backdrops',
   'logos',
@@ -38,6 +39,7 @@ export const ANIME_SCRAPER_SLOTS: AnimeScraperSlot[] = [
   'characters',
   'persons',
   'companies',
+  'relatedEntries',
   'covers',
   'backdrops',
   'logos'

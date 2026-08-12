@@ -4,7 +4,7 @@
  * Core metadata type definitions for anime entities.
  */
 
-import type { AnimeEpisodeType, AnimeFormat, PartialDate, RelatedSite } from '@shared/db'
+import type { AnimeEpisodeType, AnimeFormat, PartialDate, ExternalSite } from '@shared/db'
 import type { ExternalId, Tag } from './common'
 
 // =============================================================================
@@ -24,7 +24,7 @@ export interface AnimeInfo {
   format?: AnimeFormat
   /** Episode count declared by the source; stored episode rows stay authoritative. */
   totalEpisodes?: number
-  relatedSites?: RelatedSite[]
+  externalSites?: ExternalSite[]
   externalIds: ExternalId[]
 }
 

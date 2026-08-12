@@ -20,7 +20,7 @@ export {
   PersonBatchMetadataUpdateFormDialog,
   PersonExternalIdsFormDialog,
   PersonMediaFormDialog,
-  PersonRelatedSitesFormDialog,
+  PersonExternalSitesFormDialog,
   PersonTagsFormDialog,
   PersonGamesFormDialog,
   PersonCharactersFormDialog

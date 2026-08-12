@@ -1,7 +1,9 @@
 import { and, eq, type SQL } from 'drizzle-orm'
 import type {
+  LibraryAnimeCharacterRole,
   LibraryAnimeCompanyRole,
   LibraryAnimePersonRole,
+  LibraryGameCharacterRole,
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
   LibraryGraphEdge,
@@ -9,14 +11,19 @@ import type {
   LibraryMediaType
 } from '@kisaki3/extension-api'
 import {
+  animeCharacterLinks,
   animeCompanyLinks,
   animePersonLinks,
   animeTagLinks,
+  characterPersonLinks,
   collectionAnimeLinks,
   collectionGameLinks,
+  gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
-  gameTagLinks
+  gameTagLinks,
+  getMediaRelationTypeRules,
+  mediaRelations
 } from '@shared/db'
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
 import { planOrderUpdate, stripUndefined } from './patches'
@@ -26,7 +33,10 @@ type CollectionMediaEdge = Extract<LibraryGraphEdge, { kind: 'collection-media' 
 type TagEdge = Extract<LibraryGraphEdge, { kind: 'media-tag' }>
 type CompanyEdge = Extract<LibraryGraphEdge, { kind: 'media-company' }>
 type PersonEdge = Extract<LibraryGraphEdge, { kind: 'media-person' }>
-type RelationEdge = TagEdge | CompanyEdge | PersonEdge
+type CharacterEdge = Extract<LibraryGraphEdge, { kind: 'media-character' }>
+type CharacterPersonEdge = Extract<LibraryGraphEdge, { kind: 'character-person' }>
+type MediaMediaEdge = Extract<LibraryGraphEdge, { kind: 'media-media' }>
+type RelationEdge = TagEdge | CompanyEdge | PersonEdge | CharacterEdge
 
 interface CollectionMediaLinkTable {
   read(mediaId: string, collectionId: string): { orderInCollection: number } | undefined
@@ -97,7 +107,83 @@ export function previewRelationEdge(
         ? 'update'
         : 'skip'
     }
+    case 'media-character': {
+      const existing = readCharacterLink(mediaType, mediaId, targetId, edge.role, options)
+      if (!existing) {
+        return 'create'
+      }
+      return (edge.order !== undefined && existing.order !== edge.order) ||
+        (edge.note !== undefined && existing.note !== edge.note)
+        ? 'update'
+        : 'skip'
+    }
   }
+}
+
+export function previewCharacterPersonEdge(
+  edge: CharacterPersonEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  const characterId = getEntityId(state, edge.from.kind, edge.from.key)
+  const personId = getEntityId(state, edge.to.kind, edge.to.key)
+  if (!characterId || !personId) {
+    return 'create'
+  }
+
+  const existing = readCharacterPersonLink(characterId, personId, edge.role, options)
+  if (!existing) {
+    return 'create'
+  }
+  return (edge.order !== undefined && existing.order !== edge.order) ||
+    (edge.note !== undefined && existing.note !== edge.note)
+    ? 'update'
+    : 'skip'
+}
+
+export function previewMediaMediaEdge(
+  edge: MediaMediaEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  if (state.skippedMedia.has(edge.from.key)) {
+    return 'skip'
+  }
+
+  const endpoints = resolveMediaRelationEndpoints(edge, state)
+  if (!endpoints) {
+    return 'fail'
+  }
+
+  if (edge.from.key === edge.to.key) {
+    return 'skip'
+  }
+
+  const fromId = getEntityId(state, edge.from.kind, edge.from.key)
+  const toId = getEntityId(state, edge.to.kind, edge.to.key)
+  if (!fromId || !toId) {
+    return 'create'
+  }
+  if (fromId === toId) {
+    return 'skip'
+  }
+
+  const existing = readMediaRelation(endpoints, fromId, toId, edge.type, options)
+  if (!existing) {
+    return 'create'
+  }
+  return (edge.order !== undefined && existing.orderInFrom !== edge.order) ||
+    (edge.note !== undefined && existing.note !== edge.note)
+    ? 'update'
+    : 'skip'
 }
 
 export function applyCollectionMediaEdge(
@@ -202,12 +288,12 @@ export function applyMediaCompanyEdge(
     const condition = and(
       eq(animeCompanyLinks.animeId, mediaId),
       eq(animeCompanyLinks.companyId, companyId),
-      eq(animeCompanyLinks.type, role)
+      eq(animeCompanyLinks.role, role)
     )
     if (!existing) {
       options.db.client
         .insert(animeCompanyLinks)
-        .values({ animeId: mediaId, companyId, type: role, orderInAnime: edge.order ?? 0 })
+        .values({ animeId: mediaId, companyId, role, orderInAnime: edge.order ?? 0 })
         .run()
       return 'create'
     }
@@ -226,12 +312,12 @@ export function applyMediaCompanyEdge(
   const condition = and(
     eq(gameCompanyLinks.gameId, mediaId),
     eq(gameCompanyLinks.companyId, companyId),
-    eq(gameCompanyLinks.type, role)
+    eq(gameCompanyLinks.role, role)
   )
   if (!existing) {
     options.db.client
       .insert(gameCompanyLinks)
-      .values({ gameId: mediaId, companyId, type: role, orderInGame: edge.order ?? 0 })
+      .values({ gameId: mediaId, companyId, role, orderInGame: edge.order ?? 0 })
       .run()
     return 'create'
   }
@@ -266,7 +352,7 @@ export function applyMediaPersonEdge(
     const condition = and(
       eq(animePersonLinks.animeId, mediaId),
       eq(animePersonLinks.personId, personId),
-      eq(animePersonLinks.type, role)
+      eq(animePersonLinks.role, role)
     )
     if (!existing) {
       options.db.client
@@ -274,7 +360,7 @@ export function applyMediaPersonEdge(
         .values({
           animeId: mediaId,
           personId,
-          type: role,
+          role,
           note: edge.note,
           orderInAnime: edge.order ?? 0
         })
@@ -297,7 +383,7 @@ export function applyMediaPersonEdge(
   const condition = and(
     eq(gamePersonLinks.gameId, mediaId),
     eq(gamePersonLinks.personId, personId),
-    eq(gamePersonLinks.type, role)
+    eq(gamePersonLinks.role, role)
   )
   if (!existing) {
     options.db.client
@@ -305,7 +391,7 @@ export function applyMediaPersonEdge(
       .values({
         gameId: mediaId,
         personId,
-        type: role,
+        role,
         note: edge.note,
         orderInGame: edge.order ?? 0
       })
@@ -319,6 +405,191 @@ export function applyMediaPersonEdge(
   })
   if (Object.keys(patch).length > 0) {
     options.db.client.update(gamePersonLinks).set(patch).where(condition).run()
+    return 'update'
+  }
+
+  return 'skip'
+}
+
+export function applyMediaCharacterEdge(
+  edge: CharacterEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  if (state.skippedMedia.has(edge.from.key)) {
+    return 'skip'
+  }
+
+  const mediaId = requireEntityId(state, edge.from.kind, edge.from.key)
+  const characterId = requireEntityId(state, edge.to.kind, edge.to.key)
+  const mediaType = state.mediaTypes.get(edge.from.key)
+  const existing = readCharacterLink(mediaType, mediaId, characterId, edge.role, options)
+
+  if (mediaType === 'anime') {
+    const role = edge.role as LibraryAnimeCharacterRole
+    const condition = and(
+      eq(animeCharacterLinks.animeId, mediaId),
+      eq(animeCharacterLinks.characterId, characterId),
+      eq(animeCharacterLinks.role, role)
+    )
+    if (!existing) {
+      options.db.client
+        .insert(animeCharacterLinks)
+        .values({
+          animeId: mediaId,
+          characterId,
+          role,
+          note: edge.note,
+          orderInAnime: edge.order ?? 0
+        })
+        .run()
+      return 'create'
+    }
+
+    const patch = stripUndefined({
+      orderInAnime:
+        edge.order !== undefined && existing.order !== edge.order ? edge.order : undefined,
+      note: edge.note !== undefined && existing.note !== edge.note ? edge.note : undefined
+    })
+    if (Object.keys(patch).length > 0) {
+      options.db.client.update(animeCharacterLinks).set(patch).where(condition).run()
+      return 'update'
+    }
+    return 'skip'
+  }
+
+  const role = edge.role as LibraryGameCharacterRole
+  const condition = and(
+    eq(gameCharacterLinks.gameId, mediaId),
+    eq(gameCharacterLinks.characterId, characterId),
+    eq(gameCharacterLinks.role, role)
+  )
+  if (!existing) {
+    options.db.client
+      .insert(gameCharacterLinks)
+      .values({
+        gameId: mediaId,
+        characterId,
+        role,
+        note: edge.note,
+        orderInGame: edge.order ?? 0
+      })
+      .run()
+    return 'create'
+  }
+
+  const patch = stripUndefined({
+    orderInGame: edge.order !== undefined && existing.order !== edge.order ? edge.order : undefined,
+    note: edge.note !== undefined && existing.note !== edge.note ? edge.note : undefined
+  })
+  if (Object.keys(patch).length > 0) {
+    options.db.client.update(gameCharacterLinks).set(patch).where(condition).run()
+    return 'update'
+  }
+
+  return 'skip'
+}
+
+export function applyCharacterPersonEdge(
+  edge: CharacterPersonEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  const characterId = requireEntityId(state, edge.from.kind, edge.from.key)
+  const personId = requireEntityId(state, edge.to.kind, edge.to.key)
+  const existing = readCharacterPersonLink(characterId, personId, edge.role, options)
+  const condition = and(
+    eq(characterPersonLinks.characterId, characterId),
+    eq(characterPersonLinks.personId, personId),
+    eq(characterPersonLinks.role, edge.role)
+  )
+  if (!existing) {
+    options.db.client
+      .insert(characterPersonLinks)
+      .values({
+        characterId,
+        personId,
+        role: edge.role,
+        note: edge.note,
+        orderInCharacter: edge.order ?? 0
+      })
+      .run()
+    return 'create'
+  }
+
+  const patch = stripUndefined({
+    orderInCharacter:
+      edge.order !== undefined && existing.order !== edge.order ? edge.order : undefined,
+    note: edge.note !== undefined && existing.note !== edge.note ? edge.note : undefined
+  })
+  if (Object.keys(patch).length > 0) {
+    options.db.client.update(characterPersonLinks).set(patch).where(condition).run()
+    return 'update'
+  }
+
+  return 'skip'
+}
+
+export function applyMediaMediaEdge(
+  edge: MediaMediaEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  if (state.skippedMedia.has(edge.from.key)) {
+    return 'skip'
+  }
+
+  const endpoints = resolveMediaRelationEndpoints(edge, state)
+  if (!endpoints) {
+    return 'fail'
+  }
+
+  const fromId = requireEntityId(state, edge.from.kind, edge.from.key)
+  const toId = requireEntityId(state, edge.to.kind, edge.to.key)
+  if (fromId === toId) {
+    return 'skip'
+  }
+
+  const existing = readMediaRelation(endpoints, fromId, toId, edge.type, options)
+  if (!existing) {
+    options.db.client
+      .insert(mediaRelations)
+      .values({
+        fromType: endpoints.fromType,
+        fromId,
+        toType: endpoints.toType,
+        toId,
+        type: edge.type,
+        note: edge.note,
+        orderInFrom: edge.order ?? 0
+      })
+      .run()
+    return 'create'
+  }
+
+  const patch = stripUndefined({
+    orderInFrom:
+      edge.order !== undefined && existing.orderInFrom !== edge.order ? edge.order : undefined,
+    note: edge.note !== undefined && existing.note !== edge.note ? edge.note : undefined
+  })
+  if (Object.keys(patch).length > 0) {
+    options.db.client
+      .update(mediaRelations)
+      .set(patch)
+      .where(mediaRelationCondition(endpoints, fromId, toId, edge.type))
+      .run()
     return 'update'
   }
 
@@ -426,7 +697,7 @@ function readCompanyLink(
         and(
           eq(animeCompanyLinks.animeId, mediaId),
           eq(animeCompanyLinks.companyId, companyId),
-          eq(animeCompanyLinks.type, role as LibraryAnimeCompanyRole)
+          eq(animeCompanyLinks.role, role as LibraryAnimeCompanyRole)
         )
       )
       .get()
@@ -440,7 +711,7 @@ function readCompanyLink(
       and(
         eq(gameCompanyLinks.gameId, mediaId),
         eq(gameCompanyLinks.companyId, companyId),
-        eq(gameCompanyLinks.type, role as LibraryGameCompanyRole)
+        eq(gameCompanyLinks.role, role as LibraryGameCompanyRole)
       )
     )
     .get()
@@ -462,7 +733,7 @@ function readPersonLink(
         and(
           eq(animePersonLinks.animeId, mediaId),
           eq(animePersonLinks.personId, personId),
-          eq(animePersonLinks.type, role as LibraryAnimePersonRole)
+          eq(animePersonLinks.role, role as LibraryAnimePersonRole)
         )
       )
       .get()
@@ -476,14 +747,128 @@ function readPersonLink(
       and(
         eq(gamePersonLinks.gameId, mediaId),
         eq(gamePersonLinks.personId, personId),
-        eq(gamePersonLinks.type, role as LibraryGamePersonRole)
+        eq(gamePersonLinks.role, role as LibraryGamePersonRole)
       )
     )
     .get()
   return row ? { order: row.orderInGame, note: row.note } : undefined
 }
 
-function isEndpointFailed(edge: CollectionMediaEdge | RelationEdge, state: ApplyState): boolean {
+function readCharacterLink(
+  mediaType: LibraryMediaType | undefined,
+  mediaId: string,
+  characterId: string,
+  role: LibraryAnimeCharacterRole | LibraryGameCharacterRole,
+  options: ExecuteLibraryGraphOptions
+): { order: number; note: string | null } | undefined {
+  if (mediaType === 'anime') {
+    const row = options.db.client
+      .select()
+      .from(animeCharacterLinks)
+      .where(
+        and(
+          eq(animeCharacterLinks.animeId, mediaId),
+          eq(animeCharacterLinks.characterId, characterId),
+          eq(animeCharacterLinks.role, role as LibraryAnimeCharacterRole)
+        )
+      )
+      .get()
+    return row ? { order: row.orderInAnime, note: row.note } : undefined
+  }
+
+  const row = options.db.client
+    .select()
+    .from(gameCharacterLinks)
+    .where(
+      and(
+        eq(gameCharacterLinks.gameId, mediaId),
+        eq(gameCharacterLinks.characterId, characterId),
+        eq(gameCharacterLinks.role, role as LibraryGameCharacterRole)
+      )
+    )
+    .get()
+  return row ? { order: row.orderInGame, note: row.note } : undefined
+}
+
+function readCharacterPersonLink(
+  characterId: string,
+  personId: string,
+  role: CharacterPersonEdge['role'],
+  options: ExecuteLibraryGraphOptions
+): { order: number; note: string | null } | undefined {
+  const row = options.db.client
+    .select()
+    .from(characterPersonLinks)
+    .where(
+      and(
+        eq(characterPersonLinks.characterId, characterId),
+        eq(characterPersonLinks.personId, personId),
+        eq(characterPersonLinks.role, role)
+      )
+    )
+    .get()
+  return row ? { order: row.orderInCharacter, note: row.note } : undefined
+}
+
+interface MediaRelationEndpoints {
+  fromType: LibraryMediaType
+  toType: LibraryMediaType
+}
+
+/**
+ * Resolves both endpoint media types and re-checks the relation type against
+ * the per-pair vocabulary as a safety net behind input validation. Returns
+ * null when the edge cannot be written.
+ */
+function resolveMediaRelationEndpoints(
+  edge: MediaMediaEdge,
+  state: ApplyState
+): MediaRelationEndpoints | null {
+  const fromType = state.mediaTypes.get(edge.from.key)
+  const toType = state.mediaTypes.get(edge.to.key)
+  if (!fromType || !toType) {
+    return null
+  }
+
+  return getMediaRelationTypeRules(fromType, toType).includes(edge.type)
+    ? { fromType, toType }
+    : null
+}
+
+function mediaRelationCondition(
+  endpoints: MediaRelationEndpoints,
+  fromId: string,
+  toId: string,
+  type: MediaMediaEdge['type']
+): SQL {
+  return and(
+    eq(mediaRelations.fromType, endpoints.fromType),
+    eq(mediaRelations.fromId, fromId),
+    eq(mediaRelations.toType, endpoints.toType),
+    eq(mediaRelations.toId, toId),
+    eq(mediaRelations.type, type)
+  ) as SQL
+}
+
+function readMediaRelation(
+  endpoints: MediaRelationEndpoints,
+  fromId: string,
+  toId: string,
+  type: MediaMediaEdge['type'],
+  options: ExecuteLibraryGraphOptions
+): { orderInFrom: number; note: string | null } | undefined {
+  const row = options.db.client
+    .select()
+    .from(mediaRelations)
+    .where(mediaRelationCondition(endpoints, fromId, toId, type))
+    .get()
+  return row ? { orderInFrom: row.orderInFrom, note: row.note } : undefined
+}
+
+function isEndpointFailed(
+  edge: CollectionMediaEdge | RelationEdge | CharacterPersonEdge | MediaMediaEdge,
+  state: ApplyState
+): boolean {
   return (
     isEntityNodeFailed(state, edge.from.kind, edge.from.key) ||
     isEntityNodeFailed(state, edge.to.kind, edge.to.key)

@@ -9,7 +9,7 @@ import { eq, asc } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { gameCharacterLinks } from '@shared/db'
-import type { GameCharacterType } from '@shared/db'
+import type { GameCharacterRole } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
 import {
   Dialog,
@@ -49,21 +49,21 @@ interface CharacterLinkItem {
   characterId: string
   characterName: string
   characterPhoto: string | null
-  type: GameCharacterType
+  role: GameCharacterRole
   note: string
   isSpoiler: boolean
   orderInGame: number
   isNew?: boolean
 }
 
-const CHARACTER_TYPE_LABELS = computed<Record<string, string>>(() => ({
+const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(() => ({
   main: m.value.library.roles.gameCharacter.main,
   supporting: m.value.library.roles.gameCharacter.supporting,
   cameo: m.value.library.roles.gameCharacter.cameo,
   other: m.value.library.roles.gameCharacter.other
 }))
 
-const CHARACTER_TYPE_ORDER: GameCharacterType[] = ['main', 'supporting', 'cameo', 'other']
+const CHARACTER_ROLE_ORDER: GameCharacterRole[] = ['main', 'supporting', 'cameo', 'other']
 
 // Form state
 const items = ref<CharacterLinkItem[]>([])
@@ -109,7 +109,7 @@ watch(results, (data) => {
         characterId: link.characterId,
         characterName: link.character!.name,
         characterPhoto: link.character!.photoFile,
-        type: link.type,
+        role: link.role,
         note: link.note || '',
         isSpoiler: link.isSpoiler,
         orderInGame: link.orderInGame
@@ -119,17 +119,17 @@ watch(results, (data) => {
 
 // Grouped characters by type
 const groupedCharacters = computed(() => {
-  const grouped: Record<GameCharacterType, CharacterLinkItem[]> = {
+  const grouped: Record<GameCharacterRole, CharacterLinkItem[]> = {
     main: [],
     supporting: [],
     cameo: [],
     other: []
   }
   items.value.forEach((item) => {
-    grouped[item.type].push(item)
+    grouped[item.role].push(item)
   })
-  for (const type of CHARACTER_TYPE_ORDER) {
-    grouped[type].sort((a, b) => a.orderInGame - b.orderInGame)
+  for (const role of CHARACTER_ROLE_ORDER) {
+    grouped[role].sort((a, b) => a.orderInGame - b.orderInGame)
   }
   return grouped
 })
@@ -171,7 +171,7 @@ const itemFormInitialData = computed(() => {
     characterId: editingItem.value.characterId,
     characterName: editingItem.value.characterName,
     characterPhoto: editingItem.value.characterPhoto,
-    type: editingItem.value.type,
+    role: editingItem.value.role,
     note: editingItem.value.note,
     isSpoiler: editingItem.value.isSpoiler
   }
@@ -188,20 +188,20 @@ async function handleSave() {
         gameId: string
         characterId: string
         isSpoiler: boolean
-        type: GameCharacterType
+        role: GameCharacterRole
         note: string | null
         orderInGame: number
       }[] = []
 
-      for (const type of CHARACTER_TYPE_ORDER) {
-        const typeLinks = groupedCharacters.value[type]
-        typeLinks.forEach((link, index) => {
+      for (const role of CHARACTER_ROLE_ORDER) {
+        const roleLinks = groupedCharacters.value[role]
+        roleLinks.forEach((link, index) => {
           linksToInsert.push({
             id: link.isNew ? nanoid() : link.id,
             gameId: props.gameId,
             characterId: link.characterId,
             isSpoiler: link.isSpoiler,
-            type: link.type,
+            role: link.role,
             note: link.note || null,
             orderInGame: index
           })
@@ -223,26 +223,26 @@ async function handleSave() {
   }
 }
 
-function handleMoveUp(type: GameCharacterType, index: number) {
+function handleMoveUp(role: GameCharacterRole, index: number) {
   if (index <= 0) return
-  const typeLinks = [...groupedCharacters.value[type]]
-  ;[typeLinks[index - 1], typeLinks[index]] = [typeLinks[index], typeLinks[index - 1]]
-  typeLinks.forEach((link, i) => {
+  const roleLinks = [...groupedCharacters.value[role]]
+  ;[roleLinks[index - 1], roleLinks[index]] = [roleLinks[index], roleLinks[index - 1]]
+  roleLinks.forEach((link, i) => {
     link.orderInGame = i
   })
-  const otherItems = items.value.filter((item) => item.type !== type)
-  items.value = [...otherItems, ...typeLinks]
+  const otherItems = items.value.filter((item) => item.role !== role)
+  items.value = [...otherItems, ...roleLinks]
 }
 
-function handleMoveDown(type: GameCharacterType, index: number) {
-  const typeLinks = [...groupedCharacters.value[type]]
-  if (index >= typeLinks.length - 1) return
-  ;[typeLinks[index], typeLinks[index + 1]] = [typeLinks[index + 1], typeLinks[index]]
-  typeLinks.forEach((link, i) => {
+function handleMoveDown(role: GameCharacterRole, index: number) {
+  const roleLinks = [...groupedCharacters.value[role]]
+  if (index >= roleLinks.length - 1) return
+  ;[roleLinks[index], roleLinks[index + 1]] = [roleLinks[index + 1], roleLinks[index]]
+  roleLinks.forEach((link, i) => {
     link.orderInGame = i
   })
-  const otherItems = items.value.filter((item) => item.type !== type)
-  items.value = [...otherItems, ...typeLinks]
+  const otherItems = items.value.filter((item) => item.role !== role)
+  items.value = [...otherItems, ...roleLinks]
 }
 
 function handleRemove(id: string) {
@@ -262,7 +262,7 @@ function handleAddNew() {
     characterId: '',
     characterName: '',
     characterPhoto: null,
-    type: 'main',
+    role: 'main',
     note: '',
     isSpoiler: false,
     orderInGame: items.value.length,
@@ -276,7 +276,7 @@ function handleItemFormSubmit(data: {
   characterId: string
   characterName: string
   characterPhoto: string | null
-  type: GameCharacterType
+  role: GameCharacterRole
   note: string
   isSpoiler: boolean
 }) {
@@ -285,7 +285,7 @@ function handleItemFormSubmit(data: {
     characterId: data.characterId,
     characterName: data.characterName,
     characterPhoto: data.characterPhoto,
-    type: data.type,
+    role: data.role,
     note: data.note,
     isSpoiler: data.isSpoiler,
     orderInGame: editingItem.value!.orderInGame,
@@ -293,15 +293,15 @@ function handleItemFormSubmit(data: {
   }
 
   if (isAddMode.value) {
-    const typeLinks = groupedCharacters.value[updatedItem.type]
-    updatedItem.orderInGame = typeLinks.length
+    const roleLinks = groupedCharacters.value[updatedItem.role]
+    updatedItem.orderInGame = roleLinks.length
     items.value.push(updatedItem)
   } else {
     const index = items.value.findIndex((item) => item.id === updatedItem.id)
     if (index !== -1) {
-      if (editingItem.value && editingItem.value.type !== updatedItem.type) {
-        const newTypeLinks = groupedCharacters.value[updatedItem.type]
-        updatedItem.orderInGame = newTypeLinks.length
+      if (editingItem.value && editingItem.value.role !== updatedItem.role) {
+        const newRoleLinks = groupedCharacters.value[updatedItem.role]
+        updatedItem.orderInGame = newRoleLinks.length
       }
       items.value[index] = updatedItem
     }
@@ -357,17 +357,17 @@ function handleRevealSpoilersConfirm() {
             </p>
             <template v-else>
               <template
-                v-for="type in CHARACTER_TYPE_ORDER"
-                :key="type"
+                v-for="role in CHARACTER_ROLE_ORDER"
+                :key="role"
               >
-                <div v-if="groupedCharacters[type].length > 0">
+                <div v-if="groupedCharacters[role].length > 0">
                   <h4 class="text-xs font-medium text-muted-foreground mb-2">
-                    {{ CHARACTER_TYPE_LABELS[type] }}
+                    {{ CHARACTER_ROLE_LABELS[role] }}
                   </h4>
                   <div class="space-y-1">
                     <ListItem
                       v-for="({ link, spoiler, photoUrl }, index) in withSpoiler(
-                        groupedCharacters[type]
+                        groupedCharacters[role]
                       )"
                       :key="link.id"
                       :icon="
@@ -393,9 +393,9 @@ function handleRevealSpoilersConfirm() {
                         <ListItemActions
                           movable
                           :is-first="index === 0"
-                          :is-last="index === groupedCharacters[type].length - 1"
-                          @move-up="handleMoveUp(type, index)"
-                          @move-down="handleMoveDown(type, index)"
+                          :is-last="index === groupedCharacters[role].length - 1"
+                          @move-up="handleMoveUp(role, index)"
+                          @move-down="handleMoveDown(role, index)"
                           @edit="handleEdit(link)"
                           @delete="deleteId = link.id"
                         />

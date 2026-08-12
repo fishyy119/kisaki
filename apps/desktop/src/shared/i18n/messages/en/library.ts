@@ -43,7 +43,7 @@ export const library = {
     relatedCharacters: 'Related characters',
     relatedCompanies: 'Related companies',
     characterPersons: 'People per character',
-    relatedSites: 'Related links',
+    externalSites: 'External links',
     externalIds: 'External IDs',
     photos: 'Photos',
     covers: 'Covers',
@@ -63,7 +63,8 @@ export const library = {
     extras: 'Extras',
     watchDuration: 'Watch time',
     lastWatchedAt: 'Last watched',
-    relatedAnimes: 'Related anime'
+    relatedAnimes: 'Related anime',
+    relatedEntries: 'Related entries'
   },
 
   status: {
@@ -153,12 +154,15 @@ export const library = {
     special: 'Special'
   },
 
-  animeRelation: {
+  mediaRelation: {
     sequel: 'Sequel',
     prequel: 'Prequel',
     sideStory: 'Side story',
-    movie: 'Movie',
+    parentStory: 'Parent story',
     summary: 'Summary',
+    fullStory: 'Full story',
+    adaptation: 'Adaptation',
+    sourceMaterial: 'Source material',
     alternative: 'Alternative version',
     other: 'Other'
   },
@@ -292,16 +296,17 @@ export const library = {
     sections: {
       description: 'Description',
       tags: 'Tags',
-      relatedSites: 'Related links',
+      externalSites: 'External links',
       details: 'Details'
     },
     empty: {
       description: 'No description yet.',
       tags: 'No tags yet.',
-      relatedSites: 'No related links yet.',
+      externalSites: 'No external links yet.',
       relatedGames: 'No related games yet.',
       relatedPersons: 'No related people yet.',
       relatedCharacters: 'No related characters yet.',
+      relatedEntries: 'No related entries yet.',
       characters: 'No characters yet.',
       persons: 'No people yet.',
       companies: 'No companies yet.'
@@ -327,7 +332,7 @@ export const library = {
     editName: 'Edit name',
     editOriginalName: 'Edit original name',
     editTags: 'Edit tags',
-    editRelatedSites: 'Edit related links',
+    editExternalSites: 'Edit related links',
     editTag: 'Edit tag',
     manageMedia: 'Manage media',
     manageExternalIds: 'Manage external IDs',
@@ -547,6 +552,8 @@ export const library = {
     companyLabel: 'Company',
     tagLabel: 'Tag',
     relationTypeLabel: 'Relation type',
+    mediaTypeLabel: 'Media type',
+    editRelatedEntries: 'Edit related entries',
     selectTypePlaceholder: 'Select type',
     characterRoleLabel: 'Character role',
     personRoleLabel: 'Person role',

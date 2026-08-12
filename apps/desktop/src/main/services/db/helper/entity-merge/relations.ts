@@ -1,16 +1,16 @@
-import { eq, inArray, or } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import {
   animeEpisodeExternalIds,
   animeEpisodeFiles,
   animeEpisodes,
   animeExtras,
-  animeRelations,
   animeSessions,
   gameNotes,
   gameSessions,
+  mediaRelations,
   type AnimeEpisode
 } from '@shared/db'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType, MediaType } from '@shared/common'
 import type { DbContext, DbQueryContext, DbWriteContext } from '../../types'
 import type { OwnedDataMerge, RelationMergeConfig, MergeRow } from './types'
 
@@ -30,7 +30,11 @@ export const OWNED_DATA_MERGES: Record<AllEntityType, OwnedDataMerge | null> = {
 }
 
 function mergeGameOwnedData(db: DbContext, targetId: string, sourceId: string, now: Date): number {
-  return mergeGameSessions(db, targetId, sourceId, now) + mergeGameNotes(db, targetId, sourceId, now)
+  return (
+    mergeGameSessions(db, targetId, sourceId, now) +
+    mergeGameNotes(db, targetId, sourceId, now) +
+    mergeMediaRelations(db, 'game', targetId, sourceId, now)
+  )
 }
 
 /**
@@ -63,7 +67,7 @@ function mergeAnimeOwnedData(db: DbContext, targetId: string, sourceId: string, 
 
   changed += mergeAnimeSessions(db, targetId, sourceId, now)
   changed += mergeAnimeExtras(db, targetId, sourceId, now)
-  changed += mergeAnimeRelations(db, targetId, sourceId, now)
+  changed += mergeMediaRelations(db, 'anime', targetId, sourceId, now)
   return changed
 }
 
@@ -235,38 +239,46 @@ function mergeAnimeExtras(db: DbContext, targetId: string, sourceId: string, now
 }
 
 /**
- * Entry-to-entry links reference animes on both columns, so both are remapped;
- * links that collapse into self-references disappear and duplicates keep the
- * earliest row. Only the target's own rows are renumbered — third entries'
- * link lists were only partially loaded and must keep their ordering.
+ * Media relations reference entries on both polymorphic ends, so both are
+ * remapped when the type matches; edges that collapse into self-references
+ * disappear and duplicates keep the earliest row. Only the target's own
+ * outgoing rows are renumbered — third entries' edge lists were only partially
+ * loaded and must keep their ordering.
  */
-function mergeAnimeRelations(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+function mergeMediaRelations(
+  db: DbContext,
+  mediaType: MediaType,
+  targetId: string,
+  sourceId: string,
+  now: Date
+): number {
   const rows = db
     .select()
-    .from(animeRelations)
+    .from(mediaRelations)
     .where(
       or(
-        inArray(animeRelations.animeId, [targetId, sourceId]),
-        inArray(animeRelations.relatedAnimeId, [targetId, sourceId])
+        and(eq(mediaRelations.fromType, mediaType), inArray(mediaRelations.fromId, [targetId, sourceId])),
+        and(eq(mediaRelations.toType, mediaType), inArray(mediaRelations.toId, [targetId, sourceId]))
       )
     )
     .all()
-  const sourceCount = rows.filter(
-    (row) => row.animeId === sourceId || row.relatedAnimeId === sourceId
-  ).length
+  const isSourceEnd = (row: (typeof rows)[number]): boolean =>
+    (row.fromType === mediaType && row.fromId === sourceId) ||
+    (row.toType === mediaType && row.toId === sourceId)
+  const sourceCount = rows.filter(isSourceEnd).length
   if (sourceCount === 0) return 0
 
   const survivors = new Map<string, (typeof rows)[number]>()
   for (const row of [...rows].sort((a, b) => toTime(a.createdAt) - toTime(b.createdAt))) {
     const remapped = {
       ...row,
-      animeId: row.animeId === sourceId ? targetId : row.animeId,
-      relatedAnimeId: row.relatedAnimeId === sourceId ? targetId : row.relatedAnimeId,
+      fromId: row.fromType === mediaType && row.fromId === sourceId ? targetId : row.fromId,
+      toId: row.toType === mediaType && row.toId === sourceId ? targetId : row.toId,
       updatedAt: now
     }
-    if (remapped.animeId === remapped.relatedAnimeId) continue
+    if (remapped.fromType === remapped.toType && remapped.fromId === remapped.toId) continue
 
-    const key = `${remapped.animeId}\0${remapped.relatedAnimeId}\0${remapped.type}`
+    const key = `${remapped.fromType}\0${remapped.fromId}\0${remapped.toType}\0${remapped.toId}\0${remapped.type}`
     const existing = survivors.get(key)
     if (!existing) {
       survivors.set(key, remapped)
@@ -277,22 +289,22 @@ function mergeAnimeRelations(db: DbContext, targetId: string, sourceId: string, 
 
   const finalRows = [...survivors.values()]
   finalRows
-    .filter((row) => row.animeId === targetId)
-    .sort((a, b) => a.orderInAnime - b.orderInAnime || toTime(a.createdAt) - toTime(b.createdAt))
+    .filter((row) => row.fromType === mediaType && row.fromId === targetId)
+    .sort((a, b) => a.orderInFrom - b.orderInFrom || toTime(a.createdAt) - toTime(b.createdAt))
     .forEach((row, index) => {
-      row.orderInAnime = index
+      row.orderInFrom = index
     })
 
-  db.delete(animeRelations)
+  db.delete(mediaRelations)
     .where(
       inArray(
-        animeRelations.id,
+        mediaRelations.id,
         rows.map((row) => row.id)
       )
     )
     .run()
   if (finalRows.length > 0) {
-    db.insert(animeRelations).values(finalRows).run()
+    db.insert(mediaRelations).values(finalRows).run()
   }
   return sourceCount
 }

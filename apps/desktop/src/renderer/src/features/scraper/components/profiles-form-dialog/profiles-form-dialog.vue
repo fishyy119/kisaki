@@ -140,6 +140,7 @@ const groupedProfiles = computed(() => {
 
 const mediaTypeLabels = computed<Record<string, string>>(() => ({
   game: m.value.library.entities.game,
+  anime: m.value.library.entities.anime,
   character: m.value.library.entities.character,
   person: m.value.library.entities.person,
   company: m.value.library.entities.company

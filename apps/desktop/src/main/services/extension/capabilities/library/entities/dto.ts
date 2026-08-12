@@ -1,4 +1,4 @@
-import type { ExternalId, LibraryRankedEntityBase, RelatedSite } from '@kisaki3/extension-api'
+import type { ExternalId, LibraryRankedEntityBase, ExternalSite } from '@kisaki3/extension-api'
 import type { Character, Company, Game, Person } from '@shared/db'
 import { optionalArray, optionalValue, toTimestampMs } from './utils'
 
@@ -14,7 +14,7 @@ type RankedEntityRow = Pick<
   | 'score'
   | 'isFavorite'
   | 'isNsfw'
-  | 'relatedSites'
+  | 'externalSites'
 >
 
 export type RankedEntityDtoBase = LibraryRankedEntityBase & {
@@ -36,7 +36,7 @@ export function buildRankedEntityDtoBase(
     score: row.score,
     isFavorite: row.isFavorite,
     isNsfw: row.isNsfw,
-    relatedSites: optionalArray<RelatedSite>(row.relatedSites),
+    externalSites: optionalArray<ExternalSite>(row.externalSites),
     externalIds
   }
 }

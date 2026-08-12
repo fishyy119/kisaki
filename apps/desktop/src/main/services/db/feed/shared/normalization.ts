@@ -37,7 +37,7 @@ export function normalizeEntityValue(value: unknown, field: string): unknown {
       'dynamicConfig',
       'foundedDate',
       'nameExtractionRules',
-      'relatedSites'
+      'externalSites'
     ].includes(field)
   ) {
     return parseJsonValue(value)

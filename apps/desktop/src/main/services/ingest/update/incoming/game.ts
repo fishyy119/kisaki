@@ -3,10 +3,10 @@ import type { CoreGameMetadata } from '@shared/metadata'
 import type { IngestUpdateLookup } from '@shared/ingest/update'
 import type { ScrapedGameBundle } from '@shared/scraper'
 import type { GameIncomingBuildResult } from '../types'
-import { buildCompleteGameRelationLinks } from '../relation-links'
+import { buildCompleteGameLinks } from '../link-topology'
 import {
   normalizeOptionalString,
-  normalizeRelatedSites,
+  normalizeExternalSites,
   normalizeTags,
   normalizeUrlCandidates
 } from '../shared/normalization'
@@ -29,8 +29,8 @@ function buildGameCore(
   const description = normalizeOptionalString(bundleCore?.description)
   if (description) core.description = description
 
-  const relatedSites = normalizeRelatedSites(bundleCore?.relatedSites)
-  if (relatedSites) core.relatedSites = relatedSites
+  const externalSites = normalizeExternalSites(bundleCore?.externalSites)
+  if (externalSites) core.externalSites = externalSites
 
   const identityIds = bundle?.identity.externalIds
   if (identityIds || lookup.knownIds) {
@@ -62,14 +62,14 @@ export function buildGameIncoming(
   // needs more, so completeness is resolved from the link topology.
   const availability: GameIncomingBuildResult['availability'] = {
     surfaces: new Set(),
-    completeRelationLinks: buildCompleteGameRelationLinks(relationFacts)
+    completeLinks: buildCompleteGameLinks(relationFacts)
   }
 
   if (core.name) availability.surfaces.add('name')
   if (core.originalName) availability.surfaces.add('originalName')
   if (core.releaseDate) availability.surfaces.add('releaseDate')
   if (core.description) availability.surfaces.add('description')
-  if (core.relatedSites) availability.surfaces.add('relatedSites')
+  if (core.externalSites) availability.surfaces.add('externalSites')
   if (core.externalIds) availability.surfaces.add('externalIds')
   if (core.tags) availability.surfaces.add('tags')
   if (relationFacts.gamePerson !== undefined || characterPersonAnswered) {
@@ -78,6 +78,7 @@ export function buildGameIncoming(
   if (relationFacts.gameCompany !== undefined) availability.surfaces.add('company')
   if (relationFacts.gameCharacter !== undefined) availability.surfaces.add('character')
   if (characterPersonAnswered) availability.surfaces.add('characterPerson')
+  if (relationFacts.relatedEntries !== undefined) availability.surfaces.add('relatedEntries')
   if (coverUrls) availability.surfaces.add('covers')
   if (backdropUrls) availability.surfaces.add('backdrops')
   if (logoUrls) availability.surfaces.add('logos')

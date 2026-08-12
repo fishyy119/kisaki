@@ -31,6 +31,7 @@ import type {
   IngestAnimePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
+import { applyMediaRelationFacts } from '../media-relations'
 import { insertAnimeEpisodeRow } from './episodes'
 import {
   requireOwnerIdentity,
@@ -62,10 +63,10 @@ function resolveAnimePersonLinks(params: {
       requireOwnerIdentity(link.animeIdentityKey, animeIdentityKey, 'anime')
       const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
       return {
-        key: `${personId}:${link.type}`,
+        key: `${personId}:${link.role}`,
         value: {
           personId,
-          type: link.type,
+          role: link.role,
           isSpoiler: link.isSpoiler,
           note: link.note
         }
@@ -74,7 +75,7 @@ function resolveAnimePersonLinks(params: {
     buildRow: (link, orderInAnime, counters) => ({
       animeId,
       personId: link.personId,
-      type: link.type,
+      role: link.role,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInAnime,
@@ -97,10 +98,10 @@ function resolveAnimeCompanyLinks(params: {
       requireOwnerIdentity(link.animeIdentityKey, animeIdentityKey, 'anime')
       const companyId = requirePersistedId(companyIdByIdentity, link.companyIdentityKey, 'company')
       return {
-        key: `${companyId}:${link.type}`,
+        key: `${companyId}:${link.role}`,
         value: {
           companyId,
-          type: link.type,
+          role: link.role,
           isSpoiler: link.isSpoiler,
           note: link.note
         }
@@ -109,7 +110,7 @@ function resolveAnimeCompanyLinks(params: {
     buildRow: (link, orderInAnime, counters) => ({
       animeId,
       companyId: link.companyId,
-      type: link.type,
+      role: link.role,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInAnime,
@@ -136,10 +137,10 @@ function resolveAnimeCharacterLinks(params: {
         'character'
       )
       return {
-        key: `${characterId}:${link.type}`,
+        key: `${characterId}:${link.role}`,
         value: {
           characterId,
-          type: link.type,
+          role: link.role,
           isSpoiler: link.isSpoiler,
           note: link.note
         }
@@ -148,7 +149,7 @@ function resolveAnimeCharacterLinks(params: {
     buildRow: (link, orderInAnime, counters) => ({
       animeId,
       characterId: link.characterId,
-      type: link.type,
+      role: link.role,
       isSpoiler: link.isSpoiler,
       note: link.note ?? null,
       orderInAnime,
@@ -310,10 +311,28 @@ export class AnimeIngestPersistHandler {
       tx.insert(characterPersonLinks).values(link).onConflictDoNothing().run()
     }
 
+    const warnings: IngestWarning[] = []
+    if (graph.relatedEntries?.length) {
+      const related = applyMediaRelationFacts({
+        tx,
+        mediaType: 'anime',
+        entityId: animeId,
+        facts: graph.relatedEntries,
+        collectionMode: 'replace'
+      })
+      if (related.unresolvedCount > 0) {
+        warnings.push({
+          code: 'related-entry-not-in-library',
+          message: `Skipped ${related.unresolvedCount} related entries because their targets are not in the library.`
+        })
+      }
+    }
+
     return {
       animeId,
       isNew: true,
-      pendingAssets
+      pendingAssets,
+      ...(warnings.length > 0 && { warnings })
     }
   }
 
@@ -342,7 +361,7 @@ export class AnimeIngestPersistHandler {
       originalName: core.originalName,
       releaseDate: core.releaseDate,
       description: core.description,
-      relatedSites: core.relatedSites || [],
+      externalSites: core.externalSites || [],
       animeDirPath: options?.animeDirPath
     }
     if (core.format) {
@@ -500,8 +519,9 @@ export class AnimeIngestPersistHandler {
     if (result.existingReason) {
       publicResult.existingReason = result.existingReason
     }
-    if (warnings.length > 0) {
-      publicResult.warnings = warnings
+    const combinedWarnings = [...(result.warnings ?? []), ...warnings]
+    if (combinedWarnings.length > 0) {
+      publicResult.warnings = combinedWarnings
     }
     return publicResult
   }

@@ -2,9 +2,10 @@
 
 ## Key Files
 
-- `apps/desktop/src/shared/db/schema.ts` - Drizzle schema definitions
-- `apps/desktop/src/shared/db/schema-relations.ts` - Table relations
-- `apps/desktop/src/shared/db/custom-types.ts` - Custom column types (enum, JSON)
+- `apps/desktop/src/shared/db/schema/tables/` - Drizzle table definitions (one file per domain)
+- `apps/desktop/src/shared/db/schema/relations/` - Drizzle relation declarations
+- `apps/desktop/src/shared/db/columns/` - Custom column types (enum, JSON, base columns)
+- `apps/desktop/src/shared/db/contracts/` - Enum unions, JSON payload types, vocabulary contracts
 - `apps/desktop/src/shared/db/table-names.ts` - Table name constants
 - `apps/desktop/drizzle.config.ts` - Drizzle Kit configuration
 - `apps/desktop/drizzle/` - Migration files
@@ -37,7 +38,7 @@ Renderer (sqlite-proxy) → IPC 'db:execute' → Main (better-sqlite3) → SQLit
 ## Schema Definition
 
 ```typescript
-// apps/desktop/src/shared/db/schema.ts
+// apps/desktop/src/shared/db/schema/tables/content.ts
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 
 export const games = sqliteTable('games', {
@@ -117,8 +118,8 @@ FTS is configured for entity tables (games, characters, persons, companies):
 
 ### Schema Changes (columns, indexes, constraints)
 
-1. Modify schema in `apps/desktop/src/shared/db/schema.ts`
-2. Update relations in `schema-relations.ts` if needed
+1. Modify the table file in `apps/desktop/src/shared/db/schema/tables/`
+2. Update declarations in `schema/relations/` if needed
 3. Determine if migration is required:
    - TypeScript-only changes (type inference): No migration
    - SQLite structure changes: Migration required
@@ -134,7 +135,8 @@ FTS is configured for entity tables (games, characters, persons, companies):
 
 ### Adding a New Table
 
-1. Define table in `apps/desktop/src/shared/db/schema.ts`:
+1. Define the table in a domain file under `apps/desktop/src/shared/db/schema/tables/` and export
+   it from the folder's `index.ts`:
 
    ```typescript
    export const myTable = sqliteTable('my_table', {
@@ -143,7 +145,7 @@ FTS is configured for entity tables (games, characters, persons, companies):
    })
    ```
 
-2. Add relations in `schema-relations.ts` if needed
+2. Add declarations in `schema/relations/` if needed
 
 3. Generate and verify migration
 
