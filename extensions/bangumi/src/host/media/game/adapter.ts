@@ -1,4 +1,10 @@
-import { kisaki, type LibraryGame, type LibraryGamePatch } from '@kisaki3/extension-sdk'
+import {
+  kisaki,
+  LIBRARY_GAME_STATUSES,
+  type LibraryGame,
+  type LibraryGamePatch,
+  type LibraryGameStatus
+} from '@kisaki3/extension-sdk'
 import { BangumiLocalMediaAdapter } from '../local/adapter'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
 import type {
@@ -9,13 +15,14 @@ import type {
   LocalMediaListQuery
 } from '../types'
 
-export class GameLocalMediaAdapter extends BangumiLocalMediaAdapter {
+export class GameLocalMediaAdapter extends BangumiLocalMediaAdapter<LibraryGameStatus> {
   readonly scope = 'game' as const
   readonly localMediaType = 'game' as const
 
   protected readonly entityType = 'game' as const
   protected readonly tagLinkKind = 'game-tag' as const
   protected readonly collectionLinkKind = 'collection-game' as const
+  protected readonly statusValues = LIBRARY_GAME_STATUSES
 
   async addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult> {
     const result = await kisaki.ingest.game.add.fromScraper(input.profileId, {

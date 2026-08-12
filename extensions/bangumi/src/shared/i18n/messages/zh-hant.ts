@@ -260,6 +260,15 @@ export const zhHant = {
       multiple: '多周目',
       shelved: '擱置',
       unset: '未設定'
+    },
+
+    animeStatus: {
+      planned: '想看',
+      watching: '在看',
+      completed: '看過',
+      onHold: '擱置',
+      dropped: '拋棄',
+      unset: '未設定'
     }
   },
 

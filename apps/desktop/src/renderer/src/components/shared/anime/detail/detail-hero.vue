@@ -1,9 +1,9 @@
 <!--
   Anime Detail Hero
 
-  Hero section for the anime detail view: cover plus the facts that describe
-  how far the entry has been watched.
-  Name, original name, and score are editable on hover.
+  Hero section for the anime detail view: cover plus the personal engagement
+  facts (last watched, status, duration, score), each editable on hover.
+  Work metadata such as format and episode counts lives in the overview tab.
 -->
 
 <script setup lang="ts">
@@ -14,16 +14,26 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { formatStatus, getEntityIcon } from '@renderer/utils/format'
-import { AnimeNameFormDialog, AnimeOriginalNameFormDialog, AnimeScoreFormDialog } from '../forms'
+import { formatAnimeStatus, getEntityIcon } from '@renderer/utils/format'
+import {
+  AnimeDurationFormDialog,
+  AnimeLastActiveFormDialog,
+  AnimeNameFormDialog,
+  AnimeOriginalNameFormDialog,
+  AnimeScoreFormDialog,
+  AnimeStatusFormDialog
+} from '../forms'
 
-const { anime, episodes } = useAnime()
+const { anime } = useAnime()
 const { m, f } = useI18n()
 
 /** Dialog open states */
 const editDialogs = ref({
   name: false,
   originalName: false,
+  lastActive: false,
+  status: false,
+  duration: false,
   score: false
 })
 
@@ -39,14 +49,6 @@ const coverUrl = computed(() =>
       })
     : null
 )
-
-/** Progress counts regular episodes; specials do not gate completion. */
-const progress = computed(() => {
-  const regular = episodes.value.filter((episode) => episode.type === 'regular')
-  const total = regular.length || (anime.value?.totalEpisodes ?? 0)
-  const watched = regular.filter((episode) => episode.watchedAt !== null).length
-  return { watched, total }
-})
 </script>
 
 <template>
@@ -102,10 +104,20 @@ const progress = computed(() => {
       <div class="grid grid-cols-2 gap-x-8 gap-y-1.5">
         <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">
           <span class="flex items-center gap-1.5 text-muted-foreground">
-            <Icon
-              icon="icon-[mdi--calendar-outline]"
-              class="size-4"
-            />
+            <button
+              class="group/icon size-4 relative cursor-pointer"
+              :aria-label="m.common.edit"
+              @click="openEditDialog('lastActive')"
+            >
+              <Icon
+                icon="icon-[mdi--calendar-outline]"
+                class="size-4 absolute inset-0 transition-opacity group-hover/icon:opacity-0"
+              />
+              <Icon
+                icon="icon-[mdi--pencil-outline]"
+                class="size-4 absolute inset-0 opacity-0 transition-opacity group-hover/icon:opacity-100"
+              />
+            </button>
             <span class="text-xs">{{ m.library.fields.lastWatchedAt }}</span>
           </span>
           <span class="font-medium truncate text-xs">
@@ -115,51 +127,45 @@ const progress = computed(() => {
 
         <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">
           <span class="flex items-center gap-1.5 text-muted-foreground">
-            <Icon
-              icon="icon-[mdi--bookmark-outline]"
-              class="size-4"
-            />
+            <button
+              class="group/icon size-4 relative cursor-pointer"
+              :aria-label="m.common.edit"
+              @click="openEditDialog('status')"
+            >
+              <Icon
+                icon="icon-[mdi--bookmark-outline]"
+                class="size-4 absolute inset-0 transition-opacity group-hover/icon:opacity-0"
+              />
+              <Icon
+                icon="icon-[mdi--pencil-outline]"
+                class="size-4 absolute inset-0 opacity-0 transition-opacity group-hover/icon:opacity-100"
+              />
+            </button>
             <span class="text-xs">{{ m.anime.detail.watchStatus }}</span>
           </span>
-          <span class="font-medium truncate text-xs">{{ formatStatus(anime.status) }}</span>
+          <span class="font-medium truncate text-xs">{{ formatAnimeStatus(anime.status) }}</span>
         </div>
 
         <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">
           <span class="flex items-center gap-1.5 text-muted-foreground">
-            <Icon
-              icon="icon-[mdi--timer-outline]"
-              class="size-4"
-            />
+            <button
+              class="group/icon size-4 relative cursor-pointer"
+              :aria-label="m.common.edit"
+              @click="openEditDialog('duration')"
+            >
+              <Icon
+                icon="icon-[mdi--timer-outline]"
+                class="size-4 absolute inset-0 transition-opacity group-hover/icon:opacity-0"
+              />
+              <Icon
+                icon="icon-[mdi--pencil-outline]"
+                class="size-4 absolute inset-0 opacity-0 transition-opacity group-hover/icon:opacity-100"
+              />
+            </button>
             <span class="text-xs">{{ m.library.fields.watchDuration }}</span>
           </span>
           <span class="font-medium truncate text-xs">
             {{ anime.totalDuration > 0 ? f.duration(anime.totalDuration) : m.common.emptyValue }}
-          </span>
-        </div>
-
-        <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">
-          <span class="flex items-center gap-1.5 text-muted-foreground">
-            <Icon
-              icon="icon-[mdi--playlist-play]"
-              class="size-4"
-            />
-            <span class="text-xs">{{ m.library.fields.episodes }}</span>
-          </span>
-          <span class="font-medium truncate text-xs">
-            {{ m.anime.episodes.progress(progress) }}
-          </span>
-        </div>
-
-        <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">
-          <span class="flex items-center gap-1.5 text-muted-foreground">
-            <Icon
-              icon="icon-[mdi--television-classic]"
-              class="size-4"
-            />
-            <span class="text-xs">{{ m.library.fields.format }}</span>
-          </span>
-          <span class="font-medium truncate text-xs">
-            {{ m.library.animeFormat[anime.format] }}
           </span>
         </div>
 
@@ -199,6 +205,21 @@ const progress = computed(() => {
     <AnimeOriginalNameFormDialog
       v-if="editDialogs.originalName"
       v-model:open="editDialogs.originalName"
+      :anime-id="anime.id"
+    />
+    <AnimeLastActiveFormDialog
+      v-if="editDialogs.lastActive"
+      v-model:open="editDialogs.lastActive"
+      :anime-id="anime.id"
+    />
+    <AnimeStatusFormDialog
+      v-if="editDialogs.status"
+      v-model:open="editDialogs.status"
+      :anime-id="anime.id"
+    />
+    <AnimeDurationFormDialog
+      v-if="editDialogs.duration"
+      v-model:open="editDialogs.duration"
       :anime-id="anime.id"
     />
     <AnimeScoreFormDialog

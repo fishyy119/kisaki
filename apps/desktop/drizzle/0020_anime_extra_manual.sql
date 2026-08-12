@@ -1,0 +1,1 @@
+ALTER TABLE `anime_extras` ADD `is_manual` integer DEFAULT false NOT NULL;

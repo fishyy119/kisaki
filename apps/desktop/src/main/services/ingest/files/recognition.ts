@@ -56,11 +56,12 @@ const EXTRA_DIRECTORY_NAMES = new Set([
 
 // JS `\b` is ASCII-based and never matches next to CJK characters, so CJK
 // tokens sit outside the word-boundary anchors that guard the ASCII ones.
+// NC/PV markers accept trailing digits (NCOP01, PV2) as BD releases number them.
 const EXTRA_KIND_PATTERNS: ReadonlyArray<{ kind: AnimeExtraKind; pattern: RegExp }> = [
-  { kind: 'ncop', pattern: /\b(?:ncop|creditless\s*op|clean\s*op|op\d*_?nc)\b/i },
-  { kind: 'nced', pattern: /\b(?:nced|creditless\s*ed|clean\s*ed|ed\d*_?nc)\b/i },
+  { kind: 'ncop', pattern: /\b(?:ncop\d*|creditless\s*op|clean\s*op|op\d*_?nc)\b/i },
+  { kind: 'nced', pattern: /\b(?:nced\d*|creditless\s*ed|clean\s*ed|ed\d*_?nc)\b/i },
   { kind: 'trailer', pattern: /(?:\b(?:trailer|teaser)\b|予告)/i },
-  { kind: 'pv', pattern: /\b(?:pv|cm|spot)\b/i },
+  { kind: 'pv', pattern: /\b(?:pv\d*|cm\d*|spot)\b/i },
   { kind: 'interview', pattern: /(?:\binterview\b|インタビュー|访谈)/i }
 ]
 
@@ -80,13 +81,28 @@ const SPECIAL_EPISODE_PATTERNS: ReadonlyArray<RegExp> = [
 const EPISODE_NUMBER_PATTERNS: ReadonlyArray<RegExp> = [
   /\bs\d{1,2}e(\d{1,4}(?:\.\d)?)\b/i,
   /\bep?\s*[.]?\s*(\d{1,4}(?:\.\d)?)(?:v\d)?\b/i,
-  /第\s*(\d{1,4}(?:\.\d)?)\s*[話话集]/,
-  /(?:^|[\s\-_[])(\d{1,4}(?:\.\d)?)(?:v\d)?(?=[\s\-_\]]|$)/
+  /第\s*(\d{1,4}(?:\.\d)?)\s*[話话集]/
 ]
+
+/**
+ * Bare number fallback. Global on purpose: the last valid token wins, because
+ * release names trail the episode number after the title while title-embedded
+ * numbers (season digits, numeric titles like "86") come first.
+ */
+const BARE_EPISODE_NUMBER_PATTERN = /(?:^|[\s\-_[])(\d{1,4}(?:\.\d)?)(?:v\d)?(?=[\s\-_\]]|$)/g
 
 /** Tokens that look like episode numbers but describe the encode instead. */
 const NON_EPISODE_TOKEN_PATTERN =
-  /\b(?:\d{3,4}[pi]|x?26[45]|hevc|avc|aac|flac|opus|ma\d?|dts|\d{1,2}bit|v\d)\b/gi
+  /\b(?:\d{3,4}[pi]|x?26[45]|hevc|avc|aac|flac|opus|ma\d?|dts|\d{1,2}[-_ ]?bit|v\d)\b/gi
+
+/**
+ * Bracket contents that carry the episode identity instead of release
+ * metadata: bare numbers ([01], [24.5], [03v2], [03(v2)]) and special/extra
+ * markers ([SP01], [OVA], [NCOP]). These unwrap in `stripNoise` so the token
+ * survives the metadata strip that VCB-style names would otherwise lose it to.
+ */
+const BRACKET_EPISODE_CONTENT_PATTERN =
+  /^\s*(?:(?:sp|oad|ova|oav|ncop|nced|pv|cm)\s*[-_. ]?\d{0,4}(?:\.\d)?|\d{1,4}(?:\.\d)?)\s*(?:\(?v\d\)?)?\s*$/i
 
 export interface AnimeEpisodeCandidate {
   path: string
@@ -118,11 +134,15 @@ export function isExtraDirectoryName(name: string): boolean {
 }
 
 function stripNoise(fileName: string): string {
-  // Bracketed groups hold release metadata, and the extension holds none.
+  // Bracketed groups hold release metadata, and the extension holds none;
+  // episode-bearing bracket contents unwrap instead of vanishing with them.
+  const unwrapEpisodeContent = (_whole: string, content: string): string =>
+    BRACKET_EPISODE_CONTENT_PATTERN.test(content) ? ` ${content} ` : ' '
+
   return path
     .basename(fileName, path.extname(fileName))
-    .replace(/\[[^\]]*\]/g, ' ')
-    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]/g, unwrapEpisodeContent)
+    .replace(/\(([^)]*)\)/g, unwrapEpisodeContent)
     .replace(NON_EPISODE_TOKEN_PATTERN, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -156,7 +176,15 @@ function readEpisodeNumber(cleaned: string): number | undefined {
     }
   }
 
-  return undefined
+  let lastValid: number | undefined
+  for (const match of cleaned.matchAll(BARE_EPISODE_NUMBER_PATTERN)) {
+    const value = Number.parseFloat(match[1])
+    if (Number.isFinite(value) && value >= 0 && !isPlausibleYearToken(value)) {
+      lastValid = value
+    }
+  }
+
+  return lastValid
 }
 
 function readSpecialEpisodeNumber(cleaned: string): number | undefined {

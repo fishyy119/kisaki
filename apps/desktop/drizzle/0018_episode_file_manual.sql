@@ -1,0 +1,1 @@
+ALTER TABLE `anime_episode_files` ADD `is_manual` integer DEFAULT false NOT NULL;

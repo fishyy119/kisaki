@@ -1,0 +1,113 @@
+<!--
+  AnimeDetailExtraItem
+  One extra row: identity, kind, duration, and playback. Extras carry no watch
+  state, so playback starts through the untracked extra channel.
+-->
+<script setup lang="ts">
+import { ref } from 'vue'
+import { Button } from '@renderer/components/ui/button'
+import { Icon } from '@renderer/components/ui/icon'
+import { useI18n } from '@renderer/composables/use-i18n'
+import { ipcManager } from '@renderer/core/ipc'
+import { createLogger } from '@renderer/core/log'
+import { notify } from '@renderer/core/notify'
+import type { AnimeExtra } from '@shared/db'
+
+const log = createLogger('Anime')
+
+interface Props {
+  extra: AnimeExtra
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  openFolder: [path: string]
+  edit: []
+}>()
+
+const { m, f } = useI18n()
+
+const isPlayPending = ref(false)
+
+async function handlePlay(): Promise<void> {
+  if (isPlayPending.value) return
+
+  isPlayPending.value = true
+  try {
+    const result = await ipcManager.invoke('activity:play-anime-extra', props.extra.id)
+    if (!result.success) {
+      notify.error(m.value.anime.extras.playFailed, result.error)
+      return
+    }
+    if (result.data.status === 'failed') {
+      notify.error(m.value.anime.extras.playFailed, m.value.activity.errors[result.data.reason])
+    }
+  } catch (error) {
+    log.error('extra playback call threw:', error)
+    notify.error(m.value.anime.extras.playFailed)
+  } finally {
+    isPlayPending.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50">
+    <div class="flex items-center gap-3 min-w-0">
+      <Icon
+        icon="icon-[mdi--movie-open-outline]"
+        class="size-4 text-muted-foreground shrink-0"
+      />
+      <div class="min-w-0">
+        <p class="text-sm font-medium truncate">{{ props.extra.name }}</p>
+        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{{ m.library.animeExtraKind[props.extra.kind] }}</span>
+          <template v-if="props.extra.durationMs">
+            <span>·</span>
+            <span>{{ f.duration(props.extra.durationMs) }}</span>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1 shrink-0">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        :tooltip="m.anime.extras.editTitle"
+        @click="emit('edit')"
+      >
+        <Icon
+          icon="icon-[mdi--pencil-outline]"
+          class="size-4"
+        />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        :tooltip="m.anime.files.openFolder"
+        @click="emit('openFolder', props.extra.path)"
+      >
+        <Icon
+          icon="icon-[mdi--folder-open-outline]"
+          class="size-4"
+        />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        :disabled="isPlayPending"
+        :tooltip="m.anime.extras.play"
+        @click="handlePlay"
+      >
+        <Icon
+          icon="icon-[mdi--play]"
+          class="size-4"
+        />
+      </Button>
+    </div>
+  </div>
+</template>

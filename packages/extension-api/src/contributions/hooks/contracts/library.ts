@@ -1,6 +1,7 @@
 import type {
   DynamicCollectionConfig,
-  LibraryMediaStatus,
+  LibraryAnimeStatus,
+  LibraryGameStatus,
   LibraryMediaType
 } from '../../../capabilities/library'
 import type {
@@ -229,8 +230,8 @@ export type LibraryDynamicConfigChange = {
 
 export type LibraryStatusChange = {
   facet: 'status'
-  before: { status: LibraryMediaStatus }
-  after: { status: LibraryMediaStatus }
+  before: { status: LibraryGameStatus | LibraryAnimeStatus }
+  after: { status: LibraryGameStatus | LibraryAnimeStatus }
   fields?: readonly ['status']
 }
 

@@ -249,7 +249,7 @@ function createImportCollectionCreatePreviewChange({
     rows.push({
       label: m().jobs.preview.status,
       before: m().jobs.preview.notSet,
-      after: formatLocalStatus(mapCollectionTypeToLocalStatus(collection.type)),
+      after: formatLocalStatus(scope, mapCollectionTypeToLocalStatus(scope, collection.type)),
       tone: 'success'
     })
   }

@@ -17,13 +17,19 @@ import type { PlayerService } from '@main/services/player'
 import {
   animeEpisodeFiles,
   animeEpisodes,
+  animeExtras,
   animeSessions,
   animes,
   type Anime,
   type AnimeEpisode,
   type AnimeEpisodeFile
 } from '@shared/db'
-import type { AnimeStopResult, AnimeWatchingState, AnimeWatchResult } from '@shared/activity'
+import type {
+  AnimeExtraPlayResult,
+  AnimeStopResult,
+  AnimeWatchingState,
+  AnimeWatchResult
+} from '@shared/activity'
 import type { PlaybackTarget } from '@shared/player'
 import type { ActivityHooks } from '../hooks'
 
@@ -120,7 +126,7 @@ export class AnimeActivityHandler {
 
     this.db.client
       .update(animes)
-      .set({ lastActiveAt: new Date(now), ...(anime.status === 'notStarted' && { status: 'inProgress' }) })
+      .set({ lastActiveAt: new Date(now), ...(anime.status === 'planned' && { status: 'watching' }) })
       .where(eq(animes.id, animeId))
       .run()
 
@@ -133,6 +139,48 @@ export class AnimeActivityHandler {
     this.hooks.watchStarted.dispatch({ animeId, episodeId: episode.id })
 
     return { status: 'started', episodeId: episode.id, sessionId: started.sessionId }
+  }
+
+  /**
+   * Plays a supplementary asset. Extras carry no watch state, so the session
+   * is not tracked and nothing is recorded when it ends.
+   */
+  async playExtra(extraId: string): Promise<AnimeExtraPlayResult> {
+    const row = this.db.client
+      .select({ extra: animeExtras, animeName: animes.name })
+      .from(animeExtras)
+      .innerJoin(animes, eq(animeExtras.animeId, animes.id))
+      .where(eq(animeExtras.id, extraId))
+      .get()
+    if (!row) {
+      log.warn('Extra to play was not found.', { extraId })
+      return { status: 'failed', reason: 'extraNotFound' }
+    }
+
+    if (!existsSync(row.extra.path)) {
+      log.warn('Extra file is missing on disk.', { extraId })
+      return { status: 'failed', reason: 'fileNotFound' }
+    }
+
+    const { playerAudioLanguages, playerSubtitleLanguages } = this.db.settings.get()
+    const started = await this.player.sessions.start({
+      path: row.extra.path,
+      title: `${row.animeName} · ${row.extra.name}`,
+      trackPreference: {
+        audioLanguages: playerAudioLanguages,
+        subtitleLanguages: playerSubtitleLanguages
+      }
+    })
+
+    if (started.status === 'failed') {
+      log.warn('Extra playback failed to start.', { extraId, reason: started.reason })
+      return {
+        status: 'failed',
+        reason: started.reason === 'engineNotFound' ? 'playerUnavailable' : 'playerStartFailed'
+      }
+    }
+
+    return { status: 'started', sessionId: started.sessionId }
   }
 
   /** Stops the playback session currently watching this anime. */

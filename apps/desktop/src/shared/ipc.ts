@@ -53,7 +53,12 @@ import type {
   IngestAddGameFromScraperOptions,
   IngestAddPersonFromScraperOptions
 } from './ingest/add'
-import type { IngestSyncAnimeFilesParams, IngestSyncAnimeFilesResult } from './ingest/files'
+import type {
+  IngestAttachAnimeEpisodeFileParams,
+  IngestAttachAnimeExtraFileParams,
+  IngestSyncAnimeFilesParams,
+  IngestSyncAnimeFilesResult
+} from './ingest/files'
 import type {
   AnimeBatchUpdateRequest,
   AnimeUpdateRequest,
@@ -135,6 +140,7 @@ import type {
 } from './deeplink'
 import type { BootstrapArgs } from './bootstrap'
 import type {
+  AnimeExtraPlayResult,
   AnimeStopResult,
   AnimeWatchingState,
   AnimeWatchResult,
@@ -340,6 +346,8 @@ export interface IpcMainHandlers {
   'ingest:sync-anime-files': (
     params: IngestSyncAnimeFilesParams
   ) => IpcResult<IngestSyncAnimeFilesResult>
+  'ingest:attach-anime-episode-file': (params: IngestAttachAnimeEpisodeFileParams) => IpcVoidResult
+  'ingest:attach-anime-extra-file': (params: IngestAttachAnimeExtraFileParams) => IpcVoidResult
   'ingest:add-person-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
@@ -464,6 +472,7 @@ export interface IpcMainHandlers {
   ) => IpcResult<string | null>
   'activity:watch-anime': (animeId: string, episodeId?: string) => IpcResult<AnimeWatchResult>
   'activity:stop-anime': (animeId: string) => IpcResult<AnimeStopResult>
+  'activity:play-anime-extra': (extraId: string) => IpcResult<AnimeExtraPlayResult>
   'activity:list-anime-watching': () => IpcResult<AnimeWatchingState[]>
 
   // Player

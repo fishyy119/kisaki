@@ -25,6 +25,10 @@ export function registerActivityIpc(service: ActivityService, ipc: IpcService): 
     wrapIpc(() => service.anime.stop(animeId))
   )
 
+  ipc.handle('activity:play-anime-extra', async (_, extraId) =>
+    wrapIpc(() => service.anime.playExtra(extraId))
+  )
+
   ipc.handle('activity:list-anime-watching', async () =>
     wrapIpc(() => service.anime.listWatching())
   )

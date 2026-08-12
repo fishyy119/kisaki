@@ -268,6 +268,15 @@ export const ja = {
       multiple: '周回プレイ',
       shelved: '保留',
       unset: '未設定'
+    },
+
+    animeStatus: {
+      planned: '見たい',
+      watching: '視聴中',
+      completed: '視聴済み',
+      onHold: '保留',
+      dropped: '中断',
+      unset: '未設定'
     }
   },
 

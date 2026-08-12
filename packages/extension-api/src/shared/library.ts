@@ -58,12 +58,19 @@ export const LIBRARY_ANIME_EPISODE_TYPES = ['regular', 'special'] as const
 export type LibraryAnimeEpisodeType = (typeof LIBRARY_ANIME_EPISODE_TYPES)[number]
 
 export const LIBRARY_ANIME_PERSON_ROLES = [
+  'originalCreator',
   'director',
   'series',
   'scenario',
+  'episodeDirector',
   'characterDesign',
-  'music',
   'animationDirector',
+  'animation',
+  'art',
+  'photography',
+  'sound',
+  'music',
+  'producer',
   'other'
 ] as const
 

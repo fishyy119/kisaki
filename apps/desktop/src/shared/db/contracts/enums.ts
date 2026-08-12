@@ -7,8 +7,11 @@
 
 import { SCANNER_INGEST_MODE_VALUES } from './constants'
 
-/** Game/media completion status */
+/** Game completion status */
 export type Status = 'notStarted' | 'inProgress' | 'partial' | 'completed' | 'multiple' | 'shelved'
+
+/** Anime watch status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
+export type AnimeStatus = 'planned' | 'watching' | 'completed' | 'onHold' | 'dropped'
 
 /** Game launcher mode */
 export type GameLauncherMode = 'file' | 'url' | 'exec'
@@ -45,12 +48,19 @@ export type AnimeEpisodeType = 'regular' | 'special'
 
 /** Anime-person link role */
 export type AnimePersonRole =
+  | 'originalCreator'
   | 'director'
   | 'series'
   | 'scenario'
+  | 'episodeDirector'
   | 'characterDesign'
-  | 'music'
   | 'animationDirector'
+  | 'animation'
+  | 'art'
+  | 'photography'
+  | 'sound'
+  | 'music'
+  | 'producer'
   | 'other'
 
 /** Anime-character link role */

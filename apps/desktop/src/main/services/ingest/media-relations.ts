@@ -41,8 +41,6 @@ interface ResolvedRelationRow {
 }
 
 export interface ApplyMediaRelationFactsResult {
-  /** Stored rows a `replace` would have deleted but merge kept. */
-  preservedRowCount: number
   /** Facts whose target did not resolve to a library entry. */
   unresolvedCount: number
 }
@@ -84,14 +82,12 @@ export function applyMediaRelationFacts(params: {
     )
 
   const finalRows = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
-  const preservedRowCount =
-    collectionMode === 'replace' ? 0 : countPreservedRows(currentRows, incomingRows)
 
   if (finalRows && !areRelationRowsEqual(currentRows, finalRows)) {
     replaceOutgoingRows(tx, mediaType, entityId, finalRows)
   }
 
-  return { preservedRowCount, unresolvedCount }
+  return { unresolvedCount }
 }
 
 function resolveRelationRows(
@@ -169,14 +165,6 @@ function buildFinalRelationRows(
   }
 
   return merged
-}
-
-function countPreservedRows(
-  current: ResolvedRelationRow[],
-  incoming: ResolvedRelationRow[]
-): number {
-  const incomingKeys = new Set(incoming.map(relationRowKey))
-  return current.filter((row) => !incomingKeys.has(relationRowKey(row))).length
 }
 
 function areRelationRowsEqual(

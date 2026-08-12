@@ -33,6 +33,7 @@ export const activity = {
     alreadyWatching: 'このアニメはすでに再生中です。',
     animeNotFound: 'アニメが存在しません。',
     episodeNotFound: 'エピソードが存在しません。',
+    extraNotFound: '特典が存在しません。',
     noPlayableEpisode: '再生できるエピソードがありません。',
     noEpisodeFile: 'このエピソードには動画ファイルがありません。',
     playerUnavailable: '動画プレイヤーを利用できません。',

@@ -120,6 +120,34 @@
       "when": 1786513514431,
       "tag": "0016_media_relations",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1786527461573,
+      "tag": "0017_episode_file_offset",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1786530287221,
+      "tag": "0018_episode_file_manual",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1786536567506,
+      "tag": "0019_anime_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1786538713921,
+      "tag": "0020_anime_extra_manual",
+      "breakpoints": true
     }
   ]
 }

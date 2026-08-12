@@ -27,6 +27,15 @@ export class NativeShell {
     }
 
     try {
+      // `file` means reveal: open the containing folder with the item
+      // selected. Opening the path itself would hand the file to the
+      // associated application instead.
+      if (config.ensure === 'file') {
+        await stat(targetPath)
+        shell.showItemInFolder(targetPath)
+        return
+      }
+
       const errorMessage = await shell.openPath(targetPath)
       if (errorMessage) {
         throw new Error('Shell openPath failed.')

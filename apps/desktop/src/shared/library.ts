@@ -5,7 +5,14 @@
  * and consumed by the `library.changed` / `library.entity-merged` hook points.
  */
 
-import type { AnimeFormat, BloodType, CupSize, Gender, Status } from './db/contracts/enums'
+import type {
+  AnimeFormat,
+  AnimeStatus,
+  BloodType,
+  CupSize,
+  Gender,
+  Status
+} from './db/contracts/enums'
 import type { DynamicCollectionConfig, PartialDate, ExternalSite } from './db/contracts/json'
 import type { MediaRelationType } from './db/contracts/media-relations'
 import type { ExternalId } from './identity'
@@ -76,8 +83,8 @@ export interface LibraryMediaRelationsSnapshot {
 
 export type LibraryStatusChange = {
   facet: 'status'
-  before: { status: Status }
-  after: { status: Status }
+  before: { status: Status | AnimeStatus }
+  after: { status: Status | AnimeStatus }
   fields?: ['status']
 }
 

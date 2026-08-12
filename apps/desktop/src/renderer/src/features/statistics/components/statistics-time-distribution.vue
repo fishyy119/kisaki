@@ -1,7 +1,7 @@
 <!--
   Statistics Time Distribution
 
-  Shows play time distribution by hour of day, weekday, or day of month.
+  Shows activity time distribution by hour of day, weekday, or day of month.
   Adapts available options based on report type.
 -->
 
@@ -16,15 +16,15 @@ import {
 import {
   aggregateByLocalDayOfMonth,
   aggregateByLocalHour,
-  aggregateByLocalWeekdayMondayFirst
+  aggregateByLocalWeekdayMondayFirst,
+  type StatisticsSession
 } from '@renderer/utils/statistics'
-import type { GameSession } from '@shared/db'
 
 interface Props {
   /** Module header title */
   title?: string
   /** Override sessions (for custom data source) */
-  sessions?: GameSession[]
+  sessions?: StatisticsSession[]
   /** Available distribution types */
   availableTypes?: DistributionType[]
 }

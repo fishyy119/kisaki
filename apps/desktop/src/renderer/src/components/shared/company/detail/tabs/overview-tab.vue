@@ -8,17 +8,17 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
-import { AnimeCard } from '@renderer/components/shared/anime'
+import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useCompany } from '@renderer/composables'
 import {
   CompanyDescriptionFormDialog,
   CompanyExternalSitesFormDialog,
   CompanyTagsFormDialog,
-  CompanyGamesFormDialog
+  CompanyGamesFormDialog,
+  CompanyAnimesFormDialog
 } from '../../forms'
 import { useI18n } from '@renderer/composables'
-import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 
 const { m } = useI18n()
 
@@ -37,15 +37,24 @@ const descriptionDialogOpen = ref(false)
 const sitesDialogOpen = ref(false)
 const tagsDialogOpen = ref(false)
 const gamesDialogOpen = ref(false)
+const animesDialogOpen = ref(false)
 
 // Detail dialog states
 const openGameId = ref<string | null>(null)
+const openAnimeId = ref<string | null>(null)
 const openTagId = ref<string | null>(null)
 
 const gameDialogOpen = computed({
   get: () => openGameId.value !== null,
   set: (value) => {
     if (!value) openGameId.value = null
+  }
+})
+
+const animeDialogOpen = computed({
+  get: () => openAnimeId.value !== null,
+  set: (value) => {
+    if (!value) openAnimeId.value = null
   }
 })
 
@@ -63,12 +72,6 @@ const tagDialogOpen = computed({
     if (!value) openTagId.value = null
   }
 })
-
-// Shared components stay route-unaware: related anime render as plain hash
-// links that the router picks up, instead of pushing through useRouter().
-function getAnimeDetailHref(animeId: string): string {
-  return `#${getEntityDetailPath('anime', animeId)}`
-}
 </script>
 
 <template>
@@ -106,23 +109,21 @@ function getAnimeDetailHref(animeId: string): string {
         </SectionScroll>
 
         <SectionScroll
-          v-if="animeLinks.length > 0"
           :title="m.library.fields.relatedAnimes"
+          editable
           :items="animeLinks"
           :get-key="(item) => item.id"
+          :empty-text="m.library.detail.empty.relatedAnimes"
+          @edit="animesDialogOpen = true"
         >
           <template #item="{ item: link }">
-            <a
-              :href="getAnimeDetailHref(link.anime!.id)"
-              class="block"
-            >
-              <AnimeCard
-                :anime="link.anime!"
-                align="left"
-                size="sm"
-                :badge-label="link.role ? ANIME_COMPANY_ROLE_LABELS[link.role] : undefined"
-              />
-            </a>
+            <AnimeCard
+              :anime="link.anime!"
+              align="left"
+              size="sm"
+              :badge-label="link.role ? ANIME_COMPANY_ROLE_LABELS[link.role] : undefined"
+              @click="openAnimeId = link.anime!.id"
+            />
           </template>
         </SectionScroll>
 
@@ -200,12 +201,22 @@ function getAnimeDetailHref(animeId: string): string {
       v-model:open="gamesDialogOpen"
       :company-id="company.id"
     />
+    <CompanyAnimesFormDialog
+      v-if="animesDialogOpen"
+      v-model:open="animesDialogOpen"
+      :company-id="company.id"
+    />
 
     <!-- Entity Dialogs -->
     <GameDetailDialog
       v-if="openGameId"
       v-model:open="gameDialogOpen"
       :game-id="openGameId"
+    />
+    <AnimeDetailDialog
+      v-if="openAnimeId"
+      v-model:open="animeDialogOpen"
+      :anime-id="openAnimeId"
     />
 
     <!-- Tag Detail Dialog -->

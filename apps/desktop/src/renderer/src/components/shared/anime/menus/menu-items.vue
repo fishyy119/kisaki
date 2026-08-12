@@ -18,7 +18,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { animes, collections, collectionAnimeLinks, type Anime } from '@shared/db'
-import { Status } from '@shared/db'
+import { AnimeStatus } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
 
 interface Props {
@@ -39,15 +39,19 @@ const { showNsfw } = storeToRefs(preferencesStore)
 const { m } = useI18n()
 
 // Status options for selection
-const statusOptions = computed<{ value: Status; label: string }[]>(() =>
-  (['notStarted', 'inProgress', 'partial', 'completed', 'multiple', 'shelved'] as const).map(
-    (value) => ({ value, label: m.value.library.status[value] })
-  )
+const statusOptions = computed<{ value: AnimeStatus; label: string }[]>(() =>
+  (['planned', 'watching', 'completed', 'onHold', 'dropped'] as const).map((value) => ({
+    value,
+    label: m.value.library.animeStatus[value]
+  }))
 )
 
 const emit = defineEmits<{
   openScoreDialog: []
+  openFilesConfigDialog: []
+  openMediaDialog: []
   openMetadataUpdateDialog: []
+  openExternalIdsDialog: []
   openMergeDialog: []
   openDeleteDialog: []
   openNewCollectionDialog: []
@@ -154,7 +158,7 @@ async function handleRemoveFromCollection(collectionId: string) {
 // Computed model for status dropdown
 const statusModel = computed({
   get: () => anime.value?.status,
-  set: async (status: Status | undefined) => {
+  set: async (status: AnimeStatus | undefined) => {
     if (!status) return
     try {
       await db.update(animes).set({ status }).where(eq(animes.id, props.animeId))
@@ -381,6 +385,30 @@ async function handleOpenAnimeDir() {
       {{ m.anime.detail.openAnimeDir }}
     </component>
 
+    <!-- Files Configuration -->
+    <component
+      :is="props.components.Item"
+      @select="emit('openFilesConfigDialog')"
+    >
+      <Icon
+        icon="icon-[mdi--folder-cog-outline]"
+        class="size-4"
+      />
+      {{ m.anime.filesConfig.title }}
+    </component>
+
+    <!-- Media Management -->
+    <component
+      :is="props.components.Item"
+      @select="emit('openMediaDialog')"
+    >
+      <Icon
+        icon="icon-[mdi--image-multiple-outline]"
+        class="size-4"
+      />
+      {{ m.library.menu.media }}
+    </component>
+
     <!-- Metadata Update -->
     <component
       :is="props.components.Item"
@@ -391,6 +419,17 @@ async function handleOpenAnimeDir() {
         class="size-4"
       />
       {{ m.library.menu.updateMetadata }}
+    </component>
+
+    <component
+      :is="props.components.Item"
+      @select="emit('openExternalIdsDialog')"
+    >
+      <Icon
+        icon="icon-[mdi--card-text-outline]"
+        class="size-4"
+      />
+      {{ m.library.menu.manageExternalIds }}
     </component>
 
     <component

@@ -73,6 +73,14 @@ export const library = {
     shelved: '已搁置'
   },
 
+  animeStatus: {
+    planned: '想看',
+    watching: '在看',
+    completed: '已看完',
+    onHold: '搁置',
+    dropped: '弃番'
+  },
+
   gender: {
     male: '男性',
     female: '女性',
@@ -115,12 +123,19 @@ export const library = {
       other: '其他'
     },
     animePerson: {
+      originalCreator: '原作',
       director: '监督',
       series: '系列构成',
       scenario: '脚本',
+      episodeDirector: '演出',
       characterDesign: '角色设计',
-      music: '音乐',
       animationDirector: '作画监督',
+      animation: '原画',
+      art: '美术',
+      photography: '摄影',
+      sound: '音响',
+      music: '音乐',
+      producer: '制片人',
       other: '其他'
     },
     animeCharacter: {
@@ -271,6 +286,7 @@ export const library = {
       persons: '人物',
       companies: '公司',
       relatedGames: '相关游戏',
+      relatedAnimes: '相关动漫',
       relatedPersons: '相关人物',
       relatedCharacters: '相关角色',
       activity: '活动',
@@ -296,6 +312,7 @@ export const library = {
       tags: '暂无标签',
       externalSites: '暂无外部链接',
       relatedGames: '暂无相关游戏',
+      relatedAnimes: '暂无相关动漫',
       relatedPersons: '暂无相关人物',
       relatedCharacters: '暂无相关角色',
       relatedEntries: '暂无关联条目',
@@ -331,11 +348,17 @@ export const library = {
     editGameCharacters: '编辑角色',
     editGamePersons: '编辑人物',
     editGameCompanies: '编辑公司',
+    editAnimeCharacters: '编辑角色',
+    editAnimePersons: '编辑制作人员',
+    editAnimeCompanies: '编辑公司',
     editCharacterGames: '编辑登场游戏',
+    editCharacterAnimes: '编辑出演动漫',
     editCharacterPersons: '编辑相关人员',
     editPersonGames: '编辑参与游戏',
+    editPersonAnimes: '编辑参与动漫',
     editPersonCharacters: '编辑配音角色',
     editCompanyGames: '编辑相关游戏',
+    editCompanyAnimes: '编辑相关动漫',
     editCollectionEntities: '编辑合集内容',
 
     notePlaceholder: '可选备注…',
@@ -360,6 +383,8 @@ export const library = {
     releaseDateInvalidFormat: '发行日期格式不正确。',
     foundedDateYearDayWithoutMonth: '成立日期填写了年份和日期时，必须同时填写月份。',
     releaseDateYearDayWithoutMonth: '发行日期填写了年份和日期时，必须同时填写月份。',
+    totalEpisodesPlaceholder: '可留空',
+    totalEpisodesInvalid: '总集数必须为非负整数。',
 
     scoreRangeHint: '评分范围 0-10，支持一位小数（如 8.5）。',
     scoreOutOfRange: '评分必须在 0-10 之间。',
@@ -416,6 +441,9 @@ export const library = {
       gameBackdrop: '详情页背景图。',
       gameLogo: '游戏标题 Logo。',
       gameIcon: '小尺寸图标。',
+      animeCover: '动漫封面图，用于卡片和列表显示。',
+      animeBackdrop: '详情页背景图。',
+      animeLogo: '动漫标题 Logo。',
       characterPhoto: '角色照片，用于卡片和详情显示。',
       personPhoto: '人物照片，用于卡片和详情显示。',
       companyLogo: '公司徽标，用于卡片和详情显示。'

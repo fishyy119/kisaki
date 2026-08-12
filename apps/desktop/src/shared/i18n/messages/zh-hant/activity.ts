@@ -33,6 +33,7 @@ export const activity = {
     alreadyWatching: '該動漫已在播放中。',
     animeNotFound: '動漫不存在。',
     episodeNotFound: '劇集不存在。',
+    extraNotFound: '特典不存在。',
     noPlayableEpisode: '沒有可播放的劇集。',
     noEpisodeFile: '該劇集尚無影片檔案。',
     playerUnavailable: '影片播放器無法使用。',

@@ -28,6 +28,7 @@ import type {
   AnimeExtraKind,
   AnimeFormat,
   AnimePersonRole,
+  AnimeStatus,
   BloodType,
   CharacterPersonRole,
   CupSize,
@@ -56,6 +57,9 @@ const STATUS_VALUES = [
   'shelved'
 ] as const
 export const status = createEnumType<Status>(STATUS_VALUES, 'notStarted', 'status')
+
+const ANIME_STATUS_VALUES = ['planned', 'watching', 'completed', 'onHold', 'dropped'] as const
+export const animeStatus = createEnumType<AnimeStatus>(ANIME_STATUS_VALUES, 'planned', 'animeStatus')
 
 const GAME_LAUNCHER_MODE_VALUES = ['file', 'url', 'exec'] as const
 export const gameLauncherMode = createEnumType<GameLauncherMode>(
@@ -121,12 +125,19 @@ export const animeEpisodeType = createEnumType<AnimeEpisodeType>(
 )
 
 const ANIME_PERSON_ROLE_VALUES = [
+  'originalCreator',
   'director',
   'series',
   'scenario',
+  'episodeDirector',
   'characterDesign',
-  'music',
   'animationDirector',
+  'animation',
+  'art',
+  'photography',
+  'sound',
+  'music',
+  'producer',
   'other'
 ] as const
 export const animePersonRole = createEnumType<AnimePersonRole>(

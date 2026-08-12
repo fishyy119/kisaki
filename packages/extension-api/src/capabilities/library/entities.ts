@@ -97,8 +97,8 @@ export const LIBRARY_ORGANIZER_ENTITY_TYPES = ['collection', 'tag'] as const
 
 export type LibraryOrganizerEntityType = (typeof LIBRARY_ORGANIZER_ENTITY_TYPES)[number]
 
-/** Consumption status; shared by every media type. */
-export const LIBRARY_MEDIA_STATUSES = [
+/** Game completion status. */
+export const LIBRARY_GAME_STATUSES = [
   'notStarted',
   'inProgress',
   'partial',
@@ -107,7 +107,18 @@ export const LIBRARY_MEDIA_STATUSES = [
   'shelved'
 ] as const
 
-export type LibraryMediaStatus = (typeof LIBRARY_MEDIA_STATUSES)[number]
+export type LibraryGameStatus = (typeof LIBRARY_GAME_STATUSES)[number]
+
+/** Anime watch status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
+export const LIBRARY_ANIME_STATUSES = [
+  'planned',
+  'watching',
+  'completed',
+  'onHold',
+  'dropped'
+] as const
+
+export type LibraryAnimeStatus = (typeof LIBRARY_ANIME_STATUSES)[number]
 
 export const LIBRARY_GAME_LAUNCHER_MODES = ['file', 'url', 'exec'] as const
 
@@ -159,7 +170,7 @@ export interface LibraryGame extends LibraryRankedEntityBase {
   logoFile?: string
   iconFile?: string
   releaseDate?: PartialDate
-  status: LibraryMediaStatus
+  status: LibraryGameStatus
   lastActiveAt?: number | null
   totalDuration: number
   savePath?: string
@@ -179,7 +190,7 @@ export interface LibraryAnime extends LibraryRankedEntityBase {
   backdropFile?: string
   logoFile?: string
   releaseDate?: PartialDate
-  status: LibraryMediaStatus
+  status: LibraryAnimeStatus
   format: LibraryAnimeFormat
   totalEpisodes?: number | null
   lastActiveAt?: number | null
@@ -308,7 +319,7 @@ export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
   logoFile?: string
   iconFile?: string
   releaseDate?: PartialDate
-  status?: LibraryMediaStatus
+  status?: LibraryGameStatus
   lastActiveAt?: number | null
   totalDuration?: number
   savePath?: string
@@ -335,7 +346,7 @@ export interface LibraryAnimeCreateInput extends LibraryRankedEntityInputBase {
   backdropFile?: string
   logoFile?: string
   releaseDate?: PartialDate
-  status?: LibraryMediaStatus
+  status?: LibraryAnimeStatus
   format?: LibraryAnimeFormat
   totalEpisodes?: number | null
   lastActiveAt?: number | null
@@ -420,7 +431,7 @@ export interface LibraryTagCreateInput extends LibraryEntityInputBase {
 export type LibraryTagPatch = Partial<Omit<LibraryTagCreateInput, 'createdAt' | 'updatedAt'>>
 
 export interface LibraryGameQuery extends LibraryListQuery {
-  statuses?: readonly LibraryMediaStatus[]
+  statuses?: readonly LibraryGameStatus[]
   favoritesOnly?: boolean
   includeNsfw?: boolean
   collectionIds?: readonly string[]
@@ -428,7 +439,7 @@ export interface LibraryGameQuery extends LibraryListQuery {
 }
 
 export interface LibraryAnimeQuery extends LibraryListQuery {
-  statuses?: readonly LibraryMediaStatus[]
+  statuses?: readonly LibraryAnimeStatus[]
   formats?: readonly LibraryAnimeFormat[]
   favoritesOnly?: boolean
   includeNsfw?: boolean

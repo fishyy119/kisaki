@@ -29,6 +29,7 @@ export function validateLibraryMediaRelationCreateInput(value: unknown): Validat
   return [
     ...validateUnknownKeys(value, RELATION_CREATE_KEYS),
     ...validateRelationEndpoints(value),
+    ...validateEndpointsDistinct(value),
     ...validateRequiredEnumString(
       value.type,
       '$.type',
@@ -157,6 +158,22 @@ function validateRelationEndpoints(value: Record<string, unknown>): ValidationIs
     ...validateMediaEntityReference(value.from, '$.from'),
     ...validateMediaEntityReference(value.to, '$.to')
   ]
+}
+
+/** A relation is an edge between two entries; self-edges are rejected at create. */
+function validateEndpointsDistinct(value: Record<string, unknown>): ValidationIssue[] {
+  const { from, to } = value
+  if (!isRecord(from) || !isRecord(to)) {
+    return []
+  }
+  if (typeof from.id !== 'string' || from.id.trim() === '') {
+    return []
+  }
+  if (from.entityType !== to.entityType || from.id !== to.id) {
+    return []
+  }
+
+  return [{ path: '$.to', message: 'to must reference a different entry than from.' }]
 }
 
 function validateMediaEntityReference(value: unknown, path: string): ValidationIssue[] {

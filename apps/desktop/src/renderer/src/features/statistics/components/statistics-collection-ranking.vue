@@ -1,15 +1,15 @@
 <!--
   Statistics Collection Ranking
 
-  Ranked collection list (share bars) by play time or session count. Owns
+  Ranked collection list (share bars) by activity time or session count. Owns
   its module header: Section title with the sort control inline. Shares are
   relative to the period total (a session counts under each collection that
-  contains its game).
+  contains its entry).
 -->
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useStatistics } from '../composables'
+import { useStatistics, type StatisticsSessionEntry } from '../composables'
 import {
   computeCollectionRanking,
   sessionDurationMs,
@@ -20,13 +20,12 @@ import { Section } from '@renderer/components/ui/section'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { GameSession } from '@shared/db'
 
 interface Props {
   /** Module header title */
   title: string
   /** Override sessions (for custom data source) */
-  sessions?: GameSession[]
+  sessions?: StatisticsSessionEntry[]
 }
 
 const props = defineProps<Props>()
@@ -49,7 +48,8 @@ const totalValue = computed(() =>
 const items = computed<RankingListItem[]>(() =>
   computeCollectionRanking(
     effectiveSessions.value,
-    context.gameCollectionLinks.value,
+    (session) => session.entityKey,
+    context.entityCollectionLinks.value,
     context.collections.value,
     sort.value
   ).map((item) => ({

@@ -1,23 +1,28 @@
 <!--
   AnimeWatchButton
-  Watch/stop button for an anime entry or a specific episode. Owns the four
-  visible states (idle, starting, playing, stopping) and the notifications for
-  every watch outcome the button itself cannot show.
+  Watch/stop button for an anime entry or a specific episode. The watch action
+  reads "start" or "continue" depending on recorded watch progress, transitional
+  phases keep the action label and show a spinner, and the button owns the
+  notifications for every watch outcome it cannot show itself.
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { cva } from 'class-variance-authority'
+import { and, eq, isNotNull, or } from 'drizzle-orm'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { useDbChanges } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { useAnimeActivityStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
 import type { AnimeStopResult, AnimeWatchResult } from '@shared/activity'
+import { animeEpisodes } from '@shared/db'
 
 const log = createLogger('Anime')
 
@@ -63,41 +68,69 @@ const state = computed<WatchButtonState>(() => {
 const isBusy = computed(() => state.value === 'starting' || state.value === 'stopping')
 const isStopAction = computed(() => state.value === 'playing' || state.value === 'stopping')
 
-const label = computed<string>(() => {
-  const labels: Record<WatchButtonState, string> = {
-    idle: m.value.anime.watch,
-    starting: m.value.anime.starting,
-    playing: m.value.anime.stop,
-    stopping: m.value.anime.stopping
+/**
+ * Whether the watch action resumes existing progress: an episode button resumes
+ * from the episode's own resume point, while an entry button resumes once any
+ * episode carries watch progress.
+ */
+const hasProgress = ref(false)
+
+async function refreshProgress(): Promise<void> {
+  const { animeId, episodeId } = props
+
+  if (episodeId) {
+    const [row] = await db
+      .select({ resumePositionMs: animeEpisodes.resumePositionMs })
+      .from(animeEpisodes)
+      .where(eq(animeEpisodes.id, episodeId))
+      .limit(1)
+    hasProgress.value = (row?.resumePositionMs ?? null) !== null
+    return
   }
-  return labels[state.value]
+
+  const [row] = await db
+    .select({ id: animeEpisodes.id })
+    .from(animeEpisodes)
+    .where(
+      and(
+        eq(animeEpisodes.animeId, animeId),
+        or(isNotNull(animeEpisodes.watchedAt), isNotNull(animeEpisodes.resumePositionMs))
+      )
+    )
+    .limit(1)
+  hasProgress.value = row !== undefined
+}
+
+watch(() => [props.animeId, props.episodeId], () => void refreshProgress(), { immediate: true })
+
+useDbChanges(({ table }) => {
+  if (table === 'anime_episodes') void refreshProgress()
 })
 
-// Hover transform lives on the wrapper: the button drops pointer events while
-// busy, which would otherwise snap the scale back mid-action.
-const iconButtonVariants = cva(
-  'relative transition-transform duration-200 ease-in-out hover:scale-120',
-  {
-    variants: {
-      size: {
-        sm: 'w-8 h-8',
-        md: 'w-10 h-10',
-        lg: 'w-14 h-14'
-      }
-    },
-    defaultVariants: { size: 'md' }
-  }
+// Transitional phases keep the action label; the spinner alone signals progress.
+const label = computed<string>(() =>
+  isStopAction.value
+    ? m.value.anime.stop
+    : hasProgress.value
+      ? m.value.anime.watchContinue
+      : m.value.anime.watchStart
 )
 
 const iconVariants = cva('', {
   variants: {
     size: {
-      sm: 'w-5 h-5',
-      md: 'w-6 h-6',
-      lg: 'w-8 h-8'
+      sm: 'size-4',
+      md: 'size-4',
+      lg: 'size-5'
     }
   },
   defaultVariants: { size: 'md' }
+})
+
+const iconButtonSize = computed(() => {
+  if (props.size === 'lg') return 'icon-lg'
+  if (props.size === 'sm') return 'icon-sm'
+  return 'icon'
 })
 
 // Reserve the widest label so switching states never shifts the surrounding row.
@@ -177,34 +210,27 @@ function notifyUnexpected(action: 'watch' | 'stop', error: string): void {
 
 <template>
   <!-- Icon variant -->
-  <div
+  <Button
     v-if="props.display === 'icon'"
-    :class="cn(iconButtonVariants({ size: props.size }), props.class)"
+    variant="ghost"
+    :size="iconButtonSize"
+    :disabled="isBusy"
+    :aria-busy="isBusy"
+    :aria-label="label"
+    :tooltip="label"
+    :class="cn('disabled:opacity-100', props.class)"
+    @click="handleClick"
   >
-    <Button
-      :variant="isStopAction ? 'secondary' : 'default'"
-      :disabled="isBusy"
-      :aria-busy="isBusy"
-      :aria-label="label"
-      :class="
-        cn(
-          'rounded-full w-full h-full p-0 disabled:opacity-100',
-          isStopAction ? 'bg-secondary hover:bg-secondary/80' : 'bg-primary hover:bg-primary/80'
-        )
-      "
-      @click="handleClick"
-    >
-      <Spinner
-        v-if="isBusy"
-        :class="iconVariants({ size: props.size })"
-      />
-      <Icon
-        v-else
-        :icon="isStopAction ? 'icon-[mdi--stop]' : 'icon-[mdi--play]'"
-        :class="iconVariants({ size: props.size })"
-      />
-    </Button>
-  </div>
+    <Spinner
+      v-if="isBusy"
+      :class="iconVariants({ size: props.size })"
+    />
+    <Icon
+      v-else
+      :icon="isStopAction ? 'icon-[mdi--stop]' : 'icon-[mdi--play]'"
+      :class="iconVariants({ size: props.size })"
+    />
+  </Button>
 
   <!-- Labeled variant -->
   <Button

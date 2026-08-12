@@ -51,6 +51,11 @@ export interface LibraryMediaRelation {
   updatedAt?: number
 }
 
+/**
+ * Endpoints must reference two different existing library entries; the host
+ * rejects self-edges and unknown entry ids because relation rows carry no
+ * database-level referential integrity.
+ */
 export interface LibraryMediaRelationCreateInput {
   from: LibraryEntityReference<LibraryMediaType>
   to: LibraryEntityReference<LibraryMediaType>

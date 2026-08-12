@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/u
 import { useCompany } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
 import CompanyDetailHero from './detail-hero.vue'
-import { CompanyDetailOverviewTab, CompanyDetailGamesTab } from './tabs'
+import { CompanyDetailOverviewTab, CompanyDetailGamesTab, CompanyDetailAnimesTab } from './tabs'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -39,6 +39,13 @@ const { company } = useCompany()
           />
           {{ m.library.detail.tabs.relatedGames }}
         </TabsTrigger>
+        <TabsTrigger value="animes">
+          <Icon
+            :icon="getEntityIcon('anime')"
+            class="size-3.5"
+          />
+          {{ m.library.detail.tabs.relatedAnimes }}
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
@@ -47,6 +54,10 @@ const { company } = useCompany()
 
       <TabsContent value="games">
         <CompanyDetailGamesTab />
+      </TabsContent>
+
+      <TabsContent value="animes">
+        <CompanyDetailAnimesTab />
       </TabsContent>
     </Tabs>
   </template>

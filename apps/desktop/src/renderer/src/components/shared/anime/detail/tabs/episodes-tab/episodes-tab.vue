@@ -1,31 +1,53 @@
 <!--
   Anime Episodes Tab
 
-  Episode list with watch state and playback actions, followed by the extras
-  that belong to the entry but carry no watch state.
+  Episode list with watch state, playback actions, and the file toolbar
+  (files configuration, sync, manual episode creation), followed by the
+  extras that belong to the entry but carry no watch state.
 -->
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Section } from '@renderer/components/ui/section'
 import { StateView } from '@renderer/components/ui/state-view'
+import { useAnimeFileSync } from '@renderer/composables'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { cn } from '@renderer/utils/cn'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { animeEpisodes } from '@shared/db'
+import { animeEpisodes, type AnimeExtra } from '@shared/db'
 import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
+import { AnimeFilesConfigFormDialog } from '../../../forms'
 import AnimeDetailEpisodeItem from './episode-item.vue'
+import AnimeDetailExtraItem from './extra-item.vue'
+import AnimeEpisodeDetailDialog from './episode-detail-dialog.vue'
+import AnimeEpisodeFormDialog from './episode-form-dialog.vue'
+import AnimeExtraFormDialog from './extra-form-dialog.vue'
 
 const { anime, episodes, extras } = useAnime()
-const { m, f } = useI18n()
+const { m } = useI18n()
+const { isSyncing, syncFiles } = useAnimeFileSync()
+
+const addDialogOpen = ref(false)
+const filesConfigOpen = ref(false)
+const openEpisodeId = ref<string | null>(null)
 
 const watchedCount = computed(
   () => episodes.value.filter((episode) => episode.watchedAt !== null).length
 )
+
+const canSyncFiles = computed(() => !!anime.value?.animeDirPath)
+
+const episodeDetailOpen = computed({
+  get: () => openEpisodeId.value !== null,
+  set: (value) => {
+    if (!value) openEpisodeId.value = null
+  }
+})
 
 async function handleToggleWatched(episode: AnimeEpisodeEntry): Promise<void> {
   try {
@@ -49,6 +71,31 @@ async function handleOpenFolder(path: string): Promise<void> {
     notify.error(m.value.anime.files.openFolderFailed)
   }
 }
+
+async function handleSyncFiles(): Promise<void> {
+  const current = anime.value
+  if (!current) return
+  if (!current.animeDirPath) {
+    notify.error(m.value.anime.detail.animeDirNotSet)
+    return
+  }
+
+  await syncFiles(current.id)
+}
+
+// =============================================================================
+// Extras
+// =============================================================================
+
+const addExtraOpen = ref(false)
+const editExtraTarget = ref<AnimeExtra | null>(null)
+
+const extraEditOpen = computed({
+  get: () => editExtraTarget.value !== null,
+  set: (value) => {
+    if (!value) editExtraTarget.value = null
+  }
+})
 </script>
 
 <template>
@@ -58,9 +105,49 @@ async function handleOpenFolder(path: string): Promise<void> {
   >
     <Section :title="m.anime.episodes.title">
       <template #actions>
-        <span class="text-xs text-muted-foreground">
-          {{ m.anime.episodes.progress({ watched: watchedCount, total: episodes.length }) }}
-        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-muted-foreground">
+            {{ m.anime.episodes.progress({ watched: watchedCount, total: episodes.length }) }}
+          </span>
+
+          <Button
+            variant="outline"
+            size="sm"
+            @click="addDialogOpen = true"
+          >
+            <Icon
+              icon="icon-[mdi--plus]"
+              class="size-4 mr-1.5"
+            />
+            {{ m.anime.episodes.addEpisode }}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            @click="filesConfigOpen = true"
+          >
+            <Icon
+              icon="icon-[mdi--folder-cog-outline]"
+              class="size-4 mr-1.5"
+            />
+            {{ m.anime.filesConfig.title }}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="!canSyncFiles || isSyncing"
+            :tooltip="canSyncFiles ? undefined : m.anime.detail.animeDirNotSet"
+            @click="handleSyncFiles"
+          >
+            <Icon
+              :icon="isSyncing ? 'icon-[mdi--loading]' : 'icon-[mdi--folder-sync-outline]'"
+              :class="cn('size-4 mr-1.5', isSyncing && 'animate-spin')"
+            />
+            {{ m.anime.episodes.syncFiles }}
+          </Button>
+        </div>
       </template>
 
       <StateView
@@ -82,6 +169,7 @@ async function handleOpenFolder(path: string): Promise<void> {
           :episode="episode"
           @toggle-watched="handleToggleWatched(episode)"
           @open-folder="handleOpenFolder"
+          @open-detail="openEpisodeId = episode.id"
         />
       </div>
     </Section>
@@ -91,42 +179,66 @@ async function handleOpenFolder(path: string): Promise<void> {
       :empty="extras.length === 0"
       :empty-text="m.anime.extras.emptyHint"
     >
+      <template #actions>
+        <Button
+          variant="outline"
+          size="sm"
+          @click="addExtraOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--plus]"
+            class="size-4 mr-1.5"
+          />
+          {{ m.anime.extras.addExtra }}
+        </Button>
+      </template>
+
       <div class="space-y-2">
-        <div
+        <AnimeDetailExtraItem
           v-for="extra in extras"
           :key="extra.id"
-          class="flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50"
-        >
-          <div class="flex items-center gap-3 min-w-0">
-            <Icon
-              icon="icon-[mdi--movie-open-outline]"
-              class="size-4 text-muted-foreground shrink-0"
-            />
-            <div class="min-w-0">
-              <p class="text-sm font-medium truncate">{{ extra.name }}</p>
-              <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{{ m.library.animeExtraKind[extra.kind] }}</span>
-                <template v-if="extra.durationMs">
-                  <span>·</span>
-                  <span>{{ f.duration(extra.durationMs) }}</span>
-                </template>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :tooltip="m.anime.files.openFolder"
-            @click="handleOpenFolder(extra.path)"
-          >
-            <Icon
-              icon="icon-[mdi--folder-open-outline]"
-              class="size-4"
-            />
-          </Button>
-        </div>
+          :extra="extra"
+          @open-folder="handleOpenFolder"
+          @edit="editExtraTarget = extra"
+        />
       </div>
     </Section>
+
+    <!-- Episode detail dialog -->
+    <AnimeEpisodeDetailDialog
+      v-if="openEpisodeId"
+      v-model:open="episodeDetailOpen"
+      :anime-id="anime.id"
+      :episode-id="openEpisodeId"
+    />
+
+    <!-- Create episode dialog -->
+    <AnimeEpisodeFormDialog
+      v-if="addDialogOpen"
+      v-model:open="addDialogOpen"
+      :anime-id="anime.id"
+    />
+
+    <!-- Files configuration dialog -->
+    <AnimeFilesConfigFormDialog
+      v-if="filesConfigOpen"
+      v-model:open="filesConfigOpen"
+      :anime-id="anime.id"
+    />
+
+    <!-- Extra create dialog -->
+    <AnimeExtraFormDialog
+      v-if="addExtraOpen"
+      v-model:open="addExtraOpen"
+      :anime-id="anime.id"
+    />
+
+    <!-- Extra edit dialog -->
+    <AnimeExtraFormDialog
+      v-if="editExtraTarget"
+      v-model:open="extraEditOpen"
+      :anime-id="anime.id"
+      :extra="editExtraTarget"
+    />
   </div>
 </template>

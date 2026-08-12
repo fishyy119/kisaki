@@ -34,9 +34,9 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { animes, type Status } from '@shared/db'
+import { animes, type AnimeStatus } from '@shared/db'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { formatStatus, getEntityIcon, getStatusVariant } from '@renderer/utils/format'
+import { formatAnimeStatus, getAnimeStatusVariant, getEntityIcon } from '@renderer/utils/format'
 
 const { m } = useI18n()
 
@@ -44,13 +44,12 @@ const { m } = useI18n()
 // Constants
 // =============================================================================
 
-const STATUS_OPTIONS = computed<{ value: Status; label: string }[]>(() => [
-  { value: 'notStarted', label: m.value.library.status.notStarted },
-  { value: 'inProgress', label: m.value.library.status.inProgress },
-  { value: 'partial', label: m.value.library.status.partial },
-  { value: 'completed', label: m.value.library.status.completed },
-  { value: 'multiple', label: m.value.library.status.multiple },
-  { value: 'shelved', label: m.value.library.status.shelved }
+const STATUS_OPTIONS = computed<{ value: AnimeStatus; label: string }[]>(() => [
+  { value: 'planned', label: m.value.library.animeStatus.planned },
+  { value: 'watching', label: m.value.library.animeStatus.watching },
+  { value: 'completed', label: m.value.library.animeStatus.completed },
+  { value: 'onHold', label: m.value.library.animeStatus.onHold },
+  { value: 'dropped', label: m.value.library.animeStatus.dropped }
 ])
 
 // =============================================================================
@@ -136,7 +135,7 @@ function handleRevealSpoilersConfirm() {
 
 const selectedStatus = computed({
   get: () => anime.value?.status,
-  set: async (status: Status | undefined) => {
+  set: async (status: AnimeStatus | undefined) => {
     if (isPendingStatus.value || !anime.value || !status) return
     const current = anime.value
     isPendingStatus.value = true
@@ -200,10 +199,10 @@ async function handleOpenAnimeDir() {
           <TooltipTrigger as-child>
             <DropdownMenuTrigger as-child>
               <Badge
-                :variant="getStatusVariant(anime.status)"
+                :variant="getAnimeStatusVariant(anime.status)"
                 class="shrink-0 cursor-pointer"
               >
-                {{ formatStatus(anime.status) }}
+                {{ formatAnimeStatus(anime.status) }}
               </Badge>
             </DropdownMenuTrigger>
           </TooltipTrigger>

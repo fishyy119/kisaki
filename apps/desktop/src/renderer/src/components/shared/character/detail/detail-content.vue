@@ -14,7 +14,8 @@ import CharacterDetailHero from './detail-hero.vue'
 import {
   CharacterDetailOverviewTab,
   CharacterDetailPersonsTab,
-  CharacterDetailGamesTab
+  CharacterDetailGamesTab,
+  CharacterDetailAnimesTab
 } from './tabs'
 import { useI18n } from '@renderer/composables'
 
@@ -56,6 +57,13 @@ const { character } = useCharacter()
           />
           {{ m.library.detail.tabs.relatedGames }}
         </TabsTrigger>
+        <TabsTrigger value="animes">
+          <Icon
+            :icon="getEntityIcon('anime')"
+            class="size-3.5"
+          />
+          {{ m.library.detail.tabs.relatedAnimes }}
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
@@ -66,6 +74,9 @@ const { character } = useCharacter()
       </TabsContent>
       <TabsContent value="games">
         <CharacterDetailGamesTab />
+      </TabsContent>
+      <TabsContent value="animes">
+        <CharacterDetailAnimesTab />
       </TabsContent>
     </Tabs>
   </template>

@@ -38,3 +38,41 @@ export function getOpenImageDialogOptions(
     properties: ['openFile']
   }
 }
+
+/** Mirrors the containers the main-process file recognition accepts. */
+const DEFAULT_VIDEO_EXTENSIONS = [
+  'mkv',
+  'mp4',
+  'm4v',
+  'mov',
+  'avi',
+  'wmv',
+  'flv',
+  'webm',
+  'ts',
+  'm2ts',
+  'mpg',
+  'mpeg',
+  'rmvb',
+  'ogm'
+]
+
+export function getOpenVideoDialogOptions(
+  options: {
+    title?: string
+    extensions?: string[]
+    filterName?: string
+  } = {}
+): OpenDialogOptions {
+  const {
+    title = 'Select video',
+    extensions = DEFAULT_VIDEO_EXTENSIONS,
+    filterName = 'Videos'
+  } = options
+
+  return {
+    title,
+    filters: [{ name: filterName, extensions }],
+    properties: ['openFile']
+  }
+}

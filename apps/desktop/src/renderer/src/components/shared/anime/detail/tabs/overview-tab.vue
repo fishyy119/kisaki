@@ -20,15 +20,30 @@ import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/pers
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { AnimeDescriptionFormDialog, AnimeInfoFormDialog } from '../../forms'
+import {
+  AnimeCharactersFormDialog,
+  AnimeCompaniesFormDialog,
+  AnimeDescriptionFormDialog,
+  AnimeExternalSitesFormDialog,
+  AnimeInfoFormDialog,
+  AnimePersonsFormDialog,
+  AnimeTagsFormDialog
+} from '../../forms'
 
 const PERSON_ROLE_ORDER = [
+  'originalCreator',
   'director',
   'series',
   'scenario',
+  'episodeDirector',
   'characterDesign',
-  'music',
   'animationDirector',
+  'animation',
+  'art',
+  'photography',
+  'sound',
+  'music',
+  'producer',
   'other'
 ] as const
 
@@ -51,6 +66,11 @@ const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(
 const editDialogs = ref({
   description: false,
   details: false,
+  tags: false,
+  characters: false,
+  staff: false,
+  companies: false,
+  externalSites: false,
   relations: false
 })
 
@@ -156,9 +176,11 @@ const tagDialogOpen = computed({
 
         <SectionScroll
           :title="m.library.detail.tabs.characters"
+          editable
           :items="sortedCharacters"
           :get-key="(item) => item.link.id"
           :empty-text="m.library.detail.empty.characters"
+          @edit="openEditDialog('characters')"
         >
           <template #item="{ item }">
             <CharacterCard
@@ -180,8 +202,10 @@ const tagDialogOpen = computed({
 
         <Section
           :title="m.library.fields.tags"
+          editable
           :empty="tags.length === 0"
           :empty-text="m.library.detail.empty.tags"
+          @edit="openEditDialog('tags')"
         >
           <div class="flex flex-wrap gap-1">
             <template
@@ -220,8 +244,10 @@ const tagDialogOpen = computed({
 
         <Section
           :title="m.library.detail.tabs.persons"
+          editable
           :empty="persons.length === 0"
           :empty-text="m.library.detail.empty.persons"
+          @edit="openEditDialog('staff')"
         >
           <div class="space-y-2 text-sm">
             <template
@@ -261,8 +287,10 @@ const tagDialogOpen = computed({
 
         <Section
           :title="m.library.detail.tabs.companies"
+          editable
           :empty="companies.length === 0"
           :empty-text="m.library.detail.empty.companies"
+          @edit="openEditDialog('companies')"
         >
           <div class="space-y-2 text-sm">
             <template
@@ -302,8 +330,10 @@ const tagDialogOpen = computed({
 
         <Section
           :title="m.library.fields.externalSites"
+          editable
           :empty="!hasExternalSites"
           :empty-text="m.library.detail.empty.externalSites"
+          @edit="openEditDialog('externalSites')"
         >
           <div class="flex flex-col gap-1.5">
             <a
@@ -334,6 +364,31 @@ const tagDialogOpen = computed({
     <AnimeInfoFormDialog
       v-if="editDialogs.details"
       v-model:open="editDialogs.details"
+      :anime-id="anime.id"
+    />
+    <AnimeTagsFormDialog
+      v-if="editDialogs.tags"
+      v-model:open="editDialogs.tags"
+      :anime-id="anime.id"
+    />
+    <AnimeCharactersFormDialog
+      v-if="editDialogs.characters"
+      v-model:open="editDialogs.characters"
+      :anime-id="anime.id"
+    />
+    <AnimePersonsFormDialog
+      v-if="editDialogs.staff"
+      v-model:open="editDialogs.staff"
+      :anime-id="anime.id"
+    />
+    <AnimeCompaniesFormDialog
+      v-if="editDialogs.companies"
+      v-model:open="editDialogs.companies"
+      :anime-id="anime.id"
+    />
+    <AnimeExternalSitesFormDialog
+      v-if="editDialogs.externalSites"
+      v-model:open="editDialogs.externalSites"
       :anime-id="anime.id"
     />
     <MediaRelationsFormDialog

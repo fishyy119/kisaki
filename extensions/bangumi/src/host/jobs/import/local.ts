@@ -159,13 +159,13 @@ export async function buildCollectionLocalUpdatePlan({
   let resolvedTargetCollection: LocalCollectionTarget | undefined
 
   if (fields.status) {
-    const targetStatus = mapCollectionTypeToLocalStatus(collection.type)
+    const targetStatus = mapCollectionTypeToLocalStatus(item.scope, collection.type)
     if (item.status !== targetStatus) {
       patch.status = targetStatus
       rows.push({
         label: m().jobs.preview.status,
-        before: formatLocalStatus(item.status),
-        after: formatLocalStatus(targetStatus),
+        before: formatLocalStatus(item.scope, item.status),
+        after: formatLocalStatus(item.scope, targetStatus),
         tone: 'info'
       })
     }
@@ -257,37 +257,67 @@ export function formatCollectionTags(tags: readonly string[] | undefined): strin
   return normalized.length > 0 ? normalized.join(m().common.listSeparator) : m().common.none
 }
 
-export function formatLocalStatus(value: string | undefined): string {
+export function formatLocalStatus(scope: BangumiMediaScope, value: string | undefined): string {
+  if (scope === 'anime') {
+    const labels = m().jobs.animeStatus
+    switch (value) {
+      case 'planned':
+        return labels.planned
+      case 'watching':
+        return labels.watching
+      case 'completed':
+        return labels.completed
+      case 'onHold':
+        return labels.onHold
+      case 'dropped':
+        return labels.dropped
+      default:
+        return labels.unset
+    }
+  }
+
+  const labels = m().jobs.gameStatus
   switch (value) {
     case 'notStarted':
-      return m().jobs.gameStatus.notStarted
+      return labels.notStarted
     case 'inProgress':
-      return m().jobs.gameStatus.inProgress
+      return labels.inProgress
     case 'partial':
-      return m().jobs.gameStatus.partial
+      return labels.partial
     case 'completed':
-      return m().jobs.gameStatus.completed
+      return labels.completed
     case 'multiple':
-      return m().jobs.gameStatus.multiple
+      return labels.multiple
     case 'shelved':
-      return m().jobs.gameStatus.shelved
+      return labels.shelved
     default:
-      return m().jobs.gameStatus.unset
+      return labels.unset
   }
 }
 
-export function mapCollectionTypeToLocalStatus(type: BangumiCollectionType): string {
-  switch (type) {
-    case 1:
-      return 'notStarted'
-    case 2:
-      return 'completed'
-    case 3:
-      return 'inProgress'
-    case 4:
-    case 5:
-      return 'shelved'
-  }
+const GAME_STATUS_BY_COLLECTION_TYPE: Record<BangumiCollectionType, string> = {
+  1: 'notStarted',
+  2: 'completed',
+  3: 'inProgress',
+  4: 'shelved',
+  5: 'shelved'
+}
+
+const ANIME_STATUS_BY_COLLECTION_TYPE: Record<BangumiCollectionType, string> = {
+  1: 'planned',
+  2: 'completed',
+  3: 'watching',
+  4: 'onHold',
+  5: 'dropped'
+}
+
+export function mapCollectionTypeToLocalStatus(
+  scope: BangumiMediaScope,
+  type: BangumiCollectionType
+): string {
+  const table =
+    scope === 'anime' ? ANIME_STATUS_BY_COLLECTION_TYPE : GAME_STATUS_BY_COLLECTION_TYPE
+  return table[type]
 }
 
 function normalizeBangumiRate(value: unknown): number | undefined {

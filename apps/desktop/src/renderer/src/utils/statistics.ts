@@ -2,10 +2,12 @@
  * Statistics Helper Functions
  *
  * Shared utility functions for statistics data processing.
- * Used by both global statistics pages and game detail activity tab.
+ * Used by the global statistics pages and the media detail activity tabs.
+ * Mechanics are media-agnostic: time aggregation needs only session spans,
+ * and entity-keyed aggregation takes injected accessors.
  */
 
-import type { Game, GameSession, Collection } from '@shared/db'
+import type { Collection } from '@shared/db'
 import { parseLocalDateKey, splitLocalByDay, splitLocalByHour, toLocalDateKey } from './datetime'
 
 // =============================================================================
@@ -14,6 +16,13 @@ import { parseLocalDateKey, splitLocalByDay, splitLocalByHour, toLocalDateKey } 
 
 export type TimeGranularity = 'daily' | 'weekly' | 'monthly'
 export type RankingSort = 'time' | 'count'
+
+/** Minimal session span every media session row satisfies structurally. */
+export interface StatisticsSession {
+  id: string
+  startedAt: Date
+  endedAt: Date
+}
 
 export interface TimeAggregation {
   date: string
@@ -35,17 +44,17 @@ export interface GlobalStatisticsStats {
   longestSession: number
   currentStreak: number
   longestStreak: number
-  mostPlayedGame: RankingItem | null
+  mostPlayedEntity: RankingItem | null
   firstSessionDate: Date | null
   lastSessionDate: Date | null
-  uniqueGamesPlayed: number
+  uniqueEntitiesPlayed: number
 }
 
 // =============================================================================
 // Date Key Functions
 // =============================================================================
 
-export function sessionDurationMs(session: GameSession): number {
+export function sessionDurationMs(session: StatisticsSession): number {
   return Math.max(0, session.endedAt.getTime() - session.startedAt.getTime())
 }
 
@@ -74,7 +83,7 @@ export function getDateKey(date: Date, granularity: TimeGranularity): string {
 
 /** Aggregate sessions by time granularity */
 export function aggregateByTime(
-  sessions: GameSession[],
+  sessions: StatisticsSession[],
   granularity: TimeGranularity
 ): TimeAggregation[] {
   const aggregated = new Map<
@@ -106,7 +115,7 @@ export function aggregateByTime(
 // =============================================================================
 
 /** Compute play streaks (consecutive days with activity) */
-export function computeStreaks(sessions: GameSession[]): {
+export function computeStreaks(sessions: StatisticsSession[]): {
   currentStreak: number
   longestStreak: number
 } {
@@ -165,25 +174,27 @@ export function computeStreaks(sessions: GameSession[]): {
 // Ranking Functions
 // =============================================================================
 
-/** Compute game ranking */
-export function computeGameRanking(
-  sessions: GameSession[],
-  games: Map<string, Game>,
+/** Compute entity ranking; the accessor injects how sessions key their entity. */
+export function computeEntityRanking<TSession extends StatisticsSession>(
+  sessions: TSession[],
+  getEntityId: (session: TSession) => string,
+  getEntityName: (entityId: string) => string | undefined,
   sort: RankingSort
 ): RankingItem[] {
-  const gamePlaytime = new Map<string, { duration: number; count: number }>()
+  const entityPlaytime = new Map<string, { duration: number; count: number }>()
 
   for (const session of sessions) {
     const duration = sessionDurationMs(session)
-    const existing = gamePlaytime.get(session.gameId) ?? { duration: 0, count: 0 }
+    const entityId = getEntityId(session)
+    const existing = entityPlaytime.get(entityId) ?? { duration: 0, count: 0 }
     existing.duration += duration
     existing.count++
-    gamePlaytime.set(session.gameId, existing)
+    entityPlaytime.set(entityId, existing)
   }
 
-  const ranking = [...gamePlaytime.entries()].map(([id, { duration, count }]) => ({
+  const ranking = [...entityPlaytime.entries()].map(([id, { duration, count }]) => ({
     id,
-    name: games.get(id)?.name ?? 'Unknown',
+    name: getEntityName(id) ?? 'Unknown',
     totalDuration: duration,
     sessionCount: count
   }))
@@ -193,26 +204,27 @@ export function computeGameRanking(
   )
 }
 
-/** Compute collection ranking */
-export function computeCollectionRanking(
-  sessions: GameSession[],
-  gameCollectionLinks: { gameId: string; collectionId: string }[],
+/** Compute collection ranking; entity ids must match the link table's side. */
+export function computeCollectionRanking<TSession extends StatisticsSession>(
+  sessions: TSession[],
+  getEntityId: (session: TSession) => string,
+  entityCollectionLinks: { entityId: string; collectionId: string }[],
   collections: Map<string, Collection>,
   sort: RankingSort
 ): RankingItem[] {
   const collectionPlaytime = new Map<string, { duration: number; count: number }>()
 
-  // Build game -> collections map
-  const gameCollectionsMap = new Map<string, string[]>()
-  for (const link of gameCollectionLinks) {
-    const existing = gameCollectionsMap.get(link.gameId) ?? []
+  // Build entity -> collections map
+  const entityCollectionsMap = new Map<string, string[]>()
+  for (const link of entityCollectionLinks) {
+    const existing = entityCollectionsMap.get(link.entityId) ?? []
     existing.push(link.collectionId)
-    gameCollectionsMap.set(link.gameId, existing)
+    entityCollectionsMap.set(link.entityId, existing)
   }
 
   for (const session of sessions) {
     const duration = sessionDurationMs(session)
-    const collectionIds = gameCollectionsMap.get(session.gameId) ?? []
+    const collectionIds = entityCollectionsMap.get(getEntityId(session)) ?? []
 
     for (const collectionId of collectionIds) {
       const existing = collectionPlaytime.get(collectionId) ?? { duration: 0, count: 0 }
@@ -238,10 +250,11 @@ export function computeCollectionRanking(
 // Statistics Functions
 // =============================================================================
 
-/** Compute global statistics */
-export function computeStats(
-  sessions: GameSession[],
-  games: Map<string, Game>
+/** Compute global statistics; the accessor injects how sessions key their entity. */
+export function computeStats<TSession extends StatisticsSession>(
+  sessions: TSession[],
+  getEntityId: (session: TSession) => string,
+  getEntityName: (entityId: string) => string | undefined
 ): GlobalStatisticsStats {
   if (sessions.length === 0) {
     return {
@@ -251,10 +264,10 @@ export function computeStats(
       longestSession: 0,
       currentStreak: 0,
       longestStreak: 0,
-      mostPlayedGame: null,
+      mostPlayedEntity: null,
       firstSessionDate: null,
       lastSessionDate: null,
-      uniqueGamesPlayed: 0
+      uniqueEntitiesPlayed: 0
     }
   }
 
@@ -270,29 +283,27 @@ export function computeStats(
 
   const { currentStreak, longestStreak } = computeStreaks(sessions)
 
-  // Find most played game
-  const gamePlaytime = new Map<string, number>()
+  // Find the most played entity
+  const entityPlaytime = new Map<string, { duration: number; count: number }>()
   for (const session of sessions) {
-    const duration = sessionDurationMs(session)
-    gamePlaytime.set(session.gameId, (gamePlaytime.get(session.gameId) ?? 0) + duration)
+    const entityId = getEntityId(session)
+    const existing = entityPlaytime.get(entityId) ?? { duration: 0, count: 0 }
+    existing.duration += sessionDurationMs(session)
+    existing.count++
+    entityPlaytime.set(entityId, existing)
   }
 
-  let mostPlayedGame: RankingItem | null = null
-  let maxDuration = 0
-  for (const [gameId, duration] of gamePlaytime) {
-    if (duration > maxDuration) {
-      maxDuration = duration
-      const game = games.get(gameId)
-      mostPlayedGame = {
-        id: gameId,
-        name: game?.name ?? 'Unknown',
+  let mostPlayedEntity: RankingItem | null = null
+  for (const [entityId, { duration, count }] of entityPlaytime) {
+    if (!mostPlayedEntity || duration > mostPlayedEntity.totalDuration) {
+      mostPlayedEntity = {
+        id: entityId,
+        name: getEntityName(entityId) ?? 'Unknown',
         totalDuration: duration,
-        sessionCount: sessions.filter((s) => s.gameId === gameId).length
+        sessionCount: count
       }
     }
   }
-
-  const uniqueGamesPlayed = new Set(sessions.map((s) => s.gameId)).size
 
   return {
     totalDuration,
@@ -301,10 +312,10 @@ export function computeStats(
     longestSession,
     currentStreak,
     longestStreak,
-    mostPlayedGame,
+    mostPlayedEntity,
     firstSessionDate,
     lastSessionDate,
-    uniqueGamesPlayed
+    uniqueEntitiesPlayed: entityPlaytime.size
   }
 }
 
@@ -313,7 +324,7 @@ export function computeStats(
 // =============================================================================
 
 /** Count unique active days from sessions */
-export function countActiveDays(sessions: GameSession[]): number {
+export function countActiveDays(sessions: StatisticsSession[]): number {
   const activeDates = new Set<string>()
   for (const session of sessions) {
     for (const slice of splitLocalByDay(session.startedAt, session.endedAt)) {
@@ -325,7 +336,7 @@ export function countActiveDays(sessions: GameSession[]): number {
 
 /** Get the most active month from sessions */
 export function getMostActiveMonth(
-  sessions: GameSession[]
+  sessions: StatisticsSession[]
 ): { month: string; duration: number } | null {
   if (sessions.length === 0) return null
 
@@ -352,7 +363,7 @@ export function getMostActiveMonth(
  * Returns total duration in milliseconds for that weekday.
  */
 export function getMostActiveWeekdayMondayFirst(
-  sessions: GameSession[]
+  sessions: StatisticsSession[]
 ): { weekday: number; duration: number } | null {
   if (sessions.length === 0) return null
 
@@ -384,7 +395,7 @@ export function getMostActiveWeekdayMondayFirst(
  * Week totals are computed in milliseconds and split across day boundaries.
  */
 export function getMostActiveWeek(
-  sessions: GameSession[]
+  sessions: StatisticsSession[]
 ): { weekStart: string; duration: number } | null {
   const weekly = aggregateByTime(sessions, 'weekly')
   if (weekly.length === 0) return null
@@ -405,7 +416,7 @@ export function getMostActiveWeek(
  * Aggregate session duration by hour-of-day (0..23), splitting sessions across hour boundaries.
  * Result values are in hours (float).
  */
-export function aggregateByLocalHour(sessions: GameSession[]): number[] {
+export function aggregateByLocalHour(sessions: StatisticsSession[]): number[] {
   const buckets = Array.from({ length: 24 }, () => 0)
   for (const session of sessions) {
     for (const slice of splitLocalByHour(session.startedAt, session.endedAt)) {
@@ -420,7 +431,7 @@ export function aggregateByLocalHour(sessions: GameSession[]): number[] {
  * Aggregate session duration by weekday (Monday-first 0..6), splitting sessions across day boundaries.
  * Result values are in hours (float).
  */
-export function aggregateByLocalWeekdayMondayFirst(sessions: GameSession[]): number[] {
+export function aggregateByLocalWeekdayMondayFirst(sessions: StatisticsSession[]): number[] {
   const buckets = Array.from({ length: 7 }, () => 0)
   for (const session of sessions) {
     for (const slice of splitLocalByDay(session.startedAt, session.endedAt)) {
@@ -436,7 +447,7 @@ export function aggregateByLocalWeekdayMondayFirst(sessions: GameSession[]): num
  * Aggregate session duration by day-of-month (1..31), splitting sessions across day boundaries.
  * Result values are in hours (float).
  */
-export function aggregateByLocalDayOfMonth(sessions: GameSession[]): number[] {
+export function aggregateByLocalDayOfMonth(sessions: StatisticsSession[]): number[] {
   const buckets = Array.from({ length: 31 }, () => 0)
   for (const session of sessions) {
     for (const slice of splitLocalByDay(session.startedAt, session.endedAt)) {

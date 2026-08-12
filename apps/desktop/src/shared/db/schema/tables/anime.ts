@@ -69,6 +69,12 @@ export const animeEpisodeFiles = sqliteTable(
     subtitleTracks: subtitleTracks('subtitle_tracks').notNull().default([]),
     /** Preferred file of the episode; ties break on insertion order. */
     isPrimary: integer('is_primary', { mode: 'boolean' }).notNull().default(false),
+    /**
+     * Row owned by the user instead of file sync. Manual rows may live outside
+     * the anime directory, keep their episode assignment, and never get
+     * deleted or retargeted by a sync pass.
+     */
+    isManual: integer('is_manual', { mode: 'boolean' }).notNull().default(false),
     note: text('note')
   },
   (t) => [index('idx_anime_episode_files_episode_id').on(t.episodeId)]
@@ -89,7 +95,12 @@ export const animeExtras = sqliteTable(
     name: text('name').notNull(),
     path: text('path').notNull().unique(),
     durationMs: integer('duration_ms'),
-    orderInAnime: integer('order_in_anime').notNull().default(0)
+    orderInAnime: integer('order_in_anime').notNull().default(0),
+    /**
+     * Row owned by the user instead of file sync. Manual rows may live outside
+     * the anime directory and never get rewritten or deleted by a sync pass.
+     */
+    isManual: integer('is_manual', { mode: 'boolean' }).notNull().default(false)
   },
   (t) => [index('idx_anime_extras_anime_id').on(t.animeId)]
 )

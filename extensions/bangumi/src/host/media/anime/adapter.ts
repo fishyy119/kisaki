@@ -1,4 +1,10 @@
-import { kisaki, type LibraryAnime, type LibraryAnimePatch } from '@kisaki3/extension-sdk'
+import {
+  kisaki,
+  LIBRARY_ANIME_STATUSES,
+  type LibraryAnime,
+  type LibraryAnimePatch,
+  type LibraryAnimeStatus
+} from '@kisaki3/extension-sdk'
 import { BangumiLocalMediaAdapter } from '../local/adapter'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
 import type {
@@ -10,7 +16,7 @@ import type {
   LocalMediaListQuery
 } from '../types'
 
-export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter {
+export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter<LibraryAnimeStatus> {
   readonly scope = 'anime' as const
   readonly localMediaType = 'anime' as const
   readonly supportsEpisodeSync = true
@@ -18,6 +24,7 @@ export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter {
   protected readonly entityType = 'anime' as const
   protected readonly tagLinkKind = 'anime-tag' as const
   protected readonly collectionLinkKind = 'collection-anime' as const
+  protected readonly statusValues = LIBRARY_ANIME_STATUSES
 
   async listEpisodes(localId: string): Promise<readonly LocalEpisodeItem[]> {
     const episodes = await kisaki.library.animes.episodes.list({ animeId: localId })

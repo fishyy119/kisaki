@@ -32,6 +32,7 @@ const emit = defineEmits<{
   toggleWatched: []
   /** Carries the playable file path so the parent never re-derives it. */
   openFolder: [path: string]
+  openDetail: []
 }>()
 
 const { m, f } = useI18n()
@@ -221,6 +222,18 @@ function notifyPlayerFailure(resume: boolean, error: string): void {
     </div>
 
     <div class="flex items-center gap-1 shrink-0">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        :tooltip="m.anime.episodes.showDetail"
+        @click="emit('openDetail')"
+      >
+        <Icon
+          icon="icon-[mdi--information-outline]"
+          class="size-4"
+        />
+      </Button>
+
       <Button
         v-if="playableFile"
         variant="ghost"

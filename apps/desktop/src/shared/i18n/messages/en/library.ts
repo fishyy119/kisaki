@@ -76,6 +76,14 @@ export const library = {
     shelved: 'Shelved'
   },
 
+  animeStatus: {
+    planned: 'Plan to watch',
+    watching: 'Watching',
+    completed: 'Completed',
+    onHold: 'On hold',
+    dropped: 'Dropped'
+  },
+
   gender: {
     male: 'Male',
     female: 'Female',
@@ -118,12 +126,19 @@ export const library = {
       other: 'Other'
     },
     animePerson: {
+      originalCreator: 'Original creator',
       director: 'Director',
       series: 'Series composition',
       scenario: 'Scenario',
+      episodeDirector: 'Episode director',
       characterDesign: 'Character design',
-      music: 'Music',
       animationDirector: 'Animation director',
+      animation: 'Key animation',
+      art: 'Art',
+      photography: 'Photography',
+      sound: 'Sound',
+      music: 'Music',
+      producer: 'Producer',
       other: 'Other'
     },
     animeCharacter: {
@@ -279,6 +294,7 @@ export const library = {
       persons: 'People',
       companies: 'Companies',
       relatedGames: 'Related games',
+      relatedAnimes: 'Related anime',
       relatedPersons: 'Related people',
       relatedCharacters: 'Related characters',
       activity: 'Activity',
@@ -304,6 +320,7 @@ export const library = {
       tags: 'No tags yet.',
       externalSites: 'No external links yet.',
       relatedGames: 'No related games yet.',
+      relatedAnimes: 'No related anime yet.',
       relatedPersons: 'No related people yet.',
       relatedCharacters: 'No related characters yet.',
       relatedEntries: 'No related entries yet.',
@@ -343,11 +360,17 @@ export const library = {
     editGameCharacters: 'Edit characters',
     editGamePersons: 'Edit people',
     editGameCompanies: 'Edit companies',
+    editAnimeCharacters: 'Edit characters',
+    editAnimePersons: 'Edit staff',
+    editAnimeCompanies: 'Edit companies',
     editCharacterGames: 'Edit game appearances',
+    editCharacterAnimes: 'Edit anime appearances',
     editCharacterPersons: 'Edit related people',
     editPersonGames: 'Edit game credits',
+    editPersonAnimes: 'Edit anime credits',
     editPersonCharacters: 'Edit voiced characters',
     editCompanyGames: 'Edit related games',
+    editCompanyAnimes: 'Edit related anime',
     editCollectionEntities: 'Edit collection contents',
 
     // Shared field bits
@@ -375,6 +398,8 @@ export const library = {
     releaseDateInvalidFormat: 'Release date format is invalid.',
     foundedDateYearDayWithoutMonth: 'Founded date needs a month when both year and day are set.',
     releaseDateYearDayWithoutMonth: 'Release date needs a month when both year and day are set.',
+    totalEpisodesPlaceholder: 'Optional',
+    totalEpisodesInvalid: 'Total episodes must be a non-negative integer.',
 
     // Score form
     scoreRangeHint: 'Score is 0–10 with one decimal place (for example 8.5).',
@@ -440,6 +465,9 @@ export const library = {
       gameBackdrop: 'Backdrop image for the detail page.',
       gameLogo: 'Game title logo.',
       gameIcon: 'Small icon.',
+      animeCover: 'Anime cover art shown on cards and lists.',
+      animeBackdrop: 'Backdrop image for the detail page.',
+      animeLogo: 'Anime title logo.',
       characterPhoto: 'Character photo shown on cards and detail pages.',
       personPhoto: 'Person photo shown on cards and detail pages.',
       companyLogo: 'Company logo shown on cards and detail pages.'

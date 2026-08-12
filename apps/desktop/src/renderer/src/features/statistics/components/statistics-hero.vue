@@ -2,9 +2,9 @@
   Statistics Hero
 
   Report headline band. Right side anchors the height with the period's most
-  played game as a large cover; the left column distributes three layers
-  across that height: total play time with delta, a composition strip (top
-  games' share, GitHub-language-bar idiom) with legend, and a fact row
+  played entry as a large cover; the left column distributes three layers
+  across that height: total activity time with delta, a composition strip
+  (top entries' share, GitHub-language-bar idiom) with legend, and a fact row
   spread across the width. No internal rules - facts separate by spacing;
   all grid lines belong to the page. Every layer renders a placeholder
   without data so the band frame never collapses.
@@ -16,7 +16,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useStatistics } from '../composables'
 import { getPreviousPeriodLabel } from '../period'
 import {
-  computeGameRanking,
+  computeEntityRanking,
   countActiveDays,
   getMostActiveMonth,
   getMostActiveWeek,
@@ -25,7 +25,6 @@ import {
 import { parseLocalDateKey } from '@renderer/utils/datetime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { getEntityIcon } from '@renderer/utils/format'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 
 const {
@@ -37,7 +36,7 @@ const {
   previousSessions,
   allTimeSessions,
   allTimeStats,
-  games
+  entities
 } = useStatistics()
 
 const { m, f } = useI18n()
@@ -81,7 +80,7 @@ const delta = computed(() => {
 })
 
 // =============================================================================
-// Composition strip (top games' share of the period total)
+// Composition strip (top entries' share of the period total)
 // =============================================================================
 
 // Chart ink: strip segments step down the chart ink density ladder by rank;
@@ -107,7 +106,12 @@ const composition = computed<CompositionSegment[] | null>(() => {
   const total = effectiveStats.value.totalDuration
   if (total <= 0) return null
 
-  const ranking = computeGameRanking(effectiveSessions.value, games.value, 'time')
+  const ranking = computeEntityRanking(
+    effectiveSessions.value,
+    (session) => session.entityKey,
+    (entityKey) => entities.value.get(entityKey)?.name,
+    'time'
+  )
   const top = ranking.slice(0, SEGMENT_FILLS.length)
 
   const segments: Array<{ id: string; name: string; fill: string; duration: number }> = top.map(
@@ -143,19 +147,25 @@ const composition = computed<CompositionSegment[] | null>(() => {
 })
 
 // =============================================================================
-// Most played game (featured, anchors the band height)
+// Most played entry (featured, anchors the band height)
 // =============================================================================
 
+const MEDIA_ATTACHMENT_TABLES = { game: 'games', anime: 'animes' } as const
+
 const mostPlayed = computed(() => {
-  const item = effectiveStats.value.mostPlayedGame
+  const item = effectiveStats.value.mostPlayedEntity
   if (!item) return null
 
-  const game = games.value.get(item.id)
+  const entity = entities.value.get(item.id)
   return {
     name: item.name,
-    coverUrl: game?.coverFile
-      ? getAttachmentUrl('games', game.id, game.coverFile, { width: 184, height: 256 })
-      : null
+    coverUrl:
+      entity?.coverFile != null
+        ? getAttachmentUrl(MEDIA_ATTACHMENT_TABLES[entity.mediaType], entity.id, entity.coverFile, {
+            width: 184,
+            height: 256
+          })
+        : null
   }
 })
 
@@ -210,7 +220,10 @@ const facts = computed<HeroFact[]>(() => {
   const hero = m.value.statistics.hero
   const baseFacts: HeroFact[] = [
     { label: hero.sessions, value: hero.timesValue({ count: current.totalSessions }) },
-    { label: hero.gamesPlayed, value: hero.gamesValue({ count: current.uniqueGamesPlayed }) },
+    {
+      label: hero.entitiesPlayed,
+      value: hero.entitiesValue({ count: current.uniqueEntitiesPlayed })
+    },
     { label: hero.averageSession, value: f.value.duration(current.averageSessionDuration) }
   ]
 
@@ -289,7 +302,7 @@ const facts = computed<HeroFact[]>(() => {
     <!-- Left column: three layers distributed across the band height -->
     <div class="flex min-w-0 flex-1 flex-col justify-between gap-y-4">
       <div>
-        <div class="text-xs text-muted-foreground">{{ m.statistics.hero.totalPlayTime }}</div>
+        <div class="text-xs text-muted-foreground">{{ m.statistics.hero.totalTime }}</div>
         <div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span class="text-2xl font-semibold tracking-tight tabular-nums">
             {{ f.duration(effectiveStats.totalDuration) }}
@@ -356,7 +369,7 @@ const facts = computed<HeroFact[]>(() => {
               <span class="tabular-nums">{{ segment.shareText }}</span>
             </div>
           </template>
-          <span v-else>{{ m.statistics.hero.noPlayRecords }}</span>
+          <span v-else>{{ m.statistics.hero.noActivityRecords }}</span>
         </div>
       </div>
 
@@ -389,7 +402,7 @@ const facts = computed<HeroFact[]>(() => {
         class="flex h-30 w-21.5 items-center justify-center rounded-md bg-muted"
       >
         <Icon
-          :icon="getEntityIcon('game')"
+          icon="icon-[mdi--image-off-outline]"
           class="size-6 text-muted-foreground"
         />
       </div>

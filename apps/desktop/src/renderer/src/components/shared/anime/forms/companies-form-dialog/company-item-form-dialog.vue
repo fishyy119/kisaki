@@ -1,0 +1,218 @@
+<!--
+  AnimeCompaniesItemFormDialog
+  Dialog for adding/editing an anime company link with role and note.
+-->
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import type { AnimeCompanyRole } from '@shared/db'
+import { db } from '@renderer/core/db'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+  DialogFooter
+} from '@renderer/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
+import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
+import { Checkbox } from '@renderer/components/ui/checkbox'
+import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
+import { Form } from '@renderer/components/ui/form'
+import { CompanySelect } from '@renderer/components/shared/company'
+import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
+
+interface CompanyLinkData {
+  companyId: string
+  companyName: string
+  role: AnimeCompanyRole
+  note: string
+  isSpoiler: boolean
+}
+
+interface Props {
+  initialData?: CompanyLinkData
+  excludeIds: string[]
+}
+
+const props = defineProps<Props>()
+
+const open = defineModel<boolean>('open', { required: true })
+
+const emit = defineEmits<{
+  submit: [data: CompanyLinkData]
+}>()
+
+const COMPANY_ROLE_OPTIONS = computed<{ value: AnimeCompanyRole; label: string }[]>(() => [
+  { value: 'studio', label: m.value.library.roles.animeCompany.studio },
+  { value: 'producer', label: m.value.library.roles.animeCompany.producer },
+  { value: 'distributor', label: m.value.library.roles.animeCompany.distributor },
+  { value: 'other', label: m.value.library.roles.animeCompany.other }
+])
+
+// Form state
+const formData = ref<CompanyLinkData>({
+  companyId: '',
+  companyName: '',
+  role: 'studio',
+  note: '',
+  isSpoiler: false
+})
+
+const isAddMode = computed(() => !props.initialData)
+
+// Initialize form state when dialog opens
+watch(
+  () => open.value,
+  (isOpen) => {
+    if (isOpen) {
+      if (props.initialData) {
+        formData.value.companyId = props.initialData.companyId
+        formData.value.companyName = props.initialData.companyName
+        formData.value.role = props.initialData.role
+        formData.value.note = props.initialData.note
+        formData.value.isSpoiler = props.initialData.isSpoiler
+      } else {
+        formData.value.companyId = ''
+        formData.value.companyName = ''
+        formData.value.role = 'studio'
+        formData.value.note = ''
+        formData.value.isSpoiler = false
+      }
+    }
+  },
+  { immediate: true }
+)
+
+const selectExcludeIds = computed(() => {
+  if (isAddMode.value) {
+    return props.excludeIds
+  }
+  return props.excludeIds.filter((id) => id !== formData.value.companyId)
+})
+
+// Watch for company selection change - async side effect to fetch company name
+watch(
+  () => formData.value.companyId,
+  async (companyId) => {
+    if (!companyId) {
+      formData.value.companyName = ''
+      return
+    }
+    const company = await db.query.companies.findFirst({
+      where: (c, { eq }) => eq(c.id, companyId)
+    })
+    if (company) {
+      formData.value.companyName = company.name
+    }
+  }
+)
+
+function handleSubmit() {
+  if (!formData.value.companyId) {
+    notify.error(
+      m.value.library.forms.selectEntityRequired({ label: m.value.library.entities.company })
+    )
+    return
+  }
+
+  emit('submit', {
+    companyId: formData.value.companyId,
+    companyName: formData.value.companyName || 'Unknown',
+    role: formData.value.role,
+    note: formData.value.note.trim(),
+    isSpoiler: formData.value.isSpoiler
+  })
+  open.value = false
+}
+
+function handleCancel() {
+  open.value = false
+}
+</script>
+
+<template>
+  <Dialog v-model:open="open">
+    <DialogContent class="max-w-sm">
+      <DialogHeader>
+        <DialogTitle>{{
+          (isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({
+            label: m.library.entities.company
+          })
+        }}</DialogTitle>
+      </DialogHeader>
+      <Form @submit="handleSubmit">
+        <DialogBody>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>{{ m.library.forms.companyLabel }}</FieldLabel>
+              <FieldContent>
+                <CompanySelect
+                  v-model="formData.companyId"
+                  :exclude-ids="selectExcludeIds"
+                  :placeholder="
+                    m.library.select.selectPlaceholder({ label: m.library.entities.company })
+                  "
+                />
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>{{ m.library.forms.companyRoleLabel }}</FieldLabel>
+              <FieldContent>
+                <Select v-model="formData.role">
+                  <SelectTrigger class="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="opt in COMPANY_ROLE_OPTIONS"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>{{ m.library.fields.note }}</FieldLabel>
+              <FieldContent>
+                <Input
+                  v-model="formData.note"
+                  :placeholder="m.library.forms.notePlaceholder"
+                />
+              </FieldContent>
+            </Field>
+            <Field orientation="horizontal">
+              <FieldLabel>{{ m.library.forms.includesSpoiler }}</FieldLabel>
+              <FieldContent>
+                <Checkbox v-model="formData.isSpoiler" />
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            @click="handleCancel"
+          >
+            {{ m.common.cancel }}
+          </Button>
+          <Button type="submit">{{ m.common.save }}</Button>
+        </DialogFooter>
+      </Form>
+    </DialogContent>
+  </Dialog>
+</template>

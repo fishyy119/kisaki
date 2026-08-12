@@ -5,10 +5,8 @@ import {
   type HooksRegistrar,
   type LibraryEntityChangeSummary,
   type LibraryEntityType,
-  type LibraryMediaStatus,
   type LibraryLinkKind,
-  type ScraperMediaType,
-  LIBRARY_MEDIA_STATUSES
+  type ScraperMediaType
 } from '@kisaki3/extension-sdk'
 import { m } from '../../i18n'
 import { readBangumiSubjectIdFromExternalIds } from '../../identity/subject-ref'
@@ -38,16 +36,16 @@ import {
 const SUBJECT_LOOKUP_PAGE_SIZE = 500
 
 /** Library row shape every synced media entity shares. */
-interface LocalMediaEntity {
+interface LocalMediaEntity<TStatus extends string> {
   id: string
   name: string
-  status?: LibraryMediaStatus
+  status?: TStatus
   score?: number | null
   externalIds: readonly ExternalId[]
 }
 
-interface LocalMediaEntityPatch {
-  status?: LibraryMediaStatus
+interface LocalMediaEntityPatch<TStatus extends string> {
+  status?: TStatus
   score?: number | null
 }
 
@@ -55,10 +53,12 @@ interface LocalMediaEntityPatch {
  * Sync-facing view of one local media type.
  *
  * Everything the sync engine needs is media-neutral except the library
- * namespace, ingest entry point, and relation kinds, so subclasses only
- * declare those.
+ * namespace, ingest entry point, relation kinds, and the status vocabulary,
+ * so subclasses only declare those.
  */
-export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
+export abstract class BangumiLocalMediaAdapter<TStatus extends string = string>
+  implements LocalMediaAdapter
+{
   readonly supportsScraperProfile = true
   readonly supportsAutoSync = true
   readonly supportsImportWrite = true
@@ -69,6 +69,8 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   protected abstract readonly entityType: LibraryEntityType
   protected abstract readonly tagLinkKind: LibraryLinkKind
   protected abstract readonly collectionLinkKind: LibraryLinkKind
+  /** Status values this media type accepts; import writes are validated against it. */
+  protected abstract readonly statusValues: readonly TStatus[]
 
   constructor(private readonly hooks: HooksRegistrar) {}
 
@@ -139,10 +141,10 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   async patchUserFields(localId: string, patch: LocalMediaUserPatch): Promise<LocalMediaItem> {
-    const entityPatch: LocalMediaEntityPatch = {}
+    const entityPatch: LocalMediaEntityPatch<TStatus> = {}
 
     if (patch.status !== undefined) {
-      if (!isLibraryMediaStatus(patch.status)) {
+      if (!this.isStatusValue(patch.status)) {
         throw new BangumiExtensionError('bangumi_validation', m().errors.localMediaStatusUnknown)
       }
       entityPatch.status = patch.status
@@ -240,11 +242,18 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
 
   protected abstract listEntities(
     query: LocalMediaListQuery
-  ): Promise<readonly LocalMediaEntity[]>
-  protected abstract getEntity(localId: string): Promise<LocalMediaEntity | null>
-  protected abstract updateEntity(localId: string, patch: LocalMediaEntityPatch): Promise<void>
+  ): Promise<readonly LocalMediaEntity<TStatus>[]>
+  protected abstract getEntity(localId: string): Promise<LocalMediaEntity<TStatus> | null>
+  protected abstract updateEntity(
+    localId: string,
+    patch: LocalMediaEntityPatch<TStatus>
+  ): Promise<void>
   protected abstract createTagLink(localId: string, tagId: string): Promise<void>
   protected abstract createCollectionLink(collectionId: string, localId: string): Promise<void>
+
+  private isStatusValue(value: string): value is TStatus {
+    return (this.statusValues as readonly string[]).includes(value)
+  }
 
   private async hasCollectionLink(localId: string, collectionId: string): Promise<boolean> {
     const links = await kisaki.library.links.list({
@@ -255,7 +264,7 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
     return links.length > 0
   }
 
-  private toLocalItem(entity: LocalMediaEntity): LocalMediaItem {
+  private toLocalItem(entity: LocalMediaEntity<TStatus>): LocalMediaItem {
     return omitUndefined({
       scope: this.scope,
       localId: entity.id,
@@ -294,8 +303,4 @@ function readChangeReasons(change: LibraryEntityChangeSummary): LocalMediaChange
   }
 
   return reasons
-}
-
-function isLibraryMediaStatus(value: string): value is LibraryMediaStatus {
-  return LIBRARY_MEDIA_STATUSES.includes(value as LibraryMediaStatus)
 }

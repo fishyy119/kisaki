@@ -1,9 +1,20 @@
-import { LIBRARY_MEDIA_STATUSES, type LibraryMediaStatus } from '@kisaki3/extension-sdk'
+import {
+  LIBRARY_ANIME_STATUSES,
+  LIBRARY_GAME_STATUSES,
+  type LibraryAnimeStatus,
+  type LibraryGameStatus
+} from '@kisaki3/extension-sdk'
 import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
 import { BANGUMI_MEDIA_SCOPES, type BangumiMediaScope } from '../../shared/scopes'
 
 export type BangumiCollectionType = 1 | 2 | 3 | 4 | 5
 export type BangumiStatusMappingValue = BangumiCollectionType | 'skip'
+
+/** Local status to Bangumi collection type tables, one per status-bearing scope. */
+export interface BangumiStatusToBangumiMapping {
+  game: Record<LibraryGameStatus, BangumiStatusMappingValue>
+  anime: Record<LibraryAnimeStatus, BangumiStatusMappingValue>
+}
 
 export interface BangumiSettingsV1 {
   version: 1
@@ -28,7 +39,7 @@ export interface BangumiSettingsV1 {
     clearRemoteScoreWhenEmpty: boolean
     debounceMs: number
     notifyErrors: boolean
-    statusToBangumi: Record<LibraryMediaStatus, BangumiStatusMappingValue>
+    statusToBangumi: BangumiStatusToBangumiMapping
   }
   client: {
     rateLimit: {
@@ -162,12 +173,24 @@ function normalizeRateLimitSettings(
 
 function normalizeStatusToBangumi(
   value: unknown,
-  defaults: BangumiSettingsV1['autoSync']['statusToBangumi']
-): BangumiSettingsV1['autoSync']['statusToBangumi'] {
+  defaults: BangumiStatusToBangumiMapping
+): BangumiStatusToBangumiMapping {
   const input = asRecord(value)
+
+  return {
+    game: normalizeStatusTable(LIBRARY_GAME_STATUSES, asRecord(input?.game), defaults.game),
+    anime: normalizeStatusTable(LIBRARY_ANIME_STATUSES, asRecord(input?.anime), defaults.anime)
+  }
+}
+
+function normalizeStatusTable<TStatus extends string>(
+  statuses: readonly TStatus[],
+  input: Record<string, unknown> | undefined,
+  defaults: Record<TStatus, BangumiStatusMappingValue>
+): Record<TStatus, BangumiStatusMappingValue> {
   const output = { ...defaults }
 
-  for (const status of LIBRARY_MEDIA_STATUSES) {
+  for (const status of statuses) {
     output[status] = normalizeStatusMappingValue(input?.[status], defaults[status])
   }
 

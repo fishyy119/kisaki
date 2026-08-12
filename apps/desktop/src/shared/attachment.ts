@@ -18,6 +18,17 @@ export const GAME_MEDIA_TYPE_TO_FIELD: Record<GameMediaType, GameMediaField> = {
   icon: 'iconFile'
 }
 
+/** Media file types for anime assets; anime has no launcher icon. */
+export type AnimeMediaType = 'cover' | 'backdrop' | 'logo'
+
+export type AnimeMediaField = 'coverFile' | 'backdropFile' | 'logoFile'
+
+export const ANIME_MEDIA_TYPE_TO_FIELD: Record<AnimeMediaType, AnimeMediaField> = {
+  cover: 'coverFile',
+  backdrop: 'backdropFile',
+  logo: 'logoFile'
+}
+
 /**
  * Crop region for image editing operations
  */

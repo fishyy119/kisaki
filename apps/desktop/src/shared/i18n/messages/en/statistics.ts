@@ -18,18 +18,18 @@ export const statistics = {
   },
 
   hero: {
-    totalPlayTime: 'Total play time',
+    totalTime: 'Total activity time',
     flatVsPrevious: ({ label }: { label: string }) => `On par with ${label}`,
     upVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `Up ${duration} vs ${label}`,
     downVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `Down ${duration} vs ${label}`,
     other: 'Other',
-    noPlayRecords: 'No play activity yet.',
-    mostPlayed: 'Most played',
+    noActivityRecords: 'No activity yet.',
+    mostPlayed: 'Top title',
 
     sessions: 'Sessions',
-    gamesPlayed: 'Games played',
+    entitiesPlayed: 'Titles',
     averageSession: 'Average session',
     activeDays: 'Active days',
     dailyAverage: 'Daily average',
@@ -43,14 +43,14 @@ export const statistics = {
     longestStreak: 'Longest streak',
 
     timesValue: ({ count }: { count: number }) => (count === 1 ? '1 time' : `${count} times`),
-    gamesValue: ({ count }: { count: number }) => (count === 1 ? '1 game' : `${count} games`),
+    entitiesValue: ({ count }: { count: number }) => (count === 1 ? '1 title' : `${count} titles`),
     activeDaysValue: ({ active, total }: { active: number; total: number }) =>
       `${active}/${total} days`,
     daysValue: ({ count }: { count: number }) => (count === 1 ? '1 day' : `${count} days`)
   },
 
   ranking: {
-    gameTitle: 'Game ranking',
+    mediaTitle: 'Title ranking',
     collectionTitle: 'Collection ranking',
     sortTime: 'Time',
     sortCount: 'Count'
@@ -58,7 +58,7 @@ export const statistics = {
 
   charts: {
     heatmapTitle: 'Activity heatmap',
-    trendTitle: 'Play trend',
+    trendTitle: 'Activity trend',
     distributionTitle: 'Time distribution'
   }
 }

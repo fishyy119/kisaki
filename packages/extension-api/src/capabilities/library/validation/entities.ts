@@ -26,9 +26,10 @@ import type {
   SortDirection
 } from '../entities'
 import {
+  LIBRARY_ANIME_STATUSES,
   LIBRARY_GAME_LAUNCHER_MODES,
   LIBRARY_GAME_MONITOR_MODES,
-  LIBRARY_MEDIA_STATUSES
+  LIBRARY_GAME_STATUSES
 } from '../entities'
 import {
   LIBRARY_ANIME_EPISODE_TYPES,
@@ -395,7 +396,7 @@ export function validateLibraryGameQuery(value: unknown): ValidationIssue[] {
     ...validateOptionalEnumArray(
       query.statuses,
       '$.statuses',
-      LIBRARY_MEDIA_STATUSES,
+      LIBRARY_GAME_STATUSES,
       'statuses must be an array of supported game statuses.'
     ),
     ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
@@ -416,8 +417,8 @@ export function validateLibraryAnimeQuery(value: unknown): ValidationIssue[] {
     ...validateOptionalEnumArray(
       query.statuses,
       '$.statuses',
-      LIBRARY_MEDIA_STATUSES,
-      'statuses must be an array of supported media statuses.'
+      LIBRARY_ANIME_STATUSES,
+      'statuses must be an array of supported anime statuses.'
     ),
     ...validateOptionalEnumArray(
       query.formats,
@@ -696,7 +697,7 @@ function validateGameWriteInput(value: unknown, path: string, create: boolean): 
     ...validateOptionalEnumString(
       input.status,
       `${path}.status`,
-      LIBRARY_MEDIA_STATUSES,
+      LIBRARY_GAME_STATUSES,
       'status must be one of the supported game statuses.'
     ),
     ...validateOptionalString(input.savePath, `${path}.savePath`),
@@ -746,8 +747,8 @@ function validateAnimeWriteInput(value: unknown, path: string, create: boolean):
     ...validateOptionalEnumString(
       input.status,
       `${path}.status`,
-      LIBRARY_MEDIA_STATUSES,
-      'status must be one of the supported media statuses.'
+      LIBRARY_ANIME_STATUSES,
+      'status must be one of the supported anime statuses.'
     ),
     ...validateOptionalEnumString(
       input.format,

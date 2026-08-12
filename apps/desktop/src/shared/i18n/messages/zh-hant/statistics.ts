@@ -20,18 +20,18 @@ export const statistics = {
   },
 
   hero: {
-    totalPlayTime: '總遊玩時長',
+    totalTime: '總活動時長',
     flatVsPrevious: ({ label }: { label: string }) => `與${label}持平`,
     upVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `較${label} +${duration}`,
     downVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `較${label} -${duration}`,
     other: '其他',
-    noPlayRecords: '暫無遊玩紀錄',
-    mostPlayed: '最常玩',
+    noActivityRecords: '暫無活動紀錄',
+    mostPlayed: '最投入',
 
-    sessions: '遊玩次數',
-    gamesPlayed: '遊玩數量',
+    sessions: '活動次數',
+    entitiesPlayed: '作品數量',
     averageSession: '平均單次',
     activeDays: '活躍天數',
     dailyAverage: '日均時長',
@@ -45,14 +45,14 @@ export const statistics = {
     longestStreak: '最長連續',
 
     timesValue: ({ count }: { count: number }) => `${count}次`,
-    gamesValue: ({ count }: { count: number }) => `${count}款`,
+    entitiesValue: ({ count }: { count: number }) => `${count}部`,
     activeDaysValue: ({ active, total }: { active: number; total: number }) =>
       `${active}/${total}天`,
     daysValue: ({ count }: { count: number }) => `${count}天`
   },
 
   ranking: {
-    gameTitle: '遊戲排行',
+    mediaTitle: '作品排行',
     collectionTitle: '收藏排行',
     sortTime: '時長',
     sortCount: '次數'
@@ -60,7 +60,7 @@ export const statistics = {
 
   charts: {
     heatmapTitle: '活動熱力圖',
-    trendTitle: '遊玩趨勢',
+    trendTitle: '活動趨勢',
     distributionTitle: '時段分佈'
   }
 } satisfies Messages['statistics']

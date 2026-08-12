@@ -23,8 +23,11 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import {
   AnimeDeleteFormDialog,
-  AnimeScoreFormDialog,
-  AnimeMetadataUpdateFormDialog
+  AnimeExternalIdsFormDialog,
+  AnimeFilesConfigFormDialog,
+  AnimeMediaFormDialog,
+  AnimeMetadataUpdateFormDialog,
+  AnimeScoreFormDialog
 } from '../forms'
 import { CollectionInfoFormDialog } from '@renderer/components/shared/collection'
 import { EntityMergeDialog } from '@renderer/components/shared/entity-merge'
@@ -56,8 +59,11 @@ const dropdownMenuComponents: MenuComponents = {
 // Dialog states managed by parent to survive menu close
 const deleteDialogOpen = ref(false)
 const scoreDialogOpen = ref(false)
+const filesConfigDialogOpen = ref(false)
+const mediaDialogOpen = ref(false)
 const collectionDialogOpen = ref(false)
 const metadataUpdateDialogOpen = ref(false)
+const externalIdsDialogOpen = ref(false)
 const mergeDialogOpen = ref(false)
 </script>
 
@@ -84,7 +90,10 @@ const mergeDialogOpen = ref(false)
         :anime-id="props.animeId"
         :components="dropdownMenuComponents"
         @open-score-dialog="scoreDialogOpen = true"
+        @open-files-config-dialog="filesConfigDialogOpen = true"
+        @open-media-dialog="mediaDialogOpen = true"
         @open-metadata-update-dialog="metadataUpdateDialogOpen = true"
+        @open-external-ids-dialog="externalIdsDialogOpen = true"
         @open-merge-dialog="mergeDialogOpen = true"
         @open-delete-dialog="deleteDialogOpen = true"
         @open-new-collection-dialog="collectionDialogOpen = true"
@@ -106,9 +115,27 @@ const mergeDialogOpen = ref(false)
     :anime-id="props.animeId"
   />
 
+  <AnimeFilesConfigFormDialog
+    v-if="filesConfigDialogOpen"
+    v-model:open="filesConfigDialogOpen"
+    :anime-id="props.animeId"
+  />
+
+  <AnimeMediaFormDialog
+    v-if="mediaDialogOpen"
+    v-model:open="mediaDialogOpen"
+    :anime-id="props.animeId"
+  />
+
   <AnimeMetadataUpdateFormDialog
     v-if="metadataUpdateDialogOpen"
     v-model:open="metadataUpdateDialogOpen"
+    :anime-id="props.animeId"
+  />
+
+  <AnimeExternalIdsFormDialog
+    v-if="externalIdsDialogOpen"
+    v-model:open="externalIdsDialogOpen"
     :anime-id="props.animeId"
   />
 

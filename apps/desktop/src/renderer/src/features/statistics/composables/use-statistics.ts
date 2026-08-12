@@ -7,6 +7,10 @@
  * reports also load the previous period's sessions for comparison.
  * Data loads during navigation (route loader); period switching triggers a
  * non-blocking SWR refetch.
+ *
+ * Sessions from every media type merge into one entity-keyed stream: each
+ * session carries an `entityKey` (`<mediaType>:<id>`) that resolves through
+ * the `entities` map, so charts, rankings, and stats stay media-agnostic.
  */
 
 import {
@@ -19,12 +23,13 @@ import {
   type ComputedRef,
   type Ref
 } from 'vue'
-import { desc, gte, lte, and, inArray, eq, type SQL } from 'drizzle-orm'
+import { gte, lte, and, inArray, eq, type SQL } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useDbChanges } from '@renderer/composables/use-db-changes'
-import type { Game, GameSession, Collection } from '@shared/db/schema'
+import type { MediaType } from '@shared/common'
+import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
 import { computeStats, type GlobalStatisticsStats } from '@renderer/utils/statistics'
@@ -35,6 +40,31 @@ import {
   shiftPeriod
 } from '../period'
 import type { ReportType, Period, PeriodDisplay } from '../types'
+
+// =============================================================================
+// Data Types
+// =============================================================================
+
+/** One session span, keyed to its media entity. */
+export interface StatisticsSessionEntry {
+  id: string
+  entityKey: string
+  startedAt: Date
+  endedAt: Date
+}
+
+/** Display facts of one media entity the sessions reference. */
+export interface StatisticsEntity {
+  key: string
+  mediaType: MediaType
+  id: string
+  name: string
+  coverFile: string | null
+}
+
+function buildEntityKey(mediaType: MediaType, id: string): string {
+  return `${mediaType}:${id}`
+}
 
 // =============================================================================
 // Context Type
@@ -53,20 +83,20 @@ export interface StatisticsContext {
   dateRange: ComputedRef<{ start: Date; end: Date }>
 
   // Data - filtered by dateRange
-  sessions: ComputedRef<GameSession[]>
-  games: ComputedRef<Map<string, Game>>
+  sessions: ComputedRef<StatisticsSessionEntry[]>
+  entities: ComputedRef<Map<string, StatisticsEntity>>
   collections: ComputedRef<Map<string, Collection>>
   stats: ComputedRef<GlobalStatisticsStats>
 
   // Previous period sessions for comparison; null for overview
-  previousSessions: ComputedRef<GameSession[] | null>
+  previousSessions: ComputedRef<StatisticsSessionEntry[] | null>
 
   // For overview: all-time data for stats/distributions/rankings
-  allTimeSessions: ComputedRef<GameSession[]>
+  allTimeSessions: ComputedRef<StatisticsSessionEntry[]>
   allTimeStats: ComputedRef<GlobalStatisticsStats>
 
-  // Link data for local computation
-  gameCollectionLinks: ComputedRef<{ gameId: string; collectionId: string }[]>
+  // Link data for local computation, entity side keyed like sessions
+  entityCollectionLinks: ComputedRef<{ entityId: string; collectionId: string }[]>
 
   // State
   isFetching: Ref<boolean>
@@ -99,41 +129,102 @@ function getReportTypeFromRoute(routeName: string | symbol | null | undefined): 
 // =============================================================================
 
 interface FetchedData {
-  sessions: GameSession[]
-  games: Game[]
+  sessions: StatisticsSessionEntry[]
+  entities: StatisticsEntity[]
   collections: Collection[]
-  gameCollectionLinks: { gameId: string; collectionId: string }[]
+  entityCollectionLinks: { entityId: string; collectionId: string }[]
+}
+
+function rangeConditions(
+  dateRange: { start: Date; end: Date } | null,
+  startedAt: typeof schema.gameSessions.startedAt | typeof schema.animeSessions.startedAt,
+  endedAt: typeof schema.gameSessions.endedAt | typeof schema.animeSessions.endedAt
+): SQL[] {
+  if (!dateRange) return []
+  return [gte(startedAt, dateRange.start), lte(endedAt, dateRange.end)]
+}
+
+async function fetchGameSessionsInRange(
+  dateRange: { start: Date; end: Date } | null,
+  showNsfw: boolean
+): Promise<StatisticsSessionEntry[]> {
+  const conditions = rangeConditions(
+    dateRange,
+    schema.gameSessions.startedAt,
+    schema.gameSessions.endedAt
+  )
+  const sessionWhere = conditions.length ? and(...conditions) : undefined
+
+  const rows = showNsfw
+    ? await db.select().from(schema.gameSessions).where(sessionWhere)
+    : (
+        await db
+          .select()
+          .from(schema.gameSessions)
+          .innerJoin(schema.games, eq(schema.gameSessions.gameId, schema.games.id))
+          .where(and(sessionWhere, eq(schema.games.isNsfw, false)))
+      ).map((row) => row.game_sessions)
+
+  return rows.map((row) => ({
+    id: row.id,
+    entityKey: buildEntityKey('game', row.gameId),
+    startedAt: row.startedAt,
+    endedAt: row.endedAt
+  }))
+}
+
+async function fetchAnimeSessionsInRange(
+  dateRange: { start: Date; end: Date } | null,
+  showNsfw: boolean
+): Promise<StatisticsSessionEntry[]> {
+  const conditions = rangeConditions(
+    dateRange,
+    schema.animeSessions.startedAt,
+    schema.animeSessions.endedAt
+  )
+  const sessionWhere = conditions.length ? and(...conditions) : undefined
+
+  const rows = showNsfw
+    ? await db.select().from(schema.animeSessions).where(sessionWhere)
+    : (
+        await db
+          .select()
+          .from(schema.animeSessions)
+          .innerJoin(schema.animes, eq(schema.animeSessions.animeId, schema.animes.id))
+          .where(and(sessionWhere, eq(schema.animes.isNsfw, false)))
+      ).map((row) => row.anime_sessions)
+
+  return rows.map((row) => ({
+    id: row.id,
+    entityKey: buildEntityKey('anime', row.animeId),
+    startedAt: row.startedAt,
+    endedAt: row.endedAt
+  }))
 }
 
 async function fetchSessionsInRange(
   dateRange: { start: Date; end: Date } | null,
   showNsfw: boolean
-): Promise<GameSession[]> {
-  const conditions: SQL[] = []
-  if (dateRange) {
-    conditions.push(
-      gte(schema.gameSessions.startedAt, dateRange.start),
-      lte(schema.gameSessions.endedAt, dateRange.end)
+): Promise<StatisticsSessionEntry[]> {
+  const [gameSessions, animeSessions] = await Promise.all([
+    fetchGameSessionsInRange(dateRange, showNsfw),
+    fetchAnimeSessionsInRange(dateRange, showNsfw)
+  ])
+
+  return [...gameSessions, ...animeSessions].sort(
+    (a, b) => b.startedAt.getTime() - a.startedAt.getTime()
+  )
+}
+
+function entityIdsOf(sessions: StatisticsSessionEntry[], mediaType: MediaType): string[] {
+  const prefix = `${mediaType}:`
+  return [
+    ...new Set(
+      sessions
+        .filter((session) => session.entityKey.startsWith(prefix))
+        .map((session) => session.entityKey.slice(prefix.length))
     )
-  }
-
-  const sessionWhere = conditions.length ? and(...conditions) : undefined
-
-  if (showNsfw) {
-    return await db
-      .select()
-      .from(schema.gameSessions)
-      .where(sessionWhere)
-      .orderBy(desc(schema.gameSessions.startedAt))
-  }
-
-  const rows = await db
-    .select()
-    .from(schema.gameSessions)
-    .innerJoin(schema.games, eq(schema.gameSessions.gameId, schema.games.id))
-    .where(and(sessionWhere, eq(schema.games.isNsfw, false)))
-    .orderBy(desc(schema.gameSessions.startedAt))
-  return rows.map((row) => row.game_sessions)
+  ]
 }
 
 async function fetchStatisticsData(
@@ -145,61 +236,115 @@ async function fetchStatisticsData(
   if (sessions.length === 0) {
     return {
       sessions: [],
-      games: [],
+      entities: [],
       collections: [],
-      gameCollectionLinks: []
+      entityCollectionLinks: []
     }
   }
 
-  // Get unique game IDs
-  const gameIds = [...new Set(sessions.map((s) => s.gameId))]
+  const gameIds = entityIdsOf(sessions, 'game')
+  const animeIds = entityIdsOf(sessions, 'anime')
 
   // Parallel fetch all related data
-  const [games, collections, gameCollectionLinks] = await Promise.all([
-    db
-      .select()
-      .from(schema.games)
-      .where(
-        and(
-          inArray(schema.games.id, gameIds),
-          showNsfw ? undefined : eq(schema.games.isNsfw, false)
-        )
-      ),
-    db
-      .select()
-      .from(schema.collections)
-      .where(showNsfw ? undefined : eq(schema.collections.isNsfw, false)),
-    showNsfw
-      ? db
-          .select({
-            gameId: schema.collectionGameLinks.gameId,
-            collectionId: schema.collectionGameLinks.collectionId
-          })
-          .from(schema.collectionGameLinks)
-          .where(inArray(schema.collectionGameLinks.gameId, gameIds))
-      : db
-          .select({
-            gameId: schema.collectionGameLinks.gameId,
-            collectionId: schema.collectionGameLinks.collectionId
-          })
-          .from(schema.collectionGameLinks)
-          .innerJoin(
-            schema.collections,
-            eq(schema.collectionGameLinks.collectionId, schema.collections.id)
-          )
-          .where(
-            and(
-              inArray(schema.collectionGameLinks.gameId, gameIds),
-              eq(schema.collections.isNsfw, false)
+  const [games, animes, collections, gameCollectionLinks, animeCollectionLinks] =
+    await Promise.all([
+      gameIds.length
+        ? db
+            .select()
+            .from(schema.games)
+            .where(
+              and(
+                inArray(schema.games.id, gameIds),
+                showNsfw ? undefined : eq(schema.games.isNsfw, false)
+              )
             )
-          )
-  ])
+        : Promise.resolve([]),
+      animeIds.length
+        ? db
+            .select()
+            .from(schema.animes)
+            .where(
+              and(
+                inArray(schema.animes.id, animeIds),
+                showNsfw ? undefined : eq(schema.animes.isNsfw, false)
+              )
+            )
+        : Promise.resolve([]),
+      db
+        .select()
+        .from(schema.collections)
+        .where(showNsfw ? undefined : eq(schema.collections.isNsfw, false)),
+      gameIds.length
+        ? db
+            .select({
+              gameId: schema.collectionGameLinks.gameId,
+              collectionId: schema.collectionGameLinks.collectionId
+            })
+            .from(schema.collectionGameLinks)
+            .innerJoin(
+              schema.collections,
+              eq(schema.collectionGameLinks.collectionId, schema.collections.id)
+            )
+            .where(
+              and(
+                inArray(schema.collectionGameLinks.gameId, gameIds),
+                showNsfw ? undefined : eq(schema.collections.isNsfw, false)
+              )
+            )
+        : Promise.resolve([]),
+      animeIds.length
+        ? db
+            .select({
+              animeId: schema.collectionAnimeLinks.animeId,
+              collectionId: schema.collectionAnimeLinks.collectionId
+            })
+            .from(schema.collectionAnimeLinks)
+            .innerJoin(
+              schema.collections,
+              eq(schema.collectionAnimeLinks.collectionId, schema.collections.id)
+            )
+            .where(
+              and(
+                inArray(schema.collectionAnimeLinks.animeId, animeIds),
+                showNsfw ? undefined : eq(schema.collections.isNsfw, false)
+              )
+            )
+        : Promise.resolve([])
+    ])
+
+  const entities: StatisticsEntity[] = [
+    ...games.map((game) => ({
+      key: buildEntityKey('game', game.id),
+      mediaType: 'game' as const,
+      id: game.id,
+      name: game.name,
+      coverFile: game.coverFile
+    })),
+    ...animes.map((anime) => ({
+      key: buildEntityKey('anime', anime.id),
+      mediaType: 'anime' as const,
+      id: anime.id,
+      name: anime.name,
+      coverFile: anime.coverFile
+    }))
+  ]
+
+  const entityCollectionLinks = [
+    ...gameCollectionLinks.map((link) => ({
+      entityId: buildEntityKey('game', link.gameId),
+      collectionId: link.collectionId
+    })),
+    ...animeCollectionLinks.map((link) => ({
+      entityId: buildEntityKey('anime', link.animeId),
+      collectionId: link.collectionId
+    }))
+  ]
 
   return {
     sessions,
-    games,
+    entities,
     collections,
-    gameCollectionLinks
+    entityCollectionLinks
   }
 }
 
@@ -211,7 +356,7 @@ interface StatisticsData {
   reportType: ReportType
   period: Period
   current: FetchedData
-  previousSessions: GameSession[] | null
+  previousSessions: StatisticsSessionEntry[] | null
   allTime: FetchedData | null
 }
 
@@ -277,14 +422,14 @@ export function useStatisticsProvider(): StatisticsContext {
   // Computed data maps
   const sessions = computed(() => data.value?.current.sessions ?? [])
 
-  const games = computed(() => {
-    const map = new Map<string, Game>()
-    // Merge games from both data sources for overview
-    for (const game of data.value?.current.games ?? []) {
-      map.set(game.id, game)
+  const entities = computed(() => {
+    const map = new Map<string, StatisticsEntity>()
+    // Merge entities from both data sources for overview
+    for (const entity of data.value?.current.entities ?? []) {
+      map.set(entity.key, entity)
     }
-    for (const game of data.value?.allTime?.games ?? []) {
-      map.set(game.id, game)
+    for (const entity of data.value?.allTime?.entities ?? []) {
+      map.set(entity.key, entity)
     }
     return map
   })
@@ -298,33 +443,37 @@ export function useStatisticsProvider(): StatisticsContext {
   })
 
   // Expose link data for local computation in components
-  const gameCollectionLinks = computed(() => {
+  const entityCollectionLinks = computed(() => {
     if (reportType.value === 'overview') {
-      return data.value?.allTime?.gameCollectionLinks ?? []
+      return data.value?.allTime?.entityCollectionLinks ?? []
     }
-    return data.value?.current.gameCollectionLinks ?? []
+    return data.value?.current.entityCollectionLinks ?? []
   })
 
+  const getEntityName = (entityKey: string): string | undefined =>
+    entities.value.get(entityKey)?.name
+
   // Computed stats
-  const stats = computed(() => computeStats(sessions.value, games.value))
+  const stats = computed(() =>
+    computeStats(sessions.value, (session) => session.entityKey, getEntityName)
+  )
 
   const previousSessions = computed(() => data.value?.previousSessions ?? null)
 
   // All-time data for overview
   const allTimeSessions = computed(() => data.value?.allTime?.sessions ?? [])
-  const allTimeStats = computed(() => computeStats(allTimeSessions.value, games.value))
+  const allTimeStats = computed(() =>
+    computeStats(allTimeSessions.value, (session) => session.entityKey, getEntityName)
+  )
 
   // Event listeners for auto-refresh
   useDbChanges(({ operation, table }) => {
-    if (operation === 'inserted') {
-      if (table === 'game_sessions') void refetch()
+    const sessionTable = table === 'game_sessions' || table === 'anime_sessions'
+    if (operation === 'inserted' && sessionTable) void refetch()
+    if (operation === 'updated' && (sessionTable || table === 'games' || table === 'animes')) {
+      void refetch()
     }
-    if (operation === 'updated') {
-      if (table === 'game_sessions' || table === 'games') void refetch()
-    }
-    if (operation === 'deleted') {
-      if (table === 'game_sessions') void refetch()
-    }
+    if (operation === 'deleted' && sessionTable) void refetch()
   })
 
   const context: StatisticsContext = {
@@ -334,13 +483,13 @@ export function useStatisticsProvider(): StatisticsContext {
     periodDisplay,
     dateRange,
     sessions,
-    games,
+    entities,
     collections,
     stats,
     previousSessions,
     allTimeSessions,
     allTimeStats,
-    gameCollectionLinks,
+    entityCollectionLinks,
     isFetching,
     error,
     refetch

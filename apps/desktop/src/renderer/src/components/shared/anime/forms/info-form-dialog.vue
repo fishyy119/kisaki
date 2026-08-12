@@ -1,12 +1,13 @@
 <!--
   AnimeInfoFormDialog
-  Dialog for editing anime info (sort name, release date, created date).
+  Dialog for editing anime info (sort name, format, total episodes, release
+  date, created date).
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { animes, type PartialDate } from '@shared/db'
+import { animes, type AnimeFormat, type PartialDate } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
 import { formatDateInput } from '@renderer/utils/datetime'
 import {
@@ -22,6 +23,13 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
 import { notify } from '@renderer/core/notify'
 import {
   PartialDateInput,
@@ -42,15 +50,25 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
+const ANIME_FORMAT_VALUES: AnimeFormat[] = ['tv', 'movie', 'ova', 'ona', 'special', 'other']
+
+const FORMAT_OPTIONS = computed<{ value: AnimeFormat; label: string }[]>(() =>
+  ANIME_FORMAT_VALUES.map((value) => ({ value, label: m.value.library.animeFormat[value] }))
+)
+
 // Form state
 interface FormData {
   sortName: string
+  format: AnimeFormat
+  totalEpisodes: string
   releaseDate: PartialDate | null
   createdAt: string
 }
 
 const formData = ref<FormData>({
   sortName: '',
+  format: 'tv',
+  totalEpisodes: '',
   releaseDate: null,
   createdAt: ''
 })
@@ -70,6 +88,9 @@ const { data: anime, isLoading } = useAsyncData(
 watch(anime, (animeData) => {
   if (animeData) {
     formData.value.sortName = animeData.sortName || ''
+    formData.value.format = animeData.format
+    formData.value.totalEpisodes =
+      animeData.totalEpisodes !== null ? String(animeData.totalEpisodes) : ''
     formData.value.releaseDate = animeData.releaseDate ?? null
     formData.value.createdAt = formatDateInput(animeData.createdAt)
   }
@@ -87,10 +108,19 @@ async function handleSubmit() {
     }
     const releaseDate = releaseDateValidation?.value ?? formData.value.releaseDate
 
+    const totalEpisodesText = formData.value.totalEpisodes.trim()
+    const totalEpisodes = totalEpisodesText === '' ? null : Number(totalEpisodesText)
+    if (totalEpisodes !== null && (!Number.isInteger(totalEpisodes) || totalEpisodes < 0)) {
+      notify.error(m.value.library.forms.totalEpisodesInvalid)
+      return
+    }
+
     await db
       .update(animes)
       .set({
         sortName: formData.value.sortName || null,
+        format: formData.value.format,
+        totalEpisodes,
         releaseDate,
         createdAt: new Date(formData.value.createdAt)
       })
@@ -138,6 +168,38 @@ function handleCancel() {
                   <Input
                     v-model="formData.sortName"
                     :placeholder="m.library.forms.sortNamePlaceholder"
+                  />
+                </FieldContent>
+              </Field>
+
+              <Field>
+                <FieldLabel>{{ m.library.fields.format }}</FieldLabel>
+                <FieldContent>
+                  <Select v-model="formData.format">
+                    <SelectTrigger class="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="opt in FORMAT_OPTIONS"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
+
+              <Field>
+                <FieldLabel>{{ m.library.fields.totalEpisodes }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="formData.totalEpisodes"
+                    type="number"
+                    min="0"
+                    :placeholder="m.library.forms.totalEpisodesPlaceholder"
                   />
                 </FieldContent>
               </Field>

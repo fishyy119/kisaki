@@ -1,18 +1,19 @@
-import { LIBRARY_MEDIA_STATUSES, type LibraryMediaStatus } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionPatch } from '../api/types'
 import type {
   BangumiCollectionType,
   BangumiSettingsV1,
-  BangumiStatusMappingValue
+  BangumiStatusMappingValue,
+  BangumiStatusToBangumiMapping
 } from '../config/schema'
 import type { LocalMediaItem } from '../media/types'
+import type { BangumiMediaScope } from '../../shared/scopes'
 import { BANGUMI_WISH_COLLECTION_TYPE } from '../utils/constants'
 
 export interface SyncMappingOptions {
   playStatusEnabled: boolean
   scoreEnabled: boolean
   clearRemoteScoreWhenEmpty: boolean
-  statusToBangumi: Record<LibraryMediaStatus, BangumiStatusMappingValue>
+  statusToBangumi: BangumiStatusToBangumiMapping
 }
 
 export interface SyncPayloadPlan {
@@ -42,11 +43,11 @@ export function createSyncMappingOptions(
 }
 
 export function createSyncPayloadPlan(
-  item: Pick<LocalMediaItem, 'status' | 'score'>,
+  item: Pick<LocalMediaItem, 'scope' | 'status' | 'score'>,
   options: SyncMappingOptions
 ): SyncPayloadPlan {
   const payload: BangumiCollectionPatch = {}
-  const mappedType = mapMediaStatusToBangumiType(item.status, options)
+  const mappedType = mapMediaStatusToBangumiType(item.scope, item.status, options)
   const mappedRate = resolveBangumiRateForSync(
     mappedType,
     mapMediaScoreToBangumiRate(item.score, options)
@@ -69,19 +70,24 @@ export function createSyncPayloadPlan(
 }
 
 export function mapMediaStatusToBangumiType(
+  scope: BangumiMediaScope,
   status: string | undefined,
   options: Pick<SyncMappingOptions, 'playStatusEnabled' | 'statusToBangumi'>
 ): BangumiCollectionType | undefined {
-  if (!options.playStatusEnabled) {
+  if (!options.playStatusEnabled || !status) {
     return undefined
   }
 
-  if (!status || !isLibraryMediaStatus(status)) {
-    return undefined
-  }
+  const mapped = readStatusTable(options.statusToBangumi, scope)?.[status]
+  return mapped === undefined || mapped === 'skip' ? undefined : mapped
+}
 
-  const mapped = options.statusToBangumi[status]
-  return mapped === 'skip' ? undefined : mapped
+/** Only status-bearing scopes own a mapping table; other scopes never push status. */
+function readStatusTable(
+  statusToBangumi: BangumiStatusToBangumiMapping,
+  scope: BangumiMediaScope
+): Partial<Record<string, BangumiStatusMappingValue>> | undefined {
+  return scope === 'game' || scope === 'anime' ? statusToBangumi[scope] : undefined
 }
 
 export function mapMediaScoreToBangumiRate(
@@ -101,10 +107,6 @@ export function mapMediaScoreToBangumiRate(
   }
 
   return Math.min(10, Math.max(1, Math.round(score / 10)))
-}
-
-function isLibraryMediaStatus(value: string): value is LibraryMediaStatus {
-  return LIBRARY_MEDIA_STATUSES.includes(value as LibraryMediaStatus)
 }
 
 function resolveBangumiRateForSync(

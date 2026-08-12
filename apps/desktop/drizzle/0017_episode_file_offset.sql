@@ -1,0 +1,1 @@
+ALTER TABLE `animes` ADD `episode_file_number_offset` integer DEFAULT 0 NOT NULL;

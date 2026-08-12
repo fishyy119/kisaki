@@ -265,6 +265,15 @@ export const en = {
       multiple: 'Multiple playthroughs',
       shelved: 'On hold',
       unset: 'Not set'
+    },
+
+    animeStatus: {
+      planned: 'Plan to watch',
+      watching: 'Watching',
+      completed: 'Watched',
+      onHold: 'On hold',
+      dropped: 'Dropped',
+      unset: 'Not set'
     }
   },
 

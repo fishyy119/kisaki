@@ -6,7 +6,7 @@
  */
 
 import type Database from 'better-sqlite3'
-import type { Status } from '@shared/db/contracts/enums'
+import type { AnimeStatus, Status } from '@shared/db/contracts/enums'
 import type { RawDbChange } from '@shared/db/changes'
 import type {
   LibraryChange,
@@ -278,8 +278,8 @@ function projectDirectChanges(
   if (firstOld.status !== lastNext.status) {
     projected.push({
       facet: 'status',
-      before: { status: firstOld.status as Status },
-      after: { status: lastNext.status as Status },
+      before: { status: firstOld.status as Status | AnimeStatus },
+      after: { status: lastNext.status as Status | AnimeStatus },
       fields: ['status']
     })
   }

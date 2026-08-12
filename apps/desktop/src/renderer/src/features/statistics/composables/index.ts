@@ -5,4 +5,8 @@ export {
   useStatistics
 } from './use-statistics'
 
-export type { StatisticsContext } from './use-statistics'
+export type {
+  StatisticsContext,
+  StatisticsEntity,
+  StatisticsSessionEntry
+} from './use-statistics'

@@ -20,18 +20,18 @@ export const statistics = {
   },
 
   hero: {
-    totalPlayTime: '总游玩时长',
+    totalTime: '总活动时长',
     flatVsPrevious: ({ label }: { label: string }) => `与${label}持平`,
     upVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `较${label} +${duration}`,
     downVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `较${label} -${duration}`,
     other: '其他',
-    noPlayRecords: '暂无游玩记录',
-    mostPlayed: '最常玩',
+    noActivityRecords: '暂无活动记录',
+    mostPlayed: '最投入',
 
-    sessions: '游玩次数',
-    gamesPlayed: '游玩数量',
+    sessions: '活动次数',
+    entitiesPlayed: '作品数量',
     averageSession: '平均单次',
     activeDays: '活跃天数',
     dailyAverage: '日均时长',
@@ -45,14 +45,14 @@ export const statistics = {
     longestStreak: '最长连续',
 
     timesValue: ({ count }: { count: number }) => `${count}次`,
-    gamesValue: ({ count }: { count: number }) => `${count}款`,
+    entitiesValue: ({ count }: { count: number }) => `${count}部`,
     activeDaysValue: ({ active, total }: { active: number; total: number }) =>
       `${active}/${total}天`,
     daysValue: ({ count }: { count: number }) => `${count}天`
   },
 
   ranking: {
-    gameTitle: '游戏排行',
+    mediaTitle: '作品排行',
     collectionTitle: '收藏排行',
     sortTime: '时长',
     sortCount: '次数'
@@ -60,7 +60,7 @@ export const statistics = {
 
   charts: {
     heatmapTitle: '活动热力图',
-    trendTitle: '游玩趋势',
+    trendTitle: '活动趋势',
     distributionTitle: '时段分布'
   }
 } satisfies Messages['statistics']

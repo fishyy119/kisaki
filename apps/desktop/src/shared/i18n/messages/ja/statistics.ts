@@ -20,18 +20,18 @@ export const statistics = {
   },
 
   hero: {
-    totalPlayTime: '合計プレイ時間',
+    totalTime: '合計アクティビティ時間',
     flatVsPrevious: ({ label }: { label: string }) => `${label}と同じ`,
     upVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `${label}より +${duration}`,
     downVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `${label}より -${duration}`,
     other: 'その他',
-    noPlayRecords: 'プレイ記録はまだありません',
-    mostPlayed: '最もプレイ',
+    noActivityRecords: 'アクティビティ記録はまだありません',
+    mostPlayed: 'トップ作品',
 
-    sessions: 'プレイ回数',
-    gamesPlayed: 'プレイ本数',
+    sessions: 'セッション数',
+    entitiesPlayed: '作品数',
     averageSession: '平均セッション',
     activeDays: 'アクティブ日数',
     dailyAverage: '1 日平均',
@@ -45,14 +45,14 @@ export const statistics = {
     longestStreak: '最長の連続日数',
 
     timesValue: ({ count }: { count: number }) => `${count} 回`,
-    gamesValue: ({ count }: { count: number }) => `${count} 本`,
+    entitiesValue: ({ count }: { count: number }) => `${count} 作品`,
     activeDaysValue: ({ active, total }: { active: number; total: number }) =>
       `${active}/${total} 日`,
     daysValue: ({ count }: { count: number }) => `${count} 日`
   },
 
   ranking: {
-    gameTitle: 'ゲームランキング',
+    mediaTitle: '作品ランキング',
     collectionTitle: 'コレクションランキング',
     sortTime: '時間',
     sortCount: '回数'
@@ -60,7 +60,7 @@ export const statistics = {
 
   charts: {
     heatmapTitle: 'アクティビティヒートマップ',
-    trendTitle: 'プレイ推移',
+    trendTitle: 'アクティビティ推移',
     distributionTitle: '時間帯分布'
   }
 } satisfies Messages['statistics']

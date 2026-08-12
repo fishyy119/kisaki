@@ -16,7 +16,7 @@ import {
   StatisticsActivityHeatmap,
   StatisticsTimeTrend,
   StatisticsTimeDistribution,
-  StatisticsGameRanking,
+  StatisticsMediaRanking,
   StatisticsCollectionRanking
 } from '../components'
 
@@ -61,8 +61,8 @@ const { allTimeSessions, error } = useStatistics()
     <!-- Rankings band: last row, so uneven column ends fall off the page -->
     <div class="grid grid-cols-1 divide-y xl:grid-cols-2 xl:divide-y-0">
       <div class="min-w-0 p-4">
-        <StatisticsGameRanking
-          :title="m.statistics.ranking.gameTitle"
+        <StatisticsMediaRanking
+          :title="m.statistics.ranking.mediaTitle"
           :sessions="allTimeSessions"
         />
       </div>

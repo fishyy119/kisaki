@@ -3,6 +3,7 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import {
   animeFormat,
+  animeStatus,
   baseColumns,
   bloodType,
   cupSize,
@@ -98,10 +99,15 @@ export const animes = sqliteTable(
     releaseDate: partialDate('release_date'),
     description: text('description'),
     externalSites: externalSites('external_sites'),
-    status: status('status').notNull().default('notStarted'),
+    status: animeStatus('status').notNull().default('planned'),
     format: animeFormat('format').notNull().default('tv'),
     /** Episode count declared by metadata; the episode rows remain authoritative. */
     totalEpisodes: integer('total_episodes'),
+    /**
+     * Subtracted from file-derived regular episode numbers during file sync so
+     * absolutely numbered releases align with this entry's metadata numbering.
+     */
+    episodeFileNumberOffset: integer('episode_file_number_offset').notNull().default(0),
     lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
     totalDuration: integer('total_duration').notNull().default(0),
     animeDirPath: text('anime_dir_path'),

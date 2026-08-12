@@ -73,6 +73,14 @@ export const library = {
     shelved: '積みゲー'
   },
 
+  animeStatus: {
+    planned: '見たい',
+    watching: '視聴中',
+    completed: '視聴済み',
+    onHold: '保留',
+    dropped: '中断'
+  },
+
   gender: {
     male: '男性',
     female: '女性',
@@ -115,12 +123,19 @@ export const library = {
       other: 'その他'
     },
     animePerson: {
+      originalCreator: '原作',
       director: '監督',
       series: 'シリーズ構成',
       scenario: '脚本',
+      episodeDirector: '演出',
       characterDesign: 'キャラクターデザイン',
-      music: '音楽',
       animationDirector: '作画監督',
+      animation: '原画',
+      art: '美術',
+      photography: '撮影',
+      sound: '音響',
+      music: '音楽',
+      producer: 'プロデューサー',
       other: 'その他'
     },
     animeCharacter: {
@@ -272,6 +287,7 @@ export const library = {
       persons: '人物',
       companies: '会社',
       relatedGames: '関連ゲーム',
+      relatedAnimes: '関連アニメ',
       relatedPersons: '関連人物',
       relatedCharacters: '関連キャラクター',
       activity: 'アクティビティ',
@@ -297,6 +313,7 @@ export const library = {
       tags: 'タグはまだありません',
       externalSites: '外部リンクはまだありません',
       relatedGames: '関連ゲームはまだありません',
+      relatedAnimes: '関連アニメはまだありません',
       relatedPersons: '関連人物はまだいません',
       relatedCharacters: '関連キャラクターはまだいません',
       relatedEntries: '関連エントリーはまだありません',
@@ -334,11 +351,17 @@ export const library = {
     editGameCharacters: 'キャラクターを編集',
     editGamePersons: '人物を編集',
     editGameCompanies: '会社を編集',
+    editAnimeCharacters: 'キャラクターを編集',
+    editAnimePersons: 'スタッフを編集',
+    editAnimeCompanies: '会社を編集',
     editCharacterGames: '登場ゲームを編集',
+    editCharacterAnimes: '出演アニメを編集',
     editCharacterPersons: '関連スタッフを編集',
     editPersonGames: '参加ゲームを編集',
+    editPersonAnimes: '参加アニメを編集',
     editPersonCharacters: '担当キャラクターを編集',
     editCompanyGames: '関連ゲームを編集',
+    editCompanyAnimes: '関連アニメを編集',
     editCollectionEntities: 'コレクション内容を編集',
 
     notePlaceholder: '任意のメモ…',
@@ -364,6 +387,8 @@ export const library = {
     releaseDateInvalidFormat: '発売日の形式が正しくありません。',
     foundedDateYearDayWithoutMonth: '設立日に年と日を入力する場合は、月も入力してください。',
     releaseDateYearDayWithoutMonth: '発売日に年と日を入力する場合は、月も入力してください。',
+    totalEpisodesPlaceholder: '空欄可',
+    totalEpisodesInvalid: '総話数は 0 以上の整数で入力してください。',
 
     scoreRangeHint: 'スコアは 0〜10 で、小数第 1 位まで入力できます（例：8.5）。',
     scoreOutOfRange: 'スコアは 0〜10 の範囲で入力してください。',
@@ -422,6 +447,9 @@ export const library = {
       gameBackdrop: '詳細ページの背景画像。',
       gameLogo: 'ゲームタイトルのロゴ。',
       gameIcon: '小さいサイズのアイコン。',
+      animeCover: 'カードやリストに表示されるアニメカバー画像。',
+      animeBackdrop: '詳細ページの背景画像。',
+      animeLogo: 'アニメタイトルのロゴ。',
       characterPhoto: 'カードや詳細に表示されるキャラクター写真。',
       personPhoto: 'カードや詳細に表示される人物写真。',
       companyLogo: 'カードや詳細に表示される会社ロゴ。'

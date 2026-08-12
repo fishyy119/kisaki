@@ -1,22 +1,25 @@
 <!--
   Statistics Time Trend
 
-  Time trend chart showing play time over time.
+  Time trend chart showing activity time over time.
   Respects granularity constraints based on report type.
 -->
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useStatistics } from '../composables'
-import { aggregateByTime, type TimeGranularity } from '@renderer/utils/statistics'
+import {
+  aggregateByTime,
+  type StatisticsSession,
+  type TimeGranularity
+} from '@renderer/utils/statistics'
 import { TrendChart } from '@renderer/components/ui/trend-chart'
-import type { GameSession } from '@shared/db'
 
 interface Props {
   /** Module header title */
   title?: string
   /** Override sessions (for custom data source) */
-  sessions?: GameSession[]
+  sessions?: StatisticsSession[]
   /** Override date range (for custom range) */
   dateRange?: { start: Date; end: Date }
   /** Available granularities for the trend chart */

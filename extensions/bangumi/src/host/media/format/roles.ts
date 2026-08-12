@@ -258,90 +258,158 @@ export function mapBangumiGameCompanyRole(relation?: string): LibraryGameCompany
 /**
  * Anime staff credits.
  *
- * Voice actors are not anime staff: they reach the entry through the character
- * they play, so `actor`-looking relations fall through to `other` here.
+ * Bangumi credits staff with a curated position vocabulary, so known positions
+ * resolve through an exact table and only wiki variants reach the ordered
+ * substring fallback. Two ordering traps drive that design: song credits such
+ * as 主题歌演出 belong to music and must resolve before the staff sense of
+ * 演出, and every specific X监督 position must resolve before the bare 监督
+ * director check. Voice actors are not anime staff: they reach the entry
+ * through the character they play.
  */
+const BANGUMI_ANIME_POSITION_ROLES: Record<string, LibraryAnimePersonRole> = {
+  原作: 'originalCreator',
+  原案: 'originalCreator',
+  导演: 'director',
+  总导演: 'director',
+  副导演: 'director',
+  系列监督: 'director',
+  总监督: 'director',
+  监修: 'director',
+  系列构成: 'series',
+  脚本: 'scenario',
+  剧本: 'scenario',
+  编剧: 'scenario',
+  分镜: 'episodeDirector',
+  演出: 'episodeDirector',
+  主演出: 'episodeDirector',
+  演出助理: 'episodeDirector',
+  oped分镜: 'episodeDirector',
+  oped演出: 'episodeDirector',
+  人物设定: 'characterDesign',
+  角色设计: 'characterDesign',
+  角色原案: 'characterDesign',
+  人设: 'characterDesign',
+  总作画监督: 'animationDirector',
+  作画监督: 'animationDirector',
+  动作作画监督: 'animationDirector',
+  机械作画监督: 'animationDirector',
+  作监协力: 'animationDirector',
+  原画: 'animation',
+  第二原画: 'animation',
+  动画检查: 'animation',
+  作画: 'animation',
+  构图: 'animation',
+  美术监督: 'art',
+  美术设计: 'art',
+  背景美术: 'art',
+  美术: 'art',
+  背景: 'art',
+  色彩设计: 'art',
+  色彩指定: 'art',
+  色指定: 'art',
+  摄影监督: 'photography',
+  摄影: 'photography',
+  '3dcg': 'photography',
+  cg导演: 'photography',
+  cg指导: 'photography',
+  数码绘图: 'photography',
+  特效: 'photography',
+  特技监督: 'photography',
+  音响监督: 'sound',
+  音响: 'sound',
+  音响制作: 'sound',
+  音效: 'sound',
+  录音: 'sound',
+  录音助理: 'sound',
+  配音监督: 'sound',
+  音乐: 'music',
+  音乐制作: 'music',
+  音乐制作人: 'music',
+  音乐监督: 'music',
+  主题歌编曲: 'music',
+  主题歌作曲: 'music',
+  主题歌作词: 'music',
+  主题歌演出: 'music',
+  插入歌演出: 'music',
+  制作人: 'producer',
+  制片人: 'producer',
+  总制片人: 'producer',
+  联合制片人: 'producer',
+  助理制片人: 'producer',
+  执行制片人: 'producer',
+  企画: 'producer',
+  企划: 'producer',
+  企划制作人: 'producer',
+  executiveproducer: 'producer',
+  制作: 'producer',
+  製作: 'producer',
+  制作总指挥: 'producer'
+}
+
+/** Ordered so song/music terms win over 演出 and X监督 terms win over 监督. */
+const BANGUMI_ANIME_POSITION_FALLBACKS: readonly (readonly [
+  LibraryAnimePersonRole,
+  readonly string[]
+])[] = [
+  [
+    'music',
+    [
+      '主题歌',
+      '插入歌',
+      '作曲',
+      '作词',
+      '编曲',
+      '演唱',
+      '歌',
+      '音乐',
+      '音樂',
+      'vocal',
+      'song',
+      'composer',
+      'music'
+    ]
+  ],
+  ['sound', ['音响', '音響', '音效', '录音', '錄音', '配音', 'sound']],
+  ['photography', ['摄影', '攝影', '撮影', '特效', '特技', 'cg', 'photograph']],
+  ['art', ['美术', '美術', '背景', '色彩', '色指定', 'background']],
+  ['animationDirector', ['作画监督', '作畫監督', '作画監督', '作监', '作監', 'animationdirector']],
+  [
+    'characterDesign',
+    ['人物设定', '人物設定', '角色设计', '角色設計', '人设', 'chardesign', 'characterdesign']
+  ],
+  ['animation', ['原画', '原畫', '作画', '作畫', 'keyanimation']],
+  ['episodeDirector', ['分镜', '分鏡', '絵コンテ', 'storyboard', 'episodedirector', '演出']],
+  ['series', ['系列构成', '系列構成', 'seriescomposition']],
+  ['scenario', ['脚本', '剧本', '劇本', '编剧', '編劇', 'scenario', 'script', 'writer']],
+  ['originalCreator', ['原作', '原案', 'originalwork']],
+  ['producer', ['制作人', '製作人', '制片', '製片', '企画', '企划', '企劃', 'producer']],
+  ['director', ['导演', '導演', '監督', '监督', 'director']]
+]
+
 export function mapBangumiAnimePersonRole(
   relation?: string,
   careers: BangumiPersonCareer[] = []
 ): LibraryAnimePersonRole {
   const normalized = normalizeToken(relation)
+  if (!normalized) return mapAnimeCareersFallback(careers)
 
-  if (
-    normalized.includes('系列构成') ||
-    normalized.includes('系列構成') ||
-    normalized.includes('seriescomposition')
-  ) {
-    return 'series'
+  const exact = BANGUMI_ANIME_POSITION_ROLES[normalized]
+  if (exact) return exact
+
+  for (const [role, tokens] of BANGUMI_ANIME_POSITION_FALLBACKS) {
+    if (tokens.some((token) => normalized.includes(token))) return role
   }
 
-  if (
-    normalized.includes('作画监督') ||
-    normalized.includes('作画監督') ||
-    normalized.includes('演出') ||
-    normalized.includes('分镜') ||
-    normalized.includes('分鏡') ||
-    normalized.includes('storyboard') ||
-    normalized.includes('animationdirector')
-  ) {
-    return 'animationDirector'
-  }
+  return mapAnimeCareersFallback(careers)
+}
 
-  if (
-    normalized.includes('人物设定') ||
-    normalized.includes('人物設定') ||
-    normalized.includes('角色设定') ||
-    normalized.includes('总作画监督') ||
-    normalized.includes('原案') ||
-    normalized.includes('chardesign') ||
-    normalized.includes('characterdesign')
-  ) {
-    return 'characterDesign'
-  }
+function mapAnimeCareersFallback(careers: BangumiPersonCareer[]): LibraryAnimePersonRole {
+  const normalizedCareers = new Set(careers.map((career) => normalizeToken(career)))
 
-  if (
-    normalized.includes('音乐') ||
-    normalized.includes('音樂') ||
-    normalized.includes('主题歌') ||
-    normalized.includes('插入歌') ||
-    normalized.includes('作曲') ||
-    normalized.includes('作词') ||
-    normalized.includes('音响') ||
-    normalized.includes('vocal') ||
-    normalized.includes('song') ||
-    normalized.includes('composer')
-  ) {
-    return 'music'
-  }
-
-  if (
-    normalized.includes('脚本') ||
-    normalized.includes('剧本') ||
-    normalized.includes('原作') ||
-    normalized.includes('scenario') ||
-    normalized.includes('script') ||
-    normalized.includes('writer')
-  ) {
-    return 'scenario'
-  }
-
-  if (
-    normalized.includes('导演') ||
-    normalized.includes('監督') ||
-    normalized.includes('监督') ||
-    normalized.includes('director')
-  ) {
-    return 'director'
-  }
-
-  if (
-    careers.some((career) => {
-      const normalizedCareer = normalizeToken(career)
-      return normalizedCareer === 'writer' || normalizedCareer === 'mangaka'
-    })
-  ) {
-    return 'scenario'
-  }
+  if (normalizedCareers.has('writer')) return 'scenario'
+  if (normalizedCareers.has('mangaka')) return 'originalCreator'
+  if (normalizedCareers.has('producer')) return 'producer'
+  if (normalizedCareers.has('artist')) return 'music'
 
   return 'other'
 }

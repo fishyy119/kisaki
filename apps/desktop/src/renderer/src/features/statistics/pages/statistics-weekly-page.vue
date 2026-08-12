@@ -16,7 +16,7 @@ import {
   StatisticsActivityHeatmap,
   StatisticsTimeTrend,
   StatisticsTimeDistribution,
-  StatisticsGameRanking
+  StatisticsMediaRanking
 } from '../components'
 
 const { m } = useI18n()
@@ -65,8 +65,8 @@ const { error } = useStatistics()
 
     <!-- Rankings band: full-width game ranking, rows flowing in two columns -->
     <div class="p-4">
-      <StatisticsGameRanking
-        :title="m.statistics.ranking.gameTitle"
+      <StatisticsMediaRanking
+        :title="m.statistics.ranking.mediaTitle"
         :columns="2"
       />
     </div>

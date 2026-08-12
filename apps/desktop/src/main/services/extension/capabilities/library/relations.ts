@@ -1,14 +1,16 @@
 import type {
+  LibraryEntityReference,
   LibraryMediaRelation,
   LibraryMediaRelationCreateInput,
   LibraryMediaRelationPatch,
   LibraryMediaRelationQuery,
-  LibraryMediaRelationSelector
+  LibraryMediaRelationSelector,
+  LibraryMediaType
 } from '@kisaki3/extension-api'
 import { createNotFoundError, normalizeCapabilityError } from '@kisaki3/extension-api'
 import { and, eq, or, type SQL } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { mediaRelations, type MediaRelation } from '@shared/db'
+import { animes, games, mediaRelations, type MediaRelation } from '@shared/db'
 import type { DbService } from '@main/services/db'
 
 export interface ExtensionLibraryMediaRelationStoreOptions {
@@ -21,7 +23,9 @@ export interface ExtensionLibraryMediaRelationStoreOptions {
  * Rows are directed edges; an extension manages the edges it writes, and
  * readers merge both directions through the inverse vocabulary. Endpoint pair
  * and vocabulary validity are enforced by the shared validators at the RPC
- * boundary.
+ * boundary; endpoint existence is verified here on create, because the table
+ * carries no foreign keys and this is the only write path whose targets are
+ * not already resolved from the library.
  */
 export class ExtensionLibraryMediaRelationStore {
   constructor(private readonly options: ExtensionLibraryMediaRelationStoreOptions) {}
@@ -41,6 +45,9 @@ export class ExtensionLibraryMediaRelationStore {
 
   create(input: LibraryMediaRelationCreateInput): LibraryMediaRelation {
     try {
+      this.requireMediaEntryExists(input.from)
+      this.requireMediaEntryExists(input.to)
+
       this.options.db.client
         .insert(mediaRelations)
         .values({
@@ -96,6 +103,31 @@ export class ExtensionLibraryMediaRelationStore {
       this.options.db.client.delete(mediaRelations).where(buildSelectorCondition(selector)).run()
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to remove the library media relation.')
+    }
+  }
+
+  private requireMediaEntryExists(reference: LibraryEntityReference<LibraryMediaType>): void {
+    if (this.findMediaEntryId(reference) === undefined) {
+      throw createNotFoundError(
+        `Library ${reference.entityType} entry "${reference.id}" was not found.`
+      )
+    }
+  }
+
+  private findMediaEntryId(reference: LibraryEntityReference<LibraryMediaType>): string | undefined {
+    switch (reference.entityType) {
+      case 'game':
+        return this.options.db.client
+          .select({ id: games.id })
+          .from(games)
+          .where(eq(games.id, reference.id))
+          .get()?.id
+      case 'anime':
+        return this.options.db.client
+          .select({ id: animes.id })
+          .from(animes)
+          .where(eq(animes.id, reference.id))
+          .get()?.id
     }
   }
 

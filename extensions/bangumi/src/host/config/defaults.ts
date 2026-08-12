@@ -33,12 +33,21 @@ export const DEFAULT_BANGUMI_SETTINGS: BangumiSettingsV1 = {
     debounceMs: 3000,
     notifyErrors: true,
     statusToBangumi: {
-      notStarted: 1,
-      inProgress: 3,
-      partial: 3,
-      completed: 2,
-      multiple: 2,
-      shelved: 4
+      game: {
+        notStarted: 1,
+        inProgress: 3,
+        partial: 3,
+        completed: 2,
+        multiple: 2,
+        shelved: 4
+      },
+      anime: {
+        planned: 1,
+        watching: 3,
+        completed: 2,
+        onHold: 4,
+        dropped: 5
+      }
     }
   },
   client: {

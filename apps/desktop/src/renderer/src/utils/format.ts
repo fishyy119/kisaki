@@ -4,7 +4,7 @@
  * Time-related formatting functions are in datetime.ts
  */
 
-import type { Status, Gender } from '@shared/db'
+import type { AnimeStatus, Status, Gender } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
 import { messages } from '@renderer/core/i18n'
 
@@ -24,6 +24,14 @@ const STATUS_VARIANTS: Record<Status, StatusVariant> = {
   shelved: 'destructive'
 }
 
+const ANIME_STATUS_VARIANTS: Record<AnimeStatus, StatusVariant> = {
+  planned: 'secondary',
+  watching: 'default',
+  completed: 'success',
+  onHold: 'warning',
+  dropped: 'destructive'
+}
+
 /**
  * Format game status to a localized label
  */
@@ -32,10 +40,24 @@ export function formatStatus(status: Status): string {
 }
 
 /**
- * Map status to badge variant for UI display
+ * Map game status to badge variant for UI display
  */
 export function getStatusVariant(status: Status): StatusVariant {
   return STATUS_VARIANTS[status] ?? 'secondary'
+}
+
+/**
+ * Format anime watch status to a localized label
+ */
+export function formatAnimeStatus(status: AnimeStatus): string {
+  return messages.value.library.animeStatus[status]
+}
+
+/**
+ * Map anime watch status to badge variant for UI display
+ */
+export function getAnimeStatusVariant(status: AnimeStatus): StatusVariant {
+  return ANIME_STATUS_VARIANTS[status] ?? 'secondary'
 }
 
 // =============================================================================

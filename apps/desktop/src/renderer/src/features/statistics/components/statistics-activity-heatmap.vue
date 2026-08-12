@@ -1,7 +1,7 @@
 <!--
   Statistics Activity Heatmap
 
-  Activity heatmap showing play frequency over time.
+  Activity heatmap showing activity frequency over time.
   Uses the generic Heatmap UI component.
 -->
 
@@ -9,13 +9,13 @@
 import { computed } from 'vue'
 import { Heatmap, type HeatmapGranularity } from '@renderer/components/ui/heatmap'
 import { useStatistics } from '../composables'
-import type { GameSession } from '@shared/db'
+import type { StatisticsSession } from '@renderer/utils/statistics'
 
 interface Props {
   /** Module header title */
   title?: string
   /** Override sessions (for custom data source) */
-  sessions?: GameSession[]
+  sessions?: StatisticsSession[]
   /** Override date range (for custom range) */
   dateRange?: { start: Date; end: Date }
   /** Available heatmap granularities */
