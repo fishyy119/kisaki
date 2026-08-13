@@ -31,7 +31,7 @@ import type {
   IngestAnimePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
-import { applyMediaRelationFacts } from '../media-relations'
+import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../media-relations'
 import { insertAnimeEpisodeRow } from './episodes'
 import {
   requireOwnerIdentity,
@@ -321,10 +321,7 @@ export class AnimeIngestPersistHandler {
         collectionMode: 'replace'
       })
       if (related.unresolvedCount > 0) {
-        warnings.push({
-          code: 'related-entry-not-in-library',
-          message: `Skipped ${related.unresolvedCount} related entries because their targets are not in the library.`
-        })
+        warnings.push(createUnresolvedRelatedEntriesWarning(related.unresolvedCount))
       }
     }
 

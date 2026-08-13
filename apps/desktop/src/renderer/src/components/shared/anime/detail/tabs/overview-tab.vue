@@ -14,42 +14,22 @@ import { CharacterCard, CharacterDetailDialog } from '@renderer/components/share
 import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
 import {
   MediaRelationsFormDialog,
-  MediaRelationsSection
-} from '@renderer/components/shared/media-relations'
+  MediaRelationsSection,
+  MediaDescriptionFormDialog
+} from '@renderer/components/shared/media'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import {
-  AnimeCharactersFormDialog,
-  AnimeCompaniesFormDialog,
-  AnimeDescriptionFormDialog,
-  AnimeExternalSitesFormDialog,
-  AnimeInfoFormDialog,
-  AnimePersonsFormDialog,
-  AnimeTagsFormDialog
-} from '../../forms'
-
-const PERSON_ROLE_ORDER = [
-  'originalCreator',
-  'director',
-  'series',
-  'scenario',
-  'episodeDirector',
-  'characterDesign',
-  'animationDirector',
-  'animation',
-  'art',
-  'photography',
-  'sound',
-  'music',
-  'producer',
-  'other'
-] as const
-
-const COMPANY_ROLE_ORDER = ['studio', 'producer', 'distributor', 'other'] as const
-
-const CHARACTER_ROLE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
+  AnimeInfoFormDialog
+  } from '../../forms'
+import {
+  EntityLinksFormDialog,
+  EntityExternalSitesFormDialog,
+  EntityTagsFormDialog
+} from '@renderer/components/shared/entity'
+import { ANIME_CHARACTER_ROLE_VALUES, ANIME_COMPANY_ROLE_VALUES, ANIME_PERSON_ROLE_VALUES } from '@shared/db'
 
 const { anime, tags, characters, persons, companies, relations } = useAnime()
 const { m, f } = useI18n()
@@ -90,11 +70,11 @@ const hasExternalSites = computed(
 const sortedCharacters = computed(() =>
   [...characters.value]
     .sort((a, b) => {
-      const roleIndexA = CHARACTER_ROLE_ORDER.indexOf(
-        (a.role || 'other') as (typeof CHARACTER_ROLE_ORDER)[number]
+      const roleIndexA = ANIME_CHARACTER_ROLE_VALUES.indexOf(
+        (a.role || 'other') as (typeof ANIME_CHARACTER_ROLE_VALUES)[number]
       )
-      const roleIndexB = CHARACTER_ROLE_ORDER.indexOf(
-        (b.role || 'other') as (typeof CHARACTER_ROLE_ORDER)[number]
+      const roleIndexB = ANIME_CHARACTER_ROLE_VALUES.indexOf(
+        (b.role || 'other') as (typeof ANIME_CHARACTER_ROLE_VALUES)[number]
       )
       if (roleIndexA !== roleIndexB) return roleIndexA - roleIndexB
       return a.orderInAnime - b.orderInAnime
@@ -251,7 +231,7 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="role in PERSON_ROLE_ORDER"
+              v-for="role in ANIME_PERSON_ROLE_VALUES"
               :key="role"
             >
               <div v-if="groupedPersons[role]?.length">
@@ -294,7 +274,7 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="role in COMPANY_ROLE_ORDER"
+              v-for="role in ANIME_COMPANY_ROLE_VALUES"
               :key="role"
             >
               <div v-if="groupedCompanies[role]?.length">
@@ -356,40 +336,46 @@ const tagDialogOpen = computed({
     </div>
 
     <!-- Edit Dialogs -->
-    <AnimeDescriptionFormDialog
+    <MediaDescriptionFormDialog
       v-if="editDialogs.description"
       v-model:open="editDialogs.description"
-      :anime-id="anime.id"
+      media-type="anime"
+      :entity-id="anime.id"
     />
     <AnimeInfoFormDialog
       v-if="editDialogs.details"
       v-model:open="editDialogs.details"
       :anime-id="anime.id"
     />
-    <AnimeTagsFormDialog
+    <EntityTagsFormDialog
       v-if="editDialogs.tags"
       v-model:open="editDialogs.tags"
-      :anime-id="anime.id"
+      entity-type="anime"
+      :entity-id="anime.id"
     />
-    <AnimeCharactersFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.characters"
       v-model:open="editDialogs.characters"
-      :anime-id="anime.id"
+      view="anime-characters"
+      :entity-id="anime.id"
     />
-    <AnimePersonsFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.staff"
       v-model:open="editDialogs.staff"
-      :anime-id="anime.id"
+      view="anime-persons"
+      :entity-id="anime.id"
     />
-    <AnimeCompaniesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.companies"
       v-model:open="editDialogs.companies"
-      :anime-id="anime.id"
+      view="anime-companies"
+      :entity-id="anime.id"
     />
-    <AnimeExternalSitesFormDialog
+    <EntityExternalSitesFormDialog
       v-if="editDialogs.externalSites"
       v-model:open="editDialogs.externalSites"
-      :anime-id="anime.id"
+      entity-type="anime"
+      :entity-id="anime.id"
     />
     <MediaRelationsFormDialog
       v-if="editDialogs.relations"

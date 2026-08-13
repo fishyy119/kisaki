@@ -15,10 +15,9 @@ import { Separator } from '@renderer/components/ui/separator'
 import { StateView } from '@renderer/components/ui/state-view'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import {
-  CompanyScoreFormDialog,
-  CompanyDropdownMenu,
   CompanyDetailContent
 } from '@renderer/components/shared/company'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import {
   useAmbientLight,
   useCompanyRouteProvider,
@@ -211,7 +210,10 @@ function handleRevealSpoilersConfirm() {
         />
 
         <!-- More menu -->
-        <CompanyDropdownMenu :company-id="company.id" />
+        <EntityDropdownMenu
+          entity-type="company"
+          :entity-id="company.id"
+        />
       </template>
     </PageHeader>
 
@@ -221,10 +223,11 @@ function handleRevealSpoilersConfirm() {
     </div>
 
     <!-- Score dialog -->
-    <CompanyScoreFormDialog
+    <EntityScoreFormDialog
       v-if="scoreDialogOpen"
       v-model:open="scoreDialogOpen"
-      :company-id="company.id"
+      entity-type="company"
+      :entity-id="company.id"
     />
 
     <SpoilerConfirmDialog

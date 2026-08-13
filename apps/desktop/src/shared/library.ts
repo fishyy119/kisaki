@@ -10,8 +10,8 @@ import type {
   AnimeStatus,
   BloodType,
   CupSize,
-  Gender,
-  Status
+  GameStatus,
+  Gender
 } from './db/contracts/enums'
 import type { DynamicCollectionConfig, PartialDate, ExternalSite } from './db/contracts/json'
 import type { MediaRelationType } from './db/contracts/media-relations'
@@ -83,8 +83,8 @@ export interface LibraryMediaRelationsSnapshot {
 
 export type LibraryStatusChange = {
   facet: 'status'
-  before: { status: Status | AnimeStatus }
-  after: { status: Status | AnimeStatus }
+  before: { status: GameStatus | AnimeStatus }
+  after: { status: GameStatus | AnimeStatus }
   fields?: ['status']
 }
 

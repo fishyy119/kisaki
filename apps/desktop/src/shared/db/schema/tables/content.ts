@@ -9,11 +9,11 @@ import {
   cupSize,
   gameLauncherMode,
   gameMonitorMode,
+  gameStatus,
   gender,
   partialDate,
   externalSites,
   saveBackups,
-  status,
   stringArrayJson
 } from '../../columns'
 
@@ -33,7 +33,7 @@ export const games = sqliteTable(
     releaseDate: partialDate('release_date'),
     description: text('description'),
     externalSites: externalSites('external_sites'),
-    status: status('status').notNull().default('notStarted'),
+    status: gameStatus('status').notNull().default('notStarted'),
     lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
     totalDuration: integer('total_duration').notNull().default(0),
     savePath: text('save_path'),

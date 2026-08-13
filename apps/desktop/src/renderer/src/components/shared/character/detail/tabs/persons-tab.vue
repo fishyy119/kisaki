@@ -10,8 +10,9 @@ import { useCharacter } from '@renderer/composables/use-character'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
-import { CharacterPersonsFormDialog } from '../../forms'
 import { useI18n } from '@renderer/composables'
+import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import { CHARACTER_PERSON_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 
@@ -31,8 +32,6 @@ const openPersonId = ref<string | null>(null)
 const PERSON_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.characterPerson
 )
-
-const PERSON_ROLE_ORDER = ['actor', 'illustration', 'designer', 'other'] as const
 
 // =============================================================================
 // Computed
@@ -104,7 +103,7 @@ const personDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="role in PERSON_ROLE_ORDER"
+          v-for="role in CHARACTER_PERSON_ROLE_VALUES"
           :key="role"
         >
           <div v-if="groupedPersons[role]?.length">
@@ -131,10 +130,11 @@ const personDialogOpen = computed({
     </template>
 
     <!-- Edit Dialog -->
-    <CharacterPersonsFormDialog
+    <EntityLinksFormDialog
       v-if="isEditOpen"
       v-model:open="isEditOpen"
-      :character-id="character.id"
+      view="character-persons"
+      :entity-id="character.id"
     />
 
     <!-- Person Detail Dialog -->

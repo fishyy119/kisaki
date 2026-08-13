@@ -12,17 +12,19 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { formatStatus, getEntityIcon } from '@renderer/utils/format'
+import { formatGameStatus, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import {
-  GameNameFormDialog,
-  GameOriginalNameFormDialog,
-  GameLastActiveFormDialog,
-  GameStatusFormDialog,
-  GameDurationFormDialog,
-  GameScoreFormDialog
-} from '../forms'
+  EntityNameFormDialog,
+  EntityOriginalNameFormDialog,
+  EntityScoreFormDialog
+} from '@renderer/components/shared/entity'
+import {
+  MediaDurationFormDialog,
+  MediaLastActiveFormDialog,
+  MediaStatusFormDialog
+} from '@renderer/components/shared/media'
 
 // =============================================================================
 // State
@@ -151,7 +153,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
               </button>
               <span class="text-xs">{{ m.library.menu.playStatus }}</span>
             </span>
-            <span class="font-medium truncate text-xs">{{ formatStatus(game.status) }}</span>
+            <span class="font-medium truncate text-xs">{{ formatGameStatus(game.status) }}</span>
           </div>
 
           <!-- Total Duration -->
@@ -207,35 +209,41 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
     </div>
 
     <!-- Edit Dialogs - conditionally rendered with v-if -->
-    <GameNameFormDialog
+    <EntityNameFormDialog
       v-if="editDialogs.name"
       v-model:open="editDialogs.name"
-      :game-id="game.id"
+      entity-type="game"
+      :entity-id="game.id"
     />
-    <GameOriginalNameFormDialog
+    <EntityOriginalNameFormDialog
       v-if="editDialogs.originalName"
       v-model:open="editDialogs.originalName"
-      :game-id="game.id"
+      entity-type="game"
+      :entity-id="game.id"
     />
-    <GameLastActiveFormDialog
+    <MediaLastActiveFormDialog
       v-if="editDialogs.lastActive"
       v-model:open="editDialogs.lastActive"
-      :game-id="game.id"
+      media-type="game"
+      :entity-id="game.id"
     />
-    <GameStatusFormDialog
+    <MediaStatusFormDialog
       v-if="editDialogs.status"
       v-model:open="editDialogs.status"
-      :game-id="game.id"
+      media-type="game"
+      :entity-id="game.id"
     />
-    <GameDurationFormDialog
+    <MediaDurationFormDialog
       v-if="editDialogs.duration"
       v-model:open="editDialogs.duration"
-      :game-id="game.id"
+      media-type="game"
+      :entity-id="game.id"
     />
-    <GameScoreFormDialog
+    <EntityScoreFormDialog
       v-if="editDialogs.score"
       v-model:open="editDialogs.score"
-      :game-id="game.id"
+      entity-type="game"
+      :entity-id="game.id"
     />
   </template>
 </template>

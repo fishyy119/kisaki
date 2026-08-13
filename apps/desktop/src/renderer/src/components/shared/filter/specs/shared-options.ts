@@ -36,7 +36,7 @@ export function getGenderOptions(): { value: string; label: string }[] {
 
 /** Localized game completion status options for the current UI locale. */
 export function getGameStatusOptions(): { value: string; label: string }[] {
-  const status = messages.value.library.status
+  const status = messages.value.library.gameStatus
   return [
     { value: 'notStarted', label: status.notStarted },
     { value: 'inProgress', label: status.inProgress },

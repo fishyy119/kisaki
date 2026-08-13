@@ -10,6 +10,7 @@ export const game = {
 
   statusDialog: {
     title: 'Edit play status',
+    label: 'Play status',
     selectStatus: 'Select status'
   },
 
@@ -21,7 +22,7 @@ export const game = {
 
   duration: {
     title: 'Edit play time',
-    totalPlayTime: 'Total play time',
+    totalTime: 'Total play time',
     sessionsDuration: ({ value }: { value: string }) => `Sessions: ${value}`,
     untrackedDuration: ({ value }: { value: string }) => `Untracked: ${value}`,
     untrackedLabel: 'Untracked play time',
@@ -135,21 +136,20 @@ export const game = {
     heatmap: 'Activity heatmap',
     trend: 'Play trend',
     distribution: 'Time distribution',
+    recentSessions: 'Recent sessions',
     emptyTitle: 'No play activity yet',
     emptyHint: 'Play time is recorded here automatically once you launch the game.',
-    legendLess: 'Less',
-    legendMore: 'More',
-    playDuration: 'Play time',
-    playCount: 'Play count',
-    playCountValue: ({ count }: { count: number }) =>
+    totalDuration: 'Play time',
+    sessionCount: 'Play count',
+    sessionCountValue: ({ count }: { count: number }) =>
       count === 1 ? '1 session' : `${count} sessions`,
     avgDuration: 'Average session',
     longestSession: 'Longest session',
     currentStreak: 'Current streak',
     longestStreak: 'Longest streak',
     streakValue: ({ days }: { days: number }) => (days === 1 ? '1 day' : `${days} days`),
-    firstPlayed: 'First played',
-    lastPlayed: 'Last played',
+    firstSession: 'First played',
+    lastSession: 'Last played',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day}`
   }
 }

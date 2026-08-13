@@ -27,7 +27,8 @@ export const gameFilterUiSpec: ComputedRef<FilterUiSpec<typeof gameFilterQuerySp
           label: m.library.fields.playDuration,
           kind: 'number',
           min: 0,
-          unit: m.filter.secondsUnit
+          unit: m.filter.hoursUnit,
+          valueScale: 3600000
         },
 
         { key: 'releaseDate', label: m.library.fields.releaseDate, kind: 'date' },

@@ -8,7 +8,7 @@
  */
 
 import path from 'node:path'
-import type { AnimeEpisodeType, AnimeExtraKind } from '@shared/db'
+import type { AnimeEpisodeType, AnimeExtraType } from '@shared/db'
 
 /** Containers mpv plays and ffprobe understands. */
 const VIDEO_EXTENSIONS = new Set([
@@ -57,12 +57,12 @@ const EXTRA_DIRECTORY_NAMES = new Set([
 // JS `\b` is ASCII-based and never matches next to CJK characters, so CJK
 // tokens sit outside the word-boundary anchors that guard the ASCII ones.
 // NC/PV markers accept trailing digits (NCOP01, PV2) as BD releases number them.
-const EXTRA_KIND_PATTERNS: ReadonlyArray<{ kind: AnimeExtraKind; pattern: RegExp }> = [
-  { kind: 'ncop', pattern: /\b(?:ncop\d*|creditless\s*op|clean\s*op|op\d*_?nc)\b/i },
-  { kind: 'nced', pattern: /\b(?:nced\d*|creditless\s*ed|clean\s*ed|ed\d*_?nc)\b/i },
-  { kind: 'trailer', pattern: /(?:\b(?:trailer|teaser)\b|予告)/i },
-  { kind: 'pv', pattern: /\b(?:pv\d*|cm\d*|spot)\b/i },
-  { kind: 'interview', pattern: /(?:\binterview\b|インタビュー|访谈)/i }
+const EXTRA_TYPE_PATTERNS: ReadonlyArray<{ type: AnimeExtraType; pattern: RegExp }> = [
+  { type: 'ncop', pattern: /\b(?:ncop\d*|creditless\s*op|clean\s*op|op\d*_?nc)\b/i },
+  { type: 'nced', pattern: /\b(?:nced\d*|creditless\s*ed|clean\s*ed|ed\d*_?nc)\b/i },
+  { type: 'trailer', pattern: /(?:\b(?:trailer|teaser)\b|予告)/i },
+  { type: 'pv', pattern: /\b(?:pv\d*|cm\d*|spot)\b/i },
+  { type: 'interview', pattern: /(?:\binterview\b|インタビュー|访谈)/i }
 ]
 
 /**
@@ -117,13 +117,13 @@ export interface AnimeEpisodeCandidate {
 export interface AnimeExtraCandidate {
   path: string
   name: string
-  kind: AnimeExtraKind
+  type: AnimeExtraType
 }
 
-export interface AnimeReleaseFiles {
-  episodes: AnimeEpisodeCandidate[]
-  extras: AnimeExtraCandidate[]
-}
+/** Classification of one video file, discriminated explicitly by `kind`. */
+export type AnimeReleaseFileClassification =
+  | { kind: 'episode'; episode: AnimeEpisodeCandidate }
+  | { kind: 'extra'; extra: AnimeExtraCandidate }
 
 export function isVideoFile(filePath: string): boolean {
   return VIDEO_EXTENSIONS.has(path.extname(filePath).toLowerCase())
@@ -148,10 +148,10 @@ function stripNoise(fileName: string): string {
     .trim()
 }
 
-function readExtraKind(fileName: string): AnimeExtraKind | undefined {
-  for (const { kind, pattern } of EXTRA_KIND_PATTERNS) {
+function readExtraType(fileName: string): AnimeExtraType | undefined {
+  for (const { type, pattern } of EXTRA_TYPE_PATTERNS) {
     if (pattern.test(fileName)) {
-      return kind
+      return type
     }
   }
   return undefined
@@ -211,33 +211,33 @@ function readSpecialEpisodeNumber(cleaned: string): number | undefined {
 export function classifyReleaseFile(
   filePath: string,
   inExtraDirectory: boolean
-): AnimeEpisodeCandidate | AnimeExtraCandidate {
+): AnimeReleaseFileClassification {
   const fileName = path.basename(filePath)
   const cleaned = stripNoise(fileName)
-  const extraKind = readExtraKind(cleaned)
+  const extraType = readExtraType(cleaned)
   const name = cleaned || path.basename(fileName, path.extname(fileName))
 
-  if (inExtraDirectory || extraKind) {
+  if (inExtraDirectory || extraType) {
     return {
-      path: filePath,
-      name,
-      kind: extraKind ?? 'other'
+      kind: 'extra',
+      extra: { path: filePath, name, type: extraType ?? 'other' }
     }
   }
 
   const specialNumber = readSpecialEpisodeNumber(cleaned)
   if (specialNumber !== undefined) {
-    return { path: filePath, fileName, name, type: 'special', number: specialNumber }
+    return {
+      kind: 'episode',
+      episode: { path: filePath, fileName, name, type: 'special', number: specialNumber }
+    }
   }
 
   const number = readEpisodeNumber(cleaned)
-  return number === undefined
-    ? { path: filePath, fileName, name, type: 'regular' }
-    : { path: filePath, fileName, name, type: 'regular', number }
-}
-
-export function isExtraCandidate(
-  candidate: AnimeEpisodeCandidate | AnimeExtraCandidate
-): candidate is AnimeExtraCandidate {
-  return 'kind' in candidate
+  return {
+    kind: 'episode',
+    episode:
+      number === undefined
+        ? { path: filePath, fileName, name, type: 'regular' }
+        : { path: filePath, fileName, name, type: 'regular', number }
+  }
 }

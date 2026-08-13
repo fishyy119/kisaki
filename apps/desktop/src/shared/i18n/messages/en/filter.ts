@@ -29,6 +29,6 @@ export const filter = {
   summaryTo: ({ value }: { value: string }) => `To ${value}`,
   minPlaceholder: 'Min',
   maxPlaceholder: 'Max',
-  secondsUnit: 'Seconds',
+  hoursUnit: 'Hours',
   favorite: 'Favorite'
 }

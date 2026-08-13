@@ -11,16 +11,15 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { useCompany } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
-import { CompanyGamesFormDialog } from '../../forms'
 import { useI18n } from '@renderer/composables'
+import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import { GAME_COMPANY_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 
 const GAME_COMPANY_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gameCompany
 )
-
-const GAME_COMPANY_ROLE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
 
 const { company, games } = useCompany()
 
@@ -92,7 +91,7 @@ const groupedGames = computed(() => {
 
       <div class="space-y-4">
         <template
-          v-for="role in GAME_COMPANY_ROLE_ORDER"
+          v-for="role in GAME_COMPANY_ROLE_VALUES"
           :key="role"
         >
           <div v-if="groupedGames[role] && groupedGames[role].length > 0">
@@ -119,10 +118,11 @@ const groupedGames = computed(() => {
     </template>
 
     <!-- Edit Dialog -->
-    <CompanyGamesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogOpen"
       v-model:open="editDialogOpen"
-      :company-id="company.id"
+      view="company-games"
+      :entity-id="company.id"
     />
 
     <!-- Game Detail Dialog -->

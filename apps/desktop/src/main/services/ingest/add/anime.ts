@@ -23,7 +23,7 @@ import {
 import { reportIngestProgress } from '../progress'
 import { throwIfIngestAborted } from '../abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
-import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
+import { createIngestRun, toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 type AnimeAddFromScraperOptions = IngestAddAnimeFromScraperOptions & IngestOperationOptions
 type AnimeAddDirectOptions = IngestAddAnimeDirectOptions & IngestOperationOptions
@@ -180,25 +180,12 @@ export class AnimeAddHandler {
     label: string,
     initiator: IngestTaskRunOptions['taskRunInitiator']
   ): TaskRunHandle {
-    const title = this.i18nService.messages.ingest.add.title({ entity: 'anime' })
-    return this.taskRunService.runs.create({
-      category: 'ingest',
+    return createIngestRun(this.taskRunService, {
       operation: 'ingest.anime.add',
-      title,
-      description: label,
-      owner: { type: 'app' },
-      initiator: initiator ?? { type: 'user' },
-      subject: { type: 'anime', labelSnapshot: label },
-      controls: { cancelable: true, pausable: false },
-      presentation: {
-        notify: {
-          enabled: true,
-          title,
-          showProgress: true,
-          showResult: true,
-          closable: true
-        }
-      }
+      title: this.i18nService.messages.ingest.add.title({ entity: 'anime' }),
+      label,
+      subject: { type: 'anime' },
+      initiator
     })
   }
 

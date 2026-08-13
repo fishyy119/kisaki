@@ -12,15 +12,14 @@ import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
-import {
-  CharacterDescriptionFormDialog,
-  CharacterPersonsFormDialog,
-  CharacterExternalSitesFormDialog,
-  CharacterTagsFormDialog,
-  CharacterGamesFormDialog,
-  CharacterAnimesFormDialog
-} from '../../forms'
 import { useI18n } from '@renderer/composables'
+import {
+  EntityDescriptionFormDialog,
+  EntityTagsFormDialog,
+  EntityExternalSitesFormDialog,
+  EntityLinksFormDialog
+} from '@renderer/components/shared/entity'
+import { CHARACTER_PERSON_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 
@@ -53,8 +52,6 @@ const openTagId = ref<string | null>(null)
 const PERSON_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.characterPerson
 )
-
-const PERSON_ROLE_ORDER = ['actor', 'illustration', 'designer', 'other'] as const
 
 // =============================================================================
 // Computed
@@ -218,7 +215,7 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="role in PERSON_ROLE_ORDER"
+              v-for="role in CHARACTER_PERSON_ROLE_VALUES"
               :key="role"
             >
               <div v-if="groupedPersons[role]?.length">
@@ -280,35 +277,41 @@ const tagDialogOpen = computed({
     </div>
 
     <!-- Edit Dialogs - conditionally rendered -->
-    <CharacterDescriptionFormDialog
+    <EntityDescriptionFormDialog
       v-if="editDialogs.description"
       v-model:open="editDialogs.description"
-      :character-id="character.id"
+      entity-type="character"
+      :entity-id="character.id"
     />
-    <CharacterPersonsFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.persons"
       v-model:open="editDialogs.persons"
-      :character-id="character.id"
+      view="character-persons"
+      :entity-id="character.id"
     />
-    <CharacterExternalSitesFormDialog
+    <EntityExternalSitesFormDialog
       v-if="editDialogs.sites"
       v-model:open="editDialogs.sites"
-      :character-id="character.id"
+      entity-type="character"
+      :entity-id="character.id"
     />
-    <CharacterTagsFormDialog
+    <EntityTagsFormDialog
       v-if="editDialogs.tags"
       v-model:open="editDialogs.tags"
-      :character-id="character.id"
+      entity-type="character"
+      :entity-id="character.id"
     />
-    <CharacterGamesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.games"
       v-model:open="editDialogs.games"
-      :character-id="character.id"
+      view="character-games"
+      :entity-id="character.id"
     />
-    <CharacterAnimesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.animes"
       v-model:open="editDialogs.animes"
-      :character-id="character.id"
+      view="character-animes"
+      :entity-id="character.id"
     />
 
     <!-- Entity Dialogs -->

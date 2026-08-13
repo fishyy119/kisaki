@@ -8,6 +8,13 @@
 
 import type { GameLauncherMode, GameMonitorMode } from './db/contracts/enums'
 
+/** Push payload for game activity lifecycle events. */
+export interface GameActivityEvent {
+  gameId: string
+  /** Present on the started event when the process pid is known. */
+  pid?: number
+}
+
 /** Live consumption state of one game, as tracked by the activity service. */
 export interface GameRunningStatus {
   gameId: string
@@ -67,6 +74,7 @@ export type AnimeWatchResult =
 
 export type AnimeExtraPlayFailureReason =
   | 'extraNotFound'
+  | 'noExtraFile'
   | 'fileNotFound'
   | 'playerUnavailable'
   | 'playerStartFailed'

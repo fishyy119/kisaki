@@ -1,8 +1,9 @@
 <!--
   AnimeExtraFormDialog
   Creates or edits an extra. Creation picks an on-disk video and may leave
-  name/kind to filename recognition; editing offers deletion. Rows touched
-  here are user-owned, so file sync stops rewriting them.
+  name/type to filename recognition; editing offers file management (alternate
+  versions attach to the same extra) and deletion. Rows touched here are
+  user-owned, so file sync stops rewriting them.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
@@ -21,6 +22,7 @@ import { Field, FieldContent, FieldLabel } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { Icon } from '@renderer/components/ui/icon'
 import { Input } from '@renderer/components/ui/input'
+import { Separator } from '@renderer/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -29,19 +31,21 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { useI18n } from '@renderer/composables/use-i18n'
+import type { AnimeExtraEntry } from '@renderer/composables/use-anime'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { getOpenVideoDialogOptions } from '@renderer/utils/dialog'
-import { animeExtras, type AnimeExtra, type AnimeExtraKind } from '@shared/db'
+import { animeExtraFiles, animeExtras, type AnimeExtraFile, type AnimeExtraType } from '@shared/db'
+import AnimeFileRecordList from './file-record-list.vue'
 
 const log = createLogger('Anime')
 
 interface Props {
   animeId: string
   /** Row to edit; omit to create a new extra from a picked file. */
-  extra?: AnimeExtra
+  extra?: AnimeExtraEntry
 }
 
 const props = defineProps<Props>()
@@ -52,29 +56,29 @@ const { m } = useI18n()
 
 const isEditing = computed(() => props.extra !== undefined)
 
-/** `auto` defers name and kind to filename recognition at attach time. */
-type KindChoice = AnimeExtraKind | 'auto'
+/** `auto` defers name and type to filename recognition at attach time. */
+type TypeChoice = AnimeExtraType | 'auto'
 
-const KIND_VALUES = ['trailer', 'pv', 'ncop', 'nced', 'interview', 'other'] as const
+const TYPE_VALUES = ['trailer', 'pv', 'ncop', 'nced', 'interview', 'other'] as const
 
-const kindOptions = computed<{ value: KindChoice; label: string }[]>(() => [
+const typeOptions = computed<{ value: TypeChoice; label: string }[]>(() => [
   ...(isEditing.value
     ? []
     : [{ value: 'auto' as const, label: m.value.anime.extras.autoDetect }]),
-  ...KIND_VALUES.map((value) => ({ value, label: m.value.library.animeExtraKind[value] }))
+  ...TYPE_VALUES.map((value) => ({ value, label: m.value.library.animeExtraType[value] }))
 ])
 
 const filePath = ref('')
 const name = ref('')
-const kind = ref<KindChoice>('auto')
+const type = ref<TypeChoice>('auto')
 const isSaving = ref(false)
+const isAttachingFile = ref(false)
 
 watch(
   () => props.extra,
   (extra) => {
-    filePath.value = extra?.path ?? ''
     name.value = extra?.name ?? ''
-    kind.value = extra?.kind ?? 'auto'
+    type.value = extra?.type ?? 'auto'
   },
   { immediate: true }
 )
@@ -85,15 +89,20 @@ const canSave = computed(() => {
   return name.value.trim().length > 0
 })
 
-async function handlePickFile(): Promise<void> {
+async function pickVideoFile(): Promise<string | null> {
   const dialogResult = await ipcManager.invoke('native:open-dialog', getOpenVideoDialogOptions())
   if (!dialogResult.success) {
     notify.error(dialogResult.error || m.value.library.feedback.pickFileFailed)
-    return
+    return null
   }
   const picked = dialogResult.data?.filePaths[0]
-  if (!picked || dialogResult.data?.canceled) return
-  filePath.value = picked
+  if (!picked || dialogResult.data?.canceled) return null
+  return picked
+}
+
+async function handlePickFile(): Promise<void> {
+  const picked = await pickVideoFile()
+  if (picked) filePath.value = picked
 }
 
 async function handleSubmit(): Promise<void> {
@@ -115,7 +124,7 @@ async function saveCreate(): Promise<void> {
     animeId: props.animeId,
     path: filePath.value,
     ...(name.value.trim() ? { name: name.value.trim() } : {}),
-    ...(kind.value === 'auto' ? {} : { kind: kind.value })
+    ...(type.value === 'auto' ? {} : { type: type.value })
   })
   if (!result.success) {
     notify.error(m.value.anime.files.attachFailed, result.error)
@@ -128,18 +137,105 @@ async function saveCreate(): Promise<void> {
 
 async function saveEdit(): Promise<void> {
   const extra = props.extra
-  if (!extra || kind.value === 'auto') return
+  if (!extra || type.value === 'auto') return
 
   try {
     await db
       .update(animeExtras)
-      .set({ name: name.value.trim(), kind: kind.value, isManual: true })
+      .set({ name: name.value.trim(), type: type.value, isManual: true })
       .where(eq(animeExtras.id, extra.id))
     notify.success(m.value.anime.extras.extraUpdated)
     open.value = false
   } catch (error) {
     log.error('Extra update failed:', error)
     notify.error(m.value.library.feedback.saveFailedRetry)
+  }
+}
+
+// =============================================================================
+// File management (edit mode; alternate versions of the same asset)
+// =============================================================================
+
+async function handleAttachFile(): Promise<void> {
+  const extra = props.extra
+  if (!extra || isAttachingFile.value) return
+
+  isAttachingFile.value = true
+  try {
+    const picked = await pickVideoFile()
+    if (!picked) return
+
+    const result = await ipcManager.invoke('ingest:attach-anime-extra-file', {
+      animeId: props.animeId,
+      path: picked,
+      extraId: extra.id
+    })
+    if (!result.success) {
+      notify.error(m.value.anime.files.attachFailed, result.error)
+      return
+    }
+
+    notify.success(m.value.anime.files.fileAttached)
+  } finally {
+    isAttachingFile.value = false
+  }
+}
+
+async function handleSetPrimary(file: Pick<AnimeExtraFile, 'id' | 'isPrimary'>): Promise<void> {
+  const extra = props.extra
+  if (!extra || file.isPrimary) return
+  try {
+    await db
+      .update(animeExtraFiles)
+      .set({ isPrimary: false })
+      .where(eq(animeExtraFiles.extraId, extra.id))
+    await db.update(animeExtraFiles).set({ isPrimary: true }).where(eq(animeExtraFiles.id, file.id))
+    notify.success(m.value.anime.files.primaryUpdated)
+  } catch (error) {
+    log.error('Set primary file failed:', error)
+    notify.error(m.value.library.feedback.updateFailed)
+  }
+}
+
+async function handleRemoveFile(fileId: string): Promise<void> {
+  const extra = props.extra
+  if (!extra) return
+  try {
+    const removed = extra.files.find((file) => file.id === fileId)
+    await db.delete(animeExtraFiles).where(eq(animeExtraFiles.id, fileId))
+
+    // Keep exactly one primary among the survivors.
+    if (removed?.isPrimary) {
+      const survivor = extra.files.find((file) => file.id !== fileId)
+      if (survivor) {
+        await db
+          .update(animeExtraFiles)
+          .set({ isPrimary: true })
+          .where(eq(animeExtraFiles.id, survivor.id))
+      }
+    }
+
+    notify.success(m.value.anime.files.fileRemoved)
+  } catch (error) {
+    log.error('Remove file record failed:', error)
+    notify.error(m.value.common.deleteFailed)
+  }
+}
+
+async function handleSaveNote(fileId: string, note: string | null): Promise<void> {
+  try {
+    await db.update(animeExtraFiles).set({ note }).where(eq(animeExtraFiles.id, fileId))
+    notify.success(m.value.anime.files.noteSaved)
+  } catch (error) {
+    log.error('File note update failed:', error)
+    notify.error(m.value.library.feedback.updateFailed)
+  }
+}
+
+async function handleOpenFolder(path: string): Promise<void> {
+  const result = await ipcManager.invoke('native:open-path', { path, ensure: 'file' })
+  if (!result.success) {
+    notify.error(m.value.anime.files.openFolderFailed)
   }
 }
 
@@ -161,7 +257,6 @@ async function handleDelete(): Promise<void> {
     notify.error(m.value.common.deleteFailed)
   }
 }
-
 </script>
 
 <template>
@@ -205,15 +300,15 @@ async function handleDelete(): Promise<void> {
           </Field>
 
           <Field>
-            <FieldLabel>{{ m.anime.extras.kindLabel }}</FieldLabel>
+            <FieldLabel>{{ m.anime.extras.typeLabel }}</FieldLabel>
             <FieldContent>
-              <Select v-model="kind">
+              <Select v-model="type">
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
-                    v-for="option in kindOptions"
+                    v-for="option in typeOptions"
                     :key="option.value"
                     :value="option.value"
                   >
@@ -224,6 +319,21 @@ async function handleDelete(): Promise<void> {
             </FieldContent>
           </Field>
 
+          <template v-if="isEditing && props.extra">
+            <Separator />
+
+            <!-- Alternate version files of this extra -->
+            <AnimeFileRecordList
+              :files="props.extra.files"
+              :empty-text="m.anime.extras.noFiles"
+              :attaching="isAttachingFile"
+              @attach="handleAttachFile"
+              @set-primary="handleSetPrimary"
+              @remove-file="handleRemoveFile"
+              @open-folder="handleOpenFolder"
+              @save-note="handleSaveNote"
+            />
+          </template>
         </DialogBody>
         <DialogFooter>
           <div class="flex items-center justify-between w-full">

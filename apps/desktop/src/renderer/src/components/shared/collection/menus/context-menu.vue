@@ -24,10 +24,9 @@ import {
   CollectionInfoFormDialog,
   CollectionEntitiesFormDialog,
   CollectionDynamicConfigFormDialog,
-  CollectionConvertToStaticFormDialog,
-  CollectionDeleteFormDialog
-} from '../forms'
-import { EntityMergeDialog } from '@renderer/components/shared/entity-merge'
+  CollectionConvertToStaticFormDialog
+  } from '../forms'
+import { EntityMergeDialog, EntityDeleteFormDialog } from '@renderer/components/shared/entity'
 import type { MenuComponents } from '@renderer/types'
 
 interface Props {
@@ -81,10 +80,11 @@ const mergeDialogOpen = ref(false)
   </ContextMenu>
 
   <!-- Dialogs rendered outside menu to survive menu close -->
-  <CollectionDeleteFormDialog
+  <EntityDeleteFormDialog
     v-if="deleteDialogOpen"
     v-model:open="deleteDialogOpen"
-    :collection-id="props.collectionId"
+    entity-type="collection"
+    :entity-id="props.collectionId"
   />
 
   <CollectionInfoFormDialog

@@ -30,7 +30,7 @@ import type {
   IngestGamePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
-import { applyMediaRelationFacts } from '../media-relations'
+import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../media-relations'
 import {
   requireOwnerIdentity,
   requirePersistedId,
@@ -321,10 +321,7 @@ export class GameIngestPersistHandler {
         collectionMode: 'replace'
       })
       if (related.unresolvedCount > 0) {
-        warnings.push({
-          code: 'related-entry-not-in-library',
-          message: `Skipped ${related.unresolvedCount} related entries because their targets are not in the library.`
-        })
+        warnings.push(createUnresolvedRelatedEntriesWarning(related.unresolvedCount))
       }
     }
 

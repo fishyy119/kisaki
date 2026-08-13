@@ -1,7 +1,53 @@
-import type { TaskRun, TaskRunWarning } from '@shared/task-run'
+import type {
+  TaskRun,
+  TaskRunInitiator,
+  TaskRunOperation,
+  TaskRunSubject,
+  TaskRunWarning
+} from '@shared/task-run'
 import type { IngestWarning } from '@shared/ingest'
-import type { TaskRunService } from '@main/services/task-run'
+import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { TaskRunCancellation } from '@main/services/task-run'
+
+/** The parts of an ingest task run that differ per operation and entity. */
+export interface IngestRunSpec {
+  operation: TaskRunOperation
+  title: string
+  /** User-facing label of the affected entity; doubles as the description. */
+  label: string
+  subject: { type: TaskRunSubject['type']; id?: string }
+  initiator: TaskRunInitiator | undefined
+}
+
+/**
+ * Creates a task run with the presentation every ingest operation shares:
+ * app-owned, cancelable, progress-notifying.
+ */
+export function createIngestRun(taskRunService: TaskRunService, spec: IngestRunSpec): TaskRunHandle {
+  return taskRunService.runs.create({
+    category: 'ingest',
+    operation: spec.operation,
+    title: spec.title,
+    description: spec.label,
+    owner: { type: 'app' },
+    initiator: spec.initiator ?? { type: 'user' },
+    subject: {
+      type: spec.subject.type,
+      ...(spec.subject.id !== undefined && { id: spec.subject.id }),
+      labelSnapshot: spec.label
+    },
+    controls: { cancelable: true, pausable: false },
+    presentation: {
+      notify: {
+        enabled: true,
+        title: spec.title,
+        showProgress: true,
+        showResult: true,
+        closable: true
+      }
+    }
+  })
+}
 
 export function toTaskRunWarnings(
   warnings: readonly IngestWarning[] | undefined

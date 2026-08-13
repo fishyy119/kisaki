@@ -19,11 +19,12 @@ import { buildPersonIncoming } from './incoming'
 import { buildPersonPlan } from './plan'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
+import { requireUpdateRequest } from './shared/request'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
 import { reportIngestProgress } from '../progress'
 import { throwIfIngestAborted } from '../abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
-import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
+import { createIngestRun, toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 const log = createLogger('Ingest')
 
@@ -40,25 +41,13 @@ export class PersonUpdateHandler {
     request: PersonUpdateRequest,
     options?: IngestTaskRunOptions
   ): TaskRunStartResult {
-    this.validateRequest(request)
-    const run = this.taskRunService.runs.create({
-      category: 'ingest',
+    requireUpdateRequest(request)
+    const run = createIngestRun(this.taskRunService, {
       operation: 'ingest.person.update',
       title: this.i18nService.messages.ingest.update.title({ entity: 'person' }),
-      description: request.lookup.name,
-      owner: { type: 'app' },
-      initiator: options?.taskRunInitiator ?? { type: 'user' },
-      subject: { type: 'person', id: request.rootId, labelSnapshot: request.lookup.name },
-      controls: { cancelable: true, pausable: false },
-      presentation: {
-        notify: {
-          enabled: true,
-          title: this.i18nService.messages.ingest.update.title({ entity: 'person' }),
-          showProgress: true,
-          showResult: true,
-          closable: true
-        }
-      }
+      label: request.lookup.name,
+      subject: { type: 'person', id: request.rootId },
+      initiator: options?.taskRunInitiator
     })
 
     void this.handleUpdateFromScraperWithTaskRun(run, request)
@@ -77,7 +66,7 @@ export class PersonUpdateHandler {
     request: PersonUpdateRequest,
     options?: IngestOperationOptions
   ): Promise<IngestUpdateResult> {
-    this.validateRequest(request)
+    requireUpdateRequest(request)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
@@ -146,15 +135,6 @@ export class PersonUpdateHandler {
 
     this.hooks.updated.dispatch({ entityId: request.rootId, surfaces, warnings })
     return warnings.length > 0 ? { warnings } : {}
-  }
-
-  private validateRequest(request: PersonUpdateRequest): void {
-    if (!request.rootId) {
-      throw new Error('Update rootId is required')
-    }
-    if (!request.profileId) {
-      throw new Error('Update profileId is required')
-    }
   }
 
   private async handleUpdateFromScraperWithTaskRun(

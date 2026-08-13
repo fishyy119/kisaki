@@ -212,11 +212,11 @@ derived from the `ExtensionHookPoints` map per point id.
 ### Kind Semantics
 
 - **waterfall** - ordered value transformation: `scraper.<type>.lookup|searched|collected`,
-  `scanner.entry.discovered|matched`, `play.game.launching`, `play.session.ending`.
+  `scanner.entry.discovered|matched`, `play.game.launching`, `play.game.session.ending`.
 - **veto** - ordered gatekeeping before a write; the first `{ veto: true, reason? }` aborts the
   workflow with a stable error: `ingest.<type>.committing|updating`, `library.entity-merging`.
 - **notify** - after-the-fact notification: `ingest.<type>.committed|updated`,
-  `scanner.run.started|finished`, `play.session.started|ended`, `library.changed`,
+  `scanner.run.started|finished`, `play.game.session.started|ended`, `library.changed`,
   `library.entity-merged`, `app.ready`, `app.settings.changed`, `app.ui-locale.changed`,
   `app.theme.changed`, `extension.enabled|disabled`.
 - **awaited notify** - declared in the catalog as notify with `await: true`; the workflow awaits

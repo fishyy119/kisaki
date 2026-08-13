@@ -2,64 +2,29 @@ import { eq } from 'drizzle-orm'
 import {
   personExternalIdLink,
   requireExternalIdsAvailable,
-  resolveTagId,
   type DbContext
 } from '@main/services/db'
-import {
-  personExternalIds,
-  persons,
-  personTagLinks,
-  type NewPerson,
-  type NewPersonTagLink
-} from '@shared/db'
-import { normalizeExternalIds, type ExternalId } from '@shared/identity'
+import { personExternalIds, persons, personTagLinks, type NewPerson } from '@shared/db'
 import type { PersonUpdatePlan, UpdateApplyResult } from '../types'
+import {
+  replaceEntityExternalIds,
+  replaceEntityTags,
+  type ExternalIdRowSpec,
+  type TagLinkRowSpec
+} from './links'
 
-function replacePersonExternalIds(
-  tx: DbContext,
-  personId: string,
-  externalIds: ExternalId[]
-): void {
-  tx.delete(personExternalIds).where(eq(personExternalIds.personId, personId)).run()
-
-  const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
-    personId,
-    source: externalId.source,
-    externalId: externalId.id,
-    orderInPerson: index
-  }))
-
-  if (values.length > 0) {
-    tx.insert(personExternalIds).values(values).run()
-  }
+const PERSON_EXTERNAL_ID_SPEC: ExternalIdRowSpec = {
+  table: personExternalIds,
+  entityIdColumn: personExternalIds.personId,
+  entityIdField: 'personId',
+  orderField: 'orderInPerson'
 }
 
-function replacePersonTags(
-  tx: DbContext,
-  personId: string,
-  nextTags: PersonUpdatePlan['tags']
-): void {
-  tx.delete(personTagLinks).where(eq(personTagLinks.personId, personId)).run()
-  if (!nextTags?.length) return
-
-  const linkValues: NewPersonTagLink[] = []
-  nextTags.forEach((tag, index) => {
-    const tagId = resolveTagId(tx, tag)
-    if (!tagId) return
-
-    linkValues.push({
-      personId,
-      tagId,
-      isSpoiler: tag.isSpoiler ?? false,
-      note: tag.note ?? null,
-      orderInPerson: index,
-      orderInTag: 0
-    })
-  })
-
-  if (linkValues.length > 0) {
-    tx.insert(personTagLinks).values(linkValues).run()
-  }
+const PERSON_TAG_LINK_SPEC: TagLinkRowSpec = {
+  table: personTagLinks,
+  entityIdColumn: personTagLinks.personId,
+  entityIdField: 'personId',
+  orderInEntityField: 'orderInPerson'
 }
 
 export function applyPersonPlan(
@@ -69,11 +34,11 @@ export function applyPersonPlan(
 ): UpdateApplyResult {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, personExternalIdLink, [personId], plan.externalIds)
-    replacePersonExternalIds(tx, personId, plan.externalIds)
+    replaceEntityExternalIds(tx, PERSON_EXTERNAL_ID_SPEC, personId, plan.externalIds)
   }
 
   if (plan.tags) {
-    replacePersonTags(tx, personId, plan.tags)
+    replaceEntityTags(tx, PERSON_TAG_LINK_SPEC, personId, plan.tags)
   }
 
   if (Object.keys(plan.patch).length > 0) {

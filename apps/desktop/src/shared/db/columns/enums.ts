@@ -16,16 +16,25 @@ import {
 } from '../contracts/constants'
 import type { AutomationCommandInvocationStatus } from '../../automation'
 import {
+  ANIME_CHARACTER_ROLE_VALUES,
+  ANIME_COMPANY_ROLE_VALUES,
+  ANIME_PERSON_ROLE_VALUES,
+  ANIME_STATUS_VALUES,
+  CHARACTER_PERSON_ROLE_VALUES,
   EXTENSION_INSTALL_REASON_VALUES,
   EXTENSION_REPOSITORY_STATE_VALUES,
   EXTENSION_SIGNER_ALGORITHM_VALUES,
-  EXTENSION_UPDATE_POLICY_VALUES
+  EXTENSION_UPDATE_POLICY_VALUES,
+  GAME_CHARACTER_ROLE_VALUES,
+  GAME_COMPANY_ROLE_VALUES,
+  GAME_PERSON_ROLE_VALUES,
+  GAME_STATUS_VALUES
 } from '../contracts/enums'
 import type {
   AnimeCharacterRole,
   AnimeCompanyRole,
   AnimeEpisodeType,
-  AnimeExtraKind,
+  AnimeExtraType,
   AnimeFormat,
   AnimePersonRole,
   AnimeStatus,
@@ -41,24 +50,16 @@ import type {
   GameLauncherMode,
   GameMonitorMode,
   GamePersonRole,
+  GameStatus,
   Gender,
   MainWindowCloseAction,
-  ScannerIngestMode,
-  Status
+  ScannerIngestMode
 } from '../contracts/enums'
 import { createBoundedIntegerType, createEnumType, createNullableEnumType } from './factories'
 
-const STATUS_VALUES = [
-  'notStarted',
-  'inProgress',
-  'partial',
-  'completed',
-  'multiple',
-  'shelved'
-] as const
-export const status = createEnumType<Status>(STATUS_VALUES, 'notStarted', 'status')
 
-const ANIME_STATUS_VALUES = ['planned', 'watching', 'completed', 'onHold', 'dropped'] as const
+export const gameStatus = createEnumType<GameStatus>(GAME_STATUS_VALUES, 'notStarted', 'gameStatus')
+
 export const animeStatus = createEnumType<AnimeStatus>(ANIME_STATUS_VALUES, 'planned', 'animeStatus')
 
 const GAME_LAUNCHER_MODE_VALUES = ['file', 'url', 'exec'] as const
@@ -78,36 +79,25 @@ export const gameMonitorMode = createEnumType<GameMonitorMode>(
 const GENDER_VALUES = ['male', 'female', 'other'] as const
 export const gender = createNullableEnumType<Gender>(GENDER_VALUES, 'gender')
 
-const GAME_PERSON_ROLE_VALUES = [
-  'director',
-  'scenario',
-  'illustration',
-  'music',
-  'programmer',
-  'actor',
-  'other'
-] as const
+
 export const gamePersonRole = createEnumType<GamePersonRole>(
   GAME_PERSON_ROLE_VALUES,
   'other',
   'gamePersonRole'
 )
 
-const GAME_CHARACTER_ROLE_VALUES = ['main', 'supporting', 'cameo', 'other'] as const
 export const gameCharacterRole = createEnumType<GameCharacterRole>(
   GAME_CHARACTER_ROLE_VALUES,
   'other',
   'gameCharacterRole'
 )
 
-const GAME_COMPANY_ROLE_VALUES = ['developer', 'publisher', 'distributor', 'other'] as const
 export const gameCompanyRole = createEnumType<GameCompanyRole>(
   GAME_COMPANY_ROLE_VALUES,
   'other',
   'gameCompanyRole'
 )
 
-const CHARACTER_PERSON_ROLE_VALUES = ['actor', 'illustration', 'designer', 'other'] as const
 export const characterPersonRole = createEnumType<CharacterPersonRole>(
   CHARACTER_PERSON_ROLE_VALUES,
   'other',
@@ -124,47 +114,30 @@ export const animeEpisodeType = createEnumType<AnimeEpisodeType>(
   'animeEpisodeType'
 )
 
-const ANIME_PERSON_ROLE_VALUES = [
-  'originalCreator',
-  'director',
-  'series',
-  'scenario',
-  'episodeDirector',
-  'characterDesign',
-  'animationDirector',
-  'animation',
-  'art',
-  'photography',
-  'sound',
-  'music',
-  'producer',
-  'other'
-] as const
+
 export const animePersonRole = createEnumType<AnimePersonRole>(
   ANIME_PERSON_ROLE_VALUES,
   'other',
   'animePersonRole'
 )
 
-const ANIME_CHARACTER_ROLE_VALUES = ['main', 'supporting', 'cameo', 'other'] as const
 export const animeCharacterRole = createEnumType<AnimeCharacterRole>(
   ANIME_CHARACTER_ROLE_VALUES,
   'other',
   'animeCharacterRole'
 )
 
-const ANIME_COMPANY_ROLE_VALUES = ['studio', 'producer', 'distributor', 'other'] as const
 export const animeCompanyRole = createEnumType<AnimeCompanyRole>(
   ANIME_COMPANY_ROLE_VALUES,
   'other',
   'animeCompanyRole'
 )
 
-const ANIME_EXTRA_KIND_VALUES = ['trailer', 'pv', 'ncop', 'nced', 'interview', 'other'] as const
-export const animeExtraKind = createEnumType<AnimeExtraKind>(
-  ANIME_EXTRA_KIND_VALUES,
+const ANIME_EXTRA_TYPE_VALUES = ['trailer', 'pv', 'ncop', 'nced', 'interview', 'other'] as const
+export const animeExtraType = createEnumType<AnimeExtraType>(
+  ANIME_EXTRA_TYPE_VALUES,
   'other',
-  'animeExtraKind'
+  'animeExtraType'
 )
 
 const BLOOD_TYPE_VALUES = ['a', 'b', 'ab', 'o'] as const

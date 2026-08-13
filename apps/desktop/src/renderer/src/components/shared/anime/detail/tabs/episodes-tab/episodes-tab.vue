@@ -19,8 +19,8 @@ import { cn } from '@renderer/utils/cn'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { animeEpisodes, type AnimeExtra } from '@shared/db'
-import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
+import { animeEpisodes } from '@shared/db'
+import type { AnimeEpisodeEntry, AnimeExtraEntry } from '@renderer/composables/use-anime'
 import { AnimeFilesConfigFormDialog } from '../../../forms'
 import AnimeDetailEpisodeItem from './episode-item.vue'
 import AnimeDetailExtraItem from './extra-item.vue'
@@ -88,7 +88,7 @@ async function handleSyncFiles(): Promise<void> {
 // =============================================================================
 
 const addExtraOpen = ref(false)
-const editExtraTarget = ref<AnimeExtra | null>(null)
+const editExtraTarget = ref<AnimeExtraEntry | null>(null)
 
 const extraEditOpen = computed({
   get: () => editExtraTarget.value !== null,

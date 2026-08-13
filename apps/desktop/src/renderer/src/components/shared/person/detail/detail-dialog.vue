@@ -25,8 +25,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import PersonDetailContent from './detail-content.vue'
-import { PersonScoreFormDialog } from '../forms'
-import { PersonDropdownMenu } from '../menus'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -208,16 +207,20 @@ function handleRevealSpoilersConfirm() {
               />
 
               <!-- More menu -->
-              <PersonDropdownMenu :person-id="person.id" />
+              <EntityDropdownMenu
+                entity-type="person"
+                :entity-id="person.id"
+              />
             </div>
           </div>
         </DialogFooter>
 
         <!-- Score Dialog -->
-        <PersonScoreFormDialog
+        <EntityScoreFormDialog
           v-if="isScoreOpen"
           v-model:open="isScoreOpen"
-          :person-id="person.id"
+          entity-type="person"
+          :entity-id="person.id"
         />
 
         <SpoilerConfirmDialog

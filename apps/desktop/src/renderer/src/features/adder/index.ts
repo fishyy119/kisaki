@@ -1,2 +1,1 @@
-export { GameAdderDialog } from './components'
-export { AdderTrigger } from './components'
+export { AdderTrigger, EntityAdderDialog } from './components'

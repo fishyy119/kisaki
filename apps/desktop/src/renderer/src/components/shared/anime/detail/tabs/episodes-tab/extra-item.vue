@@ -1,25 +1,28 @@
 <!--
   AnimeDetailExtraItem
-  One extra row: identity, kind, duration, and playback. Extras carry no watch
-  state, so playback starts through the untracked extra channel.
+  One extra row: identity, type, primary-file facts, and playback. Extras carry
+  no watch state, so playback starts through the untracked extra channel.
 -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { useI18n } from '@renderer/composables/use-i18n'
+import type { AnimeExtraEntry } from '@renderer/composables/use-anime'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
-import type { AnimeExtra } from '@shared/db'
 
 const log = createLogger('Anime')
 
 interface Props {
-  extra: AnimeExtra
+  extra: AnimeExtraEntry
 }
 
 const props = defineProps<Props>()
+
+/** Files arrive primary-first from the provider, so the head is the playable one. */
+const primaryFile = computed(() => props.extra.files[0])
 
 const emit = defineEmits<{
   openFolder: [path: string]
@@ -62,10 +65,14 @@ async function handlePlay(): Promise<void> {
       <div class="min-w-0">
         <p class="text-sm font-medium truncate">{{ props.extra.name }}</p>
         <div class="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{{ m.library.animeExtraKind[props.extra.kind] }}</span>
-          <template v-if="props.extra.durationMs">
+          <span>{{ m.library.animeExtraType[props.extra.type] }}</span>
+          <template v-if="primaryFile?.durationMs">
             <span>·</span>
-            <span>{{ f.duration(props.extra.durationMs) }}</span>
+            <span>{{ f.duration(primaryFile.durationMs) }}</span>
+          </template>
+          <template v-if="props.extra.files.length > 1">
+            <span>·</span>
+            <span>{{ m.anime.extras.fileCount({ count: props.extra.files.length }) }}</span>
           </template>
         </div>
       </div>
@@ -85,10 +92,11 @@ async function handlePlay(): Promise<void> {
       </Button>
 
       <Button
+        v-if="primaryFile"
         variant="ghost"
         size="icon-sm"
         :tooltip="m.anime.files.openFolder"
-        @click="emit('openFolder', props.extra.path)"
+        @click="emit('openFolder', primaryFile.path)"
       >
         <Icon
           icon="icon-[mdi--folder-open-outline]"
@@ -99,7 +107,7 @@ async function handlePlay(): Promise<void> {
       <Button
         variant="ghost"
         size="icon-sm"
-        :disabled="isPlayPending"
+        :disabled="isPlayPending || !primaryFile"
         :tooltip="m.anime.extras.play"
         @click="handlePlay"
       >

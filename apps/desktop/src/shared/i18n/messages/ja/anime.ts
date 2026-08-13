@@ -70,8 +70,10 @@ export const anime = {
     play: '再生',
     playFailed: '特典の再生に失敗しました',
     nameLabel: '名前',
-    kindLabel: '種類',
-    autoDetect: '自動判別'
+    typeLabel: '種類',
+    autoDetect: '自動判別',
+    noFiles: 'ファイルはまだありません。',
+    fileCount: ({ count }: { count: number }) => `ファイル ${count}`
   },
 
   files: {
@@ -93,7 +95,10 @@ export const anime = {
     addFile: 'ファイルを追加',
     fileAttached: 'ファイルを追加しました。',
     attachFailed: 'ファイルを追加できませんでした。',
-    manualBadge: '手動'
+    manualBadge: '手動',
+    noteLabel: 'メモ',
+    editNote: 'メモを編集',
+    noteSaved: 'メモを保存しました。'
   },
 
   player: {
@@ -124,6 +129,7 @@ export const anime = {
 
   statusDialog: {
     title: '視聴ステータスを編集',
+    label: '視聴ステータス',
     selectStatus: 'ステータスを選択'
   },
 
@@ -135,7 +141,7 @@ export const anime = {
 
   duration: {
     title: '視聴時間を編集',
-    totalWatchTime: '合計視聴時間',
+    totalTime: '合計視聴時間',
     sessionsDuration: ({ value }: { value: string }) => `セッション記録：${value}`,
     untrackedDuration: ({ value }: { value: string }) => `未記録時間：${value}`,
     untrackedLabel: '未記録の視聴時間',
@@ -165,7 +171,7 @@ export const anime = {
     trend: '視聴推移',
     distribution: '時間帯分布',
     recentSessions: '最近の視聴',
-    watchDuration: '視聴時間',
+    totalDuration: '視聴時間',
     sessionCount: '視聴回数',
     sessionCountValue: ({ count }: { count: number }) => `${count} 回`,
     avgDuration: '平均セッション',
@@ -173,8 +179,8 @@ export const anime = {
     currentStreak: '現在の連続日数',
     longestStreak: '最長の連続日数',
     streakValue: ({ days }: { days: number }) => `${days} 日`,
-    firstWatched: '初回視聴',
-    lastWatched: '最終視聴',
+    firstSession: '初回視聴',
+    lastSession: '最終視聴',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day}日`
   }
 } satisfies Messages['anime']

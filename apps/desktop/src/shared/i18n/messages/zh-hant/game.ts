@@ -8,6 +8,7 @@ export const game = {
 
   statusDialog: {
     title: '編輯遊玩狀態',
+    label: '遊玩狀態',
     selectStatus: '選擇狀態'
   },
 
@@ -19,7 +20,7 @@ export const game = {
 
   duration: {
     title: '編輯遊玩時間',
-    totalPlayTime: '總遊玩時間',
+    totalTime: '總遊玩時間',
     sessionsDuration: ({ value }: { value: string }) => `工作階段記錄：${value}`,
     untrackedDuration: ({ value }: { value: string }) => `未記錄時間：${value}`,
     untrackedLabel: '未記錄的遊玩時間',
@@ -131,20 +132,19 @@ export const game = {
     heatmap: '活動熱力圖',
     trend: '遊玩趨勢',
     distribution: '時段分布',
+    recentSessions: '最近會話',
     emptyTitle: '暫無遊玩活動',
     emptyHint: '啟動遊戲後，遊玩時間將自動記錄在這裡。',
-    legendLess: '少',
-    legendMore: '多',
-    playDuration: '遊玩時長',
-    playCount: '遊玩次數',
-    playCountValue: ({ count }: { count: number }) => `${count} 次`,
+    totalDuration: '遊玩時長',
+    sessionCount: '遊玩次數',
+    sessionCountValue: ({ count }: { count: number }) => `${count} 次`,
     avgDuration: '平均時長',
     longestSession: '最長單次',
     currentStreak: '目前連續',
     longestStreak: '最長連續',
     streakValue: ({ days }: { days: number }) => `${days} 天`,
-    firstPlayed: '首次遊玩',
-    lastPlayed: '最近遊玩',
+    firstSession: '首次遊玩',
+    lastSession: '最近遊玩',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day}日`
   }
 } satisfies Messages['game']

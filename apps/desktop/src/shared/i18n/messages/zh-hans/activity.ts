@@ -34,6 +34,7 @@ export const activity = {
     animeNotFound: '动漫不存在。',
     episodeNotFound: '剧集不存在。',
     extraNotFound: '特典不存在。',
+    noExtraFile: '该特典尚无视频文件。',
     noPlayableEpisode: '没有可播放的剧集。',
     noEpisodeFile: '该剧集尚无视频文件。',
     playerUnavailable: '视频播放器不可用。',

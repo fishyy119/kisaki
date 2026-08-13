@@ -26,8 +26,7 @@ import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { getEntityIcon } from '@renderer/utils/format'
 import CharacterDetailContent from './detail-content.vue'
-import { CharacterScoreFormDialog } from '../forms'
-import { CharacterDropdownMenu } from '../menus'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -211,7 +210,10 @@ function handleRevealSpoilersConfirm() {
               />
 
               <!-- More menu -->
-              <CharacterDropdownMenu :character-id="character.id" />
+              <EntityDropdownMenu
+                entity-type="character"
+                :entity-id="character.id"
+              />
             </div>
           </div>
         </DialogFooter>
@@ -220,10 +222,11 @@ function handleRevealSpoilersConfirm() {
   </Dialog>
 
   <!-- Score Dialog -->
-  <CharacterScoreFormDialog
+  <EntityScoreFormDialog
     v-if="isScoreOpen && state === 'success' && character"
     v-model:open="isScoreOpen"
-    :character-id="character.id"
+    entity-type="character"
+    :entity-id="character.id"
   />
 
   <SpoilerConfirmDialog

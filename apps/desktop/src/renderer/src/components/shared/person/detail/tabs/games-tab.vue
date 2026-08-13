@@ -10,24 +10,15 @@ import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
-import { PersonGamesFormDialog } from '../../forms'
 import { useI18n } from '@renderer/composables'
+import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import { GAME_PERSON_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 
 const GAME_PERSON_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gamePerson
 )
-
-const GAME_PERSON_ROLE_ORDER = [
-  'director',
-  'scenario',
-  'illustration',
-  'music',
-  'programmer',
-  'actor',
-  'other'
-] as const
 
 const { person, games } = usePerson()
 
@@ -101,7 +92,7 @@ const gameDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="role in GAME_PERSON_ROLE_ORDER"
+          v-for="role in GAME_PERSON_ROLE_VALUES"
           :key="role"
         >
           <div v-if="groupedGames[role]?.length">
@@ -128,10 +119,11 @@ const gameDialogOpen = computed({
     </template>
 
     <!-- Edit Dialog -->
-    <PersonGamesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogOpen"
       v-model:open="editDialogOpen"
-      :person-id="person.id"
+      view="person-games"
+      :entity-id="person.id"
     />
 
     <!-- Game Detail Dialog -->

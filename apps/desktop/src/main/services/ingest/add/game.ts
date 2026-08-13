@@ -23,7 +23,7 @@ import {
 import { reportIngestProgress } from '../progress'
 import { throwIfIngestAborted } from '../abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
-import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
+import { createIngestRun, toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 type GameAddFromScraperOptions = IngestAddGameFromScraperOptions & IngestOperationOptions
 type GameAddDirectOptions = IngestAddGameDirectOptions & IngestOperationOptions
@@ -46,25 +46,7 @@ export class GameAddHandler {
     options?: GameAddFromScraperTaskRunOptions
   ): TaskRunStartResult {
     const normalized = normalizeIngestLookupInput(profileId, lookup)
-    const run = this.taskRunService.runs.create({
-      category: 'ingest',
-      operation: 'ingest.game.add',
-      title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
-      description: normalized.lookup.name,
-      owner: { type: 'app' },
-      initiator: options?.taskRunInitiator ?? { type: 'user' },
-      subject: { type: 'game', labelSnapshot: normalized.lookup.name },
-      controls: { cancelable: true, pausable: false },
-      presentation: {
-        notify: {
-          enabled: true,
-          title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
-          showProgress: true,
-          showResult: true,
-          closable: true
-        }
-      }
-    })
+    const run = this.createRun(normalized.lookup.name, options?.taskRunInitiator)
 
     void this.handleAddFromScraperWithTaskRun(run, normalized.profileId, normalized.lookup, options)
     return { runId: run.id, createdAt: run.createdAt }
@@ -78,25 +60,7 @@ export class GameAddHandler {
       name: seed.name,
       knownIds: seed.knownIds
     })
-    const run = this.taskRunService.runs.create({
-      category: 'ingest',
-      operation: 'ingest.game.add',
-      title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
-      description: normalizedLookup.name,
-      owner: { type: 'app' },
-      initiator: options?.taskRunInitiator ?? { type: 'user' },
-      subject: { type: 'game', labelSnapshot: normalizedLookup.name },
-      controls: { cancelable: true, pausable: false },
-      presentation: {
-        notify: {
-          enabled: true,
-          title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
-          showProgress: true,
-          showResult: true,
-          closable: true
-        }
-      }
-    })
+    const run = this.createRun(normalizedLookup.name, options?.taskRunInitiator)
 
     void this.handleAddDirectWithTaskRun(run, normalizedLookup, options)
     return { runId: run.id, createdAt: run.createdAt }
@@ -210,6 +174,19 @@ export class GameAddHandler {
       warnings: result.warnings ?? []
     })
     return result
+  }
+
+  private createRun(
+    label: string,
+    initiator: IngestTaskRunOptions['taskRunInitiator']
+  ): TaskRunHandle {
+    return createIngestRun(this.taskRunService, {
+      operation: 'ingest.game.add',
+      title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
+      label,
+      subject: { type: 'game' },
+      initiator
+    })
   }
 
   private async handleAddFromScraperWithTaskRun(

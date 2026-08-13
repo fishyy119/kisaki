@@ -13,9 +13,8 @@ import { CharacterCard, CharacterDetailDialog } from '@renderer/components/share
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
-import { AnimeCharactersFormDialog } from '../../forms'
-
-const CHARACTER_TYPE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
+import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import { ANIME_CHARACTER_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 
@@ -90,7 +89,7 @@ const characterDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="type in CHARACTER_TYPE_ORDER"
+          v-for="type in ANIME_CHARACTER_ROLE_VALUES"
           :key="type"
         >
           <div v-if="groupedCharacters[type]?.length">
@@ -117,10 +116,11 @@ const characterDialogOpen = computed({
     </template>
 
     <!-- Edit Dialog -->
-    <AnimeCharactersFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogOpen"
       v-model:open="editDialogOpen"
-      :anime-id="anime.id"
+      view="anime-characters"
+      :entity-id="anime.id"
     />
 
     <CharacterDetailDialog

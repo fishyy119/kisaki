@@ -9,7 +9,7 @@
 
 import { eq } from 'drizzle-orm'
 import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
-import type { DbContext, DbQueryContext, DbWriteContext } from '@main/services/db'
+import { resolveTagId, type DbContext, type DbQueryContext, type DbWriteContext } from '@main/services/db'
 import {
   animeCharacterLinks,
   animeCompanyLinks,
@@ -20,9 +20,15 @@ import {
   gamePersonLinks
 } from '@shared/db'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
+import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import { IngestPersistHandlers } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
-import type { IngestCharacterGraph, IngestCharacterNode, IngestGameGraph } from '../../graph'
+import type {
+  IngestCharacterGraph,
+  IngestCharacterNode,
+  IngestCharacterPersonLink,
+  IngestGameGraph
+} from '../../graph'
 import { normalizeOptionalString } from '../shared/normalization'
 
 /** One stored or incoming link row, reduced to the fields update semantics compare. */
@@ -271,6 +277,245 @@ export function applyLinkRows<
   }
 
   return rowPlan.preservedRowCount
+}
+
+/** Schema facts of one entity's external-id table. */
+export interface ExternalIdRowSpec {
+  table: SQLiteTable
+  entityIdColumn: AnySQLiteColumn
+  entityIdField: string
+  orderField: string
+}
+
+/** Replaces an entity's external-id rows with the normalized incoming set. */
+export function replaceEntityExternalIds(
+  tx: DbContext,
+  spec: ExternalIdRowSpec,
+  entityId: string,
+  externalIds: ExternalId[]
+): void {
+  ;(tx as DbWriteContext).delete(spec.table).where(eq(spec.entityIdColumn, entityId)).run()
+
+  const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
+    [spec.entityIdField]: entityId,
+    source: externalId.source,
+    externalId: externalId.id,
+    [spec.orderField]: index
+  }))
+
+  if (values.length > 0) {
+    ;(tx as DbWriteContext).insert(spec.table).values(values).run()
+  }
+}
+
+/** Schema facts of one entity's tag-link table. */
+export interface TagLinkRowSpec {
+  table: SQLiteTable
+  entityIdColumn: AnySQLiteColumn
+  entityIdField: string
+  orderInEntityField: string
+}
+
+type UpdateTagInput = Parameters<typeof resolveTagId>[1] & {
+  isSpoiler?: boolean
+  note?: string | null
+}
+
+/** Replaces an entity's tag links, resolving or creating tags by identity. */
+export function replaceEntityTags(
+  tx: DbContext,
+  spec: TagLinkRowSpec,
+  entityId: string,
+  nextTags: readonly UpdateTagInput[] | undefined
+): void {
+  ;(tx as DbWriteContext).delete(spec.table).where(eq(spec.entityIdColumn, entityId)).run()
+  if (!nextTags?.length) return
+
+  const values: Record<string, unknown>[] = []
+  nextTags.forEach((tag, index) => {
+    const tagId = resolveTagId(tx, tag)
+    if (!tagId) return
+
+    values.push({
+      [spec.entityIdField]: entityId,
+      tagId,
+      isSpoiler: tag.isSpoiler ?? false,
+      note: tag.note ?? null,
+      [spec.orderInEntityField]: index,
+      orderInTag: 0
+    })
+  })
+
+  if (values.length > 0) {
+    ;(tx as DbWriteContext).insert(spec.table).values(values).run()
+  }
+}
+
+interface NodeResolution {
+  idByIdentity: Map<string, string>
+  pendingAssets: PendingAssetTask[]
+}
+
+const EMPTY_RESOLUTION: NodeResolution = { idByIdentity: new Map(), pendingAssets: [] }
+
+/** One media-side link family: its link-table kind, resolved mode, and graph rows. */
+export interface MediaGraphLinkInput<
+  K extends LinkRowKind,
+  TLink extends { role: string; isSpoiler: boolean; note?: string | null }
+> {
+  kind: K
+  mode: IngestUpdatePolicy['collectionUpdate'] | undefined
+  links: readonly TLink[]
+}
+
+/**
+ * Applies a media entry's scraped relation graph: resolves the satellite
+ * nodes the planned link tables actually reference (creating missing ones)
+ * and reconciles the person/company/character link tables plus the
+ * character-person rows reachable through them. Parameterized only by
+ * link-table kinds and graph rows; identical mechanics for every playable
+ * media type.
+ */
+export function applyMediaLinkGraph<K extends LinkRowKind>(params: {
+  tx: DbContext
+  entityId: string
+  persistHandlers: IngestPersistHandlers
+  nodes: {
+    persons: IngestGameGraph['persons']
+    companies: IngestGameGraph['companies']
+    characters: IngestGameGraph['characters']
+  }
+  person: MediaGraphLinkInput<K, { personIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }>
+  company: MediaGraphLinkInput<K, { companyIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }>
+  character: MediaGraphLinkInput<K, { characterIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }>
+  characterPerson: {
+    mode: IngestUpdatePolicy['collectionUpdate'] | undefined
+    links: readonly IngestCharacterPersonLink[]
+  }
+}): {
+  pendingAssets: PendingAssetTask[]
+  preservedLinkRows: Partial<Record<K | 'characterPerson', number>>
+} {
+  const { tx, entityId, persistHandlers, nodes, person, company, character, characterPerson } =
+    params
+
+  const personIdentityKeys = new Set<string>()
+  if (person.mode) {
+    for (const link of person.links) personIdentityKeys.add(link.personIdentityKey)
+  }
+  if (characterPerson.mode) {
+    for (const link of characterPerson.links) personIdentityKeys.add(link.personIdentityKey)
+  }
+
+  const companyIdentityKeys = new Set<string>()
+  if (company.mode) {
+    for (const link of company.links) companyIdentityKeys.add(link.companyIdentityKey)
+  }
+
+  const characterIdentityKeys = new Set<string>()
+  if (character.mode) {
+    for (const link of character.links) characterIdentityKeys.add(link.characterIdentityKey)
+  }
+  if (characterPerson.mode) {
+    for (const link of characterPerson.links) characterIdentityKeys.add(link.characterIdentityKey)
+  }
+
+  const pendingAssets: PendingAssetTask[] = []
+  const preservedLinkRows: Partial<Record<K | 'characterPerson', number>> = {}
+
+  const personResolution =
+    personIdentityKeys.size > 0
+      ? resolvePersonNodes(
+          tx,
+          persistHandlers,
+          filterNodesByIdentity(nodes.persons, personIdentityKeys)
+        )
+      : EMPTY_RESOLUTION
+  pendingAssets.push(...personResolution.pendingAssets)
+
+  const companyResolution =
+    companyIdentityKeys.size > 0
+      ? resolveCompanyNodes(
+          tx,
+          persistHandlers,
+          filterNodesByIdentity(nodes.companies, companyIdentityKeys)
+        )
+      : EMPTY_RESOLUTION
+  pendingAssets.push(...companyResolution.pendingAssets)
+
+  const characterResolution =
+    characterIdentityKeys.size > 0
+      ? resolveCharacterNodes(
+          tx,
+          persistHandlers,
+          filterNodesByIdentity(nodes.characters, characterIdentityKeys)
+        )
+      : EMPTY_RESOLUTION
+  pendingAssets.push(...characterResolution.pendingAssets)
+
+  if (person.mode) {
+    preservedLinkRows[person.kind] = applyLinkRows({
+      tx,
+      kind: person.kind,
+      entityId,
+      links: person.links,
+      relatedIdentityKeyOf: (link) => link.personIdentityKey,
+      relatedIdByIdentity: personResolution.idByIdentity,
+      collectionMode: person.mode
+    })
+  }
+
+  if (company.mode) {
+    preservedLinkRows[company.kind] = applyLinkRows({
+      tx,
+      kind: company.kind,
+      entityId,
+      links: company.links,
+      relatedIdentityKeyOf: (link) => link.companyIdentityKey,
+      relatedIdByIdentity: companyResolution.idByIdentity,
+      collectionMode: company.mode
+    })
+  }
+
+  if (character.mode) {
+    preservedLinkRows[character.kind] = applyLinkRows({
+      tx,
+      kind: character.kind,
+      entityId,
+      links: character.links,
+      relatedIdentityKeyOf: (link) => link.characterIdentityKey,
+      relatedIdByIdentity: characterResolution.idByIdentity,
+      collectionMode: character.mode
+    })
+  }
+
+  if (characterPerson.mode) {
+    const linksByCharacterId = new Map<string, IngestCharacterPersonLink[]>()
+    for (const link of characterPerson.links) {
+      const characterId = characterResolution.idByIdentity.get(link.characterIdentityKey)
+      if (!characterId) continue
+
+      const links = linksByCharacterId.get(characterId) ?? []
+      links.push(link)
+      linksByCharacterId.set(characterId, links)
+    }
+
+    let preserved = 0
+    for (const [characterId, links] of linksByCharacterId) {
+      preserved += applyLinkRows({
+        tx,
+        kind: 'characterPerson',
+        entityId: characterId,
+        links,
+        relatedIdentityKeyOf: (link) => link.personIdentityKey,
+        relatedIdByIdentity: personResolution.idByIdentity,
+        collectionMode: characterPerson.mode
+      })
+    }
+    preservedLinkRows.characterPerson = preserved
+  }
+
+  return { pendingAssets, preservedLinkRows }
 }
 
 export function resolvePersonNodes(

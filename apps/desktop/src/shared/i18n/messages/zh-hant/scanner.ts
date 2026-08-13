@@ -226,8 +226,7 @@ export const scanner = {
       externalIdLinked: '外部 ID 已關聯到現有項目，目前路徑未新增。',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 個影片檔案無法辨識集數，已作為未編號劇集新增。`,
-      episodeSyncFailed: ({ message }: { message: string }) =>
-        `項目已新增，但影片檔案讀取失敗：${message}`
+      episodeSyncFailed: '項目已新增，但影片檔案同步失敗，詳見日誌。'
     }
   }
 } satisfies Messages['scanner']

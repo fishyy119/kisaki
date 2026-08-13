@@ -7,37 +7,10 @@ export { default as GameSearcher } from './game-searcher.vue'
 export { default as GameSelect } from './game-select.vue'
 export type { GameSearcherSelection } from './types'
 
-// Menus
-export {
-  GameContextMenu,
-  GameMenuItems,
-  GameDropdownMenu,
-  GameBatchContextMenu,
-  GameBatchMenuItems
-} from './menus'
-
 // Forms
 export {
-  GameScoreFormDialog,
-  GameDeleteFormDialog,
-  GameBatchDeleteFormDialog,
-  GameMetadataUpdateFormDialog,
-  GameBatchMetadataUpdateFormDialog,
-  GameExternalIdsFormDialog,
   GameInfoFormDialog,
-  GameNameFormDialog,
-  GameOriginalNameFormDialog,
-  GameDescriptionFormDialog,
-  GameStatusFormDialog,
-  GameLastActiveFormDialog,
-  GameTagsFormDialog,
-  GameDurationFormDialog,
-  GameExternalSitesFormDialog,
   GameLaunchConfigFormDialog,
-  GameCharactersFormDialog,
-  GameCompaniesFormDialog,
-  GamePersonsFormDialog,
-  GameMediaFormDialog,
   GameNotesFormDialog,
   GameSavesFormDialog
 } from './forms'

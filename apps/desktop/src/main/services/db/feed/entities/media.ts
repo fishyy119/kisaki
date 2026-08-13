@@ -6,7 +6,7 @@
  */
 
 import type Database from 'better-sqlite3'
-import type { AnimeStatus, Status } from '@shared/db/contracts/enums'
+import type { AnimeStatus, GameStatus } from '@shared/db/contracts/enums'
 import type { RawDbChange } from '@shared/db/changes'
 import type {
   LibraryChange,
@@ -75,9 +75,11 @@ const ANIME_PROJECTION: MediaFeedProjection = {
     company: 'anime_company_links',
     character: 'anime_character_links'
   },
-  // `anime_episode_files` has no anime_id column, so the owner-column mechanism
-  // cannot cover it; episode file changes reach subscribers via the episodes
-  // they hang off.
+  // `anime_episode_files` and `anime_extra_files` have no anime_id column, so
+  // the owner-column mechanism cannot cover them; file-row changes reach
+  // subscribers via the episode/extra rows they hang off. If extension
+  // subscribers ever need file-level changes, route them through a two-step
+  // lookup (file -> episode/extra -> anime) instead of widening this list.
   ownedTables: ['anime_episodes', 'anime_extras', 'anime_sessions'],
   coreFields: {
     name: 'name',
@@ -278,8 +280,8 @@ function projectDirectChanges(
   if (firstOld.status !== lastNext.status) {
     projected.push({
       facet: 'status',
-      before: { status: firstOld.status as Status | AnimeStatus },
-      after: { status: lastNext.status as Status | AnimeStatus },
+      before: { status: firstOld.status as GameStatus | AnimeStatus },
+      after: { status: lastNext.status as GameStatus | AnimeStatus },
       fields: ['status']
     })
   }

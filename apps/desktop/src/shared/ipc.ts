@@ -144,6 +144,7 @@ import type {
   AnimeStopResult,
   AnimeWatchingState,
   AnimeWatchResult,
+  GameActivityEvent,
   GameLaunchResult,
   GameMonitorPathConfig,
   GameRunningStatus,
@@ -606,10 +607,10 @@ export interface IpcRendererEvents {
   ready: [boolean]
   'native:main-window-maximized': []
   'native:main-window-unmaximized': []
-  'activity:game-started': [string]
-  'activity:game-stopped': [string]
-  'activity:game-foreground': [string]
-  'activity:game-background': [string]
+  'activity:game-started': [event: GameActivityEvent]
+  'activity:game-stopped': [event: GameActivityEvent]
+  'activity:game-foreground': [event: GameActivityEvent]
+  'activity:game-background': [event: GameActivityEvent]
   'activity:anime-started': [state: AnimeWatchingState]
   'activity:anime-stopped': [state: AnimeWatchingState]
   'player:session-started': [state: PlaybackSessionState]

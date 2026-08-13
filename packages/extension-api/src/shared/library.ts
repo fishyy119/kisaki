@@ -60,7 +60,7 @@ export type LibraryAnimeEpisodeType = (typeof LIBRARY_ANIME_EPISODE_TYPES)[numbe
 export const LIBRARY_ANIME_PERSON_ROLES = [
   'originalCreator',
   'director',
-  'series',
+  'seriesComposition',
   'scenario',
   'episodeDirector',
   'characterDesign',

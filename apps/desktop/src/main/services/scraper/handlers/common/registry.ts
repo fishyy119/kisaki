@@ -19,6 +19,21 @@ export interface ScraperProviderRegistry<TProvider extends RegisteredScraperProv
   asMap(): ReadonlyMap<string, TProvider>
 }
 
+/** Public info projection of a registered provider, with capabilities copied. */
+export function toProviderInfo<C extends ScraperCapability>(provider: {
+  id: string
+  name: string
+  externalIdSource: string
+  capabilities: readonly C[]
+}): { id: string; name: string; externalIdSource: string; capabilities: C[] } {
+  return {
+    id: provider.id,
+    name: provider.name,
+    externalIdSource: provider.externalIdSource,
+    capabilities: [...provider.capabilities]
+  }
+}
+
 function hasMethod(provider: RegisteredScraperProvider, methodName: string): boolean {
   return typeof (provider as unknown as Record<string, unknown>)[methodName] === 'function'
 }

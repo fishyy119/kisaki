@@ -74,8 +74,10 @@ export const anime = {
     play: 'Play',
     playFailed: 'Failed to play extra',
     nameLabel: 'Name',
-    kindLabel: 'Kind',
-    autoDetect: 'Auto detect'
+    typeLabel: 'Type',
+    autoDetect: 'Auto detect',
+    noFiles: 'No files yet.',
+    fileCount: ({ count }: { count: number }) => (count === 1 ? '1 file' : `${count} files`)
   },
 
   files: {
@@ -99,7 +101,10 @@ export const anime = {
     addFile: 'Add file',
     fileAttached: 'File attached.',
     attachFailed: 'Could not attach the file.',
-    manualBadge: 'Manual'
+    manualBadge: 'Manual',
+    noteLabel: 'Note',
+    editNote: 'Edit note',
+    noteSaved: 'Note saved.'
   },
 
   player: {
@@ -130,6 +135,7 @@ export const anime = {
 
   statusDialog: {
     title: 'Edit watch status',
+    label: 'Watch status',
     selectStatus: 'Select status'
   },
 
@@ -141,7 +147,7 @@ export const anime = {
 
   duration: {
     title: 'Edit watch time',
-    totalWatchTime: 'Total watch time',
+    totalTime: 'Total watch time',
     sessionsDuration: ({ value }: { value: string }) => `Sessions: ${value}`,
     untrackedDuration: ({ value }: { value: string }) => `Untracked: ${value}`,
     untrackedLabel: 'Untracked watch time',
@@ -171,7 +177,7 @@ export const anime = {
     trend: 'Watch trend',
     distribution: 'Time distribution',
     recentSessions: 'Recent sessions',
-    watchDuration: 'Watch time',
+    totalDuration: 'Watch time',
     sessionCount: 'Sessions',
     sessionCountValue: ({ count }: { count: number }) =>
       count === 1 ? '1 session' : `${count} sessions`,
@@ -180,8 +186,8 @@ export const anime = {
     currentStreak: 'Current streak',
     longestStreak: 'Longest streak',
     streakValue: ({ days }: { days: number }) => (days === 1 ? '1 day' : `${days} days`),
-    firstWatched: 'First watched',
-    lastWatched: 'Last watched',
+    firstSession: 'First watched',
+    lastSession: 'Last watched',
     dayOfMonthLabel: ({ day }: { day: number }) => `Day ${day}`
   }
 }

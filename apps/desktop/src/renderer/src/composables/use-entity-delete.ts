@@ -1,4 +1,13 @@
-import { computed, ref, toRaw, watch, type ComputedRef, type Ref } from 'vue'
+import {
+  computed,
+  ref,
+  toRaw,
+  toValue,
+  watch,
+  type ComputedRef,
+  type MaybeRefOrGetter,
+  type Ref
+} from 'vue'
 import type { AllEntityType } from '@shared/common'
 import type { EntityDeleteResult } from '@shared/entity-delete'
 import { deleteEntities, previewEntityDelete } from '@renderer/core/db'
@@ -6,7 +15,7 @@ import { messages } from '@renderer/core/i18n'
 import { useAsyncData } from './use-async-data'
 
 interface UseEntityDeleteOptions {
-  entityType: AllEntityType
+  entityType: MaybeRefOrGetter<AllEntityType>
   entityIds: ComputedRef<string[]>
   open: Ref<boolean>
 }
@@ -23,14 +32,14 @@ export function useEntityDelete(options: UseEntityDeleteOptions) {
       const entityIds = options.entityIds.value.filter(Boolean)
       if (entityIds.length === 0) {
         return {
-          entityType: options.entityType,
+          entityType: toValue(options.entityType),
           items: [],
           relatedOptions: []
         }
       }
 
       return await previewEntityDelete({
-        entityType: options.entityType,
+        entityType: toValue(options.entityType),
         entityIds
       })
     },
@@ -64,7 +73,7 @@ export function useEntityDelete(options: UseEntityDeleteOptions) {
 
   async function deleteSelectedEntities(): Promise<EntityDeleteResult> {
     return await deleteEntities({
-      entityType: options.entityType,
+      entityType: toValue(options.entityType),
       entityIds: resolvedEntityIds.value,
       deleteRelatedTypes: toRaw(selectedRelatedTypes.value)
     })

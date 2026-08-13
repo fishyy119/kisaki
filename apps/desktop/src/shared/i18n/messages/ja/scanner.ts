@@ -242,8 +242,8 @@ export const scanner = {
         '外部 ID が既存の項目に関連付けられているため、このパスは追加しませんでした。',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 件の動画ファイルは話数を判別できないため、番号なしのエピソードとして追加しました。`,
-      episodeSyncFailed: ({ message }: { message: string }) =>
-        `項目は追加しましたが、動画ファイルを読み取れませんでした：${message}`
+      episodeSyncFailed:
+        '項目は追加しましたが、動画ファイルの同期に失敗しました。詳細はログを参照してください。'
     }
   }
 } satisfies Messages['scanner']

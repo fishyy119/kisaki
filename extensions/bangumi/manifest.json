@@ -7,15 +7,15 @@
   "entry": "./dist/index.mjs",
   "ui": "./dist/ui",
   "description": {
-    "en": "Built-in Bangumi media integration and game metadata scraper for Kisaki.",
-    "ja": "Kisaki 内蔵の Bangumi メディア連携およびゲームメタデータスクレイパー。",
-    "zh-Hans": "Kisaki 内置的 Bangumi 媒体集成与游戏元数据刮削器。",
-    "zh-Hant": "Kisaki 內建的 Bangumi 媒體整合與遊戲中繼資料刮削器。"
+    "en": "Built-in Bangumi media integration and game/anime metadata scraper for Kisaki.",
+    "ja": "Kisaki 内蔵の Bangumi メディア連携およびゲーム・アニメメタデータスクレイパー。",
+    "zh-Hans": "Kisaki 内置的 Bangumi 媒体集成与游戏/动漫元数据刮削器。",
+    "zh-Hant": "Kisaki 內建的 Bangumi 媒體整合與遊戲/動漫中繼資料刮削器。"
   },
   "author": "Kisaki",
   "homepage": "https://bgm.tv",
   "keywords": ["bangumi", "scraper", "game", "anime", "book", "music"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.7"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

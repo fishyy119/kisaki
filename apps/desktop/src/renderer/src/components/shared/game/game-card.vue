@@ -18,8 +18,8 @@ import {
   type MediaCardAlign,
   type MediaCardSize
 } from '@renderer/components/ui/media-card'
-import { GameContextMenu } from './menus'
 import type { Game } from '@shared/db'
+import { EntityContextMenu } from '@renderer/components/shared/entity'
 
 interface Props {
   game: Game
@@ -61,7 +61,10 @@ const imageUrl = computed(() =>
 </script>
 
 <template>
-  <GameContextMenu :game-id="props.game.id">
+  <EntityContextMenu
+    entity-type="game"
+    :entity-id="props.game.id"
+  >
     <MediaCard
       v-if="props.variant === 'card'"
       :name="props.game.name"
@@ -91,5 +94,5 @@ const imageUrl = computed(() =>
       :class="props.class"
       @click="emit('click')"
     />
-  </GameContextMenu>
+  </EntityContextMenu>
 </template>

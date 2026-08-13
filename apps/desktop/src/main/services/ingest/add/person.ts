@@ -15,7 +15,7 @@ import { addPersonToCollection, normalizeIngestLookupInput, requireScrapedBundle
 import { reportIngestProgress } from '../progress'
 import { throwIfIngestAborted } from '../abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
-import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
+import { createIngestRun, toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 type PersonAddFromScraperOptions = IngestAddPersonFromScraperOptions & IngestOperationOptions
 type PersonAddFromScraperTaskRunOptions = IngestAddPersonFromScraperOptions & IngestTaskRunOptions
@@ -36,24 +36,12 @@ export class PersonAddHandler {
     options?: PersonAddFromScraperTaskRunOptions
   ): TaskRunStartResult {
     const normalized = normalizeIngestLookupInput(profileId, lookup)
-    const run = this.taskRunService.runs.create({
-      category: 'ingest',
+    const run = createIngestRun(this.taskRunService, {
       operation: 'ingest.person.add',
       title: this.i18nService.messages.ingest.add.title({ entity: 'person' }),
-      description: normalized.lookup.name,
-      owner: { type: 'app' },
-      initiator: options?.taskRunInitiator ?? { type: 'user' },
-      subject: { type: 'person', labelSnapshot: normalized.lookup.name },
-      controls: { cancelable: true, pausable: false },
-      presentation: {
-        notify: {
-          enabled: true,
-          title: this.i18nService.messages.ingest.add.title({ entity: 'person' }),
-          showProgress: true,
-          showResult: true,
-          closable: true
-        }
-      }
+      label: normalized.lookup.name,
+      subject: { type: 'person' },
+      initiator: options?.taskRunInitiator
     })
 
     void this.handleAddFromScraperWithTaskRun(run, normalized.profileId, normalized.lookup, options)

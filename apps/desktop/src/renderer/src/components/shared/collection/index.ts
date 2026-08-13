@@ -12,9 +12,8 @@ export {
   CollectionInfoFormDialog,
   CollectionEntitiesFormDialog,
   CollectionDynamicConfigFormDialog,
-  CollectionConvertToStaticFormDialog,
-  CollectionDeleteFormDialog
-} from './forms'
+  CollectionConvertToStaticFormDialog
+  } from './forms'
 
 // Detail
 export { CollectionDetailContent, CollectionDetailDialog } from './detail'

@@ -4,7 +4,7 @@
  * Time-related formatting functions are in datetime.ts
  */
 
-import type { AnimeStatus, Status, Gender } from '@shared/db'
+import type { AnimeStatus, GameStatus, Gender } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
 import { messages } from '@renderer/core/i18n'
 
@@ -15,7 +15,7 @@ import { messages } from '@renderer/core/i18n'
 /** Badge variant type for status display */
 export type StatusVariant = 'default' | 'secondary' | 'success' | 'warning' | 'destructive'
 
-const STATUS_VARIANTS: Record<Status, StatusVariant> = {
+const GAME_STATUS_VARIANTS: Record<GameStatus, StatusVariant> = {
   notStarted: 'secondary',
   inProgress: 'default',
   partial: 'warning',
@@ -35,15 +35,15 @@ const ANIME_STATUS_VARIANTS: Record<AnimeStatus, StatusVariant> = {
 /**
  * Format game status to a localized label
  */
-export function formatStatus(status: Status): string {
-  return messages.value.library.status[status]
+export function formatGameStatus(status: GameStatus): string {
+  return messages.value.library.gameStatus[status]
 }
 
 /**
  * Map game status to badge variant for UI display
  */
-export function getStatusVariant(status: Status): StatusVariant {
-  return STATUS_VARIANTS[status] ?? 'secondary'
+export function getGameStatusVariant(status: GameStatus): StatusVariant {
+  return GAME_STATUS_VARIANTS[status] ?? 'secondary'
 }
 
 /**
@@ -58,6 +58,24 @@ export function formatAnimeStatus(status: AnimeStatus): string {
  */
 export function getAnimeStatusVariant(status: AnimeStatus): StatusVariant {
   return ANIME_STATUS_VARIANTS[status] ?? 'secondary'
+}
+
+// =============================================================================
+// File Size Formatting
+// =============================================================================
+
+/** Format a byte count with binary-step units (B, KB, MB, GB, TB). */
+export function formatBytes(size: number): string {
+  if (!Number.isFinite(size) || size <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let value = size
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex++
+  }
+  if (unitIndex === 0) return `${Math.round(value)} B`
+  return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unitIndex]}`
 }
 
 // =============================================================================

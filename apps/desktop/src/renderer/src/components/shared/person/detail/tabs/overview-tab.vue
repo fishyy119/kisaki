@@ -15,13 +15,11 @@ import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import {
-  PersonDescriptionFormDialog,
-  PersonExternalSitesFormDialog,
-  PersonTagsFormDialog,
-  PersonGamesFormDialog,
-  PersonAnimesFormDialog,
-  PersonCharactersFormDialog
-} from '../../forms'
+  EntityDescriptionFormDialog,
+  EntityLinksFormDialog,
+  EntityExternalSitesFormDialog,
+  EntityTagsFormDialog
+} from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -236,35 +234,41 @@ const tagDialogOpen = computed({
     </div>
 
     <!-- Edit Dialogs -->
-    <PersonDescriptionFormDialog
+    <EntityDescriptionFormDialog
       v-if="editDialogs.description"
       v-model:open="editDialogs.description"
-      :person-id="person.id"
+      entity-type="person"
+      :entity-id="person.id"
     />
-    <PersonExternalSitesFormDialog
+    <EntityExternalSitesFormDialog
       v-if="editDialogs.sites"
       v-model:open="editDialogs.sites"
-      :person-id="person.id"
+      entity-type="person"
+      :entity-id="person.id"
     />
-    <PersonTagsFormDialog
+    <EntityTagsFormDialog
       v-if="editDialogs.tags"
       v-model:open="editDialogs.tags"
-      :person-id="person.id"
+      entity-type="person"
+      :entity-id="person.id"
     />
-    <PersonGamesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.games"
       v-model:open="editDialogs.games"
-      :person-id="person.id"
+      view="person-games"
+      :entity-id="person.id"
     />
-    <PersonAnimesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.animes"
       v-model:open="editDialogs.animes"
-      :person-id="person.id"
+      view="person-animes"
+      :entity-id="person.id"
     />
-    <PersonCharactersFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.characters"
       v-model:open="editDialogs.characters"
-      :person-id="person.id"
+      view="person-characters"
+      :entity-id="person.id"
     />
 
     <!-- Entity Detail Dialogs -->

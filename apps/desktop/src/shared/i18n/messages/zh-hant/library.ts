@@ -64,7 +64,7 @@ export const library = {
     relatedEntries: '關聯條目'
   },
 
-  status: {
+  gameStatus: {
     notStarted: '未開始',
     inProgress: '進行中',
     partial: '部分完成',
@@ -125,7 +125,7 @@ export const library = {
     animePerson: {
       originalCreator: '原作',
       director: '監督',
-      series: '系列構成',
+      seriesComposition: '系列構成',
       scenario: '腳本',
       episodeDirector: '演出',
       characterDesign: '角色設計',
@@ -179,7 +179,7 @@ export const library = {
     other: '其他'
   },
 
-  animeExtraKind: {
+  animeExtraType: {
     trailer: '預告',
     pv: 'PV',
     ncop: '無字幕 OP',

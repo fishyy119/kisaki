@@ -16,20 +16,21 @@ import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
 import {
   MediaRelationsFormDialog,
-  MediaRelationsSection
-} from '@renderer/components/shared/media-relations'
+  MediaRelationsSection,
+  MediaDescriptionFormDialog
+} from '@renderer/components/shared/media'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import {
-  GameDescriptionFormDialog,
-  GameInfoFormDialog,
-  GameTagsFormDialog,
-  GameCharactersFormDialog,
-  GamePersonsFormDialog,
-  GameCompaniesFormDialog,
-  GameExternalSitesFormDialog
-} from '../../forms'
+  GameInfoFormDialog
+  } from '../../forms'
+import {
+  EntityLinksFormDialog,
+  EntityExternalSitesFormDialog,
+  EntityTagsFormDialog
+} from '@renderer/components/shared/entity'
+import { GAME_CHARACTER_ROLE_VALUES, GAME_COMPANY_ROLE_VALUES, GAME_PERSON_ROLE_VALUES } from '@shared/db'
 
 // =============================================================================
 // Constants
@@ -40,20 +41,6 @@ const COMPANY_ROLE_LABELS = computed<Record<string, string>>(
 )
 
 const PERSON_ROLE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.gamePerson)
-
-const PERSON_ROLE_ORDER = [
-  'director',
-  'scenario',
-  'illustration',
-  'music',
-  'programmer',
-  'actor',
-  'other'
-] as const
-
-const COMPANY_ROLE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
-
-const CHARACTER_ROLE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
 
 const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gameCharacter
@@ -101,11 +88,11 @@ const sortedCharacters = computed(() => {
   if (!hasCharacters.value) return []
   return [...characters.value]
     .sort((a, b) => {
-      const roleIndexA = CHARACTER_ROLE_ORDER.indexOf(
-        (a.role || 'other') as (typeof CHARACTER_ROLE_ORDER)[number]
+      const roleIndexA = GAME_CHARACTER_ROLE_VALUES.indexOf(
+        (a.role || 'other') as (typeof GAME_CHARACTER_ROLE_VALUES)[number]
       )
-      const roleIndexB = CHARACTER_ROLE_ORDER.indexOf(
-        (b.role || 'other') as (typeof CHARACTER_ROLE_ORDER)[number]
+      const roleIndexB = GAME_CHARACTER_ROLE_VALUES.indexOf(
+        (b.role || 'other') as (typeof GAME_CHARACTER_ROLE_VALUES)[number]
       )
       if (roleIndexA !== roleIndexB) return roleIndexA - roleIndexB
       return a.orderInGame - b.orderInGame
@@ -259,7 +246,7 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="role in PERSON_ROLE_ORDER"
+              v-for="role in GAME_PERSON_ROLE_VALUES"
               :key="role"
             >
               <div v-if="groupedPersons[role]?.length">
@@ -302,7 +289,7 @@ const tagDialogOpen = computed({
         >
           <div class="space-y-2 text-sm">
             <template
-              v-for="role in COMPANY_ROLE_ORDER"
+              v-for="role in GAME_COMPANY_ROLE_VALUES"
               :key="role"
             >
               <div v-if="companies.filter((c) => (c.role || 'other') === role).length > 0">
@@ -366,40 +353,46 @@ const tagDialogOpen = computed({
     </div>
 
     <!-- Edit Dialogs -->
-    <GameDescriptionFormDialog
+    <MediaDescriptionFormDialog
       v-if="editDialogs.description"
       v-model:open="editDialogs.description"
-      :game-id="game.id"
+      media-type="game"
+      :entity-id="game.id"
     />
     <GameInfoFormDialog
       v-if="editDialogs.details"
       v-model:open="editDialogs.details"
       :game-id="game.id"
     />
-    <GameTagsFormDialog
+    <EntityTagsFormDialog
       v-if="editDialogs.tags"
       v-model:open="editDialogs.tags"
-      :game-id="game.id"
+      entity-type="game"
+      :entity-id="game.id"
     />
-    <GameCharactersFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.characters"
       v-model:open="editDialogs.characters"
-      :game-id="game.id"
+      view="game-characters"
+      :entity-id="game.id"
     />
-    <GamePersonsFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.staff"
       v-model:open="editDialogs.staff"
-      :game-id="game.id"
+      view="game-persons"
+      :entity-id="game.id"
     />
-    <GameCompaniesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogs.companies"
       v-model:open="editDialogs.companies"
-      :game-id="game.id"
+      view="game-companies"
+      :entity-id="game.id"
     />
-    <GameExternalSitesFormDialog
+    <EntityExternalSitesFormDialog
       v-if="editDialogs.externalSites"
       v-model:open="editDialogs.externalSites"
-      :game-id="game.id"
+      entity-type="game"
+      :entity-id="game.id"
     />
     <MediaRelationsFormDialog
       v-if="editDialogs.relations"

@@ -45,16 +45,17 @@ export interface AnimeWatchEndedPayload {
 /**
  * Play hook points.
  *
- * `play.game.launching` and `play.session.ending` are waterfall transforms
- * before the launch / persist; session start and end are notifications. Watch
- * points are notify-only: the outcome of a playback session is a fact, and the
- * subscribers that mirror it to remote services must not alter it.
+ * `play.game.launching` and `play.game.session.ending` are waterfall
+ * transforms before the launch / persist; session start and end are
+ * notifications. Watch points are notify-only: the outcome of a playback
+ * session is a fact, and the subscribers that mirror it to remote services
+ * must not alter it.
  */
 export interface PlayHookPoints {
   'play.game.launching': HookPointSpec<'waterfall', GameLaunchConfig>
-  'play.session.started': HookPointSpec<'notify', GameSessionStartedPayload>
-  'play.session.ending': HookPointSpec<'waterfall', GameSessionRecord>
-  'play.session.ended': HookPointSpec<'notify', GameSessionEndedPayload>
+  'play.game.session.started': HookPointSpec<'notify', GameSessionStartedPayload>
+  'play.game.session.ending': HookPointSpec<'waterfall', GameSessionRecord>
+  'play.game.session.ended': HookPointSpec<'notify', GameSessionEndedPayload>
   'play.anime.watch.started': HookPointSpec<'notify', AnimeWatchStartedPayload>
   'play.anime.watch.ended': HookPointSpec<'notify', AnimeWatchEndedPayload>
 }

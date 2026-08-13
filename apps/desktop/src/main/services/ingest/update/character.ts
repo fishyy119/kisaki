@@ -23,11 +23,12 @@ import { buildCharacterPlan } from './plan'
 import { CHARACTER_LINK_TOPOLOGY, createLinkDegradeWarnings } from './link-topology'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
+import { requireUpdateRequest } from './shared/request'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
 import { reportIngestProgress } from '../progress'
 import { throwIfIngestAborted } from '../abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
-import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
+import { createIngestRun, toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 const log = createLogger('Ingest')
 
@@ -45,25 +46,13 @@ export class CharacterUpdateHandler {
     request: CharacterUpdateRequest,
     options?: IngestTaskRunOptions
   ): TaskRunStartResult {
-    this.validateRequest(request)
-    const run = this.taskRunService.runs.create({
-      category: 'ingest',
+    requireUpdateRequest(request)
+    const run = createIngestRun(this.taskRunService, {
       operation: 'ingest.character.update',
       title: this.i18nService.messages.ingest.update.title({ entity: 'character' }),
-      description: request.lookup.name,
-      owner: { type: 'app' },
-      initiator: options?.taskRunInitiator ?? { type: 'user' },
-      subject: { type: 'character', id: request.rootId, labelSnapshot: request.lookup.name },
-      controls: { cancelable: true, pausable: false },
-      presentation: {
-        notify: {
-          enabled: true,
-          title: this.i18nService.messages.ingest.update.title({ entity: 'character' }),
-          showProgress: true,
-          showResult: true,
-          closable: true
-        }
-      }
+      label: request.lookup.name,
+      subject: { type: 'character', id: request.rootId },
+      initiator: options?.taskRunInitiator
     })
 
     void this.handleUpdateFromScraperWithTaskRun(run, request)
@@ -82,7 +71,7 @@ export class CharacterUpdateHandler {
     request: CharacterUpdateRequest,
     options?: IngestOperationOptions
   ): Promise<IngestUpdateResult> {
-    this.validateRequest(request)
+    requireUpdateRequest(request)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
@@ -167,15 +156,6 @@ export class CharacterUpdateHandler {
 
     this.hooks.updated.dispatch({ entityId: request.rootId, surfaces, warnings })
     return warnings.length > 0 ? { warnings } : {}
-  }
-
-  private validateRequest(request: CharacterUpdateRequest): void {
-    if (!request.rootId) {
-      throw new Error('Update rootId is required')
-    }
-    if (!request.profileId) {
-      throw new Error('Update profileId is required')
-    }
   }
 
   private async handleUpdateFromScraperWithTaskRun(

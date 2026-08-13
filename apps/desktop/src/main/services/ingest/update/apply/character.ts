@@ -2,67 +2,34 @@ import { eq } from 'drizzle-orm'
 import {
   characterExternalIdLink,
   requireExternalIdsAvailable,
-  resolveTagId,
   type DbContext
 } from '@main/services/db'
 import { IngestPersistHandlers } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
-import {
-  characterExternalIds,
-  characterTagLinks,
-  characters,
-  type NewCharacter,
-  type NewCharacterTagLink
-} from '@shared/db'
-import { normalizeExternalIds, type ExternalId } from '@shared/identity'
+import { characterExternalIds, characterTagLinks, characters, type NewCharacter } from '@shared/db'
 import type { CharacterLinkKind, CharacterUpdatePlan, UpdateLinkApplyResult } from '../types'
-import { applyLinkRows, filterNodesByIdentity, resolvePersonNodes } from './links'
+import {
+  applyLinkRows,
+  filterNodesByIdentity,
+  replaceEntityExternalIds,
+  replaceEntityTags,
+  resolvePersonNodes,
+  type ExternalIdRowSpec,
+  type TagLinkRowSpec
+} from './links'
 
-function replaceCharacterExternalIds(
-  tx: DbContext,
-  characterId: string,
-  externalIds: ExternalId[]
-): void {
-  tx.delete(characterExternalIds).where(eq(characterExternalIds.characterId, characterId)).run()
-
-  const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
-    characterId,
-    source: externalId.source,
-    externalId: externalId.id,
-    orderInCharacter: index
-  }))
-
-  if (values.length > 0) {
-    tx.insert(characterExternalIds).values(values).run()
-  }
+const CHARACTER_EXTERNAL_ID_SPEC: ExternalIdRowSpec = {
+  table: characterExternalIds,
+  entityIdColumn: characterExternalIds.characterId,
+  entityIdField: 'characterId',
+  orderField: 'orderInCharacter'
 }
 
-function replaceCharacterTags(
-  tx: DbContext,
-  characterId: string,
-  nextTags: CharacterUpdatePlan['tags']
-): void {
-  tx.delete(characterTagLinks).where(eq(characterTagLinks.characterId, characterId)).run()
-  if (!nextTags?.length) return
-
-  const linkValues: NewCharacterTagLink[] = []
-  nextTags.forEach((tag, index) => {
-    const tagId = resolveTagId(tx, tag)
-    if (!tagId) return
-
-    linkValues.push({
-      characterId,
-      tagId,
-      isSpoiler: tag.isSpoiler ?? false,
-      note: tag.note ?? null,
-      orderInCharacter: index,
-      orderInTag: 0
-    })
-  })
-
-  if (linkValues.length > 0) {
-    tx.insert(characterTagLinks).values(linkValues).run()
-  }
+const CHARACTER_TAG_LINK_SPEC: TagLinkRowSpec = {
+  table: characterTagLinks,
+  entityIdColumn: characterTagLinks.characterId,
+  entityIdField: 'characterId',
+  orderInEntityField: 'orderInCharacter'
 }
 
 function applyCharacterRelationGraph(
@@ -105,11 +72,11 @@ export function applyCharacterPlan(
 ): UpdateLinkApplyResult<CharacterLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, characterExternalIdLink, [characterId], plan.externalIds)
-    replaceCharacterExternalIds(tx, characterId, plan.externalIds)
+    replaceEntityExternalIds(tx, CHARACTER_EXTERNAL_ID_SPEC, characterId, plan.externalIds)
   }
 
   if (plan.tags) {
-    replaceCharacterTags(tx, characterId, plan.tags)
+    replaceEntityTags(tx, CHARACTER_TAG_LINK_SPEC, characterId, plan.tags)
   }
 
   if (Object.keys(plan.patch).length > 0) {

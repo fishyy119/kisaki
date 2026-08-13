@@ -13,6 +13,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { formatBytes } from '@renderer/utils/format'
 import { uiLocale } from '@renderer/core/i18n'
 import { languageAutonym } from '@shared/i18n'
 import {
@@ -145,18 +146,6 @@ watch(
   },
   { immediate: true }
 )
-
-function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let size = bytes
-  let unitIndex = 0
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024
-    unitIndex += 1
-  }
-  return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
-}
 
 function formatSpeed(bytesPerSecond: number): string {
   if (!Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) return '0 B/s'

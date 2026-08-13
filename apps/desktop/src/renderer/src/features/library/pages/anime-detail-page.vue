@@ -25,10 +25,9 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
   AnimeDetailContent,
-  AnimeDropdownMenu,
-  AnimeScoreFormDialog,
   AnimeWatchButton
 } from '@renderer/components/shared/anime'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useAmbientLight, useAnimeRouteProvider, useDbChanges, useIpc } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
@@ -299,7 +298,10 @@ async function handleOpenAnimeDir() {
           :anime-id="anime.id"
           size="sm"
         />
-        <AnimeDropdownMenu :anime-id="anime.id">
+        <EntityDropdownMenu
+          entity-type="anime"
+          :entity-id="anime.id"
+        >
           <Button
             variant="secondary"
             size="icon-sm"
@@ -309,7 +311,7 @@ async function handleOpenAnimeDir() {
               class="size-4"
             />
           </Button>
-        </AnimeDropdownMenu>
+        </EntityDropdownMenu>
       </template>
     </PageHeader>
 
@@ -318,10 +320,11 @@ async function handleOpenAnimeDir() {
     </div>
 
     <!-- Score dialog -->
-    <AnimeScoreFormDialog
+    <EntityScoreFormDialog
       v-if="scoreDialogOpen"
       v-model:open="scoreDialogOpen"
-      :anime-id="anime.id"
+      entity-type="anime"
+      :entity-id="anime.id"
     />
 
     <SpoilerConfirmDialog

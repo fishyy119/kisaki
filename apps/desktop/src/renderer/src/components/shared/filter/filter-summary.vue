@@ -61,7 +61,9 @@ function formatCondition(condition: FilterCondition): string | null {
       return `${field.label} · ${opLabel}: ${formatIdList(field, condition.value)}`
     }
     case 'inRange': {
-      const { min, max } = condition.value
+      const scale = field.kind === 'number' ? (field.valueScale ?? 1) : 1
+      const min = condition.value.min !== undefined ? condition.value.min / scale : undefined
+      const max = condition.value.max !== undefined ? condition.value.max / scale : undefined
       if (min !== undefined && max !== undefined) return `${field.label}: ${min}-${max}`
       if (min !== undefined) return `${field.label}: ≥ ${min}`
       if (max !== undefined) return `${field.label}: ≤ ${max}`

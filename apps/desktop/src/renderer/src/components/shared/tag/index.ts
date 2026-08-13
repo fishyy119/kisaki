@@ -8,7 +8,7 @@ export { default as TagSelect } from './tag-select.vue'
 export { TagContextMenu, TagMenuItems, TagDropdownMenu } from './menus'
 
 // Forms
-export { TagInfoFormDialog, TagDeleteFormDialog } from './forms'
+export { TagInfoFormDialog } from './forms'
 
 // Detail
 export { TagDetailContent, TagDetailDialog } from './detail'

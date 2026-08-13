@@ -239,8 +239,8 @@ export const scanner = {
         'The external ID is already linked to an existing entry. This path was not added.',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} video file(s) had no readable episode number and were added as unnumbered episodes.`,
-      episodeSyncFailed: ({ message }: { message: string }) =>
-        `The entry was added but its video files could not be read: ${message}`
+      episodeSyncFailed:
+        'The entry was added but its video files could not be synced. See the log for details.'
     }
   }
 }

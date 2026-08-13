@@ -1,10 +1,5 @@
 import { eq, inArray } from 'drizzle-orm'
-import {
-  animeExternalIdLink,
-  requireExternalIdsAvailable,
-  resolveTagId,
-  type DbContext
-} from '@main/services/db'
+import { animeExternalIdLink, requireExternalIdsAvailable, type DbContext } from '@main/services/db'
 import {
   IngestPersistHandlers,
   insertAnimeEpisodeExternalIds,
@@ -20,10 +15,9 @@ import {
   animeTagLinks,
   animes,
   type AnimeEpisode,
-  type NewAnime,
-  type NewAnimeTagLink
+  type NewAnime
 } from '@shared/db'
-import { normalizeExternalIds, toExternalIdKey, type ExternalId } from '@shared/identity'
+import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type { AnimeEpisodeInfo } from '@shared/metadata'
 import type {
   AnimeEpisodeUpdatePlan,
@@ -34,50 +28,25 @@ import type {
 import { areScalarValuesEqual } from '../shared/merge'
 import { applyMediaRelationFacts } from '../../media-relations'
 import {
-  applyLinkRows,
-  filterNodesByIdentity,
-  resolveCharacterNodes,
-  resolveCompanyNodes,
-  resolvePersonNodes
+  applyMediaLinkGraph,
+  replaceEntityExternalIds,
+  replaceEntityTags,
+  type ExternalIdRowSpec,
+  type TagLinkRowSpec
 } from './links'
 
-function replaceAnimeExternalIds(tx: DbContext, animeId: string, externalIds: ExternalId[]): void {
-  tx.delete(animeExternalIds).where(eq(animeExternalIds.animeId, animeId)).run()
-
-  const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
-    animeId,
-    source: externalId.source,
-    externalId: externalId.id,
-    orderInAnime: index
-  }))
-
-  if (values.length > 0) {
-    tx.insert(animeExternalIds).values(values).run()
-  }
+const ANIME_EXTERNAL_ID_SPEC: ExternalIdRowSpec = {
+  table: animeExternalIds,
+  entityIdColumn: animeExternalIds.animeId,
+  entityIdField: 'animeId',
+  orderField: 'orderInAnime'
 }
 
-function replaceAnimeTags(tx: DbContext, animeId: string, nextTags: AnimeUpdatePlan['tags']): void {
-  tx.delete(animeTagLinks).where(eq(animeTagLinks.animeId, animeId)).run()
-  if (!nextTags?.length) return
-
-  const linkValues: NewAnimeTagLink[] = []
-  nextTags.forEach((tag, index) => {
-    const tagId = resolveTagId(tx, tag)
-    if (!tagId) return
-
-    linkValues.push({
-      animeId,
-      tagId,
-      isSpoiler: tag.isSpoiler ?? false,
-      note: tag.note ?? null,
-      orderInAnime: index,
-      orderInTag: 0
-    })
-  })
-
-  if (linkValues.length > 0) {
-    tx.insert(animeTagLinks).values(linkValues).run()
-  }
+const ANIME_TAG_LINK_SPEC: TagLinkRowSpec = {
+  table: animeTagLinks,
+  entityIdColumn: animeTagLinks.animeId,
+  entityIdField: 'animeId',
+  orderInEntityField: 'orderInAnime'
 }
 
 interface EpisodeMatch {
@@ -248,148 +217,6 @@ function reconcileAnimeEpisodes(
   }
 }
 
-function applyAnimeRelationGraph(
-  tx: DbContext,
-  animeId: string,
-  plan: AnimeUpdatePlan,
-  persistHandlers: IngestPersistHandlers
-): UpdateLinkApplyResult<AnimeLinkKind> {
-  const relationGraph = plan.relationGraph
-  if (!relationGraph) {
-    return { pendingAssets: [], preservedLinkRows: {} }
-  }
-
-  const { animePerson, animeCompany, animeCharacter, characterPerson } = plan.links
-
-  const personIdentityKeys = new Set<string>()
-  if (animePerson) {
-    for (const link of relationGraph.links.animePerson) {
-      personIdentityKeys.add(link.personIdentityKey)
-    }
-  }
-  if (characterPerson) {
-    for (const link of relationGraph.links.characterPerson) {
-      personIdentityKeys.add(link.personIdentityKey)
-    }
-  }
-
-  const companyIdentityKeys = new Set<string>()
-  if (animeCompany) {
-    for (const link of relationGraph.links.animeCompany) {
-      companyIdentityKeys.add(link.companyIdentityKey)
-    }
-  }
-
-  const characterIdentityKeys = new Set<string>()
-  if (animeCharacter) {
-    for (const link of relationGraph.links.animeCharacter) {
-      characterIdentityKeys.add(link.characterIdentityKey)
-    }
-  }
-  if (characterPerson) {
-    for (const link of relationGraph.links.characterPerson) {
-      characterIdentityKeys.add(link.characterIdentityKey)
-    }
-  }
-
-  const pendingAssets: PendingAssetTask[] = []
-  const preservedLinkRows: Partial<Record<AnimeLinkKind, number>> = {}
-
-  const personResolution =
-    personIdentityKeys.size > 0
-      ? resolvePersonNodes(
-          tx,
-          persistHandlers,
-          filterNodesByIdentity(relationGraph.persons, personIdentityKeys)
-        )
-      : { idByIdentity: new Map<string, string>(), pendingAssets: [] }
-  pendingAssets.push(...personResolution.pendingAssets)
-
-  const companyResolution =
-    companyIdentityKeys.size > 0
-      ? resolveCompanyNodes(
-          tx,
-          persistHandlers,
-          filterNodesByIdentity(relationGraph.companies, companyIdentityKeys)
-        )
-      : { idByIdentity: new Map<string, string>(), pendingAssets: [] }
-  pendingAssets.push(...companyResolution.pendingAssets)
-
-  const characterResolution =
-    characterIdentityKeys.size > 0
-      ? resolveCharacterNodes(
-          tx,
-          persistHandlers,
-          filterNodesByIdentity(relationGraph.characters, characterIdentityKeys)
-        )
-      : { idByIdentity: new Map<string, string>(), pendingAssets: [] }
-  pendingAssets.push(...characterResolution.pendingAssets)
-
-  if (animePerson) {
-    preservedLinkRows.animePerson = applyLinkRows({
-      tx,
-      kind: 'animePerson',
-      entityId: animeId,
-      links: relationGraph.links.animePerson,
-      relatedIdentityKeyOf: (link) => link.personIdentityKey,
-      relatedIdByIdentity: personResolution.idByIdentity,
-      collectionMode: animePerson
-    })
-  }
-
-  if (animeCompany) {
-    preservedLinkRows.animeCompany = applyLinkRows({
-      tx,
-      kind: 'animeCompany',
-      entityId: animeId,
-      links: relationGraph.links.animeCompany,
-      relatedIdentityKeyOf: (link) => link.companyIdentityKey,
-      relatedIdByIdentity: companyResolution.idByIdentity,
-      collectionMode: animeCompany
-    })
-  }
-
-  if (animeCharacter) {
-    preservedLinkRows.animeCharacter = applyLinkRows({
-      tx,
-      kind: 'animeCharacter',
-      entityId: animeId,
-      links: relationGraph.links.animeCharacter,
-      relatedIdentityKeyOf: (link) => link.characterIdentityKey,
-      relatedIdByIdentity: characterResolution.idByIdentity,
-      collectionMode: animeCharacter
-    })
-  }
-
-  if (characterPerson) {
-    const linksByCharacterId = new Map<string, typeof relationGraph.links.characterPerson>()
-    for (const link of relationGraph.links.characterPerson) {
-      const characterId = characterResolution.idByIdentity.get(link.characterIdentityKey)
-      if (!characterId) continue
-
-      const links = linksByCharacterId.get(characterId) ?? []
-      links.push(link)
-      linksByCharacterId.set(characterId, links)
-    }
-
-    let preserved = 0
-    for (const [characterId, links] of linksByCharacterId) {
-      preserved += applyLinkRows({
-        tx,
-        kind: 'characterPerson',
-        entityId: characterId,
-        links,
-        relatedIdentityKeyOf: (link) => link.personIdentityKey,
-        relatedIdByIdentity: personResolution.idByIdentity,
-        collectionMode: characterPerson
-      })
-    }
-    preservedLinkRows.characterPerson = preserved
-  }
-
-  return { pendingAssets, preservedLinkRows }
-}
-
 export function applyAnimePlan(
   tx: DbContext,
   animeId: string,
@@ -398,11 +225,11 @@ export function applyAnimePlan(
 ): UpdateLinkApplyResult<AnimeLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, animeExternalIdLink, [animeId], plan.externalIds)
-    replaceAnimeExternalIds(tx, animeId, plan.externalIds)
+    replaceEntityExternalIds(tx, ANIME_EXTERNAL_ID_SPEC, animeId, plan.externalIds)
   }
 
   if (plan.tags) {
-    replaceAnimeTags(tx, animeId, plan.tags)
+    replaceEntityTags(tx, ANIME_TAG_LINK_SPEC, animeId, plan.tags)
   }
 
   if (Object.keys(plan.patch).length > 0) {
@@ -425,7 +252,34 @@ export function applyAnimePlan(
     .filter(([, url]) => Boolean(url))
     .map(([field, url]) => ({ table: 'animes', rowId: animeId, field, url: url as string }))
 
-  const relations = applyAnimeRelationGraph(tx, animeId, plan, persistHandlers)
+  const relationGraph = plan.relationGraph
+  const relations = relationGraph
+    ? applyMediaLinkGraph({
+        tx,
+        entityId: animeId,
+        persistHandlers,
+        nodes: relationGraph,
+        person: {
+          kind: 'animePerson',
+          mode: plan.links.animePerson,
+          links: relationGraph.links.animePerson
+        },
+        company: {
+          kind: 'animeCompany',
+          mode: plan.links.animeCompany,
+          links: relationGraph.links.animeCompany
+        },
+        character: {
+          kind: 'animeCharacter',
+          mode: plan.links.animeCharacter,
+          links: relationGraph.links.animeCharacter
+        },
+        characterPerson: {
+          mode: plan.links.characterPerson,
+          links: relationGraph.links.characterPerson
+        }
+      })
+    : { pendingAssets: [] as PendingAssetTask[], preservedLinkRows: {} }
   pendingAssets.push(...relations.pendingAssets)
 
   let unresolvedRelatedEntries: number | undefined

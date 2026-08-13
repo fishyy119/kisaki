@@ -28,6 +28,6 @@ export const filter = {
   summaryTo: ({ value }: { value: string }) => `到 ${value}`,
   minPlaceholder: '最小',
   maxPlaceholder: '最大',
-  secondsUnit: '秒',
+  hoursUnit: '小時',
   favorite: '我喜歡'
 } satisfies Messages['filter']

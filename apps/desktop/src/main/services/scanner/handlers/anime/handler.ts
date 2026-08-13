@@ -86,9 +86,8 @@ export class AnimeScannerHandler extends MediaScannerHandler {
         )
       ]
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      log.warn('Failed to sync anime files after add.', { entityPath: entity.path, message })
-      return [createWarning('file-sync-failed', reasons.episodeSyncFailed({ message }))]
+      log.warn('Failed to sync anime files after add.', error, { entityPath: entity.path })
+      return [createWarning('file-sync-failed', reasons.episodeSyncFailed)]
     }
   }
 }

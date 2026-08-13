@@ -5,7 +5,7 @@
  * so its request and report shapes cross the process boundary.
  */
 
-import type { AnimeExtraKind } from '../db/contracts/enums'
+import type { AnimeExtraType } from '../db/contracts/enums'
 
 export interface IngestSyncAnimeFilesParams {
   animeId: string
@@ -16,6 +16,7 @@ export interface IngestSyncAnimeFilesParams {
 export interface IngestSyncAnimeFilesResult {
   episodeCount: number
   fileCount: number
+  /** Extra rows after the sync pass. */
   extraCount: number
   /** Files whose episode number could not be read from the file name. */
   unrecognizedFiles: string[]
@@ -28,13 +29,15 @@ export interface IngestAttachAnimeEpisodeFileParams {
   path: string
 }
 
-/** Register one on-disk video file as a user-owned extra row. */
+/** Register one on-disk video file as a user-owned extra file row. */
 export interface IngestAttachAnimeExtraFileParams {
   animeId: string
   /** Absolute path; may live outside the anime's library directory. */
   path: string
-  /** Explicit display name; filename recognition names the row when omitted. */
+  /** Attach the file to this existing extra; a new extra is created when omitted. */
+  extraId?: string
+  /** Explicit display name; filename recognition names a new extra when omitted. */
   name?: string
-  /** Explicit kind; filename recognition guesses the kind when omitted. */
-  kind?: AnimeExtraKind
+  /** Explicit type; filename recognition guesses a new extra's type when omitted. */
+  type?: AnimeExtraType
 }

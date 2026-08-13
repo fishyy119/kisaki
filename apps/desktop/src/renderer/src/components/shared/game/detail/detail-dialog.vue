@@ -30,8 +30,7 @@ import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import GameDetailContent from './detail-content.vue'
 import GamePlayButton from '../game-play-button.vue'
-import { GameScoreFormDialog } from '../forms'
-import { GameDropdownMenu } from '../menus'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -230,16 +229,20 @@ const canOpenGameDir = computed(() => {
                 class="h-4"
               />
 
-              <GameDropdownMenu :game-id="game.id" />
+              <EntityDropdownMenu
+                entity-type="game"
+                :entity-id="game.id"
+              />
             </div>
           </div>
         </DialogFooter>
 
         <!-- Score Dialog -->
-        <GameScoreFormDialog
+        <EntityScoreFormDialog
           v-if="isScoreOpen"
           v-model:open="isScoreOpen"
-          :game-id="game.id"
+          entity-type="game"
+          :entity-id="game.id"
         />
 
         <SpoilerConfirmDialog

@@ -10,14 +10,7 @@ import { computed, inject, type Component, type ComputedRef } from 'vue'
 import { RouterLink, useRoute, type LocationQuery } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
-import { GameContextMenu, GameBatchContextMenu } from '@renderer/components/shared/game'
-import { AnimeContextMenu, AnimeBatchContextMenu } from '@renderer/components/shared/anime'
-import {
-  CharacterContextMenu,
-  CharacterBatchContextMenu
-} from '@renderer/components/shared/character'
-import { PersonContextMenu, PersonBatchContextMenu } from '@renderer/components/shared/person'
-import { CompanyContextMenu, CompanyBatchContextMenu } from '@renderer/components/shared/company'
+import { EntityContextMenu, EntityBatchContextMenu } from '@renderer/components/shared/entity'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
@@ -156,35 +149,17 @@ const entityIcon = computed(() => getEntityIcon(props.entityType))
  * The row markup is identical for every entity type; only the context menu that
  * wraps it differs, so the wrapper is resolved here instead of in the template.
  */
-const contextMenu = computed<{ component: Component; props: Record<string, unknown> }>(() => {
-  const batchIds = selectedEntityIds.value
-  const id = props.entity.id
-
-  switch (props.entityType) {
-    case 'game':
-      return useBatchMenu.value
-        ? { component: GameBatchContextMenu, props: { gameIds: batchIds } }
-        : { component: GameContextMenu, props: { gameId: id } }
-    case 'anime':
-      return useBatchMenu.value
-        ? { component: AnimeBatchContextMenu, props: { animeIds: batchIds } }
-        : { component: AnimeContextMenu, props: { animeId: id } }
-    case 'character':
-      return useBatchMenu.value
-        ? { component: CharacterBatchContextMenu, props: { characterIds: batchIds } }
-        : { component: CharacterContextMenu, props: { characterId: id } }
-    case 'person':
-      return useBatchMenu.value
-        ? { component: PersonBatchContextMenu, props: { personIds: batchIds } }
-        : { component: PersonContextMenu, props: { personId: id } }
-    case 'company':
-      return useBatchMenu.value
-        ? { component: CompanyBatchContextMenu, props: { companyIds: batchIds } }
-        : { component: CompanyContextMenu, props: { companyId: id } }
-    default:
-      return props.entityType satisfies never
-  }
-})
+const contextMenu = computed<{ component: Component; props: Record<string, unknown> }>(() =>
+  useBatchMenu.value
+    ? {
+        component: EntityBatchContextMenu,
+        props: { entityType: props.entityType, entityIds: selectedEntityIds.value }
+      }
+    : {
+        component: EntityContextMenu,
+        props: { entityType: props.entityType, entityId: props.entity.id }
+      }
+)
 
 function handleClick(e: MouseEvent) {
   if (e.shiftKey) {

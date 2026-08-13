@@ -4,12 +4,10 @@ import type { ActivityService } from './service'
 
 export function registerActivityIpc(service: ActivityService, ipc: IpcService): void {
   ipc.handle('activity:launch-game', async (_, gameId) =>
-    wrapIpc(() => service.game.launchGame(gameId))
+    wrapIpc(() => service.game.launch(gameId))
   )
 
-  ipc.handle('activity:stop-game', async (_, gameId) =>
-    wrapIpc(() => service.game.stopGame(gameId))
-  )
+  ipc.handle('activity:stop-game', async (_, gameId) => wrapIpc(() => service.game.stop(gameId)))
 
   ipc.handle('activity:list-game-statuses', async () => wrapIpc(() => service.game.listStatuses()))
 

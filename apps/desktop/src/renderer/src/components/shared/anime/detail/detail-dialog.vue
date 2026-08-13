@@ -30,8 +30,7 @@ import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import AnimeDetailContent from './detail-content.vue'
 import AnimeWatchButton from '../anime-watch-button.vue'
-import { AnimeScoreFormDialog } from '../forms'
-import { AnimeDropdownMenu } from '../menus'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -231,16 +230,20 @@ const canOpenAnimeDir = computed(() => {
                 class="h-4"
               />
 
-              <AnimeDropdownMenu :anime-id="anime.id" />
+              <EntityDropdownMenu
+                entity-type="anime"
+                :entity-id="anime.id"
+              />
             </div>
           </div>
         </DialogFooter>
 
         <!-- Score Dialog -->
-        <AnimeScoreFormDialog
+        <EntityScoreFormDialog
           v-if="isScoreOpen"
           v-model:open="isScoreOpen"
-          :anime-id="anime.id"
+          entity-type="anime"
+          :entity-id="anime.id"
         />
 
         <SpoilerConfirmDialog

@@ -8,6 +8,7 @@ export const game = {
 
   statusDialog: {
     title: 'プレイ状況を編集',
+    label: 'プレイ状況',
     selectStatus: 'ステータスを選択'
   },
 
@@ -19,7 +20,7 @@ export const game = {
 
   duration: {
     title: 'プレイ時間を編集',
-    totalPlayTime: '合計プレイ時間',
+    totalTime: '合計プレイ時間',
     sessionsDuration: ({ value }: { value: string }) => `セッション記録：${value}`,
     untrackedDuration: ({ value }: { value: string }) => `未記録時間：${value}`,
     untrackedLabel: '未記録のプレイ時間',
@@ -132,20 +133,19 @@ export const game = {
     heatmap: 'アクティビティヒートマップ',
     trend: 'プレイ傾向',
     distribution: '時間帯分布',
+    recentSessions: '最近のセッション',
     emptyTitle: 'プレイ記録はまだありません',
     emptyHint: 'ゲームを起動すると、プレイ時間が自動的にここへ記録されます。',
-    legendLess: '少',
-    legendMore: '多',
-    playDuration: 'プレイ時間',
-    playCount: 'プレイ回数',
-    playCountValue: ({ count }: { count: number }) => `${count} 回`,
+    totalDuration: 'プレイ時間',
+    sessionCount: 'プレイ回数',
+    sessionCountValue: ({ count }: { count: number }) => `${count} 回`,
     avgDuration: '平均時間',
     longestSession: '最長セッション',
     currentStreak: '現在の連続日数',
     longestStreak: '最長連続日数',
     streakValue: ({ days }: { days: number }) => `${days} 日`,
-    firstPlayed: '初回プレイ',
-    lastPlayed: '最終プレイ',
+    firstSession: '初回プレイ',
+    lastSession: '最終プレイ',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day}日`
   }
 } satisfies Messages['game']

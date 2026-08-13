@@ -20,7 +20,6 @@ import type {
   ScrapedCharacterBundle,
   ScraperLookup
 } from '@shared/scraper'
-import type { ContentLocale } from '@shared/i18n'
 import type { I18nService } from '@main/services/i18n'
 import { ensureProviderExternalId, ensureProviderIdentity, ScrapeFailure } from '../../shared'
 import { executeScraperPlan } from '../common/executor'
@@ -30,7 +29,8 @@ import {
   prepareRuntimeSlotConfigs,
   type PlannedSlotEntry
 } from '../common/planner'
-import { createProviderRegistry } from '../common/registry'
+import { resolveContentLocale } from '../common/locale'
+import { createProviderRegistry, toProviderInfo } from '../common/registry'
 import { resolveProviderTarget, resolveSearchProviderTarget } from '../common/resolve'
 import { createScraperInvocationState } from '../common/state'
 import { mergeCharacterScraperBundle, mergeCharacterScraperImages } from './merge'
@@ -83,22 +83,11 @@ export class CharacterScraperHandler {
   }
 
   getProviders(): CharacterScraperProviderInfo[] {
-    return this.providers.list().map((provider) => ({
-      id: provider.id,
-      name: provider.name,
-      externalIdSource: provider.externalIdSource,
-      capabilities: [...provider.capabilities]
-    }))
+    return this.providers.list().map(toProviderInfo)
   }
 
   getProviderInfo(providerId: string): CharacterScraperProviderInfo {
-    const provider = this.requireProvider(providerId)
-    return {
-      id: provider.id,
-      name: provider.name,
-      externalIdSource: provider.externalIdSource,
-      capabilities: [...provider.capabilities]
-    }
+    return toProviderInfo(this.requireProvider(providerId))
   }
 
   async search(
@@ -109,7 +98,7 @@ export class CharacterScraperHandler {
     const profile = this.loadProfile(profileId)
     const provider = this.requireProvider(profile.searchProviderId)
     const results = await provider.search(query, {
-      locale: this.getProfileLocale(profile),
+      locale: resolveContentLocale(undefined, profile, this.i18n.locale),
       signal: options.signal
     })
     return this.hooks.searched.transform(
@@ -136,11 +125,11 @@ export class CharacterScraperHandler {
       )
     }
 
-    const resolveLocale = this.getResolveLocale(runtimeProfile, lookup)
+    const resolveLocale = resolveContentLocale(lookup.locale, runtimeProfile, this.i18n.locale)
     const searchProvider = this.requireProvider(runtimeProfile.searchProviderId)
     const plan = buildExecutionPlan<CharacterScraperSlot>({
       slotConfigs: runtimeProfile.slotConfigs,
-      resolveLocale: (entry) => this.getFetchLocale(runtimeProfile, entry)
+      resolveLocale: (entry) => resolveContentLocale(entry.locale, runtimeProfile, this.i18n.locale)
     })
     const state = createScraperInvocationState<
       CharacterResolvedTarget,
@@ -358,20 +347,5 @@ export class CharacterScraperHandler {
 
   private requireProviderExternalIdSource(providerId: string): string {
     return this.requireProvider(providerId).externalIdSource
-  }
-
-  private getProfileLocale(profile: ScraperProfile): ContentLocale {
-    return profile.defaultLocale ?? this.i18n.locale
-  }
-
-  private getResolveLocale(profile: ScraperProfile, lookup: ScraperLookup): ContentLocale {
-    return lookup.locale ?? profile.defaultLocale ?? this.i18n.locale
-  }
-
-  private getFetchLocale(
-    profile: ScraperProfile,
-    entry: { locale?: ContentLocale | null }
-  ): ContentLocale {
-    return entry.locale ?? profile.defaultLocale ?? this.i18n.locale
   }
 }

@@ -69,8 +69,10 @@ export const anime = {
     play: '播放',
     playFailed: '播放特典失败',
     nameLabel: '名称',
-    kindLabel: '类型',
-    autoDetect: '自动识别'
+    typeLabel: '类型',
+    autoDetect: '自动识别',
+    noFiles: '暂无文件。',
+    fileCount: ({ count }: { count: number }) => `${count} 个文件`
   },
 
   files: {
@@ -92,7 +94,10 @@ export const anime = {
     addFile: '添加文件',
     fileAttached: '文件已添加。',
     attachFailed: '添加文件失败。',
-    manualBadge: '手动'
+    manualBadge: '手动',
+    noteLabel: '备注',
+    editNote: '编辑备注',
+    noteSaved: '备注已保存。'
   },
 
   player: {
@@ -122,6 +127,7 @@ export const anime = {
 
   statusDialog: {
     title: '编辑观看状态',
+    label: '观看状态',
     selectStatus: '选择状态'
   },
 
@@ -133,7 +139,7 @@ export const anime = {
 
   duration: {
     title: '编辑观看时间',
-    totalWatchTime: '总观看时间',
+    totalTime: '总观看时间',
     sessionsDuration: ({ value }: { value: string }) => `会话记录：${value}`,
     untrackedDuration: ({ value }: { value: string }) => `未记录时间：${value}`,
     untrackedLabel: '未记录的观看时间',
@@ -163,7 +169,7 @@ export const anime = {
     trend: '观看趋势',
     distribution: '时段分布',
     recentSessions: '最近观看',
-    watchDuration: '观看时长',
+    totalDuration: '观看时长',
     sessionCount: '观看次数',
     sessionCountValue: ({ count }: { count: number }) => `${count} 次`,
     avgDuration: '平均单次',
@@ -171,8 +177,8 @@ export const anime = {
     currentStreak: '当前连续',
     longestStreak: '最长连续',
     streakValue: ({ days }: { days: number }) => `${days} 天`,
-    firstWatched: '首次观看',
-    lastWatched: '最近观看',
+    firstSession: '首次观看',
+    lastSession: '最近观看',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day}日`
   }
 } satisfies Messages['anime']

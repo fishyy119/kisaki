@@ -8,10 +8,30 @@
 import { SCANNER_INGEST_MODE_VALUES } from './constants'
 
 /** Game completion status */
-export type Status = 'notStarted' | 'inProgress' | 'partial' | 'completed' | 'multiple' | 'shelved'
+export type GameStatus =
+  'notStarted' | 'inProgress' | 'partial' | 'completed' | 'multiple' | 'shelved'
+
+/** Game status values in canonical display order. */
+export const GAME_STATUS_VALUES = [
+  'notStarted',
+  'inProgress',
+  'partial',
+  'completed',
+  'multiple',
+  'shelved'
+] as const satisfies readonly GameStatus[]
 
 /** Anime watch status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
 export type AnimeStatus = 'planned' | 'watching' | 'completed' | 'onHold' | 'dropped'
+
+/** Anime status values in canonical display order. */
+export const ANIME_STATUS_VALUES = [
+  'planned',
+  'watching',
+  'completed',
+  'onHold',
+  'dropped'
+] as const satisfies readonly AnimeStatus[]
 
 /** Game launcher mode */
 export type GameLauncherMode = 'file' | 'url' | 'exec'
@@ -26,14 +46,49 @@ export type Gender = 'male' | 'female' | 'other'
 export type GamePersonRole =
   'director' | 'scenario' | 'illustration' | 'music' | 'programmer' | 'actor' | 'other'
 
+/** Game-person role values in canonical display order. */
+export const GAME_PERSON_ROLE_VALUES = [
+  'director',
+  'scenario',
+  'illustration',
+  'music',
+  'programmer',
+  'actor',
+  'other'
+] as const satisfies readonly GamePersonRole[]
+
 /** Game-character link role */
 export type GameCharacterRole = 'main' | 'supporting' | 'cameo' | 'other'
+
+/** Game-character role values in canonical display order. */
+export const GAME_CHARACTER_ROLE_VALUES = [
+  'main',
+  'supporting',
+  'cameo',
+  'other'
+] as const satisfies readonly GameCharacterRole[]
 
 /** Game-company link role */
 export type GameCompanyRole = 'developer' | 'publisher' | 'distributor' | 'other'
 
+/** Game-company role values in canonical display order. */
+export const GAME_COMPANY_ROLE_VALUES = [
+  'developer',
+  'publisher',
+  'distributor',
+  'other'
+] as const satisfies readonly GameCompanyRole[]
+
 /** Character-person link role */
 export type CharacterPersonRole = 'actor' | 'illustration' | 'designer' | 'other'
+
+/** Character-person role values in canonical display order. */
+export const CHARACTER_PERSON_ROLE_VALUES = [
+  'actor',
+  'illustration',
+  'designer',
+  'other'
+] as const satisfies readonly CharacterPersonRole[]
 
 /** Anime release format */
 export type AnimeFormat = 'tv' | 'movie' | 'ova' | 'ona' | 'special' | 'other'
@@ -50,7 +105,7 @@ export type AnimeEpisodeType = 'regular' | 'special'
 export type AnimePersonRole =
   | 'originalCreator'
   | 'director'
-  | 'series'
+  | 'seriesComposition'
   | 'scenario'
   | 'episodeDirector'
   | 'characterDesign'
@@ -63,14 +118,48 @@ export type AnimePersonRole =
   | 'producer'
   | 'other'
 
+/** Anime-person role values in canonical display order. */
+export const ANIME_PERSON_ROLE_VALUES = [
+  'originalCreator',
+  'director',
+  'seriesComposition',
+  'scenario',
+  'episodeDirector',
+  'characterDesign',
+  'animationDirector',
+  'animation',
+  'art',
+  'photography',
+  'sound',
+  'music',
+  'producer',
+  'other'
+] as const satisfies readonly AnimePersonRole[]
+
 /** Anime-character link role */
 export type AnimeCharacterRole = 'main' | 'supporting' | 'cameo' | 'other'
+
+/** Anime-character role values in canonical display order. */
+export const ANIME_CHARACTER_ROLE_VALUES = [
+  'main',
+  'supporting',
+  'cameo',
+  'other'
+] as const satisfies readonly AnimeCharacterRole[]
 
 /** Anime-company link role */
 export type AnimeCompanyRole = 'studio' | 'producer' | 'distributor' | 'other'
 
-/** Supplementary anime asset kind; these never carry watch state. */
-export type AnimeExtraKind = 'trailer' | 'pv' | 'ncop' | 'nced' | 'interview' | 'other'
+/** Anime-company role values in canonical display order. */
+export const ANIME_COMPANY_ROLE_VALUES = [
+  'studio',
+  'producer',
+  'distributor',
+  'other'
+] as const satisfies readonly AnimeCompanyRole[]
+
+/** Supplementary anime asset type; these never carry watch state. */
+export type AnimeExtraType = 'trailer' | 'pv' | 'ncop' | 'nced' | 'interview' | 'other'
 
 /** Blood type */
 export type BloodType = 'a' | 'b' | 'ab' | 'o'

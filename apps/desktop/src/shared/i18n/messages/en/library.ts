@@ -67,7 +67,7 @@ export const library = {
     relatedEntries: 'Related entries'
   },
 
-  status: {
+  gameStatus: {
     notStarted: 'Not started',
     inProgress: 'In progress',
     partial: 'Partially completed',
@@ -128,7 +128,7 @@ export const library = {
     animePerson: {
       originalCreator: 'Original creator',
       director: 'Director',
-      series: 'Series composition',
+      seriesComposition: 'Series composition',
       scenario: 'Scenario',
       episodeDirector: 'Episode director',
       characterDesign: 'Character design',
@@ -182,7 +182,7 @@ export const library = {
     other: 'Other'
   },
 
-  animeExtraKind: {
+  animeExtraType: {
     trailer: 'Trailer',
     pv: 'PV',
     ncop: 'Creditless opening',

@@ -17,12 +17,14 @@ import type { PlayerService } from '@main/services/player'
 import {
   animeEpisodeFiles,
   animeEpisodes,
+  animeExtraFiles,
   animeExtras,
   animeSessions,
   animes,
   type Anime,
   type AnimeEpisode,
-  type AnimeEpisodeFile
+  type AnimeEpisodeFile,
+  type AnimeExtraFile
 } from '@shared/db'
 import type {
   AnimeExtraPlayResult,
@@ -126,8 +128,14 @@ export class AnimeActivityHandler {
 
     this.db.client
       .update(animes)
-      .set({ lastActiveAt: new Date(now), ...(anime.status === 'planned' && { status: 'watching' }) })
+      .set({ lastActiveAt: new Date(now) })
       .where(eq(animes.id, animeId))
+      .run()
+    // Guarded by status so a user edit during player startup is never clobbered.
+    this.db.client
+      .update(animes)
+      .set({ status: 'watching' })
+      .where(and(eq(animes.id, animeId), eq(animes.status, 'planned')))
       .run()
 
     log.info('Anime playback started.', { animeId, episodeId: episode.id })
@@ -136,14 +144,15 @@ export class AnimeActivityHandler {
       episodeId: episode.id,
       sessionId: started.sessionId
     })
-    this.hooks.watchStarted.dispatch({ animeId, episodeId: episode.id })
+    this.hooks.animeWatchStarted.dispatch({ animeId, episodeId: episode.id })
 
     return { status: 'started', episodeId: episode.id, sessionId: started.sessionId }
   }
 
   /**
-   * Plays a supplementary asset. Extras carry no watch state, so the session
-   * is not tracked and nothing is recorded when it ends.
+   * Plays a supplementary asset through its primary file. Extras carry no
+   * watch state, so the session is not tracked and nothing is recorded when
+   * it ends.
    */
   async playExtra(extraId: string): Promise<AnimeExtraPlayResult> {
     const row = this.db.client
@@ -157,14 +166,20 @@ export class AnimeActivityHandler {
       return { status: 'failed', reason: 'extraNotFound' }
     }
 
-    if (!existsSync(row.extra.path)) {
+    const file = this.readPlayableExtraFile(extraId)
+    if (!file) {
+      log.warn('Extra has no playable file.', { extraId })
+      return { status: 'failed', reason: 'noExtraFile' }
+    }
+
+    if (!existsSync(file.path)) {
       log.warn('Extra file is missing on disk.', { extraId })
       return { status: 'failed', reason: 'fileNotFound' }
     }
 
     const { playerAudioLanguages, playerSubtitleLanguages } = this.db.settings.get()
     const started = await this.player.sessions.start({
-      path: row.extra.path,
+      path: file.path,
       title: `${row.animeName} · ${row.extra.name}`,
       trackPreference: {
         audioLanguages: playerAudioLanguages,
@@ -314,7 +329,7 @@ export class AnimeActivityHandler {
     })
 
     this.ipc.send('activity:anime-stopped', { animeId, episodeId, sessionId })
-    this.hooks.watchEnded.dispatch({
+    this.hooks.animeWatchEnded.dispatch({
       animeId,
       episodeId,
       watched,
@@ -402,6 +417,17 @@ export class AnimeActivityHandler {
       .from(animeEpisodeFiles)
       .where(eq(animeEpisodeFiles.episodeId, episodeId))
       .orderBy(asc(animeEpisodeFiles.createdAt))
+      .all()
+
+    return files.find((file) => file.isPrimary) ?? files[0]
+  }
+
+  private readPlayableExtraFile(extraId: string): AnimeExtraFile | undefined {
+    const files = this.db.client
+      .select()
+      .from(animeExtraFiles)
+      .where(eq(animeExtraFiles.extraId, extraId))
+      .orderBy(asc(animeExtraFiles.createdAt))
       .all()
 
     return files.find((file) => file.isPrimary) ?? files[0]

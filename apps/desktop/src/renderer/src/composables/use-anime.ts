@@ -33,6 +33,7 @@ import type {
   AnimeEpisode,
   AnimeEpisodeFile,
   AnimeExtra,
+  AnimeExtraFile,
   AnimeSession,
   AnimeCharacterLink,
   AnimePersonLink,
@@ -56,10 +57,15 @@ export interface AnimeEpisodeEntry extends AnimeEpisode {
   files: AnimeEpisodeFile[]
 }
 
+/** One extra with the playable files it owns, ordered by preference. */
+export interface AnimeExtraEntry extends AnimeExtra {
+  files: AnimeExtraFile[]
+}
+
 interface AnimeData {
   anime: Anime | null
   episodes: AnimeEpisodeEntry[]
-  extras: AnimeExtra[]
+  extras: AnimeExtraEntry[]
   tags: (AnimeTagLink & { tag: Tag | null })[]
   characters: (AnimeCharacterLink & { character: Character | null })[]
   persons: (AnimePersonLink & { person: Person | null })[]
@@ -73,8 +79,8 @@ export interface AnimeContext {
   anime: ComputedRef<Anime | null>
   /** Episodes in display order, each with its playable files */
   episodes: ComputedRef<AnimeEpisodeEntry[]>
-  /** Supplementary assets (trailers, creditless openings) */
-  extras: ComputedRef<AnimeExtra[]>
+  /** Supplementary assets (trailers, creditless openings), each with its files */
+  extras: ComputedRef<AnimeExtraEntry[]>
   /** Anime tags (from animeTagLinks) */
   tags: ComputedRef<(AnimeTagLink & { tag: Tag | null })[]>
   /** Character links with character data */
@@ -201,7 +207,7 @@ async function fetchAnimeData(
   return {
     anime: animeData,
     episodes: await attachEpisodeFiles(episodes),
-    extras,
+    extras: await attachExtraFiles(extras),
     tags: tagLinks.map((row) => ({ ...row.anime_tag_links, tag: row.tags })),
     characters: charLinks.map((row) => ({
       ...row.anime_character_links,
@@ -243,6 +249,34 @@ async function attachEpisodeFiles(episodes: AnimeEpisode[]): Promise<AnimeEpisod
   }
 
   return episodes.map((episode) => ({ ...episode, files: filesByEpisode.get(episode.id) ?? [] }))
+}
+
+/** Extra files load in one query, primary first, mirroring the episode files. */
+async function attachExtraFiles(extras: AnimeExtra[]): Promise<AnimeExtraEntry[]> {
+  if (extras.length === 0) return []
+
+  const files = await db
+    .select()
+    .from(schema.animeExtraFiles)
+    .where(
+      inArray(
+        schema.animeExtraFiles.extraId,
+        extras.map((extra) => extra.id)
+      )
+    )
+    .orderBy(desc(schema.animeExtraFiles.isPrimary), asc(schema.animeExtraFiles.createdAt))
+
+  const filesByExtra = new Map<string, AnimeExtraFile[]>()
+  for (const file of files) {
+    const bucket = filesByExtra.get(file.extraId)
+    if (bucket) {
+      bucket.push(file)
+    } else {
+      filesByExtra.set(file.extraId, [file])
+    }
+  }
+
+  return extras.map((extra) => ({ ...extra, files: filesByExtra.get(extra.id) ?? [] }))
 }
 
 // =============================================================================
@@ -302,6 +336,7 @@ const ANIME_OWNED_TABLES = [
   'anime_episodes',
   'anime_episode_files',
   'anime_extras',
+  'anime_extra_files',
   'anime_sessions',
   'anime_tag_links',
   'anime_character_links',

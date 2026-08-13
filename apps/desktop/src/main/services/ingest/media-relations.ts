@@ -45,6 +45,17 @@ export interface ApplyMediaRelationFactsResult {
   unresolvedCount: number
 }
 
+/** Warning surfaced when related-entry facts point at entries outside the library. */
+export function createUnresolvedRelatedEntriesWarning(count: number): {
+  code: 'related-entry-not-in-library'
+  message: string
+} {
+  return {
+    code: 'related-entry-not-in-library',
+    message: `Skipped ${count} related entries because their targets are not in the library.`
+  }
+}
+
 /**
  * Applies scraped related-entry facts as the entity's outgoing edges.
  * `replace` makes the stored out-edge set equal the resolved incoming one;

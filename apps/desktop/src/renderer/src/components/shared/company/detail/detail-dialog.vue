@@ -24,8 +24,7 @@ import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-di
 import { getEntityIcon } from '@renderer/utils/format'
 import { useCompanyDialogProvider, useDbChanges, useRenderState } from '@renderer/composables'
 import CompanyDetailContent from './detail-content.vue'
-import { CompanyScoreFormDialog } from '../forms'
-import { CompanyDropdownMenu } from '../menus'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -186,16 +185,20 @@ function handleRevealSpoilersConfirm() {
               />
 
               <!-- More menu -->
-              <CompanyDropdownMenu :company-id="company!.id" />
+              <EntityDropdownMenu
+                entity-type="company"
+                :entity-id="company!.id"
+              />
             </div>
           </div>
         </DialogFooter>
 
         <!-- Score Dialog -->
-        <CompanyScoreFormDialog
+        <EntityScoreFormDialog
           v-if="isScoreOpen"
           v-model:open="isScoreOpen"
-          :company-id="company!.id"
+          entity-type="company"
+          :entity-id="company!.id"
         />
 
         <SpoilerConfirmDialog

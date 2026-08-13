@@ -2,64 +2,29 @@ import { eq } from 'drizzle-orm'
 import {
   companyExternalIdLink,
   requireExternalIdsAvailable,
-  resolveTagId,
   type DbContext
 } from '@main/services/db'
-import {
-  companies,
-  companyExternalIds,
-  companyTagLinks,
-  type NewCompany,
-  type NewCompanyTagLink
-} from '@shared/db'
-import { normalizeExternalIds, type ExternalId } from '@shared/identity'
+import { companies, companyExternalIds, companyTagLinks, type NewCompany } from '@shared/db'
 import type { CompanyUpdatePlan, UpdateApplyResult } from '../types'
+import {
+  replaceEntityExternalIds,
+  replaceEntityTags,
+  type ExternalIdRowSpec,
+  type TagLinkRowSpec
+} from './links'
 
-function replaceCompanyExternalIds(
-  tx: DbContext,
-  companyId: string,
-  externalIds: ExternalId[]
-): void {
-  tx.delete(companyExternalIds).where(eq(companyExternalIds.companyId, companyId)).run()
-
-  const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
-    companyId,
-    source: externalId.source,
-    externalId: externalId.id,
-    orderInCompany: index
-  }))
-
-  if (values.length > 0) {
-    tx.insert(companyExternalIds).values(values).run()
-  }
+const COMPANY_EXTERNAL_ID_SPEC: ExternalIdRowSpec = {
+  table: companyExternalIds,
+  entityIdColumn: companyExternalIds.companyId,
+  entityIdField: 'companyId',
+  orderField: 'orderInCompany'
 }
 
-function replaceCompanyTags(
-  tx: DbContext,
-  companyId: string,
-  nextTags: CompanyUpdatePlan['tags']
-): void {
-  tx.delete(companyTagLinks).where(eq(companyTagLinks.companyId, companyId)).run()
-  if (!nextTags?.length) return
-
-  const linkValues: NewCompanyTagLink[] = []
-  nextTags.forEach((tag, index) => {
-    const tagId = resolveTagId(tx, tag)
-    if (!tagId) return
-
-    linkValues.push({
-      companyId,
-      tagId,
-      isSpoiler: tag.isSpoiler ?? false,
-      note: tag.note ?? null,
-      orderInCompany: index,
-      orderInTag: 0
-    })
-  })
-
-  if (linkValues.length > 0) {
-    tx.insert(companyTagLinks).values(linkValues).run()
-  }
+const COMPANY_TAG_LINK_SPEC: TagLinkRowSpec = {
+  table: companyTagLinks,
+  entityIdColumn: companyTagLinks.companyId,
+  entityIdField: 'companyId',
+  orderInEntityField: 'orderInCompany'
 }
 
 export function applyCompanyPlan(
@@ -69,11 +34,11 @@ export function applyCompanyPlan(
 ): UpdateApplyResult {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, companyExternalIdLink, [companyId], plan.externalIds)
-    replaceCompanyExternalIds(tx, companyId, plan.externalIds)
+    replaceEntityExternalIds(tx, COMPANY_EXTERNAL_ID_SPEC, companyId, plan.externalIds)
   }
 
   if (plan.tags) {
-    replaceCompanyTags(tx, companyId, plan.tags)
+    replaceEntityTags(tx, COMPANY_TAG_LINK_SPEC, companyId, plan.tags)
   }
 
   if (Object.keys(plan.patch).length > 0) {

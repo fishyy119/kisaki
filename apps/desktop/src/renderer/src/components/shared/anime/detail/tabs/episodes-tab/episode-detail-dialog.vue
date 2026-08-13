@@ -1,9 +1,10 @@
 <!--
   AnimeEpisodeDetailDialog
   Full detail view for one episode: metadata, watch state, and the playable
-  file records with file-level management (manual attachment, primary
-  election, record removal). User-touched rows become manual (user-owned) so
-  file sync leaves them alone. Disk files are never touched here.
+  file records. Manual attachment creates user-owned rows; primary election
+  and record removal act on sync-owned rows too (sync keeps a surviving
+  primary preference, and removed in-library records reappear on the next
+  sync pass). Disk files are never touched here.
 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
@@ -32,6 +33,7 @@ import { getOpenVideoDialogOptions } from '@renderer/utils/dialog'
 import { animeEpisodeFiles, animeEpisodes, type AnimeEpisodeFile } from '@shared/db'
 import AnimeWatchButton from '../../../anime-watch-button.vue'
 import AnimeEpisodeFormDialog from './episode-form-dialog.vue'
+import AnimeFileRecordList from './file-record-list.vue'
 
 const log = createLogger('Anime')
 
@@ -54,7 +56,6 @@ const episode = computed<AnimeEpisodeEntry | null>(
 const editDialogOpen = ref(false)
 const deleteDialogOpen = ref(false)
 const isAttachingFile = ref(false)
-const removeFileId = ref<string | null>(null)
 
 const title = computed(() => {
   const entry = episode.value
@@ -76,38 +77,6 @@ const isWatched = computed(() => episode.value?.watchedAt !== null)
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
-}
-
-function fileBasename(filePath: string): string {
-  const segments = filePath.split(/[\\/]/)
-  return segments[segments.length - 1] || filePath
-}
-
-function formatFileSize(size: number | null): string | null {
-  if (size === null || size <= 0) return null
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let value = size
-  let unitIndex = 0
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex++
-  }
-  return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unitIndex]}`
-}
-
-function fileFacts(file: AnimeEpisodeFile): string {
-  const parts: string[] = []
-  if (file.width && file.height) parts.push(`${file.width}×${file.height}`)
-  if (file.videoCodec) parts.push(file.videoCodec)
-  const size = formatFileSize(file.fileSize)
-  if (size) parts.push(size)
-  if (file.audioTracks.length > 0) {
-    parts.push(m.value.anime.files.audioTrackCount({ count: file.audioTracks.length }))
-  }
-  if (file.subtitleTracks.length > 0) {
-    parts.push(m.value.anime.files.subtitleTrackCount({ count: file.subtitleTracks.length }))
-  }
-  return parts.join(' · ')
 }
 
 async function handleToggleWatched(): Promise<void> {
@@ -170,7 +139,7 @@ async function handleAttachFile(): Promise<void> {
   }
 }
 
-async function handleSetPrimary(file: AnimeEpisodeFile): Promise<void> {
+async function handleSetPrimary(file: Pick<AnimeEpisodeFile, 'id' | 'isPrimary'>): Promise<void> {
   const entry = episode.value
   if (!entry || file.isPrimary) return
   try {
@@ -211,8 +180,16 @@ async function handleRemoveFile(fileId: string): Promise<void> {
   } catch (error) {
     log.error('Remove file record failed:', error)
     notify.error(m.value.common.deleteFailed)
-  } finally {
-    removeFileId.value = null
+  }
+}
+
+async function handleSaveNote(fileId: string, note: string | null): Promise<void> {
+  try {
+    await db.update(animeEpisodeFiles).set({ note }).where(eq(animeEpisodeFiles.id, fileId))
+    notify.success(m.value.anime.files.noteSaved)
+  } catch (error) {
+    log.error('File note update failed:', error)
+    notify.error(m.value.library.feedback.updateFailed)
   }
 }
 
@@ -222,13 +199,6 @@ async function handleOpenFolder(path: string): Promise<void> {
     notify.error(m.value.anime.files.openFolderFailed)
   }
 }
-
-const removeFileDialogOpen = computed({
-  get: () => removeFileId.value !== null,
-  set: (value) => {
-    if (!value) removeFileId.value = null
-  }
-})
 </script>
 
 <template>
@@ -315,100 +285,16 @@ const removeFileDialogOpen = computed({
           <Separator />
 
           <!-- Files -->
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-xs font-medium text-muted-foreground">
-                {{ m.anime.files.title }}
-              </h4>
-              <Button
-                variant="outline"
-                size="xs"
-                :disabled="isAttachingFile"
-                @click="handleAttachFile"
-              >
-                <Icon
-                  :icon="isAttachingFile ? 'icon-[mdi--loading]' : 'icon-[mdi--plus]'"
-                  :class="isAttachingFile ? 'size-3.5 animate-spin' : 'size-3.5'"
-                />
-                {{ m.anime.files.addFile }}
-              </Button>
-            </div>
-            <p
-              v-if="episode.files.length === 0"
-              class="text-sm text-muted-foreground py-3 text-center"
-            >
-              {{ m.anime.episodes.missingFile }}
-            </p>
-            <div
-              v-else
-              class="space-y-2"
-            >
-              <div
-                v-for="file in episode.files"
-                :key="file.id"
-                class="flex items-center justify-between gap-3 p-2.5 rounded-lg border bg-muted/50"
-              >
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <p class="text-sm font-medium truncate">{{ fileBasename(file.path) }}</p>
-                    <Badge
-                      v-if="file.isPrimary"
-                      variant="secondary"
-                      class="shrink-0"
-                    >
-                      {{ m.anime.files.primary }}
-                    </Badge>
-                    <Badge
-                      v-if="file.isManual"
-                      variant="outline"
-                      class="shrink-0"
-                    >
-                      {{ m.anime.files.manualBadge }}
-                    </Badge>
-                  </div>
-                  <p class="text-xs text-muted-foreground truncate">{{ fileFacts(file) }}</p>
-                </div>
-
-                <div class="flex items-center gap-1 shrink-0">
-                  <Button
-                    v-if="!file.isPrimary"
-                    variant="ghost"
-                    size="icon-sm"
-                    :tooltip="m.anime.files.setPrimary"
-                    @click="handleSetPrimary(file)"
-                  >
-                    <Icon
-                      icon="icon-[mdi--star-outline]"
-                      class="size-4"
-                    />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    :tooltip="m.anime.files.openFolder"
-                    @click="handleOpenFolder(file.path)"
-                  >
-                    <Icon
-                      icon="icon-[mdi--folder-open-outline]"
-                      class="size-4"
-                    />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    class="text-destructive hover:text-destructive"
-                    :tooltip="m.anime.files.removeFile"
-                    @click="removeFileId = file.id"
-                  >
-                    <Icon
-                      icon="icon-[mdi--delete-outline]"
-                      class="size-4"
-                    />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AnimeFileRecordList
+            :files="episode.files"
+            :empty-text="m.anime.episodes.missingFile"
+            :attaching="isAttachingFile"
+            @attach="handleAttachFile"
+            @set-primary="handleSetPrimary"
+            @remove-file="handleRemoveFile"
+            @open-folder="handleOpenFolder"
+            @save-note="handleSaveNote"
+          />
         </DialogBody>
 
         <DialogFooter>
@@ -483,14 +369,5 @@ const removeFileDialogOpen = computed({
     :entity-label="m.anime.episodes.entityLabel"
     :entity-name="title"
     @confirm="handleDeleteEpisode"
-  />
-
-  <!-- Remove file record confirmation -->
-  <DeleteConfirmDialog
-    v-if="removeFileDialogOpen"
-    v-model:open="removeFileDialogOpen"
-    :entity-label="m.anime.files.recordEntityLabel"
-    mode="remove"
-    @confirm="removeFileId !== null && handleRemoveFile(removeFileId)"
   />
 </template>

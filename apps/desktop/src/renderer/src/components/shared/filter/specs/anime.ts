@@ -33,7 +33,8 @@ export const animeFilterUiSpec: ComputedRef<FilterUiSpec<typeof animeFilterQuery
           label: m.library.fields.watchDuration,
           kind: 'number',
           min: 0,
-          unit: m.filter.secondsUnit
+          unit: m.filter.hoursUnit,
+          valueScale: 3600000
         },
         { key: 'totalEpisodes', label: m.library.fields.totalEpisodes, kind: 'number', min: 0 },
 

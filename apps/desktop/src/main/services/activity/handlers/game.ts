@@ -68,7 +68,7 @@ export class GameActivityHandler {
    * Every expected outcome is reported through the result; callers own the user
    * notifications and this handler logs the failure detail.
    */
-  async launchGame(gameId: string): Promise<GameLaunchResult> {
+  async launch(gameId: string): Promise<GameLaunchResult> {
     const game = this.db.client.select().from(games).where(eq(games.id, gameId)).get()
     if (!game) {
       log.warn('Game to launch was not found.', { gameId })
@@ -143,7 +143,7 @@ export class GameActivityHandler {
   }
 
   /** Terminates the running game process and waits for the stop to be observed. */
-  async stopGame(gameId: string): Promise<GameStopResult> {
+  async stop(gameId: string): Promise<GameStopResult> {
     const status = this.getStatus(gameId)
     if (!status?.isRunning || status.pid === undefined) {
       log.warn('Game to stop is not running.', { gameId })
@@ -236,8 +236,8 @@ export class GameActivityHandler {
         .run()
 
       log.info('Game process started.', { gameId: tracked.gameId, processPid: payload.pid })
-      this.ipc.send('activity:game-started', tracked.gameId)
-      this.hooks.sessionStarted.dispatch({ gameId: tracked.gameId, pid: payload.pid })
+      this.ipc.send('activity:game-started', { gameId: tracked.gameId, pid: payload.pid })
+      this.hooks.gameSessionStarted.dispatch({ gameId: tracked.gameId, pid: payload.pid })
     })
 
     this.processService.hooks.foregroundChanged.tap(async (payload) => {
@@ -248,12 +248,12 @@ export class GameActivityHandler {
 
       if (payload.isForeground) {
         tracked.foregroundSince = Date.now()
-        this.ipc.send('activity:game-foreground', tracked.gameId)
+        this.ipc.send('activity:game-foreground', { gameId: tracked.gameId })
         return
       }
 
       tracked.foregroundSince = undefined
-      this.ipc.send('activity:game-background', tracked.gameId)
+      this.ipc.send('activity:game-background', { gameId: tracked.gameId })
       if (payload.foregroundMs && payload.foregroundMs > 0) {
         // Registered synchronously so a stop edge arriving right after this
         // leaving edge can await the session insert before announcing.
@@ -289,8 +289,8 @@ export class GameActivityHandler {
         log.error('Save auto-backup failed.', error, { gameId: tracked.gameId })
       })
 
-      this.ipc.send('activity:game-stopped', tracked.gameId)
-      this.hooks.sessionEnded.dispatch({
+      this.ipc.send('activity:game-stopped', { gameId: tracked.gameId })
+      this.hooks.gameSessionEnded.dispatch({
         gameId: tracked.gameId,
         playTimeSeconds: Math.floor(payload.elapsedMs / 1000)
       })
@@ -305,26 +305,26 @@ export class GameActivityHandler {
   }
 
   private async savePlaySession(gameId: string, durationMs: number): Promise<void> {
-    const record = await this.hooks.sessionEnding.transform({ gameId, durationMs })
+    const record = await this.hooks.gameSessionEnding.transform({ gameId, durationMs })
     const now = Date.now()
 
-    this.db.client
-      .insert(gameSessions)
-      .values({
-        gameId,
-        startedAt: new Date(now - record.durationMs),
-        endedAt: new Date(now)
-      })
-      .run()
+    this.db.client.transaction((tx) => {
+      tx.insert(gameSessions)
+        .values({
+          gameId,
+          startedAt: new Date(now - record.durationMs),
+          endedAt: new Date(now)
+        })
+        .run()
 
-    this.db.client
-      .update(games)
-      .set({
-        lastActiveAt: new Date(now),
-        totalDuration: sql`${games.totalDuration} + ${record.durationMs}`
-      })
-      .where(eq(games.id, gameId))
-      .run()
+      tx.update(games)
+        .set({
+          lastActiveAt: new Date(now),
+          totalDuration: sql`${games.totalDuration} + ${record.durationMs}`
+        })
+        .where(eq(games.id, gameId))
+        .run()
+    })
 
     log.info('Play session saved.', { gameId, durationSeconds: Math.round(record.durationMs / 1000) })
   }

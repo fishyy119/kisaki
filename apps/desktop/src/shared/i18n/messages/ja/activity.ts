@@ -34,6 +34,7 @@ export const activity = {
     animeNotFound: 'アニメが存在しません。',
     episodeNotFound: 'エピソードが存在しません。',
     extraNotFound: '特典が存在しません。',
+    noExtraFile: 'この特典には動画ファイルがありません。',
     noPlayableEpisode: '再生できるエピソードがありません。',
     noEpisodeFile: 'このエピソードには動画ファイルがありません。',
     playerUnavailable: '動画プレイヤーを利用できません。',

@@ -25,18 +25,17 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 import {
   GamePlayButton,
-  GameDropdownMenu,
-  GameScoreFormDialog,
   GameDetailContent
 } from '@renderer/components/shared/game'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useAmbientLight, useDbChanges, useGameRouteProvider, useIpc } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { games, type Status } from '@shared/db'
+import { games, type GameStatus } from '@shared/db'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { formatStatus, getStatusVariant, getEntityIcon } from '@renderer/utils/format'
+import { formatGameStatus, getGameStatusVariant, getEntityIcon } from '@renderer/utils/format'
 
 const { m } = useI18n()
 
@@ -44,13 +43,13 @@ const { m } = useI18n()
 // Constants
 // =============================================================================
 
-const STATUS_OPTIONS = computed<{ value: Status; label: string }[]>(() => [
-  { value: 'notStarted', label: m.value.library.status.notStarted },
-  { value: 'inProgress', label: m.value.library.status.inProgress },
-  { value: 'partial', label: m.value.library.status.partial },
-  { value: 'completed', label: m.value.library.status.completed },
-  { value: 'multiple', label: m.value.library.status.multiple },
-  { value: 'shelved', label: m.value.library.status.shelved }
+const STATUS_OPTIONS = computed<{ value: GameStatus; label: string }[]>(() => [
+  { value: 'notStarted', label: m.value.library.gameStatus.notStarted },
+  { value: 'inProgress', label: m.value.library.gameStatus.inProgress },
+  { value: 'partial', label: m.value.library.gameStatus.partial },
+  { value: 'completed', label: m.value.library.gameStatus.completed },
+  { value: 'multiple', label: m.value.library.gameStatus.multiple },
+  { value: 'shelved', label: m.value.library.gameStatus.shelved }
 ])
 
 // =============================================================================
@@ -134,7 +133,7 @@ function handleRevealSpoilersConfirm() {
 // Status as a computed to track dropdown value
 const selectedStatus = computed({
   get: () => game.value?.status,
-  set: async (status: Status | undefined) => {
+  set: async (status: GameStatus | undefined) => {
     if (isPendingStatus.value || !game.value || !status) return
     const current = game.value
     isPendingStatus.value = true
@@ -205,10 +204,10 @@ const canOpenGameDir = computed(() => {
           <TooltipTrigger as-child>
             <DropdownMenuTrigger as-child>
               <Badge
-                :variant="getStatusVariant(game.status)"
+                :variant="getGameStatusVariant(game.status)"
                 class="shrink-0 cursor-pointer"
               >
-                {{ formatStatus(game.status) }}
+                {{ formatGameStatus(game.status) }}
               </Badge>
             </DropdownMenuTrigger>
           </TooltipTrigger>
@@ -307,7 +306,10 @@ const canOpenGameDir = computed(() => {
           :game-id="game.id"
           size="sm"
         />
-        <GameDropdownMenu :game-id="game.id">
+        <EntityDropdownMenu
+          entity-type="game"
+          :entity-id="game.id"
+        >
           <Button
             variant="secondary"
             size="icon-sm"
@@ -317,7 +319,7 @@ const canOpenGameDir = computed(() => {
               class="size-4"
             />
           </Button>
-        </GameDropdownMenu>
+        </EntityDropdownMenu>
       </template>
     </PageHeader>
 
@@ -327,10 +329,11 @@ const canOpenGameDir = computed(() => {
     </div>
 
     <!-- Score dialog -->
-    <GameScoreFormDialog
+    <EntityScoreFormDialog
       v-if="scoreDialogOpen"
       v-model:open="scoreDialogOpen"
-      :game-id="game.id"
+      entity-type="game"
+      :entity-id="game.id"
     />
 
     <SpoilerConfirmDialog

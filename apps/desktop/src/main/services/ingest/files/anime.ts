@@ -2,9 +2,9 @@
  * Anime local file sync and manual file attachment.
  *
  * Sync reconciles the video files under an anime's library directory with its
- * episode, episode-file, and extra rows. Metadata scraped from a provider owns
- * episode identity and naming; this pass only attaches playable files to it and
- * creates rows for episodes the provider did not list.
+ * episode, episode-file, extra, and extra-file rows. Metadata scraped from a
+ * provider owns episode identity and naming; this pass only attaches playable
+ * files to it and creates rows for episodes the provider did not list.
  *
  * File rows have an owner: sync owns only the rows it created and the user
  * never touched. Rows marked `isManual` (attached or reassigned by the user)
@@ -16,11 +16,12 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 import { createLogger } from '@main/log'
-import type { DbContext, DbService } from '@main/services/db'
+import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
 import type { MediaInfoService } from '@main/services/media-info'
 import {
   animeEpisodeFiles,
   animeEpisodes,
+  animeExtraFiles,
   animeExtras,
   animeSessions,
   animes,
@@ -29,7 +30,7 @@ import {
   type AnimeExtra,
   type NewAnimeEpisode,
   type NewAnimeEpisodeFile,
-  type NewAnimeExtra
+  type NewAnimeExtraFile
 } from '@shared/db'
 import type {
   IngestAttachAnimeEpisodeFileParams,
@@ -42,7 +43,6 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import {
   classifyReleaseFile,
-  isExtraCandidate,
   isExtraDirectoryName,
   isVideoFile,
   type AnimeEpisodeCandidate,
@@ -63,9 +63,20 @@ interface WalkedFiles {
   extras: AnimeExtraCandidate[]
 }
 
+interface FileStat {
+  size: number
+  mtimeMs: number
+}
+
 interface ProbedEpisodeFile {
   candidate: AnimeEpisodeCandidate
-  stat: { size: number; mtimeMs: number }
+  stat: FileStat
+  info: MediaFileInfo | null
+}
+
+interface ProbedExtraFile {
+  candidate: AnimeExtraCandidate
+  stat: FileStat
   info: MediaFileInfo | null
 }
 
@@ -118,6 +129,22 @@ function applyEpisodeFileNumberOffset(
   }
 }
 
+/** File-row column values derived from one probe pass. */
+function toProbedFileValues(stat: FileStat, info: MediaFileInfo | null) {
+  return {
+    fileSize: stat.size,
+    fileMtime: new Date(stat.mtimeMs),
+    container: info?.container ?? null,
+    videoCodec: info?.video?.codec ?? null,
+    bitDepth: info?.video?.bitDepth ?? null,
+    width: info?.video?.width ?? null,
+    height: info?.video?.height ?? null,
+    durationMs: info?.durationMs ?? null,
+    audioTracks: [...(info?.audioTracks ?? [])],
+    subtitleTracks: [...(info?.subtitleTracks ?? [])]
+  }
+}
+
 export class AnimeFileSyncHandler {
   constructor(
     private readonly dbService: DbService,
@@ -144,8 +171,8 @@ export class AnimeFileSyncHandler {
     // Manual rows already claim their paths, so those files leave the
     // candidate set entirely: sync neither re-probes nor re-assigns them.
     const manualPaths = new Set([
-      ...this.readManualFiles(animeId).map((file) => file.path),
-      ...this.readManualExtras(animeId).map((extra) => extra.path)
+      ...this.readManualEpisodeFiles(animeId).map((file) => file.path),
+      ...this.readManualExtraFiles(animeId).map((file) => file.path)
     ])
     walked.episodes = walked.episodes.filter((candidate) => !manualPaths.has(candidate.path))
     walked.extras = walked.extras.filter((extra) => !manualPaths.has(extra.path))
@@ -153,18 +180,20 @@ export class AnimeFileSyncHandler {
     applyEpisodeFileNumberOffset(walked.episodes, animeRow?.episodeFileNumberOffset ?? 0)
     walked.episodes.sort(compareEpisodes)
 
-    const probed: ProbedEpisodeFile[] = []
+    const probedEpisodes: ProbedEpisodeFile[] = []
     for (const candidate of walked.episodes) {
       signal?.throwIfAborted()
       const stat = await this.readStat(candidate.path)
       if (!stat) continue
-      probed.push({ candidate, stat, info: await this.mediaInfo.probe(candidate.path) })
+      probedEpisodes.push({ candidate, stat, info: await this.mediaInfo.probe(candidate.path) })
     }
 
-    const extraDurations = new Map<string, number | null>()
-    for (const extra of walked.extras) {
+    const probedExtras: ProbedExtraFile[] = []
+    for (const candidate of walked.extras) {
       signal?.throwIfAborted()
-      extraDurations.set(extra.path, (await this.mediaInfo.probe(extra.path))?.durationMs ?? null)
+      const stat = await this.readStat(candidate.path)
+      if (!stat) continue
+      probedExtras.push({ candidate, stat, info: await this.mediaInfo.probe(candidate.path) })
     }
 
     return this.dbService.client.transaction((tx) => {
@@ -187,19 +216,25 @@ export class AnimeFileSyncHandler {
       const episodeIdByKey = this.writeEpisodes(
         tx,
         animeId,
-        probed,
+        probedEpisodes,
         existingEpisodes,
         existingFiles
       )
-      const fileCount = this.writeEpisodeFiles(tx, probed, episodeIdByKey, existingFiles)
-      this.deleteOrphanedFileBornEpisodes(tx, existingEpisodes, existingFiles, probed, episodeIdByKey)
-      const extraCount = this.writeExtras(tx, animeId, walked.extras, extraDurations)
+      const fileCount = this.writeEpisodeFiles(tx, probedEpisodes, episodeIdByKey, existingFiles)
+      this.deleteOrphanedFileBornEpisodes(
+        tx,
+        existingEpisodes,
+        existingFiles,
+        probedEpisodes,
+        episodeIdByKey
+      )
+      const extraCount = this.writeExtras(tx, animeId, probedExtras)
 
       return {
         episodeCount: episodeIdByKey.size,
         fileCount,
         extraCount,
-        unrecognizedFiles: probed
+        unrecognizedFiles: probedEpisodes
           .filter(({ candidate }) => candidate.number === undefined)
           .map(({ candidate }) => candidate.path)
       }
@@ -232,15 +267,7 @@ export class AnimeFileSyncHandler {
         throw new Error(`Episode not found: ${episodeId}`)
       }
 
-      const [claimed] = tx
-        .select({ id: animeEpisodeFiles.id })
-        .from(animeEpisodeFiles)
-        .where(eq(animeEpisodeFiles.path, filePath))
-        .limit(1)
-        .all()
-      if (claimed) {
-        throw new Error(`File is already attached to an episode: ${filePath}`)
-      }
+      this.requirePathUnclaimed(tx, filePath)
 
       const siblings = tx
         .select({ id: animeEpisodeFiles.id })
@@ -253,16 +280,7 @@ export class AnimeFileSyncHandler {
           id: nanoid(),
           episodeId,
           path: filePath,
-          fileSize: stat.size,
-          fileMtime: new Date(stat.mtimeMs),
-          container: info?.container ?? null,
-          videoCodec: info?.video?.codec ?? null,
-          bitDepth: info?.video?.bitDepth ?? null,
-          width: info?.video?.width ?? null,
-          height: info?.video?.height ?? null,
-          durationMs: info?.durationMs ?? null,
-          audioTracks: [...(info?.audioTracks ?? [])],
-          subtitleTracks: [...(info?.subtitleTracks ?? [])],
+          ...toProbedFileValues(stat, info),
           isPrimary: siblings.length === 0,
           isManual: true
         })
@@ -279,11 +297,11 @@ export class AnimeFileSyncHandler {
   }
 
   /**
-   * Register one on-disk video as a user-owned extra.
+   * Attach one on-disk video as a user-owned extra file.
    *
-   * Filename recognition fills the name and kind unless the caller supplied
-   * explicit values; the row is marked manual so sync passes leave it alone
-   * from now on.
+   * With `extraId` the file joins that extra as an alternate version;
+   * otherwise a new user-owned extra is created, with filename recognition
+   * filling name and type unless the caller supplied explicit values.
    */
   async attachExtra(params: IngestAttachAnimeExtraFileParams): Promise<void> {
     const { animeId, path: filePath } = params
@@ -293,61 +311,94 @@ export class AnimeFileSyncHandler {
       throw new Error(`Extra file is not readable: ${filePath}`)
     }
     const info = await this.mediaInfo.probe(filePath)
-    const candidate = classifyReleaseFile(filePath, true)
-    const kind = params.kind ?? (isExtraCandidate(candidate) ? candidate.kind : 'other')
-    const name = params.name?.trim() || candidate.name
+    const classified = classifyReleaseFile(filePath, true)
+    const recognized = classified.kind === 'extra' ? classified.extra : undefined
 
     this.dbService.client.transaction((tx) => {
-      const [anime] = tx
-        .select({ id: animes.id })
-        .from(animes)
-        .where(eq(animes.id, animeId))
-        .limit(1)
-        .all()
-      if (!anime) {
-        throw new Error(`Anime not found: ${animeId}`)
+      this.requirePathUnclaimed(tx, filePath)
+
+      let extraId = params.extraId
+      if (extraId) {
+        const [extra] = tx
+          .select({ id: animeExtras.id })
+          .from(animeExtras)
+          .where(and(eq(animeExtras.id, extraId), eq(animeExtras.animeId, animeId)))
+          .limit(1)
+          .all()
+        if (!extra) {
+          throw new Error(`Extra not found: ${extraId}`)
+        }
+      } else {
+        const [anime] = tx
+          .select({ id: animes.id })
+          .from(animes)
+          .where(eq(animes.id, animeId))
+          .limit(1)
+          .all()
+        if (!anime) {
+          throw new Error(`Anime not found: ${animeId}`)
+        }
+
+        const siblings = tx
+          .select({ orderInAnime: animeExtras.orderInAnime })
+          .from(animeExtras)
+          .where(eq(animeExtras.animeId, animeId))
+          .all()
+        const nextOrder = siblings.reduce((max, row) => Math.max(max, row.orderInAnime + 1), 0)
+
+        extraId = nanoid()
+        tx.insert(animeExtras)
+          .values({
+            id: extraId,
+            animeId,
+            type: params.type ?? recognized?.type ?? 'other',
+            name: params.name?.trim() || (recognized?.name ?? path.basename(filePath)),
+            orderInAnime: nextOrder,
+            isManual: true
+          })
+          .run()
       }
 
-      const [claimedExtra] = tx
-        .select({ id: animeExtras.id })
-        .from(animeExtras)
-        .where(eq(animeExtras.path, filePath))
-        .limit(1)
+      const siblingFiles = tx
+        .select({ id: animeExtraFiles.id })
+        .from(animeExtraFiles)
+        .where(eq(animeExtraFiles.extraId, extraId))
         .all()
-      if (claimedExtra) {
-        throw new Error(`File is already registered as an extra: ${filePath}`)
-      }
 
-      const [claimedEpisode] = tx
-        .select({ id: animeEpisodeFiles.id })
-        .from(animeEpisodeFiles)
-        .where(eq(animeEpisodeFiles.path, filePath))
-        .limit(1)
-        .all()
-      if (claimedEpisode) {
-        throw new Error(`File is already attached to an episode: ${filePath}`)
-      }
-
-      const siblings = tx
-        .select({ orderInAnime: animeExtras.orderInAnime })
-        .from(animeExtras)
-        .where(eq(animeExtras.animeId, animeId))
-        .all()
-      const nextOrder = siblings.reduce((max, row) => Math.max(max, row.orderInAnime + 1), 0)
-
-      tx.insert(animeExtras)
+      tx.insert(animeExtraFiles)
         .values({
           id: nanoid(),
-          animeId,
-          kind,
-          name,
+          extraId,
           path: filePath,
-          durationMs: info?.durationMs ?? null,
-          orderInAnime: nextOrder,
+          ...toProbedFileValues(stat, info),
+          isPrimary: siblingFiles.length === 0,
           isManual: true
         })
         .run()
     })
+  }
+
+  /** Throws when the path is already claimed by any episode or extra file row. */
+  private requirePathUnclaimed(tx: DbContext, filePath: string): void {
+    const [claimedEpisode] = (tx as DbQueryContext)
+      .select({ id: animeEpisodeFiles.id })
+      .from(animeEpisodeFiles)
+      .where(eq(animeEpisodeFiles.path, filePath))
+      .limit(1)
+      .all()
+    if (claimedEpisode) {
+      throw new Error(`File is already attached to an episode: ${filePath}`)
+    }
+
+    const [claimedExtra] = (tx as DbQueryContext)
+      .select({ id: animeExtraFiles.id })
+      .from(animeExtraFiles)
+      .where(eq(animeExtraFiles.path, filePath))
+      .limit(1)
+      .all()
+    if (claimedExtra) {
+      throw new Error(`File is already attached to an extra: ${filePath}`)
+    }
   }
 
   private readAnimeSyncConfig(
@@ -366,25 +417,25 @@ export class AnimeFileSyncHandler {
     return row ?? null
   }
 
-  private readManualFiles(animeId: string): AnimeEpisodeFile[] {
+  private readManualEpisodeFiles(animeId: string): Array<{ path: string }> {
     return this.dbService.client
-      .select({ file: animeEpisodeFiles })
+      .select({ path: animeEpisodeFiles.path })
       .from(animeEpisodeFiles)
       .innerJoin(animeEpisodes, eq(animeEpisodeFiles.episodeId, animeEpisodes.id))
       .where(and(eq(animeEpisodes.animeId, animeId), eq(animeEpisodeFiles.isManual, true)))
       .all()
-      .map((row) => row.file)
   }
 
-  private readManualExtras(animeId: string): AnimeExtra[] {
+  private readManualExtraFiles(animeId: string): Array<{ path: string }> {
     return this.dbService.client
-      .select()
-      .from(animeExtras)
-      .where(and(eq(animeExtras.animeId, animeId), eq(animeExtras.isManual, true)))
+      .select({ path: animeExtraFiles.path })
+      .from(animeExtraFiles)
+      .innerJoin(animeExtras, eq(animeExtraFiles.extraId, animeExtras.id))
+      .where(and(eq(animeExtras.animeId, animeId), eq(animeExtraFiles.isManual, true)))
       .all()
   }
 
-  private async readStat(filePath: string): Promise<{ size: number; mtimeMs: number } | null> {
+  private async readStat(filePath: string): Promise<FileStat | null> {
     try {
       const stat = await fs.stat(filePath)
       return { size: stat.size, mtimeMs: stat.mtimeMs }
@@ -416,11 +467,11 @@ export class AnimeFileSyncHandler {
 
         if (!entry.isFile() || !isVideoFile(entry.name)) continue
 
-        const candidate = classifyReleaseFile(entryPath, inExtras)
-        if (isExtraCandidate(candidate)) {
-          result.extras.push(candidate)
+        const classified = classifyReleaseFile(entryPath, inExtras)
+        if (classified.kind === 'extra') {
+          result.extras.push(classified.extra)
         } else {
-          result.episodes.push(candidate)
+          result.episodes.push(classified.episode)
         }
       }
     }
@@ -526,6 +577,16 @@ export class AnimeFileSyncHandler {
 
     let count = 0
 
+    // Sync-owned files that vanished from disk must not stay playable,
+    // including files of episodes no candidate matched this run. Manual rows
+    // are user-owned and may live outside the walked directory, so they stay.
+    // Deletion runs first so the partial primary index never sees two rows.
+    const livePaths = new Set(probed.map(({ candidate }) => candidate.path))
+    for (const file of existingFiles) {
+      if (file.isManual || livePaths.has(file.path)) continue
+      tx.delete(animeEpisodeFiles).where(eq(animeEpisodeFiles.id, file.id)).run()
+    }
+
     for (const [episodeId, group] of probedByEpisodeId) {
       // A stored primary preference survives as long as its file does; a new
       // primary is elected only when no preferred file remains on disk and no
@@ -540,16 +601,7 @@ export class AnimeFileSyncHandler {
         const values = {
           episodeId,
           path: candidate.path,
-          fileSize: stat.size,
-          fileMtime: new Date(stat.mtimeMs),
-          container: info?.container ?? null,
-          videoCodec: info?.video?.codec ?? null,
-          bitDepth: info?.video?.bitDepth ?? null,
-          width: info?.video?.width ?? null,
-          height: info?.video?.height ?? null,
-          durationMs: info?.durationMs ?? null,
-          audioTracks: [...(info?.audioTracks ?? [])],
-          subtitleTracks: [...(info?.subtitleTracks ?? [])],
+          ...toProbedFileValues(stat, info),
           isPrimary: candidate.path === primaryPath
         } satisfies Omit<NewAnimeEpisodeFile, 'id'>
 
@@ -564,15 +616,6 @@ export class AnimeFileSyncHandler {
 
         count++
       }
-    }
-
-    // Sync-owned files that vanished from disk must not stay playable,
-    // including files of episodes no candidate matched this run. Manual rows
-    // are user-owned and may live outside the walked directory, so they stay.
-    const livePaths = new Set(probed.map(({ candidate }) => candidate.path))
-    for (const file of existingFiles) {
-      if (file.isManual || livePaths.has(file.path)) continue
-      tx.delete(animeEpisodeFiles).where(eq(animeEpisodeFiles.id, file.id)).run()
     }
 
     return count
@@ -608,8 +651,8 @@ export class AnimeFileSyncHandler {
     if (candidates.length === 0) return
 
     const referencedIds = new Set(
-      tx
-        .select()
+      (tx as DbQueryContext)
+        .select({ episodeId: animeSessions.episodeId })
         .from(animeSessions)
         .where(
           inArray(
@@ -627,45 +670,101 @@ export class AnimeFileSyncHandler {
     }
   }
 
-  private writeExtras(
-    tx: DbContext,
-    animeId: string,
-    extras: AnimeExtraCandidate[],
-    durations: Map<string, number | null>
-  ): number {
-    const known = tx.select().from(animeExtras).where(eq(animeExtras.animeId, animeId)).all()
-    const knownIdByPath = new Map(known.map((extra) => [extra.path, extra.id]))
+  /**
+   * Reconcile extras and their files against the walked candidates.
+   *
+   * Candidates claim file rows by path. A file with no row creates a new
+   * extra plus its file row (sync keeps one file per extra; grouping alternate
+   * versions under one extra is a manual attach). Sync-owned rows whose file
+   * vanished are deleted; an extra that lost every file is deleted unless the
+   * extra or one of its files is user-owned.
+   */
+  private writeExtras(tx: DbContext, animeId: string, probed: ProbedExtraFile[]): number {
+    const existingExtras = tx
+      .select()
+      .from(animeExtras)
+      .where(eq(animeExtras.animeId, animeId))
+      .all()
+    const extraIds = existingExtras.map((extra) => extra.id)
+    const existingFiles = extraIds.length
+      ? tx.select().from(animeExtraFiles).where(inArray(animeExtraFiles.extraId, extraIds)).all()
+      : []
 
-    for (const [index, extra] of extras.entries()) {
-      const values = {
-        animeId,
-        kind: extra.kind,
-        name: extra.name,
-        path: extra.path,
-        durationMs: durations.get(extra.path) ?? null,
-        orderInAnime: index
-      } satisfies Omit<NewAnimeExtra, 'id'>
+    const extraById = new Map(existingExtras.map((extra) => [extra.id, extra]))
+    const fileByPath = new Map(existingFiles.map((file) => [file.path, file]))
 
-      const knownId = knownIdByPath.get(extra.path)
-      if (knownId) {
-        tx.update(animeExtras).set(values).where(eq(animeExtras.id, knownId)).run()
-      } else {
-        tx.insert(animeExtras)
-          .values({ id: nanoid(), ...values })
-          .run()
-      }
+    // Sync-owned files that vanished from disk lose their rows first, so the
+    // partial primary index never sees a stale primary colliding with a new one.
+    const livePaths = new Set(probed.map(({ candidate }) => candidate.path))
+    const deletedFileIds = new Set<string>()
+    for (const file of existingFiles) {
+      if (file.isManual || livePaths.has(file.path)) continue
+      tx.delete(animeExtraFiles).where(eq(animeExtraFiles.id, file.id)).run()
+      deletedFileIds.add(file.id)
     }
 
-    // Manual rows never appear in the candidate set, so they are also exempt
-    // from the orphan cleanup below.
-    const livePaths = new Set(extras.map((extra) => extra.path))
-    for (const extra of known) {
-      if (extra.isManual || livePaths.has(extra.path)) continue
-      tx.delete(animeExtras)
-        .where(and(eq(animeExtras.id, extra.id), eq(animeExtras.animeId, animeId)))
+    let syncOrder = 0
+    for (const { candidate, stat, info } of probed) {
+      const known = fileByPath.get(candidate.path)
+
+      if (known) {
+        tx.update(animeExtraFiles)
+          .set(toProbedFileValues(stat, info))
+          .where(eq(animeExtraFiles.id, known.id))
+          .run()
+
+        // Recognition may improve across runs, but user-owned extras keep
+        // their name, type, and ordering.
+        const owner = extraById.get(known.extraId)
+        if (owner && !owner.isManual) {
+          const patch: Partial<AnimeExtra> = {}
+          if (owner.name !== candidate.name) patch.name = candidate.name
+          if (owner.type !== candidate.type) patch.type = candidate.type
+          if (owner.orderInAnime !== syncOrder) patch.orderInAnime = syncOrder
+          if (Object.keys(patch).length > 0) {
+            tx.update(animeExtras).set(patch).where(eq(animeExtras.id, owner.id)).run()
+          }
+          syncOrder++
+        }
+        continue
+      }
+
+      const extraId = nanoid()
+      tx.insert(animeExtras)
+        .values({
+          id: extraId,
+          animeId,
+          type: candidate.type,
+          name: candidate.name,
+          orderInAnime: syncOrder++
+        })
+        .run()
+
+      const fileValues = {
+        extraId,
+        path: candidate.path,
+        ...toProbedFileValues(stat, info),
+        isPrimary: true
+      } satisfies Omit<NewAnimeExtraFile, 'id'>
+      tx.insert(animeExtraFiles)
+        .values({ id: nanoid(), ...fileValues })
         .run()
     }
 
-    return extras.length
+    // An extra that lost its last file carries nothing, unless the extra row
+    // or one of its files is user-owned.
+    const survivingFileExtraIds = new Set(
+      existingFiles.filter((file) => !deletedFileIds.has(file.id)).map((file) => file.extraId)
+    )
+    for (const extra of existingExtras) {
+      if (extra.isManual || survivingFileExtraIds.has(extra.id)) continue
+      tx.delete(animeExtras).where(eq(animeExtras.id, extra.id)).run()
+    }
+
+    return (tx as DbQueryContext)
+      .select({ id: animeExtras.id })
+      .from(animeExtras)
+      .where(eq(animeExtras.animeId, animeId))
+      .all().length
   }
 }

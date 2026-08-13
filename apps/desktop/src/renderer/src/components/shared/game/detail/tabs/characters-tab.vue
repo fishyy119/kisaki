@@ -12,8 +12,9 @@ import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
-import { GameCharactersFormDialog } from '../../forms'
 import { useI18n } from '@renderer/composables'
+import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import { GAME_CHARACTER_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 
@@ -24,8 +25,6 @@ const { m } = useI18n()
 const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.gameCharacter
 )
-
-const CHARACTER_ROLE_ORDER = ['main', 'supporting', 'other'] as const
 
 // =============================================================================
 // State
@@ -108,7 +107,7 @@ const characterDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="role in CHARACTER_ROLE_ORDER"
+          v-for="role in GAME_CHARACTER_ROLE_VALUES"
           :key="role"
         >
           <div v-if="groupedCharacters[role]?.length">
@@ -135,10 +134,11 @@ const characterDialogOpen = computed({
     </template>
 
     <!-- Edit Dialog -->
-    <GameCharactersFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogOpen"
       v-model:open="editDialogOpen"
-      :game-id="game.id"
+      view="game-characters"
+      :entity-id="game.id"
     />
 
     <!-- Character Detail Dialog -->

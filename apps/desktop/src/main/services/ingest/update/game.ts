@@ -16,6 +16,7 @@ import {
 } from '@shared/ingest/update'
 import type { IngestUpdateResult } from '@shared/ingest'
 import type { TaskRunStartResult } from '@shared/task-run'
+import { createUnresolvedRelatedEntriesWarning } from '../media-relations'
 import { applyGamePlan } from './apply'
 import { loadGameCurrent } from './current'
 import { buildGameIncoming } from './incoming'
@@ -23,11 +24,12 @@ import { buildGamePlan } from './plan'
 import { createLinkDegradeWarnings, GAME_LINK_TOPOLOGY } from './link-topology'
 import { normalizeLookup } from './shared/normalization'
 import { normalizePolicy } from './shared/policy'
+import { requireUpdateRequest } from './shared/request'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
 import { reportIngestProgress } from '../progress'
 import { throwIfIngestAborted } from '../abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
-import { toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
+import { createIngestRun, toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
 
 const log = createLogger('Ingest')
 
@@ -45,25 +47,13 @@ export class GameUpdateHandler {
     request: GameUpdateRequest,
     options?: IngestTaskRunOptions
   ): TaskRunStartResult {
-    this.validateRequest(request)
-    const run = this.taskRunService.runs.create({
-      category: 'ingest',
+    requireUpdateRequest(request)
+    const run = createIngestRun(this.taskRunService, {
       operation: 'ingest.game.update',
       title: this.i18nService.messages.ingest.update.title({ entity: 'game' }),
-      description: request.lookup.name,
-      owner: { type: 'app' },
-      initiator: options?.taskRunInitiator ?? { type: 'user' },
-      subject: { type: 'game', id: request.rootId, labelSnapshot: request.lookup.name },
-      controls: { cancelable: true, pausable: false },
-      presentation: {
-        notify: {
-          enabled: true,
-          title: this.i18nService.messages.ingest.update.title({ entity: 'game' }),
-          showProgress: true,
-          showResult: true,
-          closable: true
-        }
-      }
+      label: request.lookup.name,
+      subject: { type: 'game', id: request.rootId },
+      initiator: options?.taskRunInitiator
     })
 
     void this.handleUpdateFromScraperWithTaskRun(run, request)
@@ -82,7 +72,7 @@ export class GameUpdateHandler {
     request: GameUpdateRequest,
     options?: IngestOperationOptions
   ): Promise<IngestUpdateResult> {
-    this.validateRequest(request)
+    requireUpdateRequest(request)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
@@ -158,12 +148,7 @@ export class GameUpdateHandler {
         preservedRows: applyResult.preservedLinkRows
       }),
       ...(applyResult.unresolvedRelatedEntries
-        ? [
-            {
-              code: 'related-entry-not-in-library' as const,
-              message: `Skipped ${applyResult.unresolvedRelatedEntries} related entries because their targets are not in the library.`
-            }
-          ]
+        ? [createUnresolvedRelatedEntriesWarning(applyResult.unresolvedRelatedEntries)]
         : []),
       ...(await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
         signal: options?.signal
@@ -177,15 +162,6 @@ export class GameUpdateHandler {
 
     this.hooks.updated.dispatch({ entityId: request.rootId, surfaces, warnings })
     return warnings.length > 0 ? { warnings } : {}
-  }
-
-  private validateRequest(request: GameUpdateRequest): void {
-    if (!request.rootId) {
-      throw new Error('Update rootId is required')
-    }
-    if (!request.profileId) {
-      throw new Error('Update profileId is required')
-    }
   }
 
   private async handleUpdateFromScraperWithTaskRun(

@@ -24,6 +24,8 @@ export type FilterUiFieldDef =
       step?: number
       /** Unit suffix rendered after the range inputs (e.g. seconds, cm). */
       unit?: string
+      /** Stored-value multiplier: displayed value × scale = query value. */
+      valueScale?: number
     }
   | { key: string; label: string; kind: 'date' }
   | { key: string; label: string; kind: 'relation' }

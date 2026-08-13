@@ -16,13 +16,15 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatAnimeStatus, getEntityIcon } from '@renderer/utils/format'
 import {
-  AnimeDurationFormDialog,
-  AnimeLastActiveFormDialog,
-  AnimeNameFormDialog,
-  AnimeOriginalNameFormDialog,
-  AnimeScoreFormDialog,
-  AnimeStatusFormDialog
-} from '../forms'
+  EntityNameFormDialog,
+  EntityOriginalNameFormDialog,
+  EntityScoreFormDialog
+} from '@renderer/components/shared/entity'
+import {
+  MediaDurationFormDialog,
+  MediaLastActiveFormDialog,
+  MediaStatusFormDialog
+} from '@renderer/components/shared/media'
 
 const { anime } = useAnime()
 const { m, f } = useI18n()
@@ -197,35 +199,41 @@ const coverUrl = computed(() =>
 
   <!-- Edit Dialogs - conditionally rendered with v-if -->
   <template v-if="anime">
-    <AnimeNameFormDialog
+    <EntityNameFormDialog
       v-if="editDialogs.name"
       v-model:open="editDialogs.name"
-      :anime-id="anime.id"
+      entity-type="anime"
+      :entity-id="anime.id"
     />
-    <AnimeOriginalNameFormDialog
+    <EntityOriginalNameFormDialog
       v-if="editDialogs.originalName"
       v-model:open="editDialogs.originalName"
-      :anime-id="anime.id"
+      entity-type="anime"
+      :entity-id="anime.id"
     />
-    <AnimeLastActiveFormDialog
+    <MediaLastActiveFormDialog
       v-if="editDialogs.lastActive"
       v-model:open="editDialogs.lastActive"
-      :anime-id="anime.id"
+      media-type="anime"
+      :entity-id="anime.id"
     />
-    <AnimeStatusFormDialog
+    <MediaStatusFormDialog
       v-if="editDialogs.status"
       v-model:open="editDialogs.status"
-      :anime-id="anime.id"
+      media-type="anime"
+      :entity-id="anime.id"
     />
-    <AnimeDurationFormDialog
+    <MediaDurationFormDialog
       v-if="editDialogs.duration"
       v-model:open="editDialogs.duration"
-      :anime-id="anime.id"
+      media-type="anime"
+      :entity-id="anime.id"
     />
-    <AnimeScoreFormDialog
+    <EntityScoreFormDialog
       v-if="editDialogs.score"
       v-model:open="editDialogs.score"
-      :anime-id="anime.id"
+      entity-type="anime"
+      :entity-id="anime.id"
     />
   </template>
 </template>

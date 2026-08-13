@@ -11,8 +11,9 @@ import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { CharacterAnimesFormDialog } from '../../forms'
 import { useI18n } from '@renderer/composables'
+import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import { ANIME_CHARACTER_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 
@@ -32,8 +33,6 @@ const openAnimeId = ref<string | null>(null)
 const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.animeCharacter
 )
-
-const CHARACTER_ROLE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
 
 // =============================================================================
 // Computed
@@ -109,7 +108,7 @@ const animeDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="role in CHARACTER_ROLE_ORDER"
+          v-for="role in ANIME_CHARACTER_ROLE_VALUES"
           :key="role"
         >
           <div v-if="groupedAnimes[role]?.length">
@@ -136,10 +135,11 @@ const animeDialogOpen = computed({
     </template>
 
     <!-- Edit Dialog -->
-    <CharacterAnimesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogOpen"
       v-model:open="editDialogOpen"
-      :character-id="character.id"
+      view="character-animes"
+      :entity-id="character.id"
     />
 
     <!-- Anime Detail Dialog -->

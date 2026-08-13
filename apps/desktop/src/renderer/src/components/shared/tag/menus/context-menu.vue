@@ -18,8 +18,8 @@ import {
   ContextMenuRadioGroup,
   ContextMenuRadioItem
 } from '@renderer/components/ui/context-menu'
-import { TagDeleteFormDialog, TagInfoFormDialog } from '../forms'
-import { EntityMergeDialog } from '@renderer/components/shared/entity-merge'
+import { TagInfoFormDialog } from '../forms'
+import { EntityMergeDialog, EntityDeleteFormDialog } from '@renderer/components/shared/entity'
 import TagMenuItems from './menu-items.vue'
 import type { MenuComponents } from '@renderer/types'
 
@@ -68,10 +68,11 @@ const mergeDialogOpen = ref(false)
   </ContextMenu>
 
   <!-- Dialogs rendered outside menu to survive menu close -->
-  <TagDeleteFormDialog
+  <EntityDeleteFormDialog
     v-if="deleteDialogOpen"
     v-model:open="deleteDialogOpen"
-    :tag-id="props.tagId"
+    entity-type="tag"
+    :entity-id="props.tagId"
   />
 
   <TagInfoFormDialog

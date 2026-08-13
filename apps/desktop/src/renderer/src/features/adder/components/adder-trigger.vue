@@ -3,7 +3,7 @@
   Global adder trigger for sidebar with dropdown menu.
 -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
@@ -17,45 +17,45 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
-import GameAdderDialog from './game-adder-dialog.vue'
-import AnimeAdderDialog from './anime-adder-dialog.vue'
-import PersonAdderDialog from './person-adder-dialog.vue'
-import CompanyAdderDialog from './company-adder-dialog.vue'
-import CharacterAdderDialog from './character-adder-dialog.vue'
+import type { ContentEntityType } from '@shared/common'
+import EntityAdderDialog from './entity-adder-dialog.vue'
 
 const { m } = useI18n()
 
 const router = useRouter()
-const gameDialogOpen = ref(false)
-const animeDialogOpen = ref(false)
-const personDialogOpen = ref(false)
-const companyDialogOpen = ref(false)
-const characterDialogOpen = ref(false)
+const adderEntityType = ref<ContentEntityType | null>(null)
 const dropdownOpen = ref(false)
 
-function handleAddGame() {
+const adderOpen = computed({
+  get: () => adderEntityType.value !== null,
+  set: (value: boolean) => {
+    if (!value) adderEntityType.value = null
+  }
+})
+
+function handleAddEntity(entityType: ContentEntityType) {
   dropdownOpen.value = false
-  gameDialogOpen.value = true
+  adderEntityType.value = entityType
+}
+
+function handleAddGame() {
+  handleAddEntity('game')
 }
 
 function handleAddAnime() {
-  dropdownOpen.value = false
-  animeDialogOpen.value = true
+  handleAddEntity('anime')
 }
 
 function handleAddCharacter() {
-  dropdownOpen.value = false
-  characterDialogOpen.value = true
+  handleAddEntity('character')
 }
 
 function handleAddPerson() {
-  dropdownOpen.value = false
-  personDialogOpen.value = true
+  handleAddEntity('person')
 }
 
 function handleAddCompany() {
-  dropdownOpen.value = false
-  companyDialogOpen.value = true
+  handleAddEntity('company')
 }
 
 function handleAddScanner() {
@@ -162,24 +162,9 @@ function handleAddScanner() {
     </DropdownMenu>
   </Tooltip>
 
-  <GameAdderDialog
-    v-if="gameDialogOpen"
-    v-model:open="gameDialogOpen"
-  />
-  <AnimeAdderDialog
-    v-if="animeDialogOpen"
-    v-model:open="animeDialogOpen"
-  />
-  <CharacterAdderDialog
-    v-if="characterDialogOpen"
-    v-model:open="characterDialogOpen"
-  />
-  <PersonAdderDialog
-    v-if="personDialogOpen"
-    v-model:open="personDialogOpen"
-  />
-  <CompanyAdderDialog
-    v-if="companyDialogOpen"
-    v-model:open="companyDialogOpen"
+  <EntityAdderDialog
+    v-if="adderEntityType"
+    v-model:open="adderOpen"
+    :entity-type="adderEntityType"
   />
 </template>

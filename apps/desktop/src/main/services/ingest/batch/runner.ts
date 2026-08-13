@@ -13,6 +13,7 @@
 import { createLogger } from '@main/log'
 import type { I18nService } from '@main/services/i18n'
 import { isCancellation, type TaskRunHandle, type TaskRunService } from '@main/services/task-run'
+import { createIngestRun } from '../task-run'
 import type { ExternalId } from '@shared/identity'
 import type { IngestUpdateResult } from '@shared/ingest'
 import {
@@ -72,24 +73,12 @@ export class IngestBatchUpdateRunner {
       count: rootIds.length
     })
 
-    const run = this.taskRunService.runs.create({
-      category: 'ingest',
+    const run = createIngestRun(this.taskRunService, {
       operation: `ingest.${spec.entity}.batchUpdate`,
       title: messages.ingest.batch.title({ entity: spec.entity }),
-      description: subjectLabel,
-      owner: { type: 'app' },
-      initiator: { type: 'user' },
-      subject: { type: spec.entity, labelSnapshot: subjectLabel },
-      controls: { cancelable: true, pausable: false },
-      presentation: {
-        notify: {
-          enabled: true,
-          title: messages.ingest.batch.title({ entity: spec.entity }),
-          showProgress: true,
-          showResult: true,
-          closable: true
-        }
-      }
+      label: subjectLabel,
+      subject: { type: spec.entity },
+      initiator: undefined
     })
 
     void this.execute(run, spec, rootIds)

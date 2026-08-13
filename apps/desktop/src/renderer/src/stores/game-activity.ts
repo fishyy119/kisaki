@@ -85,16 +85,17 @@ export const useGameActivityStore = defineStore('gameActivity', () => {
   async function init() {
     if (initialized.value) return
 
-    ipcManager.on('activity:game-started', (_, gameId: string) => {
-      setGameStatus(gameId, {
+    ipcManager.on('activity:game-started', (_, event) => {
+      setGameStatus(event.gameId, {
         isRunning: true,
         isForeground: true,
+        pid: event.pid,
         startTime: Date.now()
       })
     })
 
-    ipcManager.on('activity:game-stopped', (_, gameId: string) => {
-      setGameStatus(gameId, {
+    ipcManager.on('activity:game-stopped', (_, event) => {
+      setGameStatus(event.gameId, {
         isRunning: false,
         isForeground: false,
         pid: undefined,
@@ -102,12 +103,12 @@ export const useGameActivityStore = defineStore('gameActivity', () => {
       })
     })
 
-    ipcManager.on('activity:game-foreground', (_, gameId: string) => {
-      setGameStatus(gameId, { isForeground: true })
+    ipcManager.on('activity:game-foreground', (_, event) => {
+      setGameStatus(event.gameId, { isForeground: true })
     })
 
-    ipcManager.on('activity:game-background', (_, gameId: string) => {
-      setGameStatus(gameId, { isForeground: false })
+    ipcManager.on('activity:game-background', (_, event) => {
+      setGameStatus(event.gameId, { isForeground: false })
     })
 
     try {

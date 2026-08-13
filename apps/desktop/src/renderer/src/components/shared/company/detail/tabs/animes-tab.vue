@@ -10,16 +10,15 @@ import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { CompanyAnimesFormDialog } from '../../forms'
 import { useI18n } from '@renderer/composables'
+import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import { ANIME_COMPANY_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 
 const COMPANY_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.animeCompany
 )
-
-const COMPANY_ROLE_ORDER = ['studio', 'producer', 'distributor', 'other'] as const
 
 const { company, animes } = useCompany()
 
@@ -93,7 +92,7 @@ const animeDialogOpen = computed({
 
       <div class="space-y-4">
         <template
-          v-for="role in COMPANY_ROLE_ORDER"
+          v-for="role in ANIME_COMPANY_ROLE_VALUES"
           :key="role"
         >
           <div v-if="groupedAnimes[role]?.length">
@@ -120,10 +119,11 @@ const animeDialogOpen = computed({
     </template>
 
     <!-- Edit Dialog -->
-    <CompanyAnimesFormDialog
+    <EntityLinksFormDialog
       v-if="editDialogOpen"
       v-model:open="editDialogOpen"
-      :company-id="company.id"
+      view="company-animes"
+      :entity-id="company.id"
     />
 
     <!-- Anime Detail Dialog -->

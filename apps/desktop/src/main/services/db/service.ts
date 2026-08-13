@@ -91,8 +91,22 @@ export class DbService implements IService {
     // never fails on trigger column references.
     dropAllTriggers(this.sqlite)
 
-    // Run migrations
+    // better-sqlite3 enables foreign keys by default, and the migrator runs all
+    // pending migrations inside one transaction where `PRAGMA foreign_keys=OFF`
+    // written in a migration file is a no-op. A rebuild-style migration would
+    // then cascade-delete every child row of the dropped table, so enforcement
+    // is suspended around the whole migration run instead (pragmas only take
+    // effect outside a transaction) and integrity is checked afterwards.
+    this.sqlite.pragma('foreign_keys = OFF')
     migrate(this.client, { migrationsFolder: path.join(import.meta.dirname, '../../drizzle') })
+    this.sqlite.pragma('foreign_keys = ON')
+
+    const violations = this.sqlite.pragma('foreign_key_check') as unknown[]
+    if (violations.length > 0) {
+      log.warn('Foreign key check reported violations after migrations.', {
+        violationCount: violations.length
+      })
+    }
 
     const ipc = container.get('ipc')
 

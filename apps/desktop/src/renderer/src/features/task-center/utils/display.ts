@@ -10,6 +10,7 @@ import type {
 import type { BadgeVariants } from '@renderer/components/ui/badge'
 import type { Messages } from '@shared/i18n'
 import { formatters, messages } from '@renderer/core/i18n'
+import { formatBytes } from '@renderer/utils/format'
 
 export const TASK_RUN_CATEGORY_OPTIONS: readonly TaskRunCategory[] = [
   'scanner',
@@ -387,6 +388,7 @@ function formatIngestOperation(operation: TaskRunOperation): string {
 function formatIngestEntity(entity: string | undefined): string {
   switch (entity) {
     case 'game':
+    case 'anime':
     case 'person':
     case 'company':
     case 'character':
@@ -484,19 +486,6 @@ function getRatePeriodMultiplier(period: TaskRunRatePeriod): number {
 
 function formatRatePeriod(period: TaskRunRatePeriod): string {
   return messages.value.task.ratePeriods[period]
-}
-
-function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let value = bytes
-  let index = 0
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024
-    index += 1
-  }
-
-  return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`
 }
 
 function formatDurationShort(ms: number): string {

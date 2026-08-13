@@ -69,8 +69,10 @@ export const anime = {
     play: '播放',
     playFailed: '播放特典失敗',
     nameLabel: '名稱',
-    kindLabel: '類型',
-    autoDetect: '自動識別'
+    typeLabel: '類型',
+    autoDetect: '自動識別',
+    noFiles: '暫無檔案。',
+    fileCount: ({ count }: { count: number }) => `${count} 個檔案`
   },
 
   files: {
@@ -92,7 +94,10 @@ export const anime = {
     addFile: '新增檔案',
     fileAttached: '檔案已新增。',
     attachFailed: '新增檔案失敗。',
-    manualBadge: '手動'
+    manualBadge: '手動',
+    noteLabel: '備註',
+    editNote: '編輯備註',
+    noteSaved: '備註已儲存。'
   },
 
   player: {
@@ -122,6 +127,7 @@ export const anime = {
 
   statusDialog: {
     title: '編輯觀看狀態',
+    label: '觀看狀態',
     selectStatus: '選擇狀態'
   },
 
@@ -133,7 +139,7 @@ export const anime = {
 
   duration: {
     title: '編輯觀看時間',
-    totalWatchTime: '總觀看時間',
+    totalTime: '總觀看時間',
     sessionsDuration: ({ value }: { value: string }) => `工作階段記錄：${value}`,
     untrackedDuration: ({ value }: { value: string }) => `未記錄時間：${value}`,
     untrackedLabel: '未記錄的觀看時間',
@@ -163,7 +169,7 @@ export const anime = {
     trend: '觀看趨勢',
     distribution: '時段分佈',
     recentSessions: '最近觀看',
-    watchDuration: '觀看時長',
+    totalDuration: '觀看時長',
     sessionCount: '觀看次數',
     sessionCountValue: ({ count }: { count: number }) => `${count} 次`,
     avgDuration: '平均單次',
@@ -171,8 +177,8 @@ export const anime = {
     currentStreak: '目前連續',
     longestStreak: '最長連續',
     streakValue: ({ days }: { days: number }) => `${days} 天`,
-    firstWatched: '首次觀看',
-    lastWatched: '最近觀看',
+    firstSession: '首次觀看',
+    lastSession: '最近觀看',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day}日`
   }
 } satisfies Messages['anime']

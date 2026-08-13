@@ -7,9 +7,9 @@ export function bindPlayHookPoints(
   point: ExtensionHookContributionPoint
 ): void {
   activity.gameLaunching.tap((value) => point.transform('play.game.launching', value))
-  activity.sessionStarted.tap((payload) => point.notify('play.session.started', payload))
-  activity.sessionEnding.tap((value) => point.transform('play.session.ending', value))
-  activity.sessionEnded.tap((payload) => point.notify('play.session.ended', payload))
-  activity.watchStarted.tap((payload) => point.notify('play.anime.watch.started', payload))
-  activity.watchEnded.tap((payload) => point.notify('play.anime.watch.ended', payload))
+  activity.gameSessionStarted.tap((payload) => point.notify('play.game.session.started', payload))
+  activity.gameSessionEnding.tap((value) => point.transform('play.game.session.ending', value))
+  activity.gameSessionEnded.tap((payload) => point.notify('play.game.session.ended', payload))
+  activity.animeWatchStarted.tap((payload) => point.notify('play.anime.watch.started', payload))
+  activity.animeWatchEnded.tap((payload) => point.notify('play.anime.watch.ended', payload))
 }

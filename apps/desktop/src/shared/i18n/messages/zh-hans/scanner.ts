@@ -225,8 +225,7 @@ export const scanner = {
       externalIdLinked: '外部 ID 已关联到现有条目，当前路径未添加。',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 个视频文件无法识别话数，已作为未编号剧集添加。`,
-      episodeSyncFailed: ({ message }: { message: string }) =>
-        `条目已添加，但视频文件读取失败：${message}`
+      episodeSyncFailed: '条目已添加，但视频文件同步失败，详见日志。'
     }
   }
 } satisfies Messages['scanner']

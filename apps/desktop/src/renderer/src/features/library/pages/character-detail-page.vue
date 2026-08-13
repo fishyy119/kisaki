@@ -15,10 +15,9 @@ import { Separator } from '@renderer/components/ui/separator'
 import { StateView } from '@renderer/components/ui/state-view'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import {
-  CharacterScoreFormDialog,
-  CharacterDropdownMenu,
   CharacterDetailContent
 } from '@renderer/components/shared/character'
+import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import {
   useAmbientLight,
   useCharacterRouteProvider,
@@ -211,7 +210,10 @@ function handleRevealSpoilersConfirm() {
         />
 
         <!-- More menu -->
-        <CharacterDropdownMenu :character-id="character.id" />
+        <EntityDropdownMenu
+          entity-type="character"
+          :entity-id="character.id"
+        />
       </template>
     </PageHeader>
 
@@ -221,10 +223,11 @@ function handleRevealSpoilersConfirm() {
     </div>
 
     <!-- Score dialog -->
-    <CharacterScoreFormDialog
+    <EntityScoreFormDialog
       v-if="scoreDialogOpen"
       v-model:open="scoreDialogOpen"
-      :character-id="character.id"
+      entity-type="character"
+      :entity-id="character.id"
     />
 
     <SpoilerConfirmDialog

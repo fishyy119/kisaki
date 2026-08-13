@@ -29,6 +29,6 @@ export const filter = {
   summaryTo: ({ value }: { value: string }) => `${value} まで`,
   minPlaceholder: '最小',
   maxPlaceholder: '最大',
-  secondsUnit: '秒',
+  hoursUnit: '時間',
   favorite: 'お気に入り'
 } satisfies Messages['filter']

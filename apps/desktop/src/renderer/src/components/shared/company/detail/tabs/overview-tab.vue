@@ -12,12 +12,11 @@ import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useCompany } from '@renderer/composables'
 import {
-  CompanyDescriptionFormDialog,
-  CompanyExternalSitesFormDialog,
-  CompanyTagsFormDialog,
-  CompanyGamesFormDialog,
-  CompanyAnimesFormDialog
-} from '../../forms'
+  EntityDescriptionFormDialog,
+  EntityLinksFormDialog,
+  EntityExternalSitesFormDialog,
+  EntityTagsFormDialog
+} from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -181,30 +180,35 @@ const tagDialogOpen = computed({
     </div>
 
     <!-- Edit Dialogs -->
-    <CompanyDescriptionFormDialog
+    <EntityDescriptionFormDialog
       v-if="descriptionDialogOpen"
       v-model:open="descriptionDialogOpen"
-      :company-id="company.id"
+      entity-type="company"
+      :entity-id="company.id"
     />
-    <CompanyExternalSitesFormDialog
+    <EntityExternalSitesFormDialog
       v-if="sitesDialogOpen"
       v-model:open="sitesDialogOpen"
-      :company-id="company.id"
+      entity-type="company"
+      :entity-id="company.id"
     />
-    <CompanyTagsFormDialog
+    <EntityTagsFormDialog
       v-if="tagsDialogOpen"
       v-model:open="tagsDialogOpen"
-      :company-id="company.id"
+      entity-type="company"
+      :entity-id="company.id"
     />
-    <CompanyGamesFormDialog
+    <EntityLinksFormDialog
       v-if="gamesDialogOpen"
       v-model:open="gamesDialogOpen"
-      :company-id="company.id"
+      view="company-games"
+      :entity-id="company.id"
     />
-    <CompanyAnimesFormDialog
+    <EntityLinksFormDialog
       v-if="animesDialogOpen"
       v-model:open="animesDialogOpen"
-      :company-id="company.id"
+      view="company-animes"
+      :entity-id="company.id"
     />
 
     <!-- Entity Dialogs -->

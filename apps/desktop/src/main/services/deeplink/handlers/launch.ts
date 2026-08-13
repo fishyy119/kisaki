@@ -50,7 +50,7 @@ export class LaunchHandler implements DeeplinkRouteHandler<typeof LAUNCH_DEEPLIN
     gameId: string,
     deeplink: LaunchDeeplinkContext
   ): Promise<DeeplinkResult> {
-    const result = await this.activity.game.launchGame(gameId)
+    const result = await this.activity.game.launch(gameId)
     this.notifyLaunchOutcome(result)
 
     if (result.status !== 'detected') {

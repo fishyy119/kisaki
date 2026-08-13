@@ -108,19 +108,19 @@ export class PlaybackSessionManager {
   }
 
   async pause(sessionId: string): Promise<void> {
-    await this.require(sessionId).pause()
+    await this.find(sessionId)?.pause()
   }
 
   async resume(sessionId: string): Promise<void> {
-    await this.require(sessionId).resume()
+    await this.find(sessionId)?.resume()
   }
 
   async seek(sessionId: string, positionMs: number): Promise<void> {
-    await this.require(sessionId).seek(positionMs)
+    await this.find(sessionId)?.seek(positionMs)
   }
 
   async stop(sessionId: string): Promise<void> {
-    await this.require(sessionId).stop()
+    await this.find(sessionId)?.stop()
   }
 
   async dispose(): Promise<void> {
@@ -129,10 +129,14 @@ export class PlaybackSessionManager {
     this.lastProgressAt.clear()
   }
 
-  private require(sessionId: string): PlaybackSession {
+  /**
+   * Transport controls racing a session's natural end are expected, so a
+   * control aimed at a session that is no longer active is a silent no-op.
+   */
+  private find(sessionId: string): PlaybackSession | undefined {
     const session = this.sessions.get(sessionId)
     if (!session) {
-      throw new Error(`Playback session "${sessionId}" is not active.`)
+      log.debug('Transport control ignored: session is not active.', { sessionId })
     }
     return session
   }

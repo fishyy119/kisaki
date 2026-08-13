@@ -21,11 +21,14 @@ const { m } = useI18n()
 const minInput = ref('')
 const maxInput = ref('')
 
+/** Stored values are scaled (e.g. milliseconds); inputs use the display unit. */
+const scale = props.field.valueScale ?? 1
+
 watch(
   model,
   (value) => {
-    minInput.value = value.min?.toString() ?? ''
-    maxInput.value = value.max?.toString() ?? ''
+    minInput.value = value.min !== undefined ? (value.min / scale).toString() : ''
+    maxInput.value = value.max !== undefined ? (value.max / scale).toString() : ''
   },
   { immediate: true }
 )
@@ -35,8 +38,8 @@ function handleBlur() {
   const max = maxInput.value ? Number.parseFloat(maxInput.value) : undefined
 
   model.value = {
-    ...(min !== undefined && !Number.isNaN(min) && { min }),
-    ...(max !== undefined && !Number.isNaN(max) && { max })
+    ...(min !== undefined && !Number.isNaN(min) && { min: min * scale }),
+    ...(max !== undefined && !Number.isNaN(max) && { max: max * scale })
   }
 }
 </script>
