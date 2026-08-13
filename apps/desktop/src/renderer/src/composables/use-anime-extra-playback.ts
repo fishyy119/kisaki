@@ -4,7 +4,8 @@
  * Bundles the live playing state from the activity store with the play, stop,
  * and pause/resume transports, so the extra row and the extra detail dialog
  * share one playback path. Extras carry no watch state; sessions are tracked
- * for live UI only.
+ * for live UI only. Confirmed outcomes show through the tracked state; only
+ * failures notify, and raw transport errors go to the log alone.
  */
 
 import { computed, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue'
@@ -21,10 +22,12 @@ export interface AnimeExtraPlayback {
   isPlaying: ComputedRef<boolean>
   playbackStatus: ComputedRef<AnimePlaybackState['status'] | undefined>
   playbackProgress: ComputedRef<{ positionMs: number; durationMs: number | null } | undefined>
-  isPaused: Ref<boolean>
+  isPaused: ComputedRef<boolean>
   isPauseActionPending: Ref<boolean>
   togglePause: () => Promise<void>
-  isActionPending: Ref<boolean>
+  /** In-flight transport phase, letting buttons render transitional states. */
+  pendingAction: Ref<'start' | 'stop' | null>
+  isActionPending: ComputedRef<boolean>
   play: (fileId?: string) => Promise<void>
   stop: () => Promise<void>
 }
@@ -50,12 +53,13 @@ export function useAnimeExtraPlayback(extraId: MaybeRefOrGetter<string>): AnimeE
     status: () => playbackStatus.value
   })
 
-  const isActionPending = ref(false)
+  const pendingAction = ref<'start' | 'stop' | null>(null)
+  const isActionPending = computed(() => pendingAction.value !== null)
 
   async function play(fileId?: string): Promise<void> {
-    if (isActionPending.value) return
+    if (pendingAction.value) return
 
-    isActionPending.value = true
+    pendingAction.value = 'start'
     try {
       const result = await ipcManager.invoke('activity:play-anime-extra', toValue(extraId), fileId)
       if (!result.success) {
@@ -69,31 +73,28 @@ export function useAnimeExtraPlayback(extraId: MaybeRefOrGetter<string>): AnimeE
       log.error('extra playback call threw:', error)
       notify.error(m.value.anime.extras.playFailed)
     } finally {
-      isActionPending.value = false
+      pendingAction.value = null
     }
   }
 
   async function stop(): Promise<void> {
-    if (isActionPending.value) return
+    if (pendingAction.value) return
 
-    isActionPending.value = true
+    pendingAction.value = 'stop'
     try {
       const result = await ipcManager.invoke('activity:stop-anime-extra', toValue(extraId))
       if (!result.success) {
-        notify.error(m.value.activity.watchStopFailedTitle, result.error)
+        notify.error(m.value.anime.extras.stopFailed, result.error)
         return
       }
       if (result.data.status === 'failed') {
-        notify.error(
-          m.value.activity.watchStopFailedTitle,
-          m.value.activity.errors[result.data.reason]
-        )
+        notify.error(m.value.anime.extras.stopFailed, m.value.activity.errors[result.data.reason])
       }
     } catch (error) {
       log.error('extra stop call threw:', error)
-      notify.error(m.value.activity.watchStopFailedTitle)
+      notify.error(m.value.anime.extras.stopFailed)
     } finally {
-      isActionPending.value = false
+      pendingAction.value = null
     }
   }
 
@@ -104,6 +105,7 @@ export function useAnimeExtraPlayback(extraId: MaybeRefOrGetter<string>): AnimeE
     isPaused,
     isPauseActionPending,
     togglePause,
+    pendingAction,
     isActionPending,
     play,
     stop

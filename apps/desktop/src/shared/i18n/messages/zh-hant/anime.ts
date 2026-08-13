@@ -67,6 +67,7 @@ export const anime = {
     extraRemoved: '特典紀錄已刪除',
     play: '播放',
     playFailed: '播放特典失敗',
+    stopFailed: '停止播放特典失敗',
     nameLabel: '名稱',
     typeLabel: '類型',
     autoDetect: '自動識別',

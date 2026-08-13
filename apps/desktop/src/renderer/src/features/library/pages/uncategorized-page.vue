@@ -14,7 +14,7 @@ import { EntityCard } from '@renderer/components/shared'
 import type { ContentEntityData } from '@renderer/composables'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import type { ContentEntityType } from '@shared/common'
-import { useUncategorized } from '../composables'
+import { useUncategorizedList } from '../composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -33,7 +33,7 @@ const entityType = computed(() => (route.params.entityType as ContentEntityType)
 // Data (settled during navigation by the route loader)
 // =============================================================================
 
-const { entities } = useUncategorized()
+const { entities } = useUncategorizedList()
 
 // =============================================================================
 // Actions

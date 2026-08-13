@@ -72,6 +72,7 @@ export const anime = {
     extraRemoved: 'Extra record removed',
     play: 'Play',
     playFailed: 'Failed to play extra',
+    stopFailed: 'Failed to stop extra',
     nameLabel: 'Name',
     typeLabel: 'Type',
     autoDetect: 'Auto detect'

@@ -14,7 +14,7 @@ import { notify } from '@renderer/core/notify'
 import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
 import { useI18n } from './use-i18n'
 
-const log = createLogger('StagedImagePick')
+const log = createLogger('Attachment')
 
 export type StagedImageMode = 'keep' | 'set' | 'clear'
 

@@ -277,8 +277,6 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
     getExtraPlayingStatus,
     getExtraProgress,
     getExtraPlaybackStatus,
-    startWatching,
-    stopWatching,
     init
   }
 })

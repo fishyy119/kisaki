@@ -1,10 +1,11 @@
 <!--
   AnimeEpisodeDetailDialog
-  Full detail view for one episode: metadata, watch state, and the playable
-  file records. Manual attachment creates user-owned rows; primary election
-  and record removal act on sync-owned rows too (sync keeps a surviving
-  primary preference, and removed in-library records reappear on the next
-  sync pass). Disk files are never touched here.
+  Workbench for one episode: metadata, watch state, live playback controls,
+  and the playable file records. Manual attachment creates user-owned rows;
+  primary election and record removal act on sync-owned rows too (sync keeps
+  a surviving primary preference, and removed in-library records reappear on
+  the next sync pass). Staged field edits live in the episode form dialog
+  opened from the footer. Disk files are never touched here.
 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
@@ -23,17 +24,20 @@ import {
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { Separator } from '@renderer/components/ui/separator'
 import { useAnime, type AnimeEpisodeEntry } from '@renderer/composables/use-anime'
+import { revealAnimeFile, useAnimeFileRecords } from '@renderer/composables/use-anime-file-records'
+import { toggleEpisodeWatched, useAnimeWatch } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { getOpenVideoDialogOptions } from '@renderer/utils/dialog'
-import { animeEpisodeFiles, animeEpisodes, type AnimeEpisodeFile } from '@shared/db'
+import { formatEpisodeNumber } from '@renderer/utils/format'
+import { animeEpisodeFiles, animeEpisodes } from '@shared/db'
 import AnimeWatchButton from '../../../anime-watch-button.vue'
 import AnimeEpisodeFormDialog from './episode-form-dialog.vue'
 import AnimeFileRecordList from './file-record-list.vue'
+import AnimePlaybackProgress from './playback-progress.vue'
 
 const log = createLogger('Anime')
 
@@ -55,7 +59,6 @@ const episode = computed<AnimeEpisodeEntry | null>(
 
 const editDialogOpen = ref(false)
 const deleteDialogOpen = ref(false)
-const isAttachingFile = ref(false)
 
 const title = computed(() => {
   const entry = episode.value
@@ -63,7 +66,7 @@ const title = computed(() => {
   const numbered =
     entry.episodeNumber === null
       ? null
-      : m.value.anime.episodes.unnamed({ number: formatNumber(entry.episodeNumber) })
+      : m.value.anime.episodes.unnamed({ number: formatEpisodeNumber(entry.episodeNumber) })
   return entry.name ?? numbered ?? m.value.common.emptyValue
 })
 
@@ -75,27 +78,42 @@ const stillUrl = computed(() => {
 
 const isWatched = computed(() => episode.value?.watchedAt !== null)
 
-function formatNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+async function handleToggleWatched(): Promise<void> {
+  if (episode.value) await toggleEpisodeWatched(episode.value)
 }
 
-async function handleToggleWatched(): Promise<void> {
-  const entry = episode.value
-  if (!entry) return
-  try {
-    await db
-      .update(animeEpisodes)
-      .set(
-        entry.watchedAt === null
-          ? { watchedAt: new Date(), resumePositionMs: null }
-          : { watchedAt: null }
-      )
-      .where(eq(animeEpisodes.id, entry.id))
-    notify.success(m.value.anime.episodes.watchedUpdated)
-  } catch {
-    notify.error(m.value.library.feedback.updateFailed)
-  }
-}
+// =============================================================================
+// Playback
+// =============================================================================
+
+const {
+  isWatching,
+  playbackStatus,
+  playbackProgress,
+  isPaused,
+  isPauseActionPending,
+  togglePause,
+  watch: watchEpisode
+} = useAnimeWatch(
+  () => props.animeId,
+  () => props.episodeId
+)
+
+// =============================================================================
+// File records (immediate semantics; alternate versions of the same asset)
+// =============================================================================
+
+const { isAttaching, attachFile, setPrimary, removeFile, saveNote } = useAnimeFileRecords({
+  owner: episode,
+  table: animeEpisodeFiles,
+  ownerColumn: animeEpisodeFiles.episodeId,
+  attach: (episodeId, path) =>
+    ipcManager.invoke('ingest:attach-anime-episode-file', { episodeId, path })
+})
+
+// =============================================================================
+// Deletion (record only; sync re-creates in-library files it still owns)
+// =============================================================================
 
 async function handleDeleteEpisode(): Promise<void> {
   const entry = episode.value
@@ -109,111 +127,6 @@ async function handleDeleteEpisode(): Promise<void> {
     notify.error(m.value.common.deleteFailed)
   }
 }
-
-async function handleAttachFile(): Promise<void> {
-  const entry = episode.value
-  if (!entry || isAttachingFile.value) return
-
-  isAttachingFile.value = true
-  try {
-    const dialogResult = await ipcManager.invoke('native:open-dialog', getOpenVideoDialogOptions())
-    if (!dialogResult.success) {
-      notify.error(dialogResult.error || m.value.library.feedback.pickFileFailed)
-      return
-    }
-    const filePath = dialogResult.data?.filePaths[0]
-    if (!filePath || dialogResult.data?.canceled) return
-
-    const result = await ipcManager.invoke('ingest:attach-anime-episode-file', {
-      episodeId: entry.id,
-      path: filePath
-    })
-    if (!result.success) {
-      notify.error(m.value.anime.files.attachFailed, result.error)
-      return
-    }
-
-    notify.success(m.value.anime.files.fileAttached)
-  } finally {
-    isAttachingFile.value = false
-  }
-}
-
-async function handleSetPrimary(file: Pick<AnimeEpisodeFile, 'id' | 'isPrimary'>): Promise<void> {
-  const entry = episode.value
-  if (!entry || file.isPrimary) return
-  try {
-    await db
-      .update(animeEpisodeFiles)
-      .set({ isPrimary: false })
-      .where(eq(animeEpisodeFiles.episodeId, entry.id))
-    await db
-      .update(animeEpisodeFiles)
-      .set({ isPrimary: true })
-      .where(eq(animeEpisodeFiles.id, file.id))
-    notify.success(m.value.anime.files.primaryUpdated)
-  } catch (error) {
-    log.error('Set primary file failed:', error)
-    notify.error(m.value.library.feedback.updateFailed)
-  }
-}
-
-async function handleRemoveFile(fileId: string): Promise<void> {
-  const entry = episode.value
-  if (!entry) return
-  try {
-    const removed = entry.files.find((file) => file.id === fileId)
-    await db.delete(animeEpisodeFiles).where(eq(animeEpisodeFiles.id, fileId))
-
-    // Keep exactly one primary among the survivors.
-    if (removed?.isPrimary) {
-      const survivor = entry.files.find((file) => file.id !== fileId)
-      if (survivor) {
-        await db
-          .update(animeEpisodeFiles)
-          .set({ isPrimary: true })
-          .where(eq(animeEpisodeFiles.id, survivor.id))
-      }
-    }
-
-    notify.success(m.value.anime.files.fileRemoved)
-  } catch (error) {
-    log.error('Remove file record failed:', error)
-    notify.error(m.value.common.deleteFailed)
-  }
-}
-
-async function handleSaveNote(fileId: string, note: string | null): Promise<void> {
-  try {
-    await db.update(animeEpisodeFiles).set({ note }).where(eq(animeEpisodeFiles.id, fileId))
-    notify.success(m.value.anime.files.noteSaved)
-  } catch (error) {
-    log.error('File note update failed:', error)
-    notify.error(m.value.library.feedback.updateFailed)
-  }
-}
-
-async function handleOpenFolder(path: string): Promise<void> {
-  const result = await ipcManager.invoke('native:open-path', { path, ensure: 'file' })
-  if (!result.success) {
-    notify.error(m.value.anime.files.openFolderFailed)
-  }
-}
-
-/** Plays one specific version file without touching the primary election. */
-async function handlePlayFile(fileId: string): Promise<void> {
-  const entry = episode.value
-  if (!entry) return
-  const result = await ipcManager.invoke('activity:watch-anime', props.animeId, entry.id, fileId)
-  if (!result.success) {
-    notify.error(m.value.activity.watchFailedTitle, result.error)
-    return
-  }
-  if (result.data.status === 'failed') {
-    notify.error(m.value.activity.watchFailedTitle, m.value.activity.errors[result.data.reason])
-  }
-}
-
 </script>
 
 <template>
@@ -226,7 +139,7 @@ async function handlePlayFile(fileId: string): Promise<void> {
               v-if="episode.episodeNumber !== null"
               class="font-mono text-muted-foreground shrink-0"
             >
-              {{ formatNumber(episode.episodeNumber) }}
+              {{ formatEpisodeNumber(episode.episodeNumber) }}
             </span>
             <span class="truncate">{{ title }}</span>
             <Badge
@@ -240,6 +153,13 @@ async function handlePlayFile(fileId: string): Promise<void> {
         </DialogHeader>
 
         <DialogBody class="flex-1 min-h-0 overflow-auto space-y-4">
+          <!-- Live playback progress -->
+          <AnimePlaybackProgress
+            v-if="isWatching"
+            :status="playbackStatus"
+            :progress="playbackProgress"
+          />
+
           <!-- Still (display only; edited through the episode form) -->
           <div
             v-if="stillUrl"
@@ -260,7 +180,9 @@ async function handlePlayFile(fileId: string): Promise<void> {
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-3">
               <dt class="text-muted-foreground">{{ m.library.fields.watchDuration }}</dt>
-              <dd>{{ episode.durationMs ? f.duration(episode.durationMs) : m.common.emptyValue }}</dd>
+              <dd>
+                {{ episode.durationMs ? f.duration(episode.durationMs) : m.common.emptyValue }}
+              </dd>
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-3">
               <dt class="text-muted-foreground">{{ m.anime.episodes.playCount }}</dt>
@@ -295,33 +217,46 @@ async function handlePlayFile(fileId: string): Promise<void> {
           <AnimeFileRecordList
             :files="episode.files"
             :empty-text="m.anime.files.noFiles"
-            :attaching="isAttachingFile"
-            @attach="handleAttachFile"
-            @play="handlePlayFile"
-            @set-primary="handleSetPrimary"
-            @remove-file="handleRemoveFile"
-            @open-folder="handleOpenFolder"
-            @save-note="handleSaveNote"
+            :attaching="isAttaching"
+            @attach="attachFile"
+            @play="watchEpisode"
+            @set-primary="setPrimary"
+            @remove-file="removeFile"
+            @open-folder="revealAnimeFile"
+            @save-note="saveNote"
           />
         </DialogBody>
 
         <DialogFooter>
           <div class="flex items-center justify-between w-full">
-            <AnimeWatchButton
-              v-if="episode.files.length > 0"
-              :anime-id="props.animeId"
-              :episode-id="episode.id"
-              size="sm"
-            />
-            <div v-else />
+            <div class="flex items-center gap-1.5">
+              <AnimeWatchButton
+                v-if="episode.files.length > 0"
+                :anime-id="props.animeId"
+                :episode-id="episode.id"
+                size="sm"
+              />
+
+              <Button
+                v-if="isWatching"
+                variant="secondary"
+                size="icon-sm"
+                :disabled="isPauseActionPending"
+                :tooltip="isPaused ? m.anime.player.resume : m.anime.player.pause"
+                @click="togglePause"
+              >
+                <Icon
+                  :icon="isPaused ? 'icon-[mdi--play]' : 'icon-[mdi--pause]'"
+                  class="size-4"
+                />
+              </Button>
+            </div>
 
             <div class="flex items-center gap-1.5">
               <Button
                 variant="secondary"
                 size="icon-sm"
-                :tooltip="
-                  isWatched ? m.anime.episodes.markUnwatched : m.anime.episodes.markWatched
-                "
+                :tooltip="isWatched ? m.anime.episodes.markUnwatched : m.anime.episodes.markWatched"
                 @click="handleToggleWatched"
               >
                 <Icon

@@ -4,6 +4,6 @@
 export {
   showcaseSectionsData,
   favoritesData,
-  uncategorizedData,
+  uncategorizedListData,
   collectionsListData
 } from './composables'

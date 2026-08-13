@@ -1,5 +1,9 @@
 /**
- * Shared types for composables
+ * Content entity aggregates.
+ *
+ * Row-type union and per-type counts spanning the five content entities,
+ * shared by the list surfaces (collection, tag, favorites, uncategorized)
+ * that render mixed-entity results.
  */
 
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'

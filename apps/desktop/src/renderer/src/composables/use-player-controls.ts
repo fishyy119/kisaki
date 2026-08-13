@@ -6,7 +6,7 @@
  * control path instead of hand-rolling IPC calls.
  */
 
-import { computed, ref, toValue, type MaybeRefOrGetter, type Ref } from 'vue'
+import { computed, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
@@ -16,7 +16,7 @@ import { useI18n } from './use-i18n'
 const log = createLogger('Player')
 
 export interface PlayerControls {
-  isPaused: Ref<boolean>
+  isPaused: ComputedRef<boolean>
   isPending: Ref<boolean>
   togglePause: () => Promise<void>
 }
@@ -44,14 +44,15 @@ export function usePlayerControls(options: {
         notifyFailure(resume, result.error)
       }
     } catch (error) {
+      // Raw transport errors go to the log alone; the notice stays wrapped.
       log.error('player control call threw:', error)
-      notifyFailure(resume, error instanceof Error ? error.message : String(error))
+      notifyFailure(resume)
     } finally {
       isPending.value = false
     }
   }
 
-  function notifyFailure(resume: boolean, error: string): void {
+  function notifyFailure(resume: boolean, error?: string): void {
     const messages = m.value.anime.player
     notify.error(resume ? messages.resumeFailed : messages.pauseFailed, error)
   }

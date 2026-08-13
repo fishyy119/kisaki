@@ -7,20 +7,18 @@
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { eq } from 'drizzle-orm'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Section } from '@renderer/components/ui/section'
 import { StateView } from '@renderer/components/ui/state-view'
 import { useAnimeFileSync } from '@renderer/composables'
 import { useAnime } from '@renderer/composables/use-anime'
+import { revealAnimeFile } from '@renderer/composables/use-anime-file-records'
+import { toggleEpisodeWatched } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
-import { db } from '@renderer/core/db'
-import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { animeEpisodes, ANIME_EXTRA_TYPE_VALUES } from '@shared/db'
-import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
+import { ANIME_EXTRA_TYPE_VALUES } from '@shared/db'
 import { AnimeFilesConfigFormDialog } from '../../../forms'
 import AnimeDetailEpisodeItem from './episode-item.vue'
 import AnimeDetailExtraItem from './extra-item.vue'
@@ -49,29 +47,6 @@ const episodeDetailOpen = computed({
     if (!value) openEpisodeId.value = null
   }
 })
-
-async function handleToggleWatched(episode: AnimeEpisodeEntry): Promise<void> {
-  try {
-    await db
-      .update(animeEpisodes)
-      .set(
-        episode.watchedAt === null
-          ? { watchedAt: new Date(), resumePositionMs: null }
-          : { watchedAt: null }
-      )
-      .where(eq(animeEpisodes.id, episode.id))
-    notify.success(m.value.anime.episodes.watchedUpdated)
-  } catch {
-    notify.error(m.value.library.feedback.updateFailed)
-  }
-}
-
-async function handleOpenFolder(path: string): Promise<void> {
-  const result = await ipcManager.invoke('native:open-path', { path, ensure: 'file' })
-  if (!result.success) {
-    notify.error(m.value.anime.files.openFolderFailed)
-  }
-}
 
 async function handleSyncFiles(): Promise<void> {
   const current = anime.value
@@ -175,8 +150,8 @@ const extraDetailOpen = computed({
           :key="episode.id"
           :anime-id="anime.id"
           :episode="episode"
-          @toggle-watched="handleToggleWatched(episode)"
-          @open-folder="handleOpenFolder"
+          @toggle-watched="toggleEpisodeWatched(episode)"
+          @open-folder="revealAnimeFile"
           @open-detail="openEpisodeId = episode.id"
         />
       </div>
@@ -206,7 +181,7 @@ const extraDetailOpen = computed({
           v-for="extra in sortedExtras"
           :key="extra.id"
           :extra="extra"
-          @open-folder="handleOpenFolder"
+          @open-folder="revealAnimeFile"
           @open-detail="openExtraId = extra.id"
         />
       </div>

@@ -9,10 +9,10 @@ import { computed } from 'vue'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
+import { useAnimeWatch } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { usePlayerControls } from '@renderer/composables/use-player-controls'
-import { useAnimeActivityStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
+import { formatEpisodeNumber } from '@renderer/utils/format'
 import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
 import AnimeWatchButton from '../../../anime-watch-button.vue'
 import AnimePlaybackProgress from './playback-progress.vue'
@@ -33,15 +33,13 @@ const emit = defineEmits<{
 
 const { m, f } = useI18n()
 
-const activityStore = useAnimeActivityStore()
-
 const isWatched = computed(() => props.episode.watchedAt !== null)
 const playableFile = computed(() => props.episode.files[0] ?? null)
 
 const title = computed(() => {
   const number = props.episode.episodeNumber
   const numbered =
-    number === null ? null : m.value.anime.episodes.unnamed({ number: formatNumber(number) })
+    number === null ? null : m.value.anime.episodes.unnamed({ number: formatEpisodeNumber(number) })
   return props.episode.name ?? numbered ?? m.value.common.emptyValue
 })
 
@@ -50,33 +48,18 @@ const resolution = computed(() => {
   return file?.width && file.height ? `${file.width}×${file.height}` : null
 })
 
-function formatNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1)
-}
-
-// =============================================================================
-// Live playback (only for the currently-watching episode)
-// =============================================================================
-
-const isWatchingNow = computed(() => activityStore.isEpisodeWatching(props.episode.id))
-const watchingSession = computed(() =>
-  isWatchingNow.value ? activityStore.getWatchingStatus(props.animeId) : undefined
-)
-const playbackStatus = computed(() =>
-  isWatchingNow.value ? activityStore.getPlaybackStatus(props.animeId) : undefined
-)
-const playbackProgress = computed(() =>
-  isWatchingNow.value ? activityStore.getProgress(props.animeId) : undefined
-)
-
+// Live playback only reflects this episode being the currently-watched one.
 const {
+  isWatching,
+  playbackStatus,
+  playbackProgress,
   isPaused,
-  isPending: isPlayerActionPending,
-  togglePause: handleTogglePause
-} = usePlayerControls({
-  sessionId: () => watchingSession.value?.sessionId,
-  status: () => playbackStatus.value
-})
+  isPauseActionPending,
+  togglePause
+} = useAnimeWatch(
+  () => props.animeId,
+  () => props.episode.id
+)
 </script>
 
 <template>
@@ -107,7 +90,7 @@ const {
             v-if="props.episode.episodeNumber !== null"
             class="text-xs font-mono text-muted-foreground shrink-0"
           >
-            {{ formatNumber(props.episode.episodeNumber) }}
+            {{ formatEpisodeNumber(props.episode.episodeNumber) }}
           </span>
           <p class="text-sm font-medium truncate">{{ title }}</p>
           <Badge
@@ -148,7 +131,7 @@ const {
 
         <!-- Live playback progress for the currently-watching episode -->
         <AnimePlaybackProgress
-          v-if="isWatchingNow"
+          v-if="isWatching"
           :status="playbackStatus"
           :progress="playbackProgress"
         />
@@ -182,12 +165,12 @@ const {
       </Button>
 
       <Button
-        v-if="watchingSession"
+        v-if="isWatching"
         variant="ghost"
         size="icon-sm"
-        :disabled="isPlayerActionPending"
+        :disabled="isPauseActionPending"
         :tooltip="isPaused ? m.anime.player.resume : m.anime.player.pause"
-        @click="handleTogglePause"
+        @click="togglePause"
       >
         <Icon
           :icon="isPaused ? 'icon-[mdi--play]' : 'icon-[mdi--pause]'"

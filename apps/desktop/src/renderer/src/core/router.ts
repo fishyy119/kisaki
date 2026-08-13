@@ -27,7 +27,7 @@ import {
 import {
   showcaseSectionsData,
   favoritesData,
-  uncategorizedData,
+  uncategorizedListData,
   collectionsListData
 } from '@renderer/features/library'
 import { scannersData } from '@renderer/features/scanner'
@@ -130,7 +130,7 @@ const routes: RouteRecordRaw[] = [
         name: 'uncategorized',
         component: () => import('@renderer/features/library/pages/uncategorized-page.vue'),
         props: true,
-        meta: { dataLoaders: [uncategorizedData] }
+        meta: { dataLoaders: [uncategorizedListData] }
       },
       {
         path: 'favorites',

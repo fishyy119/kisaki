@@ -68,6 +68,7 @@ export const anime = {
     extraRemoved: '特典レコードを削除しました',
     play: '再生',
     playFailed: '特典の再生に失敗しました',
+    stopFailed: '特典の停止に失敗しました',
     nameLabel: '名前',
     typeLabel: '種類',
     autoDetect: '自動判別',

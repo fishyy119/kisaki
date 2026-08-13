@@ -1,7 +1,7 @@
 // Composables re-exports
 
-// Shared types
-export * from './types'
+// Content entity aggregates
+export * from './content-entities'
 
 // Core composables
 export * from './use-ambient-light'
@@ -22,7 +22,9 @@ export * from './use-staged-image-pick'
 export * from './use-game'
 export * from './use-anime'
 export * from './use-anime-extra-playback'
+export * from './use-anime-file-records'
 export * from './use-anime-file-sync'
+export * from './use-anime-watch'
 export * from './use-collection'
 export * from './use-person'
 export * from './use-character'

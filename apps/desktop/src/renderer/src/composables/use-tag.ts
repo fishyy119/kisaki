@@ -30,8 +30,8 @@ import { usePreferencesStore } from '@renderer/stores'
 import type { Tag, Game, Anime, Character, Person, Company } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { ContentEntityType } from '@shared/common'
-import { createEmptyContentEntityCounts } from './types'
-import type { ContentEntityData, ContentEntityCounts } from './types'
+import { createEmptyContentEntityCounts } from './content-entities'
+import type { ContentEntityData, ContentEntityCounts } from './content-entities'
 import { useDbChanges } from './use-db-changes'
 
 interface TagData {

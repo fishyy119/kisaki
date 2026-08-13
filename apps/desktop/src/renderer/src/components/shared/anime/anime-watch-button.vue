@@ -1,9 +1,9 @@
 <!--
   AnimeWatchButton
   Watch/stop button for an anime entry or a specific episode. The watch action
-  reads "start" or "continue" depending on recorded watch progress, transitional
-  phases keep the action label and show a spinner, and the button owns the
-  notifications for every watch outcome it cannot show itself.
+  reads "start" or "continue" depending on recorded watch progress, and
+  transitional phases keep the action label and show a spinner. Transport and
+  failure notices live in the shared watch facade.
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
@@ -14,17 +14,11 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { useDbChanges } from '@renderer/composables'
+import { useAnimeWatch } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
-import { ipcManager } from '@renderer/core/ipc'
-import { createLogger } from '@renderer/core/log'
-import { notify } from '@renderer/core/notify'
-import { useAnimeActivityStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
-import type { AnimeStopResult, AnimeWatchResult } from '@shared/activity'
 import { animeEpisodes } from '@shared/db'
-
-const log = createLogger('Anime')
 
 type WatchButtonState = 'idle' | 'starting' | 'playing' | 'stopping'
 
@@ -44,25 +38,22 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { m } = useI18n()
 
-const activityStore = useAnimeActivityStore()
-const pendingAction = ref<'watch' | 'stop' | null>(null)
-
-/**
- * An episode button only reflects its own playback; the entry button reflects
- * any episode of the entry.
- */
-const isPlaying = computed(() =>
-  props.episodeId
-    ? activityStore.isEpisodeWatching(props.episodeId)
-    : activityStore.isAnimeWatching(props.animeId)
+const {
+  isWatching,
+  pendingAction,
+  watch: watchAnime,
+  stop: stopAnime
+} = useAnimeWatch(
+  () => props.animeId,
+  () => props.episodeId
 )
 
 // The activity broadcast lands before the IPC reply, so the in-flight phase
 // ends on the tracked state instead of the reply.
 const state = computed<WatchButtonState>(() => {
-  if (pendingAction.value === 'watch' && !isPlaying.value) return 'starting'
-  if (pendingAction.value === 'stop' && isPlaying.value) return 'stopping'
-  return isPlaying.value ? 'playing' : 'idle'
+  if (pendingAction.value === 'start' && !isWatching.value) return 'starting'
+  if (pendingAction.value === 'stop' && isWatching.value) return 'stopping'
+  return isWatching.value ? 'playing' : 'idle'
 })
 
 const isBusy = computed(() => state.value === 'starting' || state.value === 'stopping')
@@ -101,7 +92,11 @@ async function refreshProgress(): Promise<void> {
   hasProgress.value = row !== undefined
 }
 
-watch(() => [props.animeId, props.episodeId], () => void refreshProgress(), { immediate: true })
+watch(
+  () => [props.animeId, props.episodeId],
+  () => void refreshProgress(),
+  { immediate: true }
+)
 
 useDbChanges(({ table }) => {
   if (table === 'anime_episodes') void refreshProgress()
@@ -154,57 +149,7 @@ const labeledButtonSize = computed(() => {
 async function handleClick(e: Event) {
   e.stopPropagation()
   e.preventDefault()
-
-  if (pendingAction.value) {
-    return
-  }
-
-  const action = isPlaying.value ? 'stop' : 'watch'
-  pendingAction.value = action
-
-  try {
-    if (action === 'stop') {
-      const result = await ipcManager.invoke('activity:stop-anime', props.animeId)
-      if (result.success) {
-        notifyStopOutcome(result.data)
-      } else {
-        notifyUnexpected(action, result.error)
-      }
-    } else {
-      const result = await ipcManager.invoke('activity:watch-anime', props.animeId, props.episodeId)
-      if (result.success) {
-        notifyWatchOutcome(result.data)
-      } else {
-        notifyUnexpected(action, result.error)
-      }
-    }
-  } catch (error) {
-    log.error('activity call threw:', error)
-    notifyUnexpected(action, error instanceof Error ? error.message : String(error))
-  } finally {
-    pendingAction.value = null
-  }
-}
-
-function notifyWatchOutcome(result: AnimeWatchResult): void {
-  // The button switching to the playing state already confirms a start.
-  if (result.status === 'failed') {
-    notify.error(m.value.activity.watchFailedTitle, m.value.activity.errors[result.reason])
-  }
-}
-
-function notifyStopOutcome(result: AnimeStopResult): void {
-  if (result.status === 'failed') {
-    notify.error(m.value.activity.watchStopFailedTitle, m.value.activity.errors[result.reason])
-  }
-}
-
-/** Only transport or programming errors reach here; expected ones are results. */
-function notifyUnexpected(action: 'watch' | 'stop', error: string): void {
-  log.warn(`activity ${action} failed:`, error)
-
-  const messages = m.value.activity
-  notify.error(action === 'stop' ? messages.watchStopFailedTitle : messages.watchFailedTitle, error)
+  await (isWatching.value ? stopAnime() : watchAnime())
 }
 </script>
 

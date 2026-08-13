@@ -1,5 +1,5 @@
 /**
- * Composable: useUncategorized
+ * Composable: useUncategorizedList
  *
  * Route-loaded list of entities not assigned to any collection.
  * The entity type comes from the route param.
@@ -114,14 +114,14 @@ async function fetchUncategorized(
   }
 }
 
-export const uncategorizedData = defineRouteData((route) => {
+export const uncategorizedListData = defineRouteData((route) => {
   const entityType = (route.params.entityType as ContentEntityType) || 'game'
   const { showNsfw } = storeToRefs(usePreferencesStore())
   return fetchUncategorized(entityType, showNsfw.value)
 })
 
-export function useUncategorized() {
-  const { data, error, isFetching, refetch } = uncategorizedData()
+export function useUncategorizedList() {
+  const { data, error, isFetching, refetch } = uncategorizedListData()
 
   const { showNsfw } = storeToRefs(usePreferencesStore())
   watch(showNsfw, () => void refetch())

@@ -40,8 +40,8 @@ import type { TableName } from '@shared/db/table-names'
 import type { DynamicCollectionConfig } from '@shared/db/contracts/json'
 import type { ContentEntityType } from '@shared/common'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
-import { createEmptyContentEntityCounts } from './types'
-import type { ContentEntityData, ContentEntityCounts } from './types'
+import { createEmptyContentEntityCounts } from './content-entities'
+import type { ContentEntityData, ContentEntityCounts } from './content-entities'
 import { useDbChanges } from './use-db-changes'
 
 // =============================================================================

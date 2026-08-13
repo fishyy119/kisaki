@@ -60,6 +60,11 @@ export function getAnimeStatusVariant(status: AnimeStatus): StatusVariant {
   return ANIME_STATUS_VARIANTS[status] ?? 'secondary'
 }
 
+/** Format an episode number, keeping one decimal only for half-numbered episodes. */
+export function formatEpisodeNumber(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
 // =============================================================================
 // File Size Formatting
 // =============================================================================

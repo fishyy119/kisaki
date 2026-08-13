@@ -19,5 +19,5 @@ export {
 export { useSectionData, type SectionEntityData } from './use-section-data'
 export { useLibrarySearch, type LibrarySearchResult } from './use-library-search'
 export { useFavorites, favoritesData } from './use-favorites'
-export { useUncategorized, uncategorizedData } from './use-uncategorized'
+export { useUncategorizedList, uncategorizedListData } from './use-uncategorized-list'
 export { useCollectionsList, collectionsListData } from './use-collections-list'
