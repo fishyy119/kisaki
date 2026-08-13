@@ -6,6 +6,7 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { cn } from '@renderer/utils/cn'
+import { getEntityIcon } from '@renderer/utils/format'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { persons } from '@shared/db'
@@ -134,7 +135,13 @@ function handleRevealSpoilersConfirm() {
       <!-- Loaded Content -->
       <template v-else-if="person">
         <DialogHeader>
-          <DialogTitle>{{ person.name }}</DialogTitle>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon
+              :icon="getEntityIcon('person')"
+              class="size-4 text-muted-foreground"
+            />
+            {{ person.name }}
+          </DialogTitle>
         </DialogHeader>
         <DialogBody class="flex-1 min-h-0 overflow-auto p-4">
           <PersonDetailContent />

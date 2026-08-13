@@ -159,7 +159,13 @@ const entityTypeModel = computed({
       <!-- Content -->
       <template v-else-if="collection">
         <DialogHeader>
-          <DialogTitle>{{ collection.name }}</DialogTitle>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon
+              :icon="getEntityIcon('collection')"
+              class="size-4 text-muted-foreground"
+            />
+            {{ collection.name }}
+          </DialogTitle>
         </DialogHeader>
         <DialogBody
           ref="dialogBodyRef"

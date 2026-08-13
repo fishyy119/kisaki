@@ -1,8 +1,11 @@
 <!--
   MediaRelationsFormDialog
-  Dialog for editing the outgoing media relations of one entry, grouped by
-  relation type. Only out-edges are managed here; the other endpoint owns its
-  own outgoing list, and readers merge both directions for display.
+  Dialog for editing the media relations of one entry from its own
+  perspective, grouped by relation type. Out-edges are owned here and are
+  rewritten on save; in-edges (stored on the other endpoint) appear with the
+  inverse vocabulary and save back onto their stored row, so a relation stays
+  editable from both sides. Only out-edges are orderable: the stored order
+  belongs to the from side.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
@@ -12,6 +15,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import type { MediaType } from '@shared/common'
 import {
   MEDIA_RELATION_TYPES,
+  MEDIA_RELATION_TYPE_INVERSE,
   mediaRelations,
   type MediaRelationType,
   type NewMediaRelation
@@ -51,36 +55,63 @@ const open = defineModel<boolean>('open', { required: true })
 
 interface RelationItem extends MediaRelationDraft {
   id: string
+  direction: 'out' | 'in'
   isNew?: boolean
+}
+
+/** Loaded state of an in-edge row, for diffing viewed edits back onto it. */
+interface InEdgeSnapshot {
+  targetType: MediaType
+  targetId: string
+  type: MediaRelationType
+  note: string
 }
 
 const RELATION_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.mediaRelation)
 
 // Form state
 const items = ref<RelationItem[]>([])
+const inSnapshots = ref<Map<string, InEdgeSnapshot>>(new Map())
 const editingItem = ref<RelationItem | null>(null)
 const isAddMode = ref(false)
 const deleteId = ref<string | null>(null)
 const isSaving = ref(false)
 const itemFormOpen = ref(false)
 
-// Fetch outgoing relation rows when the dialog opens.
+// Fetch both edge directions when the dialog opens; in-edges arrive labelled
+// with the inverse vocabulary, mirroring the display reader.
 const {
   data: fetchedData,
   isLoading,
   error
 } = useAsyncData(
   async () => {
-    const rows = await db
-      .select()
-      .from(mediaRelations)
-      .where(
-        and(eq(mediaRelations.fromType, props.mediaType), eq(mediaRelations.fromId, props.entityId))
-      )
-      .orderBy(asc(mediaRelations.orderInFrom), asc(mediaRelations.createdAt))
+    const [outRows, inRows] = await Promise.all([
+      db
+        .select()
+        .from(mediaRelations)
+        .where(
+          and(
+            eq(mediaRelations.fromType, props.mediaType),
+            eq(mediaRelations.fromId, props.entityId)
+          )
+        )
+        .orderBy(asc(mediaRelations.orderInFrom), asc(mediaRelations.createdAt)),
+      db
+        .select()
+        .from(mediaRelations)
+        .where(
+          and(eq(mediaRelations.toType, props.mediaType), eq(mediaRelations.toId, props.entityId))
+        )
+        .orderBy(asc(mediaRelations.createdAt))
+    ])
 
-    const gameIds = rows.filter((row) => row.toType === 'game').map((row) => row.toId)
-    const animeIds = rows.filter((row) => row.toType === 'anime').map((row) => row.toId)
+    const targets = [
+      ...outRows.map((row) => ({ mediaType: row.toType, id: row.toId })),
+      ...inRows.map((row) => ({ mediaType: row.fromType, id: row.fromId }))
+    ]
+    const gameIds = targets.filter((target) => target.mediaType === 'game').map((t) => t.id)
+    const animeIds = targets.filter((target) => target.mediaType === 'anime').map((t) => t.id)
     const [gameRows, animeRows] = await Promise.all([
       gameIds.length
         ? db.query.games.findMany({ where: (t) => inArray(t.id, gameIds) })
@@ -94,16 +125,46 @@ const {
       ...animeRows.map((row) => [`anime:${row.id}`, row.name] as const)
     ])
 
-    return rows.map(
-      (row): RelationItem => ({
-        id: row.id,
-        targetType: row.toType,
-        targetId: row.toId,
-        targetName: nameByKey.get(`${row.toType}:${row.toId}`) ?? '',
-        type: row.type,
-        note: row.note ?? ''
-      })
+    const loadedItems: RelationItem[] = [
+      ...outRows.map(
+        (row): RelationItem => ({
+          id: row.id,
+          direction: 'out',
+          targetType: row.toType,
+          targetId: row.toId,
+          targetName: nameByKey.get(`${row.toType}:${row.toId}`) ?? '',
+          type: row.type,
+          note: row.note ?? ''
+        })
+      ),
+      ...inRows.map(
+        (row): RelationItem => ({
+          id: row.id,
+          direction: 'in',
+          targetType: row.fromType,
+          targetId: row.fromId,
+          targetName: nameByKey.get(`${row.fromType}:${row.fromId}`) ?? '',
+          type: MEDIA_RELATION_TYPE_INVERSE[row.type],
+          note: row.note ?? ''
+        })
+      )
+    ]
+
+    const snapshots = new Map<string, InEdgeSnapshot>(
+      loadedItems
+        .filter((item) => item.direction === 'in')
+        .map((item) => [
+          item.id,
+          {
+            targetType: item.targetType,
+            targetId: item.targetId,
+            type: item.type,
+            note: item.note
+          }
+        ])
     )
+
+    return { items: loadedItems, snapshots }
   },
   {
     watch: [() => props.entityId],
@@ -114,7 +175,8 @@ const state = useRenderState(isLoading, error, fetchedData)
 
 // Initialize form state when data loads.
 watch(fetchedData, (data) => {
-  items.value = data ? [...data] : []
+  items.value = data ? [...data.items] : []
+  inSnapshots.value = data ? data.snapshots : new Map()
 })
 
 const excludeGameIds = computed(() => [
@@ -127,40 +189,85 @@ const excludeAnimeIds = computed(() => [
   ...items.value.filter((item) => item.targetType === 'anime').map((item) => item.targetId)
 ])
 
-const groupedItems = computed(() => {
-  const groups = new Map<MediaRelationType, RelationItem[]>()
-  for (const type of MEDIA_RELATION_TYPES) groups.set(type, [])
-  for (const item of items.value) groups.get(item.type)!.push(item)
-  return groups
-})
+// Out-edges keep list order and prefix each group; in-edges trail unordered.
+const groups = computed(() =>
+  MEDIA_RELATION_TYPES.map((type) => {
+    const ofType = items.value.filter((item) => item.type === type)
+    const outs = ofType.filter((item) => item.direction === 'out')
+    const ins = ofType.filter((item) => item.direction === 'in')
+    return {
+      type,
+      items: [...outs, ...ins],
+      outCount: outs.length
+    }
+  }).filter((group) => group.items.length > 0)
+)
+
+/** An in-edge whose target changed re-points elsewhere, so it becomes an out-edge here. */
+function isRetargetedInEdge(item: RelationItem): boolean {
+  if (item.direction !== 'in') return false
+  const snapshot = inSnapshots.value.get(item.id)
+  if (!snapshot) return true
+  return snapshot.targetType !== item.targetType || snapshot.targetId !== item.targetId
+}
 
 async function handleSave() {
   isSaving.value = true
   try {
+    const keptInIds = new Set<string>()
+    const inUpdates: { id: string; type: MediaRelationType; note: string | null }[] = []
+    const outValues: NewMediaRelation[] = []
+
+    let orderInFrom = 0
+    for (const group of groups.value) {
+      for (const item of group.items) {
+        if (item.direction === 'in' && !isRetargetedInEdge(item)) {
+          keptInIds.add(item.id)
+          const snapshot = inSnapshots.value.get(item.id)!
+          if (snapshot.type !== item.type || snapshot.note !== item.note) {
+            inUpdates.push({
+              id: item.id,
+              // The stored row points at this entity, so the viewed label
+              // writes back through the inverse vocabulary.
+              type: MEDIA_RELATION_TYPE_INVERSE[item.type],
+              note: item.note || null
+            })
+          }
+          continue
+        }
+
+        outValues.push({
+          id: item.isNew ? nanoid() : item.id,
+          fromType: props.mediaType,
+          fromId: props.entityId,
+          toType: item.targetType,
+          toId: item.targetId,
+          type: item.type,
+          note: item.note || null,
+          orderInFrom: orderInFrom++
+        })
+      }
+    }
+
+    // In-edge rows the user removed (or re-pointed) are deleted by id.
+    const removedInIds = [...inSnapshots.value.keys()].filter((id) => !keptInIds.has(id))
+
     await db
       .delete(mediaRelations)
       .where(
         and(eq(mediaRelations.fromType, props.mediaType), eq(mediaRelations.fromId, props.entityId))
       )
-
-    if (items.value.length > 0) {
-      let orderInFrom = 0
-      const values: NewMediaRelation[] = []
-      for (const type of MEDIA_RELATION_TYPES) {
-        for (const item of groupedItems.value.get(type)!) {
-          values.push({
-            id: item.isNew ? nanoid() : item.id,
-            fromType: props.mediaType,
-            fromId: props.entityId,
-            toType: item.targetType,
-            toId: item.targetId,
-            type: item.type,
-            note: item.note || null,
-            orderInFrom: orderInFrom++
-          })
-        }
-      }
-      await db.insert(mediaRelations).values(values)
+    if (removedInIds.length > 0) {
+      await db.delete(mediaRelations).where(inArray(mediaRelations.id, removedInIds))
+    }
+    for (const update of inUpdates) {
+      await db
+        .update(mediaRelations)
+        .set({ type: update.type, note: update.note, updatedAt: new Date() })
+        .where(eq(mediaRelations.id, update.id))
+    }
+    if (outValues.length > 0) {
+      await db.insert(mediaRelations).values(outValues)
     }
 
     notify.success(m.value.common.saved)
@@ -187,7 +294,7 @@ function handleEdit(item: RelationItem) {
 
 function handleItemFormSubmit(data: MediaRelationDraft) {
   if (isAddMode.value) {
-    items.value.push({ ...data, id: nanoid(), isNew: true })
+    items.value.push({ ...data, id: nanoid(), direction: 'out', isNew: true })
     return
   }
   const index = items.value.findIndex((item) => item.id === editingItem.value?.id)
@@ -202,12 +309,14 @@ function handleRemove(id: string) {
 }
 
 function handleMove(type: MediaRelationType, index: number, offset: -1 | 1) {
-  const groupItems = groupedItems.value.get(type)!
+  const group = groups.value.find((candidate) => candidate.type === type)
+  if (!group) return
   const swapWith = index + offset
-  if (swapWith < 0 || swapWith >= groupItems.length) return
+  // Only out-edges are orderable; they occupy the group prefix.
+  if (swapWith < 0 || swapWith >= group.outCount) return
 
-  const indexA = items.value.findIndex((item) => item.id === groupItems[index].id)
-  const indexB = items.value.findIndex((item) => item.id === groupItems[swapWith].id)
+  const indexA = items.value.findIndex((item) => item.id === group.items[index].id)
+  const indexB = items.value.findIndex((item) => item.id === group.items[swapWith].id)
   if (indexA === -1 || indexB === -1) return
   ;[items.value[indexA], items.value[indexB]] = [items.value[indexB], items.value[indexA]]
 }
@@ -259,37 +368,35 @@ const deleteDialogOpen = computed({
             v-else
             class="space-y-2"
           >
-            <template
-              v-for="type in MEDIA_RELATION_TYPES"
-              :key="type"
+            <div
+              v-for="group in groups"
+              :key="group.type"
             >
-              <div v-if="groupedItems.get(type)!.length > 0">
-                <h4 class="text-xs font-medium text-muted-foreground mb-2">
-                  {{ RELATION_TYPE_LABELS[type] }}
-                </h4>
-                <div class="space-y-1">
-                  <ListItem
-                    v-for="(item, index) in groupedItems.get(type)!"
-                    :key="item.id"
-                    :icon="getEntityIcon(item.targetType)"
-                    :title="item.targetName"
-                    :description="item.note || undefined"
-                  >
-                    <template #actions>
-                      <ListItemActions
-                        movable
-                        :is-first="index === 0"
-                        :is-last="index === groupedItems.get(type)!.length - 1"
-                        @move-up="handleMove(type, index, -1)"
-                        @move-down="handleMove(type, index, 1)"
-                        @edit="handleEdit(item)"
-                        @delete="deleteId = item.id"
-                      />
-                    </template>
-                  </ListItem>
-                </div>
+              <h4 class="text-xs font-medium text-muted-foreground mb-2">
+                {{ RELATION_TYPE_LABELS[group.type] }}
+              </h4>
+              <div class="space-y-1">
+                <ListItem
+                  v-for="(item, index) in group.items"
+                  :key="item.id"
+                  :icon="getEntityIcon(item.targetType)"
+                  :title="item.targetName"
+                  :description="item.note || undefined"
+                >
+                  <template #actions>
+                    <ListItemActions
+                      :movable="item.direction === 'out'"
+                      :is-first="index === 0"
+                      :is-last="index === group.outCount - 1"
+                      @move-up="handleMove(group.type, index, -1)"
+                      @move-down="handleMove(group.type, index, 1)"
+                      @edit="handleEdit(item)"
+                      @delete="deleteId = item.id"
+                    />
+                  </template>
+                </ListItem>
               </div>
-            </template>
+            </div>
           </div>
         </DialogBody>
         <DialogFooter class="flex justify-between">

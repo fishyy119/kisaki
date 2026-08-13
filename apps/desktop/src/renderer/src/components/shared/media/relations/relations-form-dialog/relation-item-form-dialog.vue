@@ -1,8 +1,8 @@
 <!--
   MediaRelationItemFormDialog
-  Dialog for adding/editing a single outgoing media relation edge: target
-  media type, target entry, relation type constrained by the endpoint pair,
-  and an optional note.
+  Dialog for adding/editing a single media relation as seen from the owning
+  entry: target media type, target entry, relation type constrained by the
+  endpoint pair, and an optional note.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'

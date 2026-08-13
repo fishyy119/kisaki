@@ -134,7 +134,13 @@ function handleRevealSpoilersConfirm() {
       <!-- Content state -->
       <template v-else-if="character">
         <DialogHeader>
-          <DialogTitle>{{ character.name }}</DialogTitle>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon
+              :icon="getEntityIcon('character')"
+              class="size-4 text-muted-foreground"
+            />
+            {{ character.name }}
+          </DialogTitle>
         </DialogHeader>
 
         <DialogBody class="flex-1 min-h-0 overflow-auto p-4">

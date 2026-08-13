@@ -6,6 +6,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { getEntityIcon } from '@renderer/utils/format'
 import { GameDetailDialog } from '@renderer/components/shared/game'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { CharacterDetailDialog } from '@renderer/components/shared/character'
@@ -151,7 +152,13 @@ const entityTypeModel = computed({
       <template v-else-if="tag">
         <DialogHeader>
           <div class="flex items-center gap-2">
-            <DialogTitle>{{ tag.name }}</DialogTitle>
+            <DialogTitle class="flex items-center gap-2">
+              <Icon
+                :icon="getEntityIcon('tag')"
+                class="size-4 text-muted-foreground"
+              />
+              {{ tag.name }}
+            </DialogTitle>
             <Badge
               v-if="tag.isNsfw"
               variant="destructive"

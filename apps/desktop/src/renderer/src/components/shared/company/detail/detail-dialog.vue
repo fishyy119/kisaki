@@ -110,7 +110,13 @@ function handleRevealSpoilersConfirm() {
       <!-- Content -->
       <template v-else-if="company">
         <DialogHeader>
-          <DialogTitle>{{ company.name }}</DialogTitle>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon
+              :icon="getEntityIcon('company')"
+              class="size-4 text-muted-foreground"
+            />
+            {{ company.name }}
+          </DialogTitle>
         </DialogHeader>
         <DialogBody class="flex-1 min-h-0 overflow-auto p-4">
           <CompanyDetailContent />
