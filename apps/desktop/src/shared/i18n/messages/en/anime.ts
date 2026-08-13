@@ -7,6 +7,7 @@ export const anime = {
   watchContinue: 'Continue watching',
   watchNext: 'Watch next',
   stop: 'Stop',
+  showDetail: 'Show details',
   starting: 'Starting',
   playing: 'Playing',
 
@@ -18,15 +19,13 @@ export const anime = {
     entityLabel: 'Episode',
     watched: 'Watched',
     unwatched: 'Unwatched',
-    missingFile: 'No file',
-    fileCount: ({ count }: { count: number }) => (count === 1 ? '1 file' : `${count} files`),
+    stillEntityLabel: 'Still',
     resumeAt: ({ position }: { position: string }) => `Resume at ${position}`,
     markWatched: 'Mark as watched',
     markUnwatched: 'Mark as unwatched',
     watchedUpdated: 'Watch state updated.',
     progress: ({ watched, total }: { watched: number; total: number }) =>
       `${watched} / ${total} watched`,
-    showDetail: 'Show details',
     playCount: 'Play count',
     watchedAt: 'Watched at',
     resumeLabel: 'Resume position',
@@ -75,13 +74,15 @@ export const anime = {
     playFailed: 'Failed to play extra',
     nameLabel: 'Name',
     typeLabel: 'Type',
-    autoDetect: 'Auto detect',
-    noFiles: 'No files yet.',
-    fileCount: ({ count }: { count: number }) => (count === 1 ? '1 file' : `${count} files`)
+    autoDetect: 'Auto detect'
   },
 
   files: {
     title: 'Files',
+    playFile: 'Play this file',
+    missingFile: 'No file',
+    noFiles: 'No files yet.',
+    fileCount: ({ count }: { count: number }) => (count === 1 ? '1 file' : `${count} files`),
     primary: 'Primary',
     resolution: 'Resolution',
     codec: 'Codec',

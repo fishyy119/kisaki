@@ -1,13 +1,16 @@
 <!--
   AnimeEpisodeFormDialog
-  Dialog for creating or editing one episode's metadata. Watch state and file
-  rows are owned by playback and file sync, so they never appear here.
+  Dialog for creating or editing one episode's staged fields, including the
+  still image. Watch state and file rows are owned by playback and file sync,
+  so they never appear here.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { db } from '@renderer/core/db'
+import { attachment, db } from '@renderer/core/db'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { useStagedImagePick } from '@renderer/composables/use-staged-image-pick'
 import { animeEpisodes, type AnimeEpisode, type AnimeEpisodeType } from '@shared/db'
 import type { PartialDate } from '@shared/db'
 import {
@@ -26,6 +29,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Button } from '@renderer/components/ui/button'
+import { ImagePicker } from '@renderer/components/ui/image-picker'
 import { Input } from '@renderer/components/ui/input'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
@@ -83,11 +87,26 @@ const airDateInput = ref<PartialDateInputExpose | null>(null)
 
 const isAddMode = computed(() => !props.episode)
 
+const still = useStagedImagePick()
+
+const currentStillUrl = computed(() => {
+  if (still.mode.value !== 'keep') return null
+  const episode = props.episode
+  if (!episode?.stillFile) return null
+  return getAttachmentUrl('anime_episodes', episode.id, episode.stillFile, { width: 640 })
+})
+
+const stillClearDisabled = computed(
+  () => still.mode.value === 'clear' || (still.mode.value === 'keep' && !props.episode?.stillFile)
+)
+
 // Initialize form state when dialog opens
 watch(
   () => open.value,
   (isOpen) => {
     if (!isOpen) return
+
+    still.reset()
 
     if (props.episode) {
       formData.value.type = props.episode.type
@@ -165,19 +184,32 @@ async function handleSubmit() {
       description: formData.value.description.trim() || null
     }
 
+    let episodeId: string
     if (props.episode) {
-      await db.update(animeEpisodes).set(values).where(eq(animeEpisodes.id, props.episode.id))
+      episodeId = props.episode.id
+      await db.update(animeEpisodes).set(values).where(eq(animeEpisodes.id, episodeId))
     } else {
+      episodeId = nanoid()
       const existing = await db
         .select({ orderInAnime: animeEpisodes.orderInAnime })
         .from(animeEpisodes)
         .where(eq(animeEpisodes.animeId, props.animeId))
       await db.insert(animeEpisodes).values({
-        id: nanoid(),
+        id: episodeId,
         animeId: props.animeId,
         ...values,
         orderInAnime: existing.length
       })
+    }
+
+    // Apply the staged still decision through the attachment pipeline.
+    if (still.mode.value === 'set' && still.pickedPath.value) {
+      await attachment.setFile(animeEpisodes, episodeId, 'stillFile', {
+        kind: 'path',
+        path: still.pickedPath.value
+      })
+    } else if (still.mode.value === 'clear' && props.episode?.stillFile) {
+      await attachment.clearFile(animeEpisodes, episodeId, 'stillFile')
     }
 
     notify.success(m.value.common.saved)
@@ -287,6 +319,22 @@ function handleCancel() {
                 <Textarea
                   v-model="formData.description"
                   :rows="4"
+                />
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>{{ m.anime.episodes.stillEntityLabel }}</FieldLabel>
+              <FieldContent>
+                <ImagePicker
+                  :image-url="currentStillUrl"
+                  :image-alt="formData.name"
+                  :picked-path="still.pickedPath.value"
+                  :picked-preview-url="still.previewUrl.value"
+                  :pick-disabled="isSaving"
+                  :clear-disabled="isSaving || stillClearDisabled"
+                  @pick="still.pick()"
+                  @clear="still.clear()"
                 />
               </FieldContent>
             </Field>

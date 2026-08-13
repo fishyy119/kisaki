@@ -73,13 +73,14 @@ export type AnimeWatchResult =
   | { status: 'failed'; reason: AnimeWatchFailureReason }
 
 export type AnimeExtraPlayFailureReason =
+  | 'alreadyPlaying'
   | 'extraNotFound'
   | 'noExtraFile'
   | 'fileNotFound'
   | 'playerUnavailable'
   | 'playerStartFailed'
 
-/** Extras carry no watch state, so playback starts without activity tracking. */
+/** Extras carry no watch state; their sessions are tracked but never recorded. */
 export type AnimeExtraPlayResult =
   | { status: 'started'; sessionId: string }
   | { status: 'failed'; reason: AnimeExtraPlayFailureReason }
@@ -92,8 +93,22 @@ export interface AnimeWatchingState {
   sessionId: string
 }
 
+/** Live playback state of one extra, as tracked by the activity service. */
+export interface AnimeExtraPlayingState {
+  animeId: string
+  extraId: string
+  /** Player session id, correlating this playback with `player:*` pushes. */
+  sessionId: string
+}
+
 export type AnimeStopFailureReason = 'notWatching' | 'stopFailed'
 
 export type AnimeStopResult =
   | { status: 'stopped' }
   | { status: 'failed'; reason: AnimeStopFailureReason }
+
+export type AnimeExtraStopFailureReason = 'notPlaying' | 'stopFailed'
+
+export type AnimeExtraStopResult =
+  | { status: 'stopped' }
+  | { status: 'failed'; reason: AnimeExtraStopFailureReason }

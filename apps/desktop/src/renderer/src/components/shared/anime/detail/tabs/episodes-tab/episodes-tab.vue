@@ -19,13 +19,14 @@ import { cn } from '@renderer/utils/cn'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { animeEpisodes } from '@shared/db'
-import type { AnimeEpisodeEntry, AnimeExtraEntry } from '@renderer/composables/use-anime'
+import { animeEpisodes, ANIME_EXTRA_TYPE_VALUES } from '@shared/db'
+import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
 import { AnimeFilesConfigFormDialog } from '../../../forms'
 import AnimeDetailEpisodeItem from './episode-item.vue'
 import AnimeDetailExtraItem from './extra-item.vue'
 import AnimeEpisodeDetailDialog from './episode-detail-dialog.vue'
 import AnimeEpisodeFormDialog from './episode-form-dialog.vue'
+import AnimeExtraDetailDialog from './extra-detail-dialog.vue'
 import AnimeExtraFormDialog from './extra-form-dialog.vue'
 
 const { anime, episodes, extras } = useAnime()
@@ -88,12 +89,19 @@ async function handleSyncFiles(): Promise<void> {
 // =============================================================================
 
 const addExtraOpen = ref(false)
-const editExtraTarget = ref<AnimeExtraEntry | null>(null)
+const openExtraId = ref<string | null>(null)
 
-const extraEditOpen = computed({
-  get: () => editExtraTarget.value !== null,
+/** Single list in canonical type order; the row badge carries the type. */
+const sortedExtras = computed(() =>
+  [...extras.value].sort(
+    (a, b) => ANIME_EXTRA_TYPE_VALUES.indexOf(a.type) - ANIME_EXTRA_TYPE_VALUES.indexOf(b.type)
+  )
+)
+
+const extraDetailOpen = computed({
+  get: () => openExtraId.value !== null,
   set: (value) => {
-    if (!value) editExtraTarget.value = null
+    if (!value) openExtraId.value = null
   }
 })
 </script>
@@ -195,11 +203,11 @@ const extraEditOpen = computed({
 
       <div class="space-y-2">
         <AnimeDetailExtraItem
-          v-for="extra in extras"
+          v-for="extra in sortedExtras"
           :key="extra.id"
           :extra="extra"
           @open-folder="handleOpenFolder"
-          @edit="editExtraTarget = extra"
+          @open-detail="openExtraId = extra.id"
         />
       </div>
     </Section>
@@ -233,12 +241,12 @@ const extraEditOpen = computed({
       :anime-id="anime.id"
     />
 
-    <!-- Extra edit dialog -->
-    <AnimeExtraFormDialog
-      v-if="editExtraTarget"
-      v-model:open="extraEditOpen"
+    <!-- Extra detail dialog -->
+    <AnimeExtraDetailDialog
+      v-if="openExtraId"
+      v-model:open="extraDetailOpen"
       :anime-id="anime.id"
-      :extra="editExtraTarget"
+      :extra-id="openExtraId"
     />
   </div>
 </template>

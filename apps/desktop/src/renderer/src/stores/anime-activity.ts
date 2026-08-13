@@ -1,10 +1,10 @@
 /**
  * Anime Activity Store
  *
- * Tracks which anime entries are currently being watched, synced from the main
- * process activity service, plus the live playback state of their player
- * sessions. Used by watch buttons and episode rows to show the live episode
- * and its progress without polling the database.
+ * Tracks which anime entries are currently being watched and which extras are
+ * playing, synced from the main process activity service, plus the live
+ * playback state of their player sessions. Used by watch buttons, episode
+ * rows, and extra rows to show live progress without polling the database.
  */
 
 import { defineStore } from 'pinia'
@@ -18,6 +18,13 @@ const log = createLogger('Activity')
 export interface AnimeWatchingStatus {
   episodeId: string
   /** Player session id, correlating this watch with `player:*` pushes. */
+  sessionId: string
+  startedAt: number
+}
+
+export interface AnimeExtraPlayingStatus {
+  animeId: string
+  /** Player session id, correlating this playback with `player:*` pushes. */
   sessionId: string
   startedAt: number
 }
@@ -36,7 +43,9 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
 
   /** Watching entries keyed by animeId. */
   const watching = ref(new Map<string, AnimeWatchingStatus>())
-  /** Live playback state keyed by sessionId (only sessions tracked in `watching`). */
+  /** Playing extras keyed by extraId. */
+  const playingExtras = ref(new Map<string, AnimeExtraPlayingStatus>())
+  /** Live playback state keyed by sessionId (only tracked sessions). */
   const playback = ref(new Map<string, AnimePlaybackState>())
   const initialized = ref(false)
 
@@ -68,14 +77,38 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
   function getProgress(
     animeId: string
   ): { positionMs: number; durationMs: number | null } | undefined {
-    const sessionId = watching.value.get(animeId)?.sessionId
-    const state = sessionId ? playback.value.get(sessionId) : undefined
-    return state ? { positionMs: state.positionMs, durationMs: state.durationMs } : undefined
+    return getSessionProgress(watching.value.get(animeId)?.sessionId)
   }
 
   function getPlaybackStatus(animeId: string): AnimePlaybackState['status'] | undefined {
     const sessionId = watching.value.get(animeId)?.sessionId
     return sessionId ? playback.value.get(sessionId)?.status : undefined
+  }
+
+  function isExtraPlaying(extraId: string): boolean {
+    return playingExtras.value.has(extraId)
+  }
+
+  function getExtraPlayingStatus(extraId: string): AnimeExtraPlayingStatus | undefined {
+    return playingExtras.value.get(extraId)
+  }
+
+  function getExtraProgress(
+    extraId: string
+  ): { positionMs: number; durationMs: number | null } | undefined {
+    return getSessionProgress(playingExtras.value.get(extraId)?.sessionId)
+  }
+
+  function getExtraPlaybackStatus(extraId: string): AnimePlaybackState['status'] | undefined {
+    const sessionId = playingExtras.value.get(extraId)?.sessionId
+    return sessionId ? playback.value.get(sessionId)?.status : undefined
+  }
+
+  function getSessionProgress(
+    sessionId: string | undefined
+  ): { positionMs: number; durationMs: number | null } | undefined {
+    const state = sessionId ? playback.value.get(sessionId) : undefined
+    return state ? { positionMs: state.positionMs, durationMs: state.durationMs } : undefined
   }
 
   function startWatching(animeId: string, episodeId: string, sessionId: string): void {
@@ -99,8 +132,32 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
     }
   }
 
+  function startPlayingExtra(extraId: string, animeId: string, sessionId: string): void {
+    const previous = playingExtras.value.get(extraId)
+    const next = new Map(playingExtras.value)
+    next.set(extraId, { animeId, sessionId, startedAt: Date.now() })
+    playingExtras.value = next
+    // A restart hands the extra a new session; drop the superseded session state.
+    if (previous && previous.sessionId !== sessionId) {
+      removePlayback(previous.sessionId)
+    }
+  }
+
+  function stopPlayingExtra(extraId: string): void {
+    const status = playingExtras.value.get(extraId)
+    const next = new Map(playingExtras.value)
+    next.delete(extraId)
+    playingExtras.value = next
+    if (status) {
+      removePlayback(status.sessionId)
+    }
+  }
+
   function isKnownSession(sessionId: string): boolean {
     for (const status of watching.value.values()) {
+      if (status.sessionId === sessionId) return true
+    }
+    for (const status of playingExtras.value.values()) {
       if (status.sessionId === sessionId) return true
     }
     return false
@@ -132,6 +189,14 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
 
     ipcManager.on('activity:anime-stopped', (_, state) => {
       stopWatching(state.animeId)
+    })
+
+    ipcManager.on('activity:anime-extra-started', (_, state) => {
+      startPlayingExtra(state.extraId, state.animeId, state.sessionId)
+    })
+
+    ipcManager.on('activity:anime-extra-stopped', (_, state) => {
+      stopPlayingExtra(state.extraId)
     })
 
     ipcManager.on('player:session-changed', (_, state) => {
@@ -167,6 +232,13 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
         }
       }
 
+      const extrasResult = await ipcManager.invoke('activity:list-anime-extras-playing')
+      if (extrasResult.success && extrasResult.data) {
+        for (const state of extrasResult.data) {
+          startPlayingExtra(state.extraId, state.animeId, state.sessionId)
+        }
+      }
+
       // Seed live session state so status and position render right away
       // after a renderer reload, instead of waiting for the next push.
       const sessionsResult = await ipcManager.invoke('player:list-sessions')
@@ -190,6 +262,7 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
   return {
     // State
     watching,
+    playingExtras,
     playback,
     initialized,
     // Getters
@@ -200,6 +273,10 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
     getWatchingStatus,
     getProgress,
     getPlaybackStatus,
+    isExtraPlaying,
+    getExtraPlayingStatus,
+    getExtraProgress,
+    getExtraPlaybackStatus,
     startWatching,
     stopWatching,
     init

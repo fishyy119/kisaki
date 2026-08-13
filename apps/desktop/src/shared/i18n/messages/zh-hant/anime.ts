@@ -5,6 +5,7 @@ export const anime = {
   watchContinue: '繼續觀看',
   watchNext: '看下一集',
   stop: '停止',
+  showDetail: '檢視詳情',
   starting: '啟動中',
   playing: '播放中',
 
@@ -16,15 +17,13 @@ export const anime = {
     entityLabel: '劇集',
     watched: '已看',
     unwatched: '未看',
-    missingFile: '缺少檔案',
-    fileCount: ({ count }: { count: number }) => `${count} 個檔案`,
+    stillEntityLabel: '劇照',
     resumeAt: ({ position }: { position: string }) => `從 ${position} 繼續`,
     markWatched: '標記為已看',
     markUnwatched: '標記為未看',
     watchedUpdated: '觀看狀態已更新。',
     progress: ({ watched, total }: { watched: number; total: number }) =>
       `已看 ${watched} / ${total}`,
-    showDetail: '檢視詳情',
     playCount: '播放次數',
     watchedAt: '觀看時間',
     resumeLabel: '續播位置',
@@ -71,12 +70,14 @@ export const anime = {
     nameLabel: '名稱',
     typeLabel: '類型',
     autoDetect: '自動識別',
-    noFiles: '暫無檔案。',
-    fileCount: ({ count }: { count: number }) => `${count} 個檔案`
   },
 
   files: {
     title: '檔案',
+    playFile: '播放此檔案',
+    missingFile: '缺少檔案',
+    noFiles: '暫無檔案。',
+    fileCount: ({ count }: { count: number }) => `${count} 個檔案`,
     primary: '首選',
     resolution: '解析度',
     codec: '編碼',

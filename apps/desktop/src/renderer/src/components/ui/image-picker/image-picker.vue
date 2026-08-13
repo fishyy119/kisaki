@@ -10,6 +10,8 @@ interface Props {
   imageUrl?: string | null
   imageAlt?: string
   pickedPath?: string | null
+  /** Preview of the picked file; shown instead of the picked path text. */
+  pickedPreviewUrl?: string | null
   pickedPathPrefix?: string
   pickLabel?: string
   pickIcon?: string
@@ -24,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
   imageUrl: null,
   imageAlt: '',
   pickedPath: null,
+  pickedPreviewUrl: null,
   pickIcon: 'icon-[mdi--image-outline]',
   pickDisabled: false,
   clearDisabled: false,
@@ -57,11 +60,11 @@ function handleClear() {
     data-slot="image-picker"
   >
     <div
-      v-if="props.imageUrl"
+      v-if="props.imageUrl || props.pickedPreviewUrl"
       class="rounded-lg overflow-hidden border bg-muted"
     >
       <img
-        :src="props.imageUrl"
+        :src="props.imageUrl ?? props.pickedPreviewUrl ?? undefined"
         :alt="props.imageAlt"
         :class="cn('w-full object-contain', props.previewMaxHeightClass)"
       />

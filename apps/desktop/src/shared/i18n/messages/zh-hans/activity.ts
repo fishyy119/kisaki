@@ -31,6 +31,8 @@ export const activity = {
     gameNotRunning: '游戏未运行。',
     stopProcessFailed: '停止游戏进程失败。',
     alreadyWatching: '该动漫已在播放中。',
+    alreadyPlaying: '该特典已在播放中。',
+    notPlaying: '当前没有正在播放的内容。',
     animeNotFound: '动漫不存在。',
     episodeNotFound: '剧集不存在。',
     extraNotFound: '特典不存在。',

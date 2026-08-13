@@ -11,7 +11,6 @@ import { eq, and } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { notify } from '@renderer/core/notify'
 import { db, attachment } from '@renderer/core/db'
-import { ipcManager } from '@renderer/core/ipc'
 import {
   collections,
   collectionGameLinks,
@@ -20,8 +19,7 @@ import {
   collectionPersonLinks,
   collectionCompanyLinks
 } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
-import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
+import { useAsyncData, useStagedImagePick } from '@renderer/composables'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import type { ContentEntityType } from '@shared/common'
 import {
@@ -48,12 +46,9 @@ import {
   FieldGroup
 } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
-
-const log = createLogger('Collection')
 
 export interface Props {
   /** Collection ID for edit mode */
@@ -88,9 +83,7 @@ const formData = ref<FormData>({
 })
 const isSubmitting = ref(false)
 
-type CoverMode = 'keep' | 'set' | 'clear'
-const coverMode = ref<CoverMode>('keep')
-const coverPath = ref<string | null>(null)
+const cover = useStagedImagePick()
 
 // For edit mode, fetch collection data
 const {
@@ -129,8 +122,7 @@ watch(
 
 const currentCoverUrl = computed(() => {
   if (!isEditMode) return null
-  if (coverMode.value === 'clear') return null
-  if (coverMode.value === 'set') return null
+  if (cover.mode.value !== 'keep') return null
   if (!existingCollection.value?.coverFile) return null
   return getAttachmentUrl(
     'collections',
@@ -139,13 +131,18 @@ const currentCoverUrl = computed(() => {
   )
 })
 
+const coverClearDisabled = computed(
+  () =>
+    cover.mode.value === 'clear' ||
+    (cover.mode.value === 'keep' && !existingCollection.value?.coverFile)
+)
+
 // Reset form when dialog opens
 watch(
   () => open.value,
   (isOpen) => {
     if (isOpen) {
-      coverMode.value = 'keep'
-      coverPath.value = null
+      cover.reset()
       if (isEditMode) {
         refetch()
       } else {
@@ -161,35 +158,6 @@ watch(
   },
   { immediate: true }
 )
-
-async function pickCoverPath(): Promise<string | null> {
-  const dialogOptions = getOpenImageDialogOptions({ title: m.value.library.forms.pickCover })
-  const res = await ipcManager.invoke('native:open-dialog', dialogOptions)
-  if (!res.success) {
-    throw new Error(res.error || 'Failed to open file dialog')
-  }
-  if (!res.data || res.data.canceled || !res.data.filePaths || res.data.filePaths.length === 0) {
-    return null
-  }
-  return res.data.filePaths[0]
-}
-
-async function handlePickCover() {
-  try {
-    const path = await pickCoverPath()
-    if (!path) return
-    coverMode.value = 'set'
-    coverPath.value = path
-  } catch (error) {
-    log.error('Pick cover failed:', error)
-    notify.error(m.value.library.feedback.pickCoverFailed)
-  }
-}
-
-function handleClearCover() {
-  coverMode.value = 'clear'
-  coverPath.value = null
-}
 
 async function handleSubmit() {
   if (!formData.value.name.trim()) return
@@ -207,13 +175,13 @@ async function handleSubmit() {
         })
         .where(eq(collections.id, existingCollection.value.id))
 
-      if (coverMode.value === 'clear') {
+      if (cover.mode.value === 'clear') {
         await attachment.clearFile(collections, existingCollection.value.id, 'coverFile')
       }
-      if (coverMode.value === 'set' && coverPath.value) {
+      if (cover.mode.value === 'set' && cover.pickedPath.value) {
         await attachment.setFile(collections, existingCollection.value.id, 'coverFile', {
           kind: 'path',
-          path: coverPath.value
+          path: cover.pickedPath.value
         })
       }
       notify.success(m.value.library.forms.collectionUpdated)
@@ -229,10 +197,10 @@ async function handleSubmit() {
         dynamicConfig: null
       })
 
-      if (coverMode.value === 'set' && coverPath.value) {
+      if (cover.mode.value === 'set' && cover.pickedPath.value) {
         await attachment.setFile(collections, newCollectionId, 'coverFile', {
           kind: 'path',
-          path: coverPath.value
+          path: cover.pickedPath.value
         })
       }
 
@@ -411,14 +379,12 @@ const canSubmit = computed(() => formData.value.name.trim())
                 <FieldContent>
                   <ImagePicker
                     :image-url="currentCoverUrl"
-                    :picked-path="coverMode === 'set' ? coverPath : null"
+                    :picked-path="cover.pickedPath.value"
+                    :picked-preview-url="cover.previewUrl.value"
                     :pick-label="m.library.forms.pickCover"
-                    :clear-disabled="
-                      (!isEditMode && coverMode !== 'set') ||
-                      (isEditMode && !existingCollection?.coverFile && coverMode !== 'set')
-                    "
-                    @pick="handlePickCover"
-                    @clear="handleClearCover"
+                    :clear-disabled="coverClearDisabled"
+                    @pick="cover.pick({ title: m.library.forms.pickCover })"
+                    @clear="cover.clear()"
                   />
                 </FieldContent>
               </Field>

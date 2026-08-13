@@ -251,7 +251,6 @@ export const library = {
     gameDirNotSet: 'Game folder is not set.',
     openGameDirFailed: 'Could not open the game folder.',
     pickFileFailed: 'Could not pick a file.',
-    pickCoverFailed: 'Could not pick a cover.',
     deletedSummary: ({ items }: { items: string[] }) =>
       items.length > 0 ? `Deleted ${items.join(', ')}.` : 'Deleted.',
     nameAndMore: ({ name, count }: { name: string; count: number }) =>

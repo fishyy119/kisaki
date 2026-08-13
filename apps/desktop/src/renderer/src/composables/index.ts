@@ -15,10 +15,13 @@ export * from './use-ipc'
 export * from './use-i18n'
 export * from './use-render-state'
 export * from './use-inline-attachments'
+export * from './use-player-controls'
+export * from './use-staged-image-pick'
 
 // Entity data composables (Provider/Consumer pattern)
 export * from './use-game'
 export * from './use-anime'
+export * from './use-anime-extra-playback'
 export * from './use-anime-file-sync'
 export * from './use-collection'
 export * from './use-person'

@@ -246,7 +246,6 @@ export const library = {
     gameDirNotSet: 'ゲームフォルダーが設定されていません',
     openGameDirFailed: 'ゲームフォルダーを開けません',
     pickFileFailed: 'ファイルの選択に失敗しました',
-    pickCoverFailed: 'カバーの選択に失敗しました',
     deletedSummary: ({ items }: { items: string[] }) =>
       items.length > 0 ? `${items.join('、')}を削除しました` : '削除しました',
     nameAndMore: ({ name, count }: { name: string; count: number }) => `${name} など ${count} 件`

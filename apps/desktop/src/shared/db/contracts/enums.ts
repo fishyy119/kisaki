@@ -161,6 +161,16 @@ export const ANIME_COMPANY_ROLE_VALUES = [
 /** Supplementary anime asset type; these never carry watch state. */
 export type AnimeExtraType = 'trailer' | 'pv' | 'ncop' | 'nced' | 'interview' | 'other'
 
+/** Anime extra type values in canonical display order. */
+export const ANIME_EXTRA_TYPE_VALUES = [
+  'trailer',
+  'pv',
+  'ncop',
+  'nced',
+  'interview',
+  'other'
+] as const satisfies readonly AnimeExtraType[]
+
 /** Blood type */
 export type BloodType = 'a' | 'b' | 'ab' | 'o'
 

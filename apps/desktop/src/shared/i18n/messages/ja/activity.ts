@@ -31,6 +31,8 @@ export const activity = {
     gameNotRunning: 'ゲームは実行されていません。',
     stopProcessFailed: 'ゲームプロセスを停止できませんでした。',
     alreadyWatching: 'このアニメはすでに再生中です。',
+    alreadyPlaying: 'この特典はすでに再生中です。',
+    notPlaying: '現在再生中のものはありません。',
     animeNotFound: 'アニメが存在しません。',
     episodeNotFound: 'エピソードが存在しません。',
     extraNotFound: '特典が存在しません。',

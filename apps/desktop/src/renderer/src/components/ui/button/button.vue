@@ -19,7 +19,10 @@ const [DefineButton, ReuseButton] = createReusableTemplate()
 
 <template>
   <DefineButton>
+    <!-- Native buttons default to type="button" so form-embedded action
+         buttons never submit implicitly; explicit type attrs still win. -->
     <Primitive
+      :type="as === 'button' && !asChild ? 'button' : undefined"
       v-bind="$attrs"
       data-slot="button"
       :as="as"

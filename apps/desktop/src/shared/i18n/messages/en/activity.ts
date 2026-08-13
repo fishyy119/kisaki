@@ -29,6 +29,8 @@ export const activity = {
     gameNotRunning: 'The game is not running.',
     stopProcessFailed: 'Could not stop the game process.',
     alreadyWatching: 'This anime is already playing.',
+    alreadyPlaying: 'This extra is already playing.',
+    notPlaying: 'Nothing is playing right now.',
     animeNotFound: 'The anime does not exist.',
     episodeNotFound: 'The episode does not exist.',
     extraNotFound: 'The extra does not exist.',

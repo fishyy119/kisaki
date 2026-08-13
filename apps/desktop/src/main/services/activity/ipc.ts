@@ -15,19 +15,27 @@ export function registerActivityIpc(service: ActivityService, ipc: IpcService): 
     wrapIpc(() => service.game.computeEffectivePath(config))
   )
 
-  ipc.handle('activity:watch-anime', async (_, animeId, episodeId) =>
-    wrapIpc(() => service.anime.watch(animeId, episodeId))
+  ipc.handle('activity:watch-anime', async (_, animeId, episodeId, fileId) =>
+    wrapIpc(() => service.anime.watch(animeId, episodeId, fileId))
   )
 
   ipc.handle('activity:stop-anime', async (_, animeId) =>
     wrapIpc(() => service.anime.stop(animeId))
   )
 
-  ipc.handle('activity:play-anime-extra', async (_, extraId) =>
-    wrapIpc(() => service.anime.playExtra(extraId))
+  ipc.handle('activity:play-anime-extra', async (_, extraId, fileId) =>
+    wrapIpc(() => service.anime.playExtra(extraId, fileId))
+  )
+
+  ipc.handle('activity:stop-anime-extra', async (_, extraId) =>
+    wrapIpc(() => service.anime.stopExtra(extraId))
   )
 
   ipc.handle('activity:list-anime-watching', async () =>
     wrapIpc(() => service.anime.listWatching())
+  )
+
+  ipc.handle('activity:list-anime-extras-playing', async () =>
+    wrapIpc(() => service.anime.listPlayingExtras())
   )
 }

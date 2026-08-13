@@ -5,21 +5,17 @@
   with pause/resume controls next to the stop action.
 -->
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
-import { Progress } from '@renderer/components/ui/progress'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { ipcManager } from '@renderer/core/ipc'
-import { createLogger } from '@renderer/core/log'
-import { notify } from '@renderer/core/notify'
+import { usePlayerControls } from '@renderer/composables/use-player-controls'
 import { useAnimeActivityStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
 import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
 import AnimeWatchButton from '../../../anime-watch-button.vue'
-
-const log = createLogger('Anime')
+import AnimePlaybackProgress from './playback-progress.vue'
 
 interface Props {
   animeId: string
@@ -73,56 +69,14 @@ const playbackProgress = computed(() =>
   isWatchingNow.value ? activityStore.getProgress(props.animeId) : undefined
 )
 
-const isPaused = computed(() => playbackStatus.value === 'paused')
-
-const progressPercent = computed(() => {
-  const progress = playbackProgress.value
-  if (!progress?.durationMs) return 0
-  return Math.min(100, (progress.positionMs / progress.durationMs) * 100)
+const {
+  isPaused,
+  isPending: isPlayerActionPending,
+  togglePause: handleTogglePause
+} = usePlayerControls({
+  sessionId: () => watchingSession.value?.sessionId,
+  status: () => playbackStatus.value
 })
-
-const playbackLabel = computed(() => {
-  if (playbackStatus.value === 'paused') return m.value.anime.player.paused
-  if (playbackStatus.value === 'loading') return m.value.anime.starting
-  return m.value.anime.playing
-})
-
-const playbackTimeText = computed(() => {
-  const progress = playbackProgress.value
-  if (!progress) return null
-  const position = f.value.durationFine(progress.positionMs)
-  return progress.durationMs === null
-    ? position
-    : `${position} / ${f.value.duration(progress.durationMs)}`
-})
-
-const isPlayerActionPending = ref(false)
-
-async function handleTogglePause(): Promise<void> {
-  const session = watchingSession.value
-  if (!session || isPlayerActionPending.value) return
-
-  const resume = isPaused.value
-  isPlayerActionPending.value = true
-  try {
-    const result = resume
-      ? await ipcManager.invoke('player:resume', session.sessionId)
-      : await ipcManager.invoke('player:pause', session.sessionId)
-    if (!result.success) {
-      notifyPlayerFailure(resume, result.error)
-    }
-  } catch (error) {
-    log.error('player control call threw:', error)
-    notifyPlayerFailure(resume, error instanceof Error ? error.message : String(error))
-  } finally {
-    isPlayerActionPending.value = false
-  }
-}
-
-function notifyPlayerFailure(resume: boolean, error: string): void {
-  const messages = m.value.anime.player
-  notify.error(resume ? messages.resumeFailed : messages.pauseFailed, error)
-}
 </script>
 
 <template>
@@ -166,14 +120,14 @@ function notifyPlayerFailure(resume: boolean, error: string): void {
         </div>
 
         <div class="flex items-center gap-2 text-xs text-muted-foreground">
-          <span v-if="!playableFile">{{ m.anime.episodes.missingFile }}</span>
+          <span v-if="!playableFile">{{ m.anime.files.missingFile }}</span>
           <template v-else>
             <span v-if="resolution">{{ resolution }}</span>
             <span v-if="resolution && playableFile.videoCodec">·</span>
             <span v-if="playableFile.videoCodec">{{ playableFile.videoCodec }}</span>
             <template v-if="props.episode.files.length > 1">
               <span>·</span>
-              <span>{{ m.anime.episodes.fileCount({ count: props.episode.files.length }) }}</span>
+              <span>{{ m.anime.files.fileCount({ count: props.episode.files.length }) }}</span>
             </template>
           </template>
           <template v-if="props.episode.durationMs">
@@ -193,31 +147,11 @@ function notifyPlayerFailure(resume: boolean, error: string): void {
         </div>
 
         <!-- Live playback progress for the currently-watching episode -->
-        <div
+        <AnimePlaybackProgress
           v-if="isWatchingNow"
-          class="mt-1.5 flex items-center gap-2"
-        >
-          <span
-            :class="
-              cn(
-                'text-xs font-medium shrink-0',
-                isPaused ? 'text-muted-foreground' : 'text-primary'
-              )
-            "
-          >
-            {{ playbackLabel }}
-          </span>
-          <Progress
-            :model-value="progressPercent"
-            class="h-1 w-40 shrink-0"
-          />
-          <span
-            v-if="playbackTimeText"
-            class="text-xs text-muted-foreground truncate"
-          >
-            {{ playbackTimeText }}
-          </span>
-        </div>
+          :status="playbackStatus"
+          :progress="playbackProgress"
+        />
       </div>
     </div>
 
@@ -225,7 +159,7 @@ function notifyPlayerFailure(resume: boolean, error: string): void {
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.anime.episodes.showDetail"
+        :tooltip="m.anime.showDetail"
         @click="emit('openDetail')"
       >
         <Icon

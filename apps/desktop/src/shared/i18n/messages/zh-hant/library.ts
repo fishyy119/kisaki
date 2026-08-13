@@ -246,7 +246,6 @@ export const library = {
     gameDirNotSet: '遊戲目錄未設定',
     openGameDirFailed: '無法開啟遊戲目錄',
     pickFileFailed: '選擇檔案失敗',
-    pickCoverFailed: '選擇封面失敗',
     deletedSummary: ({ items }: { items: string[] }) =>
       items.length > 0 ? `已刪除 ${items.join('、')}` : '已刪除',
     nameAndMore: ({ name, count }: { name: string; count: number }) => `${name} 等 ${count} 項`

@@ -199,6 +199,21 @@ async function handleOpenFolder(path: string): Promise<void> {
     notify.error(m.value.anime.files.openFolderFailed)
   }
 }
+
+/** Plays one specific version file without touching the primary election. */
+async function handlePlayFile(fileId: string): Promise<void> {
+  const entry = episode.value
+  if (!entry) return
+  const result = await ipcManager.invoke('activity:watch-anime', props.animeId, entry.id, fileId)
+  if (!result.success) {
+    notify.error(m.value.activity.watchFailedTitle, result.error)
+    return
+  }
+  if (result.data.status === 'failed') {
+    notify.error(m.value.activity.watchFailedTitle, m.value.activity.errors[result.data.reason])
+  }
+}
+
 </script>
 
 <template>
@@ -225,15 +240,15 @@ async function handleOpenFolder(path: string): Promise<void> {
         </DialogHeader>
 
         <DialogBody class="flex-1 min-h-0 overflow-auto space-y-4">
-          <!-- Still -->
+          <!-- Still (display only; edited through the episode form) -->
           <div
             v-if="stillUrl"
-            class="rounded-lg border overflow-hidden bg-muted aspect-video max-h-64"
+            class="rounded-lg border bg-muted overflow-hidden"
           >
             <img
               :src="stillUrl"
               :alt="title"
-              class="size-full object-cover"
+              class="w-full max-h-64 object-contain"
             />
           </div>
 
@@ -266,14 +281,6 @@ async function handleOpenFolder(path: string): Promise<void> {
             </div>
           </dl>
 
-          <!-- Original name -->
-          <p
-            v-if="episode.originalName && episode.originalName !== episode.name"
-            class="text-xs text-muted-foreground"
-          >
-            {{ episode.originalName }}
-          </p>
-
           <!-- Description -->
           <div v-if="episode.description">
             <h4 class="text-xs font-medium text-muted-foreground mb-1.5">
@@ -287,9 +294,10 @@ async function handleOpenFolder(path: string): Promise<void> {
           <!-- Files -->
           <AnimeFileRecordList
             :files="episode.files"
-            :empty-text="m.anime.episodes.missingFile"
+            :empty-text="m.anime.files.noFiles"
             :attaching="isAttachingFile"
             @attach="handleAttachFile"
+            @play="handlePlayFile"
             @set-primary="handleSetPrimary"
             @remove-file="handleRemoveFile"
             @open-folder="handleOpenFolder"

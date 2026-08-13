@@ -27,7 +27,9 @@ import {
   type AnimeExtraFile
 } from '@shared/db'
 import type {
+  AnimeExtraPlayingState,
   AnimeExtraPlayResult,
+  AnimeExtraStopResult,
   AnimeStopResult,
   AnimeWatchingState,
   AnimeWatchResult
@@ -58,9 +60,16 @@ interface WatchingSession {
   lastResumeWriteAt: number
 }
 
+interface PlayingExtraSession {
+  animeId: string
+  extraId: string
+}
+
 export class AnimeActivityHandler {
   /** Playback sessions started by this handler, keyed by player session id. */
   private readonly watching = new Map<string, WatchingSession>()
+  /** Untracked-for-history extra sessions, keyed by player session id. */
+  private readonly playingExtras = new Map<string, PlayingExtraSession>()
 
   constructor(
     private readonly db: DbService,
@@ -75,9 +84,10 @@ export class AnimeActivityHandler {
    * Starts watching an anime.
    *
    * Without an episode the next unwatched one is chosen, which is what a user
-   * pressing play on the entry itself means.
+   * pressing play on the entry itself means. A file id narrows playback to
+   * that specific version instead of the primary election.
    */
-  async watch(animeId: string, episodeId?: string): Promise<AnimeWatchResult> {
+  async watch(animeId: string, episodeId?: string, fileId?: string): Promise<AnimeWatchResult> {
     if (this.findSessionId(animeId)) {
       log.warn('Anime is already being watched.', { animeId })
       return { status: 'failed', reason: 'alreadyWatching' }
@@ -94,9 +104,9 @@ export class AnimeActivityHandler {
       return { status: 'failed', reason: episodeId ? 'episodeNotFound' : 'noPlayableEpisode' }
     }
 
-    const file = this.readPlayableFile(episode.id)
+    const file = this.readPlayableFile(episode.id, fileId)
     if (!file) {
-      log.warn('Episode has no playable file.', { animeId, episodeId: episode.id })
+      log.warn('Episode has no playable file.', { animeId, episodeId: episode.id, fileId })
       return { status: 'failed', reason: 'noEpisodeFile' }
     }
 
@@ -150,11 +160,16 @@ export class AnimeActivityHandler {
   }
 
   /**
-   * Plays a supplementary asset through its primary file. Extras carry no
-   * watch state, so the session is not tracked and nothing is recorded when
-   * it ends.
+   * Plays a supplementary asset through its primary file, or through the
+   * requested version file. Extras carry no watch state: the session is
+   * tracked for live UI only and nothing is recorded when it ends.
    */
-  async playExtra(extraId: string): Promise<AnimeExtraPlayResult> {
+  async playExtra(extraId: string, fileId?: string): Promise<AnimeExtraPlayResult> {
+    if (this.findExtraSessionId(extraId)) {
+      log.warn('Extra is already playing.', { extraId })
+      return { status: 'failed', reason: 'alreadyPlaying' }
+    }
+
     const row = this.db.client
       .select({ extra: animeExtras, animeName: animes.name })
       .from(animeExtras)
@@ -166,9 +181,9 @@ export class AnimeActivityHandler {
       return { status: 'failed', reason: 'extraNotFound' }
     }
 
-    const file = this.readPlayableExtraFile(extraId)
+    const file = this.readPlayableExtraFile(extraId, fileId)
     if (!file) {
-      log.warn('Extra has no playable file.', { extraId })
+      log.warn('Extra has no playable file.', { extraId, fileId })
       return { status: 'failed', reason: 'noExtraFile' }
     }
 
@@ -195,7 +210,34 @@ export class AnimeActivityHandler {
       }
     }
 
+    const animeId = row.extra.animeId
+    this.playingExtras.set(started.sessionId, { animeId, extraId })
+
+    log.info('Extra playback started.', { animeId, extraId })
+    this.ipc.send('activity:anime-extra-started', {
+      animeId,
+      extraId,
+      sessionId: started.sessionId
+    })
+
     return { status: 'started', sessionId: started.sessionId }
+  }
+
+  /** Stops the playback session currently playing this extra. */
+  async stopExtra(extraId: string): Promise<AnimeExtraStopResult> {
+    const sessionId = this.findExtraSessionId(extraId)
+    if (!sessionId) {
+      log.warn('Extra to stop is not playing.', { extraId })
+      return { status: 'failed', reason: 'notPlaying' }
+    }
+
+    try {
+      await this.player.sessions.stop(sessionId)
+      return { status: 'stopped' }
+    } catch (error) {
+      log.error('Failed to stop extra playback.', error, { extraId })
+      return { status: 'failed', reason: 'stopFailed' }
+    }
   }
 
   /** Stops the playback session currently watching this anime. */
@@ -223,6 +265,14 @@ export class AnimeActivityHandler {
     return null
   }
 
+  /** Player session id currently playing this extra, if any. */
+  findExtraSessionId(extraId: string): string | null {
+    for (const [sessionId, session] of this.playingExtras) {
+      if (session.extraId === extraId) return sessionId
+    }
+    return null
+  }
+
   /** Live watching states, letting a reloaded renderer resynchronize. */
   listWatching(): AnimeWatchingState[] {
     return [...this.watching.entries()].map(([sessionId, session]) => ({
@@ -232,15 +282,25 @@ export class AnimeActivityHandler {
     }))
   }
 
+  /** Live extra playback states, letting a reloaded renderer resynchronize. */
+  listPlayingExtras(): AnimeExtraPlayingState[] {
+    return [...this.playingExtras.entries()].map(([sessionId, session]) => ({
+      animeId: session.animeId,
+      extraId: session.extraId,
+      sessionId
+    }))
+  }
+
   async dispose(): Promise<void> {
     // stop() resolves only after the session's end report ran, so the final
     // watch session is recorded before the tracking map is cleared.
-    for (const sessionId of [...this.watching.keys()]) {
+    for (const sessionId of [...this.watching.keys(), ...this.playingExtras.keys()]) {
       await this.player.sessions.stop(sessionId).catch((error) => {
         log.warn('Failed to stop playback session during dispose.', error, { sessionId })
       })
     }
     this.watching.clear()
+    this.playingExtras.clear()
   }
 
   /**
@@ -261,16 +321,27 @@ export class AnimeActivityHandler {
 
     this.player.hooks.sessionEnded.tap((report) => {
       const session = this.watching.get(report.sessionId)
-      if (!session) return
+      if (session) {
+        this.watching.delete(report.sessionId)
+        this.recordWatchSession(
+          report.sessionId,
+          session,
+          report.positionMs,
+          report.durationMs,
+          report.elapsedMs
+        )
+        return
+      }
 
-      this.watching.delete(report.sessionId)
-      this.recordWatchSession(
-        report.sessionId,
-        session,
-        report.positionMs,
-        report.durationMs,
-        report.elapsedMs
-      )
+      const extraSession = this.playingExtras.get(report.sessionId)
+      if (!extraSession) return
+
+      this.playingExtras.delete(report.sessionId)
+      log.info('Extra playback ended.', extraSession)
+      this.ipc.send('activity:anime-extra-stopped', {
+        ...extraSession,
+        sessionId: report.sessionId
+      })
     })
   }
 
@@ -411,7 +482,7 @@ export class AnimeActivityHandler {
     return playable.find((episode) => episode.watchedAt === null) ?? playable[0]
   }
 
-  private readPlayableFile(episodeId: string): AnimeEpisodeFile | undefined {
+  private readPlayableFile(episodeId: string, fileId?: string): AnimeEpisodeFile | undefined {
     const files = this.db.client
       .select()
       .from(animeEpisodeFiles)
@@ -419,10 +490,12 @@ export class AnimeActivityHandler {
       .orderBy(asc(animeEpisodeFiles.createdAt))
       .all()
 
+    // Matching inside the episode's own files keeps ownership validated.
+    if (fileId) return files.find((file) => file.id === fileId)
     return files.find((file) => file.isPrimary) ?? files[0]
   }
 
-  private readPlayableExtraFile(extraId: string): AnimeExtraFile | undefined {
+  private readPlayableExtraFile(extraId: string, fileId?: string): AnimeExtraFile | undefined {
     const files = this.db.client
       .select()
       .from(animeExtraFiles)
@@ -430,6 +503,8 @@ export class AnimeActivityHandler {
       .orderBy(asc(animeExtraFiles.createdAt))
       .all()
 
+    // Matching inside the extra's own files keeps ownership validated.
+    if (fileId) return files.find((file) => file.id === fileId)
     return files.find((file) => file.isPrimary) ?? files[0]
   }
 }

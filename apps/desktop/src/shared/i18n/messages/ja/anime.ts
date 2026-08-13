@@ -5,6 +5,7 @@ export const anime = {
   watchContinue: '続きから見る',
   watchNext: '次の話を見る',
   stop: '停止',
+  showDetail: '詳細を表示',
   starting: '起動中',
   playing: '再生中',
 
@@ -16,15 +17,13 @@ export const anime = {
     entityLabel: 'エピソード',
     watched: '視聴済み',
     unwatched: '未視聴',
-    missingFile: 'ファイルなし',
-    fileCount: ({ count }: { count: number }) => `${count} ファイル`,
+    stillEntityLabel: 'スチル',
     resumeAt: ({ position }: { position: string }) => `${position} から再開`,
     markWatched: '視聴済みにする',
     markUnwatched: '未視聴にする',
     watchedUpdated: '視聴状態を更新しました。',
     progress: ({ watched, total }: { watched: number; total: number }) =>
       `${watched} / ${total} 視聴済み`,
-    showDetail: '詳細を表示',
     playCount: '再生回数',
     watchedAt: '視聴日時',
     resumeLabel: '再開位置',
@@ -72,12 +71,14 @@ export const anime = {
     nameLabel: '名前',
     typeLabel: '種類',
     autoDetect: '自動判別',
-    noFiles: 'ファイルはまだありません。',
-    fileCount: ({ count }: { count: number }) => `ファイル ${count}`
   },
 
   files: {
     title: 'ファイル',
+    playFile: 'このファイルを再生',
+    missingFile: 'ファイルなし',
+    noFiles: 'ファイルはまだありません。',
+    fileCount: ({ count }: { count: number }) => `${count} ファイル`,
     primary: '優先',
     resolution: '解像度',
     codec: 'コーデック',

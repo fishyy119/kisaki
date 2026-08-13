@@ -3,7 +3,7 @@ import { createLogger } from '@main/log'
 import path from 'node:path'
 import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { MediaType } from '@shared/common'
-import { AttachmentCropper } from './crop'
+import { AttachmentImages } from './images'
 import { GameAttachmentHandler } from './handlers/game'
 import { registerAttachmentIpc } from './ipc'
 
@@ -20,7 +20,7 @@ export class AttachmentService implements IMediaService {
   readonly id = 'attachment'
   readonly deps = ['db', 'ipc', 'network'] as const satisfies readonly ServiceName[]
 
-  cropper!: AttachmentCropper
+  images!: AttachmentImages
   game!: GameAttachmentHandler
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
@@ -28,14 +28,14 @@ export class AttachmentService implements IMediaService {
     const ipcService = container.get('ipc')
     const networkService = container.get('network')
 
-    this.cropper = new AttachmentCropper({
+    this.images = new AttachmentImages({
       tempDir: path.join(app.getPath('temp'), 'kisaki', 'crop'),
       downloadBuffer: (url) => networkService.download.buffer(url)
     })
     this.game = new GameAttachmentHandler(dbService)
     registerAttachmentIpc(this, ipcService)
 
-    this.cropper.cleanupOldTempCrops(24 * 60 * 60 * 1000).catch((error) => {
+    this.images.cleanupOldTempCrops(24 * 60 * 60 * 1000).catch((error) => {
       log.warn('Failed to cleanup temp crops:', error)
     })
     log.info('Initialized')

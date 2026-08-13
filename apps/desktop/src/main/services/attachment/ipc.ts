@@ -3,17 +3,21 @@ import { wrapIpc, wrapIpcVoid } from '@main/services/ipc'
 import type { CropRegion } from '@shared/attachment'
 import type { AttachmentInput } from '@shared/db/contracts/attachment'
 import type { AttachmentService } from './service'
-import type { CropToTempOptions } from './crop'
+import type { CropToTempOptions } from './images'
 
 export function registerAttachmentIpc(service: AttachmentService, ipc: IpcService): void {
   ipc.handle('attachment:crop-to-temp', async (_, input, cropRegion: CropRegion, options) =>
     wrapIpc(() =>
-      service.cropper.cropToTemp(
+      service.images.cropToTemp(
         input as AttachmentInput,
         cropRegion,
         options as CropToTempOptions | undefined
       )
     )
+  )
+
+  ipc.handle('attachment:read-image-preview', async (_, input) =>
+    wrapIpc(() => service.images.readPreviewDataUrl(input as AttachmentInput))
   )
 
   ipc.handle('attachment:create-game-backup', async (_, gameId, note) =>

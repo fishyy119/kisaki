@@ -18,6 +18,13 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@renderer/components/ui/dropdown-menu'
 import { Field, FieldContent, FieldLabel } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { Icon } from '@renderer/components/ui/icon'
@@ -40,6 +47,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   attach: []
+  play: [fileId: string]
   setPrimary: [file: FileRecord]
   removeFile: [fileId: string]
   openFolder: [path: string]
@@ -164,25 +172,13 @@ function fileFacts(file: FileRecord): string {
 
         <div class="flex items-center gap-1 shrink-0">
           <Button
-            v-if="!file.isPrimary"
             variant="ghost"
             size="icon-sm"
-            :tooltip="m.anime.files.setPrimary"
-            @click="emit('setPrimary', file)"
+            :tooltip="m.anime.files.playFile"
+            @click="emit('play', file.id)"
           >
             <Icon
-              icon="icon-[mdi--star-outline]"
-              class="size-4"
-            />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :tooltip="m.anime.files.editNote"
-            @click="openNoteEditor(file)"
-          >
-            <Icon
-              icon="icon-[mdi--note-edit-outline]"
+              icon="icon-[mdi--play]"
               class="size-4"
             />
           </Button>
@@ -197,18 +193,50 @@ function fileFacts(file: FileRecord): string {
               class="size-4"
             />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="text-destructive hover:text-destructive"
-            :tooltip="m.anime.files.removeFile"
-            @click="removeFileId = file.id"
-          >
-            <Icon
-              icon="icon-[mdi--delete-outline]"
-              class="size-4"
-            />
-          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+              >
+                <Icon
+                  icon="icon-[mdi--dots-horizontal]"
+                  class="size-4"
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                v-if="!file.isPrimary"
+                @click="emit('setPrimary', file)"
+              >
+                <Icon
+                  icon="icon-[mdi--star-outline]"
+                  class="size-4"
+                />
+                {{ m.anime.files.setPrimary }}
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="openNoteEditor(file)">
+                <Icon
+                  icon="icon-[mdi--note-edit-outline]"
+                  class="size-4"
+                />
+                {{ m.anime.files.editNote }}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                @click="removeFileId = file.id"
+              >
+                <Icon
+                  icon="icon-[mdi--delete-outline]"
+                  class="size-4"
+                />
+                {{ m.anime.files.removeFile }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

@@ -14,13 +14,16 @@ export interface CropToTempOptions {
   quality?: number
 }
 
-export interface AttachmentCropperDeps {
+export interface AttachmentImagesDeps {
   tempDir: string
   downloadBuffer: (url: string) => Promise<Buffer>
 }
 
-export class AttachmentCropper {
-  constructor(private deps: AttachmentCropperDeps) {}
+/** Preview width; enough for form thumbnails while keeping the data URL small. */
+const PREVIEW_MAX_WIDTH = 640
+
+export class AttachmentImages {
+  constructor(private deps: AttachmentImagesDeps) {}
 
   async cleanupOldTempCrops(ttlMs: number): Promise<void> {
     const { tempDir } = this.deps
@@ -73,6 +76,17 @@ export class AttachmentCropper {
 
     await applyFormat(pipeline).toFile(outputPath)
     return outputPath
+  }
+
+  /** Downscaled data URL of a source image, for staged form previews. */
+  async readPreviewDataUrl(input: AttachmentInput): Promise<string> {
+    const resolved = await this.resolveSharpInput(input)
+    const buffer = await sharp(resolved)
+      .rotate()
+      .resize({ width: PREVIEW_MAX_WIDTH, withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toBuffer()
+    return `data:image/webp;base64,${buffer.toString('base64')}`
   }
 
   private async resolveSharpInput(input: AttachmentInput): Promise<string | Buffer> {

@@ -6,11 +6,9 @@
 import { computed, ref, watch, toRef } from 'vue'
 import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { useAsyncData, useInlineAttachments } from '@renderer/composables'
+import { useAsyncData, useInlineAttachments, useStagedImagePick } from '@renderer/composables'
 import { db, attachment } from '@renderer/core/db'
-import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { gameNotes } from '@shared/db'
 import {
@@ -59,9 +57,7 @@ const formData = ref<FormData>({
 const isSaving = ref(false)
 const didSave = ref(false)
 
-type CoverMode = 'keep' | 'set' | 'clear'
-const coverMode = ref<CoverMode>('keep')
-const coverPath = ref<string | null>(null)
+const cover = useStagedImagePick()
 
 const noteIdRef = toRef(props, 'noteId')
 const { setBaselineContent, onAttachment, gcOnCancel, gcOnSave } = useInlineAttachments({
@@ -87,11 +83,15 @@ const {
 
 const currentCoverUrl = computed(() => {
   if (!isEditMode.value) return null
-  if (coverMode.value === 'clear') return null
-  if (coverMode.value === 'set') return null
+  if (cover.mode.value !== 'keep') return null
   if (!existingNote.value?.coverFile) return null
   return getAttachmentUrl('game_notes', existingNote.value.id, existingNote.value.coverFile)
 })
+
+const coverClearDisabled = computed(
+  () =>
+    cover.mode.value === 'clear' || (cover.mode.value === 'keep' && !existingNote.value?.coverFile)
+)
 
 watch(existingNote, (note) => {
   if (!note) return
@@ -107,8 +107,7 @@ watch(
 
     didSave.value = false
     didUseInlineAttachments.value = false
-    coverMode.value = 'keep'
-    coverPath.value = null
+    cover.reset()
 
     if (isEditMode.value) {
       refetch()
@@ -134,35 +133,6 @@ watch(open, async (isOpen, wasOpen) => {
   }
 })
 
-async function pickCoverPath(): Promise<string | null> {
-  const dialogOptions = getOpenImageDialogOptions({ title: m.value.library.forms.pickCover })
-  const res = await ipcManager.invoke('native:open-dialog', dialogOptions)
-  if (!res.success) {
-    throw new Error(res.error || 'Failed to open file dialog')
-  }
-  if (!res.data || res.data.canceled || !res.data.filePaths || res.data.filePaths.length === 0) {
-    return null
-  }
-  return res.data.filePaths[0]
-}
-
-async function handlePickCover() {
-  try {
-    const path = await pickCoverPath()
-    if (!path) return
-    coverMode.value = 'set'
-    coverPath.value = path
-  } catch (error) {
-    log.error('Pick cover failed:', error)
-    notify.error(m.value.library.feedback.pickCoverFailed)
-  }
-}
-
-function handleClearCover() {
-  coverMode.value = 'clear'
-  coverPath.value = null
-}
-
 const canSubmit = computed(() => formData.value.name.trim())
 
 async function handleSubmit() {
@@ -185,13 +155,13 @@ async function handleSubmit() {
 
       await gcOnSave(content)
 
-      if (coverMode.value === 'clear') {
+      if (cover.mode.value === 'clear') {
         await attachment.clearFile(gameNotes, props.noteId, 'coverFile')
       }
-      if (coverMode.value === 'set' && coverPath.value) {
+      if (cover.mode.value === 'set' && cover.pickedPath.value) {
         await attachment.setFile(gameNotes, props.noteId, 'coverFile', {
           kind: 'path',
-          path: coverPath.value
+          path: cover.pickedPath.value
         })
       }
     } else {
@@ -204,10 +174,10 @@ async function handleSubmit() {
         orderInGame: props.nextOrderInGame
       })
 
-      if (coverMode.value === 'set' && coverPath.value) {
+      if (cover.mode.value === 'set' && cover.pickedPath.value) {
         await attachment.setFile(gameNotes, id, 'coverFile', {
           kind: 'path',
-          path: coverPath.value
+          path: cover.pickedPath.value
         })
       }
     }
@@ -263,14 +233,12 @@ function handleCancel() {
                 <FieldContent>
                   <ImagePicker
                     :image-url="currentCoverUrl"
-                    :picked-path="coverMode === 'set' ? coverPath : null"
+                    :picked-path="cover.pickedPath.value"
+                    :picked-preview-url="cover.previewUrl.value"
                     :pick-label="m.library.forms.pickCover"
-                    :clear-disabled="
-                      (!isEditMode && coverMode !== 'set') ||
-                      (isEditMode && !existingNote?.coverFile && coverMode !== 'set')
-                    "
-                    @pick="handlePickCover"
-                    @clear="handleClearCover"
+                    :clear-disabled="coverClearDisabled"
+                    @pick="cover.pick({ title: m.library.forms.pickCover })"
+                    @clear="cover.clear()"
                   />
                 </FieldContent>
               </Field>

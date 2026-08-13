@@ -140,7 +140,9 @@ import type {
 } from './deeplink'
 import type { BootstrapArgs } from './bootstrap'
 import type {
+  AnimeExtraPlayingState,
   AnimeExtraPlayResult,
+  AnimeExtraStopResult,
   AnimeStopResult,
   AnimeWatchingState,
   AnimeWatchResult,
@@ -471,10 +473,16 @@ export interface IpcMainHandlers {
   'activity:compute-game-monitor-path': (
     config: GameMonitorPathConfig
   ) => IpcResult<string | null>
-  'activity:watch-anime': (animeId: string, episodeId?: string) => IpcResult<AnimeWatchResult>
+  'activity:watch-anime': (
+    animeId: string,
+    episodeId?: string,
+    fileId?: string
+  ) => IpcResult<AnimeWatchResult>
   'activity:stop-anime': (animeId: string) => IpcResult<AnimeStopResult>
-  'activity:play-anime-extra': (extraId: string) => IpcResult<AnimeExtraPlayResult>
+  'activity:play-anime-extra': (extraId: string, fileId?: string) => IpcResult<AnimeExtraPlayResult>
+  'activity:stop-anime-extra': (extraId: string) => IpcResult<AnimeExtraStopResult>
   'activity:list-anime-watching': () => IpcResult<AnimeWatchingState[]>
+  'activity:list-anime-extras-playing': () => IpcResult<AnimeExtraPlayingState[]>
 
   // Player
   'player:list-sessions': () => IpcResult<PlaybackSessionState[]>
@@ -507,6 +515,8 @@ export interface IpcMainHandlers {
       quality?: number
     }
   ) => IpcResult<string>
+  /** Downscaled data URL of a not-yet-imported image, for staged form previews. */
+  'attachment:read-image-preview': (input: AttachmentInput) => IpcResult<string>
 
   // Save backup
   'attachment:create-game-backup': (gameId: string, note?: string) => IpcResult<SaveBackup>
@@ -613,6 +623,8 @@ export interface IpcRendererEvents {
   'activity:game-background': [event: GameActivityEvent]
   'activity:anime-started': [state: AnimeWatchingState]
   'activity:anime-stopped': [state: AnimeWatchingState]
+  'activity:anime-extra-started': [state: AnimeExtraPlayingState]
+  'activity:anime-extra-stopped': [state: AnimeExtraPlayingState]
   'player:session-started': [state: PlaybackSessionState]
   'player:session-changed': [state: PlaybackSessionState]
   'player:session-progress': [progress: PlaybackProgress]
