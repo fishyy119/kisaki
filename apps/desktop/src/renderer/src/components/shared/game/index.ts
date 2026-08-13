@@ -8,12 +8,7 @@ export { default as GameSelect } from './game-select.vue'
 export type { GameSearcherSelection } from './types'
 
 // Forms
-export {
-  GameInfoFormDialog,
-  GameLaunchConfigFormDialog,
-  GameNotesFormDialog,
-  GameSavesFormDialog
-} from './forms'
+export { GameInfoFormDialog, GameLaunchConfigFormDialog, GameSavesFormDialog } from './forms'
 
 // Detail
 export {

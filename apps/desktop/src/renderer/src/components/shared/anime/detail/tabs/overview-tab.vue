@@ -2,7 +2,8 @@
   Anime Overview Tab
 
   Left: description, characters, relations, tags.
-  Right: details, staff, studios, links.
+  Right: details, persons, companies, links.
+  Role-grouped sidebar lists clamp per role; "+N" jumps to the full tab.
 -->
 
 <script setup lang="ts">
@@ -11,28 +12,37 @@ import { Icon } from '@renderer/components/ui/icon'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
-import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
+import { CompanyDetailDialog } from '@renderer/components/shared/company'
 import {
   MediaRelationsFormDialog,
   MediaRelationsSection,
   MediaDescriptionFormDialog
 } from '@renderer/components/shared/media'
-import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
+import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
-import {
-  AnimeInfoFormDialog
-  } from '../../forms'
+import { AnimeInfoFormDialog } from '../../forms'
 import {
   EntityLinksFormDialog,
   EntityExternalSitesFormDialog,
-  EntityTagsFormDialog
+  EntityRoleLinksSection,
+  EntityTagsFormDialog,
+  type RoleLinkItem
 } from '@renderer/components/shared/entity'
-import { ANIME_CHARACTER_ROLE_VALUES, ANIME_COMPANY_ROLE_VALUES, ANIME_PERSON_ROLE_VALUES } from '@shared/db'
+import {
+  ANIME_CHARACTER_ROLE_VALUES,
+  ANIME_COMPANY_ROLE_VALUES,
+  ANIME_PERSON_ROLE_VALUES
+} from '@shared/db'
 
 const { anime, tags, characters, persons, companies, relations } = useAnime()
 const { m, f } = useI18n()
+
+const emit = defineEmits<{
+  /** Ask the host tab shell to switch to another detail tab. */
+  navigate: [tab: 'persons' | 'companies']
+}>()
 
 const PERSON_ROLE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.animePerson)
 const COMPANY_ROLE_LABELS = computed<Record<string, string>>(
@@ -48,7 +58,7 @@ const editDialogs = ref({
   details: false,
   tags: false,
   characters: false,
-  staff: false,
+  persons: false,
   companies: false,
   externalSites: false,
   relations: false
@@ -87,28 +97,12 @@ const sortedCharacters = computed(() =>
     .filter((item) => item.character !== null)
 )
 
-const groupedPersons = computed(() =>
-  persons.value.reduce(
-    (acc, link) => {
-      const role = link.role || 'other'
-      if (!acc[role]) acc[role] = []
-      acc[role].push(link)
-      return acc
-    },
-    {} as Record<string, typeof persons.value>
-  )
+const personItems = computed<RoleLinkItem[]>(() =>
+  persons.value.map((link) => ({ id: link.id, role: link.role, entity: link.person }))
 )
 
-const groupedCompanies = computed(() =>
-  companies.value.reduce(
-    (acc, link) => {
-      const role = link.role || 'other'
-      if (!acc[role]) acc[role] = []
-      acc[role].push(link)
-      return acc
-    },
-    {} as Record<string, typeof companies.value>
-  )
+const companyItems = computed<RoleLinkItem[]>(() =>
+  companies.value.map((link) => ({ id: link.id, role: link.role, entity: link.company }))
 )
 
 const characterDialogOpen = computed({
@@ -222,91 +216,29 @@ const tagDialogOpen = computed({
           </dl>
         </Section>
 
-        <Section
+        <EntityRoleLinksSection
           :title="m.library.detail.tabs.persons"
-          editable
-          :empty="persons.length === 0"
           :empty-text="m.library.detail.empty.persons"
-          @edit="openEditDialog('staff')"
-        >
-          <div class="space-y-2 text-sm">
-            <template
-              v-for="role in ANIME_PERSON_ROLE_VALUES"
-              :key="role"
-            >
-              <div v-if="groupedPersons[role]?.length">
-                <div class="text-muted-foreground text-xs mb-1">
-                  {{ PERSON_ROLE_LABELS[role] || role }}
-                </div>
-                <div class="flex flex-wrap gap-x-1 gap-y-0.5">
-                  <template
-                    v-for="(link, index) in groupedPersons[role]"
-                    :key="link.id"
-                  >
-                    <span class="inline-flex items-center max-w-full min-w-0">
-                      <PersonCard
-                        v-if="link.person"
-                        :person="link.person"
-                        variant="button"
-                        button-variant="link"
-                        button-size="xs"
-                        @click="openPersonId = link.person.id"
-                      />
-                      <span
-                        v-if="index < groupedPersons[role].length - 1"
-                        class="text-muted-foreground/50"
-                        >,</span
-                      >
-                    </span>
-                  </template>
-                </div>
-              </div>
-            </template>
-          </div>
-        </Section>
+          entity-type="person"
+          :items="personItems"
+          :role-order="ANIME_PERSON_ROLE_VALUES"
+          :role-labels="PERSON_ROLE_LABELS"
+          @edit="openEditDialog('persons')"
+          @open="openPersonId = $event"
+          @view-all="emit('navigate', 'persons')"
+        />
 
-        <Section
+        <EntityRoleLinksSection
           :title="m.library.detail.tabs.companies"
-          editable
-          :empty="companies.length === 0"
           :empty-text="m.library.detail.empty.companies"
+          entity-type="company"
+          :items="companyItems"
+          :role-order="ANIME_COMPANY_ROLE_VALUES"
+          :role-labels="COMPANY_ROLE_LABELS"
           @edit="openEditDialog('companies')"
-        >
-          <div class="space-y-2 text-sm">
-            <template
-              v-for="role in ANIME_COMPANY_ROLE_VALUES"
-              :key="role"
-            >
-              <div v-if="groupedCompanies[role]?.length">
-                <div class="text-muted-foreground text-xs mb-1">
-                  {{ COMPANY_ROLE_LABELS[role] || role }}
-                </div>
-                <div class="flex flex-wrap gap-x-1 gap-y-0.5">
-                  <template
-                    v-for="(link, index) in groupedCompanies[role]"
-                    :key="link.id"
-                  >
-                    <span class="inline-flex items-center max-w-full min-w-0">
-                      <CompanyCard
-                        v-if="link.company"
-                        :company="link.company"
-                        variant="button"
-                        button-variant="link"
-                        button-size="xs"
-                        @click="openCompanyId = link.company.id"
-                      />
-                      <span
-                        v-if="index < groupedCompanies[role].length - 1"
-                        class="text-muted-foreground/50"
-                        >,</span
-                      >
-                    </span>
-                  </template>
-                </div>
-              </div>
-            </template>
-          </div>
-        </Section>
+          @open="openCompanyId = $event"
+          @view-all="emit('navigate', 'companies')"
+        />
 
         <Section
           :title="m.library.fields.externalSites"
@@ -360,8 +292,8 @@ const tagDialogOpen = computed({
       :entity-id="anime.id"
     />
     <EntityLinksFormDialog
-      v-if="editDialogs.staff"
-      v-model:open="editDialogs.staff"
+      v-if="editDialogs.persons"
+      v-model:open="editDialogs.persons"
       view="anime-persons"
       :entity-id="anime.id"
     />

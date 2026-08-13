@@ -6,6 +6,7 @@ import {
   animeEpisodes,
   animeExternalIds,
   animeExtras,
+  animeNotes,
   animePersonLinks,
   animeSessions,
   animeTagLinks,
@@ -64,12 +65,20 @@ export const animesRelations = relations(animes, ({ many }) => ({
   episodes: many(animeEpisodes),
   extras: many(animeExtras),
   sessions: many(animeSessions),
+  notes: many(animeNotes),
   animePersonLinks: many(animePersonLinks),
   animeCompanyLinks: many(animeCompanyLinks),
   animeCharacterLinks: many(animeCharacterLinks),
   collectionAnimeLinks: many(collectionAnimeLinks),
   animeTagLinks: many(animeTagLinks),
   externalIds: many(animeExternalIds)
+}))
+
+export const animeNotesRelations = relations(animeNotes, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeNotes.animeId],
+    references: [animes.id]
+  })
 }))
 
 export const personsRelations = relations(persons, ({ many }) => ({

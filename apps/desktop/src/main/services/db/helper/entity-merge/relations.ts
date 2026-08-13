@@ -4,6 +4,7 @@ import {
   animeEpisodeFiles,
   animeEpisodes,
   animeExtras,
+  animeNotes,
   animeSessions,
   gameNotes,
   gameSessions,
@@ -67,6 +68,7 @@ function mergeAnimeOwnedData(db: DbContext, targetId: string, sourceId: string, 
 
   changed += mergeAnimeSessions(db, targetId, sourceId, now)
   changed += mergeAnimeExtras(db, targetId, sourceId, now)
+  changed += mergeAnimeNotes(db, targetId, sourceId, now)
   changed += mergeMediaRelations(db, 'anime', targetId, sourceId, now)
   return changed
 }
@@ -109,7 +111,8 @@ function buildEpisodeAlignmentIndex(
       episode.episodeNumber === null
         ? undefined
         : byNumber.get(`${episode.type}\0${episode.episodeNumber}`)
-    const alignedId = identityMatch ?? (numberMatch && !claimed.has(numberMatch) ? numberMatch : undefined)
+    const alignedId =
+      identityMatch ?? (numberMatch && !claimed.has(numberMatch) ? numberMatch : undefined)
     if (alignedId) {
       alignment.set(episode.id, alignedId)
       claimed.add(alignedId)
@@ -151,11 +154,7 @@ function foldEpisodeIntoTarget(
   targetEpisodeId: string,
   now: Date
 ): void {
-  const target = db
-    .select()
-    .from(animeEpisodes)
-    .where(eq(animeEpisodes.id, targetEpisodeId))
-    .get()
+  const target = db.select().from(animeEpisodes).where(eq(animeEpisodes.id, targetEpisodeId)).get()
   if (!target) return
 
   db.update(animeEpisodes)
@@ -238,6 +237,40 @@ function mergeAnimeExtras(db: DbContext, targetId: string, sourceId: string, now
   return sourceRows.length
 }
 
+function mergeAnimeNotes(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = db
+    .select()
+    .from(animeNotes)
+    .where(inArray(animeNotes.animeId, [targetId, sourceId]))
+    .all()
+
+  const targetRows = rows.filter((row) => row.animeId === targetId)
+  const sourceRows = rows
+    .filter((row) => row.animeId === sourceId)
+    .sort((a, b) => a.orderInAnime - b.orderInAnime || toTime(a.createdAt) - toTime(b.createdAt))
+  if (sourceRows.length === 0) return 0
+
+  const usedNames = new Set(targetRows.map((row) => row.name))
+  let nextOrder = targetRows.reduce((max, row) => Math.max(max, row.orderInAnime), -1) + 1
+
+  for (const note of sourceRows) {
+    const name = createMergedNoteName(note.name, usedNames)
+    usedNames.add(name)
+
+    db.update(animeNotes)
+      .set({
+        animeId: targetId,
+        name,
+        orderInAnime: nextOrder++,
+        updatedAt: now
+      })
+      .where(eq(animeNotes.id, note.id))
+      .run()
+  }
+
+  return sourceRows.length
+}
+
 /**
  * Media relations reference entries on both polymorphic ends, so both are
  * remapped when the type matches; edges that collapse into self-references
@@ -257,8 +290,14 @@ function mergeMediaRelations(
     .from(mediaRelations)
     .where(
       or(
-        and(eq(mediaRelations.fromType, mediaType), inArray(mediaRelations.fromId, [targetId, sourceId])),
-        and(eq(mediaRelations.toType, mediaType), inArray(mediaRelations.toId, [targetId, sourceId]))
+        and(
+          eq(mediaRelations.fromType, mediaType),
+          inArray(mediaRelations.fromId, [targetId, sourceId])
+        ),
+        and(
+          eq(mediaRelations.toType, mediaType),
+          inArray(mediaRelations.toId, [targetId, sourceId])
+        )
       )
     )
     .all()

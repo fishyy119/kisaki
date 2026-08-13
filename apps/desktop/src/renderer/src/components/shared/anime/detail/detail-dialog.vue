@@ -133,9 +133,7 @@ const canOpenAnimeDir = computed(() => {
             :error="error"
             :icon="getEntityIcon('anime')"
             :title="m.library.detail.notFoundTitle({ label: m.library.entities.anime })"
-            :description="
-              m.library.detail.notFoundDescription({ label: m.library.entities.anime })
-            "
+            :description="m.library.detail.notFoundDescription({ label: m.library.entities.anime })"
             class="py-12"
           />
         </DialogBody>

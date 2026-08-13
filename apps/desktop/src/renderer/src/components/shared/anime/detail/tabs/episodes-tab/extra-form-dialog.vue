@@ -56,9 +56,7 @@ const isEditing = computed(() => props.extra !== undefined)
 type TypeChoice = AnimeExtraType | 'auto'
 
 const typeOptions = computed<{ value: TypeChoice; label: string }[]>(() => [
-  ...(isEditing.value
-    ? []
-    : [{ value: 'auto' as const, label: m.value.anime.extras.autoDetect }]),
+  ...(isEditing.value ? [] : [{ value: 'auto' as const, label: m.value.anime.extras.autoDetect }]),
   ...ANIME_EXTRA_TYPE_VALUES.map((value) => ({
     value,
     label: m.value.library.animeExtraType[value]

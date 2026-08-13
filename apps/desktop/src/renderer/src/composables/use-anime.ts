@@ -34,6 +34,7 @@ import type {
   AnimeEpisodeFile,
   AnimeExtra,
   AnimeExtraFile,
+  AnimeNote,
   AnimeSession,
   AnimeCharacterLink,
   AnimePersonLink,
@@ -66,6 +67,7 @@ interface AnimeData {
   anime: Anime | null
   episodes: AnimeEpisodeEntry[]
   extras: AnimeExtraEntry[]
+  notes: AnimeNote[]
   tags: (AnimeTagLink & { tag: Tag | null })[]
   characters: (AnimeCharacterLink & { character: Character | null })[]
   persons: (AnimePersonLink & { person: Person | null })[]
@@ -81,6 +83,8 @@ export interface AnimeContext {
   episodes: ComputedRef<AnimeEpisodeEntry[]>
   /** Supplementary assets (trailers, creditless openings), each with its files */
   extras: ComputedRef<AnimeExtraEntry[]>
+  /** Anime notes (from animeNotes) */
+  notes: ComputedRef<AnimeNote[]>
   /** Anime tags (from animeTagLinks) */
   tags: ComputedRef<(AnimeTagLink & { tag: Tag | null })[]>
   /** Character links with character data */
@@ -157,57 +161,69 @@ async function fetchAnimeData(
     showNsfw ? undefined : eq(schema.companies.isNsfw, false)
   )
 
-  const [episodes, extras, tagLinks, charLinks, personLinks, companyLinks, relations, sessions] =
-    await Promise.all([
-      db
-        .select()
-        .from(schema.animeEpisodes)
-        .where(eq(schema.animeEpisodes.animeId, animeId))
-        .orderBy(asc(schema.animeEpisodes.orderInAnime), asc(schema.animeEpisodes.episodeNumber)),
-      db
-        .select()
-        .from(schema.animeExtras)
-        .where(eq(schema.animeExtras.animeId, animeId))
-        .orderBy(asc(schema.animeExtras.orderInAnime), asc(schema.animeExtras.name)),
-      db
-        .select()
-        .from(schema.animeTagLinks)
-        .leftJoin(schema.tags, eq(schema.animeTagLinks.tagId, schema.tags.id))
-        .where(animeTagLinksWhere)
-        .orderBy(asc(schema.animeTagLinks.orderInAnime)),
-      db
-        .select()
-        .from(schema.animeCharacterLinks)
-        .leftJoin(
-          schema.characters,
-          eq(schema.animeCharacterLinks.characterId, schema.characters.id)
-        )
-        .where(animeCharacterLinksWhere)
-        .orderBy(asc(schema.animeCharacterLinks.orderInAnime)),
-      db
-        .select()
-        .from(schema.animePersonLinks)
-        .leftJoin(schema.persons, eq(schema.animePersonLinks.personId, schema.persons.id))
-        .where(animePersonLinksWhere)
-        .orderBy(asc(schema.animePersonLinks.orderInAnime)),
-      db
-        .select()
-        .from(schema.animeCompanyLinks)
-        .leftJoin(schema.companies, eq(schema.animeCompanyLinks.companyId, schema.companies.id))
-        .where(animeCompanyLinksWhere)
-        .orderBy(asc(schema.animeCompanyLinks.orderInAnime)),
-      fetchMediaRelations('anime', animeId, showNsfw),
-      db
-        .select()
-        .from(schema.animeSessions)
-        .where(eq(schema.animeSessions.animeId, animeId))
-        .orderBy(desc(schema.animeSessions.startedAt))
-    ])
+  const [
+    episodes,
+    extras,
+    notes,
+    tagLinks,
+    charLinks,
+    personLinks,
+    companyLinks,
+    relations,
+    sessions
+  ] = await Promise.all([
+    db
+      .select()
+      .from(schema.animeEpisodes)
+      .where(eq(schema.animeEpisodes.animeId, animeId))
+      .orderBy(asc(schema.animeEpisodes.orderInAnime), asc(schema.animeEpisodes.episodeNumber)),
+    db
+      .select()
+      .from(schema.animeExtras)
+      .where(eq(schema.animeExtras.animeId, animeId))
+      .orderBy(asc(schema.animeExtras.orderInAnime), asc(schema.animeExtras.name)),
+    db
+      .select()
+      .from(schema.animeNotes)
+      .where(eq(schema.animeNotes.animeId, animeId))
+      .orderBy(asc(schema.animeNotes.orderInAnime), asc(schema.animeNotes.name)),
+    db
+      .select()
+      .from(schema.animeTagLinks)
+      .leftJoin(schema.tags, eq(schema.animeTagLinks.tagId, schema.tags.id))
+      .where(animeTagLinksWhere)
+      .orderBy(asc(schema.animeTagLinks.orderInAnime)),
+    db
+      .select()
+      .from(schema.animeCharacterLinks)
+      .leftJoin(schema.characters, eq(schema.animeCharacterLinks.characterId, schema.characters.id))
+      .where(animeCharacterLinksWhere)
+      .orderBy(asc(schema.animeCharacterLinks.orderInAnime)),
+    db
+      .select()
+      .from(schema.animePersonLinks)
+      .leftJoin(schema.persons, eq(schema.animePersonLinks.personId, schema.persons.id))
+      .where(animePersonLinksWhere)
+      .orderBy(asc(schema.animePersonLinks.orderInAnime)),
+    db
+      .select()
+      .from(schema.animeCompanyLinks)
+      .leftJoin(schema.companies, eq(schema.animeCompanyLinks.companyId, schema.companies.id))
+      .where(animeCompanyLinksWhere)
+      .orderBy(asc(schema.animeCompanyLinks.orderInAnime)),
+    fetchMediaRelations('anime', animeId, showNsfw),
+    db
+      .select()
+      .from(schema.animeSessions)
+      .where(eq(schema.animeSessions.animeId, animeId))
+      .orderBy(desc(schema.animeSessions.startedAt))
+  ])
 
   return {
     anime: animeData,
     episodes: await attachEpisodeFiles(episodes),
     extras: await attachExtraFiles(extras),
+    notes,
     tags: tagLinks.map((row) => ({ ...row.anime_tag_links, tag: row.tags })),
     characters: charLinks.map((row) => ({
       ...row.anime_character_links,
@@ -315,6 +331,7 @@ function provideAnimeContext(source: AnimeDataSource): AnimeContext {
     anime: computed(() => source.data.value?.anime ?? null),
     episodes: computed(() => source.data.value?.episodes ?? []),
     extras: computed(() => source.data.value?.extras ?? []),
+    notes: computed(() => source.data.value?.notes ?? []),
     tags: computed(() => source.data.value?.tags ?? []),
     characters: computed(() => source.data.value?.characters ?? []),
     persons: computed(() => source.data.value?.persons ?? []),
@@ -337,6 +354,7 @@ const ANIME_OWNED_TABLES = [
   'anime_episode_files',
   'anime_extras',
   'anime_extra_files',
+  'anime_notes',
   'anime_sessions',
   'anime_tag_links',
   'anime_character_links',

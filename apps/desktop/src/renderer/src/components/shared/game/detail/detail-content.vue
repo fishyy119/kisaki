@@ -3,9 +3,12 @@
 
   Main content area for game detail view.
   Used by both page and dialog modes.
+  Owns the active tab so child tabs can request navigation (e.g. sidebar
+  "+N" jumping to the persons/companies tab).
 -->
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
@@ -24,11 +27,9 @@ import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
 
-// =============================================================================
-// State
-// =============================================================================
-
 const { game } = useGame()
+
+const activeTab = ref('overview')
 </script>
 
 <template>
@@ -37,7 +38,7 @@ const { game } = useGame()
     <GameDetailHero />
 
     <!-- Tabs -->
-    <Tabs default-value="overview">
+    <Tabs v-model="activeTab">
       <TabsList>
         <TabsTrigger value="overview">
           <Icon
@@ -53,7 +54,7 @@ const { game } = useGame()
           />
           {{ m.library.detail.tabs.characters }}
         </TabsTrigger>
-        <TabsTrigger value="staff">
+        <TabsTrigger value="persons">
           <Icon
             :icon="getEntityIcon('person')"
             class="size-3.5"
@@ -91,12 +92,12 @@ const { game } = useGame()
       </TabsList>
 
       <TabsContent value="overview">
-        <GameDetailOverviewTab />
+        <GameDetailOverviewTab @navigate="activeTab = $event" />
       </TabsContent>
       <TabsContent value="characters">
         <GameDetailCharactersTab />
       </TabsContent>
-      <TabsContent value="staff">
+      <TabsContent value="persons">
         <GameDetailPersonsTab />
       </TabsContent>
       <TabsContent value="companies">

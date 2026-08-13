@@ -3,7 +3,8 @@
 
   Overview tab with 2:1 two-column layout.
   Left: Description, Characters (horizontal scroll), Tags
-  Right: Details, Staff, Companies, Links
+  Right: Details, Persons, Companies, Links
+  Role-grouped sidebar lists clamp per role; "+N" jumps to the full tab.
 -->
 
 <script setup lang="ts">
@@ -19,18 +20,22 @@ import {
   MediaRelationsSection,
   MediaDescriptionFormDialog
 } from '@renderer/components/shared/media'
-import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
-import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
+import { PersonDetailDialog } from '@renderer/components/shared/person'
+import { CompanyDetailDialog } from '@renderer/components/shared/company'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
-import {
-  GameInfoFormDialog
-  } from '../../forms'
+import { GameInfoFormDialog } from '../../forms'
 import {
   EntityLinksFormDialog,
   EntityExternalSitesFormDialog,
-  EntityTagsFormDialog
+  EntityRoleLinksSection,
+  EntityTagsFormDialog,
+  type RoleLinkItem
 } from '@renderer/components/shared/entity'
-import { GAME_CHARACTER_ROLE_VALUES, GAME_COMPANY_ROLE_VALUES, GAME_PERSON_ROLE_VALUES } from '@shared/db'
+import {
+  GAME_CHARACTER_ROLE_VALUES,
+  GAME_COMPANY_ROLE_VALUES,
+  GAME_PERSON_ROLE_VALUES
+} from '@shared/db'
 
 // =============================================================================
 // Constants
@@ -53,13 +58,18 @@ const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(
 const { game, tags, characters, persons, companies, relations } = useGame()
 const { m, f } = useI18n()
 
+const emit = defineEmits<{
+  /** Ask the host tab shell to switch to another detail tab. */
+  navigate: [tab: 'persons' | 'companies']
+}>()
+
 /** Edit dialog states */
 const editDialogs = ref({
   description: false,
   details: false,
   tags: false,
   characters: false,
-  staff: false,
+  persons: false,
   companies: false,
   externalSites: false,
   relations: false
@@ -80,8 +90,6 @@ const hasExternalSites = computed(
 )
 const hasTags = computed(() => tags.value && tags.value.length > 0)
 const hasCharacters = computed(() => characters.value && characters.value.length > 0)
-const hasCompanies = computed(() => companies.value && companies.value.length > 0)
-const hasPersons = computed(() => persons.value && persons.value.length > 0)
 
 /** Sorted characters by type and order */
 const sortedCharacters = computed(() => {
@@ -105,19 +113,13 @@ const sortedCharacters = computed(() => {
     .filter((item) => item.character !== null)
 })
 
-/** Group persons by type */
-const groupedPersons = computed(() => {
-  if (!hasPersons.value) return {}
-  return persons.value.reduce(
-    (acc, link) => {
-      const role = link.role || 'other'
-      if (!acc[role]) acc[role] = []
-      acc[role].push(link)
-      return acc
-    },
-    {} as Record<string, typeof persons.value>
-  )
-})
+const personItems = computed<RoleLinkItem[]>(() =>
+  persons.value.map((link) => ({ id: link.id, role: link.role, entity: link.person }))
+)
+
+const companyItems = computed<RoleLinkItem[]>(() =>
+  companies.value.map((link) => ({ id: link.id, role: link.role, entity: link.company }))
+)
 
 // =============================================================================
 // Helpers
@@ -222,7 +224,7 @@ const tagDialogOpen = computed({
         </Section>
       </div>
 
-      <!-- Right column: Details, Staff, Companies, Links -->
+      <!-- Right column: Details, Persons, Companies, Links -->
       <div class="space-y-6 min-w-0">
         <Section
           :title="m.library.detail.sections.details"
@@ -237,93 +239,29 @@ const tagDialogOpen = computed({
           </dl>
         </Section>
 
-        <Section
+        <EntityRoleLinksSection
           :title="m.library.detail.tabs.persons"
-          editable
-          :empty="!hasPersons"
           :empty-text="m.library.detail.empty.persons"
-          @edit="openEditDialog('staff')"
-        >
-          <div class="space-y-2 text-sm">
-            <template
-              v-for="role in GAME_PERSON_ROLE_VALUES"
-              :key="role"
-            >
-              <div v-if="groupedPersons[role]?.length">
-                <div class="text-muted-foreground text-xs mb-1">
-                  {{ PERSON_ROLE_LABELS[role] || role }}
-                </div>
-                <div class="flex flex-wrap gap-x-1 gap-y-0.5">
-                  <template
-                    v-for="(link, index) in groupedPersons[role]"
-                    :key="link.id"
-                  >
-                    <span class="inline-flex items-center max-w-full min-w-0">
-                      <PersonCard
-                        v-if="link.person"
-                        :person="link.person"
-                        variant="button"
-                        button-variant="link"
-                        button-size="xs"
-                        @click="openPersonId = link.person.id"
-                      />
-                      <span
-                        v-if="index < groupedPersons[role].length - 1"
-                        class="text-muted-foreground/50"
-                        >,</span
-                      >
-                    </span>
-                  </template>
-                </div>
-              </div>
-            </template>
-          </div>
-        </Section>
+          entity-type="person"
+          :items="personItems"
+          :role-order="GAME_PERSON_ROLE_VALUES"
+          :role-labels="PERSON_ROLE_LABELS"
+          @edit="openEditDialog('persons')"
+          @open="openPersonId = $event"
+          @view-all="emit('navigate', 'persons')"
+        />
 
-        <Section
+        <EntityRoleLinksSection
           :title="m.library.detail.tabs.companies"
-          editable
-          :empty="!hasCompanies"
           :empty-text="m.library.detail.empty.companies"
+          entity-type="company"
+          :items="companyItems"
+          :role-order="GAME_COMPANY_ROLE_VALUES"
+          :role-labels="COMPANY_ROLE_LABELS"
           @edit="openEditDialog('companies')"
-        >
-          <div class="space-y-2 text-sm">
-            <template
-              v-for="role in GAME_COMPANY_ROLE_VALUES"
-              :key="role"
-            >
-              <div v-if="companies.filter((c) => (c.role || 'other') === role).length > 0">
-                <div class="text-muted-foreground text-xs mb-1">
-                  {{ COMPANY_ROLE_LABELS[role] || role }}
-                </div>
-                <div class="flex flex-wrap gap-x-1 gap-y-0.5">
-                  <template
-                    v-for="(link, index) in companies.filter((c) => (c.role || 'other') === role)"
-                    :key="link.id"
-                  >
-                    <span class="inline-flex items-center max-w-full min-w-0">
-                      <CompanyCard
-                        v-if="link.company"
-                        :company="link.company"
-                        variant="button"
-                        button-variant="link"
-                        button-size="xs"
-                        @click="openCompanyId = link.company.id"
-                      />
-                      <span
-                        v-if="
-                          index < companies.filter((c) => (c.role || 'other') === role).length - 1
-                        "
-                        class="text-muted-foreground/50"
-                        >,</span
-                      >
-                    </span>
-                  </template>
-                </div>
-              </div>
-            </template>
-          </div>
-        </Section>
+          @open="openCompanyId = $event"
+          @view-all="emit('navigate', 'companies')"
+        />
 
         <Section
           :title="m.library.fields.externalSites"
@@ -377,8 +315,8 @@ const tagDialogOpen = computed({
       :entity-id="game.id"
     />
     <EntityLinksFormDialog
-      v-if="editDialogs.staff"
-      v-model:open="editDialogs.staff"
+      v-if="editDialogs.persons"
+      v-model:open="editDialogs.persons"
       view="game-persons"
       :entity-id="game.id"
     />

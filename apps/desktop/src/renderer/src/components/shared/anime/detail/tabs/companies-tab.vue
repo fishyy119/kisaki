@@ -1,31 +1,31 @@
 <!--
-  Anime Characters Tab
+  Anime Companies Tab
 
-  Thin wrapper feeding anime character links into the shared role-links tab.
+  Thin wrapper feeding anime company links into the shared role-links tab.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { EntityRoleLinksTab, type RoleLinkItem } from '@renderer/components/shared/entity'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { ANIME_CHARACTER_ROLE_VALUES } from '@shared/db'
+import { ANIME_COMPANY_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
-const { anime, characters } = useAnime()
+const { anime, companies } = useAnime()
 
 const items = computed<RoleLinkItem[]>(() =>
-  characters.value.map((link) => ({ id: link.id, role: link.role, entity: link.character }))
+  companies.value.map((link) => ({ id: link.id, role: link.role, entity: link.company }))
 )
 </script>
 
 <template>
   <EntityRoleLinksTab
     v-if="anime"
-    entity-type="character"
+    entity-type="company"
     :entity-id="anime.id"
     :items="items"
-    :role-order="ANIME_CHARACTER_ROLE_VALUES"
-    :role-labels="m.library.roles.animeCharacter"
-    link-view="anime-characters"
+    :role-order="ANIME_COMPANY_ROLE_VALUES"
+    :role-labels="m.library.roles.animeCompany"
+    link-view="anime-companies"
   />
 </template>

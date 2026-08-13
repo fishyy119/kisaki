@@ -1,13 +1,11 @@
 <!--
-  GameDetailNotesViewDialog
-  Readonly dialog for viewing a single game note.
+  MediaNotesViewDialog
+  Readonly dialog for viewing a single media note.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { eq } from 'drizzle-orm'
 import { useAsyncData, useDbChanges } from '@renderer/composables'
-import { db } from '@renderer/core/db'
-import { gameNotes } from '@shared/db'
+import type { MediaType } from '@shared/common'
 import {
   Dialog,
   DialogContent,
@@ -22,10 +20,12 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { MEDIA_NOTE_STORES } from './store'
 
 const { m } = useI18n()
 
 interface Props {
+  mediaType: MediaType
   noteId: string
 }
 
@@ -36,19 +36,21 @@ const emit = defineEmits<{
   edit: []
 }>()
 
-const { data: note, isLoading } = useAsyncData(
-  () => db.query.gameNotes.findFirst({ where: eq(gameNotes.id, props.noteId) }),
-  { watch: [() => props.noteId], enabled: () => open.value }
-)
+const store = computed(() => MEDIA_NOTE_STORES[props.mediaType])
+
+const { data: note, isLoading } = useAsyncData(() => store.value.find(props.noteId), {
+  watch: [() => props.noteId],
+  enabled: () => open.value
+})
 
 const coverUrl = computed(() => {
   if (!note.value?.coverFile) return null
-  return getAttachmentUrl('game_notes', note.value.id, note.value.coverFile)
+  return getAttachmentUrl(store.value.tableName, note.value.id, note.value.coverFile)
 })
 
 useDbChanges(({ operation, table, id }) => {
   if (operation !== 'deleted') return
-  if (table === 'game_notes' && id === props.noteId) {
+  if (table === store.value.tableName && id === props.noteId) {
     open.value = false
   }
 })
@@ -68,10 +70,10 @@ useDbChanges(({ operation, table, id }) => {
 
       <template v-else-if="!note">
         <DialogHeader>
-          <DialogTitle>{{ m.game.notes.title }}</DialogTitle>
+          <DialogTitle>{{ m.library.notes.title }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="text-sm text-muted-foreground py-10 text-center">{{
-          m.game.notes.notFound
+          m.library.notes.notFound
         }}</DialogBody>
         <DialogFooter>
           <Button

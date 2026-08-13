@@ -320,6 +320,7 @@ export const library = {
       companies: '暫無公司'
     },
     manage: '管理',
+    viewAll: ({ count }: { count: number }) => `查看全部 (${count})`,
     ageValue: ({ age }: { age: number }) => `${age}歲`,
     addEntity: ({ label }: { label: string }) => `新增${label}`,
     collectionEmptyTitle: ({ label }: { label: string }) => `此合集暫無${label}`,
@@ -327,6 +328,22 @@ export const library = {
       `透過掃描器將${label}加入此合集。`,
     tagEmptyTitle: ({ label }: { label: string }) => `此標籤暫無${label}`,
     tagEmptyDescription: ({ label }: { label: string }) => `尚無${label}使用此標籤。`
+  },
+
+  notes: {
+    title: '筆記',
+    newNote: '新增筆記',
+    editNote: '編輯筆記',
+    noteDeleted: '已刪除筆記',
+    reorderFailed: '排序失敗',
+    emptyTitle: '暫無筆記',
+    emptyHint: '記錄想法與截圖。',
+    notFound: '未找到筆記',
+    titleLabel: '標題',
+    titlePlaceholder: '輸入標題',
+    contentLabel: '內容',
+    contentPlaceholder: '支援 Markdown…',
+    entityLabel: '筆記'
   },
 
   forms: {

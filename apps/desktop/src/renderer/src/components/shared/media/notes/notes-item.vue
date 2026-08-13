@@ -1,16 +1,19 @@
 <!--
-  GameDetailNotesItem
-  Single note item component showing note info with action buttons.
+  MediaNotesItem
+  Single note row showing cover, name, and update date with action buttons.
 -->
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import type { GameNote } from '@shared/db'
+import type { MediaType } from '@shared/common'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { MEDIA_NOTE_STORES, type MediaNoteRow } from './store'
 
 interface Props {
-  note: GameNote
+  mediaType: MediaType
+  note: MediaNoteRow
   canMoveUp: boolean
   canMoveDown: boolean
 }
@@ -26,6 +29,19 @@ const emit = defineEmits<{
 }>()
 
 const { m, f } = useI18n()
+
+const coverUrl = computed(() => {
+  if (!props.note.coverFile) return null
+  return getAttachmentUrl(
+    MEDIA_NOTE_STORES[props.mediaType].tableName,
+    props.note.id,
+    props.note.coverFile,
+    {
+      width: 96,
+      height: 96
+    }
+  )
+})
 </script>
 
 <template>
@@ -33,13 +49,8 @@ const { m, f } = useI18n()
     <div class="flex items-center gap-3 min-w-0">
       <div class="size-12 rounded-md overflow-hidden bg-muted shrink-0">
         <img
-          v-if="props.note.coverFile"
-          :src="
-            getAttachmentUrl('game_notes', props.note.id, props.note.coverFile, {
-              width: 96,
-              height: 96
-            })
-          "
+          v-if="coverUrl"
+          :src="coverUrl"
           alt=""
           class="size-full object-cover border shadow-raised"
         />

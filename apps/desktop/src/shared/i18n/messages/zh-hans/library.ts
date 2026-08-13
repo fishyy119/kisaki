@@ -320,6 +320,7 @@ export const library = {
       companies: '暂无公司'
     },
     manage: '管理',
+    viewAll: ({ count }: { count: number }) => `查看全部 (${count})`,
     ageValue: ({ age }: { age: number }) => `${age}岁`,
     addEntity: ({ label }: { label: string }) => `添加${label}`,
     collectionEmptyTitle: ({ label }: { label: string }) => `此合集暂无${label}`,
@@ -327,6 +328,22 @@ export const library = {
       `通过扫描器添加${label}到此合集。`,
     tagEmptyTitle: ({ label }: { label: string }) => `此标签暂无${label}`,
     tagEmptyDescription: ({ label }: { label: string }) => `尚无${label}使用此标签。`
+  },
+
+  notes: {
+    title: '笔记',
+    newNote: '新建笔记',
+    editNote: '编辑笔记',
+    noteDeleted: '已删除笔记',
+    reorderFailed: '排序失败',
+    emptyTitle: '暂无笔记',
+    emptyHint: '记录想法与截图。',
+    notFound: '未找到笔记',
+    titleLabel: '标题',
+    titlePlaceholder: '输入标题',
+    contentLabel: '内容',
+    contentPlaceholder: '支持 Markdown…',
+    entityLabel: '笔记'
   },
 
   forms: {

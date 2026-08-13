@@ -1,4 +1,7 @@
 export { default as AnimeDetailOverviewTab } from './overview-tab.vue'
 export { default as AnimeDetailCharactersTab } from './characters-tab.vue'
+export { default as AnimeDetailPersonsTab } from './persons-tab.vue'
+export { default as AnimeDetailCompaniesTab } from './companies-tab.vue'
+export { default as AnimeDetailNotesTab } from './notes-tab.vue'
 export { default as AnimeDetailActivityTab } from './activity-tab.vue'
 export { AnimeDetailEpisodesTab } from './episodes-tab'

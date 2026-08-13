@@ -20,3 +20,9 @@ export { EntityExternalSitesFormDialog } from './sites'
 export { EntityExternalIdsFormDialog } from './identities'
 export { EntityTagsFormDialog } from './tags'
 export { EntityLinksFormDialog, type LinkViewKey } from './links'
+export {
+  EntityRoleLinksSection,
+  EntityRoleLinksTab,
+  type RoleLinkEntityType,
+  type RoleLinkItem
+} from './role-links'

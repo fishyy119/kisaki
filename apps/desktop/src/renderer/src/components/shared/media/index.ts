@@ -5,4 +5,5 @@ export {
   MediaStatusFormDialog
 } from './fields'
 export { MediaDurationFormDialog } from './sessions'
+export { MediaNotesTab } from './notes'
 export { MediaRelationsSection, MediaRelationsFormDialog } from './relations'

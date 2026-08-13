@@ -1,16 +1,15 @@
 <!--
-  GameNotesFormDialog
-  Dialog for creating or editing a game note.
+  MediaNotesFormDialog
+  Dialog for creating or editing a media note; media differences arrive as
+  the `mediaType` registry key only.
 -->
 <script setup lang="ts">
 import { computed, ref, watch, toRef } from 'vue'
-import { eq } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
 import { useAsyncData, useInlineAttachments, useStagedImagePick } from '@renderer/composables'
-import { db, attachment } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { gameNotes } from '@shared/db'
+import type { MediaType } from '@shared/common'
+import { animeNotes, gameNotes } from '@shared/db'
 import {
   Dialog,
   DialogContent,
@@ -29,19 +28,23 @@ import { Form } from '@renderer/components/ui/form'
 import { ImagePicker } from '@renderer/components/ui/image-picker'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { MEDIA_NOTE_STORES } from './store'
 
 const { m } = useI18n()
 
-const log = createLogger('Game')
+const log = createLogger('Library')
 
 interface Props {
-  gameId: string
+  mediaType: MediaType
+  entityId: string
   noteId?: string
-  nextOrderInGame: number
+  nextOrder: number
 }
 
 const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
+
+const store = computed(() => MEDIA_NOTE_STORES[props.mediaType])
 
 const isEditMode = computed(() => !!props.noteId)
 
@@ -59,24 +62,27 @@ const didSave = ref(false)
 
 const cover = useStagedImagePick()
 
+/** One attachment manager per media table, picked reactively by media type. */
 const noteIdRef = toRef(props, 'noteId')
-const { setBaselineContent, onAttachment, gcOnCancel, gcOnSave } = useInlineAttachments({
-  table: gameNotes,
-  rowId: computed(() => noteIdRef.value || ''),
-  field: 'contentInlineFiles'
-})
+const rowId = computed(() => noteIdRef.value || '')
+const INLINE_ATTACHMENTS: Record<MediaType, ReturnType<typeof useInlineAttachments>> = {
+  game: useInlineAttachments({ table: gameNotes, rowId, field: 'contentInlineFiles' }),
+  anime: useInlineAttachments({ table: animeNotes, rowId, field: 'contentInlineFiles' })
+}
+
+const attachments = computed(() => INLINE_ATTACHMENTS[props.mediaType])
 
 const didUseInlineAttachments = ref(false)
 async function handleInlineAttachment() {
   didUseInlineAttachments.value = true
-  return await onAttachment()
+  return await attachments.value.onAttachment()
 }
 
 const {
   data: existingNote,
   isLoading,
   refetch
-} = useAsyncData(() => db.query.gameNotes.findFirst({ where: eq(gameNotes.id, props.noteId!) }), {
+} = useAsyncData(() => store.value.find(props.noteId!), {
   watch: [() => props.noteId],
   enabled: () => open.value && isEditMode.value
 })
@@ -85,7 +91,11 @@ const currentCoverUrl = computed(() => {
   if (!isEditMode.value) return null
   if (cover.mode.value !== 'keep') return null
   if (!existingNote.value?.coverFile) return null
-  return getAttachmentUrl('game_notes', existingNote.value.id, existingNote.value.coverFile)
+  return getAttachmentUrl(
+    store.value.tableName,
+    existingNote.value.id,
+    existingNote.value.coverFile
+  )
 })
 
 const coverClearDisabled = computed(
@@ -97,7 +107,7 @@ watch(existingNote, (note) => {
   if (!note) return
   formData.value.name = note.name
   formData.value.content = note.content || ''
-  setBaselineContent(formData.value.content)
+  attachments.value.setBaselineContent(formData.value.content)
 })
 
 watch(
@@ -127,7 +137,7 @@ watch(open, async (isOpen, wasOpen) => {
   if (!didUseInlineAttachments.value) return
 
   try {
-    await gcOnCancel()
+    await attachments.value.gcOnCancel()
   } catch (error) {
     log.warn('Inline attachment cleanup failed:', error)
   }
@@ -144,41 +154,25 @@ async function handleSubmit() {
     const content = formData.value.content.trim()
 
     if (isEditMode.value && props.noteId) {
-      await db
-        .update(gameNotes)
-        .set({
-          name,
-          content: content || null,
-          updatedAt: new Date()
-        })
-        .where(eq(gameNotes.id, props.noteId))
+      await store.value.update(props.noteId, { name, content: content || null })
 
-      await gcOnSave(content)
+      await attachments.value.gcOnSave(content)
 
       if (cover.mode.value === 'clear') {
-        await attachment.clearFile(gameNotes, props.noteId, 'coverFile')
+        await store.value.clearCover(props.noteId)
       }
       if (cover.mode.value === 'set' && cover.pickedPath.value) {
-        await attachment.setFile(gameNotes, props.noteId, 'coverFile', {
-          kind: 'path',
-          path: cover.pickedPath.value
-        })
+        await store.value.setCover(props.noteId, cover.pickedPath.value)
       }
     } else {
-      const id = nanoid()
-      await db.insert(gameNotes).values({
-        id,
-        gameId: props.gameId,
+      const id = await store.value.create(props.entityId, {
         name,
         content: content || null,
-        orderInGame: props.nextOrderInGame
+        order: props.nextOrder
       })
 
       if (cover.mode.value === 'set' && cover.pickedPath.value) {
-        await attachment.setFile(gameNotes, id, 'coverFile', {
-          kind: 'path',
-          path: cover.pickedPath.value
-        })
+        await store.value.setCover(id, cover.pickedPath.value)
       }
     }
 
@@ -212,17 +206,19 @@ function handleCancel() {
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>{{ isEditMode ? m.game.notes.editNote : m.game.notes.newNote }}</DialogTitle>
+          <DialogTitle>{{
+            isEditMode ? m.library.notes.editNote : m.library.notes.newNote
+          }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="space-y-4 max-h-[80vh] overflow-auto">
             <FieldGroup>
               <Field>
-                <FieldLabel>{{ m.game.notes.titleLabel }}</FieldLabel>
+                <FieldLabel>{{ m.library.notes.titleLabel }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.name"
-                    :placeholder="m.game.notes.titlePlaceholder"
+                    :placeholder="m.library.notes.titlePlaceholder"
                     autofocus
                   />
                 </FieldContent>
@@ -244,11 +240,11 @@ function handleCancel() {
               </Field>
 
               <Field>
-                <FieldLabel>{{ m.game.notes.contentLabel }}</FieldLabel>
+                <FieldLabel>{{ m.library.notes.contentLabel }}</FieldLabel>
                 <FieldContent>
                   <MarkdownEditor
                     v-model="formData.content"
-                    :placeholder="m.game.notes.contentPlaceholder"
+                    :placeholder="m.library.notes.contentPlaceholder"
                     min-height="420px"
                     max-height="420px"
                     :on-attachment="isEditMode ? handleInlineAttachment : undefined"

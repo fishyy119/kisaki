@@ -321,6 +321,7 @@ export const library = {
       companies: '会社はまだありません'
     },
     manage: '管理',
+    viewAll: ({ count }: { count: number }) => `すべて表示 (${count})`,
     ageValue: ({ age }: { age: number }) => `${age}歳`,
     addEntity: ({ label }: { label: string }) => `${label}を追加`,
     collectionEmptyTitle: ({ label }: { label: string }) =>
@@ -330,6 +331,22 @@ export const library = {
     tagEmptyTitle: ({ label }: { label: string }) => `このタグの${label}はまだありません`,
     tagEmptyDescription: ({ label }: { label: string }) =>
       `このタグを使う${label}はまだありません。`
+  },
+
+  notes: {
+    title: 'ノート',
+    newNote: '新しいノート',
+    editNote: 'ノートを編集',
+    noteDeleted: 'ノートを削除しました',
+    reorderFailed: '並べ替えに失敗しました',
+    emptyTitle: 'ノートはまだありません',
+    emptyHint: '感想やスクリーンショットを記録しましょう。',
+    notFound: 'ノートが見つかりません',
+    titleLabel: 'タイトル',
+    titlePlaceholder: 'タイトルを入力',
+    contentLabel: '内容',
+    contentPlaceholder: 'Markdown 対応…',
+    entityLabel: 'ノート'
   },
 
   forms: {

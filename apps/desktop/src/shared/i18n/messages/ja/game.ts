@@ -112,22 +112,6 @@ export const game = {
     lockHint: 'ロック中のバックアップは自動削除されません。'
   },
 
-  notes: {
-    title: 'ノート',
-    newNote: '新しいノート',
-    editNote: 'ノートを編集',
-    noteDeleted: 'ノートを削除しました',
-    reorderFailed: '並べ替えに失敗しました',
-    emptyTitle: 'ノートはまだありません',
-    emptyHint: 'プレイ中の感想やスクリーンショットを記録しましょう。',
-    notFound: 'ノートが見つかりません',
-    titleLabel: 'タイトル',
-    titlePlaceholder: 'タイトルを入力',
-    contentLabel: '内容',
-    contentPlaceholder: 'Markdown 対応…',
-    entityLabel: 'ノート'
-  },
-
   activity: {
     statsOverview: '統計概要',
     heatmap: 'アクティビティヒートマップ',

@@ -328,6 +328,7 @@ export const library = {
       companies: 'No companies yet.'
     },
     manage: 'Manage',
+    viewAll: ({ count }: { count: number }) => `View all (${count})`,
     ageValue: ({ age }: { age: number }) => `${age} years`,
     addEntity: ({ label }: { label: string }) => `Add ${label.toLowerCase()}`,
     collectionEmptyTitle: ({ label }: { label: string }) =>
@@ -337,6 +338,22 @@ export const library = {
     tagEmptyTitle: ({ label }: { label: string }) => `No ${label.toLowerCase()}s with this tag`,
     tagEmptyDescription: ({ label }: { label: string }) =>
       `No ${label.toLowerCase()} uses this tag yet.`
+  },
+
+  notes: {
+    title: 'Notes',
+    newNote: 'New note',
+    editNote: 'Edit note',
+    noteDeleted: 'Note deleted.',
+    reorderFailed: 'Reorder failed.',
+    emptyTitle: 'No notes yet',
+    emptyHint: 'Capture thoughts and screenshots.',
+    notFound: 'Note not found.',
+    titleLabel: 'Title',
+    titlePlaceholder: 'Enter a title',
+    contentLabel: 'Content',
+    contentPlaceholder: 'Supports Markdown…',
+    entityLabel: 'Note'
   },
 
   forms: {

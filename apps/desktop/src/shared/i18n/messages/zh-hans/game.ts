@@ -111,22 +111,6 @@ export const game = {
     lockHint: '锁定后不会被自动清理。'
   },
 
-  notes: {
-    title: '笔记',
-    newNote: '新建笔记',
-    editNote: '编辑笔记',
-    noteDeleted: '已删除笔记',
-    reorderFailed: '排序失败',
-    emptyTitle: '暂无笔记',
-    emptyHint: '记录游戏过程中的想法与截图。',
-    notFound: '未找到笔记',
-    titleLabel: '标题',
-    titlePlaceholder: '输入标题',
-    contentLabel: '内容',
-    contentPlaceholder: '支持 Markdown…',
-    entityLabel: '笔记'
-  },
-
   activity: {
     statsOverview: '统计概览',
     heatmap: '活动热力图',

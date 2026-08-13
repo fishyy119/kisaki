@@ -111,22 +111,6 @@ export const game = {
     lockHint: '鎖定後不會被自動清理。'
   },
 
-  notes: {
-    title: '筆記',
-    newNote: '新增筆記',
-    editNote: '編輯筆記',
-    noteDeleted: '已刪除筆記',
-    reorderFailed: '排序失敗',
-    emptyTitle: '暫無筆記',
-    emptyHint: '記錄遊戲過程中的想法與截圖。',
-    notFound: '未找到筆記',
-    titleLabel: '標題',
-    titlePlaceholder: '輸入標題',
-    contentLabel: '內容',
-    contentPlaceholder: '支援 Markdown…',
-    entityLabel: '筆記'
-  },
-
   activity: {
     statsOverview: '統計概覽',
     heatmap: '活動熱力圖',

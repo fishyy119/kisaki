@@ -129,6 +129,29 @@ export const animes = sqliteTable(
 export type Anime = InferSelectModel<typeof animes>
 export type NewAnime = InferInsertModel<typeof animes>
 
+export const animeNotes = sqliteTable(
+  'anime_notes',
+  {
+    ...baseColumns,
+    animeId: text('anime_id')
+      .notNull()
+      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    name: text('name').notNull(),
+    content: text('content'),
+    contentInlineFiles: stringArrayJson('content_inline_files').notNull().default([]),
+    coverFile: text('cover_file'),
+    orderInAnime: integer('order_in_anime').notNull().default(0)
+  },
+  (t) => [
+    unique('unique_anime_notes_anime_id_name').on(t.animeId, t.name),
+    index('idx_anime_notes_anime_id').on(t.animeId),
+    index('idx_anime_notes_anime_id_order').on(t.animeId, t.orderInAnime)
+  ]
+)
+
+export type AnimeNote = InferSelectModel<typeof animeNotes>
+export type NewAnimeNote = InferInsertModel<typeof animeNotes>
+
 export const persons = sqliteTable(
   'persons',
   {

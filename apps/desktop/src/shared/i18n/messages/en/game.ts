@@ -115,22 +115,6 @@ export const game = {
     lockHint: 'Locked backups are never cleaned up automatically.'
   },
 
-  notes: {
-    title: 'Notes',
-    newNote: 'New note',
-    editNote: 'Edit note',
-    noteDeleted: 'Note deleted.',
-    reorderFailed: 'Reorder failed.',
-    emptyTitle: 'No notes yet',
-    emptyHint: 'Capture thoughts and screenshots as you play.',
-    notFound: 'Note not found.',
-    titleLabel: 'Title',
-    titlePlaceholder: 'Enter a title',
-    contentLabel: 'Content',
-    contentPlaceholder: 'Supports Markdown…',
-    entityLabel: 'Note'
-  },
-
   activity: {
     statsOverview: 'Overview',
     heatmap: 'Activity heatmap',

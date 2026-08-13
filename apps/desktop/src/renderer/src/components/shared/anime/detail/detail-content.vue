@@ -3,9 +3,12 @@
 
   Main content area for the anime detail view.
   Used by both the page and the dialog surface.
+  Owns the active tab so child tabs can request navigation (e.g. sidebar
+  "+N" jumping to the persons/companies tab).
 -->
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { useAnime } from '@renderer/composables/use-anime'
@@ -15,20 +18,25 @@ import AnimeDetailHero from './detail-hero.vue'
 import {
   AnimeDetailActivityTab,
   AnimeDetailCharactersTab,
+  AnimeDetailCompaniesTab,
   AnimeDetailEpisodesTab,
-  AnimeDetailOverviewTab
+  AnimeDetailNotesTab,
+  AnimeDetailOverviewTab,
+  AnimeDetailPersonsTab
 } from './tabs'
 
 const { m } = useI18n()
 
 const { anime } = useAnime()
+
+const activeTab = ref('overview')
 </script>
 
 <template>
   <template v-if="anime">
     <AnimeDetailHero />
 
-    <Tabs default-value="overview">
+    <Tabs v-model="activeTab">
       <TabsList>
         <TabsTrigger value="overview">
           <Icon
@@ -51,6 +59,20 @@ const { anime } = useAnime()
           />
           {{ m.library.detail.tabs.characters }}
         </TabsTrigger>
+        <TabsTrigger value="persons">
+          <Icon
+            :icon="getEntityIcon('person')"
+            class="size-3.5"
+          />
+          {{ m.library.detail.tabs.persons }}
+        </TabsTrigger>
+        <TabsTrigger value="companies">
+          <Icon
+            :icon="getEntityIcon('company')"
+            class="size-3.5"
+          />
+          {{ m.library.detail.tabs.companies }}
+        </TabsTrigger>
         <TabsTrigger value="activity">
           <Icon
             icon="icon-[mdi--report-timeline-variant]"
@@ -58,10 +80,17 @@ const { anime } = useAnime()
           />
           {{ m.library.detail.tabs.activity }}
         </TabsTrigger>
+        <TabsTrigger value="notes">
+          <Icon
+            icon="icon-[mdi--image-multiple-outline]"
+            class="size-3.5"
+          />
+          {{ m.library.detail.tabs.notes }}
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
-        <AnimeDetailOverviewTab />
+        <AnimeDetailOverviewTab @navigate="activeTab = $event" />
       </TabsContent>
       <TabsContent value="episodes">
         <AnimeDetailEpisodesTab />
@@ -69,8 +98,17 @@ const { anime } = useAnime()
       <TabsContent value="characters">
         <AnimeDetailCharactersTab />
       </TabsContent>
+      <TabsContent value="persons">
+        <AnimeDetailPersonsTab />
+      </TabsContent>
+      <TabsContent value="companies">
+        <AnimeDetailCompaniesTab />
+      </TabsContent>
       <TabsContent value="activity">
         <AnimeDetailActivityTab />
+      </TabsContent>
+      <TabsContent value="notes">
+        <AnimeDetailNotesTab />
       </TabsContent>
     </Tabs>
   </template>
