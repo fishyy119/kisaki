@@ -22,6 +22,8 @@ export function createProcessHooks(): ProcessHooks {
   return {
     processStarted: createNotifyHook<ProcessStartedPayload>('process.started'),
     processStopped: createNotifyHook<ProcessStoppedPayload>('process.stopped'),
-    foregroundChanged: createNotifyHook<ProcessForegroundChangedPayload>('process.foregroundChanged')
+    foregroundChanged: createNotifyHook<ProcessForegroundChangedPayload>(
+      'process.foregroundChanged'
+    )
   }
 }

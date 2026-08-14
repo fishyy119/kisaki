@@ -409,7 +409,9 @@ export function validateLibraryGameQuery(value: unknown): ValidationIssue[] {
 export function validateLibraryAnimeQuery(value: unknown): ValidationIssue[] {
   const query = requireQueryObject(value)
   if (!query) {
-    return value === undefined ? [] : [{ path: '$', message: 'Anime list query must be an object.' }]
+    return value === undefined
+      ? []
+      : [{ path: '$', message: 'Anime list query must be an object.' }]
   }
 
   return [

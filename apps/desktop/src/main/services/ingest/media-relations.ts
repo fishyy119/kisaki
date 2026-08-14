@@ -83,14 +83,12 @@ export function applyMediaRelationFacts(params: {
     .where(and(eq(mediaRelations.fromType, mediaType), eq(mediaRelations.fromId, entityId)))
     .orderBy(asc(mediaRelations.orderInFrom), asc(mediaRelations.createdAt))
     .all()
-    .map(
-      (row): ResolvedRelationRow => ({
-        toType: row.toType,
-        toId: row.toId,
-        type: row.type,
-        note: row.note
-      })
-    )
+    .map((row): ResolvedRelationRow => ({
+      toType: row.toType,
+      toId: row.toId,
+      type: row.type,
+      note: row.note
+    }))
 
   const finalRows = buildFinalRelationRows(currentRows, incomingRows, collectionMode)
 

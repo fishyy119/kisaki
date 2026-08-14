@@ -180,9 +180,7 @@ export function projectMediaChanges(
     )
   )
 
-  const externalIdChanges = changes.filter(
-    (change) => change.table === projection.externalIdsTable
-  )
+  const externalIdChanges = changes.filter((change) => change.table === projection.externalIdsTable)
   if (externalIdChanges.length > 0) {
     const after = readExternalIds(sqlite, projection, mediaId)
     const before = rebuildExternalIdsBefore(after, externalIdChanges)
@@ -246,7 +244,12 @@ export function projectMediaChanges(
   const relationChanges = changes.filter((change) => change.table === MEDIA_RELATIONS_TABLE)
   if (relationChanges.length > 0) {
     const after = readMediaRelationEdges(sqlite, projection.entity, mediaId)
-    const before = rebuildMediaRelationEdgesBefore(after, relationChanges, projection.entity, mediaId)
+    const before = rebuildMediaRelationEdgesBefore(
+      after,
+      relationChanges,
+      projection.entity,
+      mediaId
+    )
     if (!sameJson(before, after)) {
       projected.push({
         facet: 'relations',
@@ -411,9 +414,8 @@ function readMediaRow(
   mediaId: string
 ): MediaRow | null {
   return (
-    (sqlite
-      .prepare(`SELECT id, name FROM ${projection.table} WHERE id = ?`)
-      .get(mediaId) as MediaRow | undefined) ?? null
+    (sqlite.prepare(`SELECT id, name FROM ${projection.table} WHERE id = ?`).get(mediaId) as
+      MediaRow | undefined) ?? null
   )
 }
 

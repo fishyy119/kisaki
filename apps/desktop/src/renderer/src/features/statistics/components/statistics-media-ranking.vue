@@ -68,10 +68,15 @@ const items = computed<RankingListItem[]>(() =>
           : m.value.statistics.hero.timesValue({ count: item.sessionCount }),
       coverUrl:
         entity?.coverFile != null
-          ? getAttachmentUrl(MEDIA_ATTACHMENT_TABLES[entity.mediaType], entity.id, entity.coverFile, {
-              width: 64,
-              height: 64
-            })
+          ? getAttachmentUrl(
+              MEDIA_ATTACHMENT_TABLES[entity.mediaType],
+              entity.id,
+              entity.coverFile,
+              {
+                width: 64,
+                height: 64
+              }
+            )
           : undefined,
       icon: getEntityIcon(entity?.mediaType ?? 'game')
     }

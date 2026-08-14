@@ -400,7 +400,10 @@ export class AnimeIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExistingAnime({ externalIds }, tx)
+      const existingByExternalId = this.dbService.entityFinder.findExistingAnime(
+        { externalIds },
+        tx
+      )
       if (existingByExternalId) {
         return { animeId: existingByExternalId.id, existingReason: 'externalId' }
       }

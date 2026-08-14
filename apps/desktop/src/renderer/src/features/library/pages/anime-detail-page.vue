@@ -23,10 +23,7 @@ import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import {
-  AnimeDetailContent,
-  AnimeWatchButton
-} from '@renderer/components/shared/anime'
+import { AnimeDetailContent, AnimeWatchButton } from '@renderer/components/shared/anime'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useAmbientLight, useAnimeRouteProvider, useDbChanges, useIpc } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'

@@ -70,7 +70,7 @@ export const anime = {
     stopFailed: '停止播放特典失敗',
     nameLabel: '名稱',
     typeLabel: '類型',
-    autoDetect: '自動識別',
+    autoDetect: '自動識別'
   },
 
   files: {
@@ -121,7 +121,8 @@ export const anime = {
     animeDirLabel: '動漫資料夾',
     animeDirPlaceholder: '未設定',
     selectDir: '選擇資料夾',
-    animeDirHint: '同步會掃描此資料夾來匹配劇集檔案；留空則完全手動管理檔案。儲存修改後會自動重新同步。',
+    animeDirHint:
+      '同步會掃描此資料夾來匹配劇集檔案；留空則完全手動管理檔案。儲存修改後會自動重新同步。',
     offsetLabel: '檔案集數偏移',
     offsetHint: '檔案集數 − 偏移 = 中繼資料集數，用於對齊絕對集數命名的檔案。',
     offsetInvalid: '偏移必須為整數。'

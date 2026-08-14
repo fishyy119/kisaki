@@ -347,13 +347,13 @@ change in the library. Two contracts hold the seam together:
 
 **Optional files by service type:**
 
-| File/Directory | Used By                                                    | Purpose                                   |
-| -------------- | ---------------------------------------------------------- | ----------------------------------------- |
-| `handlers/`    | activity, adder, attachment, deeplink, scanner, scraper    | IMediaService handlers or route handlers  |
-| `types.ts`     | db, deeplink, extension, process                           | Service-specific type definitions         |
-| `ipc.ts`       | Any service with IPC channels                              | IPC registration using `wrapIpc` helpers  |
-| `router.ts`    | deeplink                                                   | URL route definitions (deeplink-specific) |
-| `locales/`     | i18n                                                       | Translation resources (i18n-specific)     |
+| File/Directory | Used By                                                 | Purpose                                   |
+| -------------- | ------------------------------------------------------- | ----------------------------------------- |
+| `handlers/`    | activity, adder, attachment, deeplink, scanner, scraper | IMediaService handlers or route handlers  |
+| `types.ts`     | db, deeplink, extension, process                        | Service-specific type definitions         |
+| `ipc.ts`       | Any service with IPC channels                           | IPC registration using `wrapIpc` helpers  |
+| `router.ts`    | deeplink                                                | URL route definitions (deeplink-specific) |
+| `locales/`     | i18n                                                    | Translation resources (i18n-specific)     |
 
 **Complex services** may have additional domain-specific files:
 

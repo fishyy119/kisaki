@@ -71,7 +71,7 @@ export const anime = {
     stopFailed: '特典の停止に失敗しました',
     nameLabel: '名前',
     typeLabel: '種類',
-    autoDetect: '自動判別',
+    autoDetect: '自動判別'
   },
 
   files: {

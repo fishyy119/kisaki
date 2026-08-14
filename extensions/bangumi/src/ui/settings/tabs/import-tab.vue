@@ -32,11 +32,7 @@ const emit = defineEmits<{
 const indexInput = ref('')
 const collectionsOpen = ref(false)
 const indexOpen = ref(false)
-const {
-  scope,
-  options: scopeOptions,
-  profiles
-} = useScopeSelection(() => props.overview.scopes)
+const { scope, options: scopeOptions, profiles } = useScopeSelection(() => props.overview.scopes)
 const hasProfiles = computed(() => profiles.value.length > 0)
 </script>
 

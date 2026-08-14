@@ -25,7 +25,7 @@ import {
   CollectionEntitiesFormDialog,
   CollectionDynamicConfigFormDialog,
   CollectionConvertToStaticFormDialog
-  } from '../forms'
+} from '../forms'
 import { EntityMergeDialog, EntityDeleteFormDialog } from '@renderer/components/shared/entity'
 import type { MenuComponents } from '@renderer/types'
 

@@ -14,9 +14,7 @@ import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header
 import { Separator } from '@renderer/components/ui/separator'
 import { StateView } from '@renderer/components/ui/state-view'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
-import {
-  CompanyDetailContent
-} from '@renderer/components/shared/company'
+import { CompanyDetailContent } from '@renderer/components/shared/company'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import {
   useAmbientLight,

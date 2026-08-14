@@ -135,9 +135,7 @@ watch(selectedProviderId, () => {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-3xl">
       <DialogHeader>
-        <DialogTitle>{{
-          m.library.forms.searchMediaTitle({ label: slot.label(m) })
-        }}</DialogTitle>
+        <DialogTitle>{{ m.library.forms.searchMediaTitle({ label: slot.label(m) }) }}</DialogTitle>
       </DialogHeader>
 
       <!-- Loading state -->

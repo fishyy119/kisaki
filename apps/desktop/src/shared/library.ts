@@ -19,13 +19,7 @@ import type { ExternalId } from './identity'
 import type { AllEntityType, MediaType } from './common'
 
 export type LibraryEntityTopic =
-  | 'game'
-  | 'anime'
-  | 'person'
-  | 'company'
-  | 'character'
-  | 'collection'
-  | 'tag'
+  'game' | 'anime' | 'person' | 'company' | 'character' | 'collection' | 'tag'
 
 export type LibraryChangeKind = 'created' | 'updated' | 'deleted'
 

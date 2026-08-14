@@ -13,7 +13,7 @@ export {
   CollectionEntitiesFormDialog,
   CollectionDynamicConfigFormDialog,
   CollectionConvertToStaticFormDialog
-  } from './forms'
+} from './forms'
 
 // Detail
 export { CollectionDetailContent, CollectionDetailDialog } from './detail'

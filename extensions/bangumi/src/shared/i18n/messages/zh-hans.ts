@@ -393,7 +393,8 @@ export const zhHans = {
     },
 
     import: {
-      noProfilesWarning: '当前媒体类型尚未配置刮削配置，导入仍可预览，但执行本地写入前需要可用配置。',
+      noProfilesWarning:
+        '当前媒体类型尚未配置刮削配置，导入仍可预览，但执行本地写入前需要可用配置。',
       sourceTitle: '导入来源',
       sourceDescription: '导入是一次性任务；选项只用于本次运行，不写入 Bangumi 偏好。',
       myCollections: '我的收藏',

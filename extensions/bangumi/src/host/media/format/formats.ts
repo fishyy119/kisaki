@@ -12,7 +12,11 @@ export function mapBangumiAnimeFormat(platform?: string | null): LibraryAnimeFor
   if (!normalized) return undefined
 
   if (normalized === 'tv' || normalized.includes('tv')) return 'tv'
-  if (normalized.includes('剧场版') || normalized.includes('劇場版') || normalized.includes('movie')) {
+  if (
+    normalized.includes('剧场版') ||
+    normalized.includes('劇場版') ||
+    normalized.includes('movie')
+  ) {
     return 'movie'
   }
   if (normalized.includes('ova') || normalized.includes('oad')) return 'ova'

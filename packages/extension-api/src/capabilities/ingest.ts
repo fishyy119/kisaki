@@ -4,9 +4,7 @@ import type { ExternalId } from '../shared'
 export type IngestExistingReason = 'externalId' | 'path'
 
 export type IngestWarningCode =
-  | 'asset-persist-failed'
-  | 'collection-replace-degraded'
-  | 'related-entry-not-in-library'
+  'asset-persist-failed' | 'collection-replace-degraded' | 'related-entry-not-in-library'
 
 export type IngestUpdateSurfaceGroup = 'core' | 'media' | 'relation'
 

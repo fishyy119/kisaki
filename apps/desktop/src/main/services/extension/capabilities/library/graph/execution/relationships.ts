@@ -322,7 +322,11 @@ export function applyMediaCompanyEdge(
     return 'create'
   }
   if (edge.order !== undefined && existing.order !== edge.order) {
-    options.db.client.update(gameCompanyLinks).set({ orderInGame: edge.order }).where(condition).run()
+    options.db.client
+      .update(gameCompanyLinks)
+      .set({ orderInGame: edge.order })
+      .where(condition)
+      .run()
     return 'update'
   }
 
@@ -369,7 +373,8 @@ export function applyMediaPersonEdge(
     }
 
     const patch = stripUndefined({
-      orderInAnime: edge.order !== undefined && existing.order !== edge.order ? edge.order : undefined,
+      orderInAnime:
+        edge.order !== undefined && existing.order !== edge.order ? edge.order : undefined,
       note: edge.note !== undefined && existing.note !== edge.note ? edge.note : undefined
     })
     if (Object.keys(patch).length > 0) {

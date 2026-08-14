@@ -58,10 +58,13 @@ import type {
 } from '../contracts/enums'
 import { createBoundedIntegerType, createEnumType, createNullableEnumType } from './factories'
 
-
 export const gameStatus = createEnumType<GameStatus>(GAME_STATUS_VALUES, 'notStarted', 'gameStatus')
 
-export const animeStatus = createEnumType<AnimeStatus>(ANIME_STATUS_VALUES, 'planned', 'animeStatus')
+export const animeStatus = createEnumType<AnimeStatus>(
+  ANIME_STATUS_VALUES,
+  'planned',
+  'animeStatus'
+)
 
 const GAME_LAUNCHER_MODE_VALUES = ['file', 'url', 'exec'] as const
 export const gameLauncherMode = createEnumType<GameLauncherMode>(
@@ -79,7 +82,6 @@ export const gameMonitorMode = createEnumType<GameMonitorMode>(
 
 const GENDER_VALUES = ['male', 'female', 'other'] as const
 export const gender = createNullableEnumType<Gender>(GENDER_VALUES, 'gender')
-
 
 export const gamePersonRole = createEnumType<GamePersonRole>(
   GAME_PERSON_ROLE_VALUES,
@@ -114,7 +116,6 @@ export const animeEpisodeType = createEnumType<AnimeEpisodeType>(
   'regular',
   'animeEpisodeType'
 )
-
 
 export const animePersonRole = createEnumType<AnimePersonRole>(
   ANIME_PERSON_ROLE_VALUES,

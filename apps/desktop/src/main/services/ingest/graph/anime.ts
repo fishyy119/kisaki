@@ -334,9 +334,7 @@ export function normalizeAnimeEpisodes(
     byKey.set(`${normalized.type}:${normalized.number}`, normalized)
   }
 
-  return [...byKey.values()].sort(
-    (a, b) => a.type.localeCompare(b.type) || a.number - b.number
-  )
+  return [...byKey.values()].sort((a, b) => a.type.localeCompare(b.type) || a.number - b.number)
 }
 
 function buildAnimeGraphInternal(

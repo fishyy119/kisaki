@@ -470,9 +470,7 @@ export interface IpcMainHandlers {
   'activity:launch-game': (gameId: string) => IpcResult<GameLaunchResult>
   'activity:stop-game': (gameId: string) => IpcResult<GameStopResult>
   'activity:list-game-statuses': () => IpcResult<GameRunningStatus[]>
-  'activity:compute-game-monitor-path': (
-    config: GameMonitorPathConfig
-  ) => IpcResult<string | null>
+  'activity:compute-game-monitor-path': (config: GameMonitorPathConfig) => IpcResult<string | null>
   'activity:watch-anime': (
     animeId: string,
     episodeId?: string,

@@ -105,8 +105,7 @@ async function handleSubmit() {
 
   isSaving.value = true
   try {
-    const changed =
-      dirPath !== current.animeDirPath || offset !== current.episodeFileNumberOffset
+    const changed = dirPath !== current.animeDirPath || offset !== current.episodeFileNumberOffset
 
     await db
       .update(animes)

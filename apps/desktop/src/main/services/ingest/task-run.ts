@@ -23,7 +23,10 @@ export interface IngestRunSpec {
  * Creates a task run with the presentation every ingest operation shares:
  * app-owned, cancelable, progress-notifying.
  */
-export function createIngestRun(taskRunService: TaskRunService, spec: IngestRunSpec): TaskRunHandle {
+export function createIngestRun(
+  taskRunService: TaskRunService,
+  spec: IngestRunSpec
+): TaskRunHandle {
   return taskRunService.runs.create({
     category: 'ingest',
     operation: spec.operation,

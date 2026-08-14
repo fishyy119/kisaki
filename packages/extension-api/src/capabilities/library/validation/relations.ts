@@ -124,7 +124,10 @@ export function assertValidLibraryMediaRelationCreateInput(
 export function assertValidLibraryMediaRelationSelector(
   value: unknown
 ): asserts value is LibraryMediaRelationSelector {
-  throwIfValidationIssues('library media relation selector', validateLibraryMediaRelationSelector(value))
+  throwIfValidationIssues(
+    'library media relation selector',
+    validateLibraryMediaRelationSelector(value)
+  )
 }
 
 export function assertValidLibraryMediaRelationUpdateInput(

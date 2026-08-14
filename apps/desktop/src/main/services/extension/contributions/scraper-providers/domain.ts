@@ -11,11 +11,7 @@ import type { RuntimeContributionOwner } from '../types'
 
 export type ScraperKind = 'games' | 'animes' | 'persons' | 'companies' | 'characters'
 export type ScraperRpcAction =
-  | 'search'
-  | 'resolve'
-  | 'session.open'
-  | 'session.get'
-  | 'session.close'
+  'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close'
 
 export type ScraperProviderRegistration =
   | GameScraperProviderRegistrationInfo

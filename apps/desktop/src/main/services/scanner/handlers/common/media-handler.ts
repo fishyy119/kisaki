@@ -45,11 +45,7 @@ import {
   isRecoverableScraperFailure
 } from './issues'
 import type { ScannerRunSession } from './session'
-import type {
-  ScannerEntityError,
-  ScannerEntityProcessResult,
-  ScannerEntityWarning
-} from './types'
+import type { ScannerEntityError, ScannerEntityProcessResult, ScannerEntityWarning } from './types'
 
 const log = createLogger('Scanner')
 
@@ -539,9 +535,7 @@ export abstract class MediaScannerHandler {
           return {
             kind: 'added',
             result: await this.addDirect(match, options),
-            warnings: [
-              createWarning('scraper-unavailable', reasons.scrapeUnavailableFallback)
-            ]
+            warnings: [createWarning('scraper-unavailable', reasons.scrapeUnavailableFallback)]
           }
         }
 

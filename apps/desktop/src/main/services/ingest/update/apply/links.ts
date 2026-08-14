@@ -9,7 +9,12 @@
 
 import { eq } from 'drizzle-orm'
 import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
-import { resolveTagId, type DbContext, type DbQueryContext, type DbWriteContext } from '@main/services/db'
+import {
+  resolveTagId,
+  type DbContext,
+  type DbQueryContext,
+  type DbWriteContext
+} from '@main/services/db'
 import {
   animeCharacterLinks,
   animeCompanyLinks,
@@ -385,9 +390,18 @@ export function applyMediaLinkGraph<K extends LinkRowKind>(params: {
     companies: IngestGameGraph['companies']
     characters: IngestGameGraph['characters']
   }
-  person: MediaGraphLinkInput<K, { personIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }>
-  company: MediaGraphLinkInput<K, { companyIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }>
-  character: MediaGraphLinkInput<K, { characterIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }>
+  person: MediaGraphLinkInput<
+    K,
+    { personIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }
+  >
+  company: MediaGraphLinkInput<
+    K,
+    { companyIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }
+  >
+  character: MediaGraphLinkInput<
+    K,
+    { characterIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }
+  >
   characterPerson: {
     mode: IngestUpdatePolicy['collectionUpdate'] | undefined
     links: readonly IngestCharacterPersonLink[]

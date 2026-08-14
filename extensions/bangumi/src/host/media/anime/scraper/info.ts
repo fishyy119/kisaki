@@ -8,7 +8,10 @@ export async function buildAnimeInfo(
   getSubject: () => Promise<BangumiSubject>,
   locale?: ContentLocale
 ): Promise<ScrapedAnimeInfo> {
-  const [core, subject] = await Promise.all([buildSubjectCoreInfo(getSubject, locale), getSubject()])
+  const [core, subject] = await Promise.all([
+    buildSubjectCoreInfo(getSubject, locale),
+    getSubject()
+  ])
 
   return omitUndefined({
     ...core,

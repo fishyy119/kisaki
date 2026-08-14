@@ -56,9 +56,9 @@ interface LocalMediaEntityPatch<TStatus extends string> {
  * namespace, ingest entry point, relation kinds, and the status vocabulary,
  * so subclasses only declare those.
  */
-export abstract class BangumiLocalMediaAdapter<TStatus extends string = string>
-  implements LocalMediaAdapter
-{
+export abstract class BangumiLocalMediaAdapter<
+  TStatus extends string = string
+> implements LocalMediaAdapter {
   readonly supportsScraperProfile = true
   readonly supportsAutoSync = true
   readonly supportsImportWrite = true

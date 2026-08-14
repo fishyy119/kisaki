@@ -310,18 +310,18 @@ interface EntityMergeConfig {
 
 通用字段：
 
-| 字段类型       | 策略                                     |
-| -------------- | ---------------------------------------- |
-| `name`         | 保留目标                                 |
-| `originalName` | 目标非空优先，否则来源补齐               |
-| `sortName`     | 目标非空优先，否则来源补齐               |
-| `description`  | 目标非空优先，否则来源补齐               |
-| `score`        | 目标非空优先，否则来源补齐               |
-| `isFavorite`   | OR                                       |
-| `isNsfw`       | OR                                       |
+| 字段类型        | 策略                                     |
+| --------------- | ---------------------------------------- |
+| `name`          | 保留目标                                 |
+| `originalName`  | 目标非空优先，否则来源补齐               |
+| `sortName`      | 目标非空优先，否则来源补齐               |
+| `description`   | 目标非空优先，否则来源补齐               |
+| `score`         | 目标非空优先，否则来源补齐               |
+| `isFavorite`    | OR                                       |
+| `isNsfw`        | OR                                       |
 | `externalSites` | 按 URL 规范化去重，目标顺序优先          |
-| `createdAt`    | 取最早                                   |
-| `updatedAt`    | transaction 内自然更新或显式设为当前时间 |
+| `createdAt`     | 取最早                                   |
+| `updatedAt`     | transaction 内自然更新或显式设为当前时间 |
 
 Game 字段：
 

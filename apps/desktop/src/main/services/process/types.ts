@@ -6,14 +6,10 @@
  */
 
 export type ProcessLaunchFailureReason =
-  | 'fileNotFound'
-  | 'openFileFailed'
-  | 'invalidUrl'
-  | 'executableNotFound'
+  'fileNotFound' | 'openFileFailed' | 'invalidUrl' | 'executableNotFound'
 
 export type ProcessLaunchResult =
-  | { status: 'started' }
-  | { status: 'failed'; reason: ProcessLaunchFailureReason }
+  { status: 'started' } | { status: 'failed'; reason: ProcessLaunchFailureReason }
 
 /** How a running process is recognized as belonging to a watch. */
 export type ProcessMatchMode = 'file' | 'folder' | 'process'

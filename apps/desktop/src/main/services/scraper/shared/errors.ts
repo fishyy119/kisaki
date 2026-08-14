@@ -7,7 +7,8 @@
  * message carries only the provider, the operation and the HTTP status.
  */
 
-export type ScrapeFailureReason = 'profile-unavailable' | 'provider-unavailable' | 'metadata-missing'
+export type ScrapeFailureReason =
+  'profile-unavailable' | 'provider-unavailable' | 'metadata-missing'
 
 /**
  * Expected scrape-pipeline failure.

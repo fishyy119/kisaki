@@ -15,11 +15,7 @@ import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { IpcService } from '@main/services/ipc'
 import type { NativeService } from '@main/services/native'
-import type {
-  ProcessMatchRule,
-  ProcessService,
-  ProcessWatchStatus
-} from '@main/services/process'
+import type { ProcessMatchRule, ProcessService, ProcessWatchStatus } from '@main/services/process'
 import { isWindows } from '@main/env'
 import type { Game } from '@shared/db'
 import { games, gameSessions } from '@shared/db'
@@ -326,7 +322,10 @@ export class GameActivityHandler {
         .run()
     })
 
-    log.info('Play session saved.', { gameId, durationSeconds: Math.round(record.durationMs / 1000) })
+    log.info('Play session saved.', {
+      gameId,
+      durationSeconds: Math.round(record.durationMs / 1000)
+    })
   }
 
   private markNotStartedAsInProgress(game: Game): void {

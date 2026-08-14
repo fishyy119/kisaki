@@ -70,8 +70,8 @@ useDbChanges(({ operation, table, id }) => {
   }
 })
 
-const selectedSlot = computed(
-  () => spec.value.slots.find((slot) => slot.type === selectedType.value)!
+const selectedSlot = computed(() =>
+  spec.value.slots.find((slot) => slot.type === selectedType.value)!
 )
 
 const currentFile = computed(() => {

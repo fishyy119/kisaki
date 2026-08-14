@@ -115,10 +115,7 @@ function episodeCandidateKey(candidate: AnimeEpisodeCandidate): string {
  * that leaves no positive number demotes the file to an unnumbered candidate
  * instead of inventing an episode.
  */
-function applyEpisodeFileNumberOffset(
-  candidates: AnimeEpisodeCandidate[],
-  offset: number
-): void {
+function applyEpisodeFileNumberOffset(candidates: AnimeEpisodeCandidate[], offset: number): void {
   if (offset === 0) return
 
   for (const candidate of candidates) {
@@ -644,9 +641,7 @@ export class AnimeFileSyncHandler {
 
     const candidates = existingEpisodes.filter(
       (episode) =>
-        episode.episodeNumber === null &&
-        episode.watchedAt === null &&
-        !retainedIds.has(episode.id)
+        episode.episodeNumber === null && episode.watchedAt === null && !retainedIds.has(episode.id)
     )
     if (candidates.length === 0) return
 

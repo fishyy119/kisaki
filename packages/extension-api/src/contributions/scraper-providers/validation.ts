@@ -891,7 +891,12 @@ function validateAnimeSessionSlot(slot: AnimeScraperSlot, value: unknown, path: 
     case 'episodes':
       return validateArrayOf(value, path, 'episodes must be an array.', validateAnimeEpisode)
     case 'characters':
-      return validateArrayOf(value, path, 'characters must be an array.', validateAnimeCharacterFact)
+      return validateArrayOf(
+        value,
+        path,
+        'characters must be an array.',
+        validateAnimeCharacterFact
+      )
     case 'persons':
       return validateArrayOf(value, path, 'persons must be an array.', validateAnimePersonFact)
     case 'companies':

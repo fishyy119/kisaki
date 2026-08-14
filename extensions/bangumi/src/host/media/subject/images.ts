@@ -35,11 +35,10 @@ export async function buildSubjectCovers(
 ): Promise<string[]> {
   const [subject, variants] = await Promise.all([getSubject(), getSubjectImageVariants()])
 
-  return dedupeUrls([
-    ...extractImageUrls(subject.images),
-    variants.large,
-    variants.common
-  ]).slice(0, MAX_COVERS)
+  return dedupeUrls([...extractImageUrls(subject.images), variants.large, variants.common]).slice(
+    0,
+    MAX_COVERS
+  )
 }
 
 /**

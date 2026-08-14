@@ -74,8 +74,7 @@ export const LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS = [
   'save-backup'
 ] as const
 
-export type LibraryGraphMediaAttachmentSlot =
-  (typeof LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS)[number]
+export type LibraryGraphMediaAttachmentSlot = (typeof LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS)[number]
 
 /** Episodes own exactly one attachment slot: the still frame. */
 export const LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS = ['still'] as const

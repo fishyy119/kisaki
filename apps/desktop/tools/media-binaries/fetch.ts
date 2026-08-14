@@ -42,9 +42,7 @@ export async function fetchMediaBinaries(context: MediaBinaryToolContext): Promi
     await rm(workDir, { recursive: true, force: true })
   }
 
-  console.log(
-    `[media-binaries] Fetched ${sources.length} executable(s) into ${context.targetRoot}`
-  )
+  console.log(`[media-binaries] Fetched ${sources.length} executable(s) into ${context.targetRoot}`)
 }
 
 async function fetchOne(
@@ -67,7 +65,10 @@ async function fetchOne(
   await extractArchiveEntry(archivePath, source.archiveEntry, extractDir)
 
   const extractedPath = path.join(extractDir, path.basename(source.archiveEntry))
-  const targetPath = path.join(context.targetRoot, toBundledExecutableName(source.binary, context.platform))
+  const targetPath = path.join(
+    context.targetRoot,
+    toBundledExecutableName(source.binary, context.platform)
+  )
   await copyFile(extractedPath, targetPath)
   if (context.platform !== 'win32') {
     await chmod(targetPath, 0o755)

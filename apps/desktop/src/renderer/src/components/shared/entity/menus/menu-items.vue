@@ -211,7 +211,9 @@ async function handleToggleNsfw() {
       .set({ isNsfw: !entry.value.isNsfw })
       .where(eq(table.value.id, props.entityId))
     notify.success(
-      entry.value.isNsfw ? m.value.library.feedback.nsfwCleared : m.value.library.feedback.nsfwMarked
+      entry.value.isNsfw
+        ? m.value.library.feedback.nsfwCleared
+        : m.value.library.feedback.nsfwMarked
     )
   } catch {
     notify.error(m.value.common.operationFailed)

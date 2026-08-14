@@ -158,12 +158,7 @@ function mapSubjectCharacter({
   }
 
   const measurements = extractCharacterMeasurementsFromInfobox(detail?.infobox)
-  const persons = buildCharacterPersons(
-    subjectId,
-    subjectType,
-    relatedCharacter,
-    characterPersons
-  )
+  const persons = buildCharacterPersons(subjectId, subjectType, relatedCharacter, characterPersons)
   const photos = dedupeUrls(extractImageUrls(detail?.images || relatedCharacter.images))
 
   return omitUndefined({

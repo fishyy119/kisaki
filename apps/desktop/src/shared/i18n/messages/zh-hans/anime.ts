@@ -70,7 +70,7 @@ export const anime = {
     stopFailed: '停止播放特典失败',
     nameLabel: '名称',
     typeLabel: '类型',
-    autoDetect: '自动识别',
+    autoDetect: '自动识别'
   },
 
   files: {
@@ -121,7 +121,8 @@ export const anime = {
     animeDirLabel: '动漫目录',
     animeDirPlaceholder: '未设置',
     selectDir: '选择目录',
-    animeDirHint: '同步会扫描此目录来匹配剧集文件；留空则完全手动管理文件。保存修改后会自动重新同步。',
+    animeDirHint:
+      '同步会扫描此目录来匹配剧集文件；留空则完全手动管理文件。保存修改后会自动重新同步。',
     offsetLabel: '文件集数偏移',
     offsetHint: '文件集数 − 偏移 = 元数据集数，用于对齐绝对集数命名的文件。',
     offsetInvalid: '偏移必须为整数。'

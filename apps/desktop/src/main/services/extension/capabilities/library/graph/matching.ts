@@ -106,11 +106,7 @@ function matchMediaNode(
   if (externalConflict) {
     return { key, kind: 'media', mediaType, blocked: true, diagnostics: [externalConflict] }
   }
-  const externalUnavailable = createExternalIdUnavailableDiagnostic(
-    key,
-    mediaType,
-    externalMatches
-  )
+  const externalUnavailable = createExternalIdUnavailableDiagnostic(key, mediaType, externalMatches)
   if (externalUnavailable) {
     return { key, kind: 'media', mediaType, blocked: true, diagnostics: [externalUnavailable] }
   }

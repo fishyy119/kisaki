@@ -104,11 +104,9 @@ export interface AnimeExtraPlayingState {
 export type AnimeStopFailureReason = 'notWatching' | 'stopFailed'
 
 export type AnimeStopResult =
-  | { status: 'stopped' }
-  | { status: 'failed'; reason: AnimeStopFailureReason }
+  { status: 'stopped' } | { status: 'failed'; reason: AnimeStopFailureReason }
 
 export type AnimeExtraStopFailureReason = 'notPlaying' | 'stopFailed'
 
 export type AnimeExtraStopResult =
-  | { status: 'stopped' }
-  | { status: 'failed'; reason: AnimeExtraStopFailureReason }
+  { status: 'stopped' } | { status: 'failed'; reason: AnimeExtraStopFailureReason }

@@ -141,11 +141,7 @@ export type CharacterScraperSlot = 'info' | 'tags' | 'persons' | 'photos'
  * - Slot config editing UI
  */
 export type ScraperSlot =
-  | GameScraperSlot
-  | AnimeScraperSlot
-  | PersonScraperSlot
-  | CompanyScraperSlot
-  | CharacterScraperSlot
+  GameScraperSlot | AnimeScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
 
 /** Shared strategy for combining multiple provider results. */
 export type SlotStrategy = 'first' | 'enrich'

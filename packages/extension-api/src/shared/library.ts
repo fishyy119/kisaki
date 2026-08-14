@@ -80,12 +80,7 @@ export const LIBRARY_ANIME_CHARACTER_ROLES = ['main', 'supporting', 'cameo', 'ot
 
 export type LibraryAnimeCharacterRole = (typeof LIBRARY_ANIME_CHARACTER_ROLES)[number]
 
-export const LIBRARY_ANIME_COMPANY_ROLES = [
-  'studio',
-  'producer',
-  'distributor',
-  'other'
-] as const
+export const LIBRARY_ANIME_COMPANY_ROLES = ['studio', 'producer', 'distributor', 'other'] as const
 
 export type LibraryAnimeCompanyRole = (typeof LIBRARY_ANIME_COMPANY_ROLES)[number]
 

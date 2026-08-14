@@ -144,7 +144,9 @@ export class PersonScraperHandler {
         state.collectIdentity(this.createTargetIdentity(searchProvider.id, searchTarget))
       }
 
-      const resolveProviderId = async (providerId: string): Promise<PersonResolvedTarget | null> => {
+      const resolveProviderId = async (
+        providerId: string
+      ): Promise<PersonResolvedTarget | null> => {
         const provider = this.providers.get(providerId)
         if (!provider) {
           log.warn('Provider not available.', { mediaType: 'person', providerId: providerId })

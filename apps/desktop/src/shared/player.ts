@@ -14,10 +14,7 @@ export type PlaybackStatus = 'loading' | 'playing' | 'paused' | 'ended'
 export type PlaybackEndReason = 'completed' | 'stopped' | 'closed' | 'error'
 
 export type PlaybackStartFailureReason =
-  | 'engineNotFound'
-  | 'fileNotFound'
-  | 'engineStartFailed'
-  | 'engineNotResponding'
+  'engineNotFound' | 'fileNotFound' | 'engineStartFailed' | 'engineNotResponding'
 
 /** Track selection preference applied when a session loads. */
 export interface PlaybackTrackPreference {

@@ -45,7 +45,11 @@ export function createSubjectLoaders({
   )
   const getPersonDetails = memoizeTask(async () => {
     const relatedPersons = await getSubjectPersons()
-    return fetchPersonDetails(client, [...new Set(relatedPersons.map((person) => person.id))], signal)
+    return fetchPersonDetails(
+      client,
+      [...new Set(relatedPersons.map((person) => person.id))],
+      signal
+    )
   })
   const getCharacterDetails = memoizeTask(async () => {
     const relatedCharacters = await getSubjectCharacters()

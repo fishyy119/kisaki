@@ -153,13 +153,12 @@ export type GameIncomingBuildResult = UpdateIncomingBuildResult<
   GameIncomingMediaCandidates
 >
 
-export interface AnimeIncomingBuildResult
-  extends UpdateIncomingBuildResult<
-    UpdateIncomingRelationAvailability<AnimeUpdateSurface, AnimeLinkKind>,
-    CoreAnimeMetadata,
-    ScrapedAnimeRelationFacts,
-    AnimeIncomingMediaCandidates
-  > {
+export interface AnimeIncomingBuildResult extends UpdateIncomingBuildResult<
+  UpdateIncomingRelationAvailability<AnimeUpdateSurface, AnimeLinkKind>,
+  CoreAnimeMetadata,
+  ScrapedAnimeRelationFacts,
+  AnimeIncomingMediaCandidates
+> {
   /** Absent means the scrape could not answer episodes; an empty array means none exist. */
   episodes?: AnimeEpisodeInfo[]
 }

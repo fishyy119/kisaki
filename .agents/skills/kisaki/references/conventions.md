@@ -340,7 +340,7 @@ question the row answers, not by table name.
 
 ### Links: cross-class attachments
 
-- A **link** attaches entities of *different* classes: media↔metadata (`game_person_links`),
+- A **link** attaches entities of _different_ classes: media↔metadata (`game_person_links`),
   organizer↔content (`collection_game_links`, `game_tag_links`), and metadata↔metadata across
   kinds (`character_person_links`). One table per ordered pair; rows carry `role` (where a role
   vocabulary exists), `is_spoiler`, `note`, and an order column per side. Links have real FKs.
@@ -351,7 +351,7 @@ question the row answers, not by table name.
 
 ### Relations: same-class entry graphs
 
-- A **relation** connects entries of the *same* class: media↔media lives in the single polymorphic
+- A **relation** connects entries of the _same_ class: media↔media lives in the single polymorphic
   `media_relations` table (`from_type`/`from_id`/`to_type`/`to_id` + `type` + `note` +
   `order_in_from`, unique on the five identity columns). Polymorphic ends cannot carry FKs, so
   referential integrity is owned by the application choke points: entity delete clears both ends,
@@ -368,7 +368,7 @@ question the row answers, not by table name.
 
 ### Vocabulary: kind / role / type
 
-- **kind** identifies *which relationship table or edge shape*: `LibraryLinkKind`
+- **kind** identifies _which relationship table or edge shape_: `LibraryLinkKind`
   (`'game-person'`), graph edge kinds, `GameLinkKind` in the ingest topology.
 - **role** is the vocabulary a link row carries: the `role` column, `GamePersonRole`,
   `metadata.role` in the extension link protocol, `role` fields on scraped link facts.

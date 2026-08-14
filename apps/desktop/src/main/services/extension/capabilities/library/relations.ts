@@ -90,7 +90,8 @@ export class ExtensionLibraryMediaRelationStore {
         .where(buildSelectorCondition(selector))
         .run()
 
-      const updatedSelector = patch.type !== undefined ? { ...selector, type: patch.type } : selector
+      const updatedSelector =
+        patch.type !== undefined ? { ...selector, type: patch.type } : selector
       return toRelation(this.selectOne(updatedSelector))
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to update the library media relation.')
@@ -114,7 +115,9 @@ export class ExtensionLibraryMediaRelationStore {
     }
   }
 
-  private findMediaEntryId(reference: LibraryEntityReference<LibraryMediaType>): string | undefined {
+  private findMediaEntryId(
+    reference: LibraryEntityReference<LibraryMediaType>
+  ): string | undefined {
     switch (reference.entityType) {
       case 'game':
         return this.options.db.client

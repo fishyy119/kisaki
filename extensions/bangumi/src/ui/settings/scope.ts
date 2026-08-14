@@ -15,9 +15,7 @@ export interface ScopeSelection {
   profiles: ComputedRef<readonly BangumiOptionItem[]>
 }
 
-export function useScopeSelection(
-  readScopes: () => readonly BangumiScopeOption[]
-): ScopeSelection {
+export function useScopeSelection(readScopes: () => readonly BangumiScopeOption[]): ScopeSelection {
   const options = computed(readScopes)
   const scope = ref<BangumiMediaScope | undefined>(options.value[0]?.scope)
 

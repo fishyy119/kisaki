@@ -17,11 +17,7 @@ import { toPartialDateFromParts } from '../format/dates'
 import { extractExternalIdsFromSites, extractExternalSitesFromInfobox } from '../format/infobox'
 import { extractImageUrls } from '../format/images'
 import { resolveLocalizedEntityName } from '../format/names'
-import {
-  composeBangumiRoleNote,
-  mapBangumiCareersToTags,
-  mapBangumiGender
-} from '../format/roles'
+import { composeBangumiRoleNote, mapBangumiCareersToTags, mapBangumiGender } from '../format/roles'
 import { normalizeDescription } from '../format/text'
 import { buildBangumiPersonUrl, dedupeExternalSites, dedupeUrls } from '../format/urls'
 

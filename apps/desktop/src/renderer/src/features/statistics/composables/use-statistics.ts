@@ -246,8 +246,8 @@ async function fetchStatisticsData(
   const animeIds = entityIdsOf(sessions, 'anime')
 
   // Parallel fetch all related data
-  const [games, animes, collections, gameCollectionLinks, animeCollectionLinks] =
-    await Promise.all([
+  const [games, animes, collections, gameCollectionLinks, animeCollectionLinks] = await Promise.all(
+    [
       gameIds.length
         ? db
             .select()
@@ -310,7 +310,8 @@ async function fetchStatisticsData(
               )
             )
         : Promise.resolve([])
-    ])
+    ]
+  )
 
   const entities: StatisticsEntity[] = [
     ...games.map((game) => ({

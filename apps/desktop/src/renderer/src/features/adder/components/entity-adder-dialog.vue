@@ -108,7 +108,10 @@ async function handleSubmit() {
 
     const entityId = spec.value.extractId(run.result?.output)
     if (!entityId) {
-      notify.error(addFailedTitle.value, m.value.adder.missingEntityId({ label: entityLabel.value }))
+      notify.error(
+        addFailedTitle.value,
+        m.value.adder.missingEntityId({ label: entityLabel.value })
+      )
       return
     }
 

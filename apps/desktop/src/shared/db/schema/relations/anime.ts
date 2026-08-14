@@ -52,4 +52,3 @@ export const animeSessionsRelations = relations(animeSessions, ({ one }) => ({
     references: [animeEpisodes.id]
   })
 }))
-

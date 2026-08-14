@@ -59,13 +59,12 @@ export interface LibraryAnimeEpisodeNamespace {
   ): Promise<LibraryAnimeEpisode>
 }
 
-export interface LibraryAnimeNamespace
-  extends LibraryEntityNamespace<
-    LibraryAnime,
-    LibraryAnimeCreateInput,
-    LibraryAnimePatch,
-    LibraryAnimeQuery
-  > {
+export interface LibraryAnimeNamespace extends LibraryEntityNamespace<
+  LibraryAnime,
+  LibraryAnimeCreateInput,
+  LibraryAnimePatch,
+  LibraryAnimeQuery
+> {
   episodes: LibraryAnimeEpisodeNamespace
 }
 

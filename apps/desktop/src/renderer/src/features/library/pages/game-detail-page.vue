@@ -23,10 +23,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
-import {
-  GamePlayButton,
-  GameDetailContent
-} from '@renderer/components/shared/game'
+import { GamePlayButton, GameDetailContent } from '@renderer/components/shared/game'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useAmbientLight, useDbChanges, useGameRouteProvider, useIpc } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'

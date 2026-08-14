@@ -315,8 +315,7 @@ export function mapCollectionTypeToLocalStatus(
   scope: BangumiMediaScope,
   type: BangumiCollectionType
 ): string {
-  const table =
-    scope === 'anime' ? ANIME_STATUS_BY_COLLECTION_TYPE : GAME_STATUS_BY_COLLECTION_TYPE
+  const table = scope === 'anime' ? ANIME_STATUS_BY_COLLECTION_TYPE : GAME_STATUS_BY_COLLECTION_TYPE
   return table[type]
 }
 

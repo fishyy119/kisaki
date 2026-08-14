@@ -31,10 +31,7 @@ export class GameScannerHandler extends MediaScannerHandler {
     match: ScannerEntityMatch,
     options: ScannerAddOptions
   ): Promise<ScannerAddOutcome> {
-    const result = await this.ingestService.add.game.addDirect(
-      toSeed(match),
-      toAddOptions(options)
-    )
+    const result = await this.ingestService.add.game.addDirect(toSeed(match), toAddOptions(options))
     return { ...result, entityId: result.gameId }
   }
 

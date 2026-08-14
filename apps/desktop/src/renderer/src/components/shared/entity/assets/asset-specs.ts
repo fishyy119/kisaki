@@ -85,10 +85,7 @@ const BACKDROP_SLOT = (description: (m: Messages) => string): AssetSlot => ({
   searchGridClass: 'grid-cols-2'
 })
 
-const LOGO_SLOT = (
-  description: (m: Messages) => string,
-  aspectClass: string
-): AssetSlot => ({
+const LOGO_SLOT = (description: (m: Messages) => string, aspectClass: string): AssetSlot => ({
   type: 'logo',
   label: (m) => m.library.forms.mediaTypes.logo,
   description,

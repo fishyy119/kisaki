@@ -17,9 +17,7 @@ export type ExistingReason = 'externalId' | 'path'
  *   their targets did not resolve to library entries.
  */
 export type IngestWarningCode =
-  | 'asset-persist-failed'
-  | 'collection-replace-degraded'
-  | 'related-entry-not-in-library'
+  'asset-persist-failed' | 'collection-replace-degraded' | 'related-entry-not-in-library'
 
 /** Warning reported with a successful ingest result. */
 export interface IngestWarning {

@@ -126,28 +126,24 @@ const {
     ])
 
     const loadedItems: RelationItem[] = [
-      ...outRows.map(
-        (row): RelationItem => ({
-          id: row.id,
-          direction: 'out',
-          targetType: row.toType,
-          targetId: row.toId,
-          targetName: nameByKey.get(`${row.toType}:${row.toId}`) ?? '',
-          type: row.type,
-          note: row.note ?? ''
-        })
-      ),
-      ...inRows.map(
-        (row): RelationItem => ({
-          id: row.id,
-          direction: 'in',
-          targetType: row.fromType,
-          targetId: row.fromId,
-          targetName: nameByKey.get(`${row.fromType}:${row.fromId}`) ?? '',
-          type: MEDIA_RELATION_TYPE_INVERSE[row.type],
-          note: row.note ?? ''
-        })
-      )
+      ...outRows.map((row): RelationItem => ({
+        id: row.id,
+        direction: 'out',
+        targetType: row.toType,
+        targetId: row.toId,
+        targetName: nameByKey.get(`${row.toType}:${row.toId}`) ?? '',
+        type: row.type,
+        note: row.note ?? ''
+      })),
+      ...inRows.map((row): RelationItem => ({
+        id: row.id,
+        direction: 'in',
+        targetType: row.fromType,
+        targetId: row.fromId,
+        targetName: nameByKey.get(`${row.fromType}:${row.fromId}`) ?? '',
+        type: MEDIA_RELATION_TYPE_INVERSE[row.type],
+        note: row.note ?? ''
+      }))
     ]
 
     const snapshots = new Map<string, InEdgeSnapshot>(

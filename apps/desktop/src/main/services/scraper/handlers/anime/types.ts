@@ -32,6 +32,4 @@ export type AnimeScraperResult =
   | AnimeScraperLogosResult
 
 export type AnimeScraperImageResult =
-  | AnimeScraperCoversResult
-  | AnimeScraperBackdropsResult
-  | AnimeScraperLogosResult
+  AnimeScraperCoversResult | AnimeScraperBackdropsResult | AnimeScraperLogosResult

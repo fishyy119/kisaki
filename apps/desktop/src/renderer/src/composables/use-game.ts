@@ -145,29 +145,32 @@ async function fetchGameData(
   // Parallel fetch all related data
   const [notes, tagLinks, charLinks, personLinks, companyLinks, relations, sessions] =
     await Promise.all([
-    db
-      .select()
-      .from(schema.gameNotes)
-      .where(eq(schema.gameNotes.gameId, gameId))
-      .orderBy(asc(schema.gameNotes.orderInGame), asc(schema.gameNotes.name)),
-    db
-      .select()
-      .from(schema.gameTagLinks)
-      .leftJoin(schema.tags, eq(schema.gameTagLinks.tagId, schema.tags.id))
-      .where(gameTagLinksWhere)
-      .orderBy(asc(schema.gameTagLinks.orderInGame)),
-    db
-      .select()
-      .from(schema.gameCharacterLinks)
-      .leftJoin(schema.characters, eq(schema.gameCharacterLinks.characterId, schema.characters.id))
-      .where(gameCharacterLinksWhere)
-      .orderBy(asc(schema.gameCharacterLinks.orderInGame)),
-    db
-      .select()
-      .from(schema.gamePersonLinks)
-      .leftJoin(schema.persons, eq(schema.gamePersonLinks.personId, schema.persons.id))
-      .where(gamePersonLinksWhere)
-      .orderBy(asc(schema.gamePersonLinks.orderInGame)),
+      db
+        .select()
+        .from(schema.gameNotes)
+        .where(eq(schema.gameNotes.gameId, gameId))
+        .orderBy(asc(schema.gameNotes.orderInGame), asc(schema.gameNotes.name)),
+      db
+        .select()
+        .from(schema.gameTagLinks)
+        .leftJoin(schema.tags, eq(schema.gameTagLinks.tagId, schema.tags.id))
+        .where(gameTagLinksWhere)
+        .orderBy(asc(schema.gameTagLinks.orderInGame)),
+      db
+        .select()
+        .from(schema.gameCharacterLinks)
+        .leftJoin(
+          schema.characters,
+          eq(schema.gameCharacterLinks.characterId, schema.characters.id)
+        )
+        .where(gameCharacterLinksWhere)
+        .orderBy(asc(schema.gameCharacterLinks.orderInGame)),
+      db
+        .select()
+        .from(schema.gamePersonLinks)
+        .leftJoin(schema.persons, eq(schema.gamePersonLinks.personId, schema.persons.id))
+        .where(gamePersonLinksWhere)
+        .orderBy(asc(schema.gamePersonLinks.orderInGame)),
       db
         .select()
         .from(schema.gameCompanyLinks)

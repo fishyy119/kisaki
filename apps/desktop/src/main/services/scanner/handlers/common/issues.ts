@@ -57,9 +57,7 @@ export function createError(type: ScannerEntityErrorType, reason: string): Scann
 export function createIngestWarnings(
   warnings: readonly IngestWarning[] | undefined
 ): ScannerEntityWarning[] {
-  return (warnings ?? []).map((warning) =>
-    createWarning('asset-persist-failed', warning.message)
-  )
+  return (warnings ?? []).map((warning) => createWarning('asset-persist-failed', warning.message))
 }
 
 export function createExisting(entity: EntityEntry, entityId: string): ScannerRunExisting {
