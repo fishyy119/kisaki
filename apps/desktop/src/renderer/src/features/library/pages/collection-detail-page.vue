@@ -24,13 +24,13 @@ import {
 import {
   useAmbientLight,
   useCollectionRouteProvider,
-  useDbChanges,
-  useIpc
+  useEntityDetailRoute
 } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
+import { formatLibraryContext } from '@renderer/utils/library-context'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 const { m } = useI18n()
@@ -43,6 +43,8 @@ const route = useRoute()
 const router = useRouter()
 
 const collectionId = computed(() => route.params.collectionId as string)
+
+const { exit } = useEntityDetailRoute('collection', collectionId)
 
 // =============================================================================
 // Provider (data settled during navigation by the route loader)
@@ -66,18 +68,6 @@ useAmbientLight(() =>
       })
     : null
 )
-
-useDbChanges(({ operation, table, id }) => {
-  if (operation === 'deleted' && table === 'collections' && id === collectionId.value) {
-    router.push('/library/collections')
-  }
-})
-
-useIpc('library:entity-merged', (_e, event) => {
-  if (event.entityType === 'collection' && event.sourceId === collectionId.value) {
-    router.replace({ path: `/library/collection/${event.targetId}`, query: route.query })
-  }
-})
 
 // =============================================================================
 // State
@@ -111,7 +101,9 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
   if (!collection.value) return
   router.push({
     path: getEntityDetailPath(payload.type, payload.id),
-    query: { from: `collection:${collection.value.id}` }
+    query: {
+      from: formatLibraryContext({ kind: 'collection', collectionId: collection.value.id })
+    }
   })
 }
 </script>
@@ -129,8 +121,18 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     state="not-found"
     :icon="getEntityIcon('collection')"
     :title="m.library.detail.notFoundTitle({ label: m.library.entities.collection })"
+    :description="m.library.detail.notFoundDescription({ label: m.library.entities.collection })"
     class="h-full bg-background"
-  />
+  >
+    <template #actions>
+      <Button
+        variant="secondary"
+        @click="exit"
+      >
+        {{ m.app.notFound.backToLibrary }}
+      </Button>
+    </template>
+  </StateView>
 
   <!-- Content -->
   <div

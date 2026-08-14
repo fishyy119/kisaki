@@ -29,6 +29,10 @@ export const scraper = {
     anime: {
       name: '动漫',
       description: '基于 Bangumi 获取动漫的中文元数据'
+    },
+    animeBangumiTmdb: {
+      name: '动漫（Bangumi + TMDB）',
+      description: '以 Bangumi 元数据为主，由 TMDB 补齐剧集与图片'
     }
   },
 

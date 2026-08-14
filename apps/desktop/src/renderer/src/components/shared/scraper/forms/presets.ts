@@ -16,6 +16,7 @@ import {
 import { messages } from '@renderer/core/i18n'
 
 const BANGUMI_PROVIDER_ID = createExtensionScraperProviderId('builtin.bangumi', 'bangumi')
+const TMDB_PROVIDER_ID = createExtensionScraperProviderId('builtin.tmdb', 'tmdb')
 
 // =============================================================================
 // Preset Types
@@ -123,11 +124,56 @@ const ANIME_CN: ScraperPresetDefinition = {
   }
 }
 
+/**
+ * Anime preset pairing Bangumi with TMDB.
+ *
+ * Bangumi searches and owns the entry, since its anime catalogue matches the
+ * one-entry-per-season shape of the library; TMDB fills what Bangumi lacks,
+ * above all backdrops and logos. Episodes stay on `first` so a single source
+ * decides the numbering instead of two orderings being spliced together.
+ */
+const ANIME_BANGUMI_TMDB: ScraperPresetDefinition = {
+  id: 'anime-bangumi-tmdb',
+  copy: (m) => m.scraper.presets.animeBangumiTmdb,
+  mediaType: 'anime',
+  defaultLocale: 'zh-Hans',
+  searchProviderId: BANGUMI_PROVIDER_ID,
+  slotConfigs: {
+    info: createSlotConfig('info', [BANGUMI_PROVIDER_ID, TMDB_PROVIDER_ID], {
+      strategy: 'enrich'
+    }),
+    tags: createSlotConfig('tags', [BANGUMI_PROVIDER_ID, TMDB_PROVIDER_ID], {
+      strategy: 'enrich'
+    }),
+    episodes: createSlotConfig('episodes', [BANGUMI_PROVIDER_ID, TMDB_PROVIDER_ID]),
+    characters: createSlotConfig('characters', [BANGUMI_PROVIDER_ID]),
+    persons: createSlotConfig('persons', [BANGUMI_PROVIDER_ID, TMDB_PROVIDER_ID], {
+      strategy: 'enrich'
+    }),
+    companies: createSlotConfig('companies', [BANGUMI_PROVIDER_ID, TMDB_PROVIDER_ID], {
+      strategy: 'enrich'
+    }),
+    relatedEntries: createSlotConfig('relatedEntries', [BANGUMI_PROVIDER_ID]),
+    covers: createSlotConfig('covers', [BANGUMI_PROVIDER_ID, TMDB_PROVIDER_ID], {
+      strategy: 'enrich'
+    }),
+    backdrops: createSlotConfig('backdrops', [TMDB_PROVIDER_ID, BANGUMI_PROVIDER_ID], {
+      strategy: 'enrich'
+    }),
+    logos: createSlotConfig('logos', [TMDB_PROVIDER_ID])
+  }
+}
+
 // =============================================================================
 // Preset Registry
 // =============================================================================
 
-const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [VISUAL_NOVEL_CN, VIDEO_GAME, ANIME_CN]
+const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [
+  VISUAL_NOVEL_CN,
+  VIDEO_GAME,
+  ANIME_CN,
+  ANIME_BANGUMI_TMDB
+]
 
 function resolvePreset({ copy, ...preset }: ScraperPresetDefinition): ScraperPreset {
   return { ...preset, ...copy(messages.value) }

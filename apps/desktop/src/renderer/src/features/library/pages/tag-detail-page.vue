@@ -19,10 +19,11 @@ import {
   TagDropdownMenu,
   TagInfoFormDialog
 } from '@renderer/components/shared/tag'
-import { useDbChanges, useTagRouteProvider } from '@renderer/composables'
+import { useEntityDetailRoute, useTagRouteProvider } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
+import { formatLibraryContext } from '@renderer/utils/library-context'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 const { m } = useI18n()
@@ -35,19 +36,14 @@ const route = useRoute()
 const router = useRouter()
 
 const tagId = computed(() => route.params.tagId as string)
-const backTo = computed(() => (route.query.from as string) || '/library')
+
+const { exit } = useEntityDetailRoute('tag', tagId)
 
 // =============================================================================
 // Provider (data settled during navigation by the route loader)
 // =============================================================================
 
 const { tag, entityType, entityCounts, setEntityType, error } = useTagRouteProvider()
-
-useDbChanges(({ operation, table, id }) => {
-  if (operation === 'deleted' && table === 'tags' && id === tagId.value) {
-    router.push(backTo.value)
-  }
-})
 
 // =============================================================================
 // State
@@ -73,7 +69,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
   if (!tag.value) return
   router.push({
     path: getEntityDetailPath(payload.type, payload.id),
-    query: { from: `tag:${tag.value.id}` }
+    query: { from: formatLibraryContext({ kind: 'tag', tagId: tag.value.id }) }
   })
 }
 </script>
@@ -91,8 +87,18 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     state="not-found"
     :icon="getEntityIcon('tag')"
     :title="m.library.detail.notFoundTitle({ label: m.library.entities.tag })"
+    :description="m.library.detail.notFoundDescription({ label: m.library.entities.tag })"
     class="h-full bg-background"
-  />
+  >
+    <template #actions>
+      <Button
+        variant="secondary"
+        @click="exit"
+      >
+        {{ m.app.notFound.backToLibrary }}
+      </Button>
+    </template>
+  </StateView>
 
   <!-- Content -->
   <div

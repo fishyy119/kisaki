@@ -14,6 +14,7 @@ import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
 import type { ContentEntityData } from '@renderer/composables'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
+import { formatLibraryContext } from '@renderer/utils/library-context'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
 import { useFavorites } from '../composables'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -41,7 +42,7 @@ const scrollContainerRef = ref<HTMLElement>()
 function handleEntityClick(entity: ContentEntityData) {
   router.push({
     path: getEntityDetailPath(entityType.value, entity.id),
-    query: { from: 'favorites' }
+    query: { from: formatLibraryContext({ kind: 'favorites' }) }
   })
 }
 </script>

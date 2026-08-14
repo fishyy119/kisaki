@@ -6,13 +6,10 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { ref, computed, watch } from 'vue'
-import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { scraperProfiles, type ScraperProfile } from '@shared/db'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
@@ -26,7 +23,7 @@ import {
   TableRow,
   TableCell
 } from '@renderer/components/ui/table'
-import { ScraperProfileSelect } from '@renderer/components/shared/scraper'
+import { ScraperProfileSelect, useSearchProviderSource } from '@renderer/components/shared/scraper'
 import type { GameSearchResult } from '@shared/scraper'
 import type { GameSearcherSelection } from './types'
 
@@ -57,7 +54,7 @@ const emit = defineEmits<{
 
 // Profile state - initialized via watch to maintain reactivity
 const selectedProfileId = ref('')
-const selectedProfile = ref<ScraperProfile | null>(null)
+const searchProviderSource = useSearchProviderSource(selectedProfileId, 'game')
 
 function resetSelectionState() {
   searchResults.value = []
@@ -77,32 +74,11 @@ watch(
   { immediate: true }
 )
 
-// Fetch profile details when profileId changes (for searchProviderId)
-watch(
-  selectedProfileId,
-  async (id, previousId) => {
-    if (previousId && previousId !== id) {
-      resetSelectionState()
-    }
-
-    if (!id) {
-      selectedProfile.value = null
-      return
-    }
-
-    selectedProfile.value = null
-    const profile = await db.query.scraperProfiles.findFirst({
-      where: eq(scraperProfiles.id, id)
-    })
-
-    if (selectedProfileId.value !== id) {
-      return
-    }
-
-    selectedProfile.value = profile ?? null
-  },
-  { immediate: true }
-)
+watch(selectedProfileId, (id, previousId) => {
+  if (previousId && previousId !== id) {
+    resetSelectionState()
+  }
+})
 
 // Search state - use computed for props to maintain reactivity
 const searchQuery = ref('')
@@ -140,15 +116,15 @@ const canSubmit = computed(
 )
 
 watch(
-  [selectedProfileId, selectedProfile, gameId, searchResults, selectedResultId],
+  [selectedProfileId, searchProviderSource, gameId, searchResults, selectedResultId],
   () => {
     const trimmedGameId = gameId.value.trim()
     const selectedResult = selectedResultId.value
       ? searchResults.value.find((r) => r.id === selectedResultId.value)
       : null
     const fallbackKnownIds =
-      selectedProfile.value?.searchProviderId && trimmedGameId
-        ? [{ source: selectedProfile.value.searchProviderId, id: trimmedGameId }]
+      searchProviderSource.value && trimmedGameId
+        ? [{ source: searchProviderSource.value, id: trimmedGameId }]
         : []
 
     emit('selectionChange', {

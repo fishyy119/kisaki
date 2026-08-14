@@ -6,7 +6,7 @@
  */
 
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
@@ -25,7 +25,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { AnimeDetailContent, AnimeWatchButton } from '@renderer/components/shared/anime'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
-import { useAmbientLight, useAnimeRouteProvider, useDbChanges, useIpc } from '@renderer/composables'
+import { useAmbientLight, useAnimeRouteProvider, useEntityDetailRoute } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -53,10 +53,10 @@ const STATUS_OPTIONS = computed<{ value: AnimeStatus; label: string }[]>(() => [
 // =============================================================================
 
 const route = useRoute()
-const router = useRouter()
 
 const animeId = computed(() => route.params.animeId as string)
-const backTo = computed(() => (route.query.from as string) || '/library')
+
+const { exit } = useEntityDetailRoute('anime', animeId)
 
 // =============================================================================
 // Provider (data settled during navigation by the route loader)
@@ -71,18 +71,6 @@ useAmbientLight(() =>
     ? getAttachmentUrl('animes', anime.value.id, anime.value.coverFile, { width: 100, height: 100 })
     : null
 )
-
-useDbChanges(({ operation, table, id }) => {
-  if (operation === 'deleted' && table === 'animes' && id === animeId.value) {
-    router.push(backTo.value)
-  }
-})
-
-useIpc('library:entity-merged', (_e, event) => {
-  if (event.entityType === 'anime' && event.sourceId === animeId.value) {
-    router.replace({ path: `/library/anime/${event.targetId}`, query: route.query })
-  }
-})
 
 // =============================================================================
 // State
@@ -176,8 +164,18 @@ async function handleOpenAnimeDir() {
     state="not-found"
     :icon="getEntityIcon('anime')"
     :title="m.library.detail.notFoundTitle({ label: m.library.entities.anime })"
+    :description="m.library.detail.notFoundDescription({ label: m.library.entities.anime })"
     class="h-full bg-background"
-  />
+  >
+    <template #actions>
+      <Button
+        variant="secondary"
+        @click="exit"
+      >
+        {{ m.app.notFound.backToLibrary }}
+      </Button>
+    </template>
+  </StateView>
 
   <!-- Content -->
   <div

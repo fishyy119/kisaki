@@ -13,6 +13,11 @@ import { Icon } from '@renderer/components/ui/icon'
 import { VirtualList } from '@renderer/components/ui/virtual'
 import { CollectionContextMenu } from '@renderer/components/shared/collection'
 import { cn } from '@renderer/utils/cn'
+import {
+  formatLibraryContext,
+  getLibraryContextPath,
+  type LibraryContext
+} from '@renderer/utils/library-context'
 import { useLibraryExplorerStore } from '../../stores'
 import LibraryExplorerListItem from './explorer-list-item.vue'
 import type { CollectionGroup } from '../../composables'
@@ -40,12 +45,15 @@ const { collapsedIds } = storeToRefs(store)
 
 const isCollapsed = computed(() => collapsedIds.value.includes(props.group.id))
 
-const linkTarget = computed(() => {
-  if (props.isUncategorized) {
-    return `/library/uncategorized/${props.entityType}`
-  }
-  return `/library/collection/${props.group.id}`
-})
+const groupContext = computed<LibraryContext>(() =>
+  props.isUncategorized
+    ? { kind: 'uncategorized' }
+    : { kind: 'collection', collectionId: props.group.id }
+)
+
+const groupFrom = computed(() => formatLibraryContext(groupContext.value))
+
+const linkTarget = computed(() => getLibraryContextPath(groupContext.value, props.entityType))
 
 function handleToggleClick(e: MouseEvent) {
   e.preventDefault()
@@ -64,8 +72,9 @@ function handleGroupRowClick(e: MouseEvent) {
   e.preventDefault()
   e.stopPropagation()
 
-  const from = props.isUncategorized ? 'uncategorized' : `collection:${props.group.id}`
-  const keys = props.group.entities.map((entity) => toExplorerSelectionKey(from, entity.id))
+  const keys = props.group.entities.map((entity) =>
+    toExplorerSelectionKey(groupFrom.value, entity.id)
+  )
   const anchorKey = keys.length > 0 ? keys[keys.length - 1] : null
   store.toggleGroupSelection(keys, anchorKey)
 }
@@ -149,7 +158,7 @@ function handleGroupRowClick(e: MouseEvent) {
         <LibraryExplorerListItem
           :entity="item"
           :entity-type="props.entityType"
-          :from="props.isUncategorized ? 'uncategorized' : `collection:${props.group.id}`"
+          :from="groupFrom"
         />
       </template>
     </VirtualList>

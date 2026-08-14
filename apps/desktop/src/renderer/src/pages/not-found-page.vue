@@ -3,24 +3,30 @@
   404 page for unmatched routes.
 -->
 <script setup lang="ts">
-import { Icon } from '@renderer/components/ui/icon'
 import { RouterLink } from 'vue-router'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { LIBRARY_HOME_PATH } from '@renderer/utils/library-context'
 
 const { m } = useI18n()
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center h-full gap-4 bg-background">
-    <Icon
-      icon="icon-[mdi--alert-circle-outline]"
-      class="size-16 text-muted-foreground"
-    />
-    <h1 class="text-2xl font-bold">{{ m.app.notFound.title }}</h1>
-    <p class="text-muted-foreground">{{ m.app.notFound.description }}</p>
-    <Button as-child>
-      <RouterLink to="/library">{{ m.app.notFound.backToLibrary }}</RouterLink>
-    </Button>
-  </div>
+  <StateView
+    state="not-found"
+    icon="icon-[mdi--compass-off-outline]"
+    :title="m.app.notFound.title"
+    :description="m.app.notFound.description"
+    class="h-full bg-background"
+  >
+    <template #actions>
+      <Button
+        as-child
+        variant="secondary"
+      >
+        <RouterLink :to="LIBRARY_HOME_PATH">{{ m.app.notFound.backToLibrary }}</RouterLink>
+      </Button>
+    </template>
+  </StateView>
 </template>

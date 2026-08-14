@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": ["src/host/**/*", "src/shared/**/*", "kisx.config.ts"],
+  "compilerOptions": {
+    "composite": true,
+    "types": ["node"]
+  }
+}

@@ -6,13 +6,10 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed, ref, watch } from 'vue'
-import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { scraperProfiles, type ScraperProfile } from '@shared/db'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import {
@@ -32,7 +29,7 @@ import {
   TableRow,
   TableCell
 } from '@renderer/components/ui/table'
-import { ScraperProfileSelect } from '@renderer/components/shared/scraper'
+import { ScraperProfileSelect, useSearchProviderSource } from '@renderer/components/shared/scraper'
 import type { CharacterSearchResult } from '@shared/scraper'
 import type { CharacterSearcherSelection } from './types'
 
@@ -57,7 +54,7 @@ const emit = defineEmits<{
 }>()
 
 const selectedProfileId = ref('')
-const selectedProfile = ref<ScraperProfile | null>(null)
+const searchProviderSource = useSearchProviderSource(selectedProfileId, 'character')
 
 function resetSelectionState() {
   searchResults.value = []
@@ -76,31 +73,11 @@ watch(
   { immediate: true }
 )
 
-watch(
-  selectedProfileId,
-  async (id, previousId) => {
-    if (previousId && previousId !== id) {
-      resetSelectionState()
-    }
-
-    if (!id) {
-      selectedProfile.value = null
-      return
-    }
-
-    selectedProfile.value = null
-    const profile = await db.query.scraperProfiles.findFirst({
-      where: eq(scraperProfiles.id, id)
-    })
-
-    if (selectedProfileId.value !== id) {
-      return
-    }
-
-    selectedProfile.value = profile ?? null
-  },
-  { immediate: true }
-)
+watch(selectedProfileId, (id, previousId) => {
+  if (previousId && previousId !== id) {
+    resetSelectionState()
+  }
+})
 
 const searchQuery = ref('')
 watch(
@@ -135,15 +112,15 @@ const canSubmit = computed(
 )
 
 watch(
-  [selectedProfileId, selectedProfile, characterId, searchResults, selectedResultId],
+  [selectedProfileId, searchProviderSource, characterId, searchResults, selectedResultId],
   () => {
     const trimmedId = characterId.value.trim()
     const selectedResult = selectedResultId.value
       ? searchResults.value.find((r) => r.id === selectedResultId.value)
       : null
     const fallbackKnownIds =
-      selectedProfile.value?.searchProviderId && trimmedId
-        ? [{ source: selectedProfile.value.searchProviderId, id: trimmedId }]
+      searchProviderSource.value && trimmedId
+        ? [{ source: searchProviderSource.value, id: trimmedId }]
         : []
 
     emit('selectionChange', {

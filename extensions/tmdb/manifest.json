@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@kisaki3/extension-api/schemas/extension-manifest.schema.json",
+  "id": "builtin.tmdb",
+  "name": "TMDB",
+  "version": "0.0.1",
+  "categories": ["scraper"],
+  "entry": "./dist/index.mjs",
+  "ui": "./dist/ui",
+  "description": {
+    "en": "Built-in The Movie Database scraper with native episode group support.",
+    "ja": "エピソードグループに対応した Kisaki 内蔵の The Movie Database スクレイパー。",
+    "zh-Hans": "Kisaki 内置的 The Movie Database 刮削器，原生支持剧集组。",
+    "zh-Hant": "Kisaki 內建的 The Movie Database 刮削器，原生支援劇集組。"
+  },
+  "author": "Kisaki",
+  "homepage": "https://www.themoviedb.org",
+  "keywords": ["tmdb", "scraper", "anime", "tv", "movie", "episode-group"],
+  "engines": {
+    "kisakiExtensionApi": "=0.0.12"
+  }
+}

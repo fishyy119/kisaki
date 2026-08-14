@@ -28,6 +28,10 @@ export const scraper = {
     anime: {
       name: 'Anime',
       description: 'Chinese anime metadata backed by Bangumi'
+    },
+    animeBangumiTmdb: {
+      name: 'Anime (Bangumi + TMDB)',
+      description: 'Bangumi metadata, with TMDB artwork and episodes filling the gaps'
     }
   },
 

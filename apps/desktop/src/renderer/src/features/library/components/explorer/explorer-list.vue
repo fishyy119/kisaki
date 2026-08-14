@@ -14,6 +14,7 @@ import { VirtualList } from '@renderer/components/ui/virtual'
 import { useRenderState } from '@renderer/composables'
 import { useDefaultFromStore } from '@renderer/stores'
 import { getEntityIcon } from '@renderer/utils/format'
+import { formatLibraryContext } from '@renderer/utils/library-context'
 import { useLibraryExplorerStore } from '../../stores'
 import { useExplorerList } from '../../composables'
 import LibraryExplorerGroup from './explorer-group.vue'
@@ -24,6 +25,12 @@ import { toExplorerSelectionKey } from '../../utils/explorer-selection'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
+
+const UNCATEGORIZED_FROM = formatLibraryContext({ kind: 'uncategorized' })
+
+function toCollectionFrom(collectionId: string): string {
+  return formatLibraryContext({ kind: 'collection', collectionId })
+}
 
 const store = useLibraryExplorerStore()
 const defaultFromStore = useDefaultFromStore()
@@ -68,12 +75,14 @@ const visibleSelectionKeys = computed(() => {
   const keys: string[] = []
   for (const group of data.value.collections) {
     if (collapsedIds.value.includes(group.id)) continue
-    const from = `collection:${group.id}`
+    const from = toCollectionFrom(group.id)
     keys.push(...group.entities.map((e) => toExplorerSelectionKey(from, e.id)))
   }
 
   if (!collapsedIds.value.includes('__uncategorized__')) {
-    keys.push(...data.value.uncategorized.map((e) => toExplorerSelectionKey('uncategorized', e.id)))
+    keys.push(
+      ...data.value.uncategorized.map((e) => toExplorerSelectionKey(UNCATEGORIZED_FROM, e.id))
+    )
   }
 
   return keys
@@ -86,13 +95,13 @@ const allKnownSelectionKeys = computed(() => {
 
   // Grouped view instances (including collapsed groups).
   for (const group of data.value.collections) {
-    const from = `collection:${group.id}`
+    const from = toCollectionFrom(group.id)
     for (const entity of group.entities) {
       keys.add(toExplorerSelectionKey(from, entity.id))
     }
   }
   for (const entity of data.value.uncategorized) {
-    keys.add(toExplorerSelectionKey('uncategorized', entity.id))
+    keys.add(toExplorerSelectionKey(UNCATEGORIZED_FROM, entity.id))
   }
 
   // Filter view instances (stable key space).

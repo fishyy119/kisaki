@@ -13,6 +13,7 @@ import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
 import type { ContentEntityData } from '@renderer/composables'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
+import { formatLibraryContext } from '@renderer/utils/library-context'
 import type { ContentEntityType } from '@shared/common'
 import { useUncategorizedList } from '../composables'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -42,7 +43,7 @@ const { entities } = useUncategorizedList()
 function handleEntityClick(entity: ContentEntityData) {
   router.push({
     path: getEntityDetailPath(entityType.value, entity.id),
-    query: { from: 'uncategorized' }
+    query: { from: formatLibraryContext({ kind: 'uncategorized' }) }
   })
 }
 </script>

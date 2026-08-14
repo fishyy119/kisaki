@@ -29,6 +29,10 @@ export const scraper = {
     anime: {
       name: 'アニメ',
       description: 'Bangumi をベースにしたアニメ用プリセット'
+    },
+    animeBangumiTmdb: {
+      name: 'アニメ（Bangumi + TMDB）',
+      description: 'Bangumi を主軸に、TMDB がエピソードと画像を補完'
     }
   },
 

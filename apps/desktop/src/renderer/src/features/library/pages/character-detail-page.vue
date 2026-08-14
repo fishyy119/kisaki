@@ -6,7 +6,7 @@
  */
 
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -19,8 +19,7 @@ import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/
 import {
   useAmbientLight,
   useCharacterRouteProvider,
-  useDbChanges,
-  useIpc
+  useEntityDetailRoute
 } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
@@ -34,10 +33,10 @@ import { getEntityIcon } from '@renderer/utils/format'
 // =============================================================================
 
 const route = useRoute()
-const router = useRouter()
 
 const characterId = computed(() => route.params.characterId as string)
-const backTo = computed(() => (route.query.from as string) || '/library')
+
+const { exit } = useEntityDetailRoute('character', characterId)
 
 const { m } = useI18n()
 
@@ -57,18 +56,6 @@ useAmbientLight(() =>
       })
     : null
 )
-
-useDbChanges(({ operation, table, id }) => {
-  if (operation === 'deleted' && table === 'characters' && id === characterId.value) {
-    router.push(backTo.value)
-  }
-})
-
-useIpc('library:entity-merged', (_e, event) => {
-  if (event.entityType === 'character' && event.sourceId === characterId.value) {
-    router.replace({ path: `/library/character/${event.targetId}`, query: route.query })
-  }
-})
 
 // =============================================================================
 // State
@@ -128,8 +115,18 @@ function handleRevealSpoilersConfirm() {
     state="not-found"
     :icon="getEntityIcon('character')"
     :title="m.library.detail.notFoundTitle({ label: m.library.entities.character })"
+    :description="m.library.detail.notFoundDescription({ label: m.library.entities.character })"
     class="h-full bg-background"
-  />
+  >
+    <template #actions>
+      <Button
+        variant="secondary"
+        @click="exit"
+      >
+        {{ m.app.notFound.backToLibrary }}
+      </Button>
+    </template>
+  </StateView>
 
   <!-- Content -->
   <div

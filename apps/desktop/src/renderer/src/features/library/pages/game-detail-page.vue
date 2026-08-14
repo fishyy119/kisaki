@@ -6,7 +6,7 @@
  */
 
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -25,7 +25,7 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 import { GamePlayButton, GameDetailContent } from '@renderer/components/shared/game'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
-import { useAmbientLight, useDbChanges, useGameRouteProvider, useIpc } from '@renderer/composables'
+import { useAmbientLight, useEntityDetailRoute, useGameRouteProvider } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -54,10 +54,10 @@ const STATUS_OPTIONS = computed<{ value: GameStatus; label: string }[]>(() => [
 // =============================================================================
 
 const route = useRoute()
-const router = useRouter()
 
 const gameId = computed(() => route.params.gameId as string)
-const backTo = computed(() => (route.query.from as string) || '/library')
+
+const { exit } = useEntityDetailRoute('game', gameId)
 
 // =============================================================================
 // Provider (data settled during navigation by the route loader)
@@ -72,18 +72,6 @@ useAmbientLight(() =>
     ? getAttachmentUrl('games', game.value.id, game.value.coverFile, { width: 100, height: 100 })
     : null
 )
-
-useDbChanges(({ operation, table, id }) => {
-  if (operation === 'deleted' && table === 'games' && id === gameId.value) {
-    router.push(backTo.value)
-  }
-})
-
-useIpc('library:entity-merged', (_e, event) => {
-  if (event.entityType === 'game' && event.sourceId === gameId.value) {
-    router.replace({ path: `/library/game/${event.targetId}`, query: route.query })
-  }
-})
 
 // =============================================================================
 // State
@@ -180,8 +168,18 @@ const canOpenGameDir = computed(() => {
     state="not-found"
     :icon="getEntityIcon('game')"
     :title="m.library.detail.notFoundTitle({ label: m.library.entities.game })"
+    :description="m.library.detail.notFoundDescription({ label: m.library.entities.game })"
     class="h-full bg-background"
-  />
+  >
+    <template #actions>
+      <Button
+        variant="secondary"
+        @click="exit"
+      >
+        {{ m.app.notFound.backToLibrary }}
+      </Button>
+    </template>
+  </StateView>
 
   <!-- Content -->
   <div
