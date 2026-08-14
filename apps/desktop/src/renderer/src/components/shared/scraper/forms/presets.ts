@@ -103,27 +103,6 @@ const VIDEO_GAME: ScraperPresetDefinition = {
 // Anime Presets
 // =============================================================================
 
-/** Anime preset using Bangumi as the sole data source */
-const ANIME_CN: ScraperPresetDefinition = {
-  id: 'anime-cn',
-  copy: (m) => m.scraper.presets.anime,
-  mediaType: 'anime',
-  defaultLocale: 'zh-Hans',
-  searchProviderId: BANGUMI_PROVIDER_ID,
-  slotConfigs: {
-    info: createSlotConfig('info', [BANGUMI_PROVIDER_ID]),
-    tags: createSlotConfig('tags', [BANGUMI_PROVIDER_ID]),
-    episodes: createSlotConfig('episodes', [BANGUMI_PROVIDER_ID]),
-    characters: createSlotConfig('characters', [BANGUMI_PROVIDER_ID]),
-    persons: createSlotConfig('persons', [BANGUMI_PROVIDER_ID]),
-    companies: createSlotConfig('companies', [BANGUMI_PROVIDER_ID]),
-    relatedEntries: createSlotConfig('relatedEntries', [BANGUMI_PROVIDER_ID]),
-    covers: createSlotConfig('covers', [BANGUMI_PROVIDER_ID]),
-    backdrops: createSlotConfig('backdrops', [BANGUMI_PROVIDER_ID]),
-    logos: createEmptySlotConfig('logos')
-  }
-}
-
 /**
  * Anime preset pairing Bangumi with TMDB.
  *
@@ -131,10 +110,13 @@ const ANIME_CN: ScraperPresetDefinition = {
  * one-entry-per-season shape of the library; TMDB fills what Bangumi lacks,
  * above all backdrops and logos. Episodes stay on `first` so a single source
  * decides the numbering instead of two orderings being spliced together.
+ *
+ * A missing TMDB key fails only TMDB's own tasks, so the profile still scrapes
+ * everything Bangumi covers; the pairing therefore needs no Bangumi-only twin.
  */
-const ANIME_BANGUMI_TMDB: ScraperPresetDefinition = {
-  id: 'anime-bangumi-tmdb',
-  copy: (m) => m.scraper.presets.animeBangumiTmdb,
+const ANIME: ScraperPresetDefinition = {
+  id: 'anime',
+  copy: (m) => m.scraper.presets.anime,
   mediaType: 'anime',
   defaultLocale: 'zh-Hans',
   searchProviderId: BANGUMI_PROVIDER_ID,
@@ -168,12 +150,7 @@ const ANIME_BANGUMI_TMDB: ScraperPresetDefinition = {
 // Preset Registry
 // =============================================================================
 
-const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [
-  VISUAL_NOVEL_CN,
-  VIDEO_GAME,
-  ANIME_CN,
-  ANIME_BANGUMI_TMDB
-]
+const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [VISUAL_NOVEL_CN, VIDEO_GAME, ANIME]
 
 function resolvePreset({ copy, ...preset }: ScraperPresetDefinition): ScraperPreset {
   return { ...preset, ...copy(messages.value) }
