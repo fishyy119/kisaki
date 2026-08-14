@@ -74,6 +74,13 @@ const formData = ref<MediaRelationDraft>({
   note: ''
 })
 
+const selectExcludeIds = computed(() => {
+  const excludeIds =
+    formData.value.targetType === 'game' ? props.excludeGameIds : props.excludeAnimeIds
+
+  return isAddMode.value ? excludeIds : excludeIds.filter((id) => id !== formData.value.targetId)
+})
+
 const allowedTypes = computed(() =>
   getMediaRelationTypeRules(props.mediaType, formData.value.targetType)
 )
@@ -189,7 +196,7 @@ function handleCancel() {
                 <GameSelect
                   v-if="formData.targetType === 'game'"
                   v-model="formData.targetId"
-                  :exclude-ids="excludeGameIds"
+                  :exclude-ids="selectExcludeIds"
                   :placeholder="
                     m.library.select.selectPlaceholder({ label: m.library.entities.game })
                   "
@@ -197,7 +204,7 @@ function handleCancel() {
                 <AnimeSelect
                   v-else
                   v-model="formData.targetId"
-                  :exclude-ids="excludeAnimeIds"
+                  :exclude-ids="selectExcludeIds"
                   :placeholder="
                     m.library.select.selectPlaceholder({ label: m.library.entities.anime })
                   "

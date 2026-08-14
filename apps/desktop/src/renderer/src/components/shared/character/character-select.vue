@@ -35,7 +35,8 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: undefined,
   emptyText: undefined,
   disabled: false,
-  excludeIds: () => []
+  excludeIds: () => [],
+  showSelectedLabel: true
 })
 
 const { m } = useI18n()

@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
   emptyText: undefined,
   disabled: false,
   excludeIds: () => [],
+  showSelectedLabel: true,
   allowCreate: false
 })
 
