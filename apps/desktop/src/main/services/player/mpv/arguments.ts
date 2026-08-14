@@ -34,7 +34,8 @@ export function buildMpvArguments(
     '--keep-open=no',
     '--save-position-on-quit=no',
     '--write-filename-in-watch-later-config=no',
-    '--force-window=yes'
+    '--force-window=yes',
+    '--sub-auto=fuzzy'
   ]
 
   if (target.title) {

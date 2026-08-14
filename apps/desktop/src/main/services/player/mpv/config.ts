@@ -25,7 +25,7 @@ const CONFIG_TEMPLATE = `# mpv configuration for playback started by Kisaki.
 #
 # Kisaki passes a few options on the command line, which always override this
 # file: input-ipc-server, idle, keep-open, save-position-on-quit,
-# write-filename-in-watch-later-config, start, alang, slang.
+# write-filename-in-watch-later-config, sub-auto, start, alang, slang.
 #
 # Resume positions and watched state are tracked by Kisaki itself, so
 # watch-later style options have no effect on what the library records.
