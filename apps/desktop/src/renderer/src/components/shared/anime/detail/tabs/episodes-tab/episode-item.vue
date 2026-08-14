@@ -79,7 +79,7 @@ const {
         @click="emit('toggleWatched')"
       >
         <Icon
-          :icon="isWatched ? 'icon-[mdi--check-circle]' : 'icon-[mdi--circle-outline]'"
+          :icon="isWatched ? 'icon-[mdi--circle]' : 'icon-[mdi--circle-outline]'"
           :class="cn('size-4', isWatched && 'text-success')"
         />
       </Button>
