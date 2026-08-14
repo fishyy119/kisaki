@@ -231,16 +231,16 @@ fills missing entity keys with disabled defaults).
 Kisaki targets eight root media types. The list is the product's closed growth plan: a new root
 media type is added only when it fails every existing type's split test below.
 
-| Media type | Consumption unit               | Playback/technical layer    | Status  |
-| ---------- | ------------------------------ | --------------------------- | ------- |
-| game       | Session on an installed build  | Process launch + monitoring | Shipped |
-| anime      | Episode within a season entry  | Video playback (mpv)        | Shipped |
-| tv         | Episode within a season entry  | Video playback (mpv)        | Planned |
-| movie      | Single feature                 | Video playback (mpv)        | Planned |
-| music      | Track within a release         | Audio playback              | Planned |
-| audio      | Track within a release (voice) | Audio playback              | Planned |
-| comic      | Page within a volume/chapter   | Image reading               | Planned |
-| book       | Page/position within a volume  | Text reading                | Planned |
+| Media type | Consumption unit                  | Playback/technical layer    | Status  |
+| ---------- | --------------------------------- | --------------------------- | ------- |
+| game       | Session on an installed build     | Process launch + monitoring | Shipped |
+| anime      | Episode within a season entry     | Video playback (mpv)        | Shipped |
+| tv         | Episode within a season of a show | Video playback (mpv)        | Planned |
+| movie      | Single feature                    | Video playback (mpv)        | Planned |
+| music      | Track within a release            | Audio playback              | Planned |
+| audio      | Track within a release (voice)    | Audio playback              | Planned |
+| comic      | Page within a volume/chapter      | Image reading               | Planned |
+| book       | Page/position within a volume     | Text reading                | Planned |
 
 Splitting rules, in the order they decide:
 
@@ -256,13 +256,47 @@ Splitting rules, in the order they decide:
 
 Consequences of the taxonomy:
 
-- `anime` and `tv` share the season-with-episodes shape and the video engine, but keep separate
-  entries because their metadata graphs and sources differ; whatever they prove invariant may be
-  extracted once both exist.
+- `anime` and `tv` share the video engine and the episode progress model, but their metadata graphs,
+  sources, and entry grain all differ, so they keep separate tables; whatever they prove invariant
+  may be extracted once both exist.
 - `movie` has one playable file per entry, so it owns no episode table.
 - `comic` and `book` split on the technical layer (image reading vs. text reflow), not on genre.
-- Seasons are separate entries linked by media relations; trailers and creditless openings are
-  extras of an entry, not episodes.
+- Trailers and creditless openings are extras of an entry, not episodes.
+
+### Entry Grain
+
+The split test decides _whether_ a media type exists; entry grain decides _what one row of its table
+is_. An entry owns naming identity, tracking status, rating, the external-id anchor for re-scrapes
+and dedupe, directory ownership, and every user-data attachment (notes, tags, collections). Those
+must sit on one layer, so grain is a deliberate per-type decision.
+
+Put the entry where the domain puts strong identity — the layer at which upstream production and the
+metadata sources issue ids, titles, and ratings. Grain is not a UI preference, and it is never
+inherited from whichever media type shipped first.
+
+- **`anime` entries are seasons and standalone works.** TV anime is commissioned per cour, so
+  sequels ship as new productions with their own titles, staff, and ids; every anime source
+  (Bangumi, MAL, AniList, AniDB) anchors ids, ratings, and watch status there, and none issues a
+  franchise id. A franchise is therefore a connected component of `media_relations`, not a row: the
+  sequel graph is not a tree (interleaved films, split cours, side stories, summaries, alternative
+  retellings), so an integer season number would lose information.
+- **`tv` entries are shows**, with seasons as weak child rows and episodes beneath them. Seasons are
+  renewals under one contract: brand, showrunner, and source ids persist at show level, seasons
+  usually carry no title of their own, the season graph is a tree (specials as season 0), `SxxEyy` is
+  the industry's own encoding, and one show owns one directory tree — often with episodes flat in its
+  root. Season-level facts that some ecosystems do carry (season posters, anthology season titles,
+  per-season external ids) are columns on the season row.
+- Remaining planned types decide their grain when they land, by the same question.
+
+Grain differences stay contained. Below the entry, mechanics are isomorphic across the video types
+(watch state, resume position, sessions, file probing, player integration), and above it the entity
+seam is unchanged: the `tv` key in a `Record<AllEntityType, ...>` registry means the show, so adding
+the type still costs +1 table, +1 query spec, +1 UI spec, +1 registry entry.
+
+Do not resolve a grain mismatch by letting grain vary per row, by adding a franchise entity no
+source can identify, or by collapsing every type into one generic parent-child item table. Each
+trades a per-type decision for per-row ambiguity and loses typed vocabulary plus compile-time
+exhaustiveness.
 
 ## Precise Abstraction & Media-Type Extensibility
 
@@ -363,6 +397,8 @@ question the row answers, not by table name.
   pairs carry the structural words (sequel/prequel, sideStory/parentStory, summary/fullStory,
   alternative), cross-type pairs carry provenance only (adaptation/sourceMaterial). Adding a media
   type forces new pair entries at compile time.
+- Which structures those words express follows entry grain: anime seasons are sequel edges between
+  entries, while tv seasons live inside the show entry, so tv edges carry spin-offs and remakes only.
 - A same-class metadata graph (for example `company_relations` for corporate succession) would
   follow the same polymorphic directed shape if the product ever needs it.
 

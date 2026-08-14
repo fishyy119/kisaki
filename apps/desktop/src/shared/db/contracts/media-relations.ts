@@ -60,8 +60,12 @@ const CROSS_TYPE_RELATION_TYPES: readonly MediaRelationType[] = [
 
 /**
  * Allowed relation types per ordered endpoint pair. Same-type pairs carry the
- * structural vocabulary (seasons, summaries, versions); cross-type pairs carry
+ * structural vocabulary (sequels, summaries, versions); cross-type pairs carry
  * provenance only. Adding a media type forces entries here at compile time.
+ *
+ * Which structures that vocabulary expresses follows entry grain: anime seasons
+ * are separate entries joined by these edges, while tv seasons will live inside
+ * the show entry.
  */
 export const MEDIA_RELATION_TYPE_RULES: Record<MediaTypePair, readonly MediaRelationType[]> = {
   'game-game': SAME_TYPE_RELATION_TYPES,
