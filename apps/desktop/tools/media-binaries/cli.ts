@@ -1,12 +1,13 @@
 #!/usr/bin/env tsx
 
-import { fetchMediaBinaries } from './fetch'
+import { ensureMediaBinaries, fetchMediaBinaries } from './fetch'
 import { createMediaBinaryToolContext } from './paths'
-import { checkMediaBinaries, stageMediaBinaries } from './stage'
+import { checkMediaBinaries, missingMediaBinariesError, stageMediaBinaries } from './stage'
 
 const USAGE = [
   'Usage:',
   '  media-binaries fetch                Download pinned mpv/ffprobe releases and stage them',
+  '  media-binaries ensure               Fetch pinned tools when the current platform is missing any',
   '  media-binaries stage --from <dir>   Copy mpv/ffprobe into resources/bin/<platform>-<arch>',
   '  media-binaries check                Verify the current platform has every bundled tool'
 ].join('\n')
@@ -25,6 +26,11 @@ async function main(): Promise<void> {
     return
   }
 
+  if (command === 'ensure') {
+    await ensureMediaBinaries(context)
+    return
+  }
+
   if (command === 'stage') {
     const sourceDir = readOption(args, '--from')
     if (!sourceDir) {
@@ -40,13 +46,7 @@ async function main(): Promise<void> {
     const missing = statuses.filter((status) => !status.present)
 
     if (missing.length > 0) {
-      throw new Error(
-        [
-          `Missing bundled media tools for ${context.platform}-${context.arch}:`,
-          ...missing.map((status) => `  ${status.executable} -> ${status.targetPath}`),
-          'Run: pnpm --filter kisaki fetch:media-binaries (or stage:media-binaries --from <dir>)'
-        ].join('\n')
-      )
+      throw missingMediaBinariesError(context, missing)
     }
 
     console.log(

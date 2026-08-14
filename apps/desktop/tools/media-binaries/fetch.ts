@@ -11,6 +11,7 @@ import { path7za } from '7zip-bin'
 import { getBundledBinaryPlatformDir, toBundledExecutableName } from '../../src/shared/binaries'
 import type { MediaBinaryToolContext } from './paths'
 import { MEDIA_BINARY_SOURCES, type MediaBinarySource } from './sources'
+import { checkMediaBinaries, missingMediaBinariesError } from './stage'
 
 /**
  * Downloads the pinned release archives for the current platform, verifies
@@ -22,6 +23,38 @@ import { MEDIA_BINARY_SOURCES, type MediaBinarySource } from './sources'
  * so the built-in fetch routes through the proxy (Node >= 24).
  */
 export async function fetchMediaBinaries(context: MediaBinaryToolContext): Promise<void> {
+  const sources = pinnedSources(context)
+  await stageFromSources(context, sources)
+  console.log(`[media-binaries] Fetched ${sources.length} executable(s) into ${context.targetRoot}`)
+}
+
+/**
+ * Makes sure the current platform has every bundled tool. Already-staged files
+ * are left alone; missing files are fetched from the pin list. Platforms
+ * without pins still have to be staged by hand.
+ */
+export async function ensureMediaBinaries(context: MediaBinaryToolContext): Promise<void> {
+  const statuses = await checkMediaBinaries(context)
+  if (statuses.every((status) => status.present)) {
+    console.log(
+      `[media-binaries] ${statuses.length} executable(s) ready for ${context.platform}-${context.arch}`
+    )
+    return
+  }
+
+  const missing = statuses.filter((status) => !status.present)
+  console.log(
+    `[media-binaries] Missing ${missing.map((status) => status.executable).join(', ')}; fetching pinned sources`
+  )
+  await fetchMediaBinaries(context)
+
+  const remaining = (await checkMediaBinaries(context)).filter((status) => !status.present)
+  if (remaining.length > 0) {
+    throw missingMediaBinariesError(context, remaining)
+  }
+}
+
+function pinnedSources(context: MediaBinaryToolContext): readonly MediaBinarySource[] {
   const platformKey = getBundledBinaryPlatformDir(context.platform, context.arch)
   const sources = MEDIA_BINARY_SOURCES[platformKey]
 
@@ -31,6 +64,13 @@ export async function fetchMediaBinaries(context: MediaBinaryToolContext): Promi
     )
   }
 
+  return sources
+}
+
+async function stageFromSources(
+  context: MediaBinaryToolContext,
+  sources: readonly MediaBinarySource[]
+): Promise<void> {
   await mkdir(context.targetRoot, { recursive: true })
   const workDir = await mkdtemp(path.join(tmpdir(), 'kisaki-media-binaries-'))
 
@@ -41,8 +81,6 @@ export async function fetchMediaBinaries(context: MediaBinaryToolContext): Promi
   } finally {
     await rm(workDir, { recursive: true, force: true })
   }
-
-  console.log(`[media-binaries] Fetched ${sources.length} executable(s) into ${context.targetRoot}`)
 }
 
 async function fetchOne(

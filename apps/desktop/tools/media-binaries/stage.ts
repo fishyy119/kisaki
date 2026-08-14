@@ -59,6 +59,20 @@ export async function checkMediaBinaries(
   )
 }
 
+/** Shared failure for check/ensure when the staged layout is still incomplete. */
+export function missingMediaBinariesError(
+  context: MediaBinaryToolContext,
+  missing: readonly MediaBinaryStatus[]
+): Error {
+  return new Error(
+    [
+      `Missing bundled media tools for ${context.platform}-${context.arch}:`,
+      ...missing.map((status) => `  ${status.executable} -> ${status.targetPath}`),
+      'Run: pnpm --filter kisaki fetch:media-binaries (or stage:media-binaries --from <dir>)'
+    ].join('\n')
+  )
+}
+
 async function isFile(candidate: string): Promise<boolean> {
   try {
     return (await stat(candidate)).isFile()
