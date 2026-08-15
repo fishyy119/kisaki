@@ -15,6 +15,7 @@ import type {
   EntityMenuScope
 } from '../contributions/entity-menus'
 import type {
+  AnimeScraperLookup,
   AnimeScraperSlot,
   AnimeSessionResultMap,
   AnimeSearchResult,
@@ -24,6 +25,7 @@ import type {
   CompanyScraperSlot,
   CompanySessionResultMap,
   CompanySearchResult,
+  GameScraperLookup,
   GameScraperSlot,
   GameSessionResultMap,
   GameSearchResult,
@@ -221,11 +223,11 @@ export type ScraperProviderSearchResponse =
 
 export type ScraperProviderResolveRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & {
-      lookup: ScraperLookup
+      lookup: GameScraperLookup
       locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'anime'> & {
-      lookup: ScraperLookup
+      lookup: AnimeScraperLookup
       locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'person'> & {

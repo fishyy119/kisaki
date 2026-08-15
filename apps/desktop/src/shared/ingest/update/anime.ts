@@ -1,3 +1,4 @@
+import type { AnimeScraperLookup } from '@shared/scraper'
 import {
   defineIngestUpdateSurfaces,
   listIngestUpdateSurfaceKeys,
@@ -63,5 +64,5 @@ export type AnimeUpdateMediaSurface = IngestUpdateSurfaceKeysByGroup<
 >
 
 export type AnimeUpdateSelection = IngestUpdateSelection<AnimeUpdateSurface>
-export type AnimeUpdateRequest = IngestUpdateRequest<AnimeUpdateSurface>
+export type AnimeUpdateRequest = IngestUpdateRequest<AnimeUpdateSurface, AnimeScraperLookup>
 export type AnimeBatchUpdateRequest = IngestBatchUpdateRequest<AnimeUpdateSurface>

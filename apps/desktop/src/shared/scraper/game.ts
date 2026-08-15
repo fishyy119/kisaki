@@ -7,6 +7,7 @@
 
 import type { PartialDate } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
+import type { MediaScraperLookup } from './media'
 import type { ScraperCapability } from './slot'
 
 // =============================================================================
@@ -20,6 +21,16 @@ export interface GameScraperProviderInfo {
   externalIdSource: string
   capabilities: ScraperCapability[]
 }
+
+// =============================================================================
+// Lookup
+// =============================================================================
+
+/**
+ * Game lookup. Game entries are told apart by the shared media facts alone, so
+ * this names the media shape rather than restating it.
+ */
+export type GameScraperLookup = MediaScraperLookup
 
 // =============================================================================
 // Search

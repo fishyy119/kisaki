@@ -5,14 +5,14 @@
 import type { AnimeScraperSlot } from '@shared/db'
 import type { AnimeEpisodeInfo, Tag } from '@shared/metadata'
 import type {
+  AnimeScraperLookup,
   AnimeSearchResult,
   ScrapedAnimeInfo,
   ScrapedAnimeCharacterFact,
   ScrapedAnimeCompanyFact,
   ScrapedAnimePersonFact,
   ScrapedRelatedEntryFact,
-  ScraperCapability,
-  ScraperLookup
+  ScraperCapability
 } from '@shared/scraper'
 import {
   type BaseScraperSession,
@@ -44,7 +44,10 @@ export interface AnimeScraperProvider {
   readonly capabilities: readonly ScraperCapability[]
 
   search(query: string, ctx: ScraperProviderContext): Promise<AnimeSearchResult[]>
-  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<AnimeResolvedTarget | null>
+  resolve(
+    lookup: AnimeScraperLookup,
+    ctx: ScraperProviderContext
+  ): Promise<AnimeResolvedTarget | null>
   openSession(
     target: AnimeResolvedTarget,
     ctx: ScraperProviderContext

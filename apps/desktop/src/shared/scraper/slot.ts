@@ -230,6 +230,9 @@ export function normalizeSlotConfigs<T extends ScraperMediaType>(
  * Uses name as the cross-provider identifier, with optional known IDs for precision.
  * When a provider's ID is in knownIds, it will be used directly without searching.
  * Otherwise, the handler will search by name to resolve the provider's internal ID.
+ *
+ * Media types whose entries need more than a name to be told apart extend this
+ * contract with the facts their providers can disambiguate on.
  */
 export interface ScraperLookup {
   /** Entity name - universal identifier across providers. */

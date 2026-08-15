@@ -6,7 +6,10 @@ import {
   type LibraryAnimeStatus
 } from '@kisaki3/extension-sdk'
 import { BangumiLocalMediaAdapter } from '../local/adapter'
+import { parseBangumiSubjectDate } from '../format/dates'
+import { mapBangumiAnimeFormat } from '../format/formats'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
+import { omitUndefined } from '../../utils/object'
 import type {
   BangumiMediaDescriptor,
   LocalEpisodeItem,
@@ -40,10 +43,15 @@ export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter<LibraryAnim
   }
 
   async addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult> {
-    const result = await kisaki.ingest.anime.add.fromScraper(input.profileId, {
-      name: input.name,
-      knownIds: [...input.knownIds]
-    })
+    const result = await kisaki.ingest.anime.add.fromScraper(
+      input.profileId,
+      omitUndefined({
+        name: input.name,
+        knownIds: [...input.knownIds],
+        releaseDate: parseBangumiSubjectDate(input.facts?.date),
+        format: mapBangumiAnimeFormat(input.facts?.platform)
+      })
+    )
 
     return { localId: result.animeId, isNew: result.isNew }
   }

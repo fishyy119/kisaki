@@ -5,7 +5,7 @@ import type {
   IngestAddGameFromScraperOptions,
   IngestAddGameFromScraperResult
 } from '@shared/ingest/add'
-import type { ScraperLookup } from '@shared/scraper'
+import type { GameScraperLookup } from '@shared/scraper'
 import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
@@ -42,7 +42,7 @@ export class GameAddHandler {
 
   startAddFromScraper(
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: GameAddFromScraperTaskRunOptions
   ): TaskRunStartResult {
     const normalized = normalizeIngestLookupInput(profileId, lookup)
@@ -62,13 +62,17 @@ export class GameAddHandler {
     })
     const run = this.createRun(normalizedLookup.name, options?.taskRunInitiator)
 
-    void this.handleAddDirectWithTaskRun(run, normalizedLookup, options)
+    void this.handleAddDirectWithTaskRun(
+      run,
+      { name: normalizedLookup.name, knownIds: normalizedLookup.knownIds },
+      options
+    )
     return { runId: run.id, createdAt: run.createdAt }
   }
 
   async addFromScraperWithTaskRun(
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: GameAddFromScraperTaskRunOptions
   ): Promise<IngestAddGameFromScraperResult> {
     const start = this.startAddFromScraper(profileId, lookup, options)
@@ -77,7 +81,7 @@ export class GameAddHandler {
 
   async addFromScraper(
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: GameAddFromScraperOptions
   ): Promise<IngestAddGameFromScraperResult> {
     const normalized = normalizeIngestLookupInput(profileId, lookup)
@@ -192,7 +196,7 @@ export class GameAddHandler {
   private async handleAddFromScraperWithTaskRun(
     run: TaskRunHandle,
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: GameAddFromScraperTaskRunOptions
   ): Promise<void> {
     try {
@@ -211,20 +215,17 @@ export class GameAddHandler {
 
   private async handleAddDirectWithTaskRun(
     run: TaskRunHandle,
-    lookup: ScraperLookup,
+    seed: IngestAddGameDirectSeed,
     options?: GameAddDirectTaskRunOptions
   ): Promise<void> {
     try {
       run.start()
       const { taskRunInitiator: _taskRunInitiator, ...operationOptions } = options ?? {}
-      const result = await this.addDirect(
-        { name: lookup.name, knownIds: lookup.knownIds },
-        {
-          ...operationOptions,
-          signal: run.context.signal,
-          onProgress: (update) => run.context.report(update)
-        }
-      )
+      const result = await this.addDirect(seed, {
+        ...operationOptions,
+        signal: run.context.signal,
+        onProgress: (update) => run.context.report(update)
+      })
       this.completeRun(run, result)
     } catch (error) {
       this.finishRunFromError(run, error)
@@ -265,7 +266,7 @@ export class GameAddHandler {
   }
 
   private tryResolveExistingGame(
-    knownIds: ScraperLookup['knownIds'],
+    knownIds: GameScraperLookup['knownIds'],
     options?: GameAddDirectOptions | GameAddFromScraperOptions
   ): IngestAddGameDirectResult | undefined {
     if (options?.gameDirPath) {

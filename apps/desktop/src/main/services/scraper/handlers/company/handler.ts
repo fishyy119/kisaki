@@ -67,7 +67,7 @@ export class CompanyScraperHandler {
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
     private i18n: I18nService,
-    private hooks: ScraperMediaHooks<CompanySearchResult, ScrapedCompanyBundle>
+    private hooks: ScraperMediaHooks<ScraperLookup, CompanySearchResult, ScrapedCompanyBundle>
   ) {}
 
   registerProvider(provider: CompanyScraperProvider): void {

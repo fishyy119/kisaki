@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import { ipcManager } from '@renderer/core/ipc'
@@ -30,8 +30,8 @@ import {
   TableCell
 } from '@renderer/components/ui/table'
 import { ScraperProfileSelect, useSearchProviderSource } from '@renderer/components/shared/scraper'
+import type { EntitySearcherSelection } from '@renderer/components/shared/entity'
 import type { PersonSearchResult } from '@shared/scraper'
-import type { PersonSearcherSelection } from './types'
 
 interface Props {
   /** Default profile ID to use */
@@ -55,7 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
 const { m, f } = useI18n()
 
 const emit = defineEmits<{
-  selectionChange: [selection: PersonSearcherSelection]
+  selectionChange: [selection: EntitySearcherSelection]
 }>()
 
 // Profile state - initialized via watch to maintain reactivity
@@ -97,7 +97,12 @@ watch(
   { immediate: true }
 )
 const isSearching = ref(false)
-const searchResults = ref<PersonSearchResult[]>([])
+/**
+ * Shallow: the picked row travels back to the main process inside the emitted
+ * lookup, and a reactive proxy cannot cross IPC. Rows are only ever replaced
+ * wholesale, so nothing here needs deep tracking.
+ */
+const searchResults = shallowRef<PersonSearchResult[]>([])
 const hasSearched = ref(false)
 
 const RESULT_TABLE_COLUMNS = ['', '28%', '7rem', '7rem']
@@ -133,10 +138,10 @@ watch(
 
     emit('selectionChange', {
       profileId: selectedProfileId.value,
-      personId: trimmedId,
-      personName: selectedResult?.name ?? searchQuery.value.trim(),
-      originalName: selectedResult?.originalName,
-      knownIds: selectedResult?.externalIds ?? fallbackKnownIds,
+      lookup: {
+        name: selectedResult?.originalName || selectedResult?.name || searchQuery.value.trim(),
+        knownIds: selectedResult?.externalIds ?? fallbackKnownIds
+      },
       canSubmit: canSubmit.value
     })
   },

@@ -7,9 +7,11 @@
 
 import { createWaterfallHook, type WaterfallHook } from '@main/hooks'
 import type {
+  AnimeScraperLookup,
   AnimeSearchResult,
   CharacterSearchResult,
   CompanySearchResult,
+  GameScraperLookup,
   GameSearchResult,
   PersonSearchResult,
   ScrapedAnimeBundle,
@@ -20,9 +22,9 @@ import type {
   ScraperLookup
 } from '@shared/scraper'
 
-export interface ScraperMediaHooks<TSearchResult, TBundle> {
+export interface ScraperMediaHooks<TLookup extends ScraperLookup, TSearchResult, TBundle> {
   /** Transforms the lookup before provider resolution starts. */
-  lookup: WaterfallHook<ScraperLookup>
+  lookup: WaterfallHook<TLookup>
   /** Transforms search results before they are returned to the caller. */
   searched: WaterfallHook<TSearchResult[]>
   /** Transforms the merged bundle before it is returned to the caller. */
@@ -30,11 +32,11 @@ export interface ScraperMediaHooks<TSearchResult, TBundle> {
 }
 
 export interface ScraperHooks {
-  game: ScraperMediaHooks<GameSearchResult, ScrapedGameBundle>
-  anime: ScraperMediaHooks<AnimeSearchResult, ScrapedAnimeBundle>
-  person: ScraperMediaHooks<PersonSearchResult, ScrapedPersonBundle>
-  company: ScraperMediaHooks<CompanySearchResult, ScrapedCompanyBundle>
-  character: ScraperMediaHooks<CharacterSearchResult, ScrapedCharacterBundle>
+  game: ScraperMediaHooks<GameScraperLookup, GameSearchResult, ScrapedGameBundle>
+  anime: ScraperMediaHooks<AnimeScraperLookup, AnimeSearchResult, ScrapedAnimeBundle>
+  person: ScraperMediaHooks<ScraperLookup, PersonSearchResult, ScrapedPersonBundle>
+  company: ScraperMediaHooks<ScraperLookup, CompanySearchResult, ScrapedCompanyBundle>
+  character: ScraperMediaHooks<ScraperLookup, CharacterSearchResult, ScrapedCharacterBundle>
 }
 
 export function createScraperHooks(): ScraperHooks {
@@ -47,11 +49,11 @@ export function createScraperHooks(): ScraperHooks {
   }
 }
 
-function createScraperMediaHooks<TSearchResult, TBundle>(
+function createScraperMediaHooks<TLookup extends ScraperLookup, TSearchResult, TBundle>(
   prefix: string
-): ScraperMediaHooks<TSearchResult, TBundle> {
+): ScraperMediaHooks<TLookup, TSearchResult, TBundle> {
   return {
-    lookup: createWaterfallHook<ScraperLookup>(`${prefix}.lookup`),
+    lookup: createWaterfallHook<TLookup>(`${prefix}.lookup`),
     searched: createWaterfallHook<TSearchResult[]>(`${prefix}.searched`),
     collected: createWaterfallHook<TBundle>(`${prefix}.collected`)
   }

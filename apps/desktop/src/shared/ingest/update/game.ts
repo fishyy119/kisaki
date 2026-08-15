@@ -1,3 +1,4 @@
+import type { GameScraperLookup } from '@shared/scraper'
 import {
   defineIngestUpdateSurfaces,
   listIngestUpdateSurfaceKeys,
@@ -57,5 +58,5 @@ export type GameUpdateMediaSurface = IngestUpdateSurfaceKeysByGroup<
 >
 
 export type GameUpdateSelection = IngestUpdateSelection<GameUpdateSurface>
-export type GameUpdateRequest = IngestUpdateRequest<GameUpdateSurface>
+export type GameUpdateRequest = IngestUpdateRequest<GameUpdateSurface, GameScraperLookup>
 export type GameBatchUpdateRequest = IngestBatchUpdateRequest<GameUpdateSurface>

@@ -1,4 +1,5 @@
 import type {
+  AnimeScraperLookup,
   AnimeScraperProvider,
   AnimeScraperSession,
   AnimeSearchResult,
@@ -18,6 +19,7 @@ import { TMDB_SOURCE_ID } from '../../utils/constants'
 import { TmdbExtensionError } from '../../utils/errors'
 import { toTmdbLanguage } from '../format/languages'
 import { createRequestContext, type TmdbRuntime } from '../runtime'
+import { selectTmdbAnimeCandidate } from './candidates'
 import { searchTmdbAnime } from './search'
 import { createTmdbAnimeSession } from './session'
 
@@ -55,7 +57,7 @@ export class TmdbAnimeProvider implements AnimeScraperProvider {
   }
 
   async resolve(
-    lookup: ScraperLookup,
+    lookup: AnimeScraperLookup,
     ctx: ScraperProviderContext
   ): Promise<IdResolvedTarget | null> {
     const known = this.findKnownRef(lookup)
@@ -63,9 +65,9 @@ export class TmdbAnimeProvider implements AnimeScraperProvider {
       return toResolvedTarget(formatTmdbSubjectId(known), lookup.name)
     }
 
-    const first = (await this.search(lookup.name, ctx))[0]
-    return first
-      ? toResolvedTarget(first.id, first.originalName ?? first.name, first.externalIds)
+    const picked = selectTmdbAnimeCandidate(await this.search(lookup.name, ctx), lookup)
+    return picked
+      ? toResolvedTarget(picked.id, picked.originalName ?? picked.name, picked.externalIds)
       : null
   }
 

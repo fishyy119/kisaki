@@ -1,4 +1,4 @@
-import type { ScraperLookup } from '@shared/scraper'
+import type { GameScraperLookup } from '@shared/scraper'
 import type { ExternalId } from '@shared/identity'
 import type { IngestAddResult } from '../common'
 
@@ -14,7 +14,7 @@ export interface IngestAddGameFromScraperOptions {
 
 export interface IngestAddGameFromScraperParams {
   profileId: string
-  lookup: ScraperLookup
+  lookup: GameScraperLookup
   options?: IngestAddGameFromScraperOptions
 }
 

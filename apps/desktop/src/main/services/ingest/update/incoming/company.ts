@@ -1,7 +1,6 @@
 import { normalizeExternalIds } from '@shared/identity'
 import type { CoreCompanyMetadata } from '@shared/metadata'
-import type { IngestUpdateLookup } from '@shared/ingest/update'
-import type { ScrapedCompanyBundle } from '@shared/scraper'
+import type { ScrapedCompanyBundle, ScraperLookup } from '@shared/scraper'
 import type { CompanyIncomingBuildResult } from '../types'
 import {
   normalizeOptionalString,
@@ -12,7 +11,7 @@ import {
 
 function buildCompanyCore(
   bundle: ScrapedCompanyBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): Partial<CoreCompanyMetadata> {
   const core: Partial<CoreCompanyMetadata> = {}
   const bundleCore = bundle?.core
@@ -44,7 +43,7 @@ function buildCompanyCore(
 
 export function buildCompanyIncoming(
   bundle: ScrapedCompanyBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): CompanyIncomingBuildResult {
   const core = buildCompanyCore(bundle, lookup)
   const logoUrls = normalizeUrlCandidates(bundle?.mediaCandidates?.logoUrls)

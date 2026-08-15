@@ -83,11 +83,25 @@ export {
   type ScrapedCharacterMetadata
 } from './bundle'
 
+// Media lookup facts shared by every media type
+export { normalizeMediaLookupFacts, type MediaScraperLookup } from './media'
+
 // Game-specific types
-export { type GameScraperProviderInfo, type GameSearchResult } from './game'
+export {
+  type GameScraperLookup,
+  type GameScraperProviderInfo,
+  type GameSearchResult
+} from './game'
 
 // Anime-specific types
-export { type AnimeScraperProviderInfo, type AnimeSearchResult } from './anime'
+export {
+  normalizeAnimeLookupFacts,
+  selectAnimeSearchResult,
+  type AnimeLookupFacts,
+  type AnimeScraperLookup,
+  type AnimeScraperProviderInfo,
+  type AnimeSearchResult
+} from './anime'
 
 // Metadata entity scraper types
 export { type PersonScraperProviderInfo, type PersonSearchResult } from './person'

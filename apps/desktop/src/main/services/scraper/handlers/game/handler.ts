@@ -14,12 +14,12 @@ import type {
   GameScraperSlotConfigs,
   SlotStrategy
 } from '@shared/db/contracts/json'
-import { type GameImageSlot } from '@shared/scraper'
+import { normalizeMediaLookupFacts, type GameImageSlot } from '@shared/scraper'
 import type {
+  GameScraperLookup,
   GameScraperProviderInfo,
   GameSearchResult,
-  ScrapedGameBundle,
-  ScraperLookup
+  ScrapedGameBundle
 } from '@shared/scraper'
 import type { I18nService } from '@main/services/i18n'
 import { ensureProviderExternalId, ensureProviderIdentity, ScrapeFailure } from '../../shared'
@@ -61,7 +61,7 @@ export class GameScraperHandler {
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
     private i18n: I18nService,
-    private hooks: ScraperMediaHooks<GameSearchResult, ScrapedGameBundle>
+    private hooks: ScraperMediaHooks<GameScraperLookup, GameSearchResult, ScrapedGameBundle>
   ) {}
 
   registerProvider(provider: GameScraperProvider): void {
@@ -102,10 +102,12 @@ export class GameScraperHandler {
 
   async scrape(
     profileId: string,
-    rawLookup: ScraperLookup,
+    rawLookup: GameScraperLookup,
     options: ScraperInvocationOptions = {}
   ): Promise<ScrapedGameBundle | null> {
-    const lookup = await this.hooks.lookup.transform(rawLookup)
+    // Hook taps re-enter the lookup as extension-supplied JSON, so its facts
+    // are total-parsed back into the contract before providers rank on them.
+    const lookup = normalizeMediaLookupFacts(await this.hooks.lookup.transform(rawLookup))
     const profile = this.loadProfile(profileId)
 
     const runtimeProfile: RuntimeGameProfile = {
@@ -188,7 +190,7 @@ export class GameScraperHandler {
 
   async getProviderImages(
     providerId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     imageType: GameImageSlot,
     options: ScraperInvocationOptions = {}
   ): Promise<string[]> {

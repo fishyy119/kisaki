@@ -21,8 +21,10 @@ import type {
 import type { EntityMergeRequest, EntityMergeResult } from './entity-merge'
 import type {
   ScraperLookup,
+  GameScraperLookup,
   GameSearchResult,
   GameScraperProviderInfo,
+  AnimeScraperLookup,
   AnimeSearchResult,
   AnimeScraperProviderInfo,
   PersonSearchResult,
@@ -334,7 +336,7 @@ export interface IpcMainHandlers {
   ) => IpcResult<TaskRunStartResult>
   'ingest:add-game-from-scraper': (
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: IngestAddGameFromScraperOptions
   ) => IpcResult<TaskRunStartResult>
   'ingest:add-anime-direct': (
@@ -343,7 +345,7 @@ export interface IpcMainHandlers {
   ) => IpcResult<TaskRunStartResult>
   'ingest:add-anime-from-scraper': (
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: AnimeScraperLookup,
     options?: IngestAddAnimeFromScraperOptions
   ) => IpcResult<TaskRunStartResult>
   'ingest:sync-anime-files': (
@@ -403,11 +405,11 @@ export interface IpcMainHandlers {
   'scraper:search-game': (profileId: string, query: string) => IpcResult<GameSearchResult[]>
   'scraper:scrape-game': (
     profileId: string,
-    lookup: ScraperLookup
+    lookup: GameScraperLookup
   ) => IpcResult<ScrapedGameBundle | null>
   'scraper:get-game-provider-images': (
     providerId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     imageType: GameImageSlot
   ) => IpcResult<string[]>
 
@@ -416,11 +418,11 @@ export interface IpcMainHandlers {
   'scraper:search-anime': (profileId: string, query: string) => IpcResult<AnimeSearchResult[]>
   'scraper:scrape-anime': (
     profileId: string,
-    lookup: ScraperLookup
+    lookup: AnimeScraperLookup
   ) => IpcResult<ScrapedAnimeBundle | null>
   'scraper:get-anime-provider-images': (
     providerId: string,
-    lookup: ScraperLookup,
+    lookup: AnimeScraperLookup,
     imageType: AnimeImageSlot
   ) => IpcResult<string[]>
 

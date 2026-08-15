@@ -17,7 +17,7 @@ import { createIngestRun } from '../task-run'
 import type { ExternalId } from '@shared/identity'
 import type { IngestUpdateResult } from '@shared/ingest'
 import {
-  buildIngestUpdateLookup,
+  mergeUpdateLookupKnownIds,
   type IngestBatchUpdateRequest,
   type IngestUpdateRequest
 } from '@shared/ingest/update'
@@ -52,7 +52,17 @@ export interface IngestBatchUpdateSpec<TSurface extends string> {
   entity: TaskRunContentEntity
   request: IngestBatchUpdateRequest<TSurface>
   loadRows: (ids: string[]) => IngestBatchUpdateRow[]
-  search: (queryName: string, signal: AbortSignal | undefined) => Promise<IngestBatchSearchMatch[]>
+  /**
+   * Finds the provider entry the row should be rebound to, or null when the
+   * search offers none. Which entry fits is the entity's own knowledge: one work
+   * can span many provider entries, and only the entity holds the facts that
+   * tell them apart.
+   */
+  findMatch: (
+    row: IngestBatchUpdateRow,
+    queryName: string,
+    signal: AbortSignal | undefined
+  ) => Promise<IngestBatchSearchMatch | null>
   update: (
     request: IngestUpdateRequest<TSurface>,
     signal: AbortSignal | undefined
@@ -213,11 +223,10 @@ export class IngestBatchUpdateRunner {
   ): Promise<IngestUpdateResult> {
     const signal = run.context.signal
     throwIfIngestAborted(signal)
-    const matches = await spec.search(queryName, signal)
+    const match = await spec.findMatch(row, queryName, signal)
     throwIfIngestAborted(signal)
 
-    const first = matches[0]
-    if (!first) {
+    if (!match) {
       throw new Error(this.i18nService.messages.ingest.batch.noSearchResults)
     }
 
@@ -228,11 +237,13 @@ export class IngestBatchUpdateRunner {
       {
         rootId: row.id,
         profileId: request.profileId,
-        lookup: buildIngestUpdateLookup({
-          name: first.originalName || first.name || queryName,
-          baseKnownIds: request.useCurrentExternalIdsAsKnownIds ? row.externalIds : [],
-          selectionKnownIds: first.externalIds
-        }),
+        lookup: {
+          name: match.originalName || match.name || queryName,
+          knownIds: mergeUpdateLookupKnownIds(
+            match.externalIds,
+            request.useCurrentExternalIdsAsKnownIds ? row.externalIds : []
+          )
+        },
         selection: { surfaces: [...request.selection.surfaces] },
         policy: request.policy
       },

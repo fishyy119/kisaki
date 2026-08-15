@@ -1,13 +1,11 @@
 export {
-  buildIngestUpdateLookup,
   listIngestUpdateSurfaceKeys,
   listIngestUpdateSurfaceKeysByCardinality,
-  listIngestUpdateSurfaceKeysByGroup
+  listIngestUpdateSurfaceKeysByGroup,
+  mergeUpdateLookupKnownIds
 } from './common'
 export type {
-  BuildIngestUpdateLookupOptions,
   IngestBatchUpdateRequest,
-  IngestUpdateLookup,
   IngestUpdatePolicy,
   IngestUpdateRequest,
   IngestUpdateSelection,

@@ -93,6 +93,16 @@ export const CHARACTER_PERSON_ROLE_VALUES = [
 /** Anime release format */
 export type AnimeFormat = 'tv' | 'movie' | 'ova' | 'ona' | 'special' | 'other'
 
+/** Anime format values in canonical display order. */
+export const ANIME_FORMAT_VALUES = [
+  'tv',
+  'movie',
+  'ova',
+  'ona',
+  'special',
+  'other'
+] as const satisfies readonly AnimeFormat[]
+
 /**
  * Anime episode kind.
  *

@@ -67,11 +67,41 @@ export type ScraperSlot =
 
 export type ScraperCapability<TSlot extends ScraperSlot = ScraperSlot> = 'search' | TSlot
 
+/**
+ * What the host knows about the entry a provider should resolve.
+ *
+ * `knownIds` names the entry outright: when it carries the provider's own
+ * source, the provider uses that id and searches nothing. Media types whose
+ * entries need more than a name to be told apart extend this contract with the
+ * facts their providers can disambiguate on.
+ */
 export interface ScraperLookup {
   name: string
   locale?: ContentLocale
   knownIds?: readonly ExternalId[]
 }
+
+/**
+ * Lookup for a media entry (game, anime).
+ *
+ * The facts only matter to a name search, where one work spans many provider
+ * entries: TMDB offers every season of a show plus its specials collection
+ * under the same name. They are hints, never overrides — a provider that can
+ * identify the entry by id ignores them — and any of them may be absent, so a
+ * provider must still answer without them.
+ */
+export interface MediaScraperLookup extends ScraperLookup {
+  /** Release date of the entry, as precise as the host knows it. */
+  releaseDate?: PartialDate
+}
+
+/** Lookup for an anime entry, adding its release format to the media facts. */
+export interface AnimeScraperLookup extends MediaScraperLookup {
+  format?: LibraryAnimeFormat
+}
+
+/** Lookup for a game entry; game entries state no facts beyond the media ones. */
+export type GameScraperLookup = MediaScraperLookup
 
 /**
  * Invocation-scoped context passed to every scraper provider call.
@@ -444,13 +474,13 @@ export interface BaseScraperProvider<TSlot extends ScraperSlot = ScraperSlot> {
 
 export interface GameScraperProvider extends BaseScraperProvider<GameScraperSlot> {
   search(query: string, ctx: ScraperProviderContext): Promise<readonly GameSearchResult[]>
-  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  resolve(lookup: GameScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<GameScraperSession>
 }
 
 export interface AnimeScraperProvider extends BaseScraperProvider<AnimeScraperSlot> {
   search(query: string, ctx: ScraperProviderContext): Promise<readonly AnimeSearchResult[]>
-  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  resolve(lookup: AnimeScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<AnimeScraperSession>
 }
 

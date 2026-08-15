@@ -7,14 +7,23 @@ import type { ScraperLookup } from '@shared/scraper'
 import type { BaseResolvedTarget, BaseScraperSession, ScraperProviderContext } from '../../types'
 import type { ScraperInvocationState } from './state'
 
-export interface ResolveCapableScraperProvider<TTarget extends BaseResolvedTarget> {
-  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<TTarget | null>
+export interface ResolveCapableScraperProvider<
+  TTarget extends BaseResolvedTarget,
+  TLookup extends ScraperLookup
+> {
+  resolve(lookup: TLookup, ctx: ScraperProviderContext): Promise<TTarget | null>
 }
 
 /**
  * Replace the lookup name when a provider resolve yields a better canonical name.
+ *
+ * Everything else the lookup knows about the entry is preserved, so follow-up
+ * providers keep the facts that let them disambiguate their own name search.
  */
-export function createCanonicalLookup(lookup: ScraperLookup, resolveName?: string): ScraperLookup {
+export function createCanonicalLookup<TLookup extends ScraperLookup>(
+  lookup: TLookup,
+  resolveName?: string
+): TLookup {
   const canonicalName = resolveName?.trim()
   if (!canonicalName || canonicalName === lookup.name) {
     return lookup
@@ -35,12 +44,13 @@ export async function resolveProviderTarget<
   TSlot extends string,
   TResultMap extends Partial<Record<TSlot, unknown>>,
   TResult,
-  TProvider extends ResolveCapableScraperProvider<TTarget>
+  TLookup extends ScraperLookup,
+  TProvider extends ResolveCapableScraperProvider<TTarget, TLookup>
 >(options: {
   state: ScraperInvocationState<TTarget, TSession, TSlot, TResultMap, TResult>
   providerId: string
   provider: TProvider
-  lookup: ScraperLookup
+  lookup: TLookup
   ctx: ScraperProviderContext
 }): Promise<TTarget | null> {
   return options.state.getOrCreateResolvedTarget(
@@ -60,17 +70,18 @@ export async function resolveSearchProviderTarget<
   TSlot extends string,
   TResultMap extends Partial<Record<TSlot, unknown>>,
   TResult,
-  TProvider extends ResolveCapableScraperProvider<TTarget>
+  TLookup extends ScraperLookup,
+  TProvider extends ResolveCapableScraperProvider<TTarget, TLookup>
 >(options: {
   state: ScraperInvocationState<TTarget, TSession, TSlot, TResultMap, TResult>
   providerId: string
   provider: TProvider
-  lookup: ScraperLookup
+  lookup: TLookup
   ctx: ScraperProviderContext
   warn?: (message: string, error?: unknown) => void
 }): Promise<{
   target: TTarget | null
-  canonicalLookup: ScraperLookup
+  canonicalLookup: TLookup
 }> {
   try {
     const target = await resolveProviderTarget(options)

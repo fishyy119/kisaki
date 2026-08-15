@@ -1,5 +1,8 @@
-import type { ScraperLookup } from '../contributions/scraper-providers'
-import type { ExternalId } from '../shared'
+import type {
+  AnimeScraperLookup,
+  GameScraperLookup,
+  ScraperLookup
+} from '../contributions/scraper-providers'
 
 export type IngestExistingReason = 'externalId' | 'path'
 
@@ -25,15 +28,13 @@ export interface IngestUpdateSelection<TSurface extends string> {
   surfaces: readonly TSurface[]
 }
 
-export interface IngestUpdateLookup {
-  name: string
-  knownIds: readonly ExternalId[]
-}
-
-export interface IngestUpdateInput<TSurface extends string> {
+export interface IngestUpdateInput<
+  TSurface extends string,
+  TLookup extends ScraperLookup = ScraperLookup
+> {
   rootId: string
   profileId: string
-  lookup: IngestUpdateLookup
+  lookup: TLookup
   selection: IngestUpdateSelection<TSurface>
   policy: IngestUpdatePolicy
 }
@@ -61,7 +62,10 @@ export type GameUpdateSurface = (typeof GAME_UPDATE_SURFACES)[number]['key']
 
 export type GameUpdateSelection = IngestUpdateSelection<GameUpdateSurface>
 
-export type IngestGameUpdateFromScraperInput = IngestUpdateInput<GameUpdateSurface>
+export type IngestGameUpdateFromScraperInput = IngestUpdateInput<
+  GameUpdateSurface,
+  GameScraperLookup
+>
 
 export interface IngestWarning {
   code: IngestWarningCode
@@ -107,7 +111,7 @@ export interface IngestGameAddCapability {
   /** Runs the ingest inline and resolves with its result. */
   fromScraper(
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: IngestAddGameFromScraperOptions
   ): Promise<IngestAddGameFromScraperResult>
   /**
@@ -116,7 +120,7 @@ export interface IngestGameAddCapability {
    */
   startFromScraper(
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: IngestAddGameFromScraperOptions
   ): Promise<IngestTaskRunStart>
 }
@@ -140,7 +144,7 @@ export interface IngestAnimeAddCapability {
   /** Runs the ingest inline and resolves with its result. */
   fromScraper(
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: AnimeScraperLookup,
     options?: IngestAddAnimeFromScraperOptions
   ): Promise<IngestAddAnimeFromScraperResult>
   /**
@@ -149,7 +153,7 @@ export interface IngestAnimeAddCapability {
    */
   startFromScraper(
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: AnimeScraperLookup,
     options?: IngestAddAnimeFromScraperOptions
   ): Promise<IngestTaskRunStart>
 }

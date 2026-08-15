@@ -1,10 +1,13 @@
 import {
   GAME_UPDATE_SURFACES,
   CONTENT_LOCALES,
+  LIBRARY_ANIME_FORMATS,
   createUnavailableError,
   createValidationError,
+  type AnimeScraperLookup,
   type ContentLocale,
   type ExtensionRuntimeMetadata,
+  type GameScraperLookup,
   type GameUpdateSurface,
   type IngestAddAnimeFromScraperOptions,
   type IngestAddAnimeFromScraperResult,
@@ -12,11 +15,18 @@ import {
   type IngestAddGameFromScraperResult,
   type IngestGameUpdateFromScraperInput,
   type IngestUpdateResult,
+  type MediaScraperLookup,
   type ScraperLookup
 } from '@kisaki3/extension-api'
 import type { IngestService } from '@main/services/ingest'
 import type { TaskRunInitiator, TaskRunStartResult } from '@shared/task-run'
-import type { ScraperLookup as AppScraperLookup } from '@shared/scraper'
+import type { AnimeFormat, PartialDate } from '@shared/db'
+import { matchesPartialDate } from '@shared/db/columns/partial-date'
+import type {
+  AnimeScraperLookup as AppAnimeScraperLookup,
+  MediaScraperLookup as AppMediaScraperLookup,
+  ScraperLookup as AppScraperLookup
+} from '@shared/scraper'
 import type { GameUpdateRequest } from '@shared/ingest/update'
 import type {
   IngestAddAnimeFromScraperOptions as AppIngestAddAnimeFromScraperOptions,
@@ -36,7 +46,7 @@ export class ExtensionIngestCapabilityProvider {
   async addGameFromScraper(
     runtimeHandle: string,
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: IngestAddGameFromScraperOptions,
     signal?: AbortSignal
   ): Promise<IngestAddGameFromScraperResult> {
@@ -44,7 +54,7 @@ export class ExtensionIngestCapabilityProvider {
     readNonEmptyString(profileId, 'ingest profileId')
     const result = await this.options.ingest.add.game.addFromScraper(
       profileId,
-      toAppScraperLookup(lookup),
+      toAppMediaScraperLookup(lookup),
       { ...toAppAddGameFromScraperOptions(options), signal }
     )
     return toPublicIngestAddGameFromScraperResult(result)
@@ -53,21 +63,25 @@ export class ExtensionIngestCapabilityProvider {
   startAddGameFromScraper(
     runtimeHandle: string,
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: GameScraperLookup,
     options?: IngestAddGameFromScraperOptions
   ): TaskRunStartResult {
     const metadata = this.requireRuntime(runtimeHandle)
     readNonEmptyString(profileId, 'ingest profileId')
-    return this.options.ingest.add.game.startAddFromScraper(profileId, toAppScraperLookup(lookup), {
-      ...toAppAddGameFromScraperOptions(options),
-      taskRunInitiator: createExtensionTaskRunInitiator(metadata)
-    })
+    return this.options.ingest.add.game.startAddFromScraper(
+      profileId,
+      toAppMediaScraperLookup(lookup),
+      {
+        ...toAppAddGameFromScraperOptions(options),
+        taskRunInitiator: createExtensionTaskRunInitiator(metadata)
+      }
+    )
   }
 
   async addAnimeFromScraper(
     runtimeHandle: string,
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: AnimeScraperLookup,
     options?: IngestAddAnimeFromScraperOptions,
     signal?: AbortSignal
   ): Promise<IngestAddAnimeFromScraperResult> {
@@ -75,7 +89,7 @@ export class ExtensionIngestCapabilityProvider {
     readNonEmptyString(profileId, 'ingest profileId')
     const result = await this.options.ingest.add.anime.addFromScraper(
       profileId,
-      toAppScraperLookup(lookup),
+      toAppAnimeScraperLookup(lookup),
       { ...toAppAddAnimeFromScraperOptions(options), signal }
     )
     return toPublicIngestAddAnimeFromScraperResult(result)
@@ -84,14 +98,14 @@ export class ExtensionIngestCapabilityProvider {
   startAddAnimeFromScraper(
     runtimeHandle: string,
     profileId: string,
-    lookup: ScraperLookup,
+    lookup: AnimeScraperLookup,
     options?: IngestAddAnimeFromScraperOptions
   ): TaskRunStartResult {
     const metadata = this.requireRuntime(runtimeHandle)
     readNonEmptyString(profileId, 'ingest profileId')
     return this.options.ingest.add.anime.startAddFromScraper(
       profileId,
-      toAppScraperLookup(lookup),
+      toAppAnimeScraperLookup(lookup),
       {
         ...toAppAddAnimeFromScraperOptions(options),
         taskRunInitiator: createExtensionTaskRunInitiator(metadata)
@@ -223,6 +237,38 @@ function toAppScraperLookup(lookup: ScraperLookup): AppScraperLookup {
   }
 }
 
+function toAppMediaScraperLookup(lookup: MediaScraperLookup): AppMediaScraperLookup {
+  return {
+    ...toAppScraperLookup(lookup),
+    releaseDate: readOptionalPartialDate(lookup.releaseDate, 'ingest lookup.releaseDate')
+  }
+}
+
+function toAppAnimeScraperLookup(lookup: AnimeScraperLookup): AppAnimeScraperLookup {
+  return {
+    ...toAppMediaScraperLookup(lookup),
+    format: readOptionalAnimeFormat(lookup.format)
+  }
+}
+
+function readOptionalPartialDate(value: unknown, label: string): PartialDate | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (!matchesPartialDate(value)) {
+    throw createValidationError(`${label} must be a partial date with year, month and/or day.`)
+  }
+
+  return value
+}
+
+function readOptionalAnimeFormat(value: unknown): AnimeFormat | undefined {
+  return value === undefined
+    ? undefined
+    : readEnum(value, LIBRARY_ANIME_FORMATS, 'ingest lookup.format')
+}
+
 function readOptionalLocale(value: unknown): ContentLocale | undefined {
   if (value === undefined) {
     return undefined
@@ -238,7 +284,7 @@ function readOptionalLocale(value: unknown): ContentLocale | undefined {
 }
 
 function toAppGameUpdateRequest(input: IngestGameUpdateFromScraperInput): GameUpdateRequest {
-  if (!isPlainRecord(input) || !isPlainRecord(input.lookup)) {
+  if (!isPlainRecord(input)) {
     throw createValidationError('ingest update input must be an object with a lookup.')
   }
 
@@ -249,10 +295,7 @@ function toAppGameUpdateRequest(input: IngestGameUpdateFromScraperInput): GameUp
   return {
     rootId: readNonEmptyString(input.rootId, 'ingest update input.rootId'),
     profileId: readNonEmptyString(input.profileId, 'ingest update input.profileId'),
-    lookup: {
-      name: readNonEmptyString(input.lookup.name, 'ingest update lookup.name'),
-      knownIds: readKnownIds(input.lookup.knownIds)
-    },
+    lookup: toAppMediaScraperLookup(input.lookup),
     selection: {
       surfaces: readUpdateSurfaces(input.selection.surfaces)
     },

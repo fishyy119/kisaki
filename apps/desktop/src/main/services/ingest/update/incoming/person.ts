@@ -1,7 +1,6 @@
 import { normalizeExternalIds } from '@shared/identity'
 import type { CorePersonMetadata } from '@shared/metadata'
-import type { IngestUpdateLookup } from '@shared/ingest/update'
-import type { ScrapedPersonBundle } from '@shared/scraper'
+import type { ScrapedPersonBundle, ScraperLookup } from '@shared/scraper'
 import type { PersonIncomingBuildResult } from '../types'
 import {
   normalizeOptionalString,
@@ -12,7 +11,7 @@ import {
 
 function buildPersonCore(
   bundle: ScrapedPersonBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): Partial<CorePersonMetadata> {
   const core: Partial<CorePersonMetadata> = {}
   const bundleCore = bundle?.core
@@ -46,7 +45,7 @@ function buildPersonCore(
 
 export function buildPersonIncoming(
   bundle: ScrapedPersonBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): PersonIncomingBuildResult {
   const core = buildPersonCore(bundle, lookup)
   const photoUrls = normalizeUrlCandidates(bundle?.mediaCandidates?.photoUrls)

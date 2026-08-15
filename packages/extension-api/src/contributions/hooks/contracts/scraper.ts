@@ -1,7 +1,9 @@
 import type {
+  AnimeScraperLookup,
   AnimeSearchResult,
   CharacterSearchResult,
   CompanySearchResult,
+  GameScraperLookup,
   GameSearchResult,
   PersonSearchResult,
   ScrapedAnimeBundle,
@@ -21,10 +23,10 @@ import type { HookPointSpec } from './point'
  * transforms the merged bundle before it is returned to the caller.
  */
 export interface ScraperHookPoints {
-  'scraper.game.lookup': HookPointSpec<'waterfall', ScraperLookup>
+  'scraper.game.lookup': HookPointSpec<'waterfall', GameScraperLookup>
   'scraper.game.searched': HookPointSpec<'waterfall', GameSearchResult[]>
   'scraper.game.collected': HookPointSpec<'waterfall', ScrapedGameBundle>
-  'scraper.anime.lookup': HookPointSpec<'waterfall', ScraperLookup>
+  'scraper.anime.lookup': HookPointSpec<'waterfall', AnimeScraperLookup>
   'scraper.anime.searched': HookPointSpec<'waterfall', AnimeSearchResult[]>
   'scraper.anime.collected': HookPointSpec<'waterfall', ScrapedAnimeBundle>
   'scraper.person.lookup': HookPointSpec<'waterfall', ScraperLookup>

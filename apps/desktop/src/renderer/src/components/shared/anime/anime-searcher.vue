@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { ref, computed, watch } from 'vue'
+import { ref, shallowRef, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import { ipcManager } from '@renderer/core/ipc'
@@ -24,8 +24,8 @@ import {
   TableCell
 } from '@renderer/components/ui/table'
 import { ScraperProfileSelect, useSearchProviderSource } from '@renderer/components/shared/scraper'
-import type { AnimeSearchResult } from '@shared/scraper'
-import type { AnimeSearcherSelection } from './types'
+import type { EntitySearcherSelection } from '@renderer/components/shared/entity'
+import type { AnimeScraperLookup, AnimeSearchResult } from '@shared/scraper'
 
 interface Props {
   /** Default profile ID to use */
@@ -49,7 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
 const { m, f } = useI18n()
 
 const emit = defineEmits<{
-  selectionChange: [selection: AnimeSearcherSelection]
+  selectionChange: [selection: EntitySearcherSelection<AnimeScraperLookup>]
 }>()
 
 const selectedProfileId = ref('')
@@ -89,7 +89,12 @@ watch(
   { immediate: true }
 )
 const isSearching = ref(false)
-const searchResults = ref<AnimeSearchResult[]>([])
+/**
+ * Shallow: the picked row travels back to the main process inside the emitted
+ * lookup, and a reactive proxy cannot cross IPC. Rows are only ever replaced
+ * wholesale, so nothing here needs deep tracking.
+ */
+const searchResults = shallowRef<AnimeSearchResult[]>([])
 const hasSearched = ref(false)
 
 const RESULT_TABLE_COLUMNS = ['', '30%', '7.5rem']
@@ -124,10 +129,14 @@ watch(
 
     emit('selectionChange', {
       profileId: selectedProfileId.value,
-      animeId: trimmedAnimeId,
-      animeName: selectedResult?.name ?? searchQuery.value.trim(),
-      originalName: selectedResult?.originalName,
-      knownIds: selectedResult?.externalIds ?? fallbackKnownIds,
+      lookup: {
+        name: selectedResult?.originalName || selectedResult?.name || searchQuery.value.trim(),
+        knownIds: selectedResult?.externalIds ?? fallbackKnownIds,
+        // The picked row states which entry of the work this is, so providers
+        // without a known id can tell its season from the rest of the series.
+        releaseDate: selectedResult?.releaseDate,
+        format: selectedResult?.format
+      },
       canSubmit: canSubmit.value
     })
   },

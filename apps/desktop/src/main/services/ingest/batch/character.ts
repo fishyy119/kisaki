@@ -38,8 +38,9 @@ export class CharacterBatchHandler {
           },
           ids
         ),
-      search: (queryName, signal) =>
-        this.scraperService.character.search(request.profileId, queryName, { signal }),
+      findMatch: async (_row, queryName, signal) =>
+        (await this.scraperService.character.search(request.profileId, queryName, { signal }))[0] ??
+        null,
       update: (updateRequest, signal) =>
         this.updateHandler.updateFromScraper(updateRequest, { signal })
     })

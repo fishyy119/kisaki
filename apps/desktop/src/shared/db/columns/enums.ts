@@ -20,6 +20,7 @@ import {
   ANIME_COMPANY_ROLE_VALUES,
   ANIME_EPISODE_TYPE_VALUES,
   ANIME_EXTRA_TYPE_VALUES,
+  ANIME_FORMAT_VALUES,
   ANIME_PERSON_ROLE_VALUES,
   ANIME_STATUS_VALUES,
   CHARACTER_PERSON_ROLE_VALUES,
@@ -108,7 +109,6 @@ export const characterPersonRole = createEnumType<CharacterPersonRole>(
   'characterPersonRole'
 )
 
-const ANIME_FORMAT_VALUES = ['tv', 'movie', 'ova', 'ona', 'special', 'other'] as const
 export const animeFormat = createEnumType<AnimeFormat>(ANIME_FORMAT_VALUES, 'tv', 'animeFormat')
 
 export const animeEpisodeType = createEnumType<AnimeEpisodeType>(

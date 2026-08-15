@@ -10,9 +10,9 @@ import {
   collectionPersonLinks
 } from '@shared/db'
 
-export interface NormalizedIngestLookupInput {
+export interface NormalizedIngestLookupInput<TLookup extends ScraperLookup> {
   profileId: string
-  lookup: ScraperLookup
+  lookup: TLookup
 }
 
 export function normalizeProfileId(profileId: string): string {
@@ -27,7 +27,7 @@ export function normalizeKnownIds(knownIds: ExternalId[] | undefined): ExternalI
   return normalizeExternalIds(knownIds)
 }
 
-export function normalizeLookup(lookup: ScraperLookup): ScraperLookup {
+export function normalizeLookup<TLookup extends ScraperLookup>(lookup: TLookup): TLookup {
   const name = lookup.name?.trim()
   if (!name) {
     throw new Error('lookup.name is required')
@@ -42,10 +42,10 @@ export function normalizeLookup(lookup: ScraperLookup): ScraperLookup {
   }
 }
 
-export function normalizeIngestLookupInput(
+export function normalizeIngestLookupInput<TLookup extends ScraperLookup>(
   profileId: string,
-  lookup: ScraperLookup
-): NormalizedIngestLookupInput {
+  lookup: TLookup
+): NormalizedIngestLookupInput<TLookup> {
   return {
     profileId: normalizeProfileId(profileId),
     lookup: normalizeLookup(lookup)

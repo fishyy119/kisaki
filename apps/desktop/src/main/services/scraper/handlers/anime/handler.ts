@@ -14,12 +14,12 @@ import type {
   AnimeScraperSlotConfigs,
   SlotStrategy
 } from '@shared/db/contracts/json'
-import { type AnimeImageSlot } from '@shared/scraper'
+import { normalizeAnimeLookupFacts, type AnimeImageSlot } from '@shared/scraper'
 import type {
+  AnimeScraperLookup,
   AnimeScraperProviderInfo,
   AnimeSearchResult,
-  ScrapedAnimeBundle,
-  ScraperLookup
+  ScrapedAnimeBundle
 } from '@shared/scraper'
 import type { I18nService } from '@main/services/i18n'
 import { ensureProviderExternalId, ensureProviderIdentity, ScrapeFailure } from '../../shared'
@@ -64,7 +64,7 @@ export class AnimeScraperHandler {
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
     private i18n: I18nService,
-    private hooks: ScraperMediaHooks<AnimeSearchResult, ScrapedAnimeBundle>
+    private hooks: ScraperMediaHooks<AnimeScraperLookup, AnimeSearchResult, ScrapedAnimeBundle>
   ) {}
 
   registerProvider(provider: AnimeScraperProvider): void {
@@ -105,10 +105,12 @@ export class AnimeScraperHandler {
 
   async scrape(
     profileId: string,
-    rawLookup: ScraperLookup,
+    rawLookup: AnimeScraperLookup,
     options: ScraperInvocationOptions = {}
   ): Promise<ScrapedAnimeBundle | null> {
-    const lookup = await this.hooks.lookup.transform(rawLookup)
+    // Hook taps re-enter the lookup as extension-supplied JSON, so its facts
+    // are total-parsed back into the contract before providers rank on them.
+    const lookup = normalizeAnimeLookupFacts(await this.hooks.lookup.transform(rawLookup))
     const profile = this.loadProfile(profileId)
 
     const runtimeProfile: RuntimeAnimeProfile = {
@@ -191,7 +193,7 @@ export class AnimeScraperHandler {
 
   async getProviderImages(
     providerId: string,
-    lookup: ScraperLookup,
+    lookup: AnimeScraperLookup,
     imageType: AnimeImageSlot,
     options: ScraperInvocationOptions = {}
   ): Promise<string[]> {

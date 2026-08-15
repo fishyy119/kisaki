@@ -1,7 +1,6 @@
 import { normalizeExternalIds } from '@shared/identity'
 import type { CoreCharacterMetadata } from '@shared/metadata'
-import type { IngestUpdateLookup } from '@shared/ingest/update'
-import type { ScrapedCharacterBundle } from '@shared/scraper'
+import type { ScrapedCharacterBundle, ScraperLookup } from '@shared/scraper'
 import type { CharacterIncomingBuildResult } from '../types'
 import { buildCompleteCharacterLinks } from '../link-topology'
 import {
@@ -13,7 +12,7 @@ import {
 
 function buildCharacterCore(
   bundle: ScrapedCharacterBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): Partial<CoreCharacterMetadata> {
   const core: Partial<CoreCharacterMetadata> = {}
   const bundleCore = bundle?.core
@@ -54,7 +53,7 @@ function buildCharacterCore(
 
 export function buildCharacterIncoming(
   bundle: ScrapedCharacterBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): CharacterIncomingBuildResult {
   const core = buildCharacterCore(bundle, lookup)
   const photoUrls = normalizeUrlCandidates(bundle?.mediaCandidates?.photoUrls)

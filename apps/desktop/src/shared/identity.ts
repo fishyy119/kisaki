@@ -48,7 +48,9 @@ export function normalizeExternalId(externalId: ExternalId): ExternalId {
 /**
  * Normalize and deduplicate external IDs while preserving first-appearance order.
  */
-export function normalizeExternalIds(externalIds: ExternalId[] | null | undefined): ExternalId[] {
+export function normalizeExternalIds(
+  externalIds: readonly ExternalId[] | null | undefined
+): ExternalId[] {
   const byKey = new Map<string, ExternalId>()
 
   for (const externalId of externalIds ?? []) {

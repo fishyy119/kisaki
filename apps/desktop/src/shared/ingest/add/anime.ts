@@ -1,4 +1,4 @@
-import type { ScraperLookup } from '@shared/scraper'
+import type { AnimeScraperLookup } from '@shared/scraper'
 import type { ExternalId } from '@shared/identity'
 import type { IngestAddResult } from '../common'
 
@@ -13,7 +13,7 @@ export interface IngestAddAnimeFromScraperOptions {
 
 export interface IngestAddAnimeFromScraperParams {
   profileId: string
-  lookup: ScraperLookup
+  lookup: AnimeScraperLookup
   options?: IngestAddAnimeFromScraperOptions
 }
 

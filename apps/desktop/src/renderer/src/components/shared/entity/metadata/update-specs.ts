@@ -45,8 +45,6 @@ export interface MetadataUpdateSpec {
   surfaceKeys: readonly string[]
   surfaceLabels: (m: Messages) => Record<string, string>
   searcher: Component
-  /** Selection payload key holding the picked entry's display name. */
-  selectionNameKey: string
   submit: (request: IngestUpdateRequest<string>) => Promise<SubmitOutcome>
   submitBatch: (request: IngestBatchUpdateRequest<string>) => Promise<SubmitOutcome>
 }
@@ -73,7 +71,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       icons: m.library.fields.icons
     }),
     searcher: GameSearcher,
-    selectionNameKey: 'gameName',
     submit: (request) =>
       ipcManager.invoke('ingest:update-game-from-scraper', request as GameUpdateRequest),
     submitBatch: (request) =>
@@ -102,7 +99,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       logos: m.library.fields.logos
     }),
     searcher: AnimeSearcher,
-    selectionNameKey: 'animeName',
     submit: (request) =>
       ipcManager.invoke('ingest:update-anime-from-scraper', request as AnimeUpdateRequest),
     submitBatch: (request) =>
@@ -134,7 +130,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       photos: m.library.fields.photos
     }),
     searcher: CharacterSearcher,
-    selectionNameKey: 'characterName',
     submit: (request) =>
       ipcManager.invoke('ingest:update-character-from-scraper', request as CharacterUpdateRequest),
     submitBatch: (request) =>
@@ -158,7 +153,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       photos: m.library.fields.photos
     }),
     searcher: PersonSearcher,
-    selectionNameKey: 'personName',
     submit: (request) =>
       ipcManager.invoke('ingest:update-person-from-scraper', request as PersonUpdateRequest),
     submitBatch: (request) =>
@@ -180,7 +174,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       logos: m.library.fields.logos
     }),
     searcher: CompanySearcher,
-    selectionNameKey: 'companyName',
     submit: (request) =>
       ipcManager.invoke('ingest:update-company-from-scraper', request as CompanyUpdateRequest),
     submitBatch: (request) =>

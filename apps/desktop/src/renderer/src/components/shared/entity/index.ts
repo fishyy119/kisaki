@@ -26,3 +26,4 @@ export {
   type RoleLinkEntityType,
   type RoleLinkItem
 } from './role-links'
+export type { EntitySearcherSelection } from './searcher'

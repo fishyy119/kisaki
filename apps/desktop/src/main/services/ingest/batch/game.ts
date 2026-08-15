@@ -38,8 +38,8 @@ export class GameBatchHandler {
           },
           ids
         ),
-      search: (queryName, signal) =>
-        this.scraperService.game.search(request.profileId, queryName, { signal }),
+      findMatch: async (_row, queryName, signal) =>
+        (await this.scraperService.game.search(request.profileId, queryName, { signal }))[0] ?? null,
       update: (updateRequest, signal) =>
         this.updateHandler.updateFromScraper(updateRequest, { signal })
     })

@@ -5,8 +5,8 @@
  */
 
 import type { ExternalSite } from '@shared/db'
-import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
-import type { IngestUpdateLookup } from '@shared/ingest/update'
+import { normalizeExternalIds, normalizeKeyText } from '@shared/identity'
+import type { ScraperLookup } from '@shared/scraper'
 import type { Tag } from '@shared/metadata'
 
 function uniqueByKey<T>(items: T[], keyBuilder: (item: T) => string): T[] {
@@ -88,17 +88,15 @@ export function normalizeTags(tagsInput: Tag[] | null | undefined): Tag[] | unde
   )
 }
 
-export function normalizeLookup(lookup: IngestUpdateLookup): {
-  name: string
-  knownIds: ExternalId[]
-} {
+export function normalizeLookup<TLookup extends ScraperLookup>(lookup: TLookup): TLookup {
   const name = normalizeOptionalString(lookup.name)
   if (!name) {
     throw new Error('Update lookup name is required')
   }
 
   return {
+    ...lookup,
     name,
-    knownIds: normalizeExternalIds(lookup.knownIds ?? [])
+    knownIds: normalizeExternalIds(lookup.knownIds)
   }
 }

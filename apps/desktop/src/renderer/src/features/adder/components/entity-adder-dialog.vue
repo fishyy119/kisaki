@@ -4,7 +4,7 @@
   entity differences arrive via the adder spec registry.
 -->
 <script setup lang="ts">
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
 import { ipcManager } from '@renderer/core/ipc'
@@ -19,8 +19,8 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
+import type { EntitySearcherSelection } from '@renderer/components/shared/entity'
 import type { ContentEntityType } from '@shared/common'
-import type { ExternalId } from '@shared/identity'
 import { ADDER_SPECS } from './adder-specs'
 
 interface Props {
@@ -46,28 +46,13 @@ const open = defineModel<boolean>('open', { required: true })
 
 const isSubmitting = ref(false)
 
-/** Normalized view over the searcher's per-entity selection payload. */
-interface SearcherSelection {
-  profileId: string
-  originalName: string
-  knownIds: ExternalId[]
-  canSubmit: boolean
-  [key: string]: unknown
-}
-
-const selection = ref<SearcherSelection>({
+const selection = shallowRef<EntitySearcherSelection>({
   profileId: '',
-  originalName: '',
-  knownIds: [],
+  lookup: { name: '', knownIds: [] },
   canSubmit: false
 })
 
-const selectionName = computed(() => {
-  const value = selection.value[spec.value.selectionNameKey]
-  return typeof value === 'string' ? value : ''
-})
-
-function handleSelectionChange(newSelection: SearcherSelection) {
+function handleSelectionChange(newSelection: EntitySearcherSelection) {
   selection.value = newSelection
 }
 
@@ -76,14 +61,12 @@ async function handleSubmit() {
 
   isSubmitting.value = true
 
-  const profileId = selection.value.profileId
-  const name = selection.value.originalName || selectionName.value
-  const knownIds = toRaw(selection.value.knownIds)
+  const { profileId, lookup } = selection.value
   const targetCollectionId = props.targetCollectionId
 
   open.value = false
   try {
-    const result = await spec.value.submit(profileId, { name, knownIds }, { targetCollectionId })
+    const result = await spec.value.submit(profileId, lookup, { targetCollectionId })
 
     if (!result.success || !result.data) {
       notify.error(addFailedTitle.value, result.error)

@@ -1,4 +1,5 @@
 import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
+import type { ScraperLookup } from '@shared/scraper'
 
 export type IngestUpdateSurfaceGroup = 'core' | 'media' | 'relation'
 export type IngestUpdateSurfaceCardinality = 'singular' | 'collection'
@@ -69,15 +70,13 @@ export interface IngestUpdateSelection<TSurface extends string> {
   surfaces: TSurface[]
 }
 
-export interface IngestUpdateLookup {
-  name: string
-  knownIds: ExternalId[]
-}
-
-export interface IngestUpdateRequest<TSurface extends string> {
+export interface IngestUpdateRequest<
+  TSurface extends string,
+  TLookup extends ScraperLookup = ScraperLookup
+> {
   rootId: string
   profileId: string
-  lookup: IngestUpdateLookup
+  lookup: TLookup
   selection: IngestUpdateSelection<TSurface>
   policy: IngestUpdatePolicy
 }
@@ -90,27 +89,27 @@ export interface IngestBatchUpdateRequest<TSurface extends string> {
   useCurrentExternalIdsAsKnownIds?: boolean
 }
 
-export interface BuildIngestUpdateLookupOptions {
-  name: string
-  baseKnownIds?: ExternalId[]
-  selectionKnownIds?: ExternalId[]
-}
-
-export function buildIngestUpdateLookup(
-  options: BuildIngestUpdateLookupOptions
-): IngestUpdateLookup {
-  const selectionKnownIds = normalizeExternalIds(options.selectionKnownIds ?? [])
+/**
+ * Known ids for an update lookup.
+ *
+ * The picked scraper result owns its sources: re-picking an entry rebinds those
+ * ids instead of letting the stored ones pull the update back to the entry the
+ * library already recorded. The entry's remaining stored ids still ride along so
+ * providers the search never touched stay identified.
+ */
+export function mergeUpdateLookupKnownIds(
+  selectionKnownIds: readonly ExternalId[] | undefined,
+  storedKnownIds: readonly ExternalId[] | undefined
+): ExternalId[] {
+  const selection = normalizeExternalIds(selectionKnownIds)
   const selectionSources = new Set(
-    selectionKnownIds.map((externalId) => normalizeKeyText(externalId.source))
+    selection.map((externalId) => normalizeKeyText(externalId.source))
   )
-  const baseKnownIds = (options.baseKnownIds ?? []).filter(
+  const stored = (storedKnownIds ?? []).filter(
     (externalId) => !selectionSources.has(normalizeKeyText(externalId.source))
   )
 
-  return {
-    name: options.name,
-    knownIds: normalizeExternalIds([...selectionKnownIds, ...baseKnownIds])
-  }
+  return normalizeExternalIds([...selection, ...stored])
 }
 
 export { defineIngestUpdateSurfaces }

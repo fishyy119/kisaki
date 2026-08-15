@@ -69,7 +69,7 @@ export class CharacterScraperHandler {
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
     private i18n: I18nService,
-    private hooks: ScraperMediaHooks<CharacterSearchResult, ScrapedCharacterBundle>
+    private hooks: ScraperMediaHooks<ScraperLookup, CharacterSearchResult, ScrapedCharacterBundle>
   ) {}
 
   registerProvider(provider: CharacterScraperProvider): void {

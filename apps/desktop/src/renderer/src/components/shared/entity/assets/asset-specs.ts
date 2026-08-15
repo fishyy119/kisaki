@@ -11,12 +11,7 @@ import { eq } from 'drizzle-orm'
 import { attachment, db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import type { Messages } from '@shared/i18n'
-import type {
-  AnimeImageSlot,
-  GameImageSlot,
-  ScraperCapability,
-  ScraperLookup
-} from '@shared/scraper'
+import type { AnimeImageSlot, GameImageSlot, ScraperCapability } from '@shared/scraper'
 import { animes, characters, companies, games, persons } from '@shared/db'
 import type { TableName } from '@shared/db/table-names'
 import type { TableEntityType } from '../entity-tables'
@@ -44,6 +39,12 @@ interface SearchOutcome {
   error?: string
 }
 
+/** What the dialog knows when it asks for images: which entry, under what name. */
+export interface AssetImageSearchRequest {
+  entityId: string
+  name: string
+}
+
 export interface EntityAssetSpec {
   /** Attachment protocol table segment, also the db-changes table name. */
   attachmentTable: TableName
@@ -55,10 +56,14 @@ export interface EntityAssetSpec {
   >
   setFile: (id: string, slotType: string, source: AssetFileSource) => Promise<void>
   clearFile: (id: string, slotType: string) => Promise<void>
-  /** `capability` is the slot's `searchCapability` value. */
+  /**
+   * `capability` is the slot's `searchCapability` value. The spec composes the
+   * lookup itself, because it alone knows which facts its entity's providers can
+   * disambiguate on when they hold no id for the entry.
+   */
   searchImages: (
     providerId: string,
-    lookup: ScraperLookup,
+    request: AssetImageSearchRequest,
     capability: ScraperCapability
   ) => Promise<SearchOutcome>
 }
@@ -158,13 +163,16 @@ export const ENTITY_ASSET_SPECS: Record<TableEntityType, EntityAssetSpec> = {
     clearFile: async (id, slotType) => {
       await attachment.clearFile(games, id, GAME_FIELDS[slotType as keyof typeof GAME_FIELDS])
     },
-    searchImages: (providerId, lookup, capability) =>
-      ipcManager.invoke(
+    searchImages: async (providerId, request, capability) => {
+      const row = await db.query.games.findFirst({ where: eq(games.id, request.entityId) })
+
+      return ipcManager.invoke(
         'scraper:get-game-provider-images',
         providerId,
-        lookup,
+        { name: request.name, releaseDate: row?.releaseDate ?? undefined },
         capability as GameImageSlot
       )
+    }
   },
   anime: {
     attachmentTable: 'animes',
@@ -197,13 +205,20 @@ export const ENTITY_ASSET_SPECS: Record<TableEntityType, EntityAssetSpec> = {
     clearFile: async (id, slotType) => {
       await attachment.clearFile(animes, id, ANIME_FIELDS[slotType as keyof typeof ANIME_FIELDS])
     },
-    searchImages: (providerId, lookup, capability) =>
-      ipcManager.invoke(
+    searchImages: async (providerId, request, capability) => {
+      const row = await db.query.animes.findFirst({ where: eq(animes.id, request.entityId) })
+
+      return ipcManager.invoke(
         'scraper:get-anime-provider-images',
         providerId,
-        lookup,
+        {
+          name: request.name,
+          releaseDate: row?.releaseDate ?? undefined,
+          format: row?.format ?? undefined
+        },
         capability as AnimeImageSlot
       )
+    }
   },
   character: {
     attachmentTable: 'characters',
@@ -223,8 +238,13 @@ export const ENTITY_ASSET_SPECS: Record<TableEntityType, EntityAssetSpec> = {
     clearFile: async (id) => {
       await attachment.clearFile(characters, id, 'photoFile')
     },
-    searchImages: (providerId, lookup) =>
-      ipcManager.invoke('scraper:get-character-provider-images', providerId, lookup, 'photos')
+    searchImages: (providerId, request) =>
+      ipcManager.invoke(
+        'scraper:get-character-provider-images',
+        providerId,
+        { name: request.name },
+        'photos'
+      )
   },
   person: {
     attachmentTable: 'persons',
@@ -244,8 +264,13 @@ export const ENTITY_ASSET_SPECS: Record<TableEntityType, EntityAssetSpec> = {
     clearFile: async (id) => {
       await attachment.clearFile(persons, id, 'photoFile')
     },
-    searchImages: (providerId, lookup) =>
-      ipcManager.invoke('scraper:get-person-provider-images', providerId, lookup, 'photos')
+    searchImages: (providerId, request) =>
+      ipcManager.invoke(
+        'scraper:get-person-provider-images',
+        providerId,
+        { name: request.name },
+        'photos'
+      )
   },
   company: {
     attachmentTable: 'companies',
@@ -270,7 +295,12 @@ export const ENTITY_ASSET_SPECS: Record<TableEntityType, EntityAssetSpec> = {
     clearFile: async (id) => {
       await attachment.clearFile(companies, id, 'logoFile')
     },
-    searchImages: (providerId, lookup) =>
-      ipcManager.invoke('scraper:get-company-provider-images', providerId, lookup, 'logos')
+    searchImages: (providerId, request) =>
+      ipcManager.invoke(
+        'scraper:get-company-provider-images',
+        providerId,
+        { name: request.name },
+        'logos'
+      )
   }
 }

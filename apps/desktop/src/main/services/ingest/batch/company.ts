@@ -38,8 +38,9 @@ export class CompanyBatchHandler {
           },
           ids
         ),
-      search: (queryName, signal) =>
-        this.scraperService.company.search(request.profileId, queryName, { signal }),
+      findMatch: async (_row, queryName, signal) =>
+        (await this.scraperService.company.search(request.profileId, queryName, { signal }))[0] ??
+        null,
       update: (updateRequest, signal) =>
         this.updateHandler.updateFromScraper(updateRequest, { signal })
     })

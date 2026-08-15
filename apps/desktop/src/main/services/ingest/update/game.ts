@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
@@ -14,7 +15,9 @@ import {
   GAME_UPDATE_SURFACE_KEYS,
   type GameUpdateRequest
 } from '@shared/ingest/update'
+import { games } from '@shared/db'
 import type { IngestUpdateResult } from '@shared/ingest'
+import type { GameScraperLookup } from '@shared/scraper'
 import type { TaskRunStartResult } from '@shared/task-run'
 import { createUnresolvedRelatedEntriesWarning } from '../media-relations'
 import { applyGamePlan } from './apply'
@@ -78,7 +81,7 @@ export class GameUpdateHandler {
       phase: 'preparing',
       label: this.i18nService.messages.ingest.update.preparing({ entity: 'game' })
     })
-    const lookup = normalizeLookup(request.lookup)
+    const lookup = this.resolveLookup(request)
     const surfaces = normalizeSelection(request.selection.surfaces, GAME_UPDATE_SURFACE_KEYS)
     const selection = resolveUpdateSelection({
       surfaces,
@@ -162,6 +165,29 @@ export class GameUpdateHandler {
 
     this.hooks.updated.dispatch({ entityId: request.rootId, surfaces, warnings })
     return warnings.length > 0 ? { warnings } : {}
+  }
+
+  /**
+   * Complete the request's lookup with what the stored entry already knows.
+   *
+   * The caller states the facts of the result it picked, which is authoritative
+   * when the update rebinds the entry. Whatever it leaves open falls back to the
+   * entry's own row, so providers the entry has no id for can still tell one
+   * release of a title from the next.
+   */
+  private resolveLookup(request: GameUpdateRequest): GameScraperLookup {
+    const lookup = normalizeLookup(request.lookup)
+    if (lookup.releaseDate) {
+      return lookup
+    }
+
+    const stored = this.dbService.client
+      .select({ releaseDate: games.releaseDate })
+      .from(games)
+      .where(eq(games.id, request.rootId))
+      .get()
+
+    return { ...lookup, releaseDate: stored?.releaseDate ?? undefined }
   }
 
   private async handleUpdateFromScraperWithTaskRun(

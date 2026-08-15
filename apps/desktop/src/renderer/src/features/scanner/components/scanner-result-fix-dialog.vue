@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, toRaw, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { buildIngestUpdateLookup } from '@renderer/utils/ingest-update'
 import { useAsyncData } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { GameSearcher, type GameSearcherSelection } from '@renderer/components/shared/game'
+import type { EntitySearcherSelection } from '@renderer/components/shared/entity'
+import { GameSearcher } from '@renderer/components/shared/game'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Form } from '@renderer/components/ui/form'
@@ -22,7 +22,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { scanners as scannersTable } from '@shared/db'
 import { GAME_UPDATE_SURFACE_KEYS, type GameUpdateRequest } from '@shared/ingest/update'
-import type { ScraperLookup } from '@shared/scraper'
+import type { GameScraperLookup } from '@shared/scraper'
 import type { ScannerFixTarget } from './scanner-problem'
 
 interface Props {
@@ -35,7 +35,9 @@ const open = defineModel<boolean>('open', { required: true })
 const { m } = useI18n()
 
 const isSubmitting = ref(false)
-const selection = ref<GameSearcherSelection>(createEmptySelection())
+type GameSelection = EntitySearcherSelection<GameScraperLookup>
+
+const selection = shallowRef<GameSelection>(createEmptySelection())
 
 const { data: scanner } = useAsyncData(
   async () => {
@@ -59,27 +61,22 @@ const actionText = computed(() =>
 )
 const canSubmit = computed(() => selection.value.canSubmit && !isSubmitting.value)
 
-function createEmptySelection(): GameSearcherSelection {
+function createEmptySelection(): GameSelection {
   return {
     profileId: '',
-    gameId: '',
-    gameName: '',
-    originalName: '',
-    knownIds: [],
+    lookup: { name: '', knownIds: [] },
     canSubmit: false
   }
 }
 
-function handleSelectionChange(next: GameSearcherSelection) {
+function handleSelectionChange(next: GameSelection) {
   selection.value = next
 }
 
-function buildLookupName(): string {
-  return (
-    selection.value.originalName ||
-    selection.value.gameName ||
-    props.problem.extractedName
-  ).trim()
+/** The scanned name is the better fallback here, so it replaces an empty one. */
+function resolveLookup(): GameScraperLookup {
+  const lookup = selection.value.lookup
+  return { ...lookup, name: lookup.name || props.problem.extractedName.trim() }
 }
 
 async function startUpdateFromScraper() {
@@ -88,10 +85,7 @@ async function startUpdateFromScraper() {
   const request: GameUpdateRequest = {
     rootId: props.problem.entityId,
     profileId: selection.value.profileId,
-    lookup: buildIngestUpdateLookup({
-      name: buildLookupName(),
-      selectionKnownIds: toRaw(selection.value.knownIds)
-    }),
+    lookup: resolveLookup(),
     selection: {
       surfaces: [...GAME_UPDATE_SURFACE_KEYS]
     },
@@ -105,13 +99,8 @@ async function startUpdateFromScraper() {
 }
 
 async function startAddFromScraper() {
-  const lookup: ScraperLookup = {
-    name: buildLookupName(),
-    knownIds: toRaw(selection.value.knownIds)
-  }
-
   await ipcManager
-    .invoke('ingest:add-game-from-scraper', selection.value.profileId, lookup, {
+    .invoke('ingest:add-game-from-scraper', selection.value.profileId, resolveLookup(), {
       gameDirPath: props.problem.path,
       targetCollectionId: scanner.value?.targetCollectionId || undefined
     })

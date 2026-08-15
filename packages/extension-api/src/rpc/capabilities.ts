@@ -86,7 +86,10 @@ import type {
   TaskRunSnapshot
 } from '../capabilities/task-runs'
 import type { WebviewOpenOptions } from '../capabilities/webviews'
-import type { ScraperLookup } from '../contributions/scraper-providers'
+import type {
+  AnimeScraperLookup,
+  GameScraperLookup
+} from '../contributions/scraper-providers'
 import type { JsonObject, JsonValue } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload, RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
@@ -145,7 +148,7 @@ export interface ScraperProfileGetRequest extends ExtensionScopedRpcParams {
 
 export interface IngestGameAddFromScraperRequest extends ExtensionScopedRpcParams {
   profileId: string
-  lookup: ScraperLookup
+  lookup: GameScraperLookup
   options?: IngestAddGameFromScraperOptions
 }
 
@@ -155,7 +158,7 @@ export interface IngestGameUpdateFromScraperRequest extends ExtensionScopedRpcPa
 
 export interface IngestAnimeAddFromScraperRequest extends ExtensionScopedRpcParams {
   profileId: string
-  lookup: ScraperLookup
+  lookup: AnimeScraperLookup
   options?: IngestAddAnimeFromScraperOptions
 }
 

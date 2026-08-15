@@ -63,7 +63,7 @@ export class PersonScraperHandler {
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
     private i18n: I18nService,
-    private hooks: ScraperMediaHooks<PersonSearchResult, ScrapedPersonBundle>
+    private hooks: ScraperMediaHooks<ScraperLookup, PersonSearchResult, ScrapedPersonBundle>
   ) {}
 
   registerProvider(provider: PersonScraperProvider): void {

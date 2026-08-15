@@ -1,7 +1,6 @@
 import { normalizeExternalIds } from '@shared/identity'
 import type { CoreGameMetadata } from '@shared/metadata'
-import type { IngestUpdateLookup } from '@shared/ingest/update'
-import type { ScrapedGameBundle } from '@shared/scraper'
+import type { ScrapedGameBundle, ScraperLookup } from '@shared/scraper'
 import type { GameIncomingBuildResult } from '../types'
 import { buildCompleteGameLinks } from '../link-topology'
 import {
@@ -13,7 +12,7 @@ import {
 
 function buildGameCore(
   bundle: ScrapedGameBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): Partial<CoreGameMetadata> {
   const core: Partial<CoreGameMetadata> = {}
   const bundleCore = bundle?.core
@@ -45,7 +44,7 @@ function buildGameCore(
 
 export function buildGameIncoming(
   bundle: ScrapedGameBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): GameIncomingBuildResult {
   const core = buildGameCore(bundle, lookup)
   const relationFacts = bundle?.relationFacts ?? {}

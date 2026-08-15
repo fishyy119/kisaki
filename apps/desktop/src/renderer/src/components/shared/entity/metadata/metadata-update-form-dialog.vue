@@ -4,14 +4,17 @@
   ingest service; entity differences arrive via the update spec registry.
 -->
 <script setup lang="ts">
-import { computed, ref, toRaw, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
-import { buildIngestUpdateLookup } from '@renderer/utils/ingest-update'
 import type { ExternalId } from '@shared/identity'
-import type { IngestUpdatePolicy, IngestUpdateRequest } from '@shared/ingest/update'
+import {
+  mergeUpdateLookupKnownIds,
+  type IngestUpdatePolicy,
+  type IngestUpdateRequest
+} from '@shared/ingest/update'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
@@ -41,6 +44,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { useI18n } from '@renderer/composables/use-i18n'
+import type { EntitySearcherSelection } from '../searcher'
 import { ENTITY_TABLES, type TableEntityType } from '../entity-tables'
 import { IDENTITY_STORES } from '../identities/identity-tables'
 import { METADATA_UPDATE_SPECS } from './update-specs'
@@ -62,28 +66,11 @@ const surfaceLabels = computed(() => spec.value.surfaceLabels(m.value))
 
 const isSubmitting = ref(false)
 
-/** Normalized view over the searcher's per-entity selection payload. */
-interface SearcherSelection {
-  profileId: string
-  originalName: string
-  knownIds: ExternalId[]
-  canSubmit: boolean
-  [key: string]: unknown
+function createEmptySelection(): EntitySearcherSelection {
+  return { profileId: '', lookup: { name: '', knownIds: [] }, canSubmit: false }
 }
 
-const EMPTY_SELECTION: SearcherSelection = {
-  profileId: '',
-  originalName: '',
-  knownIds: [],
-  canSubmit: false
-}
-
-const selection = ref<SearcherSelection>({ ...EMPTY_SELECTION })
-
-const selectionName = computed(() => {
-  const value = selection.value[spec.value.selectionNameKey]
-  return typeof value === 'string' ? value : ''
-})
+const selection = shallowRef<EntitySearcherSelection>(createEmptySelection())
 
 const singularUpdate = ref<IngestUpdatePolicy['singularUpdate']>('overwrite')
 const collectionUpdate = ref<IngestUpdatePolicy['collectionUpdate']>('replace')
@@ -124,7 +111,7 @@ const canSubmit = computed(() => {
   return !!selection.value.profileId && selectedSurfaces.value.length > 0 && !isSubmitting.value
 })
 
-function handleSelectionChange(next: SearcherSelection) {
+function handleSelectionChange(next: EntitySearcherSelection) {
   selection.value = next
 }
 
@@ -150,7 +137,7 @@ watch(
   (isOpen) => {
     if (!isOpen) return
     isSubmitting.value = false
-    selection.value = { ...EMPTY_SELECTION }
+    selection.value = createEmptySelection()
     singularUpdate.value = 'overwrite'
     collectionUpdate.value = 'replace'
     selectedSurfaces.value = [...spec.value.surfaceKeys]
@@ -163,22 +150,21 @@ async function handleSubmit() {
   if (!selection.value.profileId) return
   if (selectedSurfaces.value.length === 0) return
 
-  const baseKnownIds = useCurrentExternalIdsAsKnownIds.value ? toRaw(data.value.externalIds) : []
-  const selectionKnownIds = toRaw(selection.value.knownIds)
-  const lookupName =
-    selection.value.originalName ||
-    selectionName.value ||
-    data.value.entry.originalName ||
-    data.value.entry.name
+  const { profileId, lookup } = selection.value
+  const storedKnownIds = useCurrentExternalIdsAsKnownIds.value
+    ? data.value.externalIds
+    : undefined
 
   const request: IngestUpdateRequest<string> = {
     rootId: props.entityId,
-    profileId: selection.value.profileId,
-    lookup: buildIngestUpdateLookup({
-      name: lookupName,
-      baseKnownIds,
-      selectionKnownIds
-    }),
+    profileId,
+    lookup: {
+      ...lookup,
+      // The searcher only knows the query; the entry's own name is the better
+      // fallback when nothing is picked.
+      name: lookup.name || data.value.entry.originalName || data.value.entry.name,
+      knownIds: mergeUpdateLookupKnownIds(lookup.knownIds, storedKnownIds)
+    },
     selection: {
       surfaces: [...selectedSurfaces.value]
     },

@@ -73,15 +73,13 @@ async function handleSearch() {
   hasSearched.value = true
   selectedUrl.value = null
 
-  const lookup = {
-    name: searchQuery.value.trim() || entry.value.originalName || entry.value.name,
-    knownIds: []
-  }
-
   try {
     const result = await spec.value.searchImages(
       selectedProviderId.value,
-      lookup,
+      {
+        entityId: props.entityId,
+        name: searchQuery.value.trim() || entry.value.originalName || entry.value.name
+      },
       slot.value.searchCapability
     )
     if (result.success && result.data) {

@@ -5,7 +5,6 @@ export { default as GameCard } from './game-card.vue'
 export { default as GamePlayButton } from './game-play-button.vue'
 export { default as GameSearcher } from './game-searcher.vue'
 export { default as GameSelect } from './game-select.vue'
-export type { GameSearcherSelection } from './types'
 
 // Forms
 export { GameInfoFormDialog, GameLaunchConfigFormDialog, GameSavesFormDialog } from './forms'

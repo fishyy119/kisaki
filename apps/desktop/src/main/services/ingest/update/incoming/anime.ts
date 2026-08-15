@@ -1,7 +1,6 @@
 import { normalizeExternalIds } from '@shared/identity'
 import type { CoreAnimeMetadata } from '@shared/metadata'
-import type { IngestUpdateLookup } from '@shared/ingest/update'
-import type { ScrapedAnimeBundle } from '@shared/scraper'
+import type { ScrapedAnimeBundle, ScraperLookup } from '@shared/scraper'
 import { normalizeAnimeEpisodes } from '../../graph'
 import type { AnimeIncomingBuildResult } from '../types'
 import { buildCompleteAnimeLinks } from '../link-topology'
@@ -14,7 +13,7 @@ import {
 
 function buildAnimeCore(
   bundle: ScrapedAnimeBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): Partial<CoreAnimeMetadata> {
   const core: Partial<CoreAnimeMetadata> = {}
   const bundleCore = bundle?.core
@@ -52,7 +51,7 @@ function buildAnimeCore(
 
 export function buildAnimeIncoming(
   bundle: ScrapedAnimeBundle | null,
-  lookup: IngestUpdateLookup
+  lookup: ScraperLookup
 ): AnimeIncomingBuildResult {
   const core = buildAnimeCore(bundle, lookup)
   const episodes = normalizeAnimeEpisodes(bundle?.episodes)

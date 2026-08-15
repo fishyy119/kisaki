@@ -5,14 +5,14 @@
 import type { GameScraperSlot } from '@shared/db'
 import type { Tag } from '@shared/metadata'
 import type {
+  GameScraperLookup,
   GameSearchResult,
   ScrapedGameInfo,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGamePersonFact,
   ScrapedRelatedEntryFact,
-  ScraperCapability,
-  ScraperLookup
+  ScraperCapability
 } from '@shared/scraper'
 import {
   type BaseScraperSession,
@@ -44,6 +44,9 @@ export interface GameScraperProvider {
   readonly capabilities: readonly ScraperCapability[]
 
   search(query: string, ctx: ScraperProviderContext): Promise<GameSearchResult[]>
-  resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<GameResolvedTarget | null>
+  resolve(
+    lookup: GameScraperLookup,
+    ctx: ScraperProviderContext
+  ): Promise<GameResolvedTarget | null>
   openSession(target: GameResolvedTarget, ctx: ScraperProviderContext): Promise<GameScraperSession>
 }

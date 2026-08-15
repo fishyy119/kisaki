@@ -6,7 +6,9 @@ import {
   type LibraryGameStatus
 } from '@kisaki3/extension-sdk'
 import { BangumiLocalMediaAdapter } from '../local/adapter'
+import { parseBangumiSubjectDate } from '../format/dates'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
+import { omitUndefined } from '../../utils/object'
 import type {
   BangumiMediaDescriptor,
   LocalMediaAddFromScraperInput,
@@ -25,10 +27,14 @@ export class GameLocalMediaAdapter extends BangumiLocalMediaAdapter<LibraryGameS
   protected readonly statusValues = LIBRARY_GAME_STATUSES
 
   async addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult> {
-    const result = await kisaki.ingest.game.add.fromScraper(input.profileId, {
-      name: input.name,
-      knownIds: [...input.knownIds]
-    })
+    const result = await kisaki.ingest.game.add.fromScraper(
+      input.profileId,
+      omitUndefined({
+        name: input.name,
+        knownIds: [...input.knownIds],
+        releaseDate: parseBangumiSubjectDate(input.facts?.date)
+      })
+    )
 
     return { localId: result.gameId, isNew: result.isNew }
   }

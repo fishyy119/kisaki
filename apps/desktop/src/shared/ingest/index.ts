@@ -92,7 +92,6 @@ export type {
   GameUpdateSelection,
   GameUpdateSurface,
   IngestBatchUpdateRequest,
-  IngestUpdateLookup,
   IngestUpdatePolicy,
   IngestUpdateRequest,
   IngestUpdateSelection,

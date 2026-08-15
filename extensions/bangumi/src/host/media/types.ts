@@ -31,10 +31,24 @@ export interface LocalMediaChangeEvent {
 
 export type LocalMediaChangeListener = (event: LocalMediaChangeEvent) => void | Promise<void>
 
+/**
+ * What the Bangumi entry states about itself, in Bangumi's own wording.
+ *
+ * Each scope's adapter maps the wording its media type can use into scraper
+ * lookup facts, so a provider that has no Bangumi id for the entry can still
+ * tell it apart from the rest of the work. Bangumi surfaces that list only ids
+ * and names, such as index entries, state nothing here.
+ */
+export interface BangumiSubjectFacts {
+  date?: string
+  platform?: string
+}
+
 export interface LocalMediaAddFromScraperInput {
   profileId: string
   name: string
   knownIds: readonly ExternalIdRef[]
+  facts?: BangumiSubjectFacts
 }
 
 export interface LocalMediaAddResult {

@@ -55,7 +55,8 @@ export async function importItemFromCollection(
   return executor.addFromScraper(scope, {
     profileId: requireProfileId(profileId),
     name: title,
-    knownIds: [{ source: BANGUMI_SOURCE_ID, id: String(subjectId) }]
+    knownIds: [{ source: BANGUMI_SOURCE_ID, id: String(subjectId) }],
+    facts: omitUndefined({ date: subject?.date, platform: subject?.platform })
   })
 }
 
