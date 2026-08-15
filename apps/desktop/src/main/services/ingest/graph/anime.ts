@@ -1,4 +1,9 @@
-import type { AnimeCharacterRole, AnimeCompanyRole, AnimePersonRole } from '@shared/db'
+import type {
+  AnimeCharacterRole,
+  AnimeCompanyRole,
+  AnimePersonRole,
+  CharacterPersonRole
+} from '@shared/db'
 import { buildEntityCanonicalIdentityKey } from '@shared/identity'
 import type {
   AnimeEpisodeInfo,
@@ -65,9 +70,27 @@ interface PendingAnimeCharacterLink {
 interface PendingCharacterPersonLink {
   characterIdentityKey: string
   personIdentityKey: string
-  role: ScrapedCharacterPersonFact['role']
+  role: CharacterPersonRole
   isSpoiler: boolean
   note?: string
+}
+
+/**
+ * Coarsen a cast credit into the anime staff vocabulary.
+ *
+ * Character-person roles name what someone did for a character; the anime side
+ * has one role for design work regardless of which of the two it was.
+ */
+function toAnimePersonRoleFromCharacterPerson(role: CharacterPersonRole): AnimePersonRole {
+  switch (role) {
+    case 'actor':
+      return 'actor'
+    case 'illustration':
+    case 'designer':
+      return 'characterDesign'
+    case 'other':
+      return 'other'
+  }
 }
 
 function upsertAnimePersonLink(
@@ -406,8 +429,8 @@ function buildAnimeGraphInternal(
       normalizeOptionalString(fact.note)
     )
 
-    // Voice actors reach the anime through their character, since anime-person
-    // roles describe staff credits only.
+    // Cast credits bind to the character and to the anime: the character link
+    // says who plays whom, the anime link says which entry that casting is for.
     for (const personFact of fact.persons ?? []) {
       const personCore = normalizeCharacterPersonFactCore(personFact)
       if (!personCore) continue
@@ -418,13 +441,21 @@ function buildAnimeGraphInternal(
         personCore,
         personFact.photos
       )
+      const note = normalizeOptionalString(personFact.note)
       upsertCharacterPersonLink(
         characterPersonLinks,
         characterIdentityKey,
         personIdentityKey,
         personFact.role,
         personFact.isSpoiler,
-        normalizeOptionalString(personFact.note)
+        note
+      )
+      upsertAnimePersonLink(
+        animePersonLinks,
+        personIdentityKey,
+        toAnimePersonRoleFromCharacterPerson(personFact.role),
+        personFact.isSpoiler,
+        note
       )
     }
   }
@@ -454,13 +485,21 @@ function buildAnimeGraphInternal(
       characterCore,
       undefined
     )
+    const note = normalizeOptionalString(fact.note)
     upsertCharacterPersonLink(
       characterPersonLinks,
       characterIdentityKey,
       personIdentityKey,
       fact.role,
       fact.isSpoiler,
-      normalizeOptionalString(fact.note)
+      note
+    )
+    upsertAnimePersonLink(
+      animePersonLinks,
+      personIdentityKey,
+      toAnimePersonRoleFromCharacterPerson(fact.role),
+      fact.isSpoiler,
+      note
     )
   }
 

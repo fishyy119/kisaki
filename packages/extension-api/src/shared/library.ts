@@ -71,6 +71,7 @@ export const LIBRARY_ANIME_PERSON_ROLES = [
   'sound',
   'music',
   'producer',
+  'actor',
   'other'
 ] as const
 

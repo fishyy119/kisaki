@@ -117,7 +117,13 @@ export const ANIME_EPISODE_TYPE_VALUES = [
   'special'
 ] as const satisfies readonly AnimeEpisodeType[]
 
-/** Anime-person link role */
+/**
+ * Anime-person link role.
+ *
+ * Staff credits plus `actor`: cast is per entry, because the same character is
+ * recast between a series, its films and its remakes, and the character-person
+ * link cannot say which entry a voice belongs to.
+ */
 export type AnimePersonRole =
   | 'originalCreator'
   | 'director'
@@ -132,6 +138,7 @@ export type AnimePersonRole =
   | 'sound'
   | 'music'
   | 'producer'
+  | 'actor'
   | 'other'
 
 /** Anime-person role values in canonical display order. */
@@ -149,6 +156,7 @@ export const ANIME_PERSON_ROLE_VALUES = [
   'sound',
   'music',
   'producer',
+  'actor',
   'other'
 ] as const satisfies readonly AnimePersonRole[]
 

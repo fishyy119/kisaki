@@ -106,13 +106,10 @@ export const ANIME_LINK_TOPOLOGY: Record<
   AnimeLinkKind,
   LinkTopologySpec<AnimeUpdateRelationSurface, AnimeRelationFactSource>
 > = {
-  // Unlike game, cast facts do not feed anime person links: voice actors reach
-  // the anime only through their character, and anime-person rows carry staff
-  // credits alone (see the anime graph builder).
   animePerson: {
     surface: 'person',
     label: 'anime person links',
-    sources: ['persons']
+    sources: ['persons', 'cast']
   },
   animeCompany: {
     surface: 'company',

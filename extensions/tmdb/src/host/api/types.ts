@@ -200,20 +200,32 @@ export interface TmdbSeriesKeywords {
   results?: TmdbKeyword[]
 }
 
-/** One crew credit. Aggregate TV credits carry `jobs`, flat movie credits `job`. */
-export interface TmdbCrewMember {
+/** The person fields every credit row carries, whichever side it sits on. */
+export interface TmdbCreditPerson {
   id: number
   name?: string
   original_name?: string
-  job?: string
-  jobs?: { job?: string }[]
-  department?: string
   known_for_department?: string
   gender?: number
   profile_path?: string | null
 }
 
+/** One crew credit. Aggregate TV credits carry `jobs`, flat movie credits `job`. */
+export interface TmdbCrewMember extends TmdbCreditPerson {
+  job?: string
+  jobs?: { job?: string }[]
+  department?: string
+}
+
+/** One cast credit. Aggregate TV credits carry `roles`, flat movie credits `character`. */
+export interface TmdbCastMember extends TmdbCreditPerson {
+  character?: string
+  roles?: { character?: string }[]
+  order?: number
+}
+
 export interface TmdbCredits {
+  cast?: TmdbCastMember[]
   crew?: TmdbCrewMember[]
 }
 

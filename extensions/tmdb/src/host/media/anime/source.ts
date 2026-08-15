@@ -45,7 +45,7 @@ export function createMovieSource(
     info: () => buildMovieInfo(loaders),
     tags: async () => buildTags((await loaders.getMovie()).genres, await loaders.getKeywords()),
     episodes: () => buildMovieEpisodes(loaders),
-    persons: async () => buildAnimePersonFacts((await loaders.getCredits()).crew, ctx.imageBaseUrl),
+    persons: async () => buildAnimePersonFacts(await loaders.getCredits(), ctx.imageBaseUrl),
     companies: async () =>
       buildAnimeCompanyFacts(
         (await loaders.getMovie()).production_companies,
@@ -100,7 +100,7 @@ export function createSeriesSource(
           return buildEpisodeGroupEpisodes(ref, loaders)
       }
     },
-    persons: async () => buildAnimePersonFacts((await loaders.getCredits()).crew, ctx.imageBaseUrl),
+    persons: async () => buildAnimePersonFacts(await loaders.getCredits(), ctx.imageBaseUrl),
     companies: async () => {
       const series = await loaders.getSeries()
       return buildAnimeCompanyFacts(series.production_companies, series.networks, ctx.imageBaseUrl)

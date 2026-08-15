@@ -263,8 +263,8 @@ export function mapBangumiGameCompanyRole(relation?: string): LibraryGameCompany
  * substring fallback. Two ordering traps drive that design: song credits such
  * as 主题歌演出 belong to music and must resolve before the staff sense of
  * 演出, and every specific X监督 position must resolve before the bare 监督
- * director check. Voice actors are not anime staff: they reach the entry
- * through the character they play.
+ * director check. Bangumi lists cast on the characters rather than here, so the
+ * voice positions only catch wiki entries that credit a voice as staff.
  */
 const BANGUMI_ANIME_POSITION_ROLES: Record<string, LibraryAnimePersonRole> = {
   原作: 'originalCreator',
@@ -322,6 +322,9 @@ const BANGUMI_ANIME_POSITION_ROLES: Record<string, LibraryAnimePersonRole> = {
   录音: 'sound',
   录音助理: 'sound',
   配音监督: 'sound',
+  声优: 'actor',
+  配音: 'actor',
+  cv: 'actor',
   音乐: 'music',
   音乐制作: 'music',
   音乐制作人: 'music',
@@ -406,6 +409,7 @@ export function mapBangumiAnimePersonRole(
 function mapAnimeCareersFallback(careers: BangumiPersonCareer[]): LibraryAnimePersonRole {
   const normalizedCareers = new Set(careers.map((career) => normalizeToken(career)))
 
+  if (normalizedCareers.has('seiyu') || normalizedCareers.has('actor')) return 'actor'
   if (normalizedCareers.has('writer')) return 'scenario'
   if (normalizedCareers.has('mangaka')) return 'originalCreator'
   if (normalizedCareers.has('producer')) return 'producer'

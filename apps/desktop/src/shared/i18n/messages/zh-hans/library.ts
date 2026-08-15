@@ -136,6 +136,7 @@ export const library = {
       sound: '音响',
       music: '音乐',
       producer: '制片人',
+      actor: '声优',
       other: '其他'
     },
     animeCharacter: {

@@ -82,9 +82,9 @@ export function buildAnimeIncoming(
   if (core.tags) availability.surfaces.add('tags')
   // An empty episode list is an authoritative "none", so presence is what counts.
   if (episodes !== undefined) availability.surfaces.add('episodes')
-  // Cast facts do not feed anime person links, so unlike game they do not
-  // answer the person surface.
-  if (relationFacts.animePerson !== undefined) availability.surfaces.add('person')
+  if (relationFacts.animePerson !== undefined || characterPersonAnswered) {
+    availability.surfaces.add('person')
+  }
   if (relationFacts.animeCompany !== undefined) availability.surfaces.add('company')
   if (relationFacts.animeCharacter !== undefined) availability.surfaces.add('character')
   if (characterPersonAnswered) availability.surfaces.add('characterPerson')

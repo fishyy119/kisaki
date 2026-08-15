@@ -139,6 +139,7 @@ export const library = {
       sound: 'Sound',
       music: 'Music',
       producer: 'Producer',
+      actor: 'Voice actor',
       other: 'Other'
     },
     animeCharacter: {
