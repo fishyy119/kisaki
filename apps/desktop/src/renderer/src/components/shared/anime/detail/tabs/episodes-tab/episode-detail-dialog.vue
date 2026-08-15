@@ -264,7 +264,7 @@ async function handleDeleteEpisode(): Promise<void> {
                 @click="handleToggleWatched"
               >
                 <Icon
-                  :icon="isWatched ? 'icon-[mdi--check-circle]' : 'icon-[mdi--circle-outline]'"
+                  icon="icon-[mdi--circle]"
                   class="size-4"
                   :class="isWatched ? 'text-success' : ''"
                 />
