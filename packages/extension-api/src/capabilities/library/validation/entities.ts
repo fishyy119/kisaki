@@ -154,6 +154,7 @@ const ANIME_EPISODE_CREATE_KEYS = new Set<string>([
   'externalIds'
 ])
 const ANIME_EPISODE_WATCH_STATE_KEYS = new Set<string>([
+  'watched',
   'watchedAt',
   'playCount',
   'resumePositionMs'
@@ -317,6 +318,7 @@ export function validateLibraryAnimeEpisodeWatchStatePatch(value: unknown): Vali
 
   return [
     ...validateUnknownKeys(input, ANIME_EPISODE_WATCH_STATE_KEYS),
+    ...validateOptionalBoolean(input.watched, '$.watched'),
     ...validateOptionalNullableFiniteNumber(input.watchedAt, '$.watchedAt'),
     ...validateOptionalNonNegativeInteger(input.playCount, '$.playCount'),
     ...validateOptionalNullableFiniteNumber(input.resumePositionMs, '$.resumePositionMs')

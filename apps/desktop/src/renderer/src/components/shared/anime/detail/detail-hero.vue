@@ -12,7 +12,9 @@ import { Button } from '@renderer/components/ui/button'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAnime } from '@renderer/composables/use-anime'
+import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { createLogger } from '@renderer/core/log'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatAnimeStatus, getEntityIcon } from '@renderer/utils/format'
 import {
@@ -25,6 +27,10 @@ import {
   MediaLastActiveFormDialog,
   MediaStatusFormDialog
 } from '@renderer/components/shared/media'
+import type { AnimeStatus } from '@shared/db'
+import AnimeWatchCatchUpDialog from '../anime-watch-catch-up-dialog.vue'
+
+const log = createLogger('Anime')
 
 const { anime } = useAnime()
 const { m, f } = useI18n()
@@ -41,6 +47,21 @@ const editDialogs = ref({
 
 function openEditDialog(dialog: keyof typeof editDialogs.value) {
   editDialogs.value[dialog] = true
+}
+
+/** Catch-up prompt lives beside the status dialog so it survives its close. */
+const catchUpOpen = ref(false)
+
+async function handleStatusSaved(status: string): Promise<void> {
+  const entry = anime.value
+  if (!entry) return
+
+  try {
+    catchUpOpen.value = await shouldOfferWatchCatchUp(entry.id, status as AnimeStatus)
+  } catch (error) {
+    // The status change already succeeded; a missed offer is not worth a notice.
+    log.warn('Episode catch-up offer check failed:', error)
+  }
 }
 
 const coverUrl = computed(() =>
@@ -222,6 +243,12 @@ const coverUrl = computed(() =>
       v-model:open="editDialogs.status"
       media-type="anime"
       :entity-id="anime.id"
+      @saved="handleStatusSaved"
+    />
+    <AnimeWatchCatchUpDialog
+      v-if="catchUpOpen"
+      v-model:open="catchUpOpen"
+      :anime-id="anime.id"
     />
     <MediaDurationFormDialog
       v-if="editDialogs.duration"

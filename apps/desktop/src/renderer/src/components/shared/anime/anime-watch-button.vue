@@ -85,7 +85,7 @@ async function refreshProgress(): Promise<void> {
     .where(
       and(
         eq(animeEpisodes.animeId, animeId),
-        or(isNotNull(animeEpisodes.watchedAt), isNotNull(animeEpisodes.resumePositionMs))
+        or(eq(animeEpisodes.watched, true), isNotNull(animeEpisodes.resumePositionMs))
       )
     )
     .limit(1)

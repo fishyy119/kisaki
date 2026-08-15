@@ -8,10 +8,10 @@
  */
 
 import { existsSync } from 'node:fs'
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 
 import { createLogger } from '@main/log'
-import type { DbContext, DbService } from '@main/services/db'
+import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import type { PlayerService } from '@main/services/player'
 import {
@@ -141,7 +141,10 @@ export class AnimeActivityHandler {
       .set({ lastActiveAt: new Date(now) })
       .where(eq(animes.id, animeId))
       .run()
-    // Guarded by status so a user edit during player startup is never clobbered.
+    // Starting playback is the only status transition playback infers, guarded so
+    // a user edit during player startup is never clobbered. Completion stays a
+    // user declaration: "every episode watched" would rest on metadata being
+    // fully scraped, which never holds while a show is still airing.
     this.db.client
       .update(animes)
       .set({ status: 'watching' })
@@ -370,6 +373,7 @@ export class AnimeActivityHandler {
         .set(
           watched
             ? {
+                watched: true,
                 watchedAt: new Date(endedAt),
                 playCount: sql`${animeEpisodes.playCount} + 1`,
                 resumePositionMs: null
@@ -386,10 +390,6 @@ export class AnimeActivityHandler {
         })
         .where(eq(animes.id, animeId))
         .run()
-
-      if (watched) {
-        this.advanceAnimeStatus(tx, animeId)
-      }
     })
 
     log.info('Watch session recorded.', {
@@ -406,26 +406,6 @@ export class AnimeActivityHandler {
       watched,
       watchTimeSeconds: Math.floor(elapsedMs / 1000)
     })
-  }
-
-  /** An entry is completed once no regular episode is left unwatched. */
-  private advanceAnimeStatus(tx: DbContext, animeId: string): void {
-    const [pending] = tx
-      .select()
-      .from(animeEpisodes)
-      .where(
-        and(
-          eq(animeEpisodes.animeId, animeId),
-          eq(animeEpisodes.type, 'regular'),
-          isNull(animeEpisodes.watchedAt)
-        )
-      )
-      .limit(1)
-      .all()
-
-    if (pending) return
-
-    tx.update(animes).set({ status: 'completed' }).where(eq(animes.id, animeId)).run()
   }
 
   private writeResumePosition(
@@ -479,7 +459,7 @@ export class AnimeActivityHandler {
       .all()
 
     const playable = rows.map((row) => row.episode)
-    return playable.find((episode) => episode.watchedAt === null) ?? playable[0]
+    return playable.find((episode) => !episode.watched) ?? playable[0]
   }
 
   private readPlayableFile(episodeId: string, fileId?: string): AnimeEpisodeFile | undefined {

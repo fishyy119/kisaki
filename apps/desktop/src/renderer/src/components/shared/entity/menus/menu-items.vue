@@ -15,12 +15,15 @@ import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
+import { createLogger } from '@renderer/core/log'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
 import { ENTITY_TABLES, type TableEntityType } from '../entity-tables'
-import { MENU_SPECS } from './menu-specs'
+import { MENU_SPECS, type MenuStatusSection } from './menu-specs'
+
+const log = createLogger('Library')
 
 interface Props {
   entityType: TableEntityType
@@ -50,6 +53,8 @@ const emit = defineEmits<{
   openNewCollectionDialog: []
   /** Media-specific dialog entries declared by the menu spec. */
   openExtraDialog: [name: string]
+  /** Follow-up prompt the written status offers. */
+  openStatusFollowUp: []
 }>()
 
 const spec = computed(() => MENU_SPECS[props.entityType])
@@ -156,16 +161,31 @@ const statusOptions = computed(() => spec.value.status?.options(m.value) ?? [])
 // Computed model for the media status radio group
 const statusModel = computed({
   get: () => entry.value?.status ?? undefined,
-  set: async (status: string | undefined) => {
-    if (!status || !spec.value.status) return
-    try {
-      await spec.value.status.write(props.entityId, status)
-      notify.success(m.value.library.feedback.statusUpdated)
-    } catch {
-      notify.error(m.value.library.feedback.updateFailed)
-    }
+  set: (status: string | undefined) => {
+    const section = spec.value.status
+    if (!status || !section) return
+    void writeStatus(section, status)
   }
 })
+
+async function writeStatus(section: MenuStatusSection, status: string): Promise<void> {
+  try {
+    await section.write(props.entityId, status)
+    notify.success(m.value.library.feedback.statusUpdated)
+  } catch {
+    notify.error(m.value.library.feedback.updateFailed)
+    return
+  }
+
+  try {
+    if (await section.followUp?.shouldOffer(props.entityId, status)) {
+      emit('openStatusFollowUp')
+    }
+  } catch (error) {
+    // The status write already landed; a missed offer is not a failed action.
+    log.warn('Status follow-up offer check failed:', error)
+  }
+}
 
 // Action handlers
 async function handleAddToCollection(collectionId: string) {

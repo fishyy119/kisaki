@@ -134,10 +134,11 @@ function toOutgoingEdge(
 }
 
 /**
- * Rebuilds the id set of rows whose flag column was set, from the current set
- * and the raw row changes that produced it.
+ * Rebuilds the id set of rows whose boolean flag column was set, from the
+ * current set and the raw row changes that produced it. Flags arrive as the
+ * driver's stored `0` / `1`, so truthiness is the test.
  */
-export function rebuildWatchedIdSetBefore(
+export function rebuildFlaggedIdSetBefore(
   after: string[],
   changes: RawDbChange[],
   flagColumn: string
@@ -150,7 +151,7 @@ export function rebuildWatchedIdSetBefore(
       continue
     }
 
-    if (change.old && change.old[flagColumn] !== null && change.old[flagColumn] !== undefined) {
+    if (change.old?.[flagColumn]) {
       ids.add(id)
     } else if (change.operation !== 'deleted') {
       ids.delete(id)

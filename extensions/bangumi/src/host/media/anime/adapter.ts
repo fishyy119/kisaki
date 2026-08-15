@@ -31,7 +31,7 @@ export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter<LibraryAnim
 
     return episodes.map((episode) => ({
       localId: episode.id,
-      watched: Boolean(episode.watchedAt),
+      watched: episode.watched,
       externalIds: episode.externalIds.map((externalId) => ({
         source: externalId.source,
         id: externalId.id

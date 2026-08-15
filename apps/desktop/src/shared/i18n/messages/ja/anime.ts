@@ -29,6 +29,20 @@ export const anime = {
     resumeLabel: '再開位置',
     airDate: '放送日',
 
+    catchUp: {
+      title: '残りのエピソードを視聴済みにしますか？',
+      pendingCount: ({ count }: { count: number }) => `${count} 話が視聴済みになっていません。`,
+      pendingByType: {
+        regular: ({ count }: { count: number }) => `本編 ${count} 話`,
+        special: ({ count }: { count: number }) => `スペシャル ${count} 話`
+      },
+      hint: '視聴状態のみを記録し、視聴日時は書き込みません。',
+      markAll: 'すべて視聴済みにする',
+      markRegularOnly: '本編のみ',
+      skip: 'スキップ',
+      marked: ({ count }: { count: number }) => `${count} 話を視聴済みにしました。`
+    },
+
     addEpisode: 'エピソードを追加',
     editEpisode: 'エピソードを編集',
     deleteEpisode: 'エピソードを削除',

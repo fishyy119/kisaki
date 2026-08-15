@@ -18,10 +18,10 @@ import type {
 import type { ExternalId } from '@shared/identity'
 import {
   rebuildExternalIdsBefore,
+  rebuildFlaggedIdSetBefore,
   rebuildIdSetBefore,
   rebuildLinkSnapshotBefore,
-  rebuildMediaRelationEdgesBefore,
-  rebuildWatchedIdSetBefore
+  rebuildMediaRelationEdgesBefore
 } from '../rebuild'
 import type { MediaFeedProjection, MediaRow } from '../types'
 import {
@@ -362,10 +362,10 @@ function projectEpisodesChange(
 
   const after = readIds(
     sqlite,
-    `SELECT id FROM ${episodesTable} WHERE ${projection.ownerColumn} = ? AND watched_at IS NOT NULL ORDER BY id ASC`,
+    `SELECT id FROM ${episodesTable} WHERE ${projection.ownerColumn} = ? AND watched = 1 ORDER BY id ASC`,
     mediaId
   )
-  const before = rebuildWatchedIdSetBefore(after, episodeChanges, 'watched_at')
+  const before = rebuildFlaggedIdSetBefore(after, episodeChanges, 'watched')
   if (sameJson(before, after)) {
     return null
   }

@@ -280,8 +280,8 @@ export abstract class BangumiLocalMediaAdapter<
 }
 
 /**
- * Entry and episode changes are reported separately: a watch that both marks an
- * episode and advances the entry status has to reach both sync paths.
+ * Entry fields and episode watch state travel to different sync paths, so a
+ * single change summary can carry both reasons.
  */
 function readChangeReasons(change: LibraryEntityChangeSummary): LocalMediaChangeReason[] {
   if (change.kind === 'created') {

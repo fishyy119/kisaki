@@ -101,6 +101,12 @@ export type AnimeFormat = 'tv' | 'movie' | 'ova' | 'ona' | 'special' | 'other'
  */
 export type AnimeEpisodeType = 'regular' | 'special'
 
+/** Anime episode type values in canonical display order. */
+export const ANIME_EPISODE_TYPE_VALUES = [
+  'regular',
+  'special'
+] as const satisfies readonly AnimeEpisodeType[]
+
 /** Anime-person link role */
 export type AnimePersonRole =
   | 'originalCreator'

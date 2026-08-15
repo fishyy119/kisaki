@@ -2,7 +2,8 @@
   MediaStatusFormDialog
   Dialog for editing a media entry's consumption status. Each media type keeps
   its own status vocabulary, so options and the write path come from per-media
-  registries.
+  registries. The saved status is emitted so media-specific hosts can offer
+  their own follow-up; this dialog stays unaware of what a status implies.
 -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
@@ -49,6 +50,11 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
+const emit = defineEmits<{
+  /** Fires only when the write succeeded, carrying the stored status value. */
+  saved: [status: string]
+}>()
+
 const table = computed(() => MEDIA_TABLES[props.mediaType])
 const labels = computed(() => m.value[props.mediaType].statusDialog)
 
@@ -94,6 +100,7 @@ async function handleSubmit() {
     await MEDIA_STATUS_WRITERS[props.mediaType](props.entityId, status.value)
     notify.success(m.value.common.saved)
     open.value = false
+    emit('saved', status.value)
   } catch (error) {
     log.error('Update failed:', error)
     notify.error(m.value.library.feedback.saveFailedRetry)

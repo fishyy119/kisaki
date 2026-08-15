@@ -159,6 +159,7 @@ function foldEpisodeIntoTarget(
 
   db.update(animeEpisodes)
     .set({
+      watched: target.watched || source.watched,
       watchedAt: target.watchedAt ?? source.watchedAt,
       playCount: target.playCount + source.playCount,
       resumePositionMs: target.resumePositionMs ?? source.resumePositionMs,

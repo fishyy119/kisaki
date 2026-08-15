@@ -35,9 +35,7 @@ const addDialogOpen = ref(false)
 const filesConfigOpen = ref(false)
 const openEpisodeId = ref<string | null>(null)
 
-const watchedCount = computed(
-  () => episodes.value.filter((episode) => episode.watchedAt !== null).length
-)
+const watchedCount = computed(() => episodes.value.filter((episode) => episode.watched).length)
 
 const canSyncFiles = computed(() => !!anime.value?.animeDirPath)
 

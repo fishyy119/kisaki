@@ -8,7 +8,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { eq } from 'drizzle-orm'
-import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import {
@@ -108,13 +107,10 @@ async function handleDelete(): Promise<void> {
       <template v-if="extra">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2 min-w-0">
-            <span class="truncate">{{ extra.name }}</span>
-            <Badge
-              variant="secondary"
-              class="shrink-0"
-            >
+            <span class="font-mono text-muted-foreground shrink-0">
               {{ m.library.animeExtraType[extra.type] }}
-            </Badge>
+            </span>
+            <span class="truncate">{{ extra.name }}</span>
           </DialogTitle>
         </DialogHeader>
 

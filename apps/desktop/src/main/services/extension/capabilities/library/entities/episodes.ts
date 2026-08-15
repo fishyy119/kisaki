@@ -7,10 +7,11 @@ import type {
 } from '@kisaki3/extension-api'
 import {
   createNotFoundError,
+  createValidationError,
   ensureNonEmptyString,
   normalizeCapabilityError
 } from '@kisaki3/extension-api'
-import { and, asc, eq, isNotNull, isNull, inArray, type SQL } from 'drizzle-orm'
+import { and, asc, eq, inArray, type SQL } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { animeEpisodeExternalIds, animeEpisodes, animes } from '@shared/db'
 import type { DbService } from '@main/services/db'
@@ -61,10 +62,10 @@ export class ExtensionLibraryEpisodeStore {
         conditions.push(inArray(animeEpisodes.type, [...query.types]))
       }
       if (query.watchedOnly) {
-        conditions.push(isNotNull(animeEpisodes.watchedAt))
+        conditions.push(eq(animeEpisodes.watched, true))
       }
       if (query.unwatchedOnly) {
-        conditions.push(isNull(animeEpisodes.watchedAt))
+        conditions.push(eq(animeEpisodes.watched, false))
       }
 
       const rows = this.options.db.client
@@ -186,6 +187,13 @@ export class ExtensionLibraryEpisodeStore {
     }
   }
 
+  /**
+   * Patches one episode's watch state.
+   *
+   * Playback evidence never outlives the state it proves: clearing `watched`
+   * drops the recorded time too, and asking for a time on an unwatched episode
+   * is a contradiction rather than a state to store.
+   */
   patchWatchState(
     episodeId: string,
     patch: LibraryAnimeEpisodeWatchStatePatch
@@ -194,6 +202,7 @@ export class ExtensionLibraryEpisodeStore {
 
     try {
       const values = stripUndefined({
+        watched: patch.watched,
         watchedAt:
           patch.watchedAt === undefined
             ? undefined
@@ -205,12 +214,28 @@ export class ExtensionLibraryEpisodeStore {
       })
 
       const existing = this.options.db.client
-        .select({ id: animeEpisodes.id })
+        .select({
+          id: animeEpisodes.id,
+          watched: animeEpisodes.watched,
+          watchedAt: animeEpisodes.watchedAt
+        })
         .from(animeEpisodes)
         .where(eq(animeEpisodes.id, episodeId))
         .get()
       if (!existing) {
         throw createNotFoundError(`Library anime episode "${episodeId}" was not found.`)
+      }
+
+      const watched = patch.watched ?? existing.watched
+      if (!watched) {
+        if (values.watchedAt) {
+          throw createValidationError(
+            `Library anime episode "${episodeId}" cannot take a watch time while not watched.`
+          )
+        }
+        if (existing.watchedAt !== null) {
+          values.watchedAt = null
+        }
       }
 
       if (Object.keys(values).length > 0) {
@@ -303,6 +328,7 @@ function toEpisodeDto(
     description: optionalValue(row.description),
     stillFile: optionalValue(row.stillFile),
     durationMs: row.durationMs,
+    watched: row.watched,
     watchedAt: toNullableTimestampMs(row.watchedAt),
     playCount: row.playCount,
     resumePositionMs: row.resumePositionMs,

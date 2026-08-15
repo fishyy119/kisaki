@@ -36,7 +36,8 @@ const openDialogs = reactive({
   externalIds: false,
   merge: false,
   delete: false,
-  newCollection: false
+  newCollection: false,
+  statusFollowUp: false
 })
 
 /** Currently open media-specific dialog name, or null. */
@@ -62,6 +63,8 @@ const extraOpenModel = computed({
 const activeExtra = computed(
   () => spec.value.extraDialogs.find((dialog) => dialog.name === extraOpen.value) ?? null
 )
+
+const statusFollowUp = computed(() => spec.value.status?.followUp ?? null)
 </script>
 
 <template>
@@ -120,5 +123,13 @@ const activeExtra = computed(
     v-if="activeExtra"
     v-model:open="extraOpenModel"
     v-bind="activeExtra.buildProps(props.entityId)"
+  />
+
+  <!-- Follow-up prompt offered by the written status -->
+  <component
+    :is="statusFollowUp.component"
+    v-if="statusFollowUp && openDialogs.statusFollowUp"
+    v-model:open="openDialogs.statusFollowUp"
+    v-bind="statusFollowUp.buildProps(props.entityId)"
   />
 </template>

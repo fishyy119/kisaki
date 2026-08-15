@@ -641,7 +641,7 @@ export class AnimeFileSyncHandler {
 
     const candidates = existingEpisodes.filter(
       (episode) =>
-        episode.episodeNumber === null && episode.watchedAt === null && !retainedIds.has(episode.id)
+        episode.episodeNumber === null && !episode.watched && !retainedIds.has(episode.id)
     )
     if (candidates.length === 0) return
 

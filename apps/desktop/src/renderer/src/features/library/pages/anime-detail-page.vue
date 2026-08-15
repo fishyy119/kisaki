@@ -23,16 +23,24 @@ import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { AnimeDetailContent, AnimeWatchButton } from '@renderer/components/shared/anime'
+import {
+  AnimeDetailContent,
+  AnimeWatchButton,
+  AnimeWatchCatchUpDialog
+} from '@renderer/components/shared/anime'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useAmbientLight, useAnimeRouteProvider, useEntityDetailRoute } from '@renderer/composables'
+import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
+import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { animes, type AnimeStatus } from '@shared/db'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatAnimeStatus, getAnimeStatusVariant, getEntityIcon } from '@renderer/utils/format'
+
+const log = createLogger('Anime')
 
 const { m } = useI18n()
 
@@ -77,6 +85,7 @@ useAmbientLight(() =>
 // =============================================================================
 
 const scoreDialogOpen = ref(false)
+const catchUpOpen = ref(false)
 const isPendingFavorite = ref(false)
 const isPendingStatus = ref(false)
 
@@ -128,8 +137,16 @@ const selectedStatus = computed({
       notify.success(m.value.library.feedback.statusUpdated)
     } catch {
       notify.error(m.value.library.feedback.updateFailed)
+      return
     } finally {
       isPendingStatus.value = false
+    }
+
+    try {
+      catchUpOpen.value = await shouldOfferWatchCatchUp(current.id, status)
+    } catch (error) {
+      // The status change already succeeded; a missed offer is not worth a notice.
+      log.warn('Episode catch-up offer check failed:', error)
     }
   }
 })
@@ -320,6 +337,12 @@ async function handleOpenAnimeDir() {
       v-model:open="scoreDialogOpen"
       entity-type="anime"
       :entity-id="anime.id"
+    />
+
+    <AnimeWatchCatchUpDialog
+      v-if="catchUpOpen"
+      v-model:open="catchUpOpen"
+      :anime-id="anime.id"
     />
 
     <SpoilerConfirmDialog

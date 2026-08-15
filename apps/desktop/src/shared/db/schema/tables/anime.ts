@@ -28,6 +28,13 @@ export const animeEpisodes = sqliteTable(
     description: text('description'),
     stillFile: text('still_file'),
     durationMs: integer('duration_ms'),
+    /** Authoritative watch state; every marking path owns this column. */
+    watched: integer('watched', { mode: 'boolean' }).notNull().default(false),
+    /**
+     * Completion time of the last full playback. Manual and imported marks
+     * leave it null: they know the state without knowing a time, so a set
+     * `watched` with a null `watchedAt` is normal rather than inconsistent.
+     */
     watchedAt: integer('watched_at', { mode: 'timestamp_ms' }),
     playCount: integer('play_count').notNull().default(0),
     resumePositionMs: integer('resume_position_ms'),
@@ -36,7 +43,6 @@ export const animeEpisodes = sqliteTable(
   (t) => [
     index('idx_anime_episodes_anime_id').on(t.animeId),
     index('idx_anime_episodes_anime_id_order').on(t.animeId, t.orderInAnime),
-    index('idx_anime_episodes_watched_at').on(t.watchedAt),
     /** Numbered episodes are unique per entry; unnumbered rows may repeat. */
     uniqueIndex('unique_anime_episodes_number')
       .on(t.animeId, t.type, t.episodeNumber)

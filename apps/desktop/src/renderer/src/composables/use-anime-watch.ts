@@ -1,22 +1,32 @@
 /**
- * Watch facade for one anime entry or episode.
+ * Watch state of one anime entry: live playback plus the episode marking paths.
  *
- * Bundles the live watching state from the activity store with the watch,
- * stop, and pause/resume transports, so the watch button, episode rows, and
- * the episode detail dialog share one watch path. Without an episode id the
- * facade reflects any episode of the entry; with one it reflects only that
- * episode. Confirmed outcomes show through the tracked state; only failures
- * notify, and raw transport errors go to the log alone.
+ * The facade bundles the live watching state from the activity store with the
+ * watch, stop, and pause/resume transports, so the watch button, episode rows,
+ * and the episode detail dialog share one watch path. Without an episode id it
+ * reflects any episode of the entry; with one it reflects only that episode.
+ * Confirmed outcomes show through the tracked state; only failures notify, and
+ * raw transport errors go to the log alone.
+ *
+ * The marking functions below own every renderer-side write to episode watch
+ * state. They set `watched` and never invent a `watchedAt`: a playback time is
+ * evidence only the player can produce.
  */
 
 import { computed, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue'
-import { eq } from 'drizzle-orm'
+import { and, count, eq, inArray } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { useAnimeActivityStore, type AnimePlaybackState } from '@renderer/stores'
-import { animeEpisodes, type AnimeEpisode } from '@shared/db'
+import {
+  ANIME_EPISODE_TYPE_VALUES,
+  animeEpisodes,
+  type AnimeEpisode,
+  type AnimeEpisodeType,
+  type AnimeStatus
+} from '@shared/db'
 import { useI18n } from './use-i18n'
 import { usePlayerControls } from './use-player-controls'
 
@@ -136,22 +146,85 @@ export function useAnimeWatch(
   }
 }
 
-/** Flips one episode's watched state; marking watched also clears resume progress. */
+/**
+ * Flips one episode's watched state.
+ *
+ * Marking clears the resume point but leaves `watchedAt` alone: a manual mark
+ * knows the state without knowing when the episode was played. Unmarking drops
+ * the playback time along with the state it proved.
+ */
 export async function toggleEpisodeWatched(
-  episode: Pick<AnimeEpisode, 'id' | 'watchedAt'>
+  episode: Pick<AnimeEpisode, 'id' | 'watched'>
 ): Promise<void> {
   const { m } = useI18n()
   try {
     await db
       .update(animeEpisodes)
       .set(
-        episode.watchedAt === null
-          ? { watchedAt: new Date(), resumePositionMs: null }
-          : { watchedAt: null }
+        episode.watched
+          ? { watched: false, watchedAt: null }
+          : { watched: true, resumePositionMs: null }
       )
       .where(eq(animeEpisodes.id, episode.id))
     notify.success(m.value.anime.episodes.watchedUpdated)
   } catch {
     notify.error(m.value.library.feedback.updateFailed)
   }
+}
+
+/** Unwatched episode count per episode type; zero for types with nothing pending. */
+export type UnwatchedEpisodeCounts = Record<AnimeEpisodeType, number>
+
+export async function readUnwatchedEpisodeCounts(animeId: string): Promise<UnwatchedEpisodeCounts> {
+  const rows = await db
+    .select({ type: animeEpisodes.type, value: count() })
+    .from(animeEpisodes)
+    .where(and(eq(animeEpisodes.animeId, animeId), eq(animeEpisodes.watched, false)))
+    .groupBy(animeEpisodes.type)
+
+  const counts = Object.fromEntries(
+    ANIME_EPISODE_TYPE_VALUES.map((type) => [type, 0])
+  ) as UnwatchedEpisodeCounts
+  for (const row of rows) {
+    counts[row.type] = row.value
+  }
+  return counts
+}
+
+/**
+ * Whether writing this status should offer to catch the entry's episodes up.
+ *
+ * Only `completed` carries an episode meaning; the remaining statuses say
+ * nothing about individual episodes, and no status ever implies unmarking one.
+ */
+export async function shouldOfferWatchCatchUp(
+  animeId: string,
+  status: AnimeStatus
+): Promise<boolean> {
+  if (status !== 'completed') return false
+
+  const counts = await readUnwatchedEpisodeCounts(animeId)
+  return ANIME_EPISODE_TYPE_VALUES.some((type) => counts[type] > 0)
+}
+
+/**
+ * Marks every unwatched episode of the given types as watched.
+ *
+ * Already-watched rows are excluded rather than rewritten, so their real
+ * playback times and play counts survive and repeating the call is a no-op.
+ */
+export async function markEpisodesWatched(
+  animeId: string,
+  types: readonly AnimeEpisodeType[]
+): Promise<void> {
+  await db
+    .update(animeEpisodes)
+    .set({ watched: true, resumePositionMs: null })
+    .where(
+      and(
+        eq(animeEpisodes.animeId, animeId),
+        eq(animeEpisodes.watched, false),
+        inArray(animeEpisodes.type, [...types])
+      )
+    )
 }

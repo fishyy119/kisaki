@@ -6,7 +6,6 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAnimeWatch } from '@renderer/composables/use-anime-watch'
@@ -33,7 +32,7 @@ const emit = defineEmits<{
 
 const { m, f } = useI18n()
 
-const isWatched = computed(() => props.episode.watchedAt !== null)
+const isWatched = computed(() => props.episode.watched)
 const playableFile = computed(() => props.episode.files[0] ?? null)
 
 const title = computed(() => {
@@ -87,19 +86,18 @@ const {
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <span
+            v-if="props.episode.type !== 'regular'"
+            class="text-xs font-mono text-muted-foreground shrink-0"
+          >
+            {{ m.library.animeEpisodeType[props.episode.type] }}
+          </span>
+          <span
             v-if="props.episode.episodeNumber !== null"
             class="text-xs font-mono text-muted-foreground shrink-0"
           >
             {{ formatEpisodeNumber(props.episode.episodeNumber) }}
           </span>
           <p class="text-sm font-medium truncate">{{ title }}</p>
-          <Badge
-            v-if="props.episode.type !== 'regular'"
-            variant="secondary"
-            class="shrink-0"
-          >
-            {{ m.library.animeEpisodeType[props.episode.type] }}
-          </Badge>
         </div>
 
         <div class="flex items-center gap-2 text-xs text-muted-foreground">

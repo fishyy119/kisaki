@@ -18,6 +18,7 @@ import type { AutomationCommandInvocationStatus } from '../../automation'
 import {
   ANIME_CHARACTER_ROLE_VALUES,
   ANIME_COMPANY_ROLE_VALUES,
+  ANIME_EPISODE_TYPE_VALUES,
   ANIME_EXTRA_TYPE_VALUES,
   ANIME_PERSON_ROLE_VALUES,
   ANIME_STATUS_VALUES,
@@ -110,7 +111,6 @@ export const characterPersonRole = createEnumType<CharacterPersonRole>(
 const ANIME_FORMAT_VALUES = ['tv', 'movie', 'ova', 'ona', 'special', 'other'] as const
 export const animeFormat = createEnumType<AnimeFormat>(ANIME_FORMAT_VALUES, 'tv', 'animeFormat')
 
-const ANIME_EPISODE_TYPE_VALUES = ['regular', 'special'] as const
 export const animeEpisodeType = createEnumType<AnimeEpisodeType>(
   ANIME_EPISODE_TYPE_VALUES,
   'regular',

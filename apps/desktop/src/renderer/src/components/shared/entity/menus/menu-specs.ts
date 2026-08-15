@@ -9,6 +9,7 @@
 
 import { and, eq, inArray } from 'drizzle-orm'
 import { defineAsyncComponent, type Component } from 'vue'
+import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
 import { db } from '@renderer/core/db'
 import type { Messages } from '@shared/i18n'
 import type { TableName } from '@shared/db/table-names'
@@ -38,6 +39,9 @@ const GameLaunchConfigFormDialog = defineAsyncComponent(() =>
 const AnimeFilesConfigFormDialog = defineAsyncComponent(() =>
   import('@renderer/components/shared/anime').then((mod) => mod.AnimeFilesConfigFormDialog)
 )
+const AnimeWatchCatchUpDialog = defineAsyncComponent(() =>
+  import('@renderer/components/shared/anime').then((mod) => mod.AnimeWatchCatchUpDialog)
+)
 
 interface CollectionLinkStore {
   /** Link table name for db-change invalidation. */
@@ -51,12 +55,24 @@ interface CollectionLinkStore {
   removeMany: (entityIds: string[], collectionId: string) => Promise<void>
 }
 
+/**
+ * Prompt a media type offers after its status was written, for statuses that
+ * imply something about the entry's consumption units. The dialog is hosted by
+ * the shared dialog assembly so it survives the menu closing.
+ */
+interface MenuStatusFollowUp {
+  component: Component
+  buildProps: (entityId: string) => Record<string, unknown>
+  shouldOffer: (entityId: string, status: string) => Promise<boolean>
+}
+
 /** Media-only menu extensions. */
-interface MenuStatusSection {
+export interface MenuStatusSection {
   label: (m: Messages) => string
   options: (m: Messages) => { value: string; label: string }[]
   read: (entityId: string) => Promise<string | null>
   write: (entityId: string, status: string) => Promise<void>
+  followUp?: MenuStatusFollowUp
 }
 
 interface MenuDirSection {
@@ -233,6 +249,11 @@ export const MENU_SPECS: Record<TableEntityType, MenuSpec> = {
           .update(animes)
           .set({ status: status as AnimeStatus })
           .where(eq(animes.id, entityId))
+      },
+      followUp: {
+        component: AnimeWatchCatchUpDialog,
+        buildProps: (entityId) => ({ animeId: entityId }),
+        shouldOffer: (entityId, status) => shouldOfferWatchCatchUp(entityId, status as AnimeStatus)
       }
     },
     dir: {

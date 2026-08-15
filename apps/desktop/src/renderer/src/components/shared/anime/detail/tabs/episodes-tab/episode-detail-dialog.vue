@@ -10,7 +10,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { eq } from 'drizzle-orm'
-import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import {
@@ -76,7 +75,15 @@ const stillUrl = computed(() => {
   return getAttachmentUrl('anime_episodes', entry.id, entry.stillFile, { width: 640 })
 })
 
-const isWatched = computed(() => episode.value?.watchedAt !== null)
+const isWatched = computed(() => episode.value?.watched === true)
+
+// Marked episodes carry no playback time, so the fact row reads empty rather
+// than unwatched for them.
+const watchedAtText = computed(() => {
+  const entry = episode.value
+  if (!entry?.watched) return m.value.anime.episodes.unwatched
+  return entry.watchedAt ? f.value.dateTime(entry.watchedAt) : m.value.common.emptyValue
+})
 
 async function handleToggleWatched(): Promise<void> {
   if (episode.value) await toggleEpisodeWatched(episode.value)
@@ -136,19 +143,18 @@ async function handleDeleteEpisode(): Promise<void> {
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2 min-w-0">
             <span
+              v-if="episode.type !== 'regular'"
+              class="font-mono text-muted-foreground shrink-0"
+            >
+              {{ m.library.animeEpisodeType[episode.type] }}
+            </span>
+            <span
               v-if="episode.episodeNumber !== null"
               class="font-mono text-muted-foreground shrink-0"
             >
               {{ formatEpisodeNumber(episode.episodeNumber) }}
             </span>
             <span class="truncate">{{ title }}</span>
-            <Badge
-              v-if="episode.type !== 'regular'"
-              variant="secondary"
-              class="shrink-0"
-            >
-              {{ m.library.animeEpisodeType[episode.type] }}
-            </Badge>
           </DialogTitle>
         </DialogHeader>
 
@@ -190,9 +196,7 @@ async function handleDeleteEpisode(): Promise<void> {
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-3">
               <dt class="text-muted-foreground">{{ m.anime.episodes.watchedAt }}</dt>
-              <dd>
-                {{ episode.watchedAt ? f.dateTime(episode.watchedAt) : m.anime.episodes.unwatched }}
-              </dd>
+              <dd>{{ watchedAtText }}</dd>
             </div>
             <div
               v-if="episode.resumePositionMs"

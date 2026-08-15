@@ -82,6 +82,7 @@ const dialogs = ref<InstanceType<typeof EntityMenuDialogs>>()
         @open-delete-dialog="dialogs?.open('delete')"
         @open-new-collection-dialog="dialogs?.open('newCollection')"
         @open-extra-dialog="(name) => dialogs?.open(name)"
+        @open-status-follow-up="dialogs?.open('statusFollowUp')"
       />
     </DropdownMenuContent>
   </DropdownMenu>

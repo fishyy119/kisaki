@@ -96,10 +96,10 @@ function updateMatchedEpisode(tx: DbContext, match: EpisodeMatch): void {
  * Incoming episodes claim stored rows by shared external id first, then by
  * (type, episodeNumber) for rows no id claimed; sources revise numbering, so
  * identity outranks position. Matched rows refresh scraped metadata but never
- * watch state (`watchedAt`/`playCount`/`resumePositionMs`/`stillFile`).
+ * watch state (`watched`/`watchedAt`/`playCount`/`resumePositionMs`/`stillFile`).
  * Unclaimed incoming episodes insert with their identity. Stored rows the
  * source no longer lists are deleted only under `replace` and only when
- * nothing user-owned hangs off them: no watch date, no playable files, no
+ * nothing user-owned hangs off them: not watched, no playable files, no
  * sessions. `merge` never deletes.
  */
 function reconcileAnimeEpisodes(
@@ -194,7 +194,7 @@ function reconcileAnimeEpisodes(
       ])
 
       for (const row of leftovers) {
-        if (row.watchedAt !== null || referencedIds.has(row.id)) continue
+        if (row.watched || referencedIds.has(row.id)) continue
         tx.delete(animeEpisodes).where(eq(animeEpisodes.id, row.id)).run()
       }
     }

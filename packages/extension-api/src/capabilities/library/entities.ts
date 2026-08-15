@@ -218,6 +218,8 @@ export interface LibraryAnimeEpisode {
   description?: string
   stillFile?: string
   durationMs?: number | null
+  watched: boolean
+  /** Completion time of the last full playback; absent on episodes only marked. */
   watchedAt?: number | null
   playCount: number
   resumePositionMs?: number | null
@@ -239,8 +241,16 @@ export interface LibraryAnimeEpisodeCreateInput {
   externalIds?: readonly ExternalId[]
 }
 
-/** Watch-state patch for one episode; progress fields are optional. */
+/**
+ * Watch-state patch for one episode; every field is optional.
+ *
+ * `watched` is the state, `watchedAt` the playback evidence: importers that
+ * only know an episode was watched patch `watched` alone and leave the time
+ * unset rather than inventing one. Clearing `watched` also clears the recorded
+ * time; combining a cleared state with a time is rejected.
+ */
 export interface LibraryAnimeEpisodeWatchStatePatch {
+  watched?: boolean
   watchedAt?: number | null
   playCount?: number
   resumePositionMs?: number | null

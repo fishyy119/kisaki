@@ -31,6 +31,25 @@ export const anime = {
     resumeLabel: 'Resume position',
     airDate: 'Air date',
 
+    catchUp: {
+      title: 'Mark remaining episodes as watched?',
+      pendingCount: ({ count }: { count: number }) =>
+        count === 1
+          ? '1 episode is not marked as watched.'
+          : `${count} episodes are not marked as watched.`,
+      pendingByType: {
+        regular: ({ count }: { count: number }) =>
+          count === 1 ? '1 regular episode' : `${count} regular episodes`,
+        special: ({ count }: { count: number }) => (count === 1 ? '1 special' : `${count} specials`)
+      },
+      hint: 'Marking records the watch state only, without a playback time.',
+      markAll: 'Mark all',
+      markRegularOnly: 'Episodes only',
+      skip: 'Skip',
+      marked: ({ count }: { count: number }) =>
+        count === 1 ? '1 episode marked as watched.' : `${count} episodes marked as watched.`
+    },
+
     addEpisode: 'Add episode',
     editEpisode: 'Edit episode',
     deleteEpisode: 'Delete episode',

@@ -29,6 +29,20 @@ export const anime = {
     resumeLabel: '续播位置',
     airDate: '放送日',
 
+    catchUp: {
+      title: '将剩余剧集标记为已看？',
+      pendingCount: ({ count }: { count: number }) => `还有 ${count} 集未标记为已看。`,
+      pendingByType: {
+        regular: ({ count }: { count: number }) => `正片 ${count} 集`,
+        special: ({ count }: { count: number }) => `特别篇 ${count} 集`
+      },
+      hint: '标记只记录观看状态，不会写入观看时间。',
+      markAll: '全部标记',
+      markRegularOnly: '仅正片',
+      skip: '跳过',
+      marked: ({ count }: { count: number }) => `已将 ${count} 集标记为已看。`
+    },
+
     addEpisode: '新增剧集',
     editEpisode: '编辑剧集',
     deleteEpisode: '删除剧集',
