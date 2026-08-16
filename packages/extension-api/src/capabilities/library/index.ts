@@ -24,6 +24,10 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
+  LibraryMovie,
+  LibraryMovieCreateInput,
+  LibraryMoviePatch,
+  LibraryMovieQuery,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -31,7 +35,16 @@ import type {
   LibraryTag,
   LibraryTagCreateInput,
   LibraryTagPatch,
-  LibraryTagQuery
+  LibraryTagQuery,
+  LibraryTv,
+  LibraryTvCreateInput,
+  LibraryTvEpisode,
+  LibraryTvEpisodeQuery,
+  LibraryTvEpisodeWatchStatePatch,
+  LibraryTvPatch,
+  LibraryTvQuery,
+  LibraryTvSeason,
+  LibraryTvSeasonQuery
 } from './entities'
 import type { LibraryLinkCapability } from './links'
 import type { LibraryMediaRelationCapability } from './relations'
@@ -68,6 +81,42 @@ export interface LibraryAnimeNamespace extends LibraryEntityNamespace<
   episodes: LibraryAnimeEpisodeNamespace
 }
 
+/**
+ * Seasons owned by a tv entry.
+ *
+ * Read-only: seasons exist to group episodes and carry the metadata a scraper
+ * publishes per season, and they are written through the ingest pipeline that
+ * owns that metadata rather than edited one row at a time.
+ */
+export interface LibraryTvSeasonNamespace {
+  list(query: LibraryTvSeasonQuery): Promise<readonly LibraryTvSeason[]>
+}
+
+/**
+ * Episodes owned by a tv entry.
+ *
+ * Exposed under the tv namespace rather than promoted to an entity type: an
+ * episode has no independent identity in the library, and per-episode watch
+ * state is the only reason callers reach for it.
+ */
+export interface LibraryTvEpisodeNamespace {
+  list(query: LibraryTvEpisodeQuery): Promise<readonly LibraryTvEpisode[]>
+  patchWatchState(
+    episodeId: string,
+    patch: LibraryTvEpisodeWatchStatePatch
+  ): Promise<LibraryTvEpisode>
+}
+
+export interface LibraryTvNamespace extends LibraryEntityNamespace<
+  LibraryTv,
+  LibraryTvCreateInput,
+  LibraryTvPatch,
+  LibraryTvQuery
+> {
+  seasons: LibraryTvSeasonNamespace
+  episodes: LibraryTvEpisodeNamespace
+}
+
 export interface LibraryCapability {
   graph: LibraryGraphCapability
   games: LibraryEntityNamespace<
@@ -77,6 +126,14 @@ export interface LibraryCapability {
     LibraryGameQuery
   >
   animes: LibraryAnimeNamespace
+  tvs: LibraryTvNamespace
+  /** A film is one unit, so watch state is patched on the entry itself. */
+  movies: LibraryEntityNamespace<
+    LibraryMovie,
+    LibraryMovieCreateInput,
+    LibraryMoviePatch,
+    LibraryMovieQuery
+  >
   characters: LibraryEntityNamespace<
     LibraryCharacter,
     LibraryCharacterCreateInput,

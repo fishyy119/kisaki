@@ -3,19 +3,24 @@ import type {
   CharacterScraperProviderRegistrationInfo,
   CompanyScraperProviderRegistrationInfo,
   GameScraperProviderRegistrationInfo,
-  PersonScraperProviderRegistrationInfo
+  MovieScraperProviderRegistrationInfo,
+  PersonScraperProviderRegistrationInfo,
+  TvScraperProviderRegistrationInfo
 } from '@kisaki3/extension-api'
 import type { ScraperService } from '@main/services/scraper'
 import type { ScraperMediaType } from '@shared/scraper'
 import type { RuntimeContributionOwner } from '../types'
 
-export type ScraperKind = 'games' | 'animes' | 'persons' | 'companies' | 'characters'
+export type ScraperKind =
+  'games' | 'animes' | 'tvs' | 'movies' | 'persons' | 'companies' | 'characters'
 export type ScraperRpcAction =
   'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close'
 
 export type ScraperProviderRegistration =
   | GameScraperProviderRegistrationInfo
   | AnimeScraperProviderRegistrationInfo
+  | TvScraperProviderRegistrationInfo
+  | MovieScraperProviderRegistrationInfo
   | PersonScraperProviderRegistrationInfo
   | CompanyScraperProviderRegistrationInfo
   | CharacterScraperProviderRegistrationInfo

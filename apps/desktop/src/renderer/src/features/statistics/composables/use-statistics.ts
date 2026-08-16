@@ -24,11 +24,12 @@ import {
   type Ref
 } from 'vue'
 import { gte, lte, and, inArray, eq, type SQL } from 'drizzle-orm'
+import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useDbChanges } from '@renderer/composables/use-db-changes'
-import type { MediaType } from '@shared/common'
+import { MEDIA_TYPES, type MediaType } from '@shared/common'
 import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
@@ -135,70 +136,105 @@ interface FetchedData {
   entityCollectionLinks: { entityId: string; collectionId: string }[]
 }
 
-function rangeConditions(
-  dateRange: { start: Date; end: Date } | null,
-  startedAt: typeof schema.gameSessions.startedAt | typeof schema.animeSessions.startedAt,
-  endedAt: typeof schema.gameSessions.endedAt | typeof schema.animeSessions.endedAt
-): SQL[] {
-  if (!dateRange) return []
-  return [gte(startedAt, dateRange.start), lte(endedAt, dateRange.end)]
+/**
+ * Per-media-type wiring for the session stream: which session table carries the
+ * spans, which media table names them, and which collection link table joins
+ * them to collections.
+ */
+interface MediaStatisticsSource {
+  sessions: SQLiteTable & {
+    id: SQLiteColumn
+    startedAt: SQLiteColumn
+    endedAt: SQLiteColumn
+  }
+  sessionEntityId: SQLiteColumn
+  entities: SQLiteTable & {
+    id: SQLiteColumn
+    name: SQLiteColumn
+    coverFile: SQLiteColumn
+    isNsfw: SQLiteColumn
+  }
+  collectionLinks: SQLiteTable & { collectionId: SQLiteColumn }
+  collectionLinkEntityId: SQLiteColumn
+  /** Session table name as reported by database change events */
+  sessionTable: string
+  /** Media table name as reported by database change events */
+  entityTable: string
 }
 
-async function fetchGameSessionsInRange(
+const MEDIA_STATISTICS_SOURCES = {
+  game: {
+    sessions: schema.gameSessions,
+    sessionEntityId: schema.gameSessions.gameId,
+    entities: schema.games,
+    collectionLinks: schema.collectionGameLinks,
+    collectionLinkEntityId: schema.collectionGameLinks.gameId,
+    sessionTable: 'game_sessions',
+    entityTable: 'games'
+  },
+  anime: {
+    sessions: schema.animeSessions,
+    sessionEntityId: schema.animeSessions.animeId,
+    entities: schema.animes,
+    collectionLinks: schema.collectionAnimeLinks,
+    collectionLinkEntityId: schema.collectionAnimeLinks.animeId,
+    sessionTable: 'anime_sessions',
+    entityTable: 'animes'
+  },
+  tv: {
+    sessions: schema.tvSessions,
+    sessionEntityId: schema.tvSessions.tvId,
+    entities: schema.tvs,
+    collectionLinks: schema.collectionTvLinks,
+    collectionLinkEntityId: schema.collectionTvLinks.tvId,
+    sessionTable: 'tv_sessions',
+    entityTable: 'tvs'
+  },
+  movie: {
+    sessions: schema.movieSessions,
+    sessionEntityId: schema.movieSessions.movieId,
+    entities: schema.movies,
+    collectionLinks: schema.collectionMovieLinks,
+    collectionLinkEntityId: schema.collectionMovieLinks.movieId,
+    sessionTable: 'movie_sessions',
+    entityTable: 'movies'
+  }
+} as const satisfies Record<MediaType, MediaStatisticsSource>
+
+const SESSION_TABLES = new Set<string>(
+  MEDIA_TYPES.map((mediaType) => MEDIA_STATISTICS_SOURCES[mediaType].sessionTable)
+)
+const MEDIA_TABLES = new Set<string>(
+  MEDIA_TYPES.map((mediaType) => MEDIA_STATISTICS_SOURCES[mediaType].entityTable)
+)
+
+async function fetchMediaSessionsInRange(
+  mediaType: MediaType,
   dateRange: { start: Date; end: Date } | null,
   showNsfw: boolean
 ): Promise<StatisticsSessionEntry[]> {
-  const conditions = rangeConditions(
-    dateRange,
-    schema.gameSessions.startedAt,
-    schema.gameSessions.endedAt
-  )
-  const sessionWhere = conditions.length ? and(...conditions) : undefined
+  const source: MediaStatisticsSource = MEDIA_STATISTICS_SOURCES[mediaType]
+  const conditions: (SQL | undefined)[] = dateRange
+    ? [gte(source.sessions.startedAt, dateRange.start), lte(source.sessions.endedAt, dateRange.end)]
+    : []
+  if (!showNsfw) conditions.push(eq(source.entities.isNsfw, false))
 
-  const rows = showNsfw
-    ? await db.select().from(schema.gameSessions).where(sessionWhere)
-    : (
-        await db
-          .select()
-          .from(schema.gameSessions)
-          .innerJoin(schema.games, eq(schema.gameSessions.gameId, schema.games.id))
-          .where(and(sessionWhere, eq(schema.games.isNsfw, false)))
-      ).map((row) => row.game_sessions)
-
-  return rows.map((row) => ({
-    id: row.id,
-    entityKey: buildEntityKey('game', row.gameId),
-    startedAt: row.startedAt,
-    endedAt: row.endedAt
-  }))
-}
-
-async function fetchAnimeSessionsInRange(
-  dateRange: { start: Date; end: Date } | null,
-  showNsfw: boolean
-): Promise<StatisticsSessionEntry[]> {
-  const conditions = rangeConditions(
-    dateRange,
-    schema.animeSessions.startedAt,
-    schema.animeSessions.endedAt
-  )
-  const sessionWhere = conditions.length ? and(...conditions) : undefined
-
-  const rows = showNsfw
-    ? await db.select().from(schema.animeSessions).where(sessionWhere)
-    : (
-        await db
-          .select()
-          .from(schema.animeSessions)
-          .innerJoin(schema.animes, eq(schema.animeSessions.animeId, schema.animes.id))
-          .where(and(sessionWhere, eq(schema.animes.isNsfw, false)))
-      ).map((row) => row.anime_sessions)
+  const rows = await db
+    .select({
+      id: source.sessions.id,
+      entityId: source.sessionEntityId,
+      startedAt: source.sessions.startedAt,
+      endedAt: source.sessions.endedAt
+    })
+    .from(source.sessions)
+    .innerJoin(source.entities, eq(source.sessionEntityId, source.entities.id))
+    .where(conditions.length ? and(...conditions) : undefined)
 
   return rows.map((row) => ({
-    id: row.id,
-    entityKey: buildEntityKey('anime', row.animeId),
-    startedAt: row.startedAt,
-    endedAt: row.endedAt
+    id: row.id as string,
+    entityKey: buildEntityKey(mediaType, row.entityId as string),
+    startedAt: row.startedAt as Date,
+    endedAt: row.endedAt as Date
   }))
 }
 
@@ -206,14 +242,11 @@ async function fetchSessionsInRange(
   dateRange: { start: Date; end: Date } | null,
   showNsfw: boolean
 ): Promise<StatisticsSessionEntry[]> {
-  const [gameSessions, animeSessions] = await Promise.all([
-    fetchGameSessionsInRange(dateRange, showNsfw),
-    fetchAnimeSessionsInRange(dateRange, showNsfw)
-  ])
-
-  return [...gameSessions, ...animeSessions].sort(
-    (a, b) => b.startedAt.getTime() - a.startedAt.getTime()
+  const perType = await Promise.all(
+    MEDIA_TYPES.map((mediaType) => fetchMediaSessionsInRange(mediaType, dateRange, showNsfw))
   )
+
+  return perType.flat().sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
 }
 
 function entityIdsOf(sessions: StatisticsSessionEntry[], mediaType: MediaType): string[] {
@@ -225,6 +258,65 @@ function entityIdsOf(sessions: StatisticsSessionEntry[], mediaType: MediaType): 
         .map((session) => session.entityKey.slice(prefix.length))
     )
   ]
+}
+
+async function fetchMediaEntities(
+  mediaType: MediaType,
+  entityIds: string[],
+  showNsfw: boolean
+): Promise<StatisticsEntity[]> {
+  if (entityIds.length === 0) return []
+  const source: MediaStatisticsSource = MEDIA_STATISTICS_SOURCES[mediaType]
+
+  const rows = await db
+    .select({
+      id: source.entities.id,
+      name: source.entities.name,
+      coverFile: source.entities.coverFile
+    })
+    .from(source.entities)
+    .where(
+      and(
+        inArray(source.entities.id, entityIds),
+        showNsfw ? undefined : eq(source.entities.isNsfw, false)
+      )
+    )
+
+  return rows.map((row) => ({
+    key: buildEntityKey(mediaType, row.id as string),
+    mediaType,
+    id: row.id as string,
+    name: row.name as string,
+    coverFile: row.coverFile as string | null
+  }))
+}
+
+async function fetchMediaCollectionLinks(
+  mediaType: MediaType,
+  entityIds: string[],
+  showNsfw: boolean
+): Promise<{ entityId: string; collectionId: string }[]> {
+  if (entityIds.length === 0) return []
+  const source: MediaStatisticsSource = MEDIA_STATISTICS_SOURCES[mediaType]
+
+  const rows = await db
+    .select({
+      entityId: source.collectionLinkEntityId,
+      collectionId: source.collectionLinks.collectionId
+    })
+    .from(source.collectionLinks)
+    .innerJoin(schema.collections, eq(source.collectionLinks.collectionId, schema.collections.id))
+    .where(
+      and(
+        inArray(source.collectionLinkEntityId, entityIds),
+        showNsfw ? undefined : eq(schema.collections.isNsfw, false)
+      )
+    )
+
+  return rows.map((row) => ({
+    entityId: buildEntityKey(mediaType, row.entityId as string),
+    collectionId: row.collectionId as string
+  }))
 }
 
 async function fetchStatisticsData(
@@ -242,110 +334,33 @@ async function fetchStatisticsData(
     }
   }
 
-  const gameIds = entityIdsOf(sessions, 'game')
-  const animeIds = entityIdsOf(sessions, 'anime')
-
-  // Parallel fetch all related data
-  const [games, animes, collections, gameCollectionLinks, animeCollectionLinks] = await Promise.all(
-    [
-      gameIds.length
-        ? db
-            .select()
-            .from(schema.games)
-            .where(
-              and(
-                inArray(schema.games.id, gameIds),
-                showNsfw ? undefined : eq(schema.games.isNsfw, false)
-              )
-            )
-        : Promise.resolve([]),
-      animeIds.length
-        ? db
-            .select()
-            .from(schema.animes)
-            .where(
-              and(
-                inArray(schema.animes.id, animeIds),
-                showNsfw ? undefined : eq(schema.animes.isNsfw, false)
-              )
-            )
-        : Promise.resolve([]),
-      db
-        .select()
-        .from(schema.collections)
-        .where(showNsfw ? undefined : eq(schema.collections.isNsfw, false)),
-      gameIds.length
-        ? db
-            .select({
-              gameId: schema.collectionGameLinks.gameId,
-              collectionId: schema.collectionGameLinks.collectionId
-            })
-            .from(schema.collectionGameLinks)
-            .innerJoin(
-              schema.collections,
-              eq(schema.collectionGameLinks.collectionId, schema.collections.id)
-            )
-            .where(
-              and(
-                inArray(schema.collectionGameLinks.gameId, gameIds),
-                showNsfw ? undefined : eq(schema.collections.isNsfw, false)
-              )
-            )
-        : Promise.resolve([]),
-      animeIds.length
-        ? db
-            .select({
-              animeId: schema.collectionAnimeLinks.animeId,
-              collectionId: schema.collectionAnimeLinks.collectionId
-            })
-            .from(schema.collectionAnimeLinks)
-            .innerJoin(
-              schema.collections,
-              eq(schema.collectionAnimeLinks.collectionId, schema.collections.id)
-            )
-            .where(
-              and(
-                inArray(schema.collectionAnimeLinks.animeId, animeIds),
-                showNsfw ? undefined : eq(schema.collections.isNsfw, false)
-              )
-            )
-        : Promise.resolve([])
-    ]
+  const entityIdsByType = new Map(
+    MEDIA_TYPES.map((mediaType) => [mediaType, entityIdsOf(sessions, mediaType)] as const)
   )
 
-  const entities: StatisticsEntity[] = [
-    ...games.map((game) => ({
-      key: buildEntityKey('game', game.id),
-      mediaType: 'game' as const,
-      id: game.id,
-      name: game.name,
-      coverFile: game.coverFile
-    })),
-    ...animes.map((anime) => ({
-      key: buildEntityKey('anime', anime.id),
-      mediaType: 'anime' as const,
-      id: anime.id,
-      name: anime.name,
-      coverFile: anime.coverFile
-    }))
-  ]
-
-  const entityCollectionLinks = [
-    ...gameCollectionLinks.map((link) => ({
-      entityId: buildEntityKey('game', link.gameId),
-      collectionId: link.collectionId
-    })),
-    ...animeCollectionLinks.map((link) => ({
-      entityId: buildEntityKey('anime', link.animeId),
-      collectionId: link.collectionId
-    }))
-  ]
+  // Parallel fetch all related data
+  const [entityGroups, linkGroups, collections] = await Promise.all([
+    Promise.all(
+      MEDIA_TYPES.map((mediaType) =>
+        fetchMediaEntities(mediaType, entityIdsByType.get(mediaType) ?? [], showNsfw)
+      )
+    ),
+    Promise.all(
+      MEDIA_TYPES.map((mediaType) =>
+        fetchMediaCollectionLinks(mediaType, entityIdsByType.get(mediaType) ?? [], showNsfw)
+      )
+    ),
+    db
+      .select()
+      .from(schema.collections)
+      .where(showNsfw ? undefined : eq(schema.collections.isNsfw, false))
+  ])
 
   return {
     sessions,
-    entities,
+    entities: entityGroups.flat(),
     collections,
-    entityCollectionLinks
+    entityCollectionLinks: linkGroups.flat()
   }
 }
 
@@ -469,12 +484,12 @@ export function useStatisticsProvider(): StatisticsContext {
 
   // Event listeners for auto-refresh
   useDbChanges(({ operation, table }) => {
-    const sessionTable = table === 'game_sessions' || table === 'anime_sessions'
-    if (operation === 'inserted' && sessionTable) void refetch()
-    if (operation === 'updated' && (sessionTable || table === 'games' || table === 'animes')) {
+    const isSessionTable = SESSION_TABLES.has(table)
+    if (isSessionTable) {
       void refetch()
+      return
     }
-    if (operation === 'deleted' && sessionTable) void refetch()
+    if (operation === 'updated' && MEDIA_TABLES.has(table)) void refetch()
   })
 
   const context: StatisticsContext = {

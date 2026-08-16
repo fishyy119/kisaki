@@ -87,7 +87,7 @@ export class AnimeScannerHandler extends MediaScannerHandler {
       ]
     } catch (error) {
       log.warn('Failed to sync anime files after add.', error, { entityPath: entity.path })
-      return [createWarning('file-sync-failed', reasons.episodeSyncFailed)]
+      return [createWarning('file-sync-failed', reasons.fileSyncFailed)]
     }
   }
 }

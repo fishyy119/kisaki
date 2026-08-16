@@ -14,7 +14,9 @@ import {
   CHARACTER_UPDATE_SURFACE_KEYS,
   COMPANY_UPDATE_SURFACE_KEYS,
   GAME_UPDATE_SURFACE_KEYS,
+  MOVIE_UPDATE_SURFACE_KEYS,
   PERSON_UPDATE_SURFACE_KEYS,
+  TV_UPDATE_SURFACE_KEYS,
   type AnimeBatchUpdateRequest,
   type AnimeUpdateRequest,
   type CharacterBatchUpdateRequest,
@@ -25,14 +27,20 @@ import {
   type GameUpdateRequest,
   type IngestBatchUpdateRequest,
   type IngestUpdateRequest,
+  type MovieBatchUpdateRequest,
+  type MovieUpdateRequest,
   type PersonBatchUpdateRequest,
-  type PersonUpdateRequest
+  type PersonUpdateRequest,
+  type TvBatchUpdateRequest,
+  type TvUpdateRequest
 } from '@shared/ingest/update'
 import { AnimeSearcher } from '@renderer/components/shared/anime'
 import { CharacterSearcher } from '@renderer/components/shared/character'
 import { CompanySearcher } from '@renderer/components/shared/company'
 import { GameSearcher } from '@renderer/components/shared/game'
+import { MovieSearcher } from '@renderer/components/shared/movie'
 import { PersonSearcher } from '@renderer/components/shared/person'
+import { TvSearcher } from '@renderer/components/shared/tv'
 import type { TableEntityType } from '../entity-tables'
 
 interface SubmitOutcome {
@@ -105,6 +113,67 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       ipcManager.invoke(
         'ingest:batch-update-anime-from-scraper',
         request as AnimeBatchUpdateRequest
+      )
+  },
+  tv: {
+    surfaceKeys: TV_UPDATE_SURFACE_KEYS,
+    surfaceLabels: (m) => ({
+      name: m.library.fields.name,
+      originalName: m.library.fields.originalName,
+      releaseDate: m.library.fields.releaseDate,
+      endDate: m.library.fields.endDate,
+      description: m.library.fields.description,
+      format: m.library.fields.format,
+      totalSeasons: m.library.fields.totalSeasons,
+      totalEpisodes: m.library.fields.totalEpisodes,
+      externalSites: m.library.fields.externalSites,
+      externalIds: m.library.fields.externalIds,
+      tags: m.library.fields.tags,
+      seasons: m.library.fields.seasons,
+      episodes: m.library.fields.episodes,
+      person: m.library.entities.person,
+      company: m.library.entities.company,
+      character: m.library.entities.character,
+      characterPerson: m.library.fields.characterPersons,
+      relatedEntries: m.library.fields.relatedEntries,
+      covers: m.library.fields.covers,
+      backdrops: m.library.fields.backdrops,
+      logos: m.library.fields.logos
+    }),
+    searcher: TvSearcher,
+    submit: (request) =>
+      ipcManager.invoke('ingest:update-tv-from-scraper', request as TvUpdateRequest),
+    submitBatch: (request) =>
+      ipcManager.invoke('ingest:batch-update-tv-from-scraper', request as TvBatchUpdateRequest)
+  },
+  movie: {
+    surfaceKeys: MOVIE_UPDATE_SURFACE_KEYS,
+    surfaceLabels: (m) => ({
+      name: m.library.fields.name,
+      originalName: m.library.fields.originalName,
+      releaseDate: m.library.fields.releaseDate,
+      description: m.library.fields.description,
+      format: m.library.fields.format,
+      runtimeMs: m.library.fields.runtime,
+      externalSites: m.library.fields.externalSites,
+      externalIds: m.library.fields.externalIds,
+      tags: m.library.fields.tags,
+      person: m.library.entities.person,
+      company: m.library.entities.company,
+      character: m.library.entities.character,
+      characterPerson: m.library.fields.characterPersons,
+      relatedEntries: m.library.fields.relatedEntries,
+      covers: m.library.fields.covers,
+      backdrops: m.library.fields.backdrops,
+      logos: m.library.fields.logos
+    }),
+    searcher: MovieSearcher,
+    submit: (request) =>
+      ipcManager.invoke('ingest:update-movie-from-scraper', request as MovieUpdateRequest),
+    submitBatch: (request) =>
+      ipcManager.invoke(
+        'ingest:batch-update-movie-from-scraper',
+        request as MovieBatchUpdateRequest
       )
   },
   character: {

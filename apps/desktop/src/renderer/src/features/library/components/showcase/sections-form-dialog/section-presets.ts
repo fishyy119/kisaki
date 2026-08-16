@@ -132,6 +132,87 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     sortDirection: 'desc'
   },
 
+  // Tv presets
+  {
+    id: 'recently-watched-tv',
+    copyKey: 'recentlyWatchedTv',
+    entityType: 'tv',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'lastActiveAt',
+    sortDirection: 'desc'
+  },
+  {
+    id: 'top-rated-tv',
+    copyKey: 'topRatedTv',
+    entityType: 'tv',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'score',
+    sortDirection: 'desc'
+  },
+  {
+    id: 'recently-added-tv',
+    copyKey: 'recentlyAddedTv',
+    entityType: 'tv',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'createdAt',
+    sortDirection: 'desc'
+  },
+
+  // Movie presets
+  {
+    id: 'recently-watched-movies',
+    copyKey: 'recentlyWatchedMovies',
+    entityType: 'movie',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'lastActiveAt',
+    sortDirection: 'desc'
+  },
+  {
+    id: 'top-rated-movies',
+    copyKey: 'topRatedMovies',
+    entityType: 'movie',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'score',
+    sortDirection: 'desc'
+  },
+  {
+    id: 'recently-added-movies',
+    copyKey: 'recentlyAddedMovies',
+    entityType: 'movie',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: 20,
+    filter: createEmptyFilter(),
+    sortField: 'createdAt',
+    sortDirection: 'desc'
+  },
+  {
+    id: 'unwatched-movies',
+    copyKey: 'unwatchedMovies',
+    entityType: 'movie',
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: null,
+    filter: { match: 'all', conditions: [{ field: 'watched', op: 'is', value: false }] },
+    sortField: 'name',
+    sortDirection: 'asc'
+  },
+
   // Character presets
   {
     id: 'favorite-characters',

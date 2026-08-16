@@ -10,5 +10,5 @@ export {
   CharacterDetailDialog,
   CharacterDetailOverviewTab,
   CharacterDetailPersonsTab,
-  CharacterDetailGamesTab
+  CharacterDetailWorksTab
 } from './detail'

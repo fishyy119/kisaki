@@ -2,9 +2,8 @@
   Library Search Dialog
 
   Modal dialog for searching across all entity types within the library.
-  Displays one result column per content entity type (games, anime,
-  characters, persons, companies). Opens with Ctrl+K shortcut or via button
-  trigger.
+  Displays one result column per content entity type. Opens with Ctrl+K
+  shortcut or via button trigger.
 -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
@@ -27,13 +26,13 @@ import { cn } from '@renderer/utils/cn'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { getEntityIcon } from '@renderer/utils/format'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
-import type { Game, Anime, Character, Person, Company } from '@shared/db'
+import type { Game, Anime, Tv, Movie, Character, Person, Company } from '@shared/db'
 
 // =============================================================================
 // Types
 // =============================================================================
 
-type SearchResultItem = Game | Anime | Character | Person | Company
+type SearchResultItem = Game | Anime | Tv | Movie | Character | Person | Company
 
 interface ColumnConfig {
   type: ContentEntityType
@@ -44,6 +43,8 @@ interface ColumnConfig {
 const RESULT_KEYS: Record<ContentEntityType, keyof LibrarySearchResult> = {
   game: 'games',
   anime: 'animes',
+  tv: 'tvs',
+  movie: 'movies',
   character: 'characters',
   person: 'persons',
   company: 'companies'
@@ -105,21 +106,15 @@ const columnItems = computed(() => {
 })
 
 // Total result count
-const totalResultCount = computed(() => {
-  return (
-    results.value.games.length +
-    results.value.animes.length +
-    results.value.characters.length +
-    results.value.persons.length +
-    results.value.companies.length
-  )
-})
+const totalResultCount = computed(() =>
+  Object.values(results.value).reduce((total, entities) => total + entities.length, 0)
+)
 
 // =============================================================================
 // Methods
 // =============================================================================
 
-function getThumbnailUrl(item: SearchResultItem, type: ContentEntityType) {
+function getThumbnailUrl(item: SearchResultItem, type: ContentEntityType): string | null {
   switch (type) {
     case 'game': {
       const game = item as Game
@@ -131,6 +126,18 @@ function getThumbnailUrl(item: SearchResultItem, type: ContentEntityType) {
       const anime = item as Anime
       return anime.coverFile
         ? getAttachmentUrl('animes', anime.id, anime.coverFile, { width: 100, height: 100 })
+        : null
+    }
+    case 'tv': {
+      const tv = item as Tv
+      return tv.coverFile
+        ? getAttachmentUrl('tvs', tv.id, tv.coverFile, { width: 100, height: 100 })
+        : null
+    }
+    case 'movie': {
+      const movie = item as Movie
+      return movie.coverFile
+        ? getAttachmentUrl('movies', movie.id, movie.coverFile, { width: 100, height: 100 })
         : null
     }
     case 'character': {
@@ -304,7 +311,7 @@ watch(
 <template>
   <Dialog v-model:open="open">
     <DialogContent
-      class="max-w-5xl p-0"
+      class="max-w-7xl p-0"
       :show-close-button="false"
       @keydown="handleKeyDown"
     >
@@ -338,7 +345,7 @@ watch(
       <!-- Results grid -->
       <div
         ref="contentRef"
-        class="grid grid-cols-5 divide-x"
+        class="grid grid-cols-7 divide-x"
       >
         <div
           v-for="(config, columnIndex) in COLUMNS"

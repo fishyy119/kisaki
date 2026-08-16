@@ -1,7 +1,11 @@
 import type {
   LibraryAnimeCompanyRole,
   LibraryAnimePersonRole,
-  LibraryGender
+  LibraryGender,
+  LibraryMovieCompanyRole,
+  LibraryMoviePersonRole,
+  LibraryTvCompanyRole,
+  LibraryTvPersonRole
 } from '@kisaki3/extension-sdk'
 
 /**
@@ -95,11 +99,91 @@ export function mapTmdbCrewRole(job: string | undefined): LibraryAnimePersonRole
 }
 
 /**
+ * TMDB crew jobs mapped onto the library's live-action staff vocabulary.
+ *
+ * Same rule as the anime table: an unnamed job is dropped rather than folded
+ * into `other`, and the exact job travels along as the credit note. The table
+ * is typed to the tv vocabulary because it is the superset — a film has no
+ * show creator — and the movie mapper narrows it.
+ */
+const LIVE_ACTION_PERSON_ROLE_BY_JOB: Record<string, LibraryTvPersonRole> = {
+  creator: 'creator',
+  'series creator': 'creator',
+  'original series creator': 'creator',
+  characters: 'creator',
+  novel: 'creator',
+  'comic book': 'creator',
+  'original story': 'creator',
+
+  director: 'director',
+  'series director': 'director',
+  'co-director': 'director',
+
+  writer: 'writer',
+  screenplay: 'writer',
+  story: 'writer',
+  script: 'writer',
+  teleplay: 'writer',
+  'staff writer': 'writer',
+
+  producer: 'producer',
+  'executive producer': 'producer',
+  'co-producer': 'producer',
+  'associate producer': 'producer',
+  'line producer': 'producer',
+  showrunner: 'producer',
+
+  'original music composer': 'music',
+  music: 'music',
+  composer: 'music',
+  'music supervisor': 'music',
+  songs: 'music',
+
+  'director of photography': 'cinematography',
+  cinematography: 'cinematography',
+
+  editor: 'editing',
+  'supervising editor': 'editing',
+
+  actor: 'actor'
+}
+
+export function mapTmdbTvPersonRole(job: string | undefined): LibraryTvPersonRole | undefined {
+  const normalized = job?.trim().toLowerCase()
+  return normalized ? LIVE_ACTION_PERSON_ROLE_BY_JOB[normalized] : undefined
+}
+
+/**
+ * A film has no show creator, so the credits a show would file under `creator`
+ * — source novel, characters, original story — are writing credits here.
+ */
+export function mapTmdbMoviePersonRole(
+  job: string | undefined
+): LibraryMoviePersonRole | undefined {
+  const role = mapTmdbTvPersonRole(job)
+  if (role === undefined) {
+    return undefined
+  }
+
+  return role === 'creator' ? 'writer' : role
+}
+
+/**
  * TMDB separates the companies that make a show from the networks that carry
- * it; `distributor` is the library role that matches a carrier.
+ * it; `distributor` is the anime role that matches a carrier.
  */
 export function mapTmdbCompanyRole(kind: 'production' | 'network'): LibraryAnimeCompanyRole {
   return kind === 'network' ? 'distributor' : 'studio'
+}
+
+/** The tv vocabulary names the carrier outright. */
+export function mapTmdbTvCompanyRole(kind: 'production' | 'network'): LibraryTvCompanyRole {
+  return kind === 'network' ? 'network' : 'studio'
+}
+
+/** TMDB credits a film's companies as production only. */
+export function mapTmdbMovieCompanyRole(): LibraryMovieCompanyRole {
+  return 'studio'
 }
 
 /** TMDB gender: 1 female, 2 male, 3 non-binary, 0 or absent unknown. */

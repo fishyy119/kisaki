@@ -14,6 +14,8 @@ import { VirtualGrid, VirtualHorizontalScroll } from '@renderer/components/ui/vi
 import { EntityCard } from '@renderer/components/shared'
 import { GameDetailDialog } from '@renderer/components/shared/game'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
+import { TvDetailDialog } from '@renderer/components/shared/tv'
+import { MovieDetailDialog } from '@renderer/components/shared/movie'
 import { CharacterDetailDialog } from '@renderer/components/shared/character'
 import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyDetailDialog } from '@renderer/components/shared/company'
@@ -181,6 +183,16 @@ function handleItemClick(item: SectionEntityData) {
       v-if="detailDialogOpen && detailEntityId && entityType === 'anime' && isDialogMode"
       v-model:open="detailDialogOpen"
       :anime-id="selectedEntityId"
+    />
+    <TvDetailDialog
+      v-if="detailDialogOpen && detailEntityId && entityType === 'tv' && isDialogMode"
+      v-model:open="detailDialogOpen"
+      :tv-id="selectedEntityId"
+    />
+    <MovieDetailDialog
+      v-if="detailDialogOpen && detailEntityId && entityType === 'movie' && isDialogMode"
+      v-model:open="detailDialogOpen"
+      :movie-id="selectedEntityId"
     />
     <CharacterDetailDialog
       v-if="detailDialogOpen && detailEntityId && entityType === 'character' && isDialogMode"

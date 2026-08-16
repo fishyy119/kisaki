@@ -22,7 +22,8 @@ import {
   AnimeDetailEpisodesTab,
   AnimeDetailNotesTab,
   AnimeDetailOverviewTab,
-  AnimeDetailPersonsTab
+  AnimeDetailPersonsTab,
+  AnimeDetailRelationsTab
 } from './tabs'
 
 const { m } = useI18n()
@@ -73,6 +74,13 @@ const activeTab = ref('overview')
           />
           {{ m.library.detail.tabs.companies }}
         </TabsTrigger>
+        <TabsTrigger value="relations">
+          <Icon
+            icon="icon-[mdi--link-variant]"
+            class="size-3.5"
+          />
+          {{ m.library.detail.tabs.relatedEntries }}
+        </TabsTrigger>
         <TabsTrigger value="activity">
           <Icon
             icon="icon-[mdi--report-timeline-variant]"
@@ -103,6 +111,9 @@ const activeTab = ref('overview')
       </TabsContent>
       <TabsContent value="companies">
         <AnimeDetailCompaniesTab />
+      </TabsContent>
+      <TabsContent value="relations">
+        <AnimeDetailRelationsTab />
       </TabsContent>
       <TabsContent value="activity">
         <AnimeDetailActivityTab />

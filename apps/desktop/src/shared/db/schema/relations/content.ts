@@ -19,7 +19,9 @@ import {
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionMovieLinks,
   collectionPersonLinks,
+  collectionTvLinks,
   companies,
   companyExternalIds,
   companyTagLinks,
@@ -31,9 +33,30 @@ import {
   games,
   gameSessions,
   gameTagLinks,
+  movieCharacterLinks,
+  movieCompanyLinks,
+  movieExternalIds,
+  movieExtras,
+  movieFiles,
+  movieNotes,
+  moviePersonLinks,
+  movies,
+  movieSessions,
+  movieTagLinks,
   personExternalIds,
   persons,
-  personTagLinks
+  personTagLinks,
+  tvCharacterLinks,
+  tvCompanyLinks,
+  tvEpisodes,
+  tvExternalIds,
+  tvExtras,
+  tvNotes,
+  tvPersonLinks,
+  tvs,
+  tvSeasons,
+  tvSessions,
+  tvTagLinks
 } from '../tables'
 
 export const gamesRelations = relations(games, ({ many }) => ({
@@ -81,9 +104,52 @@ export const animeNotesRelations = relations(animeNotes, ({ one }) => ({
   })
 }))
 
+export const tvsRelations = relations(tvs, ({ many }) => ({
+  seasons: many(tvSeasons),
+  episodes: many(tvEpisodes),
+  extras: many(tvExtras),
+  sessions: many(tvSessions),
+  notes: many(tvNotes),
+  tvPersonLinks: many(tvPersonLinks),
+  tvCompanyLinks: many(tvCompanyLinks),
+  tvCharacterLinks: many(tvCharacterLinks),
+  collectionTvLinks: many(collectionTvLinks),
+  tvTagLinks: many(tvTagLinks),
+  externalIds: many(tvExternalIds)
+}))
+
+export const tvNotesRelations = relations(tvNotes, ({ one }) => ({
+  tv: one(tvs, {
+    fields: [tvNotes.tvId],
+    references: [tvs.id]
+  })
+}))
+
+export const moviesRelations = relations(movies, ({ many }) => ({
+  files: many(movieFiles),
+  extras: many(movieExtras),
+  sessions: many(movieSessions),
+  notes: many(movieNotes),
+  moviePersonLinks: many(moviePersonLinks),
+  movieCompanyLinks: many(movieCompanyLinks),
+  movieCharacterLinks: many(movieCharacterLinks),
+  collectionMovieLinks: many(collectionMovieLinks),
+  movieTagLinks: many(movieTagLinks),
+  externalIds: many(movieExternalIds)
+}))
+
+export const movieNotesRelations = relations(movieNotes, ({ one }) => ({
+  movie: one(movies, {
+    fields: [movieNotes.movieId],
+    references: [movies.id]
+  })
+}))
+
 export const personsRelations = relations(persons, ({ many }) => ({
   gamePersonLinks: many(gamePersonLinks),
   animePersonLinks: many(animePersonLinks),
+  tvPersonLinks: many(tvPersonLinks),
+  moviePersonLinks: many(moviePersonLinks),
   characterPersonLinks: many(characterPersonLinks),
   collectionPersonLinks: many(collectionPersonLinks),
   personTagLinks: many(personTagLinks),
@@ -93,6 +159,8 @@ export const personsRelations = relations(persons, ({ many }) => ({
 export const companiesRelations = relations(companies, ({ many }) => ({
   gameCompanyLinks: many(gameCompanyLinks),
   animeCompanyLinks: many(animeCompanyLinks),
+  tvCompanyLinks: many(tvCompanyLinks),
+  movieCompanyLinks: many(movieCompanyLinks),
   collectionCompanyLinks: many(collectionCompanyLinks),
   companyTagLinks: many(companyTagLinks),
   externalIds: many(companyExternalIds)
@@ -101,6 +169,8 @@ export const companiesRelations = relations(companies, ({ many }) => ({
 export const charactersRelations = relations(characters, ({ many }) => ({
   gameCharacterLinks: many(gameCharacterLinks),
   animeCharacterLinks: many(animeCharacterLinks),
+  tvCharacterLinks: many(tvCharacterLinks),
+  movieCharacterLinks: many(movieCharacterLinks),
   characterPersonLinks: many(characterPersonLinks),
   collectionCharacterLinks: many(collectionCharacterLinks),
   characterTagLinks: many(characterTagLinks),

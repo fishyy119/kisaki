@@ -1,0 +1,8 @@
+export { default as TvDetailOverviewTab } from './overview-tab.vue'
+export { default as TvDetailCharactersTab } from './characters-tab.vue'
+export { default as TvDetailPersonsTab } from './persons-tab.vue'
+export { default as TvDetailCompaniesTab } from './companies-tab.vue'
+export { default as TvDetailRelationsTab } from './relations-tab.vue'
+export { default as TvDetailNotesTab } from './notes-tab.vue'
+export { default as TvDetailActivityTab } from './activity-tab.vue'
+export { TvDetailEpisodesTab } from './episodes-tab'

@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
-import type { ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 import EntityAdderDialog from './entity-adder-dialog.vue'
 
 const { m } = useI18n()
@@ -36,26 +36,6 @@ const adderOpen = computed({
 function handleAddEntity(entityType: ContentEntityType) {
   dropdownOpen.value = false
   adderEntityType.value = entityType
-}
-
-function handleAddGame() {
-  handleAddEntity('game')
-}
-
-function handleAddAnime() {
-  handleAddEntity('anime')
-}
-
-function handleAddCharacter() {
-  handleAddEntity('character')
-}
-
-function handleAddPerson() {
-  handleAddEntity('person')
-}
-
-function handleAddCompany() {
-  handleAddEntity('company')
 }
 
 function handleAddScanner() {
@@ -98,54 +78,16 @@ function handleAddScanner() {
         class="min-w-48"
       >
         <DropdownMenuItem
+          v-for="entityType in CONTENT_ENTITY_TYPES"
+          :key="entityType"
           class="gap-2"
-          @select="handleAddGame"
+          @select="handleAddEntity(entityType)"
         >
           <Icon
-            :icon="getEntityIcon('game')"
+            :icon="getEntityIcon(entityType)"
             class="size-4"
           />
-          <span>{{ m.library.detail.addEntity({ label: m.library.entities.game }) }}</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          class="gap-2"
-          @select="handleAddAnime"
-        >
-          <Icon
-            :icon="getEntityIcon('anime')"
-            class="size-4"
-          />
-          <span>{{ m.library.detail.addEntity({ label: m.library.entities.anime }) }}</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          class="gap-2"
-          @select="handleAddCharacter"
-        >
-          <Icon
-            :icon="getEntityIcon('character')"
-            class="size-4"
-          />
-          <span>{{ m.library.detail.addEntity({ label: m.library.entities.character }) }}</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          class="gap-2"
-          @select="handleAddPerson"
-        >
-          <Icon
-            :icon="getEntityIcon('person')"
-            class="size-4"
-          />
-          <span>{{ m.library.detail.addEntity({ label: m.library.entities.person }) }}</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          class="gap-2"
-          @select="handleAddCompany"
-        >
-          <Icon
-            :icon="getEntityIcon('company')"
-            class="size-4"
-          />
-          <span>{{ m.library.detail.addEntity({ label: m.library.entities.company }) }}</span>
+          <span>{{ m.library.detail.addEntity({ label: m.library.entities[entityType] }) }}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

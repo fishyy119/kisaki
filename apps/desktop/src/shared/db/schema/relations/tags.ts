@@ -9,17 +9,45 @@ import {
   companyTagLinks,
   gameTagLinks,
   games,
+  movies,
+  movieTagLinks,
   persons,
   personTagLinks,
-  tags
+  tags,
+  tvs,
+  tvTagLinks
 } from '../tables'
 
 export const tagsRelations = relations(tags, ({ many }) => ({
   gameTagLinks: many(gameTagLinks),
   animeTagLinks: many(animeTagLinks),
+  tvTagLinks: many(tvTagLinks),
+  movieTagLinks: many(movieTagLinks),
   characterTagLinks: many(characterTagLinks),
   personTagLinks: many(personTagLinks),
   companyTagLinks: many(companyTagLinks)
+}))
+
+export const tvTagLinksRelations = relations(tvTagLinks, ({ one }) => ({
+  tv: one(tvs, {
+    fields: [tvTagLinks.tvId],
+    references: [tvs.id]
+  }),
+  tag: one(tags, {
+    fields: [tvTagLinks.tagId],
+    references: [tags.id]
+  })
+}))
+
+export const movieTagLinksRelations = relations(movieTagLinks, ({ one }) => ({
+  movie: one(movies, {
+    fields: [movieTagLinks.movieId],
+    references: [movies.id]
+  }),
+  tag: one(tags, {
+    fields: [movieTagLinks.tagId],
+    references: [tags.id]
+  })
 }))
 
 export const animeTagLinksRelations = relations(animeTagLinks, ({ one }) => ({

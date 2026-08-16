@@ -6,8 +6,6 @@ export const anime = {
   watchNext: '看下一集',
   stop: '停止',
   showDetail: '查看详情',
-  starting: '启动中',
-  playing: '播放中',
 
   episodes: {
     title: '剧集',
@@ -119,7 +117,6 @@ export const anime = {
   player: {
     pause: '暂停',
     resume: '继续播放',
-    paused: '已暂停',
     pauseFailed: '无法暂停播放。',
     resumeFailed: '无法继续播放。'
   },

@@ -2,11 +2,13 @@ import type { Messages } from '../schema'
 
 /** Ingest pipeline: task-run titles, phase labels, and results owned by the main process. */
 
-type IngestEntity = 'game' | 'anime' | 'character' | 'person' | 'company'
+type IngestEntity = 'game' | 'anime' | 'tv' | 'movie' | 'character' | 'person' | 'company'
 
 const NOUNS: Record<IngestEntity, string> = {
   game: '游戏',
   anime: '动漫',
+  tv: '剧集',
+  movie: '电影',
   character: '角色',
   person: '人物',
   company: '公司'

@@ -21,8 +21,14 @@ import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
+import type { MediaType } from '@shared/common'
 
-const MEDIA_ATTACHMENT_TABLES = { game: 'games', anime: 'animes' } as const
+const MEDIA_ATTACHMENT_TABLES = {
+  game: 'games',
+  anime: 'animes',
+  tv: 'tvs',
+  movie: 'movies'
+} as const satisfies Record<MediaType, string>
 
 interface Props {
   /** Module header title */

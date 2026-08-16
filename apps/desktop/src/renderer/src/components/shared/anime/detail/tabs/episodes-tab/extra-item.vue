@@ -14,7 +14,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
 import type { AnimeExtraEntry } from '@renderer/composables/use-anime'
 import type { AnimeExtraType } from '@shared/db'
-import AnimePlaybackProgress from './playback-progress.vue'
+import { MediaPlaybackProgress } from '@renderer/components/shared/media'
 
 /** Icon per extra type, so rows stay tellable apart inside one type group. */
 const EXTRA_TYPE_ICONS: Record<AnimeExtraType, string> = {
@@ -101,7 +101,7 @@ const {
         </div>
 
         <!-- Live playback progress for the currently-playing extra -->
-        <AnimePlaybackProgress
+        <MediaPlaybackProgress
           v-if="isPlaying"
           :status="playbackStatus"
           :progress="playbackProgress"

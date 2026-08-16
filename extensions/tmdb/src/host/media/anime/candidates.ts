@@ -1,4 +1,8 @@
-import type { AnimeScraperLookup, AnimeSearchResult, LibraryAnimeFormat } from '@kisaki3/extension-sdk'
+import type {
+  AnimeScraperLookup,
+  AnimeSearchResult,
+  LibraryAnimeFormat
+} from '@kisaki3/extension-sdk'
 
 /**
  * Pick the row a name search was meant to land on.

@@ -15,12 +15,14 @@ import type {
   ExtensionCategory,
   ExtensionRuntimeDiagnostic,
   GameScraperProviderRegistrationInfo,
+  MovieScraperProviderRegistrationInfo,
   PersonScraperProviderRegistrationInfo,
   JsonObject,
   JsonSafe,
   JsonValue,
   LocalizedText,
   ThemeContribution,
+  TvScraperProviderRegistrationInfo,
   UiCallbackResult,
   WebviewDialogSize
 } from '@kisaki3/extension-api'
@@ -455,6 +457,8 @@ export interface ExtensionScraperProviderRegistrationInfo extends ExtensionContr
   provider:
     | GameScraperProviderRegistrationInfo
     | AnimeScraperProviderRegistrationInfo
+    | TvScraperProviderRegistrationInfo
+    | MovieScraperProviderRegistrationInfo
     | PersonScraperProviderRegistrationInfo
     | CompanyScraperProviderRegistrationInfo
     | CharacterScraperProviderRegistrationInfo

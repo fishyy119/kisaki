@@ -30,14 +30,19 @@ import type {
   Person,
   GamePersonLink,
   AnimePersonLink,
+  TvPersonLink,
+  MoviePersonLink,
   CharacterPersonLink,
   PersonTagLink,
   Game,
   Anime,
+  Tv,
+  Movie,
   Character,
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import { useDbChanges } from './use-db-changes'
 
 // =============================================================================
@@ -49,6 +54,8 @@ interface PersonData {
   tags: (PersonTagLink & { tag: Tag | null })[]
   games: (GamePersonLink & { game: Game | null })[]
   animes: (AnimePersonLink & { anime: Anime | null })[]
+  tvs: (TvPersonLink & { tv: Tv | null })[]
+  movies: (MoviePersonLink & { movie: Movie | null })[]
   characters: (CharacterPersonLink & { character: Character | null })[]
 }
 
@@ -57,6 +64,8 @@ export interface PersonContext {
   tags: ComputedRef<(PersonTagLink & { tag: Tag | null })[]>
   games: ComputedRef<(GamePersonLink & { game: Game | null })[]>
   animes: ComputedRef<(AnimePersonLink & { anime: Anime | null })[]>
+  tvs: ComputedRef<(TvPersonLink & { tv: Tv | null })[]>
+  movies: ComputedRef<(MoviePersonLink & { movie: Movie | null })[]>
   characters: ComputedRef<(CharacterPersonLink & { character: Character | null })[]>
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
@@ -112,6 +121,18 @@ async function fetchPersonData(
     showNsfw ? undefined : eq(schema.animes.isNsfw, false)
   )
 
+  const tvPersonLinksWhere = and(
+    eq(schema.tvPersonLinks.personId, personId),
+    spoilersRevealed ? undefined : eq(schema.tvPersonLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.tvs.isNsfw, false)
+  )
+
+  const moviePersonLinksWhere = and(
+    eq(schema.moviePersonLinks.personId, personId),
+    spoilersRevealed ? undefined : eq(schema.moviePersonLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.movies.isNsfw, false)
+  )
+
   const characterPersonLinksWhere = and(
     eq(schema.characterPersonLinks.personId, personId),
     spoilersRevealed ? undefined : eq(schema.characterPersonLinks.isSpoiler, false),
@@ -119,7 +140,7 @@ async function fetchPersonData(
   )
 
   // Parallel fetch all related data
-  const [tagLinks, gameLinks, animeLinks, charLinks] = await Promise.all([
+  const [tagLinks, gameLinks, animeLinks, tvLinks, movieLinks, charLinks] = await Promise.all([
     db
       .select()
       .from(schema.personTagLinks)
@@ -140,6 +161,18 @@ async function fetchPersonData(
       .orderBy(asc(schema.animePersonLinks.orderInPerson)),
     db
       .select()
+      .from(schema.tvPersonLinks)
+      .leftJoin(schema.tvs, eq(schema.tvPersonLinks.tvId, schema.tvs.id))
+      .where(tvPersonLinksWhere)
+      .orderBy(asc(schema.tvPersonLinks.orderInPerson)),
+    db
+      .select()
+      .from(schema.moviePersonLinks)
+      .leftJoin(schema.movies, eq(schema.moviePersonLinks.movieId, schema.movies.id))
+      .where(moviePersonLinksWhere)
+      .orderBy(asc(schema.moviePersonLinks.orderInPerson)),
+    db
+      .select()
       .from(schema.characterPersonLinks)
       .leftJoin(
         schema.characters,
@@ -154,6 +187,8 @@ async function fetchPersonData(
     tags: tagLinks.map((row) => ({ ...row.person_tag_links, tag: row.tags })),
     games: gameLinks.map((row) => ({ ...row.game_person_links, game: row.games })),
     animes: animeLinks.map((row) => ({ ...row.anime_person_links, anime: row.animes })),
+    tvs: tvLinks.map((row) => ({ ...row.tv_person_links, tv: row.tvs })),
+    movies: movieLinks.map((row) => ({ ...row.movie_person_links, movie: row.movies })),
     characters: charLinks.map((row) => ({
       ...row.character_person_links,
       character: row.characters
@@ -198,6 +233,8 @@ function providePersonContext(source: PersonDataSource): PersonContext {
     tags: computed(() => source.data.value?.tags ?? []),
     games: computed(() => source.data.value?.games ?? []),
     animes: computed(() => source.data.value?.animes ?? []),
+    tvs: computed(() => source.data.value?.tvs ?? []),
+    movies: computed(() => source.data.value?.movies ?? []),
     characters: computed(() => source.data.value?.characters ?? []),
     isLoading: source.isLoading,
     isFetching: source.isFetching,
@@ -210,35 +247,23 @@ function providePersonContext(source: PersonDataSource): PersonContext {
   return context
 }
 
+const PERSON_LINK_TABLES: readonly TableName[] = [
+  'person_tag_links',
+  'game_person_links',
+  'anime_person_links',
+  'tv_person_links',
+  'movie_person_links',
+  'character_person_links'
+]
+
 function usePersonDbSync(personId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
   useDbChanges(({ operation, table, id: entityId }) => {
-    if (operation === 'updated') {
-      if (table === 'persons' && entityId === toValue(personId)) {
-        refetch()
-      }
-      if (
-        table === 'person_tag_links' ||
-        table === 'game_person_links' ||
-        table === 'anime_person_links' ||
-        table === 'character_person_links'
-      ) {
-        refetch()
-      }
+    if (PERSON_LINK_TABLES.includes(table)) {
+      refetch()
+      return
     }
-    if (operation === 'inserted') {
-      if (
-        table === 'person_tag_links' ||
-        table === 'game_person_links' ||
-        table === 'anime_person_links' ||
-        table === 'character_person_links'
-      ) {
-        refetch()
-      }
-    }
-    if (operation === 'deleted') {
-      if (table === 'persons' && entityId === toValue(personId)) {
-        refetch()
-      }
+    if (table === 'persons' && entityId === toValue(personId) && operation !== 'inserted') {
+      refetch()
     }
   })
 }

@@ -9,12 +9,7 @@ import { usePerson } from '@renderer/composables/use-person'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
 import { getEntityIcon } from '@renderer/utils/format'
 import PersonDetailHero from './detail-hero.vue'
-import {
-  PersonDetailOverviewTab,
-  PersonDetailGamesTab,
-  PersonDetailAnimesTab,
-  PersonDetailCharactersTab
-} from './tabs'
+import { PersonDetailOverviewTab, PersonDetailWorksTab, PersonDetailCharactersTab } from './tabs'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -44,19 +39,12 @@ const { person } = usePerson()
           />
           {{ m.library.detail.tabs.relatedCharacters }}
         </TabsTrigger>
-        <TabsTrigger value="games">
+        <TabsTrigger value="works">
           <Icon
-            :icon="getEntityIcon('game')"
+            icon="icon-[mdi--filmstrip-box-multiple]"
             class="size-3.5"
           />
-          {{ m.library.detail.tabs.relatedGames }}
-        </TabsTrigger>
-        <TabsTrigger value="animes">
-          <Icon
-            :icon="getEntityIcon('anime')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.relatedAnimes }}
+          {{ m.library.detail.tabs.relatedWorks }}
         </TabsTrigger>
       </TabsList>
 
@@ -66,11 +54,8 @@ const { person } = usePerson()
       <TabsContent value="characters">
         <PersonDetailCharactersTab />
       </TabsContent>
-      <TabsContent value="games">
-        <PersonDetailGamesTab />
-      </TabsContent>
-      <TabsContent value="animes">
-        <PersonDetailAnimesTab />
+      <TabsContent value="works">
+        <PersonDetailWorksTab />
       </TabsContent>
     </Tabs>
   </template>

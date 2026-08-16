@@ -70,6 +70,8 @@ export interface TmdbSearchMovie {
   poster_path?: string | null
   popularity?: number
   adult?: boolean
+  /** Search rows carry genre ids only; the detail carries the genre objects. */
+  genre_ids?: number[]
 }
 
 export interface TmdbSearchSeries {
@@ -81,6 +83,8 @@ export interface TmdbSearchSeries {
   first_air_date?: string | null
   poster_path?: string | null
   popularity?: number
+  /** Search rows carry genre ids only; the detail carries the genre objects. */
+  genre_ids?: number[]
 }
 
 export interface TmdbSearchPerson {
@@ -133,8 +137,13 @@ export interface TmdbSeriesDetail {
   original_language?: string
   overview?: string | null
   first_air_date?: string | null
+  last_air_date?: string | null
   homepage?: string | null
+  /** TMDB show kind: `Scripted`, `Miniseries`, `Documentary`, `Reality`, and so on. */
   type?: string
+  /** TMDB airing state: `Returning Series`, `Ended`, `Canceled`, and so on. */
+  status?: string
+  number_of_seasons?: number
   number_of_episodes?: number
   episode_run_time?: number[]
   genres?: TmdbGenre[]

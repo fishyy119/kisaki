@@ -40,7 +40,15 @@ export const taskRunFinalStatus = createEnumType<TaskRunFinalStatus>(
   'taskRunFinalStatus'
 )
 
-const TASK_RUN_CONTENT_ENTITY_VALUES = new Set(['game', 'anime', 'person', 'company', 'character'])
+const TASK_RUN_CONTENT_ENTITY_VALUES = new Set([
+  'game',
+  'anime',
+  'tv',
+  'movie',
+  'person',
+  'company',
+  'character'
+])
 const TASK_RUN_INGEST_ACTION_VALUES = new Set([
   'add',
   'update',
@@ -68,6 +76,8 @@ const TASK_RUN_SUBJECT_TYPE_VALUES = new Set<TaskRunSubjectType>([
   'scanner',
   'game',
   'anime',
+  'tv',
+  'movie',
   'person',
   'company',
   'character',

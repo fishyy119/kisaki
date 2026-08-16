@@ -12,7 +12,9 @@ import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
+  CoreMovieMetadata,
   CorePersonMetadata,
+  CoreTvMetadata,
   Tag
 } from '@shared/metadata'
 import type {
@@ -196,6 +198,42 @@ export function normalizeAnimeCore(raw: Partial<CoreAnimeMetadata>): CoreAnimeMe
     description: normalizeOptionalString(raw.description),
     format: raw.format,
     totalEpisodes: raw.totalEpisodes,
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
+    externalIds: mergeExternalIds(undefined, raw.externalIds),
+    tags: mergeTags(undefined, raw.tags)
+  }
+}
+
+export function normalizeTvCore(raw: Partial<CoreTvMetadata>): CoreTvMetadata | null {
+  const name = normalizeOptionalString(raw.name)
+  if (!name) return null
+
+  return {
+    name,
+    originalName: normalizeOptionalString(raw.originalName),
+    releaseDate: raw.releaseDate,
+    endDate: raw.endDate,
+    description: normalizeOptionalString(raw.description),
+    format: raw.format,
+    totalSeasons: raw.totalSeasons,
+    totalEpisodes: raw.totalEpisodes,
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
+    externalIds: mergeExternalIds(undefined, raw.externalIds),
+    tags: mergeTags(undefined, raw.tags)
+  }
+}
+
+export function normalizeMovieCore(raw: Partial<CoreMovieMetadata>): CoreMovieMetadata | null {
+  const name = normalizeOptionalString(raw.name)
+  if (!name) return null
+
+  return {
+    name,
+    originalName: normalizeOptionalString(raw.originalName),
+    releaseDate: raw.releaseDate,
+    description: normalizeOptionalString(raw.description),
+    format: raw.format,
+    runtimeMs: raw.runtimeMs,
     externalSites: mergeExternalSites(undefined, raw.externalSites),
     externalIds: mergeExternalIds(undefined, raw.externalIds),
     tags: mergeTags(undefined, raw.tags)

@@ -33,6 +33,38 @@ export type {
   AnimeUpdateSurface
 } from './anime'
 export {
+  TV_UPDATE_CORE_SURFACES,
+  TV_UPDATE_MEDIA_SURFACES,
+  TV_UPDATE_RELATION_SURFACES,
+  TV_UPDATE_SURFACES,
+  TV_UPDATE_SURFACE_KEYS
+} from './tv'
+export type {
+  TvBatchUpdateRequest,
+  TvUpdateCoreSurface,
+  TvUpdateMediaSurface,
+  TvUpdateRelationSurface,
+  TvUpdateRequest,
+  TvUpdateSelection,
+  TvUpdateSurface
+} from './tv'
+export {
+  MOVIE_UPDATE_CORE_SURFACES,
+  MOVIE_UPDATE_MEDIA_SURFACES,
+  MOVIE_UPDATE_RELATION_SURFACES,
+  MOVIE_UPDATE_SURFACES,
+  MOVIE_UPDATE_SURFACE_KEYS
+} from './movie'
+export type {
+  MovieBatchUpdateRequest,
+  MovieUpdateCoreSurface,
+  MovieUpdateMediaSurface,
+  MovieUpdateRelationSurface,
+  MovieUpdateRequest,
+  MovieUpdateSelection,
+  MovieUpdateSurface
+} from './movie'
+export {
   GAME_UPDATE_CORE_SURFACES,
   GAME_UPDATE_MEDIA_SURFACES,
   GAME_UPDATE_RELATION_SURFACES,

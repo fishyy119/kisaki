@@ -25,6 +25,20 @@ export function registerScraperIpc(service: ScraperService, ipc: IpcService): vo
     wrapIpc(() => service.anime.getProviderInfo(providerId))
   )
 
+  ipc.handle('scraper:list-tv-providers', async () => wrapIpc(() => service.tv.getProviders()))
+
+  ipc.handle('scraper:get-tv-provider', async (_, providerId) =>
+    wrapIpc(() => service.tv.getProviderInfo(providerId))
+  )
+
+  ipc.handle('scraper:list-movie-providers', async () =>
+    wrapIpc(() => service.movie.getProviders())
+  )
+
+  ipc.handle('scraper:get-movie-provider', async (_, providerId) =>
+    wrapIpc(() => service.movie.getProviderInfo(providerId))
+  )
+
   ipc.handle('scraper:list-person-providers', async () =>
     wrapIpc(() => service.person.getProviders())
   )
@@ -71,6 +85,30 @@ export function registerScraperIpc(service: ScraperService, ipc: IpcService): vo
 
   ipc.handle('scraper:get-anime-provider-images', async (_, providerId, lookup, imageType) =>
     wrapIpc(() => service.anime.getProviderImages(providerId, lookup, imageType))
+  )
+
+  ipc.handle('scraper:search-tv', async (_, profileId, query) =>
+    wrapIpc(() => service.tv.search(profileId, query))
+  )
+
+  ipc.handle('scraper:scrape-tv', async (_, profileId, lookup) =>
+    wrapIpc(() => service.tv.scrape(profileId, lookup))
+  )
+
+  ipc.handle('scraper:get-tv-provider-images', async (_, providerId, lookup, imageType) =>
+    wrapIpc(() => service.tv.getProviderImages(providerId, lookup, imageType))
+  )
+
+  ipc.handle('scraper:search-movie', async (_, profileId, query) =>
+    wrapIpc(() => service.movie.search(profileId, query))
+  )
+
+  ipc.handle('scraper:scrape-movie', async (_, profileId, lookup) =>
+    wrapIpc(() => service.movie.scrape(profileId, lookup))
+  )
+
+  ipc.handle('scraper:get-movie-provider-images', async (_, providerId, lookup, imageType) =>
+    wrapIpc(() => service.movie.getProviderImages(providerId, lookup, imageType))
   )
 
   ipc.handle('scraper:search-person', async (_, profileId, query) =>

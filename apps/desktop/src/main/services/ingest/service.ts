@@ -13,23 +13,29 @@ import {
   CharacterAddHandler,
   CompanyAddHandler,
   GameAddHandler,
-  PersonAddHandler
+  MovieAddHandler,
+  PersonAddHandler,
+  TvAddHandler
 } from './add'
 import {
   AnimeUpdateHandler,
   CharacterUpdateHandler,
   CompanyUpdateHandler,
   GameUpdateHandler,
-  PersonUpdateHandler
+  MovieUpdateHandler,
+  PersonUpdateHandler,
+  TvUpdateHandler
 } from './update'
 import {
   AnimeBatchHandler,
   CharacterBatchHandler,
   CompanyBatchHandler,
   GameBatchHandler,
-  PersonBatchHandler
+  MovieBatchHandler,
+  PersonBatchHandler,
+  TvBatchHandler
 } from './batch'
-import { AnimeFileSyncHandler } from './files'
+import { AnimeFileSyncHandler, MovieFileSyncHandler, TvFileSyncHandler } from './files'
 import { registerIngestIpc } from './ipc'
 import { createIngestHooks } from './hooks'
 
@@ -45,6 +51,8 @@ type IngestHandlersByContent<THandlers extends Record<ContentEntityType, object>
 type IngestAddHandlers = IngestHandlersByContent<{
   game: GameAddHandler
   anime: AnimeAddHandler
+  tv: TvAddHandler
+  movie: MovieAddHandler
   person: PersonAddHandler
   company: CompanyAddHandler
   character: CharacterAddHandler
@@ -53,6 +61,8 @@ type IngestAddHandlers = IngestHandlersByContent<{
 type IngestUpdateHandlers = IngestHandlersByContent<{
   game: GameUpdateHandler
   anime: AnimeUpdateHandler
+  tv: TvUpdateHandler
+  movie: MovieUpdateHandler
   person: PersonUpdateHandler
   company: CompanyUpdateHandler
   character: CharacterUpdateHandler
@@ -61,6 +71,8 @@ type IngestUpdateHandlers = IngestHandlersByContent<{
 type IngestBatchHandlers = IngestHandlersByContent<{
   game: GameBatchHandler
   anime: AnimeBatchHandler
+  tv: TvBatchHandler
+  movie: MovieBatchHandler
   person: PersonBatchHandler
   company: CompanyBatchHandler
   character: CharacterBatchHandler
@@ -69,6 +81,8 @@ type IngestBatchHandlers = IngestHandlersByContent<{
 /** Handlers that reconcile an entity's local media files with its rows. */
 interface IngestFileHandlers {
   anime: AnimeFileSyncHandler
+  tv: TvFileSyncHandler
+  movie: MovieFileSyncHandler
 }
 
 export class IngestService implements IContentService {
@@ -113,6 +127,22 @@ export class IngestService implements IContentService {
         i18nService,
         this.hooks.anime
       ),
+      tv: new TvAddHandler(
+        dbService,
+        scraperService,
+        persist.tv,
+        taskRunService,
+        i18nService,
+        this.hooks.tv
+      ),
+      movie: new MovieAddHandler(
+        dbService,
+        scraperService,
+        persist.movie,
+        taskRunService,
+        i18nService,
+        this.hooks.movie
+      ),
       person: new PersonAddHandler(
         dbService,
         scraperService,
@@ -155,6 +185,22 @@ export class IngestService implements IContentService {
         i18nService,
         this.hooks.anime
       ),
+      tv: new TvUpdateHandler(
+        dbService,
+        scraperService,
+        persist,
+        taskRunService,
+        i18nService,
+        this.hooks.tv
+      ),
+      movie: new MovieUpdateHandler(
+        dbService,
+        scraperService,
+        persist,
+        taskRunService,
+        i18nService,
+        this.hooks.movie
+      ),
       person: new PersonUpdateHandler(
         dbService,
         scraperService,
@@ -193,6 +239,20 @@ export class IngestService implements IContentService {
         taskRunService,
         i18nService
       ),
+      tv: new TvBatchHandler(
+        dbService,
+        scraperService,
+        this.update.tv,
+        taskRunService,
+        i18nService
+      ),
+      movie: new MovieBatchHandler(
+        dbService,
+        scraperService,
+        this.update.movie,
+        taskRunService,
+        i18nService
+      ),
       person: new PersonBatchHandler(
         dbService,
         scraperService,
@@ -216,8 +276,11 @@ export class IngestService implements IContentService {
       )
     }
 
+    const mediaInfoService = container.get('media-info')
     this.files = {
-      anime: new AnimeFileSyncHandler(dbService, container.get('media-info'))
+      anime: new AnimeFileSyncHandler(dbService, mediaInfoService),
+      tv: new TvFileSyncHandler(dbService, mediaInfoService),
+      movie: new MovieFileSyncHandler(dbService, mediaInfoService)
     }
 
     registerIngestIpc(this, ipcService)
@@ -225,6 +288,6 @@ export class IngestService implements IContentService {
   }
 
   getSupportedContent(): ContentEntityType[] {
-    return ['game', 'anime', 'character', 'person', 'company']
+    return ['game', 'anime', 'tv', 'movie', 'character', 'person', 'company']
   }
 }

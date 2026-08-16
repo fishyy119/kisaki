@@ -13,7 +13,13 @@ import {
   LIBRARY_CHARACTER_PERSON_ROLES,
   LIBRARY_GAME_CHARACTER_ROLES,
   LIBRARY_GAME_COMPANY_ROLES,
-  LIBRARY_GAME_PERSON_ROLES
+  LIBRARY_GAME_PERSON_ROLES,
+  LIBRARY_MOVIE_CHARACTER_ROLES,
+  LIBRARY_MOVIE_COMPANY_ROLES,
+  LIBRARY_MOVIE_PERSON_ROLES,
+  LIBRARY_TV_CHARACTER_ROLES,
+  LIBRARY_TV_COMPANY_ROLES,
+  LIBRARY_TV_PERSON_ROLES
 } from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
@@ -37,6 +43,12 @@ const LINK_ENDPOINTS = {
   'anime-person': { from: 'anime', to: 'person', roleValues: LIBRARY_ANIME_PERSON_ROLES },
   'anime-company': { from: 'anime', to: 'company', roleValues: LIBRARY_ANIME_COMPANY_ROLES },
   'anime-character': { from: 'anime', to: 'character', roleValues: LIBRARY_ANIME_CHARACTER_ROLES },
+  'tv-person': { from: 'tv', to: 'person', roleValues: LIBRARY_TV_PERSON_ROLES },
+  'tv-company': { from: 'tv', to: 'company', roleValues: LIBRARY_TV_COMPANY_ROLES },
+  'tv-character': { from: 'tv', to: 'character', roleValues: LIBRARY_TV_CHARACTER_ROLES },
+  'movie-person': { from: 'movie', to: 'person', roleValues: LIBRARY_MOVIE_PERSON_ROLES },
+  'movie-company': { from: 'movie', to: 'company', roleValues: LIBRARY_MOVIE_COMPANY_ROLES },
+  'movie-character': { from: 'movie', to: 'character', roleValues: LIBRARY_MOVIE_CHARACTER_ROLES },
   'character-person': {
     from: 'character',
     to: 'person',
@@ -44,11 +56,15 @@ const LINK_ENDPOINTS = {
   },
   'game-tag': { from: 'game', to: 'tag', spoiler: true },
   'anime-tag': { from: 'anime', to: 'tag', spoiler: true },
+  'tv-tag': { from: 'tv', to: 'tag', spoiler: true },
+  'movie-tag': { from: 'movie', to: 'tag', spoiler: true },
   'character-tag': { from: 'character', to: 'tag', spoiler: true },
   'person-tag': { from: 'person', to: 'tag', spoiler: true },
   'company-tag': { from: 'company', to: 'tag', spoiler: true },
   'collection-game': { from: 'collection', to: 'game' },
   'collection-anime': { from: 'collection', to: 'anime' },
+  'collection-tv': { from: 'collection', to: 'tv' },
+  'collection-movie': { from: 'collection', to: 'movie' },
   'collection-character': { from: 'collection', to: 'character' },
   'collection-person': { from: 'collection', to: 'person' },
   'collection-company': { from: 'collection', to: 'company' }

@@ -26,6 +26,7 @@ import { parseLocalDateKey } from '@renderer/utils/datetime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import type { MediaType } from '@shared/common'
 
 const {
   reportType,
@@ -150,7 +151,12 @@ const composition = computed<CompositionSegment[] | null>(() => {
 // Most played entry (featured, anchors the band height)
 // =============================================================================
 
-const MEDIA_ATTACHMENT_TABLES = { game: 'games', anime: 'animes' } as const
+const MEDIA_ATTACHMENT_TABLES = {
+  game: 'games',
+  anime: 'animes',
+  tv: 'tvs',
+  movie: 'movies'
+} as const satisfies Record<MediaType, string>
 
 const mostPlayed = computed(() => {
   const item = effectiveStats.value.mostPlayedEntity

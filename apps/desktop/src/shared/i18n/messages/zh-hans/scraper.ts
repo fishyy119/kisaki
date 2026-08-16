@@ -29,6 +29,14 @@ export const scraper = {
     anime: {
       name: '动漫',
       description: '以 Bangumi 元数据为主，由 TMDB 补齐图片（TMDB 需自备 API Key）'
+    },
+    tv: {
+      name: '剧集',
+      description: '由 TMDB 提供剧集元数据、分季与图片（TMDB 需自备 API Key）'
+    },
+    movie: {
+      name: '电影',
+      description: '由 TMDB 提供电影元数据、演职人员与图片（TMDB 需自备 API Key）'
     }
   },
 
@@ -64,7 +72,8 @@ export const scraper = {
     slots: {
       info: '基本信息',
       tags: '标签',
-      episodes: '剧集',
+      seasons: '分季',
+      episodes: '分集',
       characters: '角色',
       persons: '人物',
       companies: '公司',

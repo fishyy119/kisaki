@@ -23,13 +23,23 @@ import {
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionMovieLinks,
   collectionPersonLinks,
+  collectionTvLinks,
   companyTagLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
   gameTagLinks,
-  personTagLinks
+  movieCharacterLinks,
+  movieCompanyLinks,
+  moviePersonLinks,
+  movieTagLinks,
+  personTagLinks,
+  tvCharacterLinks,
+  tvCompanyLinks,
+  tvPersonLinks,
+  tvTagLinks
 } from '@shared/db'
 import type { DbService } from '@main/services/db'
 import type {
@@ -132,6 +142,84 @@ const LINK_CONFIGS: Record<LibraryLinkKind, LinkConfig> = {
     spoilerField: 'isSpoiler',
     roleField: 'role'
   },
+  'tv-person': {
+    kind: 'tv-person',
+    table: tvPersonLinks,
+    fromType: 'tv',
+    toType: 'person',
+    fromIdField: 'tvId',
+    toIdField: 'personId',
+    orderField: 'orderInTv',
+    secondaryOrderField: 'orderInPerson',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    roleField: 'role'
+  },
+  'tv-company': {
+    kind: 'tv-company',
+    table: tvCompanyLinks,
+    fromType: 'tv',
+    toType: 'company',
+    fromIdField: 'tvId',
+    toIdField: 'companyId',
+    orderField: 'orderInTv',
+    secondaryOrderField: 'orderInCompany',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    roleField: 'role'
+  },
+  'tv-character': {
+    kind: 'tv-character',
+    table: tvCharacterLinks,
+    fromType: 'tv',
+    toType: 'character',
+    fromIdField: 'tvId',
+    toIdField: 'characterId',
+    orderField: 'orderInTv',
+    secondaryOrderField: 'orderInCharacter',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    roleField: 'role'
+  },
+  'movie-person': {
+    kind: 'movie-person',
+    table: moviePersonLinks,
+    fromType: 'movie',
+    toType: 'person',
+    fromIdField: 'movieId',
+    toIdField: 'personId',
+    orderField: 'orderInMovie',
+    secondaryOrderField: 'orderInPerson',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    roleField: 'role'
+  },
+  'movie-company': {
+    kind: 'movie-company',
+    table: movieCompanyLinks,
+    fromType: 'movie',
+    toType: 'company',
+    fromIdField: 'movieId',
+    toIdField: 'companyId',
+    orderField: 'orderInMovie',
+    secondaryOrderField: 'orderInCompany',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    roleField: 'role'
+  },
+  'movie-character': {
+    kind: 'movie-character',
+    table: movieCharacterLinks,
+    fromType: 'movie',
+    toType: 'character',
+    fromIdField: 'movieId',
+    toIdField: 'characterId',
+    orderField: 'orderInMovie',
+    secondaryOrderField: 'orderInCharacter',
+    noteField: 'note',
+    spoilerField: 'isSpoiler',
+    roleField: 'role'
+  },
   'character-person': {
     kind: 'character-person',
     table: characterPersonLinks,
@@ -165,6 +253,30 @@ const LINK_CONFIGS: Record<LibraryLinkKind, LinkConfig> = {
     fromIdField: 'animeId',
     toIdField: 'tagId',
     orderField: 'orderInAnime',
+    secondaryOrderField: 'orderInTag',
+    noteField: 'note',
+    spoilerField: 'isSpoiler'
+  },
+  'tv-tag': {
+    kind: 'tv-tag',
+    table: tvTagLinks,
+    fromType: 'tv',
+    toType: 'tag',
+    fromIdField: 'tvId',
+    toIdField: 'tagId',
+    orderField: 'orderInTv',
+    secondaryOrderField: 'orderInTag',
+    noteField: 'note',
+    spoilerField: 'isSpoiler'
+  },
+  'movie-tag': {
+    kind: 'movie-tag',
+    table: movieTagLinks,
+    fromType: 'movie',
+    toType: 'tag',
+    fromIdField: 'movieId',
+    toIdField: 'tagId',
+    orderField: 'orderInMovie',
     secondaryOrderField: 'orderInTag',
     noteField: 'note',
     spoilerField: 'isSpoiler'
@@ -222,6 +334,26 @@ const LINK_CONFIGS: Record<LibraryLinkKind, LinkConfig> = {
     toType: 'anime',
     fromIdField: 'collectionId',
     toIdField: 'animeId',
+    orderField: 'orderInCollection',
+    noteField: 'note'
+  },
+  'collection-tv': {
+    kind: 'collection-tv',
+    table: collectionTvLinks,
+    fromType: 'collection',
+    toType: 'tv',
+    fromIdField: 'collectionId',
+    toIdField: 'tvId',
+    orderField: 'orderInCollection',
+    noteField: 'note'
+  },
+  'collection-movie': {
+    kind: 'collection-movie',
+    table: collectionMovieLinks,
+    fromType: 'collection',
+    toType: 'movie',
+    fromIdField: 'collectionId',
+    toIdField: 'movieId',
     orderField: 'orderInCollection',
     noteField: 'note'
   },

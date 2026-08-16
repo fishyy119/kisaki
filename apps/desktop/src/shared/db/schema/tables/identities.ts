@@ -3,7 +3,8 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import { baseColumns, identityKeyText } from '../../columns'
 import { animeEpisodes } from './anime'
-import { animes, characters, companies, games, persons } from './content'
+import { animes, characters, companies, games, movies, persons, tvs } from './content'
+import { tvEpisodes } from './tv'
 
 export const gameExternalIds = sqliteTable(
   'game_external_ids',
@@ -62,6 +63,66 @@ export const animeEpisodeExternalIds = sqliteTable(
     unique().on(t.episodeId, t.source, t.externalId),
     unique('unique_anime_episode_external_id').on(t.source, t.externalId),
     index('idx_anime_episode_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
+export const tvExternalIds = sqliteTable(
+  'tv_external_ids',
+  {
+    ...baseColumns,
+    tvId: text('tv_id')
+      .notNull()
+      .references(() => tvs.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInTv: integer('order_in_tv').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.tvId, t.source, t.externalId),
+    unique('unique_tv_external_id').on(t.source, t.externalId),
+    index('idx_tv_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
+/**
+ * Per-episode identity.
+ *
+ * Kept from the first scrape so re-scrapes realign existing rows by id instead
+ * of by episode number, which sources revise.
+ */
+export const tvEpisodeExternalIds = sqliteTable(
+  'tv_episode_external_ids',
+  {
+    ...baseColumns,
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => tvEpisodes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInEpisode: integer('order_in_episode').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.episodeId, t.source, t.externalId),
+    unique('unique_tv_episode_external_id').on(t.source, t.externalId),
+    index('idx_tv_episode_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
+export const movieExternalIds = sqliteTable(
+  'movie_external_ids',
+  {
+    ...baseColumns,
+    movieId: text('movie_id')
+      .notNull()
+      .references(() => movies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInMovie: integer('order_in_movie').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.movieId, t.source, t.externalId),
+    unique('unique_movie_external_id').on(t.source, t.externalId),
+    index('idx_movie_external_ids_lookup').on(t.source, t.externalId)
   ]
 )
 
@@ -125,6 +186,12 @@ export type AnimeExternalId = InferSelectModel<typeof animeExternalIds>
 export type NewAnimeExternalId = InferInsertModel<typeof animeExternalIds>
 export type AnimeEpisodeExternalId = InferSelectModel<typeof animeEpisodeExternalIds>
 export type NewAnimeEpisodeExternalId = InferInsertModel<typeof animeEpisodeExternalIds>
+export type TvExternalId = InferSelectModel<typeof tvExternalIds>
+export type NewTvExternalId = InferInsertModel<typeof tvExternalIds>
+export type TvEpisodeExternalId = InferSelectModel<typeof tvEpisodeExternalIds>
+export type NewTvEpisodeExternalId = InferInsertModel<typeof tvEpisodeExternalIds>
+export type MovieExternalId = InferSelectModel<typeof movieExternalIds>
+export type NewMovieExternalId = InferInsertModel<typeof movieExternalIds>
 export type PersonExternalId = InferSelectModel<typeof personExternalIds>
 export type NewPersonExternalId = InferInsertModel<typeof personExternalIds>
 export type CompanyExternalId = InferSelectModel<typeof companyExternalIds>

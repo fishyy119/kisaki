@@ -10,7 +10,9 @@ export interface ScannerIssueRow {
   existingEntityName?: string
 }
 
+/** An issue carried into the fix dialog, with the run context it needs there. */
 export type ScannerFixTarget = ScannerRunIssue & {
+  mediaType: MediaType
   scannerId?: string
   scannerName?: string
 }
@@ -65,6 +67,7 @@ export function getIssueIcon(type: ScannerRunIssueType): string {
 export function toIssueFixTarget(row: ScannerIssueRow): ScannerFixTarget {
   return {
     ...row.issue,
+    mediaType: row.mediaType,
     scannerId: row.scannerId,
     scannerName: row.scannerName
   }

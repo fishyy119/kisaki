@@ -25,6 +25,7 @@ import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
+import { isMediaType } from '@shared/common'
 import type { MenuComponents } from '@renderer/types'
 import { ENTITY_TABLES, type TableEntityType } from '../entity-tables'
 import { MENU_SPECS } from './menu-specs'
@@ -63,10 +64,10 @@ const contextMenuComponents: MenuComponents = {
   RadioItem: ContextMenuRadioItem
 }
 
-// TODO: drop the media-only guard once the extension API declares batch menu
-// scopes for character/person/company domains.
+// Batch menu contributions are declared for media domains only, matching the
+// extension API's batch scope; other entity types contribute no batch items.
 const extensionMenuInput = computed(() =>
-  props.entityType === 'game' || props.entityType === 'anime'
+  isMediaType(props.entityType)
     ? ({ domain: props.entityType, scope: 'batch', entityIds: props.entityIds } as const)
     : null
 )

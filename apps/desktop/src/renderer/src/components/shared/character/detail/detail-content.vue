@@ -14,8 +14,7 @@ import CharacterDetailHero from './detail-hero.vue'
 import {
   CharacterDetailOverviewTab,
   CharacterDetailPersonsTab,
-  CharacterDetailGamesTab,
-  CharacterDetailAnimesTab
+  CharacterDetailWorksTab
 } from './tabs'
 import { useI18n } from '@renderer/composables'
 
@@ -50,19 +49,12 @@ const { character } = useCharacter()
           />
           {{ m.library.detail.tabs.relatedPersons }}
         </TabsTrigger>
-        <TabsTrigger value="games">
+        <TabsTrigger value="works">
           <Icon
-            :icon="getEntityIcon('game')"
+            icon="icon-[mdi--filmstrip-box-multiple]"
             class="size-3.5"
           />
-          {{ m.library.detail.tabs.relatedGames }}
-        </TabsTrigger>
-        <TabsTrigger value="animes">
-          <Icon
-            :icon="getEntityIcon('anime')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.relatedAnimes }}
+          {{ m.library.detail.tabs.relatedWorks }}
         </TabsTrigger>
       </TabsList>
 
@@ -72,11 +64,8 @@ const { character } = useCharacter()
       <TabsContent value="persons">
         <CharacterDetailPersonsTab />
       </TabsContent>
-      <TabsContent value="games">
-        <CharacterDetailGamesTab />
-      </TabsContent>
-      <TabsContent value="animes">
-        <CharacterDetailAnimesTab />
+      <TabsContent value="works">
+        <CharacterDetailWorksTab />
       </TabsContent>
     </Tabs>
   </template>

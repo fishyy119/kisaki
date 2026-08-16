@@ -36,22 +36,9 @@ import type {
 } from '@shared/activity'
 import type { PlaybackTarget } from '@shared/player'
 import type { ActivityHooks } from '../hooks'
+import { RESUME_WRITE_INTERVAL_MS, isWatchedPosition, toResumePosition } from './progress'
 
 const log = createLogger('Activity')
-
-/**
- * Fraction of an episode that counts as watched.
- *
- * Releases carry endings and previews after the story ends, so demanding the
- * final seconds would leave most finished episodes unwatched.
- */
-const WATCHED_POSITION_RATIO = 0.9
-
-/** Below this, a stop is a mis-click rather than a resume point worth keeping. */
-const MIN_RESUME_POSITION_MS = 30_000
-
-/** Progress is reported every second; persisting a resume point that often is waste. */
-const RESUME_WRITE_INTERVAL_MS = 15_000
 
 interface WatchingSession {
   animeId: string
@@ -487,14 +474,6 @@ export class AnimeActivityHandler {
     if (fileId) return files.find((file) => file.id === fileId)
     return files.find((file) => file.isPrimary) ?? files[0]
   }
-}
-
-function isWatchedPosition(positionMs: number, durationMs: number | null): boolean {
-  return durationMs !== null && durationMs > 0 && positionMs >= durationMs * WATCHED_POSITION_RATIO
-}
-
-function toResumePosition(positionMs: number): number | null {
-  return positionMs >= MIN_RESUME_POSITION_MS ? Math.floor(positionMs) : null
 }
 
 function formatEpisodeTitle(anime: Anime, episode: AnimeEpisode): string {

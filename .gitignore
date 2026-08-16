@@ -1,6 +1,7 @@
 node_modules
 dist
 out
+*.tsbuildinfo
 artifacts/
 apps/desktop/resources/bin
 apps/desktop/resources/extensions

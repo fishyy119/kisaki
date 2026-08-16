@@ -31,6 +31,7 @@ import type {
   ScannerRunStartResult
 } from '@shared/scanner'
 import type { TaskRunInitiator } from '@shared/task-run'
+import { assertNever } from '@shared/utils/exhaustive'
 import type { ScannerDiscovery } from '../../discovery'
 import type { ScannerHooks } from '../../hooks'
 import { ScannerRunCoordinator } from './coordinator'
@@ -81,10 +82,6 @@ export interface MediaScannerHandlerDeps {
 type AddOutcome =
   | { kind: 'added'; result: ScannerAddOutcome; warnings?: ScannerEntityWarning[] }
   | { kind: 'failed'; errors: ScannerEntityError[] }
-
-function assertNever(value: never): never {
-  throw new Error(`Unsupported scanner ingest mode: ${String(value)}`)
-}
 
 export abstract class MediaScannerHandler {
   protected readonly discovery: ScannerDiscovery
@@ -567,7 +564,7 @@ export abstract class MediaScannerHandler {
       }
 
       default:
-        return assertNever(ingestMode)
+        return assertNever(ingestMode, 'scanner ingest mode')
     }
   }
 

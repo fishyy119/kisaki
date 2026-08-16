@@ -80,8 +80,8 @@ export const scanner = {
 
   fix: {
     title: '修正扫描结果',
-    updateExisting: '更新现有游戏',
-    readdGame: '重新添加游戏',
+    updateExisting: '更新现有条目',
+    readd: '重新添加条目',
     started: '已开始重新刮削。',
     startFailed: '启动修正失败',
     unknownError: '未知错误',
@@ -225,7 +225,7 @@ export const scanner = {
       externalIdLinked: '外部 ID 已关联到现有条目，当前路径未添加。',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 个视频文件无法识别话数，已作为未编号剧集添加。`,
-      episodeSyncFailed: '条目已添加，但视频文件同步失败，详见日志。'
+      fileSyncFailed: '条目已添加，但视频文件同步失败，详见日志。'
     }
   }
 } satisfies Messages['scanner']

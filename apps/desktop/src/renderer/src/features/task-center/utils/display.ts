@@ -389,6 +389,8 @@ function formatIngestEntity(entity: string | undefined): string {
   switch (entity) {
     case 'game':
     case 'anime':
+    case 'tv':
+    case 'movie':
     case 'person':
     case 'company':
     case 'character':

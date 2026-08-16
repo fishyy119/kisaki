@@ -79,8 +79,8 @@ export const scanner = {
 
   fix: {
     title: 'Fix scan result',
-    updateExisting: 'Update the existing game',
-    readdGame: 'Re-add the game',
+    updateExisting: 'Update the existing entry',
+    readd: 'Re-add the entry',
     started: 'Rescraping started.',
     startFailed: 'Could not start the fix',
     unknownError: 'Unknown error',
@@ -239,7 +239,7 @@ export const scanner = {
         'The external ID is already linked to an existing entry. This path was not added.',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} video file(s) had no readable episode number and were added as unnumbered episodes.`,
-      episodeSyncFailed:
+      fileSyncFailed:
         'The entry was added but its video files could not be synced. See the log for details.'
     }
   }

@@ -15,10 +15,24 @@ import {
   type Anime,
   type Game,
   type MediaRelation,
-  type MediaRelationType
+  type MediaRelationType,
+  type Movie,
+  type Tv
 } from '@shared/db'
-import { animes, games } from '@shared/db'
+import { animes, games, movies, tvs } from '@shared/db'
 import { db } from './proxy'
+
+/**
+ * The entry a relation points at, paired with its media type.
+ *
+ * The pair is a union rather than one nullable field per media type, so a
+ * reader that handles every member is provably complete.
+ */
+export type MediaRelationTarget =
+  | { mediaType: 'game'; entity: Game }
+  | { mediaType: 'anime'; entity: Anime }
+  | { mediaType: 'tv'; entity: Tv }
+  | { mediaType: 'movie'; entity: Movie }
 
 /** One display-ready relation entry of an entity, either edge direction. */
 export interface MediaRelationEntry {
@@ -28,9 +42,17 @@ export interface MediaRelationEntry {
   type: MediaRelationType
   direction: 'out' | 'in'
   note: string | null
-  target: { mediaType: MediaType; id: string }
-  targetGame: Game | null
-  targetAnime: Anime | null
+  target: MediaRelationTarget
+}
+
+/** An edge resolved down to its endpoint, before the endpoint row is loaded. */
+interface MediaRelationEdge {
+  id: string
+  type: MediaRelationType
+  direction: 'out' | 'in'
+  note: string | null
+  targetType: MediaType
+  targetId: string
 }
 
 export async function fetchMediaRelations(
@@ -51,57 +73,90 @@ export async function fetchMediaRelations(
       .orderBy(asc(mediaRelations.createdAt))
   ])
 
-  const entries: MediaRelationEntry[] = []
+  const edges: MediaRelationEdge[] = []
   const seen = new Set<string>()
 
   const push = (row: MediaRelation, direction: 'out' | 'in'): void => {
-    const target =
-      direction === 'out'
-        ? { mediaType: row.toType, id: row.toId }
-        : { mediaType: row.fromType, id: row.fromId }
+    const targetType = direction === 'out' ? row.toType : row.fromType
+    const targetId = direction === 'out' ? row.toId : row.fromId
     const type = direction === 'out' ? row.type : MEDIA_RELATION_TYPE_INVERSE[row.type]
-    const key = `${target.mediaType}\0${target.id}\0${type}`
+    const key = `${targetType}\0${targetId}\0${type}`
     if (seen.has(key)) return
 
     seen.add(key)
-    entries.push({
-      id: row.id,
-      type,
-      direction,
-      note: row.note,
-      target,
-      targetGame: null,
-      targetAnime: null
-    })
+    edges.push({ id: row.id, type, direction, note: row.note, targetType, targetId })
   }
 
   for (const row of outRows) push(row, 'out')
   for (const row of inRows) push(row, 'in')
-  if (entries.length === 0) return []
+
+  return attachTargets(edges, showNsfw)
+}
+
+/** Endpoint rows load one query per media type, then pair back onto their edge. */
+async function attachTargets(
+  edges: MediaRelationEdge[],
+  showNsfw: boolean
+): Promise<MediaRelationEntry[]> {
+  if (edges.length === 0) return []
 
   const idsByType = new Map<MediaType, string[]>()
-  for (const entry of entries) {
-    const ids = idsByType.get(entry.target.mediaType) ?? []
-    ids.push(entry.target.id)
-    idsByType.set(entry.target.mediaType, ids)
+  for (const edge of edges) {
+    const ids = idsByType.get(edge.targetType) ?? []
+    ids.push(edge.targetId)
+    idsByType.set(edge.targetType, ids)
   }
 
-  const [gameRows, animeRows] = await Promise.all([
+  const [gameRows, animeRows, tvRows, movieRows] = await Promise.all([
     loadGameTargets(idsByType.get('game'), showNsfw),
-    loadAnimeTargets(idsByType.get('anime'), showNsfw)
+    loadAnimeTargets(idsByType.get('anime'), showNsfw),
+    loadTvTargets(idsByType.get('tv'), showNsfw),
+    loadMovieTargets(idsByType.get('movie'), showNsfw)
   ])
-  const gameById = new Map(gameRows.map((row) => [row.id, row]))
-  const animeById = new Map(animeRows.map((row) => [row.id, row]))
 
-  // Targets hidden by the NSFW preference drop their entries entirely.
-  return entries.flatMap((entry): MediaRelationEntry[] => {
-    if (entry.target.mediaType === 'game') {
-      const targetGame = gameById.get(entry.target.id)
-      return targetGame ? [{ ...entry, targetGame }] : []
-    }
-    const targetAnime = animeById.get(entry.target.id)
-    return targetAnime ? [{ ...entry, targetAnime }] : []
+  const targetsByType = {
+    game: new Map(gameRows.map((row) => [row.id, row])),
+    anime: new Map(animeRows.map((row) => [row.id, row])),
+    tv: new Map(tvRows.map((row) => [row.id, row])),
+    movie: new Map(movieRows.map((row) => [row.id, row]))
+  }
+
+  // Targets hidden by the NSFW preference, and ids left behind by a deleted
+  // entry, drop their edges entirely.
+  return edges.flatMap((edge): MediaRelationEntry[] => {
+    const target = readTarget(edge, targetsByType)
+    return target
+      ? [{ id: edge.id, type: edge.type, direction: edge.direction, note: edge.note, target }]
+      : []
   })
+}
+
+interface TargetsByType {
+  game: Map<string, Game>
+  anime: Map<string, Anime>
+  tv: Map<string, Tv>
+  movie: Map<string, Movie>
+}
+
+function readTarget(edge: MediaRelationEdge, targets: TargetsByType): MediaRelationTarget | null {
+  switch (edge.targetType) {
+    case 'game': {
+      const entity = targets.game.get(edge.targetId)
+      return entity ? { mediaType: 'game', entity } : null
+    }
+    case 'anime': {
+      const entity = targets.anime.get(edge.targetId)
+      return entity ? { mediaType: 'anime', entity } : null
+    }
+    case 'tv': {
+      const entity = targets.tv.get(edge.targetId)
+      return entity ? { mediaType: 'tv', entity } : null
+    }
+    case 'movie': {
+      const entity = targets.movie.get(edge.targetId)
+      return entity ? { mediaType: 'movie', entity } : null
+    }
+  }
 }
 
 async function loadGameTargets(ids: string[] | undefined, showNsfw: boolean): Promise<Game[]> {
@@ -118,4 +173,20 @@ async function loadAnimeTargets(ids: string[] | undefined, showNsfw: boolean): P
     .select()
     .from(animes)
     .where(and(inArray(animes.id, ids), showNsfw ? undefined : eq(animes.isNsfw, false)))
+}
+
+async function loadTvTargets(ids: string[] | undefined, showNsfw: boolean): Promise<Tv[]> {
+  if (!ids?.length) return []
+  return db
+    .select()
+    .from(tvs)
+    .where(and(inArray(tvs.id, ids), showNsfw ? undefined : eq(tvs.isNsfw, false)))
+}
+
+async function loadMovieTargets(ids: string[] | undefined, showNsfw: boolean): Promise<Movie[]> {
+  if (!ids?.length) return []
+  return db
+    .select()
+    .from(movies)
+    .where(and(inArray(movies.id, ids), showNsfw ? undefined : eq(movies.isNsfw, false)))
 }

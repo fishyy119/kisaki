@@ -1,9 +1,12 @@
 import {
+  animePersonLinks,
   characterPersonLinks,
   collectionPersonLinks,
   gamePersonLinks,
+  moviePersonLinks,
   persons,
-  personTagLinks
+  personTagLinks,
+  tvPersonLinks
 } from '@shared/db'
 import { defineFilterQuerySpec } from '../spec'
 
@@ -30,6 +33,36 @@ export const personFilterQuerySpec = defineFilterQuerySpec({
         table: gamePersonLinks,
         entityIdColumn: gamePersonLinks.personId,
         relatedIdColumn: gamePersonLinks.gameId
+      }
+    },
+    {
+      key: 'animes',
+      kind: 'relation',
+      targetEntity: 'anime',
+      link: {
+        table: animePersonLinks,
+        entityIdColumn: animePersonLinks.personId,
+        relatedIdColumn: animePersonLinks.animeId
+      }
+    },
+    {
+      key: 'tvs',
+      kind: 'relation',
+      targetEntity: 'tv',
+      link: {
+        table: tvPersonLinks,
+        entityIdColumn: tvPersonLinks.personId,
+        relatedIdColumn: tvPersonLinks.tvId
+      }
+    },
+    {
+      key: 'movies',
+      kind: 'relation',
+      targetEntity: 'movie',
+      link: {
+        table: moviePersonLinks,
+        entityIdColumn: moviePersonLinks.personId,
+        relatedIdColumn: moviePersonLinks.movieId
       }
     },
     {

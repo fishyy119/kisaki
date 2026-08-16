@@ -7,7 +7,13 @@ import type {
   GameCharacterRole,
   GameCompanyRole,
   GamePersonRole,
-  MediaRelationType
+  MediaRelationType,
+  MovieCharacterRole,
+  MovieCompanyRole,
+  MoviePersonRole,
+  TvCharacterRole,
+  TvCompanyRole,
+  TvPersonRole
 } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
 import type {
@@ -16,8 +22,12 @@ import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
+  CoreMovieMetadata,
   CorePersonMetadata,
-  Tag
+  CoreTvMetadata,
+  Tag,
+  TvEpisodeInfo,
+  TvSeasonInfo
 } from '@shared/metadata'
 
 export interface ScrapedEntityIdentity {
@@ -37,6 +47,10 @@ export type ScrapedGameInfo = Omit<CoreGameMetadata, 'externalIds' | 'tags'>
 
 export type ScrapedAnimeInfo = Omit<CoreAnimeMetadata, 'externalIds' | 'tags'>
 
+export type ScrapedTvInfo = Omit<CoreTvMetadata, 'externalIds' | 'tags'>
+
+export type ScrapedMovieInfo = Omit<CoreMovieMetadata, 'externalIds' | 'tags'>
+
 export type ScrapedPersonInfo = Omit<CorePersonMetadata, 'externalIds' | 'tags'>
 
 export type ScrapedCompanyInfo = Omit<CoreCompanyMetadata, 'externalIds' | 'tags'>
@@ -48,6 +62,14 @@ export interface ScrapedGameCore extends ScrapedGameInfo {
 }
 
 export interface ScrapedAnimeCore extends ScrapedAnimeInfo {
+  tags?: Tag[]
+}
+
+export interface ScrapedTvCore extends ScrapedTvInfo {
+  tags?: Tag[]
+}
+
+export interface ScrapedMovieCore extends ScrapedMovieInfo {
   tags?: Tag[]
 }
 
@@ -197,6 +219,88 @@ export interface ScrapedAnimeMetadata extends ScrapedAnimeCore, ScrapedIdentityC
 }
 
 /**
+ * Scraped tv-person relation fact.
+ */
+export interface ScrapedTvPersonFact extends ScrapedPersonMetadata {
+  role: TvPersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped tv-character relation fact.
+ */
+export interface ScrapedTvCharacterFact extends ScrapedCharacterMetadata {
+  role: TvCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped tv-company relation fact.
+ */
+export interface ScrapedTvCompanyFact extends ScrapedCompanyMetadata {
+  role: TvCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped tv metadata with relation/media facts.
+ */
+export interface ScrapedTvMetadata extends ScrapedTvCore, ScrapedIdentityCarrier {
+  seasons?: TvSeasonInfo[]
+  episodes?: TvEpisodeInfo[]
+  persons?: ScrapedTvPersonFact[]
+  characters?: ScrapedTvCharacterFact[]
+  companies?: ScrapedTvCompanyFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
+  covers?: string[]
+  backdrops?: string[]
+  logos?: string[]
+}
+
+/**
+ * Scraped movie-person relation fact.
+ */
+export interface ScrapedMoviePersonFact extends ScrapedPersonMetadata {
+  role: MoviePersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped movie-character relation fact.
+ */
+export interface ScrapedMovieCharacterFact extends ScrapedCharacterMetadata {
+  role: MovieCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped movie-company relation fact.
+ */
+export interface ScrapedMovieCompanyFact extends ScrapedCompanyMetadata {
+  role: MovieCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped movie metadata with relation/media facts.
+ */
+export interface ScrapedMovieMetadata extends ScrapedMovieCore, ScrapedIdentityCarrier {
+  persons?: ScrapedMoviePersonFact[]
+  characters?: ScrapedMovieCharacterFact[]
+  companies?: ScrapedMovieCompanyFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
+  covers?: string[]
+  backdrops?: string[]
+  logos?: string[]
+}
+
+/**
  * Relation facts a game scrape can state.
  *
  * An absent key means the scrape could not answer that relation; an empty array
@@ -237,6 +341,50 @@ export interface ScrapedAnimeBundle {
   /** Absent means unknown; an empty array means the source states no episodes. */
   episodes?: AnimeEpisodeInfo[]
   relationFacts?: ScrapedAnimeRelationFacts
+  mediaCandidates?: {
+    coverUrls?: string[]
+    backdropUrls?: string[]
+    logoUrls?: string[]
+  }
+}
+
+/** Relation facts a tv scrape can state; see `ScrapedGameRelationFacts`. */
+export interface ScrapedTvRelationFacts {
+  tvPerson?: ScrapedTvPersonFact[]
+  tvCompany?: ScrapedTvCompanyFact[]
+  tvCharacter?: ScrapedTvCharacterFact[]
+  characterPerson?: ScrapedCharacterPersonFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
+}
+
+export interface ScrapedTvBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedTvCore
+  /** Absent means unknown; an empty array means the source states no seasons. */
+  seasons?: TvSeasonInfo[]
+  /** Absent means unknown; an empty array means the source states no episodes. */
+  episodes?: TvEpisodeInfo[]
+  relationFacts?: ScrapedTvRelationFacts
+  mediaCandidates?: {
+    coverUrls?: string[]
+    backdropUrls?: string[]
+    logoUrls?: string[]
+  }
+}
+
+/** Relation facts a movie scrape can state; see `ScrapedGameRelationFacts`. */
+export interface ScrapedMovieRelationFacts {
+  moviePerson?: ScrapedMoviePersonFact[]
+  movieCompany?: ScrapedMovieCompanyFact[]
+  movieCharacter?: ScrapedMovieCharacterFact[]
+  characterPerson?: ScrapedCharacterPersonFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
+}
+
+export interface ScrapedMovieBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedMovieCore
+  relationFacts?: ScrapedMovieRelationFacts
   mediaCandidates?: {
     coverUrls?: string[]
     backdropUrls?: string[]

@@ -4,7 +4,7 @@
  * Time-related formatting functions are in datetime.ts
  */
 
-import type { AnimeStatus, GameStatus, Gender } from '@shared/db'
+import type { AnimeStatus, GameStatus, Gender, MovieStatus, TvStatus } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
 import { messages } from '@renderer/core/i18n'
 
@@ -25,6 +25,22 @@ const GAME_STATUS_VARIANTS: Record<GameStatus, StatusVariant> = {
 }
 
 const ANIME_STATUS_VARIANTS: Record<AnimeStatus, StatusVariant> = {
+  planned: 'secondary',
+  watching: 'default',
+  completed: 'success',
+  onHold: 'warning',
+  dropped: 'destructive'
+}
+
+const TV_STATUS_VARIANTS: Record<TvStatus, StatusVariant> = {
+  planned: 'secondary',
+  watching: 'default',
+  completed: 'success',
+  onHold: 'warning',
+  dropped: 'destructive'
+}
+
+const MOVIE_STATUS_VARIANTS: Record<MovieStatus, StatusVariant> = {
   planned: 'secondary',
   watching: 'default',
   completed: 'success',
@@ -58,6 +74,34 @@ export function formatAnimeStatus(status: AnimeStatus): string {
  */
 export function getAnimeStatusVariant(status: AnimeStatus): StatusVariant {
   return ANIME_STATUS_VARIANTS[status] ?? 'secondary'
+}
+
+/**
+ * Format series watch status to a localized label
+ */
+export function formatTvStatus(status: TvStatus): string {
+  return messages.value.library.tvStatus[status]
+}
+
+/**
+ * Map series watch status to badge variant for UI display
+ */
+export function getTvStatusVariant(status: TvStatus): StatusVariant {
+  return TV_STATUS_VARIANTS[status] ?? 'secondary'
+}
+
+/**
+ * Format movie watch status to a localized label
+ */
+export function formatMovieStatus(status: MovieStatus): string {
+  return messages.value.library.movieStatus[status]
+}
+
+/**
+ * Map movie watch status to badge variant for UI display
+ */
+export function getMovieStatusVariant(status: MovieStatus): StatusVariant {
+  return MOVIE_STATUS_VARIANTS[status] ?? 'secondary'
 }
 
 /** Format an episode number, keeping one decimal only for half-numbered episodes. */
@@ -160,6 +204,8 @@ export function getSpoilerDisplay(
 const ENTITY_ICONS: Record<AllEntityType, string> = {
   game: 'icon-[mdi--gamepad-variant-outline]',
   anime: 'icon-[mdi--television-classic]',
+  tv: 'icon-[mdi--television-play]',
+  movie: 'icon-[mdi--movie-open-outline]',
   character: 'icon-[mdi--ghost-outline]',
   person: 'icon-[mdi--account-circle-outline]',
   company: 'icon-[mdi--company]',

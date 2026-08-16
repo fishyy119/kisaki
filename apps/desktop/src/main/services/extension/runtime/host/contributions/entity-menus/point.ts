@@ -359,6 +359,10 @@ function getEntityMenuRegistrationForPath(
       return runtime.entityMenus.game[scope]?.get(contributionId)
     case 'anime':
       return runtime.entityMenus.anime[scope]?.get(contributionId)
+    case 'tv':
+      return runtime.entityMenus.tv[scope]?.get(contributionId)
+    case 'movie':
+      return runtime.entityMenus.movie[scope]?.get(contributionId)
     case 'character':
       return scope === 'single'
         ? runtime.entityMenus.character.single.get(contributionId)

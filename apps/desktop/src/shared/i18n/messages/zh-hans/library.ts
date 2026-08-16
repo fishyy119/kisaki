@@ -4,6 +4,8 @@ export const library = {
   entities: {
     game: '游戏',
     anime: '动漫',
+    tv: '剧集',
+    movie: '电影',
     character: '角色',
     person: '人物',
     company: '公司',
@@ -56,12 +58,23 @@ export const library = {
     order: '排序',
     format: '类型',
     totalEpisodes: '总话数',
+    totalSeasons: '总季数',
+    seasons: '季',
     episodes: '剧集',
     extras: '特典',
+    endDate: '完结日',
+    runtime: '片长',
+    edition: '版本',
+    watched: '已看',
+    watchedAt: '观看时间',
+    playCount: '播放次数',
     watchDuration: '观看时长',
     lastWatchedAt: '最近观看',
     relatedAnimes: '相关动漫',
-    relatedEntries: '关联条目'
+    relatedTvs: '相关剧集',
+    relatedMovies: '相关电影',
+    relatedEntries: '关联条目',
+    relatedWorks: '相关作品'
   },
 
   gameStatus: {
@@ -79,6 +92,22 @@ export const library = {
     completed: '已看完',
     onHold: '搁置',
     dropped: '弃番'
+  },
+
+  tvStatus: {
+    planned: '想看',
+    watching: '在看',
+    completed: '已看完',
+    onHold: '搁置',
+    dropped: '弃剧'
+  },
+
+  movieStatus: {
+    planned: '想看',
+    watching: '在看',
+    completed: '已看完',
+    onHold: '搁置',
+    dropped: '弃看'
   },
 
   gender: {
@@ -150,6 +179,52 @@ export const library = {
       producer: '出品',
       distributor: '发行',
       other: '其他'
+    },
+    tvPerson: {
+      creator: '主创',
+      director: '导演',
+      writer: '编剧',
+      producer: '制片人',
+      music: '音乐',
+      cinematography: '摄影',
+      editing: '剪辑',
+      actor: '演员',
+      other: '其他'
+    },
+    tvCharacter: {
+      main: '主角',
+      supporting: '配角',
+      cameo: '客串',
+      other: '其他'
+    },
+    tvCompany: {
+      network: '播出平台',
+      studio: '制作',
+      producer: '出品',
+      distributor: '发行',
+      other: '其他'
+    },
+    moviePerson: {
+      director: '导演',
+      writer: '编剧',
+      producer: '制片人',
+      music: '音乐',
+      cinematography: '摄影',
+      editing: '剪辑',
+      actor: '演员',
+      other: '其他'
+    },
+    movieCharacter: {
+      main: '主角',
+      supporting: '配角',
+      cameo: '客串',
+      other: '其他'
+    },
+    movieCompany: {
+      studio: '制作',
+      producer: '出品',
+      distributor: '发行',
+      other: '其他'
     }
   },
 
@@ -165,6 +240,25 @@ export const library = {
   animeEpisodeType: {
     regular: '正片',
     special: '特别篇'
+  },
+
+  tvFormat: {
+    scripted: '剧情',
+    miniseries: '迷你剧',
+    documentary: '纪录片',
+    reality: '真人秀',
+    talkShow: '脱口秀',
+    variety: '综艺',
+    news: '新闻',
+    other: '其他'
+  },
+
+  movieFormat: {
+    theatrical: '院线',
+    documentary: '纪录片',
+    short: '短片',
+    tvMovie: '电视电影',
+    other: '其他'
   },
 
   mediaRelation: {
@@ -189,9 +283,31 @@ export const library = {
     other: '其他'
   },
 
+  tvExtraType: {
+    trailer: '预告',
+    teaser: '先导预告',
+    behindTheScenes: '幕后花絮',
+    featurette: '制作特辑',
+    deletedScene: '删减片段',
+    interview: '访谈',
+    other: '其他'
+  },
+
+  movieExtraType: {
+    trailer: '预告',
+    teaser: '先导预告',
+    behindTheScenes: '幕后花絮',
+    featurette: '制作特辑',
+    deletedScene: '删减片段',
+    interview: '访谈',
+    other: '其他'
+  },
+
   counts: {
     game: ({ count }: { count: number }) => `${count} 款游戏`,
     anime: ({ count }: { count: number }) => `${count} 部动漫`,
+    tv: ({ count }: { count: number }) => `${count} 部剧集`,
+    movie: ({ count }: { count: number }) => `${count} 部电影`,
     character: ({ count }: { count: number }) => `${count} 个角色`,
     person: ({ count }: { count: number }) => `${count} 位人物`,
     company: ({ count }: { count: number }) => `${count} 家公司`,
@@ -285,10 +401,13 @@ export const library = {
       characters: '角色',
       persons: '人物',
       companies: '公司',
-      relatedGames: '相关游戏',
-      relatedAnimes: '相关动漫',
+      relatedWorks: '相关作品',
+      relatedEntries: '关联条目',
       relatedPersons: '相关人物',
       relatedCharacters: '相关角色',
+      seasons: '分季',
+      files: '文件',
+      extras: '特典',
       activity: '活动',
       saves: '存档',
       notes: '笔记'
@@ -311,8 +430,7 @@ export const library = {
       description: '暂无简介',
       tags: '暂无标签',
       externalSites: '暂无外部链接',
-      relatedGames: '暂无相关游戏',
-      relatedAnimes: '暂无相关动漫',
+      relatedWorks: '暂无相关作品',
       relatedPersons: '暂无相关人物',
       relatedCharacters: '暂无相关角色',
       relatedEntries: '暂无关联条目',
@@ -368,14 +486,26 @@ export const library = {
     editAnimeCharacters: '编辑角色',
     editAnimePersons: '编辑制作人员',
     editAnimeCompanies: '编辑公司',
+    editTvCharacters: '编辑角色',
+    editTvPersons: '编辑演职人员',
+    editTvCompanies: '编辑公司',
+    editMovieCharacters: '编辑角色',
+    editMoviePersons: '编辑演职人员',
+    editMovieCompanies: '编辑公司',
     editCharacterGames: '编辑登场游戏',
     editCharacterAnimes: '编辑出演动漫',
+    editCharacterTvs: '编辑出演剧集',
+    editCharacterMovies: '编辑出演电影',
     editCharacterPersons: '编辑相关人员',
     editPersonGames: '编辑参与游戏',
     editPersonAnimes: '编辑参与动漫',
+    editPersonTvs: '编辑参与剧集',
+    editPersonMovies: '编辑参与电影',
     editPersonCharacters: '编辑配音角色',
     editCompanyGames: '编辑相关游戏',
     editCompanyAnimes: '编辑相关动漫',
+    editCompanyTvs: '编辑相关剧集',
+    editCompanyMovies: '编辑相关电影',
     editCollectionEntities: '编辑合集内容',
 
     notePlaceholder: '可选备注…',
@@ -402,6 +532,11 @@ export const library = {
     releaseDateYearDayWithoutMonth: '发行日期填写了年份和日期时，必须同时填写月份。',
     totalEpisodesPlaceholder: '可留空',
     totalEpisodesInvalid: '总集数必须为非负整数。',
+    totalSeasonsInvalid: '总季数必须为非负整数。',
+    endDateInvalidFormat: '完结日期格式不正确。',
+    endDateYearDayWithoutMonth: '完结日期填写了年份和日期时，必须同时填写月份。',
+    runtimeMinutesPlaceholder: '分钟',
+    runtimeInvalid: '片长必须为正数分钟。',
 
     scoreRangeHint: '评分范围 0-10，支持一位小数（如 8.5）。',
     scoreOutOfRange: '评分必须在 0-10 之间。',
@@ -461,6 +596,12 @@ export const library = {
       animeCover: '动漫封面图，用于卡片和列表显示。',
       animeBackdrop: '详情页背景图。',
       animeLogo: '动漫标题 Logo。',
+      tvCover: '剧集海报，用于卡片和列表显示。',
+      tvBackdrop: '详情页背景图。',
+      tvLogo: '剧集标题 Logo。',
+      movieCover: '电影海报，用于卡片和列表显示。',
+      movieBackdrop: '详情页背景图。',
+      movieLogo: '电影标题 Logo。',
       characterPhoto: '角色照片，用于卡片和详情显示。',
       personPhoto: '人物照片，用于卡片和详情显示。',
       companyLogo: '公司徽标，用于卡片和详情显示。'
@@ -555,6 +696,8 @@ export const library = {
 
     gameLabel: '游戏',
     animeLabel: '动漫',
+    tvLabel: '剧集',
+    movieLabel: '电影',
     characterLabel: '角色',
     personLabel: '人物',
     companyLabel: '公司',
@@ -571,6 +714,8 @@ export const library = {
     linkLabels: {
       game: '游戏关联',
       anime: '动漫关联',
+      tv: '剧集关联',
+      movie: '电影关联',
       character: '角色关联',
       person: '人物关联',
       company: '公司关联',
@@ -685,6 +830,13 @@ export const library = {
       recentlyWatched: { name: '最近观看', description: '按最近观看时间排序的动漫' },
       topRatedAnime: { name: '高分动漫', description: '按评分排序的动漫' },
       recentlyAddedAnime: { name: '最新添加的动漫', description: '按添加时间排序的动漫' },
+      recentlyWatchedTv: { name: '最近观看的剧集', description: '按最近观看时间排序的剧集' },
+      topRatedTv: { name: '高分剧集', description: '按评分排序的剧集' },
+      recentlyAddedTv: { name: '最新添加的剧集', description: '按添加时间排序的剧集' },
+      recentlyWatchedMovies: { name: '最近观看的电影', description: '按最近观看时间排序的电影' },
+      topRatedMovies: { name: '高分电影', description: '按评分排序的电影' },
+      recentlyAddedMovies: { name: '最新添加的电影', description: '按添加时间排序的电影' },
+      unwatchedMovies: { name: '尚未观看', description: '尚未观看的电影' },
       favoriteCharacters: { name: '喜欢的角色', description: '已红心的角色' },
       favoritePersons: { name: '喜欢的人物', description: '已红心的人物' },
       favoriteCompanies: { name: '喜欢的公司', description: '已红心的公司' },

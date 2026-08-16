@@ -12,6 +12,9 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { GameSelect } from '@renderer/components/shared/game'
+import { AnimeSelect } from '@renderer/components/shared/anime'
+import { TvSelect } from '@renderer/components/shared/tv'
+import { MovieSelect } from '@renderer/components/shared/movie'
 import { CharacterSelect } from '@renderer/components/shared/character'
 import { PersonSelect } from '@renderer/components/shared/person'
 import { CompanySelect } from '@renderer/components/shared/company'
@@ -52,6 +55,24 @@ function handleRemove(idToRemove: string) {
   <div>
     <GameSelect
       v-if="props.targetEntity === 'game'"
+      v-model:selected-ids="selectedIds"
+      multiple
+      :show-selected-label="false"
+    />
+    <AnimeSelect
+      v-else-if="props.targetEntity === 'anime'"
+      v-model:selected-ids="selectedIds"
+      multiple
+      :show-selected-label="false"
+    />
+    <TvSelect
+      v-else-if="props.targetEntity === 'tv'"
+      v-model:selected-ids="selectedIds"
+      multiple
+      :show-selected-label="false"
+    />
+    <MovieSelect
+      v-else-if="props.targetEntity === 'movie'"
       v-model:selected-ids="selectedIds"
       multiple
       :show-selected-label="false"

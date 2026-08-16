@@ -6,8 +6,11 @@ import type {
   LibraryGame,
   LibraryGraphDiagnostic,
   LibraryGraphMediaNode,
+  LibraryGraphResultAction,
+  LibraryMovie,
   LibraryPerson,
-  LibraryTag
+  LibraryTag,
+  LibraryTv
 } from '@kisaki3/extension-api'
 import { createDiagnostic } from '../diagnostics'
 import { graphNodeIdentity } from '../identity'
@@ -24,13 +27,17 @@ import {
   buildCollectionPatch,
   buildCompanyPatch,
   buildGamePatch,
+  buildMoviePatch,
   buildPersonPatch,
   buildTagPatch,
+  buildTvPatch,
   planAnimeAction,
   planCollectionAction,
   planGameAction,
+  planMovieAction,
   planRankedEntityAction,
-  planTagAction
+  planTagAction,
+  planTvAction
 } from './patches'
 import { setEntityNodeResult } from './state'
 
@@ -126,10 +133,17 @@ function planMediaAction(
   node: LibraryGraphMediaNode,
   existing: unknown,
   conflictMode: NormalizedLibraryGraph['options']['conflictMode']
-): ReturnType<typeof planGameAction> {
-  return node.mediaType === 'anime'
-    ? planAnimeAction(existing as LibraryAnime | undefined, node.input, conflictMode)
-    : planGameAction(existing as LibraryGame | undefined, node.input, conflictMode)
+): LibraryGraphResultAction {
+  switch (node.mediaType) {
+    case 'anime':
+      return planAnimeAction(existing as LibraryAnime | undefined, node.input, conflictMode)
+    case 'tv':
+      return planTvAction(existing as LibraryTv | undefined, node.input, conflictMode)
+    case 'movie':
+      return planMovieAction(existing as LibraryMovie | undefined, node.input, conflictMode)
+    case 'game':
+      return planGameAction(existing as LibraryGame | undefined, node.input, conflictMode)
+  }
 }
 
 export function applyEntityNodes(
@@ -184,29 +198,56 @@ function writeMediaNode(
   conflictMode: NormalizedLibraryGraph['options']['conflictMode'],
   options: ExecuteLibraryGraphOptions
 ): { entityId: string; action: 'create' | 'update' | 'skip' } {
-  if (node.mediaType === 'anime') {
-    const existing = existingEntity as LibraryAnime | undefined
-    if (!existing) {
-      return { entityId: options.entities.createAnime(node.input).id, action: 'create' }
+  switch (node.mediaType) {
+    case 'anime': {
+      const existing = existingEntity as LibraryAnime | undefined
+      if (!existing) {
+        return { entityId: options.entities.createAnime(node.input).id, action: 'create' }
+      }
+
+      const patch = buildAnimePatch(existing, node.input, conflictMode)
+      if (Object.keys(patch).length === 0) {
+        return { entityId: existing.id, action: 'skip' }
+      }
+      return { entityId: options.entities.updateAnime(existing.id, patch).id, action: 'update' }
     }
+    case 'tv': {
+      const existing = existingEntity as LibraryTv | undefined
+      if (!existing) {
+        return { entityId: options.entities.createTv(node.input).id, action: 'create' }
+      }
 
-    const patch = buildAnimePatch(existing, node.input, conflictMode)
-    if (Object.keys(patch).length === 0) {
-      return { entityId: existing.id, action: 'skip' }
+      const patch = buildTvPatch(existing, node.input, conflictMode)
+      if (Object.keys(patch).length === 0) {
+        return { entityId: existing.id, action: 'skip' }
+      }
+      return { entityId: options.entities.updateTv(existing.id, patch).id, action: 'update' }
     }
-    return { entityId: options.entities.updateAnime(existing.id, patch).id, action: 'update' }
-  }
+    case 'movie': {
+      const existing = existingEntity as LibraryMovie | undefined
+      if (!existing) {
+        return { entityId: options.entities.createMovie(node.input).id, action: 'create' }
+      }
 
-  const existing = existingEntity as LibraryGame | undefined
-  if (!existing) {
-    return { entityId: options.entities.createGame(node.input).id, action: 'create' }
-  }
+      const patch = buildMoviePatch(existing, node.input, conflictMode)
+      if (Object.keys(patch).length === 0) {
+        return { entityId: existing.id, action: 'skip' }
+      }
+      return { entityId: options.entities.updateMovie(existing.id, patch).id, action: 'update' }
+    }
+    case 'game': {
+      const existing = existingEntity as LibraryGame | undefined
+      if (!existing) {
+        return { entityId: options.entities.createGame(node.input).id, action: 'create' }
+      }
 
-  const patch = buildGamePatch(existing, node.input, conflictMode)
-  if (Object.keys(patch).length === 0) {
-    return { entityId: existing.id, action: 'skip' }
+      const patch = buildGamePatch(existing, node.input, conflictMode)
+      if (Object.keys(patch).length === 0) {
+        return { entityId: existing.id, action: 'skip' }
+      }
+      return { entityId: options.entities.updateGame(existing.id, patch).id, action: 'update' }
+    }
   }
-  return { entityId: options.entities.updateGame(existing.id, patch).id, action: 'update' }
 }
 
 function applyCollectionNodes(

@@ -12,7 +12,7 @@ import { ref, computed, watch } from 'vue'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { Icon } from '@renderer/components/ui/icon'
-import type { MediaType } from '@shared/common'
+import { MEDIA_TYPES, type MediaType } from '@shared/common'
 import {
   MEDIA_RELATION_TYPES,
   MEDIA_RELATION_TYPE_INVERSE,
@@ -20,7 +20,7 @@ import {
   type MediaRelationType,
   type NewMediaRelation
 } from '@shared/db'
-import { db } from '@renderer/core/db'
+import { db, queryEntityNames } from '@renderer/core/db'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import {
   Dialog,
@@ -110,20 +110,19 @@ const {
       ...outRows.map((row) => ({ mediaType: row.toType, id: row.toId })),
       ...inRows.map((row) => ({ mediaType: row.fromType, id: row.fromId }))
     ]
-    const gameIds = targets.filter((target) => target.mediaType === 'game').map((t) => t.id)
-    const animeIds = targets.filter((target) => target.mediaType === 'anime').map((t) => t.id)
-    const [gameRows, animeRows] = await Promise.all([
-      gameIds.length
-        ? db.query.games.findMany({ where: (t) => inArray(t.id, gameIds) })
-        : Promise.resolve([]),
-      animeIds.length
-        ? db.query.animes.findMany({ where: (t) => inArray(t.id, animeIds) })
-        : Promise.resolve([])
-    ])
-    const nameByKey = new Map<string, string>([
-      ...gameRows.map((row) => [`game:${row.id}`, row.name] as const),
-      ...animeRows.map((row) => [`anime:${row.id}`, row.name] as const)
-    ])
+    // Names resolve one query per media type; NSFW targets keep their name here
+    // because the edge is already listed for editing.
+    const nameByKey = new Map<string, string>(
+      (
+        await Promise.all(
+          MEDIA_TYPES.map(async (mediaType) => {
+            const ids = targets.filter((target) => target.mediaType === mediaType).map((t) => t.id)
+            const rows = await queryEntityNames(mediaType, ids, true)
+            return rows.map((row) => [`${mediaType}:${row.id}`, row.name] as const)
+          })
+        )
+      ).flat()
+    )
 
     const loadedItems: RelationItem[] = [
       ...outRows.map((row): RelationItem => ({
@@ -175,15 +174,21 @@ watch(fetchedData, (data) => {
   inSnapshots.value = data ? data.snapshots : new Map()
 })
 
-const excludeGameIds = computed(() => [
-  ...(props.mediaType === 'game' ? [props.entityId] : []),
-  ...items.value.filter((item) => item.targetType === 'game').map((item) => item.targetId)
-])
-
-const excludeAnimeIds = computed(() => [
-  ...(props.mediaType === 'anime' ? [props.entityId] : []),
-  ...items.value.filter((item) => item.targetType === 'anime').map((item) => item.targetId)
-])
+// An entry cannot relate to itself, and a pair already listed cannot be added twice.
+const excludeIdsByType = computed<Record<MediaType, string[]>>(
+  () =>
+    Object.fromEntries(
+      MEDIA_TYPES.map((mediaType) => [
+        mediaType,
+        [
+          ...(props.mediaType === mediaType ? [props.entityId] : []),
+          ...items.value
+            .filter((item) => item.targetType === mediaType)
+            .map((item) => item.targetId)
+        ]
+      ])
+    ) as Record<MediaType, string[]>
+)
 
 // Out-edges keep list order and prefix each group; in-edges trail unordered.
 const groups = computed(() =>
@@ -430,8 +435,7 @@ const deleteDialogOpen = computed({
     v-model:open="itemFormOpen"
     :media-type="mediaType"
     :initial-data="itemFormInitialData"
-    :exclude-game-ids="excludeGameIds"
-    :exclude-anime-ids="excludeAnimeIds"
+    :exclude-ids-by-type="excludeIdsByType"
     @submit="handleItemFormSubmit"
   />
 

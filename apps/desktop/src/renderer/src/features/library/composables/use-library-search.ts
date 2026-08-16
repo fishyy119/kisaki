@@ -8,8 +8,8 @@
 import { ref, watch, computed, toValue, onUnmounted, type MaybeRefOrGetter } from 'vue'
 import { sql, and, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { games, animes, characters, persons, companies } from '@shared/db'
-import type { Game, Anime, Character, Person, Company } from '@shared/db'
+import { games, animes, tvs, movies, characters, persons, companies } from '@shared/db'
+import type { Game, Anime, Tv, Movie, Character, Person, Company } from '@shared/db'
 import { buildFtsMatchText, normalizeSearchText } from '@shared/search'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
@@ -24,6 +24,8 @@ const log = createLogger('Library')
 export interface LibrarySearchResult {
   games: Game[]
   animes: Anime[]
+  tvs: Tv[]
+  movies: Movie[]
   characters: Character[]
   persons: Person[]
   companies: Company[]
@@ -32,6 +34,8 @@ export interface LibrarySearchResult {
 const EMPTY_RESULT: LibrarySearchResult = {
   games: [],
   animes: [],
+  tvs: [],
+  movies: [],
   characters: [],
   persons: [],
   companies: []
@@ -96,69 +100,100 @@ export function useLibrarySearch(query: MaybeRefOrGetter<string>, debounceMs = 3
 
       try {
         // Parallel FTS queries for all entity types
-        const [gamesResult, animesResult, charactersResult, personsResult, companiesResult] =
-          await Promise.all([
-            // Games search
-            db
-              .select()
-              .from(games)
-              .where(
-                and(
-                  sql`${games}.rowid IN (SELECT rowid FROM games_fts WHERE games_fts MATCH ${searchTerm})`,
-                  showNsfw.value ? undefined : eq(games.isNsfw, false)
-                )
-              ),
-
-            // Animes search
-            db
-              .select()
-              .from(animes)
-              .where(
-                and(
-                  sql`${animes}.rowid IN (SELECT rowid FROM animes_fts WHERE animes_fts MATCH ${searchTerm})`,
-                  showNsfw.value ? undefined : eq(animes.isNsfw, false)
-                )
-              ),
-
-            // Characters search
-            db
-              .select()
-              .from(characters)
-              .where(
-                and(
-                  sql`${characters}.rowid IN (SELECT rowid FROM characters_fts WHERE characters_fts MATCH ${searchTerm})`,
-                  showNsfw.value ? undefined : eq(characters.isNsfw, false)
-                )
-              ),
-
-            // Persons search
-            db
-              .select()
-              .from(persons)
-              .where(
-                and(
-                  sql`${persons}.rowid IN (SELECT rowid FROM persons_fts WHERE persons_fts MATCH ${searchTerm})`,
-                  showNsfw.value ? undefined : eq(persons.isNsfw, false)
-                )
-              ),
-
-            // Companies search
-            db
-              .select()
-              .from(companies)
-              .where(
-                and(
-                  sql`${companies}.rowid IN (SELECT rowid FROM companies_fts WHERE companies_fts MATCH ${searchTerm})`,
-                  showNsfw.value ? undefined : eq(companies.isNsfw, false)
-                )
+        const [
+          gamesResult,
+          animesResult,
+          tvsResult,
+          moviesResult,
+          charactersResult,
+          personsResult,
+          companiesResult
+        ] = await Promise.all([
+          // Games search
+          db
+            .select()
+            .from(games)
+            .where(
+              and(
+                sql`${games}.rowid IN (SELECT rowid FROM games_fts WHERE games_fts MATCH ${searchTerm})`,
+                showNsfw.value ? undefined : eq(games.isNsfw, false)
               )
-          ])
+            ),
+
+          // Animes search
+          db
+            .select()
+            .from(animes)
+            .where(
+              and(
+                sql`${animes}.rowid IN (SELECT rowid FROM animes_fts WHERE animes_fts MATCH ${searchTerm})`,
+                showNsfw.value ? undefined : eq(animes.isNsfw, false)
+              )
+            ),
+
+          // Tv search
+          db
+            .select()
+            .from(tvs)
+            .where(
+              and(
+                sql`${tvs}.rowid IN (SELECT rowid FROM tvs_fts WHERE tvs_fts MATCH ${searchTerm})`,
+                showNsfw.value ? undefined : eq(tvs.isNsfw, false)
+              )
+            ),
+
+          // Movies search
+          db
+            .select()
+            .from(movies)
+            .where(
+              and(
+                sql`${movies}.rowid IN (SELECT rowid FROM movies_fts WHERE movies_fts MATCH ${searchTerm})`,
+                showNsfw.value ? undefined : eq(movies.isNsfw, false)
+              )
+            ),
+
+          // Characters search
+          db
+            .select()
+            .from(characters)
+            .where(
+              and(
+                sql`${characters}.rowid IN (SELECT rowid FROM characters_fts WHERE characters_fts MATCH ${searchTerm})`,
+                showNsfw.value ? undefined : eq(characters.isNsfw, false)
+              )
+            ),
+
+          // Persons search
+          db
+            .select()
+            .from(persons)
+            .where(
+              and(
+                sql`${persons}.rowid IN (SELECT rowid FROM persons_fts WHERE persons_fts MATCH ${searchTerm})`,
+                showNsfw.value ? undefined : eq(persons.isNsfw, false)
+              )
+            ),
+
+          // Companies search
+          db
+            .select()
+            .from(companies)
+            .where(
+              and(
+                sql`${companies}.rowid IN (SELECT rowid FROM companies_fts WHERE companies_fts MATCH ${searchTerm})`,
+                showNsfw.value ? undefined : eq(companies.isNsfw, false)
+              )
+            )
+        ])
 
         // Only update if this is still the latest search
         if (currentVersion === fetchVersion) {
           results.value = {
             games: gamesResult,
             animes: animesResult,
+            tvs: tvsResult,
+            movies: moviesResult,
             characters: charactersResult,
             persons: personsResult,
             companies: companiesResult
@@ -185,13 +220,8 @@ export function useLibrarySearch(query: MaybeRefOrGetter<string>, debounceMs = 3
     }
   })
 
-  const hasResults = computed(
-    () =>
-      results.value.games.length > 0 ||
-      results.value.animes.length > 0 ||
-      results.value.characters.length > 0 ||
-      results.value.persons.length > 0 ||
-      results.value.companies.length > 0
+  const hasResults = computed(() =>
+    Object.values(results.value).some((entities) => entities.length > 0)
   )
 
   return {

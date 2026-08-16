@@ -5,55 +5,42 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { Section, SectionScroll } from '@renderer/components/ui/section'
+import { Section } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
-import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
+import { GameDetailDialog } from '@renderer/components/shared/game'
+import { AnimeDetailDialog } from '@renderer/components/shared/anime'
+import { TvDetailDialog } from '@renderer/components/shared/tv'
+import { MovieDetailDialog } from '@renderer/components/shared/movie'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useCompany } from '@renderer/composables'
 import {
   EntityDescriptionFormDialog,
-  EntityLinksFormDialog,
   EntityExternalSitesFormDialog,
-  EntityTagsFormDialog
+  EntityTagsFormDialog,
+  EntityWorksSection
 } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
+import type { MediaType } from '@shared/common'
+import { useCompanyWorksBlocks } from '../works'
 
 const { m } = useI18n()
 
-const GAME_COMPANY_ROLE_LABELS = computed<Record<string, string>>(
-  () => m.value.library.roles.gameCompany
-)
-
-const ANIME_COMPANY_ROLE_LABELS = computed<Record<string, string>>(
-  () => m.value.library.roles.animeCompany
-)
-
-const { company, tags, games, animes } = useCompany()
+const { company, tags } = useCompany()
+const worksBlocks = useCompanyWorksBlocks()
 
 // Edit dialog states
 const descriptionDialogOpen = ref(false)
 const sitesDialogOpen = ref(false)
 const tagsDialogOpen = ref(false)
-const gamesDialogOpen = ref(false)
-const animesDialogOpen = ref(false)
 
 // Detail dialog states
-const openGameId = ref<string | null>(null)
-const openAnimeId = ref<string | null>(null)
+const openWork = ref<{ mediaType: MediaType; id: string } | null>(null)
 const openTagId = ref<string | null>(null)
 
-const gameDialogOpen = computed({
-  get: () => openGameId.value !== null,
+const workDialogOpen = computed({
+  get: () => openWork.value !== null,
   set: (value) => {
-    if (!value) openGameId.value = null
-  }
-})
-
-const animeDialogOpen = computed({
-  get: () => openAnimeId.value !== null,
-  set: (value) => {
-    if (!value) openAnimeId.value = null
+    if (!value) openWork.value = null
   }
 })
 
@@ -61,9 +48,6 @@ const hasExternalSites = computed(
   () => company.value?.externalSites && company.value.externalSites.length > 0
 )
 const hasTags = computed(() => tags.value && tags.value.length > 0)
-
-const gameLinks = computed(() => games.value.filter((link) => link.game))
-const animeLinks = computed(() => animes.value.filter((link) => link.anime))
 
 const tagDialogOpen = computed({
   get: () => openTagId.value !== null,
@@ -76,7 +60,7 @@ const tagDialogOpen = computed({
 <template>
   <template v-if="company">
     <div class="grid md:grid-cols-[3fr_1fr] grid-cols-1 gap-8">
-      <!-- Left column: Description, Related Games, Tags -->
+      <!-- Left column: Description, Works, Tags -->
       <div class="space-y-6 min-w-0">
         <Section
           :title="m.library.detail.sections.description"
@@ -88,43 +72,10 @@ const tagDialogOpen = computed({
           <MarkdownContent :content="company.description!" />
         </Section>
 
-        <SectionScroll
-          :title="m.library.fields.relatedGames"
-          editable
-          :items="gameLinks"
-          :get-key="(item) => item.id"
-          :empty-text="m.library.detail.empty.relatedGames"
-          @edit="gamesDialogOpen = true"
-        >
-          <template #item="{ item: link }">
-            <GameCard
-              :game="link.game!"
-              align="left"
-              size="sm"
-              :badge-label="link.role ? GAME_COMPANY_ROLE_LABELS[link.role] : undefined"
-              @click="openGameId = link.game!.id"
-            />
-          </template>
-        </SectionScroll>
-
-        <SectionScroll
-          :title="m.library.fields.relatedAnimes"
-          editable
-          :items="animeLinks"
-          :get-key="(item) => item.id"
-          :empty-text="m.library.detail.empty.relatedAnimes"
-          @edit="animesDialogOpen = true"
-        >
-          <template #item="{ item: link }">
-            <AnimeCard
-              :anime="link.anime!"
-              align="left"
-              size="sm"
-              :badge-label="link.role ? ANIME_COMPANY_ROLE_LABELS[link.role] : undefined"
-              @click="openAnimeId = link.anime!.id"
-            />
-          </template>
-        </SectionScroll>
+        <EntityWorksSection
+          :blocks="worksBlocks"
+          @open="(mediaType, id) => (openWork = { mediaType, id })"
+        />
 
         <Section
           :title="m.library.fields.tags"
@@ -198,30 +149,30 @@ const tagDialogOpen = computed({
       entity-type="company"
       :entity-id="company.id"
     />
-    <EntityLinksFormDialog
-      v-if="gamesDialogOpen"
-      v-model:open="gamesDialogOpen"
-      view="company-games"
-      :entity-id="company.id"
-    />
-    <EntityLinksFormDialog
-      v-if="animesDialogOpen"
-      v-model:open="animesDialogOpen"
-      view="company-animes"
-      :entity-id="company.id"
-    />
 
     <!-- Entity Dialogs -->
-    <GameDetailDialog
-      v-if="openGameId"
-      v-model:open="gameDialogOpen"
-      :game-id="openGameId"
-    />
-    <AnimeDetailDialog
-      v-if="openAnimeId"
-      v-model:open="animeDialogOpen"
-      :anime-id="openAnimeId"
-    />
+    <template v-if="openWork">
+      <GameDetailDialog
+        v-if="openWork.mediaType === 'game'"
+        v-model:open="workDialogOpen"
+        :game-id="openWork.id"
+      />
+      <AnimeDetailDialog
+        v-else-if="openWork.mediaType === 'anime'"
+        v-model:open="workDialogOpen"
+        :anime-id="openWork.id"
+      />
+      <TvDetailDialog
+        v-else-if="openWork.mediaType === 'tv'"
+        v-model:open="workDialogOpen"
+        :tv-id="openWork.id"
+      />
+      <MovieDetailDialog
+        v-else
+        v-model:open="workDialogOpen"
+        :movie-id="openWork.id"
+      />
+    </template>
 
     <!-- Tag Detail Dialog -->
     <TagDetailDialog

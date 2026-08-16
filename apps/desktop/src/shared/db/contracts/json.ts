@@ -126,6 +126,31 @@ export type AnimeScraperSlot =
   | 'backdrops'
   | 'logos'
 
+/** Seasons and episodes are separate slots: some providers publish only the former. */
+export type TvScraperSlot =
+  | 'info'
+  | 'tags'
+  | 'seasons'
+  | 'episodes'
+  | 'characters'
+  | 'persons'
+  | 'companies'
+  | 'relatedEntries'
+  | 'covers'
+  | 'backdrops'
+  | 'logos'
+
+export type MovieScraperSlot =
+  | 'info'
+  | 'tags'
+  | 'characters'
+  | 'persons'
+  | 'companies'
+  | 'relatedEntries'
+  | 'covers'
+  | 'backdrops'
+  | 'logos'
+
 export type PersonScraperSlot = 'info' | 'tags' | 'photos'
 
 export type CompanyScraperSlot = 'info' | 'tags' | 'logos'
@@ -141,7 +166,13 @@ export type CharacterScraperSlot = 'info' | 'tags' | 'persons' | 'photos'
  * - Slot config editing UI
  */
 export type ScraperSlot =
-  GameScraperSlot | AnimeScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
+  | GameScraperSlot
+  | AnimeScraperSlot
+  | TvScraperSlot
+  | MovieScraperSlot
+  | PersonScraperSlot
+  | CompanyScraperSlot
+  | CharacterScraperSlot
 
 /** Shared strategy for combining multiple provider results. */
 export type SlotStrategy = 'first' | 'enrich'
@@ -195,6 +226,32 @@ export type AnimeScraperSlotConfigs = {
   info: BasicSlotConfig
   tags: BasicSlotConfig
   episodes: BasicSlotConfig
+  characters: RelationCollectionSlotConfig
+  persons: RelationCollectionSlotConfig
+  companies: RelationCollectionSlotConfig
+  relatedEntries: BasicSlotConfig
+  covers: BasicSlotConfig
+  backdrops: BasicSlotConfig
+  logos: BasicSlotConfig
+}
+
+export type TvScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  seasons: BasicSlotConfig
+  episodes: BasicSlotConfig
+  characters: RelationCollectionSlotConfig
+  persons: RelationCollectionSlotConfig
+  companies: RelationCollectionSlotConfig
+  relatedEntries: BasicSlotConfig
+  covers: BasicSlotConfig
+  backdrops: BasicSlotConfig
+  logos: BasicSlotConfig
+}
+
+export type MovieScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
   characters: RelationCollectionSlotConfig
   persons: RelationCollectionSlotConfig
   companies: RelationCollectionSlotConfig

@@ -1,14 +1,19 @@
 /**
- * Anime release file recognition.
+ * Release file recognition for the playable media types.
  *
- * Turns the files inside one anime directory into episode candidates and
- * extras. Recognition is filename-only and deliberately conservative: an
- * unreadable filename becomes an unnumbered candidate the caller can report,
- * never a wrong episode number.
+ * Turns the files inside one entry's directory into episode, version, and
+ * extra candidates. Recognition is filename-only and deliberately
+ * conservative: an unreadable filename becomes an unnumbered candidate the
+ * caller can report, never a wrong episode number.
+ *
+ * The three media types share the container list and the directory
+ * conventions but not their vocabulary: anime names its extras after the
+ * disc-release tradition (NCOP, PV), while tv and movie use the
+ * trailer/featurette vocabulary their ecosystems publish.
  */
 
 import path from 'node:path'
-import type { AnimeEpisodeType, AnimeExtraType } from '@shared/db'
+import type { AnimeEpisodeType, AnimeExtraType, MovieExtraType, TvExtraType } from '@shared/db'
 
 /** Containers mpv plays and ffprobe understands. */
 const VIDEO_EXTENSIONS = new Set([
@@ -239,5 +244,236 @@ export function classifyReleaseFile(
       number === undefined
         ? { path: filePath, fileName, name, type: 'regular' }
         : { path: filePath, fileName, name, type: 'regular', number }
+  }
+}
+
+// =============================================================================
+// TV and movie recognition
+// =============================================================================
+
+/**
+ * Extra vocabulary tv and movie ecosystems publish. Both enums list the same
+ * values, so one pattern table classifies for either.
+ */
+const LIVE_ACTION_EXTRA_TYPE_PATTERNS: ReadonlyArray<{
+  type: TvExtraType & MovieExtraType
+  pattern: RegExp
+}> = [
+  { type: 'teaser', pattern: /(?:\bteaser\b|ティザー)/i },
+  { type: 'trailer', pattern: /(?:\btrailer\b|预告|預告|予告)/i },
+  {
+    type: 'behindTheScenes',
+    pattern:
+      /(?:\b(?:behind[\s._-]?the[\s._-]?scenes|bts|making[\s._-]?of)\b|幕后|幕後|メイキング)/i
+  },
+  { type: 'featurette', pattern: /(?:\bfeaturette\b|花絮)/i },
+  {
+    type: 'deletedScene',
+    pattern: /(?:\bdeleted[\s._-]?scenes?\b|删减|刪減)/i
+  },
+  { type: 'interview', pattern: /(?:\binterview\b|インタビュー|访谈|訪談)/i }
+]
+
+/** Directory names that hold the specials of a show, i.e. its season 0. */
+const SPECIALS_DIRECTORY_NAMES = new Set([
+  'specials',
+  'special',
+  'season 0',
+  'season 00',
+  's0',
+  's00',
+  '特别篇',
+  '特別篇',
+  'sp'
+])
+
+/** Season folder names every layout in the wild uses. */
+const SEASON_DIRECTORY_PATTERNS: ReadonlyArray<RegExp> = [
+  /^\s*season\s*[-_. ]?(\d{1,3})\s*$/i,
+  /^\s*s(\d{1,3})\s*$/i,
+  /^\s*第\s*(\d{1,3})\s*季\s*$/
+]
+
+/** Season and episode encoded in the filename, in the forms sources publish. */
+const SEASON_EPISODE_PATTERNS: ReadonlyArray<RegExp> = [
+  /\bs(\d{1,3})[\s._-]?e(\d{1,4})\b/i,
+  /\b(\d{1,3})x(\d{1,3})\b/,
+  /第\s*(\d{1,3})\s*季.*?第\s*(\d{1,4})\s*[集話话]/
+]
+
+/** Editions that distinguish one release of a film from another. */
+const MOVIE_EDITION_PATTERNS: ReadonlyArray<{ edition: string; pattern: RegExp }> = [
+  { edition: "Director's Cut", pattern: /\b(?:director'?s?[\s._-]?cut|dc)\b/i },
+  { edition: 'Extended', pattern: /\b(?:extended(?:[\s._-]?(?:cut|edition))?)\b/i },
+  { edition: 'Theatrical', pattern: /\b(?:theatrical(?:[\s._-]?cut)?)\b/i },
+  { edition: 'Unrated', pattern: /\bunrated\b/i },
+  { edition: 'Remastered', pattern: /\b(?:remastered|restored)\b/i },
+  { edition: 'IMAX', pattern: /\bimax\b/i }
+]
+
+export interface TvEpisodeCandidate {
+  path: string
+  fileName: string
+  /** Display title derived from the filename, without release tags or extension. */
+  name: string
+  /** Absent when neither the filename nor the directory states a season. */
+  seasonNumber?: number
+  /** Absent when the filename states no trustworthy episode number. */
+  number?: number
+}
+
+export interface TvExtraCandidate {
+  path: string
+  name: string
+  type: TvExtraType
+}
+
+/** Classification of one video file under a show directory. */
+export type TvReleaseFileClassification =
+  { kind: 'episode'; episode: TvEpisodeCandidate } | { kind: 'extra'; extra: TvExtraCandidate }
+
+export interface MovieVersionCandidate {
+  path: string
+  /** Display title derived from the filename, without release tags or extension. */
+  name: string
+  /** Release this file carries, when the filename names one. */
+  edition?: string
+}
+
+export interface MovieExtraCandidate {
+  path: string
+  name: string
+  type: MovieExtraType
+}
+
+/** Classification of one video file under a movie directory. */
+export type MovieReleaseFileClassification =
+  | { kind: 'version'; version: MovieVersionCandidate }
+  | { kind: 'extra'; extra: MovieExtraCandidate }
+
+function isSpecialsDirectoryName(name: string): boolean {
+  return SPECIALS_DIRECTORY_NAMES.has(name.trim().toLowerCase())
+}
+
+/** Season number a directory name states, if it states one. */
+export function readSeasonDirectoryNumber(name: string): number | undefined {
+  if (isSpecialsDirectoryName(name)) return 0
+
+  for (const pattern of SEASON_DIRECTORY_PATTERNS) {
+    const match = pattern.exec(name)
+    if (match) return Number.parseInt(match[1], 10)
+  }
+
+  return undefined
+}
+
+function readLiveActionExtraType(fileName: string): (TvExtraType & MovieExtraType) | undefined {
+  for (const { type, pattern } of LIVE_ACTION_EXTRA_TYPE_PATTERNS) {
+    if (pattern.test(fileName)) {
+      return type
+    }
+  }
+  return undefined
+}
+
+function readSeasonEpisode(cleaned: string): { season: number; episode: number } | undefined {
+  for (const pattern of SEASON_EPISODE_PATTERNS) {
+    const match = pattern.exec(cleaned)
+    if (!match) continue
+
+    const season = Number.parseInt(match[1], 10)
+    const episode = Number.parseInt(match[2], 10)
+    if (Number.isFinite(season) && Number.isFinite(episode)) {
+      return { season, episode }
+    }
+  }
+
+  return undefined
+}
+
+/**
+ * Classify one video file found under a show directory.
+ *
+ * `seasonHint` carries what the directory tree stated, which fills in for the
+ * flat layouts whose filenames carry the episode number alone. An `SxxEyy` in
+ * the filename outranks it: the file names its own place in the show.
+ */
+export function classifyTvReleaseFile(
+  filePath: string,
+  inExtraDirectory: boolean,
+  seasonHint: number | undefined
+): TvReleaseFileClassification {
+  const fileName = path.basename(filePath)
+  const cleaned = stripNoise(fileName)
+  const extraType = readLiveActionExtraType(cleaned)
+  const name = cleaned || path.basename(fileName, path.extname(fileName))
+
+  if (inExtraDirectory || extraType) {
+    return {
+      kind: 'extra',
+      extra: { path: filePath, name, type: extraType ?? 'other' }
+    }
+  }
+
+  const stated = readSeasonEpisode(cleaned)
+  if (stated) {
+    return {
+      kind: 'episode',
+      episode: {
+        path: filePath,
+        fileName,
+        name,
+        seasonNumber: stated.season,
+        number: stated.episode
+      }
+    }
+  }
+
+  const number = readEpisodeNumber(cleaned)
+  return {
+    kind: 'episode',
+    episode: {
+      path: filePath,
+      fileName,
+      name,
+      ...(seasonHint !== undefined && { seasonNumber: seasonHint }),
+      ...(number !== undefined && { number })
+    }
+  }
+}
+
+function readMovieEdition(cleaned: string): string | undefined {
+  for (const { edition, pattern } of MOVIE_EDITION_PATTERNS) {
+    if (pattern.test(cleaned)) return edition
+  }
+  return undefined
+}
+
+/**
+ * Classify one video file found under a movie directory.
+ *
+ * A film has no episode grain, so every non-extra video is a release of the
+ * same feature; the filename only decides which release it is.
+ */
+export function classifyMovieReleaseFile(
+  filePath: string,
+  inExtraDirectory: boolean
+): MovieReleaseFileClassification {
+  const fileName = path.basename(filePath)
+  const cleaned = stripNoise(fileName)
+  const extraType = readLiveActionExtraType(cleaned)
+  const name = cleaned || path.basename(fileName, path.extname(fileName))
+
+  if (inExtraDirectory || extraType) {
+    return {
+      kind: 'extra',
+      extra: { path: filePath, name, type: extraType ?? 'other' }
+    }
+  }
+
+  const edition = readMovieEdition(cleaned)
+  return {
+    kind: 'version',
+    version: { path: filePath, name, ...(edition !== undefined && { edition }) }
   }
 }

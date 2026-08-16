@@ -34,6 +34,8 @@ type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
 type LibraryEntityPrefix =
   | 'capabilities.library.games'
   | 'capabilities.library.animes'
+  | 'capabilities.library.tvs'
+  | 'capabilities.library.movies'
   | 'capabilities.library.characters'
   | 'capabilities.library.persons'
   | 'capabilities.library.companies'
@@ -43,9 +45,14 @@ type LibraryEntityPrefix =
 /** Anime owns an `episodes` sub-namespace that the generic CRUD facade does not build. */
 type LibraryAnimeEntityFacade = Omit<LibraryCapability['animes'], 'episodes'>
 
+/** Tv owns `seasons` and `episodes` sub-namespaces beyond the CRUD facade. */
+type LibraryTvEntityFacade = Omit<LibraryCapability['tvs'], 'seasons' | 'episodes'>
+
 type LibraryEntityNamespaceFacade =
   | LibraryCapability['games']
   | LibraryAnimeEntityFacade
+  | LibraryTvEntityFacade
+  | LibraryCapability['movies']
   | LibraryCapability['characters']
   | LibraryCapability['persons']
   | LibraryCapability['companies']
@@ -301,6 +308,37 @@ export function createKisakiApi(
             ).episode
         }
       },
+      tvs: {
+        ...createEntityNamespace<LibraryTvEntityFacade>({
+          get: 'capabilities.library.tvs.get',
+          list: 'capabilities.library.tvs.list',
+          create: 'capabilities.library.tvs.create',
+          update: 'capabilities.library.tvs.update',
+          remove: 'capabilities.library.tvs.remove'
+        }),
+        seasons: {
+          list: async (query) =>
+            (await requestMain('capabilities.library.tvs.seasons.list', { query })).items
+        },
+        episodes: {
+          list: async (query) =>
+            (await requestMain('capabilities.library.tvs.episodes.list', { query })).items,
+          patchWatchState: async (episodeId, patch) =>
+            (
+              await requestMain('capabilities.library.tvs.episodes.patchWatchState', {
+                episodeId,
+                patch
+              })
+            ).episode
+        }
+      },
+      movies: createEntityNamespace<LibraryCapability['movies']>({
+        get: 'capabilities.library.movies.get',
+        list: 'capabilities.library.movies.list',
+        create: 'capabilities.library.movies.create',
+        update: 'capabilities.library.movies.update',
+        remove: 'capabilities.library.movies.remove'
+      }),
       characters: createEntityNamespace<LibraryCapability['characters']>({
         get: 'capabilities.library.characters.get',
         list: 'capabilities.library.characters.list',
@@ -539,6 +577,46 @@ export function createKisakiApi(
           startFromScraper: async (profileId, lookup, options) =>
             (
               await requestMain('capabilities.ingest.anime.add.startFromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).start
+        }
+      },
+      tv: {
+        add: {
+          fromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.tv.add.fromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).result,
+          startFromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.tv.add.startFromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).start
+        }
+      },
+      movie: {
+        add: {
+          fromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.movie.add.fromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).result,
+          startFromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.movie.add.startFromScraper', {
                 profileId,
                 lookup,
                 options

@@ -1,16 +1,19 @@
 /**
- * TMDB entry identity grammar.
+ * TMDB entry identity grammar, shared by every media type scraped from TMDB.
  *
- * A Kisaki anime entry is one flat episode list, while TMDB models a show as a
- * series with seasons plus any number of alternate episode groups. The entry's
- * external id therefore names *which slice of TMDB* the entry mirrors, so a
- * re-scrape reproduces the exact same ordering and switching orderings is just
- * a different id on the same entry.
+ * An external id names *which slice of TMDB* an entry mirrors, so a re-scrape
+ * reproduces the exact same ordering and switching orderings is just a
+ * different id on the same entry.
  *
  *   movie:{movieId}                        one film
- *   tv:{seriesId}                          the whole show, seasons flattened
- *   tv:{seriesId}:s{seasonNumber}          one season (the default grain)
+ *   tv:{seriesId}                          the whole show
+ *   tv:{seriesId}:s{seasonNumber}          one season
  *   tv:{seriesId}:eg:{setId}:{groupId}     one group of an episode group
+ *
+ * A tv entry owns its seasons and episodes, so it is always the whole show, and
+ * a movie entry is always one film. The sliced forms exist for anime entries,
+ * which are one flat episode list against a source that models a show as a
+ * series with seasons plus any number of alternate episode groups.
  *
  * Everything here is a pure function over strings: no library or TMDB API
  * concepts leak in, so the grammar survives changes to either side.

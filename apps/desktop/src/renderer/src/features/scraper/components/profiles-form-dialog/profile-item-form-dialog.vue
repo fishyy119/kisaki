@@ -70,14 +70,6 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-const MEDIA_TYPE_LABELS = computed<Record<ContentEntityType, string>>(() => ({
-  game: m.value.library.entities.game,
-  anime: m.value.library.entities.anime,
-  character: m.value.library.entities.character,
-  person: m.value.library.entities.person,
-  company: m.value.library.entities.company
-}))
-
 const SLOT_LABELS = computed<Record<ScraperSlot, string>>(() => m.value.scraper.profiles.slots)
 
 const STRATEGY_LABELS = computed<Record<SlotStrategy, string>>(() => ({
@@ -265,11 +257,13 @@ async function handleCopyProfileId() {
                     <SelectValue :placeholder="m.scraper.profiles.selectMediaType" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="game">{{ MEDIA_TYPE_LABELS.game }}</SelectItem>
-                    <SelectItem value="anime">{{ MEDIA_TYPE_LABELS.anime }}</SelectItem>
-                    <SelectItem value="character">{{ MEDIA_TYPE_LABELS.character }}</SelectItem>
-                    <SelectItem value="person">{{ MEDIA_TYPE_LABELS.person }}</SelectItem>
-                    <SelectItem value="company">{{ MEDIA_TYPE_LABELS.company }}</SelectItem>
+                    <SelectItem
+                      v-for="mediaType in CONTENT_ENTITY_TYPES"
+                      :key="mediaType"
+                      :value="mediaType"
+                    >
+                      {{ m.library.entities[mediaType] }}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </FieldContent>

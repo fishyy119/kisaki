@@ -14,13 +14,21 @@ import {
   animes,
   gameSessions,
   games,
+  movieSessions,
+  movies,
+  tvSessions,
+  tvs,
   type AnimeStatus,
-  type GameStatus
+  type GameStatus,
+  type MovieStatus,
+  type TvStatus
 } from '@shared/db'
 
 export const MEDIA_TABLES = {
   game: games,
-  anime: animes
+  anime: animes,
+  tv: tvs,
+  movie: movies
 } as const
 
 /** Status writers keyed per media type; the option list guarantees the value. */
@@ -39,6 +47,18 @@ export const MEDIA_STATUS_WRITERS: Record<
       .update(animes)
       .set({ status: status as AnimeStatus })
       .where(eq(animes.id, entityId))
+  },
+  tv: async (entityId, status) => {
+    await db
+      .update(tvs)
+      .set({ status: status as TvStatus })
+      .where(eq(tvs.id, entityId))
+  },
+  movie: async (entityId, status) => {
+    await db
+      .update(movies)
+      .set({ status: status as MovieStatus })
+      .where(eq(movies.id, entityId))
   }
 }
 
@@ -97,6 +117,48 @@ export const MEDIA_SESSION_STORES: Record<MediaType, MediaSessionStore> = {
     },
     remove: async (id) => {
       await db.delete(animeSessions).where(eq(animeSessions.id, id))
+    }
+  },
+  tv: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: tvSessions.id,
+          startedAt: tvSessions.startedAt,
+          endedAt: tvSessions.endedAt
+        })
+        .from(tvSessions)
+        .where(eq(tvSessions.tvId, anchorId))
+        .orderBy(desc(tvSessions.startedAt)),
+    insert: async (anchorId, data) => {
+      await db.insert(tvSessions).values({ tvId: anchorId, ...data })
+    },
+    update: async (id, data) => {
+      await db.update(tvSessions).set(data).where(eq(tvSessions.id, id))
+    },
+    remove: async (id) => {
+      await db.delete(tvSessions).where(eq(tvSessions.id, id))
+    }
+  },
+  movie: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: movieSessions.id,
+          startedAt: movieSessions.startedAt,
+          endedAt: movieSessions.endedAt
+        })
+        .from(movieSessions)
+        .where(eq(movieSessions.movieId, anchorId))
+        .orderBy(desc(movieSessions.startedAt)),
+    insert: async (anchorId, data) => {
+      await db.insert(movieSessions).values({ movieId: anchorId, ...data })
+    },
+    update: async (id, data) => {
+      await db.update(movieSessions).set(data).where(eq(movieSessions.id, id))
+    },
+    remove: async (id) => {
+      await db.delete(movieSessions).where(eq(movieSessions.id, id))
     }
   }
 }

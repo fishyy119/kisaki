@@ -16,18 +16,24 @@ import type { IngestWarning } from '@shared/ingest'
 import type {
   AnimeUpdateRelationSurface,
   CharacterUpdateRelationSurface,
-  GameUpdateRelationSurface
+  GameUpdateRelationSurface,
+  MovieUpdateRelationSurface,
+  TvUpdateRelationSurface
 } from '@shared/ingest/update'
 import type {
   ScrapedAnimeRelationFacts,
   ScrapedCharacterRelationFacts,
-  ScrapedGameRelationFacts
+  ScrapedGameRelationFacts,
+  ScrapedMovieRelationFacts,
+  ScrapedTvRelationFacts
 } from '@shared/scraper'
 import type {
   AnimeLinkKind,
   CharacterLinkKind,
   CollectionUpdateMode,
   GameLinkKind,
+  MovieLinkKind,
+  TvLinkKind,
   UpdateIncomingRelationAvailability
 } from './types'
 
@@ -128,6 +134,94 @@ export const ANIME_LINK_TOPOLOGY: Record<
   }
 }
 
+/** Fact sources a tv scrape can answer for, named after the slots that fill them. */
+type TvRelationFactSource = 'persons' | 'companies' | 'characters' | 'cast'
+
+const TV_FACT_SOURCE_ANSWERED: Record<
+  TvRelationFactSource,
+  (facts: ScrapedTvRelationFacts) => boolean
+> = {
+  persons: (facts) => facts.tvPerson !== undefined,
+  companies: (facts) => facts.tvCompany !== undefined,
+  characters: (facts) => facts.tvCharacter !== undefined,
+  // Character-person facts arrive either as a top-level list or nested in every
+  // character, so one definitive channel answers for the whole set.
+  cast: (facts) =>
+    facts.characterPerson !== undefined ||
+    (facts.tvCharacter !== undefined &&
+      facts.tvCharacter.every((fact) => fact.persons !== undefined))
+}
+
+export const TV_LINK_TOPOLOGY: Record<
+  TvLinkKind,
+  LinkTopologySpec<TvUpdateRelationSurface, TvRelationFactSource>
+> = {
+  tvPerson: {
+    surface: 'person',
+    label: 'tv person links',
+    sources: ['persons', 'cast']
+  },
+  tvCompany: {
+    surface: 'company',
+    label: 'tv company links',
+    sources: ['companies']
+  },
+  tvCharacter: {
+    surface: 'character',
+    label: 'tv character links',
+    sources: ['characters']
+  },
+  characterPerson: {
+    surface: 'characterPerson',
+    label: 'character person links',
+    sources: ['cast']
+  }
+}
+
+/** Fact sources a movie scrape can answer for, named after the slots that fill them. */
+type MovieRelationFactSource = 'persons' | 'companies' | 'characters' | 'cast'
+
+const MOVIE_FACT_SOURCE_ANSWERED: Record<
+  MovieRelationFactSource,
+  (facts: ScrapedMovieRelationFacts) => boolean
+> = {
+  persons: (facts) => facts.moviePerson !== undefined,
+  companies: (facts) => facts.movieCompany !== undefined,
+  characters: (facts) => facts.movieCharacter !== undefined,
+  // Character-person facts arrive either as a top-level list or nested in every
+  // character, so one definitive channel answers for the whole set.
+  cast: (facts) =>
+    facts.characterPerson !== undefined ||
+    (facts.movieCharacter !== undefined &&
+      facts.movieCharacter.every((fact) => fact.persons !== undefined))
+}
+
+export const MOVIE_LINK_TOPOLOGY: Record<
+  MovieLinkKind,
+  LinkTopologySpec<MovieUpdateRelationSurface, MovieRelationFactSource>
+> = {
+  moviePerson: {
+    surface: 'person',
+    label: 'movie person links',
+    sources: ['persons', 'cast']
+  },
+  movieCompany: {
+    surface: 'company',
+    label: 'movie company links',
+    sources: ['companies']
+  },
+  movieCharacter: {
+    surface: 'character',
+    label: 'movie character links',
+    sources: ['characters']
+  },
+  characterPerson: {
+    surface: 'characterPerson',
+    label: 'character person links',
+    sources: ['cast']
+  }
+}
+
 type CharacterRelationFactSource = 'cast'
 
 const CHARACTER_FACT_SOURCE_ANSWERED: Record<
@@ -174,6 +268,14 @@ export function buildCompleteGameLinks(facts: ScrapedGameRelationFacts): Set<Gam
 
 export function buildCompleteAnimeLinks(facts: ScrapedAnimeRelationFacts): Set<AnimeLinkKind> {
   return collectCompleteLinks(ANIME_LINK_TOPOLOGY, ANIME_FACT_SOURCE_ANSWERED, facts)
+}
+
+export function buildCompleteTvLinks(facts: ScrapedTvRelationFacts): Set<TvLinkKind> {
+  return collectCompleteLinks(TV_LINK_TOPOLOGY, TV_FACT_SOURCE_ANSWERED, facts)
+}
+
+export function buildCompleteMovieLinks(facts: ScrapedMovieRelationFacts): Set<MovieLinkKind> {
+  return collectCompleteLinks(MOVIE_LINK_TOPOLOGY, MOVIE_FACT_SOURCE_ANSWERED, facts)
 }
 
 export function buildCompleteCharacterLinks(

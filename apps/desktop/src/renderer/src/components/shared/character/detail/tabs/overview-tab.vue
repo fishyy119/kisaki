@@ -6,10 +6,12 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
-import { Section, SectionScroll } from '@renderer/components/ui/section'
+import { Section } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
-import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
+import { GameDetailDialog } from '@renderer/components/shared/game'
+import { AnimeDetailDialog } from '@renderer/components/shared/anime'
+import { TvDetailDialog } from '@renderer/components/shared/tv'
+import { MovieDetailDialog } from '@renderer/components/shared/movie'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useI18n } from '@renderer/composables'
@@ -17,9 +19,12 @@ import {
   EntityDescriptionFormDialog,
   EntityTagsFormDialog,
   EntityExternalSitesFormDialog,
-  EntityLinksFormDialog
+  EntityLinksFormDialog,
+  EntityWorksSection
 } from '@renderer/components/shared/entity'
+import type { MediaType } from '@shared/common'
 import { CHARACTER_PERSON_ROLE_VALUES } from '@shared/db'
+import { useCharacterWorksBlocks } from '../works'
 
 const { m } = useI18n()
 
@@ -27,21 +32,19 @@ const { m } = useI18n()
 // State
 // =============================================================================
 
-const { character, tags, persons, games, animes } = useCharacter()
+const { character, tags, persons } = useCharacter()
+const worksBlocks = useCharacterWorksBlocks()
 
 // Edit dialog states
 const editDialogs = ref({
   description: false,
   persons: false,
   sites: false,
-  tags: false,
-  games: false,
-  animes: false
+  tags: false
 })
 
 // Entity dialog states
-const openGameId = ref<string | null>(null)
-const openAnimeId = ref<string | null>(null)
+const openWork = ref<{ mediaType: MediaType; id: string } | null>(null)
 const openPersonId = ref<string | null>(null)
 const openTagId = ref<string | null>(null)
 
@@ -75,9 +78,6 @@ const hasExternalSites = computed(
 const hasPersons = computed(() => persons.value.length > 0)
 const hasTags = computed(() => tags.value && tags.value.length > 0)
 
-const gameLinks = computed(() => games.value.filter((link) => link.game))
-const animeLinks = computed(() => animes.value.filter((link) => link.anime))
-
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -86,29 +86,10 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
   editDialogs.value[dialog] = true
 }
 
-function getRoleLabel(type: string | null | undefined) {
-  if (!type) return undefined
-  const labels: Record<string, string> = m.value.library.roles.gameCharacter
-  return labels[type]
-}
-
-function getAnimeRoleLabel(type: string | null | undefined) {
-  if (!type) return undefined
-  const labels: Record<string, string> = m.value.library.roles.animeCharacter
-  return labels[type]
-}
-
-const gameDialogOpen = computed({
-  get: () => openGameId.value !== null,
+const workDialogOpen = computed({
+  get: () => openWork.value !== null,
   set: (value) => {
-    if (!value) openGameId.value = null
-  }
-})
-
-const animeDialogOpen = computed({
-  get: () => openAnimeId.value !== null,
-  set: (value) => {
-    if (!value) openAnimeId.value = null
+    if (!value) openWork.value = null
   }
 })
 
@@ -130,7 +111,7 @@ const tagDialogOpen = computed({
 <template>
   <template v-if="character">
     <div class="grid md:grid-cols-[3fr_1fr] grid-cols-1 gap-8">
-      <!-- Left column: Description, Related Games, Tags -->
+      <!-- Left column: Description, Works, Tags -->
       <div class="space-y-6 min-w-0">
         <Section
           :title="m.library.detail.sections.description"
@@ -142,43 +123,10 @@ const tagDialogOpen = computed({
           <MarkdownContent :content="character.description!" />
         </Section>
 
-        <SectionScroll
-          :title="m.library.fields.relatedGames"
-          editable
-          :items="gameLinks"
-          :get-key="(item) => item.id"
-          :empty-text="m.library.detail.empty.relatedGames"
-          @edit="openEditDialog('games')"
-        >
-          <template #item="{ item: link }">
-            <GameCard
-              :game="link.game!"
-              align="left"
-              size="sm"
-              :badge-label="getRoleLabel(link.role)"
-              @click="openGameId = link.game!.id"
-            />
-          </template>
-        </SectionScroll>
-
-        <SectionScroll
-          :title="m.library.fields.relatedAnimes"
-          editable
-          :items="animeLinks"
-          :get-key="(item) => item.id"
-          :empty-text="m.library.detail.empty.relatedAnimes"
-          @edit="openEditDialog('animes')"
-        >
-          <template #item="{ item: link }">
-            <AnimeCard
-              :anime="link.anime!"
-              align="left"
-              size="sm"
-              :badge-label="getAnimeRoleLabel(link.role)"
-              @click="openAnimeId = link.anime!.id"
-            />
-          </template>
-        </SectionScroll>
+        <EntityWorksSection
+          :blocks="worksBlocks"
+          @open="(mediaType, id) => (openWork = { mediaType, id })"
+        />
 
         <Section
           :title="m.library.fields.tags"
@@ -301,30 +249,30 @@ const tagDialogOpen = computed({
       entity-type="character"
       :entity-id="character.id"
     />
-    <EntityLinksFormDialog
-      v-if="editDialogs.games"
-      v-model:open="editDialogs.games"
-      view="character-games"
-      :entity-id="character.id"
-    />
-    <EntityLinksFormDialog
-      v-if="editDialogs.animes"
-      v-model:open="editDialogs.animes"
-      view="character-animes"
-      :entity-id="character.id"
-    />
 
     <!-- Entity Dialogs -->
-    <GameDetailDialog
-      v-if="openGameId"
-      v-model:open="gameDialogOpen"
-      :game-id="openGameId"
-    />
-    <AnimeDetailDialog
-      v-if="openAnimeId"
-      v-model:open="animeDialogOpen"
-      :anime-id="openAnimeId"
-    />
+    <template v-if="openWork">
+      <GameDetailDialog
+        v-if="openWork.mediaType === 'game'"
+        v-model:open="workDialogOpen"
+        :game-id="openWork.id"
+      />
+      <AnimeDetailDialog
+        v-else-if="openWork.mediaType === 'anime'"
+        v-model:open="workDialogOpen"
+        :anime-id="openWork.id"
+      />
+      <TvDetailDialog
+        v-else-if="openWork.mediaType === 'tv'"
+        v-model:open="workDialogOpen"
+        :tv-id="openWork.id"
+      />
+      <MovieDetailDialog
+        v-else
+        v-model:open="workDialogOpen"
+        :movie-id="openWork.id"
+      />
+    </template>
     <PersonDetailDialog
       v-if="openPersonId"
       v-model:open="personDialogOpen"

@@ -8,7 +8,7 @@
 -->
 <script setup lang="ts">
 import type { ScraperProfile } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
@@ -60,6 +60,8 @@ const { data, isLoading, refetch } = useAsyncData(
       profilesData,
       gameProvidersResult,
       animeProvidersResult,
+      tvProvidersResult,
+      movieProvidersResult,
       personProvidersResult,
       companyProvidersResult,
       characterProvidersResult
@@ -67,6 +69,8 @@ const { data, isLoading, refetch } = useAsyncData(
       db.select().from(scraperProfiles).orderBy(scraperProfiles.order),
       ipcManager.invoke('scraper:list-game-providers'),
       ipcManager.invoke('scraper:list-anime-providers'),
+      ipcManager.invoke('scraper:list-tv-providers'),
+      ipcManager.invoke('scraper:list-movie-providers'),
       ipcManager.invoke('scraper:list-person-providers'),
       ipcManager.invoke('scraper:list-company-providers'),
       ipcManager.invoke('scraper:list-character-providers')
@@ -76,6 +80,8 @@ const { data, isLoading, refetch } = useAsyncData(
       providersByType: {
         game: gameProvidersResult.success ? gameProvidersResult.data : [],
         anime: animeProvidersResult.success ? animeProvidersResult.data : [],
+        tv: tvProvidersResult.success ? tvProvidersResult.data : [],
+        movie: movieProvidersResult.success ? movieProvidersResult.data : [],
         person: personProvidersResult.success ? personProvidersResult.data : [],
         company: companyProvidersResult.success ? companyProvidersResult.data : [],
         character: characterProvidersResult.success ? characterProvidersResult.data : []
@@ -106,6 +112,8 @@ const providersByType = computed<ScraperProvidersByType>(() => {
     data.value?.providersByType ?? {
       game: [],
       anime: [],
+      tv: [],
+      movie: [],
       person: [],
       company: [],
       character: []
@@ -125,26 +133,14 @@ watch(
   { immediate: true }
 )
 
-// Group profiles by media type
-const groupedProfiles = computed(() => {
-  return profiles.value.reduce(
-    (acc, profile) => {
-      const type = profile.mediaType || 'game'
-      if (!acc[type]) acc[type] = []
-      acc[type].push(profile)
-      return acc
-    },
-    {} as Record<string, ScraperProfile[]>
-  )
-})
-
-const mediaTypeLabels = computed<Record<string, string>>(() => ({
-  game: m.value.library.entities.game,
-  anime: m.value.library.entities.anime,
-  character: m.value.library.entities.character,
-  person: m.value.library.entities.person,
-  company: m.value.library.entities.company
-}))
+// Profiles grouped into media-type sections, in registry order; empty types are dropped.
+const profileGroups = computed(() =>
+  CONTENT_ENTITY_TYPES.map((mediaType) => ({
+    mediaType,
+    label: m.value.library.entities[mediaType],
+    profiles: profiles.value.filter((profile) => profile.mediaType === mediaType)
+  })).filter((group) => group.profiles.length > 0)
+)
 
 // Computed for delete dialog
 const deleteDialogOpen = computed({
@@ -299,7 +295,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
     profile,
     providerDisplay: getScraperProviderDisplay(
       profile.searchProviderId,
-      providersByType.value[profile.mediaType || 'game'] ?? [],
+      providersByType.value[profile.mediaType],
       ['search']
     )
   }))
@@ -336,15 +332,15 @@ function withProviderDisplay(list: ScraperProfile[]) {
           >
             <!-- Group profiles by media type -->
             <div
-              v-for="[type, typeProfiles] in Object.entries(groupedProfiles)"
-              :key="type"
+              v-for="group in profileGroups"
+              :key="group.mediaType"
             >
               <h4 class="text-xs font-medium text-muted-foreground mb-1">
-                {{ mediaTypeLabels[type] ?? type }}
+                {{ group.label }}
               </h4>
               <div class="space-y-1">
                 <ListItem
-                  v-for="{ profile, providerDisplay } in withProviderDisplay(typeProfiles)"
+                  v-for="{ profile, providerDisplay } in withProviderDisplay(group.profiles)"
                   :key="profile.id"
                   :icon="getEntityIcon(profile.mediaType)"
                 >

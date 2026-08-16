@@ -10,21 +10,30 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { defineAsyncComponent, type Component } from 'vue'
 import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
+import { shouldOfferTvWatchCatchUp } from '@renderer/composables/use-tv-watch'
 import { db } from '@renderer/core/db'
 import type { Messages } from '@shared/i18n'
 import type { TableName } from '@shared/db/table-names'
 import {
   ANIME_STATUS_VALUES,
   GAME_STATUS_VALUES,
+  MOVIE_STATUS_VALUES,
+  TV_STATUS_VALUES,
   animes,
   collectionAnimeLinks,
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionMovieLinks,
   collectionPersonLinks,
+  collectionTvLinks,
   games,
+  movies,
+  tvs,
   type AnimeStatus,
-  type GameStatus
+  type GameStatus,
+  type MovieStatus,
+  type TvStatus
 } from '@shared/db'
 import type { TableEntityType } from '../entity-tables'
 
@@ -41,6 +50,15 @@ const AnimeFilesConfigFormDialog = defineAsyncComponent(() =>
 )
 const AnimeWatchCatchUpDialog = defineAsyncComponent(() =>
   import('@renderer/components/shared/anime').then((mod) => mod.AnimeWatchCatchUpDialog)
+)
+const TvFilesConfigFormDialog = defineAsyncComponent(() =>
+  import('@renderer/components/shared/tv').then((mod) => mod.TvFilesConfigFormDialog)
+)
+const TvWatchCatchUpDialog = defineAsyncComponent(() =>
+  import('@renderer/components/shared/tv').then((mod) => mod.TvWatchCatchUpDialog)
+)
+const MovieFilesConfigFormDialog = defineAsyncComponent(() =>
+  import('@renderer/components/shared/movie').then((mod) => mod.MovieFilesConfigFormDialog)
 )
 
 interface CollectionLinkStore {
@@ -270,6 +288,175 @@ export const MENU_SPECS: Record<TableEntityType, MenuSpec> = {
         label: (m) => m.anime.filesConfig.title,
         component: AnimeFilesConfigFormDialog,
         buildProps: (entityId) => ({ animeId: entityId })
+      }
+    ]
+  },
+  tv: {
+    entityTable: 'tvs',
+    collections: {
+      table: 'collection_tv_links',
+      linkedCollectionIds: async (entityId) => {
+        const links = await db.query.collectionTvLinks.findMany({
+          where: eq(collectionTvLinks.tvId, entityId)
+        })
+        return new Set(links.map((link) => link.collectionId))
+      },
+      add: async (entityId, collectionId) => {
+        await db.insert(collectionTvLinks).values({ collectionId, tvId: entityId })
+      },
+      remove: async (entityId, collectionId) => {
+        await db
+          .delete(collectionTvLinks)
+          .where(
+            and(
+              eq(collectionTvLinks.tvId, entityId),
+              eq(collectionTvLinks.collectionId, collectionId)
+            )
+          )
+      },
+      linkedPairs: (entityIds) =>
+        db
+          .select({
+            collectionId: collectionTvLinks.collectionId,
+            entityId: collectionTvLinks.tvId
+          })
+          .from(collectionTvLinks)
+          .where(inArray(collectionTvLinks.tvId, entityIds)),
+      addMany: async (entityIds, collectionId) => {
+        await db.insert(collectionTvLinks).values(entityIds.map((tvId) => ({ collectionId, tvId })))
+      },
+      removeMany: async (entityIds, collectionId) => {
+        await db
+          .delete(collectionTvLinks)
+          .where(
+            and(
+              eq(collectionTvLinks.collectionId, collectionId),
+              inArray(collectionTvLinks.tvId, entityIds)
+            )
+          )
+      }
+    },
+    status: {
+      label: (m) => m.tv.detail.watchStatus,
+      options: (m) =>
+        TV_STATUS_VALUES.map((value) => ({ value, label: m.library.tvStatus[value] })),
+      read: async (entityId) => {
+        const rows = await db
+          .select({ status: tvs.status })
+          .from(tvs)
+          .where(eq(tvs.id, entityId))
+          .limit(1)
+        return rows[0]?.status ?? null
+      },
+      write: async (entityId, status) => {
+        await db
+          .update(tvs)
+          .set({ status: status as TvStatus })
+          .where(eq(tvs.id, entityId))
+      },
+      followUp: {
+        component: TvWatchCatchUpDialog,
+        buildProps: (entityId) => ({ tvId: entityId }),
+        shouldOffer: (entityId, status) => shouldOfferTvWatchCatchUp(entityId, status as TvStatus)
+      }
+    },
+    dir: {
+      label: (m) => m.tv.detail.openTvDir,
+      path: async (entityId) => {
+        const tv = await db.query.tvs.findFirst({ where: eq(tvs.id, entityId) })
+        return tv?.tvDirPath ?? null
+      }
+    },
+    extraDialogs: [
+      {
+        name: 'filesConfig',
+        icon: 'icon-[mdi--folder-cog-outline]',
+        label: (m) => m.tv.filesConfig.title,
+        component: TvFilesConfigFormDialog,
+        buildProps: (entityId) => ({ tvId: entityId })
+      }
+    ]
+  },
+  movie: {
+    entityTable: 'movies',
+    collections: {
+      table: 'collection_movie_links',
+      linkedCollectionIds: async (entityId) => {
+        const links = await db.query.collectionMovieLinks.findMany({
+          where: eq(collectionMovieLinks.movieId, entityId)
+        })
+        return new Set(links.map((link) => link.collectionId))
+      },
+      add: async (entityId, collectionId) => {
+        await db.insert(collectionMovieLinks).values({ collectionId, movieId: entityId })
+      },
+      remove: async (entityId, collectionId) => {
+        await db
+          .delete(collectionMovieLinks)
+          .where(
+            and(
+              eq(collectionMovieLinks.movieId, entityId),
+              eq(collectionMovieLinks.collectionId, collectionId)
+            )
+          )
+      },
+      linkedPairs: (entityIds) =>
+        db
+          .select({
+            collectionId: collectionMovieLinks.collectionId,
+            entityId: collectionMovieLinks.movieId
+          })
+          .from(collectionMovieLinks)
+          .where(inArray(collectionMovieLinks.movieId, entityIds)),
+      addMany: async (entityIds, collectionId) => {
+        await db
+          .insert(collectionMovieLinks)
+          .values(entityIds.map((movieId) => ({ collectionId, movieId })))
+      },
+      removeMany: async (entityIds, collectionId) => {
+        await db
+          .delete(collectionMovieLinks)
+          .where(
+            and(
+              eq(collectionMovieLinks.collectionId, collectionId),
+              inArray(collectionMovieLinks.movieId, entityIds)
+            )
+          )
+      }
+    },
+    status: {
+      label: (m) => m.movie.detail.watchStatus,
+      options: (m) =>
+        MOVIE_STATUS_VALUES.map((value) => ({ value, label: m.library.movieStatus[value] })),
+      read: async (entityId) => {
+        const rows = await db
+          .select({ status: movies.status })
+          .from(movies)
+          .where(eq(movies.id, entityId))
+          .limit(1)
+        return rows[0]?.status ?? null
+      },
+      write: async (entityId, status) => {
+        await db
+          .update(movies)
+          .set({ status: status as MovieStatus })
+          .where(eq(movies.id, entityId))
+      }
+    },
+    dir: {
+      label: (m) => m.movie.detail.openMovieDir,
+      path: async (entityId) => {
+        const movie = await db.query.movies.findFirst({ where: eq(movies.id, entityId) })
+        return movie?.movieDirPath ?? null
+      }
+    },
+    extraDialogs: [
+      {
+        name: 'filesConfig',
+        icon: 'icon-[mdi--folder-cog-outline]',
+        label: (m) => m.movie.filesConfig.title,
+        component: MovieFilesConfigFormDialog,
+        buildProps: (entityId) => ({ movieId: entityId })
       }
     ]
   },

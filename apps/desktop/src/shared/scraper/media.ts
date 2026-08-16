@@ -40,3 +40,26 @@ export function normalizeMediaLookupFacts<TLookup extends MediaScraperLookup>(
     releaseDate: normalizePartialDate(lookup.releaseDate) ?? undefined
   }
 }
+
+/** The release-year facts a candidate and a lookup are compared on. */
+interface ReleaseYearFacts {
+  releaseDate?: PartialDate
+}
+
+/**
+ * Score a candidate's release year against the wanted one.
+ *
+ * A year neither side states is no evidence, so it scores between a match and
+ * a mismatch: an unknown year must not beat a confirmed one, nor lose to a
+ * year that is known to be wrong. How this score weighs against the other
+ * facts is each media type's own policy.
+ */
+export function rankReleaseYear(candidate: ReleaseYearFacts, wanted: ReleaseYearFacts): number {
+  const wantedYear = wanted.releaseDate?.year
+  const candidateYear = candidate.releaseDate?.year
+  if (wantedYear === undefined || candidateYear === undefined) {
+    return 1
+  }
+
+  return candidateYear === wantedYear ? 2 : 0
+}

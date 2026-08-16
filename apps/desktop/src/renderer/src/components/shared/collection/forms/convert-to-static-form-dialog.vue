@@ -107,6 +107,7 @@ async function materializeDynamicCollection(config: DynamicCollectionConfig) {
         id: nanoid(),
         collectionId,
         entityId,
+        note: null,
         orderInCollection: index
       }))
     )

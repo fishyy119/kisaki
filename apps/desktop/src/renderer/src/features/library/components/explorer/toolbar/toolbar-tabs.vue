@@ -11,9 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { useLibraryExplorerStore } from '../../../stores'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { ContentEntityType } from '@shared/common'
-
-const ENTITY_TABS: ContentEntityType[] = ['game', 'anime', 'character', 'person', 'company']
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 const store = useLibraryExplorerStore()
 const { activeEntityType } = storeToRefs(store)
@@ -31,7 +29,7 @@ const entityTypeModel = computed({
     class="w-full"
   >
     <SegmentedControlItem
-      v-for="type in ENTITY_TABS"
+      v-for="type in CONTENT_ENTITY_TYPES"
       :key="type"
       :value="type"
     >

@@ -26,4 +26,5 @@ export {
   type RoleLinkEntityType,
   type RoleLinkItem
 } from './role-links'
+export { EntityWorksSection, EntityWorksTab, type WorksBlock } from './works'
 export type { EntitySearcherSelection } from './searcher'

@@ -11,8 +11,14 @@ import {
   companyExternalIds,
   gameExternalIds,
   games,
+  movieExternalIds,
+  movies,
   personExternalIds,
-  persons
+  persons,
+  tvEpisodeExternalIds,
+  tvEpisodes,
+  tvExternalIds,
+  tvs
 } from '../tables'
 
 export const gameExternalIdsRelations = relations(gameExternalIds, ({ one }) => ({
@@ -33,6 +39,27 @@ export const animeEpisodeExternalIdsRelations = relations(animeEpisodeExternalId
   episode: one(animeEpisodes, {
     fields: [animeEpisodeExternalIds.episodeId],
     references: [animeEpisodes.id]
+  })
+}))
+
+export const tvExternalIdsRelations = relations(tvExternalIds, ({ one }) => ({
+  tv: one(tvs, {
+    fields: [tvExternalIds.tvId],
+    references: [tvs.id]
+  })
+}))
+
+export const tvEpisodeExternalIdsRelations = relations(tvEpisodeExternalIds, ({ one }) => ({
+  episode: one(tvEpisodes, {
+    fields: [tvEpisodeExternalIds.episodeId],
+    references: [tvEpisodes.id]
+  })
+}))
+
+export const movieExternalIdsRelations = relations(movieExternalIds, ({ one }) => ({
+  movie: one(movies, {
+    fields: [movieExternalIds.movieId],
+    references: [movies.id]
   })
 }))
 

@@ -31,8 +31,20 @@ export const LIBRARY_MEDIA_RELATION_TYPE_RULES: Record<
 > = {
   'game-game': SAME_TYPE_RELATION_TYPES,
   'anime-anime': SAME_TYPE_RELATION_TYPES,
+  'tv-tv': SAME_TYPE_RELATION_TYPES,
+  'movie-movie': SAME_TYPE_RELATION_TYPES,
   'game-anime': CROSS_TYPE_RELATION_TYPES,
-  'anime-game': CROSS_TYPE_RELATION_TYPES
+  'game-tv': CROSS_TYPE_RELATION_TYPES,
+  'game-movie': CROSS_TYPE_RELATION_TYPES,
+  'anime-game': CROSS_TYPE_RELATION_TYPES,
+  'anime-tv': CROSS_TYPE_RELATION_TYPES,
+  'anime-movie': CROSS_TYPE_RELATION_TYPES,
+  'tv-game': CROSS_TYPE_RELATION_TYPES,
+  'tv-anime': CROSS_TYPE_RELATION_TYPES,
+  'tv-movie': CROSS_TYPE_RELATION_TYPES,
+  'movie-game': CROSS_TYPE_RELATION_TYPES,
+  'movie-anime': CROSS_TYPE_RELATION_TYPES,
+  'movie-tv': CROSS_TYPE_RELATION_TYPES
 }
 
 /**

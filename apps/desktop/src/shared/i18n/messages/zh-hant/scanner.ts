@@ -80,8 +80,8 @@ export const scanner = {
 
   fix: {
     title: '修正掃描結果',
-    updateExisting: '更新現有遊戲',
-    readdGame: '重新新增遊戲',
+    updateExisting: '更新現有條目',
+    readd: '重新新增條目',
     started: '已開始重新刮削。',
     startFailed: '啟動修正失敗',
     unknownError: '未知錯誤',
@@ -226,7 +226,7 @@ export const scanner = {
       externalIdLinked: '外部 ID 已關聯到現有項目，目前路徑未新增。',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 個影片檔案無法辨識集數，已作為未編號劇集新增。`,
-      episodeSyncFailed: '項目已新增，但影片檔案同步失敗，詳見日誌。'
+      fileSyncFailed: '項目已新增，但影片檔案同步失敗，詳見日誌。'
     }
   }
 } satisfies Messages['scanner']

@@ -6,4 +6,5 @@ export {
 } from './fields'
 export { MediaDurationFormDialog } from './sessions'
 export { MediaNotesTab } from './notes'
-export { MediaRelationsSection, MediaRelationsFormDialog } from './relations'
+export { default as MediaPlaybackProgress } from './playback-progress.vue'
+export { MediaRelationsSection, MediaRelationsTab, MediaRelationsFormDialog } from './relations'

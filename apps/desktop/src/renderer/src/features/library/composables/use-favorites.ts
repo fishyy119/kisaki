@@ -10,7 +10,7 @@ import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
-import { games, animes, characters, persons, companies } from '@shared/db'
+import { games, animes, characters, movies, persons, companies, tvs } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 import { useDbChanges, type ContentEntityData } from '@renderer/composables'
 
@@ -35,6 +35,16 @@ async function fetchFavorites(
           .select()
           .from(animes)
           .where(and(eq(animes.isFavorite, true), showNsfw ? undefined : eq(animes.isNsfw, false)))
+      case 'tv':
+        return await db
+          .select()
+          .from(tvs)
+          .where(and(eq(tvs.isFavorite, true), showNsfw ? undefined : eq(tvs.isNsfw, false)))
+      case 'movie':
+        return await db
+          .select()
+          .from(movies)
+          .where(and(eq(movies.isFavorite, true), showNsfw ? undefined : eq(movies.isNsfw, false)))
       case 'character':
         return await db
           .select()
@@ -90,7 +100,7 @@ export function useFavorites() {
     }
   })
 
-  const contentTables = ['games', 'animes', 'characters', 'persons', 'companies']
+  const contentTables = ['games', 'animes', 'tvs', 'movies', 'characters', 'persons', 'companies']
   useDbChanges(({ table }) => {
     if (contentTables.includes(table)) refetch()
   })

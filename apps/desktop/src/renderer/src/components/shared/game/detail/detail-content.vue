@@ -19,6 +19,7 @@ import {
   GameDetailCharactersTab,
   GameDetailPersonsTab,
   GameDetailCompaniesTab,
+  GameDetailRelationsTab,
   GameDetailActivityTab,
   GameDetailSavesTab,
   GameDetailNotesTab
@@ -68,6 +69,13 @@ const activeTab = ref('overview')
           />
           {{ m.library.detail.tabs.companies }}
         </TabsTrigger>
+        <TabsTrigger value="relations">
+          <Icon
+            icon="icon-[mdi--link-variant]"
+            class="size-3.5"
+          />
+          {{ m.library.detail.tabs.relatedEntries }}
+        </TabsTrigger>
         <TabsTrigger value="activity">
           <Icon
             icon="icon-[mdi--report-timeline-variant]"
@@ -102,6 +110,9 @@ const activeTab = ref('overview')
       </TabsContent>
       <TabsContent value="companies">
         <GameDetailCompaniesTab />
+      </TabsContent>
+      <TabsContent value="relations">
+        <GameDetailRelationsTab />
       </TabsContent>
       <TabsContent value="activity">
         <GameDetailActivityTab />

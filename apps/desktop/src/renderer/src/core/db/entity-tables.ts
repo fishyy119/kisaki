@@ -15,21 +15,27 @@ import {
   collections,
   companies,
   games,
+  movies,
   persons,
   tags,
+  tvs,
   type Anime,
   type Character,
   type Collection,
   type Company,
   type Game,
+  type Movie,
   type Person,
-  type Tag
+  type Tag,
+  type Tv
 } from '@shared/db'
 
 /** Row type per entity type for typed generic query results. */
 export interface EntityRowMap {
   game: Game
   anime: Anime
+  tv: Tv
+  movie: Movie
   character: Character
   person: Person
   company: Company
@@ -59,6 +65,20 @@ export const ENTITY_TABLES: Record<AllEntityType, EntityTableDef> = {
     idColumn: animes.id,
     nameColumn: animes.name,
     isNsfwColumn: animes.isNsfw
+  },
+  tv: {
+    table: tvs,
+    tableName: getTableName(tvs),
+    idColumn: tvs.id,
+    nameColumn: tvs.name,
+    isNsfwColumn: tvs.isNsfw
+  },
+  movie: {
+    table: movies,
+    tableName: getTableName(movies),
+    idColumn: movies.id,
+    nameColumn: movies.name,
+    isNsfwColumn: movies.isNsfw
   },
   character: {
     table: characters,

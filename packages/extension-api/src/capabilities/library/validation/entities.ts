@@ -17,26 +17,41 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
+  LibraryMovieCreateInput,
+  LibraryMoviePatch,
+  LibraryMovieQuery,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
   LibraryPersonQuery,
   LibraryTagCreateInput,
   LibraryTagPatch,
   LibraryTagQuery,
+  LibraryTvCreateInput,
+  LibraryTvEpisodeCreateInput,
+  LibraryTvEpisodeQuery,
+  LibraryTvEpisodeWatchStatePatch,
+  LibraryTvPatch,
+  LibraryTvQuery,
+  LibraryTvSeasonCreateInput,
+  LibraryTvSeasonQuery,
   SortDirection
 } from '../entities'
 import {
   LIBRARY_ANIME_STATUSES,
   LIBRARY_GAME_LAUNCHER_MODES,
   LIBRARY_GAME_MONITOR_MODES,
-  LIBRARY_GAME_STATUSES
+  LIBRARY_GAME_STATUSES,
+  LIBRARY_MOVIE_STATUSES,
+  LIBRARY_TV_STATUSES
 } from '../entities'
 import {
   LIBRARY_ANIME_EPISODE_TYPES,
   LIBRARY_ANIME_FORMATS,
   LIBRARY_BLOOD_TYPES,
   LIBRARY_CUP_SIZES,
-  LIBRARY_GENDERS
+  LIBRARY_GENDERS,
+  LIBRARY_MOVIE_FORMATS,
+  LIBRARY_TV_FORMATS
 } from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
@@ -57,6 +72,7 @@ import {
   validateEntityBaseFields,
   validateOptionalDynamicCollectionConfig,
   validateOptionalExternalIds,
+  validateOptionalInteger,
   validateOptionalNonEmptyString,
   validateOptionalNonNegativeFiniteNumber,
   validateOptionalNonNegativeInteger,
@@ -165,6 +181,112 @@ const ANIME_EPISODE_QUERY_KEYS = new Set<string>([
   'watchedOnly',
   'unwatchedOnly'
 ])
+const TV_CREATE_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'releaseDate',
+  'endDate',
+  'status',
+  'format',
+  'totalSeasons',
+  'totalEpisodes',
+  'lastActiveAt',
+  'totalDuration',
+  'tvDirPath',
+  'descriptionInlineFiles',
+  'externalIds'
+])
+const TV_PATCH_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'releaseDate',
+  'endDate',
+  'status',
+  'format',
+  'totalSeasons',
+  'totalEpisodes',
+  'tvDirPath',
+  'descriptionInlineFiles',
+  'externalIds',
+  'lastActiveAt',
+  'totalDuration'
+])
+const TV_SEASON_CREATE_KEYS = new Set<string>([
+  'seasonNumber',
+  'name',
+  'originalName',
+  'airDate',
+  'description',
+  'totalEpisodes',
+  'order'
+])
+const TV_EPISODE_CREATE_KEYS = new Set<string>([
+  'episodeNumber',
+  'name',
+  'originalName',
+  'airDate',
+  'description',
+  'durationMs',
+  'order',
+  'externalIds'
+])
+const TV_EPISODE_WATCH_STATE_KEYS = new Set<string>([
+  'watched',
+  'watchedAt',
+  'playCount',
+  'resumePositionMs'
+])
+const TV_SEASON_QUERY_KEYS = new Set<string>(['tvId', 'includeSpecials'])
+const TV_EPISODE_QUERY_KEYS = new Set<string>([
+  'tvId',
+  'seasonNumbers',
+  'watchedOnly',
+  'unwatchedOnly'
+])
+const MOVIE_CREATE_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'releaseDate',
+  'status',
+  'format',
+  'runtimeMs',
+  'watched',
+  'watchedAt',
+  'playCount',
+  'resumePositionMs',
+  'lastActiveAt',
+  'totalDuration',
+  'movieDirPath',
+  'descriptionInlineFiles',
+  'externalIds'
+])
+const MOVIE_PATCH_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'releaseDate',
+  'status',
+  'format',
+  'runtimeMs',
+  'watched',
+  'watchedAt',
+  'playCount',
+  'resumePositionMs',
+  'movieDirPath',
+  'descriptionInlineFiles',
+  'externalIds',
+  'lastActiveAt',
+  'totalDuration'
+])
 const PERSON_CREATE_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
   ...CREATE_TIMESTAMP_KEYS,
@@ -269,6 +391,26 @@ const GAME_QUERY_KEYS = new Set<string>([
   'collectionIds',
   'tagIds'
 ])
+const TV_QUERY_KEYS = new Set<string>([
+  ...LIST_QUERY_BASE_KEYS,
+  'statuses',
+  'formats',
+  'favoritesOnly',
+  'includeNsfw',
+  'collectionIds',
+  'tagIds'
+])
+const MOVIE_QUERY_KEYS = new Set<string>([
+  ...LIST_QUERY_BASE_KEYS,
+  'statuses',
+  'formats',
+  'favoritesOnly',
+  'watchedOnly',
+  'unwatchedOnly',
+  'includeNsfw',
+  'collectionIds',
+  'tagIds'
+])
 const PERSON_QUERY_KEYS = new Set<string>([
   ...LIST_QUERY_BASE_KEYS,
   'favoritesOnly',
@@ -345,6 +487,77 @@ export function validateLibraryAnimeEpisodeQuery(value: unknown): ValidationIssu
     ...validateOptionalBoolean(value.watchedOnly, '$.watchedOnly'),
     ...validateOptionalBoolean(value.unwatchedOnly, '$.unwatchedOnly')
   ]
+}
+
+export function validateLibraryTvCreateInput(value: unknown): ValidationIssue[] {
+  return validateTvWriteInput(value, '$', true)
+}
+
+export function validateLibraryTvPatch(value: unknown): ValidationIssue[] {
+  return validateTvWriteInput(value, '$', false)
+}
+
+export function validateLibraryTvSeasonCreateInput(value: unknown): ValidationIssue[] {
+  return validateTvSeasonCreateInput(value, '$')
+}
+
+export function validateLibraryTvEpisodeCreateInput(value: unknown): ValidationIssue[] {
+  return validateTvEpisodeCreateInput(value, '$')
+}
+
+export function validateLibraryTvEpisodeWatchStatePatch(value: unknown): ValidationIssue[] {
+  const input = requireWriteObject(value, '$', 'TV episode watch state patch')
+  if (!input) {
+    return [{ path: '$', message: 'TV episode watch state patch must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, TV_EPISODE_WATCH_STATE_KEYS),
+    ...validateOptionalBoolean(input.watched, '$.watched'),
+    ...validateOptionalNullableFiniteNumber(input.watchedAt, '$.watchedAt'),
+    ...validateOptionalNonNegativeInteger(input.playCount, '$.playCount'),
+    ...validateOptionalNullableFiniteNumber(input.resumePositionMs, '$.resumePositionMs')
+  ]
+}
+
+export function validateLibraryTvSeasonQuery(value: unknown): ValidationIssue[] {
+  if (!isRecord(value)) {
+    return [{ path: '$', message: 'TV season query must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, TV_SEASON_QUERY_KEYS),
+    ...validateRequiredString(value.tvId, '$.tvId', {
+      trim: true,
+      valueMessage: 'tvId must be a non-empty string.'
+    }),
+    ...validateOptionalBoolean(value.includeSpecials, '$.includeSpecials')
+  ]
+}
+
+export function validateLibraryTvEpisodeQuery(value: unknown): ValidationIssue[] {
+  if (!isRecord(value)) {
+    return [{ path: '$', message: 'TV episode query must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, TV_EPISODE_QUERY_KEYS),
+    ...validateRequiredString(value.tvId, '$.tvId', {
+      trim: true,
+      valueMessage: 'tvId must be a non-empty string.'
+    }),
+    ...validateOptionalIntegerArray(value.seasonNumbers, '$.seasonNumbers'),
+    ...validateOptionalBoolean(value.watchedOnly, '$.watchedOnly'),
+    ...validateOptionalBoolean(value.unwatchedOnly, '$.unwatchedOnly')
+  ]
+}
+
+export function validateLibraryMovieCreateInput(value: unknown): ValidationIssue[] {
+  return validateMovieWriteInput(value, '$', true)
+}
+
+export function validateLibraryMoviePatch(value: unknown): ValidationIssue[] {
+  return validateMovieWriteInput(value, '$', false)
 }
 
 export function validateLibraryPersonCreateInput(value: unknown): ValidationIssue[] {
@@ -431,6 +644,64 @@ export function validateLibraryAnimeQuery(value: unknown): ValidationIssue[] {
       'formats must be an array of supported anime formats.'
     ),
     ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
+    ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
+    ...validateOptionalNonEmptyStringArray(query.collectionIds, '$.collectionIds'),
+    ...validateOptionalNonEmptyStringArray(query.tagIds, '$.tagIds')
+  ]
+}
+
+export function validateLibraryTvQuery(value: unknown): ValidationIssue[] {
+  const query = requireQueryObject(value)
+  if (!query) {
+    return value === undefined ? [] : [{ path: '$', message: 'TV list query must be an object.' }]
+  }
+
+  return [
+    ...validateBaseListQuery(query, TV_QUERY_KEYS),
+    ...validateOptionalEnumArray(
+      query.statuses,
+      '$.statuses',
+      LIBRARY_TV_STATUSES,
+      'statuses must be an array of supported tv statuses.'
+    ),
+    ...validateOptionalEnumArray(
+      query.formats,
+      '$.formats',
+      LIBRARY_TV_FORMATS,
+      'formats must be an array of supported tv formats.'
+    ),
+    ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
+    ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
+    ...validateOptionalNonEmptyStringArray(query.collectionIds, '$.collectionIds'),
+    ...validateOptionalNonEmptyStringArray(query.tagIds, '$.tagIds')
+  ]
+}
+
+export function validateLibraryMovieQuery(value: unknown): ValidationIssue[] {
+  const query = requireQueryObject(value)
+  if (!query) {
+    return value === undefined
+      ? []
+      : [{ path: '$', message: 'Movie list query must be an object.' }]
+  }
+
+  return [
+    ...validateBaseListQuery(query, MOVIE_QUERY_KEYS),
+    ...validateOptionalEnumArray(
+      query.statuses,
+      '$.statuses',
+      LIBRARY_MOVIE_STATUSES,
+      'statuses must be an array of supported movie statuses.'
+    ),
+    ...validateOptionalEnumArray(
+      query.formats,
+      '$.formats',
+      LIBRARY_MOVIE_FORMATS,
+      'formats must be an array of supported movie formats.'
+    ),
+    ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
+    ...validateOptionalBoolean(query.watchedOnly, '$.watchedOnly'),
+    ...validateOptionalBoolean(query.unwatchedOnly, '$.unwatchedOnly'),
     ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
     ...validateOptionalNonEmptyStringArray(query.collectionIds, '$.collectionIds'),
     ...validateOptionalNonEmptyStringArray(query.tagIds, '$.tagIds')
@@ -575,6 +846,77 @@ export function assertValidLibraryAnimeQuery(
   value: unknown
 ): asserts value is LibraryAnimeQuery | undefined {
   throwIfValidationIssues('library.animes.list query', validateLibraryAnimeQuery(value))
+}
+
+export function assertValidLibraryTvCreateInput(
+  value: unknown
+): asserts value is LibraryTvCreateInput {
+  throwIfValidationIssues('library.tvs.create input', validateLibraryTvCreateInput(value))
+}
+
+export function assertValidLibraryTvPatch(value: unknown): asserts value is LibraryTvPatch {
+  throwIfValidationIssues('library.tvs.update patch', validateLibraryTvPatch(value))
+}
+
+export function assertValidLibraryTvSeasonCreateInput(
+  value: unknown
+): asserts value is LibraryTvSeasonCreateInput {
+  throwIfValidationIssues(
+    'library.tvs.seasons.create input',
+    validateLibraryTvSeasonCreateInput(value)
+  )
+}
+
+export function assertValidLibraryTvEpisodeCreateInput(
+  value: unknown
+): asserts value is LibraryTvEpisodeCreateInput {
+  throwIfValidationIssues(
+    'library.tvs.episodes.create input',
+    validateLibraryTvEpisodeCreateInput(value)
+  )
+}
+
+export function assertValidLibraryTvEpisodeWatchStatePatch(
+  value: unknown
+): asserts value is LibraryTvEpisodeWatchStatePatch {
+  throwIfValidationIssues(
+    'library.tvs.episodes.patchWatchState patch',
+    validateLibraryTvEpisodeWatchStatePatch(value)
+  )
+}
+
+export function assertValidLibraryTvSeasonQuery(
+  value: unknown
+): asserts value is LibraryTvSeasonQuery {
+  throwIfValidationIssues('library.tvs.seasons.list query', validateLibraryTvSeasonQuery(value))
+}
+
+export function assertValidLibraryTvEpisodeQuery(
+  value: unknown
+): asserts value is LibraryTvEpisodeQuery {
+  throwIfValidationIssues('library.tvs.episodes.list query', validateLibraryTvEpisodeQuery(value))
+}
+
+export function assertValidLibraryTvQuery(
+  value: unknown
+): asserts value is LibraryTvQuery | undefined {
+  throwIfValidationIssues('library.tvs.list query', validateLibraryTvQuery(value))
+}
+
+export function assertValidLibraryMovieCreateInput(
+  value: unknown
+): asserts value is LibraryMovieCreateInput {
+  throwIfValidationIssues('library.movies.create input', validateLibraryMovieCreateInput(value))
+}
+
+export function assertValidLibraryMoviePatch(value: unknown): asserts value is LibraryMoviePatch {
+  throwIfValidationIssues('library.movies.update patch', validateLibraryMoviePatch(value))
+}
+
+export function assertValidLibraryMovieQuery(
+  value: unknown
+): asserts value is LibraryMovieQuery | undefined {
+  throwIfValidationIssues('library.movies.list query', validateLibraryMovieQuery(value))
 }
 
 export function assertValidLibraryPersonCreateInput(
@@ -791,6 +1133,129 @@ function validateAnimeEpisodeCreateInput(value: unknown, path: string): Validati
     ...validateOptionalNullableFiniteNumber(input.durationMs, `${path}.durationMs`),
     ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
     ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
+  ]
+}
+
+function validateTvWriteInput(value: unknown, path: string, create: boolean): ValidationIssue[] {
+  const input = requireWriteObject(value, path, create ? 'TV create input' : 'TV patch')
+  if (!input) {
+    return [
+      {
+        path,
+        message: create ? 'TV create input must be an object.' : 'TV patch must be an object.'
+      }
+    ]
+  }
+
+  return [
+    ...validateUnknownKeys(input, create ? TV_CREATE_KEYS : TV_PATCH_KEYS, path),
+    ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
+    ...validateOptionalNonEmptyString(input.coverFile, `${path}.coverFile`),
+    ...validateOptionalNonEmptyString(input.backdropFile, `${path}.backdropFile`),
+    ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
+    ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalPartialDate(input.endDate, `${path}.endDate`),
+    ...validateOptionalEnumString(
+      input.status,
+      `${path}.status`,
+      LIBRARY_TV_STATUSES,
+      'status must be one of the supported tv statuses.'
+    ),
+    ...validateOptionalEnumString(
+      input.format,
+      `${path}.format`,
+      LIBRARY_TV_FORMATS,
+      'format must be one of the supported tv formats.'
+    ),
+    ...validateOptionalNullableFiniteNumber(input.totalSeasons, `${path}.totalSeasons`),
+    ...validateOptionalNullableFiniteNumber(input.totalEpisodes, `${path}.totalEpisodes`),
+    ...validateOptionalString(input.tvDirPath, `${path}.tvDirPath`),
+    ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
+    ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
+    ...validateOptionalNonNegativeFiniteNumber(input.totalDuration, `${path}.totalDuration`)
+  ]
+}
+
+function validateTvSeasonCreateInput(value: unknown, path: string): ValidationIssue[] {
+  const input = requireWriteObject(value, path, 'TV season create input')
+  if (!input) {
+    return [{ path, message: 'TV season create input must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, TV_SEASON_CREATE_KEYS, path),
+    ...validateRequiredSeasonNumber(input.seasonNumber, `${path}.seasonNumber`),
+    ...validateOptionalString(input.name, `${path}.name`),
+    ...validateOptionalString(input.originalName, `${path}.originalName`),
+    ...validateOptionalPartialDate(input.airDate, `${path}.airDate`),
+    ...validateOptionalString(input.description, `${path}.description`),
+    ...validateOptionalNullableFiniteNumber(input.totalEpisodes, `${path}.totalEpisodes`),
+    ...validateOptionalNonNegativeInteger(input.order, `${path}.order`)
+  ]
+}
+
+function validateTvEpisodeCreateInput(value: unknown, path: string): ValidationIssue[] {
+  const input = requireWriteObject(value, path, 'TV episode create input')
+  if (!input) {
+    return [{ path, message: 'TV episode create input must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, TV_EPISODE_CREATE_KEYS, path),
+    ...validateOptionalNullableFiniteNumber(input.episodeNumber, `${path}.episodeNumber`),
+    ...validateOptionalString(input.name, `${path}.name`),
+    ...validateOptionalString(input.originalName, `${path}.originalName`),
+    ...validateOptionalPartialDate(input.airDate, `${path}.airDate`),
+    ...validateOptionalString(input.description, `${path}.description`),
+    ...validateOptionalNullableFiniteNumber(input.durationMs, `${path}.durationMs`),
+    ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
+  ]
+}
+
+function validateMovieWriteInput(value: unknown, path: string, create: boolean): ValidationIssue[] {
+  const input = requireWriteObject(value, path, create ? 'Movie create input' : 'Movie patch')
+  if (!input) {
+    return [
+      {
+        path,
+        message: create ? 'Movie create input must be an object.' : 'Movie patch must be an object.'
+      }
+    ]
+  }
+
+  return [
+    ...validateUnknownKeys(input, create ? MOVIE_CREATE_KEYS : MOVIE_PATCH_KEYS, path),
+    ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
+    ...validateOptionalNonEmptyString(input.coverFile, `${path}.coverFile`),
+    ...validateOptionalNonEmptyString(input.backdropFile, `${path}.backdropFile`),
+    ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
+    ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      input.status,
+      `${path}.status`,
+      LIBRARY_MOVIE_STATUSES,
+      'status must be one of the supported movie statuses.'
+    ),
+    ...validateOptionalEnumString(
+      input.format,
+      `${path}.format`,
+      LIBRARY_MOVIE_FORMATS,
+      'format must be one of the supported movie formats.'
+    ),
+    ...validateOptionalNullableFiniteNumber(input.runtimeMs, `${path}.runtimeMs`),
+    ...validateOptionalBoolean(input.watched, `${path}.watched`),
+    ...validateOptionalNullableFiniteNumber(input.watchedAt, `${path}.watchedAt`),
+    ...validateOptionalNonNegativeInteger(input.playCount, `${path}.playCount`),
+    ...validateOptionalNullableFiniteNumber(input.resumePositionMs, `${path}.resumePositionMs`),
+    ...validateOptionalString(input.movieDirPath, `${path}.movieDirPath`),
+    ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
+    ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
+    ...validateOptionalNonNegativeFiniteNumber(input.totalDuration, `${path}.totalDuration`)
   ]
 }
 
@@ -1039,6 +1504,33 @@ function validateOptionalNonEmptyStringArray(value: unknown, path: string): Vali
         trim: true,
         valueMessage: 'Array item must be a non-empty string.'
       })
+    )
+  }
+  return issues
+}
+
+/** Season 0 is the specials season, so zero is a legitimate season number. */
+function validateRequiredSeasonNumber(value: unknown, path: string): ValidationIssue[] {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    return [{ path, message: 'seasonNumber must be an integer greater than or equal to zero.' }]
+  }
+
+  return []
+}
+
+function validateOptionalIntegerArray(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  if (!Array.isArray(value)) {
+    return [{ path, message: 'Field must be an array of integers.' }]
+  }
+
+  const issues: ValidationIssue[] = []
+  for (const [index, item] of value.entries()) {
+    issues.push(
+      ...validateOptionalInteger(item, `${path}[${index}]`, 'Array item must be an integer.')
     )
   }
   return issues

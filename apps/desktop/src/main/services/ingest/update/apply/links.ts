@@ -22,7 +22,13 @@ import {
   characterPersonLinks,
   gameCharacterLinks,
   gameCompanyLinks,
-  gamePersonLinks
+  gamePersonLinks,
+  movieCharacterLinks,
+  movieCompanyLinks,
+  moviePersonLinks,
+  tvCharacterLinks,
+  tvCompanyLinks,
+  tvPersonLinks
 } from '@shared/db'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
@@ -101,6 +107,54 @@ const LINK_ROW_SPECS = {
     entityIdField: 'animeId',
     relatedIdField: 'characterId',
     orderInEntityField: 'orderInAnime',
+    orderInRelatedField: 'orderInCharacter'
+  },
+  tvPerson: {
+    table: tvPersonLinks,
+    entityIdColumn: tvPersonLinks.tvId,
+    entityIdField: 'tvId',
+    relatedIdField: 'personId',
+    orderInEntityField: 'orderInTv',
+    orderInRelatedField: 'orderInPerson'
+  },
+  tvCompany: {
+    table: tvCompanyLinks,
+    entityIdColumn: tvCompanyLinks.tvId,
+    entityIdField: 'tvId',
+    relatedIdField: 'companyId',
+    orderInEntityField: 'orderInTv',
+    orderInRelatedField: 'orderInCompany'
+  },
+  tvCharacter: {
+    table: tvCharacterLinks,
+    entityIdColumn: tvCharacterLinks.tvId,
+    entityIdField: 'tvId',
+    relatedIdField: 'characterId',
+    orderInEntityField: 'orderInTv',
+    orderInRelatedField: 'orderInCharacter'
+  },
+  moviePerson: {
+    table: moviePersonLinks,
+    entityIdColumn: moviePersonLinks.movieId,
+    entityIdField: 'movieId',
+    relatedIdField: 'personId',
+    orderInEntityField: 'orderInMovie',
+    orderInRelatedField: 'orderInPerson'
+  },
+  movieCompany: {
+    table: movieCompanyLinks,
+    entityIdColumn: movieCompanyLinks.movieId,
+    entityIdField: 'movieId',
+    relatedIdField: 'companyId',
+    orderInEntityField: 'orderInMovie',
+    orderInRelatedField: 'orderInCompany'
+  },
+  movieCharacter: {
+    table: movieCharacterLinks,
+    entityIdColumn: movieCharacterLinks.movieId,
+    entityIdField: 'movieId',
+    relatedIdField: 'characterId',
+    orderInEntityField: 'orderInMovie',
     orderInRelatedField: 'orderInCharacter'
   },
   characterPerson: {

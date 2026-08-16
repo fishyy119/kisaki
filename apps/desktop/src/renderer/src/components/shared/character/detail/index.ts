@@ -6,5 +6,5 @@ export { default as CharacterDetailDialog } from './detail-dialog.vue'
 export {
   CharacterDetailOverviewTab,
   CharacterDetailPersonsTab,
-  CharacterDetailGamesTab
+  CharacterDetailWorksTab
 } from './tabs'

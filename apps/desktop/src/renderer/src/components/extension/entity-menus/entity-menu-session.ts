@@ -210,12 +210,10 @@ export function useExtensionEntityMenuSession(
   }
 }
 
+/** Identifies the entries a menu was resolved for, so a new selection re-resolves. */
 export function getMenuInputKey(input: EntityMenuInput): string {
-  if (input.domain === 'game' && input.scope === 'batch') {
-    return `${input.domain}:${input.scope}:${input.entityIds.join(',')}`
-  }
-
-  return `${input.domain}:${input.scope}:${'entityId' in input ? input.entityId : ''}`
+  const entities = 'entityIds' in input ? input.entityIds.join(',') : input.entityId
+  return `${input.domain}:${input.scope}:${entities}`
 }
 
 function getCallbackKey(

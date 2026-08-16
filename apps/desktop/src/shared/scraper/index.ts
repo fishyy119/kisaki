@@ -12,11 +12,15 @@ export {
   type ScraperImageSlot,
   type GameImageSlot,
   type AnimeImageSlot,
+  type TvImageSlot,
+  type MovieImageSlot,
   type SlotConfigForSlot,
   type SlotConfigsForMediaType,
   type RelationCollectionScraperSlot,
   GAME_IMAGE_SLOTS,
   ANIME_IMAGE_SLOTS,
+  TV_IMAGE_SLOTS,
+  MOVIE_IMAGE_SLOTS,
   SCRAPER_IMAGE_SLOTS,
   SLOT_STRATEGIES,
   UNMATCHED_ENTITY_POLICIES,
@@ -52,11 +56,15 @@ export {
   type ScraperSessionResult,
   type ScrapedGameInfo,
   type ScrapedAnimeInfo,
+  type ScrapedTvInfo,
+  type ScrapedMovieInfo,
   type ScrapedPersonInfo,
   type ScrapedCompanyInfo,
   type ScrapedCharacterInfo,
   type ScrapedGameCore,
   type ScrapedAnimeCore,
+  type ScrapedTvCore,
+  type ScrapedMovieCore,
   type ScrapedPersonCore,
   type ScrapedCompanyCore,
   type ScrapedCharacterCore,
@@ -64,6 +72,10 @@ export {
   type ScrapedGameRelationFacts,
   type ScrapedAnimeBundle,
   type ScrapedAnimeRelationFacts,
+  type ScrapedTvBundle,
+  type ScrapedTvRelationFacts,
+  type ScrapedMovieBundle,
+  type ScrapedMovieRelationFacts,
   type ScrapedPersonBundle,
   type ScrapedCompanyBundle,
   type ScrapedCharacterBundle,
@@ -74,10 +86,18 @@ export {
   type ScrapedAnimePersonFact,
   type ScrapedAnimeCharacterFact,
   type ScrapedAnimeCompanyFact,
+  type ScrapedTvPersonFact,
+  type ScrapedTvCharacterFact,
+  type ScrapedTvCompanyFact,
+  type ScrapedMoviePersonFact,
+  type ScrapedMovieCharacterFact,
+  type ScrapedMovieCompanyFact,
   type ScrapedCharacterPersonFact,
   type ScrapedRelatedEntryFact,
   type ScrapedGameMetadata,
   type ScrapedAnimeMetadata,
+  type ScrapedTvMetadata,
+  type ScrapedMovieMetadata,
   type ScrapedPersonMetadata,
   type ScrapedCompanyMetadata,
   type ScrapedCharacterMetadata
@@ -87,11 +107,7 @@ export {
 export { normalizeMediaLookupFacts, type MediaScraperLookup } from './media'
 
 // Game-specific types
-export {
-  type GameScraperLookup,
-  type GameScraperProviderInfo,
-  type GameSearchResult
-} from './game'
+export { type GameScraperLookup, type GameScraperProviderInfo, type GameSearchResult } from './game'
 
 // Anime-specific types
 export {
@@ -102,6 +118,26 @@ export {
   type AnimeScraperProviderInfo,
   type AnimeSearchResult
 } from './anime'
+
+// TV-specific types
+export {
+  normalizeTvLookupFacts,
+  selectTvSearchResult,
+  type TvLookupFacts,
+  type TvScraperLookup,
+  type TvScraperProviderInfo,
+  type TvSearchResult
+} from './tv'
+
+// Movie-specific types
+export {
+  normalizeMovieLookupFacts,
+  selectMovieSearchResult,
+  type MovieLookupFacts,
+  type MovieScraperLookup,
+  type MovieScraperProviderInfo,
+  type MovieSearchResult
+} from './movie'
 
 // Metadata entity scraper types
 export { type PersonScraperProviderInfo, type PersonSearchResult } from './person'

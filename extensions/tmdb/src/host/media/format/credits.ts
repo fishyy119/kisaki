@@ -1,24 +1,37 @@
-import type { ScrapedAnimePersonFact } from '@kisaki3/extension-sdk'
+import type {
+  ScrapedAnimePersonFact,
+  ScrapedMoviePersonFact,
+  ScrapedPersonMetadata,
+  ScrapedTvPersonFact
+} from '@kisaki3/extension-sdk'
 import type { TmdbCastMember, TmdbCreditPerson, TmdbCredits, TmdbCrewMember } from '../../api/types'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
 import { omitUndefined } from '../../utils/object'
 import { buildImageUrl } from './images'
-import { mapTmdbCrewRole, mapTmdbGender } from './roles'
+import {
+  mapTmdbCrewRole,
+  mapTmdbGender,
+  mapTmdbMoviePersonRole,
+  mapTmdbTvPersonRole
+} from './roles'
 import { buildExternalSites, tmdbPersonUrl, tmdbSite } from './sites'
 import { trimToUndefined } from './text'
 
-/** Joins the several characters one voice credit can cover. */
+/** Joins the several characters one cast credit can cover. */
 const CHARACTER_SEPARATOR = ' | '
 
 /**
- * TMDB decorations on an animation character name.
+ * TMDB decorations on a credited character name.
  *
- * `(voice)` restates what the actor role already says, and `(as <name>)` gives
- * the performer's credit alias rather than the character. Both are noise in a
- * cast note, and dropping them lets a character credited under two spellings
- * collapse into one entry instead of reading as two characters.
+ * `(voice)` restates what an animation actor role already says, and
+ * `(as <name>)` gives the performer's credit alias rather than the character.
+ * Both are noise in a cast note, and dropping them lets a character credited
+ * under two spellings collapse into one entry instead of reading as two.
  */
 const CHARACTER_DECORATIONS = /\s*\((?:voice|as\s[^)]*)\)/gi
+
+/** One credit as a library person fact, with the media type's own role. */
+type PersonFact<TRole extends string> = ScrapedPersonMetadata & { role: TRole; note?: string }
 
 /**
  * Credits as library person facts.
@@ -26,17 +39,20 @@ const CHARACTER_DECORATIONS = /\s*\((?:voice|as\s[^)]*)\)/gi
  * TMDB reports one credit per job, and aggregate TV credits pack several jobs
  * or characters into a single row, so both shapes are flattened first. A person
  * keeps one fact per distinct role: the same name credited as both writer and
- * director is two facts, but two writing credits are one.
+ * director is two facts, but two writing credits are one. The characters played
+ * travel as the note, because TMDB has no character entity of its own.
  */
-export function buildAnimePersonFacts(
+function buildPersonFacts<TRole extends string>(
   credits: TmdbCredits,
-  imageBaseUrl: string
-): ScrapedAnimePersonFact[] {
-  const facts = new Map<string, ScrapedAnimePersonFact>()
+  imageBaseUrl: string,
+  mapCrewRole: (job: string) => TRole | undefined,
+  actorRole: TRole
+): PersonFact<TRole>[] {
+  const facts = new Map<string, PersonFact<TRole>>()
 
   for (const member of credits.crew ?? []) {
     for (const job of readJobs(member)) {
-      const role = mapTmdbCrewRole(job)
+      const role = mapCrewRole(job)
       if (!role) {
         continue
       }
@@ -50,21 +66,42 @@ export function buildAnimePersonFacts(
     }
   }
 
-  // The whole cast of an animated title is a voice cast, so unlike crew jobs it
-  // needs no vocabulary to be recognized. TMDB has no character entity, so the
-  // characters played travel as the note and the anime-person link is what
-  // records that this entry cast this voice.
   for (const member of credits.cast ?? []) {
-    const key = `${member.id}:actor`
+    const key = `${member.id}:${actorRole}`
     if (facts.has(key)) {
       continue
     }
 
     const characters = readCharacters(member).join(CHARACTER_SEPARATOR)
-    facts.set(key, toPersonFact(member, 'actor', characters, imageBaseUrl))
+    facts.set(key, toPersonFact(member, actorRole, characters, imageBaseUrl))
   }
 
   return [...facts.values()]
+}
+
+/**
+ * The whole cast of an animated title is a voice cast, so unlike crew jobs it
+ * needs no vocabulary to be recognized.
+ */
+export function buildAnimePersonFacts(
+  credits: TmdbCredits,
+  imageBaseUrl: string
+): ScrapedAnimePersonFact[] {
+  return buildPersonFacts(credits, imageBaseUrl, mapTmdbCrewRole, 'actor')
+}
+
+export function buildTvPersonFacts(
+  credits: TmdbCredits,
+  imageBaseUrl: string
+): ScrapedTvPersonFact[] {
+  return buildPersonFacts(credits, imageBaseUrl, mapTmdbTvPersonRole, 'actor')
+}
+
+export function buildMoviePersonFacts(
+  credits: TmdbCredits,
+  imageBaseUrl: string
+): ScrapedMoviePersonFact[] {
+  return buildPersonFacts(credits, imageBaseUrl, mapTmdbMoviePersonRole, 'actor')
 }
 
 function readJobs(member: TmdbCrewMember): string[] {
@@ -98,12 +135,12 @@ function toCharacterLabel(character: string | undefined): string | undefined {
   return trimToUndefined(character?.replace(CHARACTER_DECORATIONS, ''))
 }
 
-function toPersonFact(
+function toPersonFact<TRole extends string>(
   member: TmdbCreditPerson,
-  role: ScrapedAnimePersonFact['role'],
+  role: TRole,
   note: string | undefined,
   imageBaseUrl: string
-): ScrapedAnimePersonFact {
+): PersonFact<TRole> {
   const originalName = trimToUndefined(member.original_name)
   // Not user-facing copy: guards a malformed credit row from entering the
   // library without a name.

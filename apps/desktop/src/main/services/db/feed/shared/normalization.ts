@@ -1,6 +1,9 @@
 export function normalizeCoreValue(value: unknown, field: string): unknown {
-  if (field === 'releaseDate') {
+  if (field === 'releaseDate' || field === 'endDate') {
     return parseJsonValue(value)
+  }
+  if (field === 'totalSeasons' || field === 'totalEpisodes' || field === 'runtimeMs') {
+    return nullableNumber(value)
   }
   return normalizeNullableString(value)
 }

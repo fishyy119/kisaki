@@ -1,0 +1,65 @@
+import type { MovieScraperLookup } from '@shared/scraper'
+import {
+  defineIngestUpdateSurfaces,
+  listIngestUpdateSurfaceKeys,
+  listIngestUpdateSurfaceKeysByGroup,
+  type IngestBatchUpdateRequest,
+  type IngestUpdateRequest,
+  type IngestUpdateSelection,
+  type IngestUpdateSurfaceKey,
+  type IngestUpdateSurfaceKeysByGroup
+} from './common'
+
+// A movie owns no child rows below the entry, so its core group is the entry's
+// own facts plus the collections every media type carries.
+export const MOVIE_UPDATE_SURFACES = defineIngestUpdateSurfaces([
+  { key: 'name', group: 'core', cardinality: 'singular' },
+  { key: 'originalName', group: 'core', cardinality: 'singular' },
+  { key: 'releaseDate', group: 'core', cardinality: 'singular' },
+  { key: 'description', group: 'core', cardinality: 'singular' },
+  { key: 'format', group: 'core', cardinality: 'singular' },
+  { key: 'runtimeMs', group: 'core', cardinality: 'singular' },
+  { key: 'externalSites', group: 'core', cardinality: 'collection' },
+  { key: 'externalIds', group: 'core', cardinality: 'collection' },
+  { key: 'tags', group: 'core', cardinality: 'collection' },
+  { key: 'person', group: 'relation', cardinality: 'collection' },
+  { key: 'company', group: 'relation', cardinality: 'collection' },
+  { key: 'character', group: 'relation', cardinality: 'collection' },
+  { key: 'characterPerson', group: 'relation', cardinality: 'collection' },
+  { key: 'relatedEntries', group: 'relation', cardinality: 'collection' },
+  { key: 'covers', group: 'media', cardinality: 'singular' },
+  { key: 'backdrops', group: 'media', cardinality: 'singular' },
+  { key: 'logos', group: 'media', cardinality: 'singular' }
+] as const)
+
+export const MOVIE_UPDATE_SURFACE_KEYS = listIngestUpdateSurfaceKeys(MOVIE_UPDATE_SURFACES)
+export const MOVIE_UPDATE_CORE_SURFACES = listIngestUpdateSurfaceKeysByGroup(
+  MOVIE_UPDATE_SURFACES,
+  'core'
+)
+export const MOVIE_UPDATE_RELATION_SURFACES = listIngestUpdateSurfaceKeysByGroup(
+  MOVIE_UPDATE_SURFACES,
+  'relation'
+)
+export const MOVIE_UPDATE_MEDIA_SURFACES = listIngestUpdateSurfaceKeysByGroup(
+  MOVIE_UPDATE_SURFACES,
+  'media'
+)
+
+export type MovieUpdateSurface = IngestUpdateSurfaceKey<typeof MOVIE_UPDATE_SURFACES>
+export type MovieUpdateCoreSurface = IngestUpdateSurfaceKeysByGroup<
+  typeof MOVIE_UPDATE_SURFACES,
+  'core'
+>
+export type MovieUpdateRelationSurface = IngestUpdateSurfaceKeysByGroup<
+  typeof MOVIE_UPDATE_SURFACES,
+  'relation'
+>
+export type MovieUpdateMediaSurface = IngestUpdateSurfaceKeysByGroup<
+  typeof MOVIE_UPDATE_SURFACES,
+  'media'
+>
+
+export type MovieUpdateSelection = IngestUpdateSelection<MovieUpdateSurface>
+export type MovieUpdateRequest = IngestUpdateRequest<MovieUpdateSurface, MovieScraperLookup>
+export type MovieBatchUpdateRequest = IngestBatchUpdateRequest<MovieUpdateSurface>

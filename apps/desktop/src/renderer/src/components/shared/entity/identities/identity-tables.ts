@@ -13,7 +13,9 @@ import {
   characterExternalIds,
   companyExternalIds,
   gameExternalIds,
-  personExternalIds
+  movieExternalIds,
+  personExternalIds,
+  tvExternalIds
 } from '@shared/db'
 import type { TableEntityType } from '../entity-tables'
 
@@ -67,6 +69,46 @@ export const IDENTITY_STORES: Record<TableEntityType, IdentityStore> = {
         await db
           .insert(animeExternalIds)
           .values(rows.map((row, index) => ({ ...row, animeId: anchorId, orderInAnime: index })))
+      }
+    }
+  },
+  tv: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: tvExternalIds.id,
+          source: tvExternalIds.source,
+          externalId: tvExternalIds.externalId
+        })
+        .from(tvExternalIds)
+        .where(eq(tvExternalIds.tvId, anchorId))
+        .orderBy(asc(tvExternalIds.orderInTv)),
+    replace: async (anchorId, rows) => {
+      await db.delete(tvExternalIds).where(eq(tvExternalIds.tvId, anchorId))
+      if (rows.length > 0) {
+        await db
+          .insert(tvExternalIds)
+          .values(rows.map((row, index) => ({ ...row, tvId: anchorId, orderInTv: index })))
+      }
+    }
+  },
+  movie: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: movieExternalIds.id,
+          source: movieExternalIds.source,
+          externalId: movieExternalIds.externalId
+        })
+        .from(movieExternalIds)
+        .where(eq(movieExternalIds.movieId, anchorId))
+        .orderBy(asc(movieExternalIds.orderInMovie)),
+    replace: async (anchorId, rows) => {
+      await db.delete(movieExternalIds).where(eq(movieExternalIds.movieId, anchorId))
+      if (rows.length > 0) {
+        await db
+          .insert(movieExternalIds)
+          .values(rows.map((row, index) => ({ ...row, movieId: anchorId, orderInMovie: index })))
       }
     }
   },

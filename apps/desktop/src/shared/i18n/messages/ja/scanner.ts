@@ -80,8 +80,8 @@ export const scanner = {
 
   fix: {
     title: 'スキャン結果を修正',
-    updateExisting: '既存のゲームを更新',
-    readdGame: 'ゲームを再追加',
+    updateExisting: '既存のエントリを更新',
+    readd: 'エントリを再追加',
     started: '再スクレイプを開始しました。',
     startFailed: '修正を開始できませんでした',
     unknownError: '不明なエラー',
@@ -242,7 +242,7 @@ export const scanner = {
         '外部 ID が既存の項目に関連付けられているため、このパスは追加しませんでした。',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 件の動画ファイルは話数を判別できないため、番号なしのエピソードとして追加しました。`,
-      episodeSyncFailed:
+      fileSyncFailed:
         '項目は追加しましたが、動画ファイルの同期に失敗しました。詳細はログを参照してください。'
     }
   }

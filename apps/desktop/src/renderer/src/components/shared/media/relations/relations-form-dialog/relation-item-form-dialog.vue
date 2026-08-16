@@ -30,7 +30,9 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { AnimeSelect } from '@renderer/components/shared/anime'
 import { GameSelect } from '@renderer/components/shared/game'
-import { db } from '@renderer/core/db'
+import { MovieSelect } from '@renderer/components/shared/movie'
+import { TvSelect } from '@renderer/components/shared/tv'
+import { queryEntityNames } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 
@@ -45,8 +47,8 @@ export interface MediaRelationDraft {
 interface Props {
   mediaType: MediaType
   initialData?: MediaRelationDraft
-  excludeGameIds: string[]
-  excludeAnimeIds: string[]
+  /** Ids already spoken for, per media type: the owning entry and listed targets. */
+  excludeIdsByType: Record<MediaType, string[]>
 }
 
 const props = defineProps<Props>()
@@ -75,8 +77,7 @@ const formData = ref<MediaRelationDraft>({
 })
 
 const selectExcludeIds = computed(() => {
-  const excludeIds =
-    formData.value.targetType === 'game' ? props.excludeGameIds : props.excludeAnimeIds
+  const excludeIds = props.excludeIdsByType[formData.value.targetType]
 
   return isAddMode.value ? excludeIds : excludeIds.filter((id) => id !== formData.value.targetId)
 })
@@ -132,10 +133,7 @@ watch(
       formData.value.targetName = ''
       return
     }
-    const row =
-      formData.value.targetType === 'game'
-        ? await db.query.games.findFirst({ where: (t, { eq }) => eq(t.id, targetId) })
-        : await db.query.animes.findFirst({ where: (t, { eq }) => eq(t.id, targetId) })
+    const [row] = await queryEntityNames(formData.value.targetType, [targetId], true)
     formData.value.targetName = row?.name ?? ''
   }
 )
@@ -202,11 +200,27 @@ function handleCancel() {
                   "
                 />
                 <AnimeSelect
-                  v-else
+                  v-else-if="formData.targetType === 'anime'"
                   v-model="formData.targetId"
                   :exclude-ids="selectExcludeIds"
                   :placeholder="
                     m.library.select.selectPlaceholder({ label: m.library.entities.anime })
+                  "
+                />
+                <TvSelect
+                  v-else-if="formData.targetType === 'tv'"
+                  v-model="formData.targetId"
+                  :exclude-ids="selectExcludeIds"
+                  :placeholder="
+                    m.library.select.selectPlaceholder({ label: m.library.entities.tv })
+                  "
+                />
+                <MovieSelect
+                  v-else
+                  v-model="formData.targetId"
+                  :exclude-ids="selectExcludeIds"
+                  :placeholder="
+                    m.library.select.selectPlaceholder({ label: m.library.entities.movie })
                   "
                 />
               </FieldContent>

@@ -8,8 +8,6 @@ export const anime = {
   watchNext: 'Watch next',
   stop: 'Stop',
   showDetail: 'Show details',
-  starting: 'Starting',
-  playing: 'Playing',
 
   episodes: {
     title: 'Episodes',
@@ -131,7 +129,6 @@ export const anime = {
   player: {
     pause: 'Pause',
     resume: 'Resume',
-    paused: 'Paused',
     pauseFailed: 'Could not pause playback.',
     resumeFailed: 'Could not resume playback.'
   },

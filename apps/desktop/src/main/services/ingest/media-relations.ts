@@ -22,6 +22,8 @@ import {
   animeExternalIdLink,
   findExternalIdOwners,
   gameExternalIdLink,
+  movieExternalIdLink,
+  tvExternalIdLink,
   type DbContext,
   type ExternalIdLinkTable
 } from '@main/services/db'
@@ -30,7 +32,9 @@ import { normalizeOptionalString } from './update/shared/normalization'
 
 const EXTERNAL_ID_LINK_BY_MEDIA_TYPE: Record<MediaType, ExternalIdLinkTable> = {
   game: gameExternalIdLink,
-  anime: animeExternalIdLink
+  anime: animeExternalIdLink,
+  tv: tvExternalIdLink,
+  movie: movieExternalIdLink
 }
 
 interface ResolvedRelationRow {

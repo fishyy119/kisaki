@@ -5,7 +5,13 @@ import type {
   CharacterPersonRole,
   GameCharacterRole,
   GameCompanyRole,
-  GamePersonRole
+  GamePersonRole,
+  MovieCharacterRole,
+  MovieCompanyRole,
+  MoviePersonRole,
+  TvCharacterRole,
+  TvCompanyRole,
+  TvPersonRole
 } from '@shared/db'
 import type { ScrapedRelatedEntryFact } from '@shared/scraper'
 import type {
@@ -14,7 +20,11 @@ import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
-  CorePersonMetadata
+  CoreMovieMetadata,
+  CorePersonMetadata,
+  CoreTvMetadata,
+  TvEpisodeInfo,
+  TvSeasonInfo
 } from '@shared/metadata'
 
 export interface IngestEntityNode<TCore> {
@@ -30,6 +40,10 @@ export interface IngestLinkBase {
 export type IngestGameNode = IngestEntityNode<CoreGameMetadata>
 
 export type IngestAnimeNode = IngestEntityNode<CoreAnimeMetadata>
+
+export type IngestTvNode = IngestEntityNode<CoreTvMetadata>
+
+export type IngestMovieNode = IngestEntityNode<CoreMovieMetadata>
 
 export interface IngestPersonNode extends IngestEntityNode<CorePersonMetadata> {
   photoUrls?: string[]
@@ -139,6 +153,104 @@ export interface IngestAnimeGraph {
   companies: IngestCompanyNode[]
   characters: IngestCharacterNode[]
   links: IngestAnimeGraphLinks
+  /** Media-relation facts pass through unresolved; persist resolves against the library. */
+  relatedEntries?: ScrapedRelatedEntryFact[]
+  media: {
+    coverUrl?: string
+    backdropUrl?: string
+    logoUrl?: string
+  }
+}
+
+export interface IngestTvPersonLink extends IngestLinkBase {
+  tvIdentityKey: string
+  personIdentityKey: string
+  role: TvPersonRole
+  orderInTv: number
+  orderInPerson: number
+}
+
+export interface IngestTvCompanyLink extends IngestLinkBase {
+  tvIdentityKey: string
+  companyIdentityKey: string
+  role: TvCompanyRole
+  orderInTv: number
+  orderInCompany: number
+}
+
+export interface IngestTvCharacterLink extends IngestLinkBase {
+  tvIdentityKey: string
+  characterIdentityKey: string
+  role: TvCharacterRole
+  orderInTv: number
+  orderInCharacter: number
+}
+
+/** Link rows a tv graph produces, keyed by the link table they populate. */
+export interface IngestTvGraphLinks {
+  tvPerson: IngestTvPersonLink[]
+  tvCompany: IngestTvCompanyLink[]
+  tvCharacter: IngestTvCharacterLink[]
+  characterPerson: IngestCharacterPersonLink[]
+}
+
+export interface IngestTvGraph {
+  tv: IngestTvNode
+  /** Absent means the scrape could not answer seasons; an empty array means none exist. */
+  seasons?: TvSeasonInfo[]
+  /** Absent means the scrape could not answer episodes; an empty array means none exist. */
+  episodes?: TvEpisodeInfo[]
+  persons: IngestPersonNode[]
+  companies: IngestCompanyNode[]
+  characters: IngestCharacterNode[]
+  links: IngestTvGraphLinks
+  /** Media-relation facts pass through unresolved; persist resolves against the library. */
+  relatedEntries?: ScrapedRelatedEntryFact[]
+  media: {
+    coverUrl?: string
+    backdropUrl?: string
+    logoUrl?: string
+  }
+}
+
+export interface IngestMoviePersonLink extends IngestLinkBase {
+  movieIdentityKey: string
+  personIdentityKey: string
+  role: MoviePersonRole
+  orderInMovie: number
+  orderInPerson: number
+}
+
+export interface IngestMovieCompanyLink extends IngestLinkBase {
+  movieIdentityKey: string
+  companyIdentityKey: string
+  role: MovieCompanyRole
+  orderInMovie: number
+  orderInCompany: number
+}
+
+export interface IngestMovieCharacterLink extends IngestLinkBase {
+  movieIdentityKey: string
+  characterIdentityKey: string
+  role: MovieCharacterRole
+  orderInMovie: number
+  orderInCharacter: number
+}
+
+/** Link rows a movie graph produces, keyed by the link table they populate. */
+export interface IngestMovieGraphLinks {
+  moviePerson: IngestMoviePersonLink[]
+  movieCompany: IngestMovieCompanyLink[]
+  movieCharacter: IngestMovieCharacterLink[]
+  characterPerson: IngestCharacterPersonLink[]
+}
+
+export interface IngestMovieGraph {
+  movie: IngestMovieNode
+  persons: IngestPersonNode[]
+  companies: IngestCompanyNode[]
+  characters: IngestCharacterNode[]
+  links: IngestMovieGraphLinks
   /** Media-relation facts pass through unresolved; persist resolves against the library. */
   relatedEntries?: ScrapedRelatedEntryFact[]
   media: {

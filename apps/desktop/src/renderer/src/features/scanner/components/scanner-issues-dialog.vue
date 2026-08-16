@@ -31,8 +31,9 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
-import { animes, games, settings } from '@shared/db'
-import type { MediaType } from '@shared/common'
+import { ENTITY_TABLES } from '@renderer/core/db/entity-tables'
+import { settings } from '@shared/db'
+import { MEDIA_TYPES, type MediaType } from '@shared/common'
 import type { ScannerRunIssueType } from '@shared/scanner'
 import ScannerResultFixDialog from './scanner-result-fix-dialog.vue'
 import {
@@ -126,33 +127,21 @@ const { data: relatedEntityNames, refetch: refetchRelatedEntityNames } = useAsyn
   async () => {
     const names = new Map<string, string>()
 
-    const gameIds = [...(relatedEntityIds.value.get('game') ?? [])]
-    if (gameIds.length > 0) {
-      const rows = await db
-        .select({ id: games.id, name: games.name })
-        .from(games)
-        .where(
-          showNsfw.value
-            ? inArray(games.id, gameIds)
-            : and(inArray(games.id, gameIds), eq(games.isNsfw, false))
-        )
-      for (const row of rows) {
-        names.set(row.id, row.name)
-      }
-    }
+    for (const [mediaType, idSet] of relatedEntityIds.value) {
+      const ids = [...idSet]
+      if (ids.length === 0) continue
 
-    const animeIds = [...(relatedEntityIds.value.get('anime') ?? [])]
-    if (animeIds.length > 0) {
+      const { table, idColumn, nameColumn, isNsfwColumn } = ENTITY_TABLES[mediaType]
       const rows = await db
-        .select({ id: animes.id, name: animes.name })
-        .from(animes)
+        .select({ id: idColumn, name: nameColumn })
+        .from(table)
         .where(
           showNsfw.value
-            ? inArray(animes.id, animeIds)
-            : and(inArray(animes.id, animeIds), eq(animes.isNsfw, false))
+            ? inArray(idColumn, ids)
+            : and(inArray(idColumn, ids), eq(isNsfwColumn, false))
         )
       for (const row of rows) {
-        names.set(row.id, row.name)
+        names.set(row.id as string, row.name as string)
       }
     }
 
@@ -213,11 +202,6 @@ async function handleOpenPath(path: string) {
   }
 }
 
-/** Re-scraping an issue needs an update ingest pipeline, which only games have. */
-function canFixIssue(row: ScannerIssueRow): boolean {
-  return row.issue.fixable && row.mediaType === 'game'
-}
-
 function handleFixIssue(row: ScannerIssueRow) {
   fixTarget.value = toIssueFixTarget(row)
   fixDialogOpen.value = true
@@ -250,8 +234,12 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
   }
 }
 
+const MEDIA_TABLE_NAMES = new Set<string>(
+  MEDIA_TYPES.map((mediaType) => ENTITY_TABLES[mediaType].tableName)
+)
+
 useDbChanges(({ operation, table }) => {
-  if (operation === 'updated' && (table === 'games' || table === 'animes')) {
+  if (operation === 'updated' && MEDIA_TABLE_NAMES.has(table)) {
     refetchRelatedEntityNames()
   }
 })
@@ -430,7 +418,7 @@ useDbChanges(({ operation, table }) => {
                       size="icon-sm"
                       class="text-muted-foreground hover:text-foreground"
                       :tooltip="m.scanner.issues.fixAndRescrape"
-                      :disabled="!canFixIssue(row)"
+                      :disabled="!row.issue.fixable"
                       @click="handleFixIssue(row)"
                     >
                       <Icon

@@ -30,7 +30,7 @@ import { notify } from '@renderer/core/notify'
 import { animeExtraFiles, animeExtras } from '@shared/db'
 import AnimeExtraFormDialog from './extra-form-dialog.vue'
 import AnimeFileRecordList from './file-record-list.vue'
-import AnimePlaybackProgress from './playback-progress.vue'
+import { MediaPlaybackProgress } from '@renderer/components/shared/media'
 
 const log = createLogger('Anime')
 
@@ -116,7 +116,7 @@ async function handleDelete(): Promise<void> {
 
         <DialogBody class="flex-1 min-h-0 overflow-auto space-y-4">
           <!-- Live playback progress -->
-          <AnimePlaybackProgress
+          <MediaPlaybackProgress
             v-if="isPlaying"
             :status="playbackStatus"
             :progress="playbackProgress"

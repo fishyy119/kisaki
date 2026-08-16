@@ -1,9 +1,15 @@
-import type { ScrapedAnimeCompanyFact, ScrapedTag } from '@kisaki3/extension-sdk'
+import type {
+  ScrapedAnimeCompanyFact,
+  ScrapedCompanyMetadata,
+  ScrapedMovieCompanyFact,
+  ScrapedTag,
+  ScrapedTvCompanyFact
+} from '@kisaki3/extension-sdk'
 import type { TmdbCompanySummary } from '../../api/types'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
 import { omitUndefined } from '../../utils/object'
 import { buildImageUrl } from './images'
-import { mapTmdbCompanyRole } from './roles'
+import { mapTmdbCompanyRole, mapTmdbMovieCompanyRole, mapTmdbTvCompanyRole } from './roles'
 import { buildExternalSites, tmdbCompanyUrl, tmdbSite } from './sites'
 import { trimToUndefined } from './text'
 
@@ -11,41 +17,72 @@ import { trimToUndefined } from './text'
 const COUNTRY_TAG_NOTE = 'Country'
 const NETWORK_NOTE = 'Network'
 
+type CompanyFact<TRole extends string> = ScrapedCompanyMetadata & { role: TRole; note?: string }
+
+type TmdbCompanyKind = 'production' | 'network'
+
 /**
  * Production companies and networks as library company facts.
  *
  * A company credited both ways keeps its first credit, which is the production
  * one: making the show is the stronger statement.
  */
-export function buildAnimeCompanyFacts(
+function buildCompanyFacts<TRole extends string>(
   production: readonly TmdbCompanySummary[] | undefined,
   networks: readonly TmdbCompanySummary[] | undefined,
-  imageBaseUrl: string
-): ScrapedAnimeCompanyFact[] {
-  const facts = new Map<number, ScrapedAnimeCompanyFact>()
+  imageBaseUrl: string,
+  mapRole: (kind: TmdbCompanyKind) => TRole
+): CompanyFact<TRole>[] {
+  const facts = new Map<number, CompanyFact<TRole>>()
 
   for (const company of production ?? []) {
     if (!facts.has(company.id)) {
-      facts.set(company.id, toCompanyFact(company, 'production', imageBaseUrl))
+      facts.set(company.id, toCompanyFact(company, 'production', mapRole, imageBaseUrl))
     }
   }
 
   for (const network of networks ?? []) {
     if (!facts.has(network.id)) {
-      facts.set(network.id, toCompanyFact(network, 'network', imageBaseUrl))
+      facts.set(network.id, toCompanyFact(network, 'network', mapRole, imageBaseUrl))
     }
   }
 
   return [...facts.values()]
 }
 
-function toCompanyFact(
-  company: TmdbCompanySummary,
-  kind: 'production' | 'network',
+export function buildAnimeCompanyFacts(
+  production: readonly TmdbCompanySummary[] | undefined,
+  networks: readonly TmdbCompanySummary[] | undefined,
   imageBaseUrl: string
-): ScrapedAnimeCompanyFact {
+): ScrapedAnimeCompanyFact[] {
+  return buildCompanyFacts(production, networks, imageBaseUrl, mapTmdbCompanyRole)
+}
+
+export function buildTvCompanyFacts(
+  production: readonly TmdbCompanySummary[] | undefined,
+  networks: readonly TmdbCompanySummary[] | undefined,
+  imageBaseUrl: string
+): ScrapedTvCompanyFact[] {
+  return buildCompanyFacts(production, networks, imageBaseUrl, mapTmdbTvCompanyRole)
+}
+
+/** TMDB credits a film's companies as production only. */
+export function buildMovieCompanyFacts(
+  production: readonly TmdbCompanySummary[] | undefined,
+  imageBaseUrl: string
+): ScrapedMovieCompanyFact[] {
+  return buildCompanyFacts(production, undefined, imageBaseUrl, mapTmdbMovieCompanyRole)
+}
+
+function toCompanyFact<TRole extends string>(
+  company: TmdbCompanySummary,
+  kind: TmdbCompanyKind,
+  mapRole: (kind: TmdbCompanyKind) => TRole,
+  imageBaseUrl: string
+): CompanyFact<TRole> {
   const logo = buildImageUrl(imageBaseUrl, company.logo_path)
   const tags = buildCountryTags(company.origin_country)
+  const role = mapRole(kind)
 
   return {
     ...omitUndefined({
@@ -55,10 +92,11 @@ function toCompanyFact(
       externalSites: buildExternalSites([tmdbSite(tmdbCompanyUrl(company.id))]),
       logos: logo ? [logo] : undefined,
       tags: tags.length > 0 ? tags : undefined,
-      note: kind === 'network' ? NETWORK_NOTE : undefined
+      // Only worth stating when the role vocabulary cannot name a carrier.
+      note: kind === 'network' && role !== 'network' ? NETWORK_NOTE : undefined
     }),
     identity: { externalIds: [{ source: TMDB_SOURCE_ID, id: String(company.id) }] },
-    role: mapTmdbCompanyRole(kind)
+    role
   }
 }
 

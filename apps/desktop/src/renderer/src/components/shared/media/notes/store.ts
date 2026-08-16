@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { attachment, db } from '@renderer/core/db'
 import type { MediaType } from '@shared/common'
-import { animeNotes, gameNotes } from '@shared/db'
+import { animeNotes, gameNotes, movieNotes, tvNotes } from '@shared/db'
 
 /** Media-neutral note row consumed by the shared notes components. */
 export interface MediaNoteRow {
@@ -135,6 +135,102 @@ export const MEDIA_NOTE_STORES: Record<MediaType, MediaNoteStore> = {
     },
     clearCover: async (id) => {
       await attachment.clearFile(animeNotes, id, 'coverFile')
+    }
+  },
+  tv: {
+    tableName: 'tv_notes',
+    find: async (id) => {
+      const rows = await db
+        .select({
+          id: tvNotes.id,
+          name: tvNotes.name,
+          content: tvNotes.content,
+          coverFile: tvNotes.coverFile,
+          order: tvNotes.orderInTv,
+          createdAt: tvNotes.createdAt,
+          updatedAt: tvNotes.updatedAt
+        })
+        .from(tvNotes)
+        .where(eq(tvNotes.id, id))
+        .limit(1)
+      return rows[0]
+    },
+    create: async (anchorId, data) => {
+      const id = nanoid()
+      await db.insert(tvNotes).values({
+        id,
+        tvId: anchorId,
+        name: data.name,
+        content: data.content,
+        orderInTv: data.order
+      })
+      return id
+    },
+    update: async (id, data) => {
+      await db
+        .update(tvNotes)
+        .set({ name: data.name, content: data.content, updatedAt: new Date() })
+        .where(eq(tvNotes.id, id))
+    },
+    remove: async (id) => {
+      await db.delete(tvNotes).where(eq(tvNotes.id, id))
+    },
+    setOrder: async (id, order) => {
+      await db.update(tvNotes).set({ orderInTv: order }).where(eq(tvNotes.id, id))
+    },
+    setCover: async (id, sourcePath) => {
+      await attachment.setFile(tvNotes, id, 'coverFile', { kind: 'path', path: sourcePath })
+    },
+    clearCover: async (id) => {
+      await attachment.clearFile(tvNotes, id, 'coverFile')
+    }
+  },
+  movie: {
+    tableName: 'movie_notes',
+    find: async (id) => {
+      const rows = await db
+        .select({
+          id: movieNotes.id,
+          name: movieNotes.name,
+          content: movieNotes.content,
+          coverFile: movieNotes.coverFile,
+          order: movieNotes.orderInMovie,
+          createdAt: movieNotes.createdAt,
+          updatedAt: movieNotes.updatedAt
+        })
+        .from(movieNotes)
+        .where(eq(movieNotes.id, id))
+        .limit(1)
+      return rows[0]
+    },
+    create: async (anchorId, data) => {
+      const id = nanoid()
+      await db.insert(movieNotes).values({
+        id,
+        movieId: anchorId,
+        name: data.name,
+        content: data.content,
+        orderInMovie: data.order
+      })
+      return id
+    },
+    update: async (id, data) => {
+      await db
+        .update(movieNotes)
+        .set({ name: data.name, content: data.content, updatedAt: new Date() })
+        .where(eq(movieNotes.id, id))
+    },
+    remove: async (id) => {
+      await db.delete(movieNotes).where(eq(movieNotes.id, id))
+    },
+    setOrder: async (id, order) => {
+      await db.update(movieNotes).set({ orderInMovie: order }).where(eq(movieNotes.id, id))
+    },
+    setCover: async (id, sourcePath) => {
+      await attachment.setFile(movieNotes, id, 'coverFile', { kind: 'path', path: sourcePath })
+    },
+    clearCover: async (id) => {
+      await attachment.clearFile(movieNotes, id, 'coverFile')
     }
   }
 }

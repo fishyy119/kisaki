@@ -28,7 +28,7 @@
  * (anime/tv/movie all play video). Target set: game, anime, tv, movie, music,
  * audio, comic, book.
  */
-export type MediaType = 'game' | 'anime'
+export type MediaType = 'game' | 'anime' | 'tv' | 'movie'
 
 /**
  * Metadata entity types - Entities associated with media
@@ -80,7 +80,7 @@ export type AllEntityType = ContentEntityType | OrganizerType
 // Type Constants (for iteration and validation)
 // =============================================================================
 
-export const MEDIA_TYPES: readonly MediaType[] = ['game', 'anime']
+export const MEDIA_TYPES: readonly MediaType[] = ['game', 'anime', 'tv', 'movie']
 
 export const METADATA_TYPES: readonly MetadataType[] = ['character', 'person', 'company']
 

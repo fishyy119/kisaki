@@ -195,6 +195,174 @@ export const ANIME_EXTRA_TYPE_VALUES = [
   'other'
 ] as const satisfies readonly AnimeExtraType[]
 
+/** TV watch status; shows track the same wish/doing/done/on-hold/dropped states. */
+export type TvStatus = 'planned' | 'watching' | 'completed' | 'onHold' | 'dropped'
+
+/** TV status values in canonical display order. */
+export const TV_STATUS_VALUES = [
+  'planned',
+  'watching',
+  'completed',
+  'onHold',
+  'dropped'
+] as const satisfies readonly TvStatus[]
+
+/** TV production format */
+export type TvFormat =
+  'scripted' | 'miniseries' | 'documentary' | 'reality' | 'talkShow' | 'variety' | 'news' | 'other'
+
+/** TV format values in canonical display order. */
+export const TV_FORMAT_VALUES = [
+  'scripted',
+  'miniseries',
+  'documentary',
+  'reality',
+  'talkShow',
+  'variety',
+  'news',
+  'other'
+] as const satisfies readonly TvFormat[]
+
+/** TV-person link role */
+export type TvPersonRole =
+  | 'creator'
+  | 'director'
+  | 'writer'
+  | 'producer'
+  | 'music'
+  | 'cinematography'
+  | 'editing'
+  | 'actor'
+  | 'other'
+
+/** TV-person role values in canonical display order. */
+export const TV_PERSON_ROLE_VALUES = [
+  'creator',
+  'director',
+  'writer',
+  'producer',
+  'music',
+  'cinematography',
+  'editing',
+  'actor',
+  'other'
+] as const satisfies readonly TvPersonRole[]
+
+/** TV-character link role */
+export type TvCharacterRole = 'main' | 'supporting' | 'cameo' | 'other'
+
+/** TV-character role values in canonical display order. */
+export const TV_CHARACTER_ROLE_VALUES = [
+  'main',
+  'supporting',
+  'cameo',
+  'other'
+] as const satisfies readonly TvCharacterRole[]
+
+/** TV-company link role; broadcasters are a role shows have and films do not. */
+export type TvCompanyRole = 'network' | 'studio' | 'producer' | 'distributor' | 'other'
+
+/** TV-company role values in canonical display order. */
+export const TV_COMPANY_ROLE_VALUES = [
+  'network',
+  'studio',
+  'producer',
+  'distributor',
+  'other'
+] as const satisfies readonly TvCompanyRole[]
+
+/** Supplementary TV asset type; these never carry watch state. */
+export type TvExtraType =
+  'trailer' | 'teaser' | 'behindTheScenes' | 'featurette' | 'deletedScene' | 'interview' | 'other'
+
+/** TV extra type values in canonical display order. */
+export const TV_EXTRA_TYPE_VALUES = [
+  'trailer',
+  'teaser',
+  'behindTheScenes',
+  'featurette',
+  'deletedScene',
+  'interview',
+  'other'
+] as const satisfies readonly TvExtraType[]
+
+/** Movie watch status; a film is one unit, so the same states still apply. */
+export type MovieStatus = 'planned' | 'watching' | 'completed' | 'onHold' | 'dropped'
+
+/** Movie status values in canonical display order. */
+export const MOVIE_STATUS_VALUES = [
+  'planned',
+  'watching',
+  'completed',
+  'onHold',
+  'dropped'
+] as const satisfies readonly MovieStatus[]
+
+/** Movie release format */
+export type MovieFormat = 'theatrical' | 'documentary' | 'short' | 'tvMovie' | 'other'
+
+/** Movie format values in canonical display order. */
+export const MOVIE_FORMAT_VALUES = [
+  'theatrical',
+  'documentary',
+  'short',
+  'tvMovie',
+  'other'
+] as const satisfies readonly MovieFormat[]
+
+/** Movie-person link role */
+export type MoviePersonRole =
+  'director' | 'writer' | 'producer' | 'music' | 'cinematography' | 'editing' | 'actor' | 'other'
+
+/** Movie-person role values in canonical display order. */
+export const MOVIE_PERSON_ROLE_VALUES = [
+  'director',
+  'writer',
+  'producer',
+  'music',
+  'cinematography',
+  'editing',
+  'actor',
+  'other'
+] as const satisfies readonly MoviePersonRole[]
+
+/** Movie-character link role */
+export type MovieCharacterRole = 'main' | 'supporting' | 'cameo' | 'other'
+
+/** Movie-character role values in canonical display order. */
+export const MOVIE_CHARACTER_ROLE_VALUES = [
+  'main',
+  'supporting',
+  'cameo',
+  'other'
+] as const satisfies readonly MovieCharacterRole[]
+
+/** Movie-company link role */
+export type MovieCompanyRole = 'studio' | 'producer' | 'distributor' | 'other'
+
+/** Movie-company role values in canonical display order. */
+export const MOVIE_COMPANY_ROLE_VALUES = [
+  'studio',
+  'producer',
+  'distributor',
+  'other'
+] as const satisfies readonly MovieCompanyRole[]
+
+/** Supplementary movie asset type; these never carry watch state. */
+export type MovieExtraType =
+  'trailer' | 'teaser' | 'behindTheScenes' | 'featurette' | 'deletedScene' | 'interview' | 'other'
+
+/** Movie extra type values in canonical display order. */
+export const MOVIE_EXTRA_TYPE_VALUES = [
+  'trailer',
+  'teaser',
+  'behindTheScenes',
+  'featurette',
+  'deletedScene',
+  'interview',
+  'other'
+] as const satisfies readonly MovieExtraType[]
+
 /** Blood type */
 export type BloodType = 'a' | 'b' | 'ab' | 'o'
 

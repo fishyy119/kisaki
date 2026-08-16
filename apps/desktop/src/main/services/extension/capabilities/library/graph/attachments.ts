@@ -11,7 +11,7 @@ import {
   type LibraryGraphMediaAttachmentEdge,
   type SaveBackup
 } from '@kisaki3/extension-api'
-import { animeEpisodes, gameNotes } from '@shared/db'
+import { animeEpisodes, gameNotes, tvEpisodes, tvSeasons } from '@shared/db'
 import type { DbService } from '@main/services/db'
 import { assertInsideAnyRoot } from '../../../shared/path-confinement'
 import { createDiagnostic } from './diagnostics'
@@ -94,15 +94,28 @@ export async function persistNoteCover(
 
 export async function persistEpisodeStill(
   db: DbService,
+  mediaType: 'anime' | 'tv',
   episodeId: string,
   stillPath: string,
   signal?: AbortSignal
 ): Promise<string> {
+  const source = { kind: 'path', path: stillPath } as const
+  return mediaType === 'tv'
+    ? await db.attachment.setFile(tvEpisodes, episodeId, 'stillFile', source, signal)
+    : await db.attachment.setFile(animeEpisodes, episodeId, 'stillFile', source, signal)
+}
+
+export async function persistSeasonPoster(
+  db: DbService,
+  seasonId: string,
+  posterPath: string,
+  signal?: AbortSignal
+): Promise<string> {
   return await db.attachment.setFile(
-    animeEpisodes,
-    episodeId,
-    'stillFile',
-    { kind: 'path', path: stillPath },
+    tvSeasons,
+    seasonId,
+    'posterFile',
+    { kind: 'path', path: posterPath },
     signal
   )
 }

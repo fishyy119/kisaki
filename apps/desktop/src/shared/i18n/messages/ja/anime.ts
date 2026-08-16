@@ -6,8 +6,6 @@ export const anime = {
   watchNext: '次の話を見る',
   stop: '停止',
   showDetail: '詳細を表示',
-  starting: '起動中',
-  playing: '再生中',
 
   episodes: {
     title: 'エピソード',
@@ -120,7 +118,6 @@ export const anime = {
   player: {
     pause: '一時停止',
     resume: '再開',
-    paused: '一時停止中',
     pauseFailed: '再生を一時停止できませんでした。',
     resumeFailed: '再生を再開できませんでした。'
   },

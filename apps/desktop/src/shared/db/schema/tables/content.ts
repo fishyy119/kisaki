@@ -11,10 +11,14 @@ import {
   gameMonitorMode,
   gameStatus,
   gender,
+  movieFormat,
+  movieStatus,
   partialDate,
   externalSites,
   saveBackups,
-  stringArrayJson
+  stringArrayJson,
+  tvFormat,
+  tvStatus
 } from '../../columns'
 
 export const games = sqliteTable(
@@ -151,6 +155,160 @@ export const animeNotes = sqliteTable(
 
 export type AnimeNote = InferSelectModel<typeof animeNotes>
 export type NewAnimeNote = InferInsertModel<typeof animeNotes>
+
+/**
+ * One television show.
+ *
+ * The entry is the show, not the season: brand, showrunner, and source ids
+ * persist across renewals, so seasons are weak child rows in `tv_seasons` and
+ * the whole show owns one directory tree.
+ */
+export const tvs = sqliteTable(
+  'tvs',
+  {
+    ...baseColumns,
+    name: text('name').notNull().default('unknown tv'),
+    originalName: text('original_name'),
+    sortName: text('sort_name'),
+    coverFile: text('cover_file'),
+    backdropFile: text('backdrop_file'),
+    logoFile: text('logo_file'),
+    score: integer('score'),
+    isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+    /** First air date of the show; season air dates live on the season rows. */
+    releaseDate: partialDate('release_date'),
+    /** Last air date; null while the show is still running. */
+    endDate: partialDate('end_date'),
+    description: text('description'),
+    externalSites: externalSites('external_sites'),
+    status: tvStatus('status').notNull().default('planned'),
+    format: tvFormat('format').notNull().default('scripted'),
+    /** Season and episode counts declared by metadata; the rows remain authoritative. */
+    totalSeasons: integer('total_seasons'),
+    totalEpisodes: integer('total_episodes'),
+    lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
+    totalDuration: integer('total_duration').notNull().default(0),
+    tvDirPath: text('tv_dir_path'),
+    isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
+    descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
+  },
+  (t) => [
+    index('idx_tvs_status').on(t.status),
+    index('idx_tvs_format').on(t.format),
+    index('idx_tvs_is_favorite').on(t.isFavorite),
+    index('idx_tvs_is_nsfw').on(t.isNsfw),
+    index('idx_tvs_last_active_at').on(t.lastActiveAt),
+    index('idx_tvs_created_at').on(t.createdAt),
+    index('idx_tvs_name').on(t.name),
+    index('idx_tvs_score').on(t.score)
+  ]
+)
+
+export type Tv = InferSelectModel<typeof tvs>
+export type NewTv = InferInsertModel<typeof tvs>
+
+export const tvNotes = sqliteTable(
+  'tv_notes',
+  {
+    ...baseColumns,
+    tvId: text('tv_id')
+      .notNull()
+      .references(() => tvs.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    name: text('name').notNull(),
+    content: text('content'),
+    contentInlineFiles: stringArrayJson('content_inline_files').notNull().default([]),
+    coverFile: text('cover_file'),
+    orderInTv: integer('order_in_tv').notNull().default(0)
+  },
+  (t) => [
+    unique('unique_tv_notes_tv_id_name').on(t.tvId, t.name),
+    index('idx_tv_notes_tv_id').on(t.tvId),
+    index('idx_tv_notes_tv_id_order').on(t.tvId, t.orderInTv)
+  ]
+)
+
+export type TvNote = InferSelectModel<typeof tvNotes>
+export type NewTvNote = InferInsertModel<typeof tvNotes>
+
+/**
+ * One feature film.
+ *
+ * A movie is a single playable work, so watch state sits on the entry itself
+ * and the alternate releases of that work live in `movie_files`.
+ */
+export const movies = sqliteTable(
+  'movies',
+  {
+    ...baseColumns,
+    name: text('name').notNull().default('unknown movie'),
+    originalName: text('original_name'),
+    sortName: text('sort_name'),
+    coverFile: text('cover_file'),
+    backdropFile: text('backdrop_file'),
+    logoFile: text('logo_file'),
+    score: integer('score'),
+    isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+    releaseDate: partialDate('release_date'),
+    description: text('description'),
+    externalSites: externalSites('external_sites'),
+    status: movieStatus('status').notNull().default('planned'),
+    format: movieFormat('format').notNull().default('theatrical'),
+    /** Runtime declared by metadata; probed file durations stay authoritative. */
+    runtimeMs: integer('runtime_ms'),
+    /** Authoritative watch state; every marking path owns this column. */
+    watched: integer('watched', { mode: 'boolean' }).notNull().default(false),
+    /**
+     * Completion time of the last full playback. Manual and imported marks
+     * leave it null: they know the state without knowing a time, so a set
+     * `watched` with a null `watchedAt` is normal rather than inconsistent.
+     */
+    watchedAt: integer('watched_at', { mode: 'timestamp_ms' }),
+    playCount: integer('play_count').notNull().default(0),
+    resumePositionMs: integer('resume_position_ms'),
+    lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
+    totalDuration: integer('total_duration').notNull().default(0),
+    movieDirPath: text('movie_dir_path'),
+    isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
+    descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
+  },
+  (t) => [
+    index('idx_movies_status').on(t.status),
+    index('idx_movies_format').on(t.format),
+    index('idx_movies_watched').on(t.watched),
+    index('idx_movies_is_favorite').on(t.isFavorite),
+    index('idx_movies_is_nsfw').on(t.isNsfw),
+    index('idx_movies_last_active_at').on(t.lastActiveAt),
+    index('idx_movies_created_at').on(t.createdAt),
+    index('idx_movies_name').on(t.name),
+    index('idx_movies_score').on(t.score)
+  ]
+)
+
+export type Movie = InferSelectModel<typeof movies>
+export type NewMovie = InferInsertModel<typeof movies>
+
+export const movieNotes = sqliteTable(
+  'movie_notes',
+  {
+    ...baseColumns,
+    movieId: text('movie_id')
+      .notNull()
+      .references(() => movies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    name: text('name').notNull(),
+    content: text('content'),
+    contentInlineFiles: stringArrayJson('content_inline_files').notNull().default([]),
+    coverFile: text('cover_file'),
+    orderInMovie: integer('order_in_movie').notNull().default(0)
+  },
+  (t) => [
+    unique('unique_movie_notes_movie_id_name').on(t.movieId, t.name),
+    index('idx_movie_notes_movie_id').on(t.movieId),
+    index('idx_movie_notes_movie_id_order').on(t.movieId, t.orderInMovie)
+  ]
+)
+
+export type MovieNote = InferSelectModel<typeof movieNotes>
+export type NewMovieNote = InferInsertModel<typeof movieNotes>
 
 export const persons = sqliteTable(
   'persons',

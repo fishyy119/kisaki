@@ -13,8 +13,10 @@ import {
   characterTagLinks,
   companyTagLinks,
   gameTagLinks,
+  movieTagLinks,
   personTagLinks,
-  tags
+  tags,
+  tvTagLinks
 } from '@shared/db'
 import type { TableEntityType } from '../entity-tables'
 
@@ -79,6 +81,52 @@ export const TAG_LINK_STORES: Record<TableEntityType, TagLinkStore> = {
         await db
           .insert(animeTagLinks)
           .values(rows.map((row, index) => ({ ...row, animeId: anchorId, orderInAnime: index })))
+      }
+    }
+  },
+  tv: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: tvTagLinks.id,
+          tagId: tvTagLinks.tagId,
+          tagName: tags.name,
+          note: tvTagLinks.note,
+          isSpoiler: tvTagLinks.isSpoiler
+        })
+        .from(tvTagLinks)
+        .innerJoin(tags, eq(tvTagLinks.tagId, tags.id))
+        .where(eq(tvTagLinks.tvId, anchorId))
+        .orderBy(asc(tvTagLinks.orderInTv)),
+    replace: async (anchorId, rows) => {
+      await db.delete(tvTagLinks).where(eq(tvTagLinks.tvId, anchorId))
+      if (rows.length > 0) {
+        await db
+          .insert(tvTagLinks)
+          .values(rows.map((row, index) => ({ ...row, tvId: anchorId, orderInTv: index })))
+      }
+    }
+  },
+  movie: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: movieTagLinks.id,
+          tagId: movieTagLinks.tagId,
+          tagName: tags.name,
+          note: movieTagLinks.note,
+          isSpoiler: movieTagLinks.isSpoiler
+        })
+        .from(movieTagLinks)
+        .innerJoin(tags, eq(movieTagLinks.tagId, tags.id))
+        .where(eq(movieTagLinks.movieId, anchorId))
+        .orderBy(asc(movieTagLinks.orderInMovie)),
+    replace: async (anchorId, rows) => {
+      await db.delete(movieTagLinks).where(eq(movieTagLinks.movieId, anchorId))
+      if (rows.length > 0) {
+        await db
+          .insert(movieTagLinks)
+          .values(rows.map((row, index) => ({ ...row, movieId: anchorId, orderInMovie: index })))
       }
     }
   },

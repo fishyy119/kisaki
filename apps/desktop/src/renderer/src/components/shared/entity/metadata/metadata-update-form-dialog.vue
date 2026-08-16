@@ -151,9 +151,7 @@ async function handleSubmit() {
   if (selectedSurfaces.value.length === 0) return
 
   const { profileId, lookup } = selection.value
-  const storedKnownIds = useCurrentExternalIdsAsKnownIds.value
-    ? data.value.externalIds
-    : undefined
+  const storedKnownIds = useCurrentExternalIdsAsKnownIds.value ? data.value.externalIds : undefined
 
   const request: IngestUpdateRequest<string> = {
     rootId: props.entityId,

@@ -8,6 +8,6 @@ export {
   PersonDetailContent,
   PersonDetailDialog,
   PersonDetailOverviewTab,
-  PersonDetailGamesTab,
+  PersonDetailWorksTab,
   PersonDetailCharactersTab
 } from './detail'

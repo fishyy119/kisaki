@@ -12,8 +12,10 @@ import { characterFilterQuerySpec } from './character'
 import { collectionFilterQuerySpec } from './collection'
 import { companyFilterQuerySpec } from './company'
 import { gameFilterQuerySpec } from './game'
+import { movieFilterQuerySpec } from './movie'
 import { personFilterQuerySpec } from './person'
 import { tagFilterQuerySpec } from './tag'
+import { tvFilterQuerySpec } from './tv'
 
 export function getFilterQuerySpec(entityType: AllEntityType): FilterQuerySpec {
   switch (entityType) {
@@ -21,6 +23,10 @@ export function getFilterQuerySpec(entityType: AllEntityType): FilterQuerySpec {
       return gameFilterQuerySpec
     case 'anime':
       return animeFilterQuerySpec
+    case 'tv':
+      return tvFilterQuerySpec
+    case 'movie':
+      return movieFilterQuerySpec
     case 'character':
       return characterFilterQuerySpec
     case 'person':

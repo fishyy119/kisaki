@@ -15,13 +15,17 @@ import {
   type IngestAddCharacterFromScraperResult,
   type IngestAddCompanyFromScraperResult,
   type IngestAddGameFromScraperResult,
-  type IngestAddPersonFromScraperResult
+  type IngestAddMovieFromScraperResult,
+  type IngestAddPersonFromScraperResult,
+  type IngestAddTvFromScraperResult
 } from '@shared/ingest/add'
 import { AnimeSearcher } from '@renderer/components/shared/anime'
 import { CharacterSearcher } from '@renderer/components/shared/character'
 import { CompanySearcher } from '@renderer/components/shared/company'
 import { GameSearcher } from '@renderer/components/shared/game'
+import { MovieSearcher } from '@renderer/components/shared/movie'
 import { PersonSearcher } from '@renderer/components/shared/person'
+import { TvSearcher } from '@renderer/components/shared/tv'
 
 interface SubmitOutcome {
   success: boolean
@@ -56,6 +60,18 @@ export const ADDER_SPECS: Record<ContentEntityType, AdderSpec> = {
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-anime-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddAnimeFromScraperResult | undefined)?.animeId
+  },
+  tv: {
+    searcher: TvSearcher,
+    submit: (profileId, lookup, options) =>
+      ipcManager.invoke('ingest:add-tv-from-scraper', profileId, lookup, options),
+    extractId: (output) => (output as IngestAddTvFromScraperResult | undefined)?.tvId
+  },
+  movie: {
+    searcher: MovieSearcher,
+    submit: (profileId, lookup, options) =>
+      ipcManager.invoke('ingest:add-movie-from-scraper', profileId, lookup, options),
+    extractId: (output) => (output as IngestAddMovieFromScraperResult | undefined)?.movieId
   },
   character: {
     searcher: CharacterSearcher,

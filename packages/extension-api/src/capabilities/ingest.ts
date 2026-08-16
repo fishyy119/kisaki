@@ -1,7 +1,9 @@
 import type {
   AnimeScraperLookup,
   GameScraperLookup,
-  ScraperLookup
+  MovieScraperLookup,
+  ScraperLookup,
+  TvScraperLookup
 } from '../contributions/scraper-providers'
 
 export type IngestExistingReason = 'externalId' | 'path'
@@ -97,6 +99,30 @@ export interface IngestAddAnimeFromScraperResult {
   warnings?: readonly IngestWarning[]
 }
 
+export interface IngestAddTvFromScraperOptions {
+  tvDirPath?: string
+  targetCollectionId?: string
+}
+
+export interface IngestAddTvFromScraperResult {
+  tvId: string
+  isNew: boolean
+  existingReason?: IngestExistingReason
+  warnings?: readonly IngestWarning[]
+}
+
+export interface IngestAddMovieFromScraperOptions {
+  movieDirPath?: string
+  targetCollectionId?: string
+}
+
+export interface IngestAddMovieFromScraperResult {
+  movieId: string
+  isNew: boolean
+  existingReason?: IngestExistingReason
+  warnings?: readonly IngestWarning[]
+}
+
 export interface IngestUpdateResult {
   warnings?: readonly IngestWarning[]
 }
@@ -162,7 +188,53 @@ export interface IngestAnimeCapability {
   add: IngestAnimeAddCapability
 }
 
+export interface IngestTvAddCapability {
+  /** Runs the ingest inline and resolves with its result. */
+  fromScraper(
+    profileId: string,
+    lookup: TvScraperLookup,
+    options?: IngestAddTvFromScraperOptions
+  ): Promise<IngestAddTvFromScraperResult>
+  /**
+   * Starts the ingest as a user-visible task run attributed to this extension
+   * and resolves as soon as the run exists.
+   */
+  startFromScraper(
+    profileId: string,
+    lookup: TvScraperLookup,
+    options?: IngestAddTvFromScraperOptions
+  ): Promise<IngestTaskRunStart>
+}
+
+export interface IngestTvCapability {
+  add: IngestTvAddCapability
+}
+
+export interface IngestMovieAddCapability {
+  /** Runs the ingest inline and resolves with its result. */
+  fromScraper(
+    profileId: string,
+    lookup: MovieScraperLookup,
+    options?: IngestAddMovieFromScraperOptions
+  ): Promise<IngestAddMovieFromScraperResult>
+  /**
+   * Starts the ingest as a user-visible task run attributed to this extension
+   * and resolves as soon as the run exists.
+   */
+  startFromScraper(
+    profileId: string,
+    lookup: MovieScraperLookup,
+    options?: IngestAddMovieFromScraperOptions
+  ): Promise<IngestTaskRunStart>
+}
+
+export interface IngestMovieCapability {
+  add: IngestMovieAddCapability
+}
+
 export interface IngestCapability {
   game: IngestGameCapability
   anime: IngestAnimeCapability
+  tv: IngestTvCapability
+  movie: IngestMovieCapability
 }

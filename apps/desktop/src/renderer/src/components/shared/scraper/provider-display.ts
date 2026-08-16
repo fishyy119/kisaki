@@ -5,14 +5,18 @@ import type {
   CharacterScraperProviderInfo,
   CompanyScraperProviderInfo,
   GameScraperProviderInfo,
+  MovieScraperProviderInfo,
   PersonScraperProviderInfo,
-  ScraperCapability
+  ScraperCapability,
+  TvScraperProviderInfo
 } from '@shared/scraper'
 import { messages } from '@renderer/core/i18n'
 
 export type ScraperProviderInfo =
   | GameScraperProviderInfo
   | AnimeScraperProviderInfo
+  | TvScraperProviderInfo
+  | MovieScraperProviderInfo
   | PersonScraperProviderInfo
   | CompanyScraperProviderInfo
   | CharacterScraperProviderInfo

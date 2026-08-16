@@ -5,7 +5,7 @@
   Step 2: Select provider
 -->
 <script setup lang="ts">
-import type { ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 import type {
   ScraperProviderInfo,
   ScraperProvidersByType
@@ -42,13 +42,9 @@ const { m } = useI18n()
 const selectedMediaType = ref<ContentEntityType | null>(null)
 
 // Media type options
-const mediaTypeOptions = computed<{ value: ContentEntityType; label: string }[]>(() => [
-  { value: 'game', label: m.value.library.entities.game },
-  { value: 'anime', label: m.value.library.entities.anime },
-  { value: 'character', label: m.value.library.entities.character },
-  { value: 'person', label: m.value.library.entities.person },
-  { value: 'company', label: m.value.library.entities.company }
-])
+const mediaTypeOptions = computed<{ value: ContentEntityType; label: string }[]>(() =>
+  CONTENT_ENTITY_TYPES.map((value) => ({ value, label: m.value.library.entities[value] }))
+)
 
 const currentProviders = computed<ScraperProviderInfo[]>(() => {
   if (!selectedMediaType.value) return []

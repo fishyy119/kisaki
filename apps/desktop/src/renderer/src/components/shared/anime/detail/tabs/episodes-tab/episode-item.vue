@@ -14,7 +14,7 @@ import { cn } from '@renderer/utils/cn'
 import { formatEpisodeNumber } from '@renderer/utils/format'
 import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
 import AnimeWatchButton from '../../../anime-watch-button.vue'
-import AnimePlaybackProgress from './playback-progress.vue'
+import { MediaPlaybackProgress } from '@renderer/components/shared/media'
 
 interface Props {
   animeId: string
@@ -128,7 +128,7 @@ const {
         </div>
 
         <!-- Live playback progress for the currently-watching episode -->
-        <AnimePlaybackProgress
+        <MediaPlaybackProgress
           v-if="isWatching"
           :status="playbackStatus"
           :progress="playbackProgress"

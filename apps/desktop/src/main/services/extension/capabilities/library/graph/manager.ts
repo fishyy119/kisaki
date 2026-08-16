@@ -7,7 +7,11 @@ import {
 } from '@kisaki3/extension-api'
 import type { DbService } from '@main/services/db'
 import type { ExtensionLibraryAttachmentStore } from '../attachments'
-import type { ExtensionLibraryEntityStore, ExtensionLibraryEpisodeStore } from '../entities'
+import type {
+  ExtensionLibraryEntityStore,
+  ExtensionLibraryEpisodeStore,
+  ExtensionLibraryTvStore
+} from '../entities'
 import { validateScopedGraphPaths } from './attachments'
 import { applyLibraryGraph, previewLibraryGraph } from './execution/runner'
 import { matchLibraryGraph } from './matching'
@@ -18,6 +22,7 @@ export interface ExtensionLibraryGraphManagerOptions {
   db: DbService
   entities: ExtensionLibraryEntityStore
   episodes: ExtensionLibraryEpisodeStore
+  tv: ExtensionLibraryTvStore
   attachments: ExtensionLibraryAttachmentStore
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
@@ -63,6 +68,7 @@ export class ExtensionLibraryGraphManager {
         db: this.options.db,
         entities: this.options.entities,
         episodes: this.options.episodes,
+        tv: this.options.tv,
         attachments: this.options.attachments
       }
 

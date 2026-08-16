@@ -16,17 +16,27 @@ import type {
   GameUpdateRelationSurface,
   GameUpdateSurface,
   IngestUpdatePolicy,
+  MovieUpdateCoreSurface,
+  MovieUpdateMediaSurface,
+  MovieUpdateRelationSurface,
+  MovieUpdateSurface,
   PersonUpdateCoreSurface,
   PersonUpdateMediaSurface,
   PersonUpdateRelationSurface,
-  PersonUpdateSurface
+  PersonUpdateSurface,
+  TvUpdateCoreSurface,
+  TvUpdateMediaSurface,
+  TvUpdateRelationSurface,
+  TvUpdateSurface
 } from '@shared/ingest/update'
 import type { ExternalId } from '@shared/identity'
 import type {
   ScrapedAnimeRelationFacts,
   ScrapedCharacterRelationFacts,
   ScrapedGameRelationFacts,
-  ScrapedRelatedEntryFact
+  ScrapedMovieRelationFacts,
+  ScrapedRelatedEntryFact,
+  ScrapedTvRelationFacts
 } from '@shared/scraper'
 import type { PendingAssetTask } from '../assets'
 import type {
@@ -34,7 +44,11 @@ import type {
   IngestAnimeGraphLinks,
   IngestCharacterGraph,
   IngestGameGraph,
-  IngestGameGraphLinks
+  IngestGameGraphLinks,
+  IngestMovieGraph,
+  IngestMovieGraphLinks,
+  IngestTvGraph,
+  IngestTvGraphLinks
 } from '../graph'
 import type {
   AnimeEpisodeInfo,
@@ -42,10 +56,14 @@ import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
+  CoreMovieMetadata,
   CorePersonMetadata,
-  Tag
+  CoreTvMetadata,
+  Tag,
+  TvEpisodeInfo,
+  TvSeasonInfo
 } from '@shared/metadata'
-import type { Anime, Character, Company, Game, Person } from '@shared/db'
+import type { Anime, Character, Company, Game, Movie, Person, Tv } from '@shared/db'
 
 export interface UpdateIncomingBundle<TCore, TRelationFacts, TMediaCandidates> {
   core: Partial<TCore>
@@ -97,6 +115,22 @@ export type GameLinkKind = keyof IngestGameGraphLinks
  */
 export type AnimeLinkKind = keyof IngestAnimeGraphLinks
 
+/**
+ * Link tables a tv update can write.
+ *
+ * Derived from the graph builder's output, so a new link table forces a
+ * declaration in `TV_LINK_TOPOLOGY`.
+ */
+export type TvLinkKind = keyof IngestTvGraphLinks
+
+/**
+ * Link tables a movie update can write.
+ *
+ * Derived from the graph builder's output, so a new link table forces a
+ * declaration in `MOVIE_LINK_TOPOLOGY`.
+ */
+export type MovieLinkKind = keyof IngestMovieGraphLinks
+
 /** Link tables a character update can write; the graph carries a single set. */
 export type CharacterLinkKind = 'characterPerson'
 
@@ -120,6 +154,18 @@ export interface GameIncomingMediaCandidates {
 }
 
 export interface AnimeIncomingMediaCandidates {
+  coverUrls?: string[]
+  backdropUrls?: string[]
+  logoUrls?: string[]
+}
+
+export interface TvIncomingMediaCandidates {
+  coverUrls?: string[]
+  backdropUrls?: string[]
+  logoUrls?: string[]
+}
+
+export interface MovieIncomingMediaCandidates {
   coverUrls?: string[]
   backdropUrls?: string[]
   logoUrls?: string[]
@@ -163,6 +209,25 @@ export interface AnimeIncomingBuildResult extends UpdateIncomingBuildResult<
   episodes?: AnimeEpisodeInfo[]
 }
 
+export interface TvIncomingBuildResult extends UpdateIncomingBuildResult<
+  UpdateIncomingRelationAvailability<TvUpdateSurface, TvLinkKind>,
+  CoreTvMetadata,
+  ScrapedTvRelationFacts,
+  TvIncomingMediaCandidates
+> {
+  /** Absent means the scrape could not answer seasons; an empty array means none exist. */
+  seasons?: TvSeasonInfo[]
+  /** Absent means the scrape could not answer episodes; an empty array means none exist. */
+  episodes?: TvEpisodeInfo[]
+}
+
+export type MovieIncomingBuildResult = UpdateIncomingBuildResult<
+  UpdateIncomingRelationAvailability<MovieUpdateSurface, MovieLinkKind>,
+  CoreMovieMetadata,
+  ScrapedMovieRelationFacts,
+  MovieIncomingMediaCandidates
+>
+
 export interface PersonCurrentState {
   person: Person
   externalIds: ExternalId[]
@@ -189,6 +254,18 @@ export interface GameCurrentState {
 
 export interface AnimeCurrentState {
   anime: Anime
+  externalIds: ExternalId[]
+  tags: Tag[]
+}
+
+export interface TvCurrentState {
+  tv: Tv
+  externalIds: ExternalId[]
+  tags: Tag[]
+}
+
+export interface MovieCurrentState {
+  movie: Movie
   externalIds: ExternalId[]
   tags: Tag[]
 }
@@ -270,6 +347,53 @@ export interface AnimeUpdatePlan {
   /** Link tables where `replace` was downgraded because a fact source stayed silent. */
   degradedLinks: AnimeLinkKind[]
   relationGraph?: IngestAnimeGraph
+  relatedEntries?: RelatedEntriesUpdatePlan
+}
+
+/**
+ * Season write resolved for one update; see `AnimeEpisodeUpdatePlan`. Seasons
+ * and episodes are separate surfaces, so a plan can carry either alone.
+ */
+export interface TvSeasonUpdatePlan {
+  items: TvSeasonInfo[]
+  mode: CollectionUpdateMode
+}
+
+/** Episode write resolved for one update; see `AnimeEpisodeUpdatePlan`. */
+export interface TvEpisodeUpdatePlan {
+  items: TvEpisodeInfo[]
+  mode: CollectionUpdateMode
+}
+
+export interface TvUpdatePlan {
+  patch: Partial<Tv>
+  externalIds?: ExternalId[]
+  tags?: Tag[]
+  coverUrl?: string
+  backdropUrl?: string
+  logoUrl?: string
+  seasons?: TvSeasonUpdatePlan
+  episodes?: TvEpisodeUpdatePlan
+  /** Link tables to write, each with the mode resolved for that table. */
+  links: Partial<Record<TvLinkKind, CollectionUpdateMode>>
+  /** Link tables where `replace` was downgraded because a fact source stayed silent. */
+  degradedLinks: TvLinkKind[]
+  relationGraph?: IngestTvGraph
+  relatedEntries?: RelatedEntriesUpdatePlan
+}
+
+export interface MovieUpdatePlan {
+  patch: Partial<Movie>
+  externalIds?: ExternalId[]
+  tags?: Tag[]
+  coverUrl?: string
+  backdropUrl?: string
+  logoUrl?: string
+  /** Link tables to write, each with the mode resolved for that table. */
+  links: Partial<Record<MovieLinkKind, CollectionUpdateMode>>
+  /** Link tables where `replace` was downgraded because a fact source stayed silent. */
+  degradedLinks: MovieLinkKind[]
+  relationGraph?: IngestMovieGraph
   relatedEntries?: RelatedEntriesUpdatePlan
 }
 
@@ -355,6 +479,32 @@ export interface AnimePlanContext {
     AnimeUpdateCoreSurface,
     AnimeUpdateMediaSurface,
     AnimeUpdateRelationSurface
+  >
+  policy: IngestUpdatePolicy
+}
+
+export interface TvPlanContext {
+  current: TvCurrentState
+  incoming: TvIncomingBuildResult
+  relationGraph?: IngestTvGraph
+  selection: UpdateResolvedSelection<
+    TvUpdateSurface,
+    TvUpdateCoreSurface,
+    TvUpdateMediaSurface,
+    TvUpdateRelationSurface
+  >
+  policy: IngestUpdatePolicy
+}
+
+export interface MoviePlanContext {
+  current: MovieCurrentState
+  incoming: MovieIncomingBuildResult
+  relationGraph?: IngestMovieGraph
+  selection: UpdateResolvedSelection<
+    MovieUpdateSurface,
+    MovieUpdateCoreSurface,
+    MovieUpdateMediaSurface,
+    MovieUpdateRelationSurface
   >
   policy: IngestUpdatePolicy
 }

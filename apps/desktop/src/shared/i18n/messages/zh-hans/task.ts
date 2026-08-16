@@ -123,6 +123,8 @@ export const task = {
     scanner: '扫描器',
     game: '游戏',
     anime: '动漫',
+    tv: '剧集',
+    movie: '电影',
     person: '人物',
     company: '公司',
     character: '角色',

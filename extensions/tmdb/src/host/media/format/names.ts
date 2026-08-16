@@ -1,9 +1,22 @@
-import type { TmdbMovieDetail, TmdbSeriesDetail } from '../../api/types'
 import { trimToUndefined } from './text'
 
 export interface TmdbEntryName {
   name: string
   originalName?: string
+}
+
+/** The naming fields every TMDB show row carries, detail or search result. */
+interface TmdbSeriesNaming {
+  id: number
+  name?: string
+  original_name?: string
+}
+
+/** The naming fields every TMDB film row carries, detail or search result. */
+interface TmdbMovieNaming {
+  id: number
+  title?: string
+  original_title?: string
 }
 
 /**
@@ -29,11 +42,11 @@ export function composeEpisodeGroupEntryName(seriesName: string, partName: strin
   return qualify(seriesName, partName)
 }
 
-export function readSeriesNames(series: TmdbSeriesDetail): TmdbEntryName {
+export function readSeriesNames(series: TmdbSeriesNaming): TmdbEntryName {
   return toEntryName(series.name, series.original_name, series.id)
 }
 
-export function readMovieNames(movie: TmdbMovieDetail): TmdbEntryName {
+export function readMovieNames(movie: TmdbMovieNaming): TmdbEntryName {
   return toEntryName(movie.title, movie.original_title, movie.id)
 }
 

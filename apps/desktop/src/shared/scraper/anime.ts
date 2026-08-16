@@ -7,7 +7,7 @@
 
 import { ANIME_FORMAT_VALUES, type AnimeFormat, type PartialDate } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
-import { normalizeMediaLookupFacts, type MediaScraperLookup } from './media'
+import { normalizeMediaLookupFacts, rankReleaseYear, type MediaScraperLookup } from './media'
 import type { ScraperCapability } from './slot'
 
 // =============================================================================
@@ -108,14 +108,4 @@ function rankAnimeFormat(
   // Specials are what a name search offers that a caller almost never means,
   // so they rank last unless they were asked for.
   return candidate === 'special' ? 0 : 1
-}
-
-function rankReleaseYear(candidate: AnimeLookupFacts, wanted: AnimeLookupFacts): number {
-  const wantedYear = wanted.releaseDate?.year
-  const candidateYear = candidate.releaseDate?.year
-  if (wantedYear === undefined || candidateYear === undefined) {
-    return 1
-  }
-
-  return candidateYear === wantedYear ? 2 : 0
 }

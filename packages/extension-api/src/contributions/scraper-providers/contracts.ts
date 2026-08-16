@@ -12,11 +12,27 @@ import type {
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
   LibraryGender,
-  LibraryMediaRelationType
+  LibraryMediaRelationType,
+  LibraryMovieCharacterRole,
+  LibraryMovieCompanyRole,
+  LibraryMovieFormat,
+  LibraryMoviePersonRole,
+  LibraryTvCharacterRole,
+  LibraryTvCompanyRole,
+  LibraryTvFormat,
+  LibraryTvPersonRole
 } from '../../shared/library'
 import type { LibraryMediaType } from '../../capabilities/library/graph'
 
-export const SCRAPER_MEDIA_TYPES = ['game', 'anime', 'person', 'company', 'character'] as const
+export const SCRAPER_MEDIA_TYPES = [
+  'game',
+  'anime',
+  'tv',
+  'movie',
+  'person',
+  'company',
+  'character'
+] as const
 
 export type ScraperMediaType = (typeof SCRAPER_MEDIA_TYPES)[number]
 
@@ -50,6 +66,36 @@ export const ANIME_SCRAPER_SLOTS = [
 
 export type AnimeScraperSlot = (typeof ANIME_SCRAPER_SLOTS)[number]
 
+export const TV_SCRAPER_SLOTS = [
+  'info',
+  'tags',
+  'seasons',
+  'episodes',
+  'characters',
+  'persons',
+  'companies',
+  'relatedEntries',
+  'covers',
+  'backdrops',
+  'logos'
+] as const
+
+export type TvScraperSlot = (typeof TV_SCRAPER_SLOTS)[number]
+
+export const MOVIE_SCRAPER_SLOTS = [
+  'info',
+  'tags',
+  'characters',
+  'persons',
+  'companies',
+  'relatedEntries',
+  'covers',
+  'backdrops',
+  'logos'
+] as const
+
+export type MovieScraperSlot = (typeof MOVIE_SCRAPER_SLOTS)[number]
+
 export const PERSON_SCRAPER_SLOTS = ['info', 'tags', 'photos'] as const
 
 export type PersonScraperSlot = (typeof PERSON_SCRAPER_SLOTS)[number]
@@ -63,7 +109,13 @@ export const CHARACTER_SCRAPER_SLOTS = ['info', 'tags', 'persons', 'photos'] as 
 export type CharacterScraperSlot = (typeof CHARACTER_SCRAPER_SLOTS)[number]
 
 export type ScraperSlot =
-  GameScraperSlot | AnimeScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
+  | GameScraperSlot
+  | AnimeScraperSlot
+  | TvScraperSlot
+  | MovieScraperSlot
+  | PersonScraperSlot
+  | CompanyScraperSlot
+  | CharacterScraperSlot
 
 export type ScraperCapability<TSlot extends ScraperSlot = ScraperSlot> = 'search' | TSlot
 
@@ -98,6 +150,22 @@ export interface MediaScraperLookup extends ScraperLookup {
 /** Lookup for an anime entry, adding its release format to the media facts. */
 export interface AnimeScraperLookup extends MediaScraperLookup {
   format?: LibraryAnimeFormat
+}
+
+/**
+ * Lookup for a tv entry, adding its production format to the media facts.
+ *
+ * The format tells providers which kind of entry to look for when a name search
+ * spans several: a franchise name can name a scripted series, its documentary
+ * companion, and a talk show at once.
+ */
+export interface TvScraperLookup extends MediaScraperLookup {
+  format?: LibraryTvFormat
+}
+
+/** Lookup for a movie entry, adding its release format to the media facts. */
+export interface MovieScraperLookup extends MediaScraperLookup {
+  format?: LibraryMovieFormat
 }
 
 /** Lookup for a game entry; game entries state no facts beyond the media ones. */
@@ -176,6 +244,68 @@ export interface ScrapedAnimeEpisode {
   description?: string
   durationMs?: number
   externalIds?: readonly ExternalId[]
+}
+
+export interface ScrapedTvInfo {
+  name: string
+  originalName?: string
+  /** First air date of the show; season air dates travel with the seasons. */
+  releaseDate?: PartialDate
+  /** Last air date; omit while the show is still running. */
+  endDate?: PartialDate
+  description?: string
+  format?: LibraryTvFormat
+  /** Counts declared by the source; season and episode rows stay authoritative. */
+  totalSeasons?: number
+  totalEpisodes?: number
+  externalSites?: readonly ExternalSite[]
+}
+
+/**
+ * One season of a show.
+ *
+ * Seasons are addressed by number rather than external id: the number is the
+ * one key every source agrees on, and a season carries no user data that a
+ * realignment could lose.
+ */
+export interface ScrapedTvSeason {
+  /** Season 0 holds specials; regular seasons start at 1. */
+  number: number
+  name?: string
+  originalName?: string
+  airDate?: PartialDate
+  description?: string
+  totalEpisodes?: number
+}
+
+/**
+ * One episode of a show.
+ *
+ * `externalIds` carries per-episode identity so re-scrapes realign existing
+ * rows by id rather than by number, which sources revise. Specials are the
+ * episodes of season 0 rather than a separate kind.
+ */
+export interface ScrapedTvEpisode {
+  /** Season the episode belongs to; 0 for specials. */
+  seasonNumber: number
+  number: number
+  name?: string
+  originalName?: string
+  airDate?: PartialDate
+  description?: string
+  durationMs?: number
+  externalIds?: readonly ExternalId[]
+}
+
+export interface ScrapedMovieInfo {
+  name: string
+  originalName?: string
+  releaseDate?: PartialDate
+  description?: string
+  format?: LibraryMovieFormat
+  /** Runtime declared by the source; probed file durations stay authoritative. */
+  runtimeMs?: number
+  externalSites?: readonly ExternalSite[]
 }
 
 export interface ScrapedPersonInfo {
@@ -287,6 +417,42 @@ export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
   note?: string
 }
 
+export interface ScrapedTvPersonFact extends ScrapedPersonMetadata {
+  role: LibraryTvPersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedTvCompanyFact extends ScrapedCompanyMetadata {
+  role: LibraryTvCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedTvCharacterFact extends ScrapedCharacterMetadata {
+  role: LibraryTvCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedMoviePersonFact extends ScrapedPersonMetadata {
+  role: LibraryMoviePersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedMovieCompanyFact extends ScrapedCompanyMetadata {
+  role: LibraryMovieCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedMovieCharacterFact extends ScrapedCharacterMetadata {
+  role: LibraryMovieCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
 export interface ScrapedGameBundle {
   identity: ScrapedEntityIdentity
   core?: ScrapedGameInfo
@@ -309,6 +475,34 @@ export interface ScrapedAnimeBundle {
   persons?: readonly ScrapedAnimePersonFact[]
   companies?: readonly ScrapedAnimeCompanyFact[]
   characters?: readonly ScrapedAnimeCharacterFact[]
+  relatedEntries?: readonly ScrapedRelatedEntryFact[]
+  covers?: readonly string[]
+  backdrops?: readonly string[]
+  logos?: readonly string[]
+}
+
+export interface ScrapedTvBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedTvInfo
+  tags?: readonly ScrapedTag[]
+  seasons?: readonly ScrapedTvSeason[]
+  episodes?: readonly ScrapedTvEpisode[]
+  persons?: readonly ScrapedTvPersonFact[]
+  companies?: readonly ScrapedTvCompanyFact[]
+  characters?: readonly ScrapedTvCharacterFact[]
+  relatedEntries?: readonly ScrapedRelatedEntryFact[]
+  covers?: readonly string[]
+  backdrops?: readonly string[]
+  logos?: readonly string[]
+}
+
+export interface ScrapedMovieBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedMovieInfo
+  tags?: readonly ScrapedTag[]
+  persons?: readonly ScrapedMoviePersonFact[]
+  companies?: readonly ScrapedMovieCompanyFact[]
+  characters?: readonly ScrapedMovieCharacterFact[]
   relatedEntries?: readonly ScrapedRelatedEntryFact[]
   covers?: readonly string[]
   backdrops?: readonly string[]
@@ -381,6 +575,24 @@ export interface AnimeSearchResult {
   externalIds: readonly ExternalId[]
 }
 
+export interface TvSearchResult {
+  id: string
+  name: string
+  originalName?: string
+  releaseDate?: PartialDate
+  format?: LibraryTvFormat
+  externalIds: readonly ExternalId[]
+}
+
+export interface MovieSearchResult {
+  id: string
+  name: string
+  originalName?: string
+  releaseDate?: PartialDate
+  format?: LibraryMovieFormat
+  externalIds: readonly ExternalId[]
+}
+
 export interface PersonSearchResult {
   id: string
   name: string
@@ -432,6 +644,32 @@ export interface AnimeSessionResultMap {
   logos: string[]
 }
 
+export interface TvSessionResultMap {
+  info: ScrapedTvInfo
+  tags: ScrapedTag[]
+  seasons: ScrapedTvSeason[]
+  episodes: ScrapedTvEpisode[]
+  characters: ScrapedTvCharacterFact[]
+  persons: ScrapedTvPersonFact[]
+  companies: ScrapedTvCompanyFact[]
+  relatedEntries: ScrapedRelatedEntryFact[]
+  covers: string[]
+  backdrops: string[]
+  logos: string[]
+}
+
+export interface MovieSessionResultMap {
+  info: ScrapedMovieInfo
+  tags: ScrapedTag[]
+  characters: ScrapedMovieCharacterFact[]
+  persons: ScrapedMoviePersonFact[]
+  companies: ScrapedMovieCompanyFact[]
+  relatedEntries: ScrapedRelatedEntryFact[]
+  covers: string[]
+  backdrops: string[]
+  logos: string[]
+}
+
 export interface PersonSessionResultMap {
   info: ScrapedPersonInfo
   tags: ScrapedTag[]
@@ -454,6 +692,10 @@ export interface CharacterSessionResultMap {
 export type GameScraperSession = BaseScraperSession<GameScraperSlot, GameSessionResultMap>
 
 export type AnimeScraperSession = BaseScraperSession<AnimeScraperSlot, AnimeSessionResultMap>
+
+export type TvScraperSession = BaseScraperSession<TvScraperSlot, TvSessionResultMap>
+
+export type MovieScraperSession = BaseScraperSession<MovieScraperSlot, MovieSessionResultMap>
 
 export type PersonScraperSession = BaseScraperSession<PersonScraperSlot, PersonSessionResultMap>
 
@@ -482,6 +724,18 @@ export interface AnimeScraperProvider extends BaseScraperProvider<AnimeScraperSl
   search(query: string, ctx: ScraperProviderContext): Promise<readonly AnimeSearchResult[]>
   resolve(lookup: AnimeScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<AnimeScraperSession>
+}
+
+export interface TvScraperProvider extends BaseScraperProvider<TvScraperSlot> {
+  search(query: string, ctx: ScraperProviderContext): Promise<readonly TvSearchResult[]>
+  resolve(lookup: TvScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<TvScraperSession>
+}
+
+export interface MovieScraperProvider extends BaseScraperProvider<MovieScraperSlot> {
+  search(query: string, ctx: ScraperProviderContext): Promise<readonly MovieSearchResult[]>
+  resolve(lookup: MovieScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<MovieScraperSession>
 }
 
 export interface PersonScraperProvider extends BaseScraperProvider<PersonScraperSlot> {
@@ -514,6 +768,8 @@ export interface ScraperProviderRegistrationPoint<TProvider extends BaseScraperP
 export interface ScraperProviderRegistrar {
   readonly game: ScraperProviderRegistrationPoint<GameScraperProvider>
   readonly anime: ScraperProviderRegistrationPoint<AnimeScraperProvider>
+  readonly tv: ScraperProviderRegistrationPoint<TvScraperProvider>
+  readonly movie: ScraperProviderRegistrationPoint<MovieScraperProvider>
   readonly person: ScraperProviderRegistrationPoint<PersonScraperProvider>
   readonly company: ScraperProviderRegistrationPoint<CompanyScraperProvider>
   readonly character: ScraperProviderRegistrationPoint<CharacterScraperProvider>

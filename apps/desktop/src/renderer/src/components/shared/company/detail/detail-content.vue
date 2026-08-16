@@ -7,9 +7,8 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { useCompany } from '@renderer/composables'
-import { getEntityIcon } from '@renderer/utils/format'
 import CompanyDetailHero from './detail-hero.vue'
-import { CompanyDetailOverviewTab, CompanyDetailGamesTab, CompanyDetailAnimesTab } from './tabs'
+import { CompanyDetailOverviewTab, CompanyDetailWorksTab } from './tabs'
 import { useI18n } from '@renderer/composables'
 
 const { m } = useI18n()
@@ -32,19 +31,12 @@ const { company } = useCompany()
           />
           {{ m.library.detail.tabs.overview }}
         </TabsTrigger>
-        <TabsTrigger value="games">
+        <TabsTrigger value="works">
           <Icon
-            :icon="getEntityIcon('game')"
+            icon="icon-[mdi--filmstrip-box-multiple]"
             class="size-3.5"
           />
-          {{ m.library.detail.tabs.relatedGames }}
-        </TabsTrigger>
-        <TabsTrigger value="animes">
-          <Icon
-            :icon="getEntityIcon('anime')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.relatedAnimes }}
+          {{ m.library.detail.tabs.relatedWorks }}
         </TabsTrigger>
       </TabsList>
 
@@ -52,12 +44,8 @@ const { company } = useCompany()
         <CompanyDetailOverviewTab />
       </TabsContent>
 
-      <TabsContent value="games">
-        <CompanyDetailGamesTab />
-      </TabsContent>
-
-      <TabsContent value="animes">
-        <CompanyDetailAnimesTab />
+      <TabsContent value="works">
+        <CompanyDetailWorksTab />
       </TabsContent>
     </Tabs>
   </template>

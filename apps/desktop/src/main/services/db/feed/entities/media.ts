@@ -6,7 +6,7 @@
  */
 
 import type Database from 'better-sqlite3'
-import type { AnimeStatus, GameStatus } from '@shared/db/contracts/enums'
+import type { AnimeStatus, GameStatus, MovieStatus, TvStatus } from '@shared/db/contracts/enums'
 import type { RawDbChange } from '@shared/db/changes'
 import type {
   LibraryChange,
@@ -33,6 +33,8 @@ import {
   uniqueStrings
 } from '../shared/normalization'
 import { createPartialSnapshot, sameJson } from '../shared/snapshot'
+
+type MediaStatus = GameStatus | AnimeStatus | TvStatus | MovieStatus
 
 const GAME_PROJECTION: MediaFeedProjection = {
   entity: 'game',
@@ -97,7 +99,77 @@ const ANIME_PROJECTION: MediaFeedProjection = {
   episodesTable: 'anime_episodes'
 }
 
-export const MEDIA_PROJECTIONS: readonly MediaFeedProjection[] = [GAME_PROJECTION, ANIME_PROJECTION]
+const TV_PROJECTION: MediaFeedProjection = {
+  entity: 'tv',
+  table: 'tvs',
+  ownerColumn: 'tv_id',
+  orderColumn: 'order_in_tv',
+  externalIdsTable: 'tv_external_ids',
+  tagLinksTable: 'tv_tag_links',
+  collectionLinksTable: 'collection_tv_links',
+  linkTables: {
+    person: 'tv_person_links',
+    company: 'tv_company_links',
+    character: 'tv_character_links'
+  },
+  // Seasons carry `tv_id`, so they redirect the feed like the other owned rows;
+  // file rows have no owner column and reach subscribers through the episode or
+  // extra row they hang off, exactly as in the anime projection.
+  ownedTables: ['tv_seasons', 'tv_episodes', 'tv_extras', 'tv_sessions'],
+  coreFields: {
+    name: 'name',
+    original_name: 'originalName',
+    description: 'description',
+    release_date: 'releaseDate',
+    end_date: 'endDate',
+    format: 'format',
+    total_seasons: 'totalSeasons',
+    total_episodes: 'totalEpisodes'
+  },
+  assetFields: {
+    cover_file: 'coverFile',
+    backdrop_file: 'backdropFile',
+    logo_file: 'logoFile'
+  },
+  episodesTable: 'tv_episodes'
+}
+
+const MOVIE_PROJECTION: MediaFeedProjection = {
+  entity: 'movie',
+  table: 'movies',
+  ownerColumn: 'movie_id',
+  orderColumn: 'order_in_movie',
+  externalIdsTable: 'movie_external_ids',
+  tagLinksTable: 'movie_tag_links',
+  collectionLinksTable: 'collection_movie_links',
+  linkTables: {
+    person: 'movie_person_links',
+    company: 'movie_company_links',
+    character: 'movie_character_links'
+  },
+  ownedTables: ['movie_files', 'movie_extras', 'movie_sessions'],
+  coreFields: {
+    name: 'name',
+    original_name: 'originalName',
+    description: 'description',
+    release_date: 'releaseDate',
+    format: 'format',
+    runtime_ms: 'runtimeMs'
+  },
+  assetFields: {
+    cover_file: 'coverFile',
+    backdrop_file: 'backdropFile',
+    logo_file: 'logoFile'
+  },
+  watchedColumn: 'watched'
+}
+
+export const MEDIA_PROJECTIONS: readonly MediaFeedProjection[] = [
+  GAME_PROJECTION,
+  ANIME_PROJECTION,
+  TV_PROJECTION,
+  MOVIE_PROJECTION
+]
 
 export function getMediaProjectionForTable(table: string): MediaFeedProjection | undefined {
   return MEDIA_PROJECTIONS.find((projection) => projection.table === table)
@@ -283,10 +355,24 @@ function projectDirectChanges(
   if (firstOld.status !== lastNext.status) {
     projected.push({
       facet: 'status',
-      before: { status: firstOld.status as GameStatus | AnimeStatus },
-      after: { status: lastNext.status as GameStatus | AnimeStatus },
+      before: { status: firstOld.status as MediaStatus },
+      after: { status: lastNext.status as MediaStatus },
       fields: ['status']
     })
+  }
+
+  const watchedColumn = projection.watchedColumn
+  if (watchedColumn) {
+    const before = isWatchedValue(firstOld[watchedColumn])
+    const after = isWatchedValue(lastNext[watchedColumn])
+    if (before !== after) {
+      projected.push({
+        facet: 'watched',
+        before: { watched: before },
+        after: { watched: after },
+        fields: ['watched']
+      })
+    }
   }
 
   if (nullableNumber(firstOld.score) !== nullableNumber(lastNext.score)) {
@@ -342,6 +428,10 @@ function projectDirectChanges(
   }
 
   return projected
+}
+
+function isWatchedValue(value: unknown): boolean {
+  return value === true || value === 1 || value === '1'
 }
 
 function projectEpisodesChange(

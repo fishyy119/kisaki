@@ -15,13 +15,17 @@ import {
   games,
   animes,
   characters,
+  movies,
   persons,
   companies,
+  tvs,
   collectionGameLinks,
   collectionAnimeLinks,
   collectionCharacterLinks,
+  collectionMovieLinks,
   collectionPersonLinks,
-  collectionCompanyLinks
+  collectionCompanyLinks,
+  collectionTvLinks
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 import { useDbChanges, type ContentEntityData } from '@renderer/composables'
@@ -60,6 +64,38 @@ async function fetchUncategorized(
           and(
             linkedIdSet.length > 0 ? notInArray(animes.id, linkedIdSet) : undefined,
             showNsfw ? undefined : eq(animes.isNsfw, false)
+          )
+        )
+    }
+    case 'tv': {
+      const linkedIds = await db
+        .selectDistinct({ id: collectionTvLinks.tvId })
+        .from(collectionTvLinks)
+      const linkedIdSet = linkedIds.map((l) => l.id)
+
+      return await db
+        .select()
+        .from(tvs)
+        .where(
+          and(
+            linkedIdSet.length > 0 ? notInArray(tvs.id, linkedIdSet) : undefined,
+            showNsfw ? undefined : eq(tvs.isNsfw, false)
+          )
+        )
+    }
+    case 'movie': {
+      const linkedIds = await db
+        .selectDistinct({ id: collectionMovieLinks.movieId })
+        .from(collectionMovieLinks)
+      const linkedIdSet = linkedIds.map((l) => l.id)
+
+      return await db
+        .select()
+        .from(movies)
+        .where(
+          and(
+            linkedIdSet.length > 0 ? notInArray(movies.id, linkedIdSet) : undefined,
+            showNsfw ? undefined : eq(movies.isNsfw, false)
           )
         )
     }
@@ -142,6 +178,8 @@ function isRelevantTable(table: string): boolean {
   return (
     table === 'games' ||
     table === 'animes' ||
+    table === 'tvs' ||
+    table === 'movies' ||
     table === 'characters' ||
     table === 'persons' ||
     table === 'companies' ||

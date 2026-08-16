@@ -30,5 +30,6 @@ export const filter = {
   minPlaceholder: 'Min',
   maxPlaceholder: 'Max',
   hoursUnit: 'Hours',
+  minutesUnit: 'Minutes',
   favorite: 'Favorite'
 }

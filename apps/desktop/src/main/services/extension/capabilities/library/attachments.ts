@@ -18,7 +18,7 @@ import {
 } from '@kisaki3/extension-api'
 import { eq } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
-import { animes, characters, collections, companies, games, persons } from '@shared/db'
+import { animes, characters, collections, companies, games, movies, persons, tvs } from '@shared/db'
 import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/contracts/attachment'
 import type { TableName } from '@shared/db/table-names'
 import type { DbService } from '@main/services/db'
@@ -28,6 +28,8 @@ type AttachmentMode = 'single' | 'multiple'
 type AttachmentTable =
   | typeof games
   | typeof animes
+  | typeof tvs
+  | typeof movies
   | typeof characters
   | typeof persons
   | typeof companies
@@ -124,6 +126,70 @@ const ATTACHMENT_SLOT_CONFIGS: readonly AttachmentSlotConfig[] = [
     mode: 'multiple',
     table: animes,
     tableName: 'animes',
+    field: 'descriptionInlineFiles'
+  },
+  {
+    entityType: 'tv',
+    slot: 'cover',
+    mode: 'single',
+    table: tvs,
+    tableName: 'tvs',
+    field: 'coverFile'
+  },
+  {
+    entityType: 'tv',
+    slot: 'backdrop',
+    mode: 'single',
+    table: tvs,
+    tableName: 'tvs',
+    field: 'backdropFile'
+  },
+  {
+    entityType: 'tv',
+    slot: 'logo',
+    mode: 'single',
+    table: tvs,
+    tableName: 'tvs',
+    field: 'logoFile'
+  },
+  {
+    entityType: 'tv',
+    slot: 'description-inline',
+    mode: 'multiple',
+    table: tvs,
+    tableName: 'tvs',
+    field: 'descriptionInlineFiles'
+  },
+  {
+    entityType: 'movie',
+    slot: 'cover',
+    mode: 'single',
+    table: movies,
+    tableName: 'movies',
+    field: 'coverFile'
+  },
+  {
+    entityType: 'movie',
+    slot: 'backdrop',
+    mode: 'single',
+    table: movies,
+    tableName: 'movies',
+    field: 'backdropFile'
+  },
+  {
+    entityType: 'movie',
+    slot: 'logo',
+    mode: 'single',
+    table: movies,
+    tableName: 'movies',
+    field: 'logoFile'
+  },
+  {
+    entityType: 'movie',
+    slot: 'description-inline',
+    mode: 'multiple',
+    table: movies,
+    tableName: 'movies',
     field: 'descriptionInlineFiles'
   },
   {

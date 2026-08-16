@@ -9,7 +9,20 @@ import {
   gameNotes,
   gameSessions,
   mediaRelations,
-  type AnimeEpisode
+  movieExtras,
+  movieFiles,
+  movieNotes,
+  movieSessions,
+  tvEpisodeExternalIds,
+  tvEpisodeFiles,
+  tvEpisodes,
+  tvExtras,
+  tvNotes,
+  tvSeasons,
+  tvSessions,
+  type AnimeEpisode,
+  type TvEpisode,
+  type TvSeason
 } from '@shared/db'
 import type { AllEntityType, MediaType } from '@shared/common'
 import type { DbContext, DbQueryContext, DbWriteContext } from '../../types'
@@ -23,6 +36,8 @@ import type { OwnedDataMerge, RelationMergeConfig, MergeRow } from './types'
 export const OWNED_DATA_MERGES: Record<AllEntityType, OwnedDataMerge | null> = {
   game: mergeGameOwnedData,
   anime: mergeAnimeOwnedData,
+  tv: mergeTvOwnedData,
+  movie: mergeMovieOwnedData,
   character: null,
   person: null,
   company: null,
@@ -270,6 +285,452 @@ function mergeAnimeNotes(db: DbContext, targetId: string, sourceId: string, now:
   }
 
   return sourceRows.length
+}
+
+/**
+ * Merging two entries of the same show must preserve the source's watch data.
+ * Seasons align by season number, episodes by shared external id first and then
+ * by (season number, episode number). Aligned episodes fold their watch state,
+ * files, identities, and sessions into the target row; unaligned seasons and
+ * episodes move to the target entry wholesale, keeping their ids so season
+ * posters and episode stills stay valid.
+ */
+function mergeTvOwnedData(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const seasonIdBySource = mergeTvSeasons(db, targetId, sourceId, now)
+  let changed = seasonIdBySource.size
+
+  changed += mergeTvEpisodes(db, targetId, sourceId, seasonIdBySource, now)
+  changed += mergeTvSessions(db, targetId, sourceId, now)
+  changed += mergeTvExtras(db, targetId, sourceId, now)
+  changed += mergeTvNotes(db, targetId, sourceId, now)
+  changed += mergeMediaRelations(db, 'tv', targetId, sourceId, now)
+  return changed
+}
+
+/**
+ * Aligns source seasons onto the target by season number, moving the unmatched
+ * ones over. Returns the season each source season's episodes belong to after
+ * the merge.
+ */
+function mergeTvSeasons(
+  db: DbContext,
+  targetId: string,
+  sourceId: string,
+  now: Date
+): Map<string, string> {
+  const targetSeasons = readTvSeasons(db, targetId)
+  const sourceSeasons = readTvSeasons(db, sourceId)
+
+  const targetByNumber = new Map(targetSeasons.map((season) => [season.seasonNumber, season]))
+  let nextOrder = nextOrderAfter(targetSeasons.map((season) => season.orderInTv))
+
+  const seasonIdBySource = new Map<string, string>()
+  for (const season of sourceSeasons) {
+    const aligned = targetByNumber.get(season.seasonNumber)
+    if (aligned) {
+      foldSeasonIntoTarget(db, season, aligned, now)
+      seasonIdBySource.set(season.id, aligned.id)
+      continue
+    }
+
+    db.update(tvSeasons)
+      .set({ tvId: targetId, orderInTv: nextOrder++, updatedAt: now })
+      .where(eq(tvSeasons.id, season.id))
+      .run()
+    seasonIdBySource.set(season.id, season.id)
+  }
+
+  return seasonIdBySource
+}
+
+/** Fills the target season's empty metadata from the source, then drops it. */
+function foldSeasonIntoTarget(db: DbContext, source: TvSeason, target: TvSeason, now: Date): void {
+  db.update(tvSeasons)
+    .set({
+      name: target.name ?? source.name,
+      originalName: target.originalName ?? source.originalName,
+      airDate: target.airDate ?? source.airDate,
+      description: target.description ?? source.description,
+      posterFile: target.posterFile ?? source.posterFile,
+      totalEpisodes: target.totalEpisodes ?? source.totalEpisodes,
+      updatedAt: now
+    })
+    .where(eq(tvSeasons.id, target.id))
+    .run()
+
+  // Episodes repoint before the row dies, so the cascade never reaches them.
+  db.update(tvEpisodes)
+    .set({ seasonId: target.id, updatedAt: now })
+    .where(eq(tvEpisodes.seasonId, source.id))
+    .run()
+
+  db.delete(tvSeasons).where(eq(tvSeasons.id, source.id)).run()
+}
+
+function mergeTvEpisodes(
+  db: DbContext,
+  targetId: string,
+  sourceId: string,
+  seasonIdBySource: Map<string, string>,
+  now: Date
+): number {
+  const targetEpisodes = readTvEpisodes(db, targetId)
+  const sourceEpisodes = readTvEpisodes(db, sourceId)
+  if (sourceEpisodes.length === 0) return 0
+
+  const alignment = buildTvEpisodeAlignmentIndex(
+    db,
+    targetEpisodes,
+    sourceEpisodes,
+    seasonIdBySource
+  )
+  let nextTvOrder = nextOrderAfter(targetEpisodes.map((episode) => episode.orderInTv))
+  const nextSeasonOrder = new Map<string, number>()
+  for (const episode of targetEpisodes) {
+    nextSeasonOrder.set(
+      episode.seasonId,
+      Math.max(nextSeasonOrder.get(episode.seasonId) ?? 0, episode.orderInSeason + 1)
+    )
+  }
+
+  for (const episode of sourceEpisodes) {
+    const alignedId = alignment.get(episode.id)
+    if (alignedId) {
+      foldTvEpisodeIntoTarget(db, episode, alignedId, now)
+      continue
+    }
+
+    // Folded seasons already repointed their episodes, so the mapping falls
+    // back to the row's current season.
+    const seasonId = seasonIdBySource.get(episode.seasonId) ?? episode.seasonId
+    const orderInSeason = nextSeasonOrder.get(seasonId) ?? 0
+    nextSeasonOrder.set(seasonId, orderInSeason + 1)
+
+    db.update(tvEpisodes)
+      .set({
+        tvId: targetId,
+        seasonId,
+        orderInSeason,
+        orderInTv: nextTvOrder++,
+        updatedAt: now
+      })
+      .where(eq(tvEpisodes.id, episode.id))
+      .run()
+  }
+
+  return sourceEpisodes.length
+}
+
+function readTvSeasons(db: DbContext, tvId: string): TvSeason[] {
+  return db.select().from(tvSeasons).where(eq(tvSeasons.tvId, tvId)).all()
+}
+
+function readTvEpisodes(db: DbContext, tvId: string): TvEpisode[] {
+  return db.select().from(tvEpisodes).where(eq(tvEpisodes.tvId, tvId)).all()
+}
+
+/** Maps each source episode id to the target episode id it aligns with. */
+function buildTvEpisodeAlignmentIndex(
+  db: DbContext,
+  targetEpisodes: TvEpisode[],
+  sourceEpisodes: TvEpisode[],
+  seasonIdBySource: Map<string, string>
+): Map<string, string> {
+  const byExternalId = new Map<string, string>()
+  const byNumber = new Map<string, string>()
+  for (const episode of targetEpisodes) {
+    if (episode.episodeNumber !== null) {
+      byNumber.set(`${episode.seasonId}\0${episode.episodeNumber}`, episode.id)
+    }
+  }
+  for (const row of readTvEpisodeExternalIds(db, targetEpisodes)) {
+    byExternalId.set(`${row.source}\0${row.externalId}`, row.episodeId)
+  }
+
+  const sourceExternalIds = new Map<string, { source: string; externalId: string }[]>()
+  for (const row of readTvEpisodeExternalIds(db, sourceEpisodes)) {
+    const list = sourceExternalIds.get(row.episodeId) ?? []
+    list.push(row)
+    sourceExternalIds.set(row.episodeId, list)
+  }
+
+  const alignment = new Map<string, string>()
+  const claimed = new Set<string>()
+  for (const episode of sourceEpisodes) {
+    const identityMatch = (sourceExternalIds.get(episode.id) ?? [])
+      .map((row) => byExternalId.get(`${row.source}\0${row.externalId}`))
+      .find((id) => id && !claimed.has(id))
+    const seasonId = seasonIdBySource.get(episode.seasonId) ?? episode.seasonId
+    const numberMatch =
+      episode.episodeNumber === null
+        ? undefined
+        : byNumber.get(`${seasonId}\0${episode.episodeNumber}`)
+    const alignedId =
+      identityMatch ?? (numberMatch && !claimed.has(numberMatch) ? numberMatch : undefined)
+    if (alignedId) {
+      alignment.set(episode.id, alignedId)
+      claimed.add(alignedId)
+    }
+  }
+  return alignment
+}
+
+function readTvEpisodeExternalIds(
+  db: DbContext,
+  episodes: TvEpisode[]
+): { episodeId: string; source: string; externalId: string }[] {
+  if (episodes.length === 0) return []
+  return (db as DbQueryContext)
+    .select({
+      episodeId: tvEpisodeExternalIds.episodeId,
+      source: tvEpisodeExternalIds.source,
+      externalId: tvEpisodeExternalIds.externalId
+    })
+    .from(tvEpisodeExternalIds)
+    .where(
+      inArray(
+        tvEpisodeExternalIds.episodeId,
+        episodes.map((episode) => episode.id)
+      )
+    )
+    .all()
+}
+
+/**
+ * Folds a source episode into its aligned target episode: watch state merges
+ * field-wise, while files, external ids, and sessions repoint to the target
+ * row before the now-empty source row is removed. The target episode's own
+ * still stays; the source's still would dangle once its attachment row dies.
+ */
+function foldTvEpisodeIntoTarget(
+  db: DbContext,
+  source: TvEpisode,
+  targetEpisodeId: string,
+  now: Date
+): void {
+  const target = db.select().from(tvEpisodes).where(eq(tvEpisodes.id, targetEpisodeId)).get()
+  if (!target) return
+
+  db.update(tvEpisodes)
+    .set({
+      watched: target.watched || source.watched,
+      watchedAt: target.watchedAt ?? source.watchedAt,
+      playCount: target.playCount + source.playCount,
+      resumePositionMs: target.resumePositionMs ?? source.resumePositionMs,
+      durationMs: target.durationMs ?? source.durationMs,
+      updatedAt: now
+    })
+    .where(eq(tvEpisodes.id, targetEpisodeId))
+    .run()
+
+  const targetHasFiles =
+    (db as DbQueryContext)
+      .select({ id: tvEpisodeFiles.id })
+      .from(tvEpisodeFiles)
+      .where(eq(tvEpisodeFiles.episodeId, targetEpisodeId))
+      .all().length > 0
+  db.update(tvEpisodeFiles)
+    .set({
+      episodeId: targetEpisodeId,
+      // The target's existing primary keeps priority over incoming files.
+      ...(targetHasFiles && { isPrimary: false }),
+      updatedAt: now
+    })
+    .where(eq(tvEpisodeFiles.episodeId, source.id))
+    .run()
+
+  db.update(tvEpisodeExternalIds)
+    .set({ episodeId: targetEpisodeId, updatedAt: now })
+    .where(eq(tvEpisodeExternalIds.episodeId, source.id))
+    .run()
+
+  db.update(tvSessions)
+    .set({ episodeId: targetEpisodeId, updatedAt: now })
+    .where(eq(tvSessions.episodeId, source.id))
+    .run()
+
+  db.delete(tvEpisodes).where(eq(tvEpisodes.id, source.id)).run()
+}
+
+function mergeTvSessions(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = (db as DbQueryContext)
+    .select({ id: tvSessions.id })
+    .from(tvSessions)
+    .where(eq(tvSessions.tvId, sourceId))
+    .all()
+  if (rows.length === 0) return 0
+
+  db.update(tvSessions)
+    .set({ tvId: targetId, updatedAt: now })
+    .where(eq(tvSessions.tvId, sourceId))
+    .run()
+  return rows.length
+}
+
+function mergeTvExtras(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const sourceRows = db
+    .select()
+    .from(tvExtras)
+    .where(eq(tvExtras.tvId, sourceId))
+    .all()
+    .sort((a, b) => a.orderInTv - b.orderInTv || toTime(a.createdAt) - toTime(b.createdAt))
+  if (sourceRows.length === 0) return 0
+
+  const targetOrders = (db as DbQueryContext)
+    .select({ orderInTv: tvExtras.orderInTv })
+    .from(tvExtras)
+    .where(eq(tvExtras.tvId, targetId))
+    .all()
+  let nextOrder = nextOrderAfter(targetOrders.map((row) => row.orderInTv))
+
+  for (const row of sourceRows) {
+    db.update(tvExtras)
+      .set({ tvId: targetId, orderInTv: nextOrder++, updatedAt: now })
+      .where(eq(tvExtras.id, row.id))
+      .run()
+  }
+  return sourceRows.length
+}
+
+function mergeTvNotes(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = db
+    .select()
+    .from(tvNotes)
+    .where(inArray(tvNotes.tvId, [targetId, sourceId]))
+    .all()
+
+  const targetRows = rows.filter((row) => row.tvId === targetId)
+  const sourceRows = rows
+    .filter((row) => row.tvId === sourceId)
+    .sort((a, b) => a.orderInTv - b.orderInTv || toTime(a.createdAt) - toTime(b.createdAt))
+  if (sourceRows.length === 0) return 0
+
+  const usedNames = new Set(targetRows.map((row) => row.name))
+  let nextOrder = nextOrderAfter(targetRows.map((row) => row.orderInTv))
+
+  for (const note of sourceRows) {
+    const name = createMergedNoteName(note.name, usedNames)
+    usedNames.add(name)
+
+    db.update(tvNotes)
+      .set({ tvId: targetId, name, orderInTv: nextOrder++, updatedAt: now })
+      .where(eq(tvNotes.id, note.id))
+      .run()
+  }
+
+  return sourceRows.length
+}
+
+/**
+ * A movie keeps its watch state on the entry row, which the field merge already
+ * folds, so only the owned rows move here: release files join the target's file
+ * list, and extras, notes, and sessions follow the same rules as the other
+ * media types.
+ */
+function mergeMovieOwnedData(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  return (
+    mergeMovieFiles(db, targetId, sourceId, now) +
+    mergeMovieExtras(db, targetId, sourceId, now) +
+    mergeMovieNotes(db, targetId, sourceId, now) +
+    mergeMovieSessions(db, targetId, sourceId, now) +
+    mergeMediaRelations(db, 'movie', targetId, sourceId, now)
+  )
+}
+
+function mergeMovieFiles(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const sourceRows = (db as DbQueryContext)
+    .select({ id: movieFiles.id })
+    .from(movieFiles)
+    .where(eq(movieFiles.movieId, sourceId))
+    .all()
+  if (sourceRows.length === 0) return 0
+
+  const targetHasFiles =
+    (db as DbQueryContext)
+      .select({ id: movieFiles.id })
+      .from(movieFiles)
+      .where(eq(movieFiles.movieId, targetId))
+      .all().length > 0
+
+  db.update(movieFiles)
+    .set({
+      movieId: targetId,
+      // The target's existing primary keeps priority over incoming files.
+      ...(targetHasFiles && { isPrimary: false }),
+      updatedAt: now
+    })
+    .where(eq(movieFiles.movieId, sourceId))
+    .run()
+  return sourceRows.length
+}
+
+function mergeMovieExtras(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const sourceRows = db
+    .select()
+    .from(movieExtras)
+    .where(eq(movieExtras.movieId, sourceId))
+    .all()
+    .sort((a, b) => a.orderInMovie - b.orderInMovie || toTime(a.createdAt) - toTime(b.createdAt))
+  if (sourceRows.length === 0) return 0
+
+  const targetOrders = (db as DbQueryContext)
+    .select({ orderInMovie: movieExtras.orderInMovie })
+    .from(movieExtras)
+    .where(eq(movieExtras.movieId, targetId))
+    .all()
+  let nextOrder = nextOrderAfter(targetOrders.map((row) => row.orderInMovie))
+
+  for (const row of sourceRows) {
+    db.update(movieExtras)
+      .set({ movieId: targetId, orderInMovie: nextOrder++, updatedAt: now })
+      .where(eq(movieExtras.id, row.id))
+      .run()
+  }
+  return sourceRows.length
+}
+
+function mergeMovieNotes(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = db
+    .select()
+    .from(movieNotes)
+    .where(inArray(movieNotes.movieId, [targetId, sourceId]))
+    .all()
+
+  const targetRows = rows.filter((row) => row.movieId === targetId)
+  const sourceRows = rows
+    .filter((row) => row.movieId === sourceId)
+    .sort((a, b) => a.orderInMovie - b.orderInMovie || toTime(a.createdAt) - toTime(b.createdAt))
+  if (sourceRows.length === 0) return 0
+
+  const usedNames = new Set(targetRows.map((row) => row.name))
+  let nextOrder = nextOrderAfter(targetRows.map((row) => row.orderInMovie))
+
+  for (const note of sourceRows) {
+    const name = createMergedNoteName(note.name, usedNames)
+    usedNames.add(name)
+
+    db.update(movieNotes)
+      .set({ movieId: targetId, name, orderInMovie: nextOrder++, updatedAt: now })
+      .where(eq(movieNotes.id, note.id))
+      .run()
+  }
+
+  return sourceRows.length
+}
+
+function mergeMovieSessions(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = (db as DbQueryContext)
+    .select({ id: movieSessions.id })
+    .from(movieSessions)
+    .where(eq(movieSessions.movieId, sourceId))
+    .all()
+  if (rows.length === 0) return 0
+
+  db.update(movieSessions)
+    .set({ movieId: targetId, updatedAt: now })
+    .where(eq(movieSessions.movieId, sourceId))
+    .run()
+  return rows.length
 }
 
 /**

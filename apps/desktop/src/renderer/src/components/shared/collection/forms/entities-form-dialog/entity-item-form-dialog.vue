@@ -22,6 +22,8 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { GameSelect } from '@renderer/components/shared/game'
 import { AnimeSelect } from '@renderer/components/shared/anime'
+import { TvSelect } from '@renderer/components/shared/tv'
+import { MovieSelect } from '@renderer/components/shared/movie'
 import { CharacterSelect } from '@renderer/components/shared/character'
 import { PersonSelect } from '@renderer/components/shared/person'
 import { CompanySelect } from '@renderer/components/shared/company'
@@ -47,6 +49,8 @@ interface EntityConfig {
 const ENTITY_CONFIG = computed<Record<ContentEntityType, EntityConfig>>(() => ({
   game: { label: m.value.library.entities.game },
   anime: { label: m.value.library.entities.anime },
+  tv: { label: m.value.library.entities.tv },
+  movie: { label: m.value.library.entities.movie },
   character: { label: m.value.library.entities.character },
   person: { label: m.value.library.entities.person },
   company: { label: m.value.library.entities.company }
@@ -110,6 +114,20 @@ watch(
       case 'anime': {
         const entity = await db.query.animes.findFirst({
           where: eq(db._.fullSchema.animes.id, id)
+        })
+        if (entity) name = entity.name
+        break
+      }
+      case 'tv': {
+        const entity = await db.query.tvs.findFirst({
+          where: eq(db._.fullSchema.tvs.id, id)
+        })
+        if (entity) name = entity.name
+        break
+      }
+      case 'movie': {
+        const entity = await db.query.movies.findFirst({
+          where: eq(db._.fullSchema.movies.id, id)
         })
         if (entity) name = entity.name
         break
@@ -198,6 +216,18 @@ const config = computed(() => ENTITY_CONFIG.value[props.entityType])
                 />
                 <AnimeSelect
                   v-else-if="props.entityType === 'anime'"
+                  v-model="formData.entityId"
+                  :exclude-ids="excludeIds"
+                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
+                />
+                <TvSelect
+                  v-else-if="props.entityType === 'tv'"
+                  v-model="formData.entityId"
+                  :exclude-ids="excludeIds"
+                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
+                />
+                <MovieSelect
+                  v-else-if="props.entityType === 'movie'"
                   v-model="formData.entityId"
                   :exclude-ids="excludeIds"
                   :placeholder="m.library.select.selectPlaceholder({ label: config.label })"

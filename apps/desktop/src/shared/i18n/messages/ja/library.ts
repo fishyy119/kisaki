@@ -4,6 +4,8 @@ export const library = {
   entities: {
     game: 'ゲーム',
     anime: 'アニメ',
+    tv: 'ドラマ',
+    movie: '映画',
     character: 'キャラクター',
     person: '人物',
     company: '会社',
@@ -56,12 +58,23 @@ export const library = {
     order: '並び順',
     format: '種別',
     totalEpisodes: '話数',
+    totalSeasons: 'シーズン数',
+    seasons: 'シーズン',
     episodes: 'エピソード',
     extras: '特典映像',
+    endDate: '放送終了日',
+    runtime: '上映時間',
+    edition: 'エディション',
+    watched: '視聴済み',
+    watchedAt: '視聴日時',
+    playCount: '再生回数',
     watchDuration: '視聴時間',
     lastWatchedAt: '最終視聴',
     relatedAnimes: '関連アニメ',
-    relatedEntries: '関連エントリー'
+    relatedTvs: '関連ドラマ',
+    relatedMovies: '関連映画',
+    relatedEntries: '関連エントリー',
+    relatedWorks: '関連作品'
   },
 
   gameStatus: {
@@ -74,6 +87,22 @@ export const library = {
   },
 
   animeStatus: {
+    planned: '見たい',
+    watching: '視聴中',
+    completed: '視聴済み',
+    onHold: '保留',
+    dropped: '中断'
+  },
+
+  tvStatus: {
+    planned: '見たい',
+    watching: '視聴中',
+    completed: '視聴済み',
+    onHold: '保留',
+    dropped: '中断'
+  },
+
+  movieStatus: {
     planned: '見たい',
     watching: '視聴中',
     completed: '視聴済み',
@@ -150,6 +179,52 @@ export const library = {
       producer: '製作',
       distributor: '配給',
       other: 'その他'
+    },
+    tvPerson: {
+      creator: '企画・原案',
+      director: '監督',
+      writer: '脚本',
+      producer: 'プロデューサー',
+      music: '音楽',
+      cinematography: '撮影',
+      editing: '編集',
+      actor: '出演',
+      other: 'その他'
+    },
+    tvCharacter: {
+      main: '主人公',
+      supporting: '脇役',
+      cameo: 'カメオ',
+      other: 'その他'
+    },
+    tvCompany: {
+      network: '放送局',
+      studio: '制作',
+      producer: '製作',
+      distributor: '配給',
+      other: 'その他'
+    },
+    moviePerson: {
+      director: '監督',
+      writer: '脚本',
+      producer: 'プロデューサー',
+      music: '音楽',
+      cinematography: '撮影',
+      editing: '編集',
+      actor: '出演',
+      other: 'その他'
+    },
+    movieCharacter: {
+      main: '主人公',
+      supporting: '脇役',
+      cameo: 'カメオ',
+      other: 'その他'
+    },
+    movieCompany: {
+      studio: '制作',
+      producer: '製作',
+      distributor: '配給',
+      other: 'その他'
     }
   },
 
@@ -165,6 +240,25 @@ export const library = {
   animeEpisodeType: {
     regular: '本編',
     special: 'スペシャル'
+  },
+
+  tvFormat: {
+    scripted: 'ドラマ',
+    miniseries: 'ミニシリーズ',
+    documentary: 'ドキュメンタリー',
+    reality: 'リアリティ',
+    talkShow: 'トークショー',
+    variety: 'バラエティ',
+    news: 'ニュース',
+    other: 'その他'
+  },
+
+  movieFormat: {
+    theatrical: '劇場公開',
+    documentary: 'ドキュメンタリー',
+    short: '短編',
+    tvMovie: 'テレビ映画',
+    other: 'その他'
   },
 
   mediaRelation: {
@@ -189,9 +283,31 @@ export const library = {
     other: 'その他'
   },
 
+  tvExtraType: {
+    trailer: '予告',
+    teaser: 'ティザー',
+    behindTheScenes: 'メイキング',
+    featurette: '特典映像',
+    deletedScene: '未公開シーン',
+    interview: 'インタビュー',
+    other: 'その他'
+  },
+
+  movieExtraType: {
+    trailer: '予告',
+    teaser: 'ティザー',
+    behindTheScenes: 'メイキング',
+    featurette: '特典映像',
+    deletedScene: '未公開シーン',
+    interview: 'インタビュー',
+    other: 'その他'
+  },
+
   counts: {
     game: ({ count }: { count: number }) => `${count} 本のゲーム`,
     anime: ({ count }: { count: number }) => `${count} 本のアニメ`,
+    tv: ({ count }: { count: number }) => `${count} 本のドラマ`,
+    movie: ({ count }: { count: number }) => `${count} 本の映画`,
     character: ({ count }: { count: number }) => `${count} 体のキャラクター`,
     person: ({ count }: { count: number }) => `${count} 名の人物`,
     company: ({ count }: { count: number }) => `${count} 社`,
@@ -286,10 +402,13 @@ export const library = {
       characters: 'キャラクター',
       persons: '人物',
       companies: '会社',
-      relatedGames: '関連ゲーム',
-      relatedAnimes: '関連アニメ',
+      relatedWorks: '関連作品',
+      relatedEntries: '関連エントリー',
       relatedPersons: '関連人物',
       relatedCharacters: '関連キャラクター',
+      seasons: 'シーズン',
+      files: 'ファイル',
+      extras: '特典',
       activity: 'アクティビティ',
       saves: 'セーブ',
       notes: 'ノート'
@@ -312,8 +431,7 @@ export const library = {
       description: '概要はまだありません',
       tags: 'タグはまだありません',
       externalSites: '外部リンクはまだありません',
-      relatedGames: '関連ゲームはまだありません',
-      relatedAnimes: '関連アニメはまだありません',
+      relatedWorks: '関連作品はまだありません',
       relatedPersons: '関連人物はまだいません',
       relatedCharacters: '関連キャラクターはまだいません',
       relatedEntries: '関連エントリーはまだありません',
@@ -371,14 +489,26 @@ export const library = {
     editAnimeCharacters: 'キャラクターを編集',
     editAnimePersons: 'スタッフを編集',
     editAnimeCompanies: '会社を編集',
+    editTvCharacters: 'キャラクターを編集',
+    editTvPersons: 'キャスト・スタッフを編集',
+    editTvCompanies: '会社を編集',
+    editMovieCharacters: 'キャラクターを編集',
+    editMoviePersons: 'キャスト・スタッフを編集',
+    editMovieCompanies: '会社を編集',
     editCharacterGames: '登場ゲームを編集',
     editCharacterAnimes: '出演アニメを編集',
+    editCharacterTvs: '出演ドラマを編集',
+    editCharacterMovies: '出演映画を編集',
     editCharacterPersons: '関連スタッフを編集',
     editPersonGames: '参加ゲームを編集',
     editPersonAnimes: '参加アニメを編集',
+    editPersonTvs: '参加ドラマを編集',
+    editPersonMovies: '参加映画を編集',
     editPersonCharacters: '担当キャラクターを編集',
     editCompanyGames: '関連ゲームを編集',
     editCompanyAnimes: '関連アニメを編集',
+    editCompanyTvs: '関連ドラマを編集',
+    editCompanyMovies: '関連映画を編集',
     editCollectionEntities: 'コレクション内容を編集',
 
     notePlaceholder: '任意のメモ…',
@@ -406,6 +536,11 @@ export const library = {
     releaseDateYearDayWithoutMonth: '発売日に年と日を入力する場合は、月も入力してください。',
     totalEpisodesPlaceholder: '空欄可',
     totalEpisodesInvalid: '総話数は 0 以上の整数で入力してください。',
+    totalSeasonsInvalid: 'シーズン数は 0 以上の整数で入力してください。',
+    endDateInvalidFormat: '放送終了日の形式が正しくありません。',
+    endDateYearDayWithoutMonth: '放送終了日に年と日を入力する場合は、月も入力してください。',
+    runtimeMinutesPlaceholder: '分',
+    runtimeInvalid: '上映時間は正の分数で入力してください。',
 
     scoreRangeHint: 'スコアは 0〜10 で、小数第 1 位まで入力できます（例：8.5）。',
     scoreOutOfRange: 'スコアは 0〜10 の範囲で入力してください。',
@@ -467,6 +602,12 @@ export const library = {
       animeCover: 'カードやリストに表示されるアニメカバー画像。',
       animeBackdrop: '詳細ページの背景画像。',
       animeLogo: 'アニメタイトルのロゴ。',
+      tvCover: 'カードやリストに表示されるドラマのポスター。',
+      tvBackdrop: '詳細ページの背景画像。',
+      tvLogo: 'ドラマタイトルのロゴ。',
+      movieCover: 'カードやリストに表示される映画のポスター。',
+      movieBackdrop: '詳細ページの背景画像。',
+      movieLogo: '映画タイトルのロゴ。',
       characterPhoto: 'カードや詳細に表示されるキャラクター写真。',
       personPhoto: 'カードや詳細に表示される人物写真。',
       companyLogo: 'カードや詳細に表示される会社ロゴ。'
@@ -569,6 +710,8 @@ export const library = {
 
     gameLabel: 'ゲーム',
     animeLabel: 'アニメ',
+    tvLabel: 'ドラマ',
+    movieLabel: '映画',
     characterLabel: 'キャラクター',
     personLabel: '人物',
     companyLabel: '会社',
@@ -585,6 +728,8 @@ export const library = {
     linkLabels: {
       game: 'ゲームの関連付け',
       anime: 'アニメの関連付け',
+      tv: 'ドラマの関連付け',
+      movie: '映画の関連付け',
       character: 'キャラクターの関連付け',
       person: '人物の関連付け',
       company: '会社の関連付け',
@@ -702,6 +847,13 @@ export const library = {
       recentlyWatched: { name: '最近視聴', description: '最終視聴日時で並べたアニメ' },
       topRatedAnime: { name: '高評価アニメ', description: 'スコアで並べたアニメ' },
       recentlyAddedAnime: { name: '最近追加のアニメ', description: '追加日時で並べたアニメ' },
+      recentlyWatchedTv: { name: '最近視聴のドラマ', description: '最終視聴日時で並べたドラマ' },
+      topRatedTv: { name: '高評価ドラマ', description: 'スコアで並べたドラマ' },
+      recentlyAddedTv: { name: '最近追加のドラマ', description: '追加日時で並べたドラマ' },
+      recentlyWatchedMovies: { name: '最近視聴の映画', description: '最終視聴日時で並べた映画' },
+      topRatedMovies: { name: '高評価映画', description: 'スコアで並べた映画' },
+      recentlyAddedMovies: { name: '最近追加の映画', description: '追加日時で並べた映画' },
+      unwatchedMovies: { name: '未視聴', description: 'まだ視聴していない映画' },
       favoriteCharacters: {
         name: 'お気に入りのキャラクター',
         description: 'お気に入りにしたキャラクター'

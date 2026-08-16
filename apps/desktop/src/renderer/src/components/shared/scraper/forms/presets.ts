@@ -36,17 +36,6 @@ export interface ScraperPreset {
 }
 
 // =============================================================================
-// Preset IDs
-// =============================================================================
-
-export const PRESET_IDS = {
-  // Game presets
-  VISUAL_NOVEL_CN: 'visual-novel-cn'
-} as const
-
-export type PresetId = (typeof PRESET_IDS)[keyof typeof PRESET_IDS]
-
-// =============================================================================
 // Game Presets
 // =============================================================================
 
@@ -56,7 +45,7 @@ type ScraperPresetDefinition = Omit<ScraperPreset, 'name' | 'description'> & {
 
 /** Visual Novel preset using VNDB as the sole data source */
 const VISUAL_NOVEL_CN: ScraperPresetDefinition = {
-  id: PRESET_IDS.VISUAL_NOVEL_CN,
+  id: 'visual-novel-cn',
   copy: (m) => m.scraper.presets.visualNovel,
   mediaType: 'game',
   defaultLocale: 'zh-Hans',
@@ -147,10 +136,79 @@ const ANIME: ScraperPresetDefinition = {
 }
 
 // =============================================================================
+// Tv Presets
+// =============================================================================
+
+/**
+ * Series preset built on TMDB alone.
+ *
+ * TMDB is the only source that catalogues a show as one entry with its seasons
+ * beneath it, which is the shape the library stores. It states no character
+ * entity and never relates two shows, so those slots stay empty rather than
+ * borrowing a second source that numbers seasons differently.
+ */
+const TV: ScraperPresetDefinition = {
+  id: 'tv',
+  copy: (m) => m.scraper.presets.tv,
+  mediaType: 'tv',
+  defaultLocale: 'zh-Hans',
+  searchProviderId: TMDB_PROVIDER_ID,
+  slotConfigs: {
+    info: createSlotConfig('info', [TMDB_PROVIDER_ID]),
+    tags: createSlotConfig('tags', [TMDB_PROVIDER_ID]),
+    seasons: createSlotConfig('seasons', [TMDB_PROVIDER_ID]),
+    episodes: createSlotConfig('episodes', [TMDB_PROVIDER_ID]),
+    characters: createEmptySlotConfig('characters'),
+    persons: createSlotConfig('persons', [TMDB_PROVIDER_ID]),
+    companies: createSlotConfig('companies', [TMDB_PROVIDER_ID]),
+    relatedEntries: createEmptySlotConfig('relatedEntries'),
+    covers: createSlotConfig('covers', [TMDB_PROVIDER_ID]),
+    backdrops: createSlotConfig('backdrops', [TMDB_PROVIDER_ID]),
+    logos: createSlotConfig('logos', [TMDB_PROVIDER_ID])
+  }
+}
+
+// =============================================================================
+// Movie Presets
+// =============================================================================
+
+/**
+ * Film preset built on TMDB alone.
+ *
+ * TMDB carries the credits and artwork a film entry needs, and its collections
+ * name the sequels a film belongs with, so `relatedEntries` is worth asking
+ * for. Characters stay empty: a cast credit alone cannot name the character.
+ */
+const MOVIE: ScraperPresetDefinition = {
+  id: 'movie',
+  copy: (m) => m.scraper.presets.movie,
+  mediaType: 'movie',
+  defaultLocale: 'zh-Hans',
+  searchProviderId: TMDB_PROVIDER_ID,
+  slotConfigs: {
+    info: createSlotConfig('info', [TMDB_PROVIDER_ID]),
+    tags: createSlotConfig('tags', [TMDB_PROVIDER_ID]),
+    characters: createEmptySlotConfig('characters'),
+    persons: createSlotConfig('persons', [TMDB_PROVIDER_ID]),
+    companies: createSlotConfig('companies', [TMDB_PROVIDER_ID]),
+    relatedEntries: createSlotConfig('relatedEntries', [TMDB_PROVIDER_ID]),
+    covers: createSlotConfig('covers', [TMDB_PROVIDER_ID]),
+    backdrops: createSlotConfig('backdrops', [TMDB_PROVIDER_ID]),
+    logos: createSlotConfig('logos', [TMDB_PROVIDER_ID])
+  }
+}
+
+// =============================================================================
 // Preset Registry
 // =============================================================================
 
-const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [VISUAL_NOVEL_CN, VIDEO_GAME, ANIME]
+const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [
+  VISUAL_NOVEL_CN,
+  VIDEO_GAME,
+  ANIME,
+  TV,
+  MOVIE
+]
 
 function resolvePreset({ copy, ...preset }: ScraperPresetDefinition): ScraperPreset {
   return { ...preset, ...copy(messages.value) }
@@ -159,15 +217,4 @@ function resolvePreset({ copy, ...preset }: ScraperPresetDefinition): ScraperPre
 /** All scraper presets with copy resolved for the current UI locale. */
 export function getScraperPresets(): ScraperPreset[] {
   return PRESET_DEFINITIONS.map(resolvePreset)
-}
-
-/** Get a preset by ID */
-export function getPresetById(presetId: string): ScraperPreset | undefined {
-  const definition = PRESET_DEFINITIONS.find((p) => p.id === presetId)
-  return definition ? resolvePreset(definition) : undefined
-}
-
-/** Get presets by media type */
-export function getPresetsByMediaType(mediaType: ContentEntityType): ScraperPreset[] {
-  return PRESET_DEFINITIONS.filter((p) => p.mediaType === mediaType).map(resolvePreset)
 }

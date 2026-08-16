@@ -1,23 +1,20 @@
 <!--
   CollectionEntitiesFormDialog
 
-  Dialog for editing entities in a collection.
-  Supports all content entity types (game, anime, character, person, company).
-  Features inline add/edit dialog with note field and reordering.
+  Dialog for editing the members of a collection, one tab per content entity
+  type, with a per-member note and manual ordering. Membership is loaded and
+  saved through the collection link registry, so every content entity type is
+  covered by the same code path.
 -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { eq, asc } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { Icon } from '@renderer/components/ui/icon'
-import { db } from '@renderer/core/db'
 import {
-  collectionGameLinks,
-  collectionAnimeLinks,
-  collectionCharacterLinks,
-  collectionPersonLinks,
-  collectionCompanyLinks
-} from '@shared/db'
+  deleteCollectionLinks,
+  insertCollectionLinks,
+  queryCollectionMembers
+} from '@renderer/core/db'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import {
@@ -60,6 +57,8 @@ interface EntityConfig {
 const ENTITY_CONFIG = computed<Record<ContentEntityType, EntityConfig>>(() => ({
   game: { label: m.value.library.entities.game },
   anime: { label: m.value.library.entities.anime },
+  tv: { label: m.value.library.entities.tv },
+  movie: { label: m.value.library.entities.movie },
   character: { label: m.value.library.entities.character },
   person: { label: m.value.library.entities.person },
   company: { label: m.value.library.entities.company }
@@ -89,76 +88,21 @@ const {
   refetch
 } = useAsyncData(
   async () => {
-    const [gameLinks, animeLinks, characterLinks, personLinks, companyLinks] = await Promise.all([
-      db.query.collectionGameLinks.findMany({
-        where: eq(collectionGameLinks.collectionId, props.collectionId),
-        with: { game: true },
-        orderBy: asc(collectionGameLinks.orderInCollection)
-      }),
-      db.query.collectionAnimeLinks.findMany({
-        where: eq(collectionAnimeLinks.collectionId, props.collectionId),
-        with: { anime: true },
-        orderBy: asc(collectionAnimeLinks.orderInCollection)
-      }),
-      db.query.collectionCharacterLinks.findMany({
-        where: eq(collectionCharacterLinks.collectionId, props.collectionId),
-        with: { character: true },
-        orderBy: asc(collectionCharacterLinks.orderInCollection)
-      }),
-      db.query.collectionPersonLinks.findMany({
-        where: eq(collectionPersonLinks.collectionId, props.collectionId),
-        with: { person: true },
-        orderBy: asc(collectionPersonLinks.orderInCollection)
-      }),
-      db.query.collectionCompanyLinks.findMany({
-        where: eq(collectionCompanyLinks.collectionId, props.collectionId),
-        with: { company: true },
-        orderBy: asc(collectionCompanyLinks.orderInCollection)
+    const groups = await Promise.all(
+      CONTENT_ENTITY_TYPES.map(async (entityType) => {
+        const members = await queryCollectionMembers(entityType, props.collectionId)
+        return members.map((member) => ({
+          id: member.id,
+          entityId: member.entityId,
+          entityName: member.entityName ?? '',
+          entityType,
+          note: member.note ?? '',
+          orderInCollection: member.orderInCollection
+        }))
       })
-    ])
+    )
 
-    return [
-      ...gameLinks.map((link) => ({
-        id: link.id,
-        entityId: link.gameId,
-        entityName: link.game?.name || 'Unknown',
-        entityType: 'game' as ContentEntityType,
-        note: link.note || '',
-        orderInCollection: link.orderInCollection
-      })),
-      ...animeLinks.map((link) => ({
-        id: link.id,
-        entityId: link.animeId,
-        entityName: link.anime?.name || 'Unknown',
-        entityType: 'anime' as ContentEntityType,
-        note: link.note || '',
-        orderInCollection: link.orderInCollection
-      })),
-      ...characterLinks.map((link) => ({
-        id: link.id,
-        entityId: link.characterId,
-        entityName: link.character?.name || 'Unknown',
-        entityType: 'character' as ContentEntityType,
-        note: link.note || '',
-        orderInCollection: link.orderInCollection
-      })),
-      ...personLinks.map((link) => ({
-        id: link.id,
-        entityId: link.personId,
-        entityName: link.person?.name || 'Unknown',
-        entityType: 'person' as ContentEntityType,
-        note: link.note || '',
-        orderInCollection: link.orderInCollection
-      })),
-      ...companyLinks.map((link) => ({
-        id: link.id,
-        entityId: link.companyId,
-        entityName: link.company?.name || 'Unknown',
-        entityType: 'company' as ContentEntityType,
-        note: link.note || '',
-        orderInCollection: link.orderInCollection
-      }))
-    ]
+    return groups.flat()
   },
   {
     watch: [() => props.collectionId],
@@ -263,92 +207,23 @@ function handleMoveDown(index: number) {
 async function handleSave() {
   isSaving.value = true
   try {
-    // Delete all existing links
-    await Promise.all([
-      db
-        .delete(collectionGameLinks)
-        .where(eq(collectionGameLinks.collectionId, props.collectionId)),
-      db
-        .delete(collectionAnimeLinks)
-        .where(eq(collectionAnimeLinks.collectionId, props.collectionId)),
-      db
-        .delete(collectionCharacterLinks)
-        .where(eq(collectionCharacterLinks.collectionId, props.collectionId)),
-      db
-        .delete(collectionPersonLinks)
-        .where(eq(collectionPersonLinks.collectionId, props.collectionId)),
-      db
-        .delete(collectionCompanyLinks)
-        .where(eq(collectionCompanyLinks.collectionId, props.collectionId))
-    ])
+    // Membership is rewritten wholesale per entity type, which also reindexes
+    // the stored order to the order shown in the list.
+    for (const entityType of CONTENT_ENTITY_TYPES) {
+      await deleteCollectionLinks(entityType, props.collectionId)
 
-    // Prepare links to insert
-    const gameLinksToInsert = entityLinks.value
-      .filter((l) => l.entityType === 'game')
-      .sort((a, b) => a.orderInCollection - b.orderInCollection)
-      .map((l, index) => ({
-        id: l.isNew ? nanoid() : l.id,
-        collectionId: props.collectionId,
-        gameId: l.entityId,
-        note: l.note || null,
-        orderInCollection: index
-      }))
-    const animeLinksToInsert = entityLinks.value
-      .filter((l) => l.entityType === 'anime')
-      .sort((a, b) => a.orderInCollection - b.orderInCollection)
-      .map((l, index) => ({
-        id: l.isNew ? nanoid() : l.id,
-        collectionId: props.collectionId,
-        animeId: l.entityId,
-        note: l.note || null,
-        orderInCollection: index
-      }))
-    const characterLinksToInsert = entityLinks.value
-      .filter((l) => l.entityType === 'character')
-      .sort((a, b) => a.orderInCollection - b.orderInCollection)
-      .map((l, index) => ({
-        id: l.isNew ? nanoid() : l.id,
-        collectionId: props.collectionId,
-        characterId: l.entityId,
-        note: l.note || null,
-        orderInCollection: index
-      }))
-    const personLinksToInsert = entityLinks.value
-      .filter((l) => l.entityType === 'person')
-      .sort((a, b) => a.orderInCollection - b.orderInCollection)
-      .map((l, index) => ({
-        id: l.isNew ? nanoid() : l.id,
-        collectionId: props.collectionId,
-        personId: l.entityId,
-        note: l.note || null,
-        orderInCollection: index
-      }))
-    const companyLinksToInsert = entityLinks.value
-      .filter((l) => l.entityType === 'company')
-      .sort((a, b) => a.orderInCollection - b.orderInCollection)
-      .map((l, index) => ({
-        id: l.isNew ? nanoid() : l.id,
-        collectionId: props.collectionId,
-        companyId: l.entityId,
-        note: l.note || null,
-        orderInCollection: index
-      }))
+      const rows = entityLinks.value
+        .filter((link) => link.entityType === entityType)
+        .sort((a, b) => a.orderInCollection - b.orderInCollection)
+        .map((link, index) => ({
+          id: link.isNew ? nanoid() : link.id,
+          collectionId: props.collectionId,
+          entityId: link.entityId,
+          note: link.note || null,
+          orderInCollection: index
+        }))
 
-    // Insert new links
-    if (gameLinksToInsert.length > 0) {
-      await db.insert(collectionGameLinks).values(gameLinksToInsert)
-    }
-    if (animeLinksToInsert.length > 0) {
-      await db.insert(collectionAnimeLinks).values(animeLinksToInsert)
-    }
-    if (characterLinksToInsert.length > 0) {
-      await db.insert(collectionCharacterLinks).values(characterLinksToInsert)
-    }
-    if (personLinksToInsert.length > 0) {
-      await db.insert(collectionPersonLinks).values(personLinksToInsert)
-    }
-    if (companyLinksToInsert.length > 0) {
-      await db.insert(collectionCompanyLinks).values(companyLinksToInsert)
+      await insertCollectionLinks(entityType, rows)
     }
 
     notify.success(m.value.common.saved)

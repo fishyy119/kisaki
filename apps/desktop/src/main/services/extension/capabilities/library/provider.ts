@@ -31,9 +31,18 @@ import {
   assertValidLibraryMediaRelationQuery,
   assertValidLibraryMediaRelationSelector,
   assertValidLibraryMediaRelationUpdateInput,
+  assertValidLibraryMovieCreateInput,
+  assertValidLibraryMoviePatch,
+  assertValidLibraryMovieQuery,
   assertValidLibraryTagCreateInput,
   assertValidLibraryTagPatch,
   assertValidLibraryTagQuery,
+  assertValidLibraryTvCreateInput,
+  assertValidLibraryTvEpisodeQuery,
+  assertValidLibraryTvEpisodeWatchStatePatch,
+  assertValidLibraryTvPatch,
+  assertValidLibraryTvQuery,
+  assertValidLibraryTvSeasonQuery,
   createUnavailableError,
   type ExtensionRuntimeMetadata,
   type HostToMainRpcMethod,
@@ -58,6 +67,10 @@ import {
   type LibraryGamePatch,
   type LibraryGameQuery,
   type LibraryGraphInput,
+  type LibraryMovie,
+  type LibraryMovieCreateInput,
+  type LibraryMoviePatch,
+  type LibraryMovieQuery,
   type LibraryPerson,
   type LibraryPersonCreateInput,
   type LibraryPersonPatch,
@@ -65,18 +78,34 @@ import {
   type LibraryTag,
   type LibraryTagCreateInput,
   type LibraryTagPatch,
-  type LibraryTagQuery
+  type LibraryTagQuery,
+  type LibraryTv,
+  type LibraryTvCreateInput,
+  type LibraryTvPatch,
+  type LibraryTvQuery
 } from '@kisaki3/extension-api'
 import type { DbService } from '@main/services/db'
 import type { ExtensionHostRpcClient } from '../../runtime'
 import { ExtensionLibraryAttachmentStore } from './attachments'
-import { ExtensionLibraryEntityStore, ExtensionLibraryEpisodeStore } from './entities'
+import {
+  ExtensionLibraryEntityStore,
+  ExtensionLibraryEpisodeStore,
+  ExtensionLibraryTvStore
+} from './entities'
 import { ExtensionLibraryGraphManager } from './graph'
 import { ExtensionLibraryLinkStore } from './links'
 import { ExtensionLibraryMediaRelationStore } from './relations'
 
 type LibraryEntityNamespaceName =
-  'games' | 'animes' | 'characters' | 'persons' | 'companies' | 'collections' | 'tags'
+  | 'games'
+  | 'animes'
+  | 'tvs'
+  | 'movies'
+  | 'characters'
+  | 'persons'
+  | 'companies'
+  | 'collections'
+  | 'tags'
 type LibraryEntityRpcMethod<
   TNamespace extends LibraryEntityNamespaceName,
   TAction extends 'get' | 'list' | 'create' | 'update' | 'remove'
@@ -115,6 +144,7 @@ export interface ExtensionLibraryCapabilityProviderOptions {
 export class ExtensionLibraryCapabilityProvider {
   readonly entities: ExtensionLibraryEntityStore
   readonly episodes: ExtensionLibraryEpisodeStore
+  readonly tv: ExtensionLibraryTvStore
   readonly links: ExtensionLibraryLinkStore
   readonly relations: ExtensionLibraryMediaRelationStore
   readonly attachments: ExtensionLibraryAttachmentStore
@@ -123,6 +153,7 @@ export class ExtensionLibraryCapabilityProvider {
   constructor(private readonly options: ExtensionLibraryCapabilityProviderOptions) {
     this.entities = new ExtensionLibraryEntityStore({ db: options.db })
     this.episodes = new ExtensionLibraryEpisodeStore({ db: options.db })
+    this.tv = new ExtensionLibraryTvStore({ db: options.db })
     this.links = new ExtensionLibraryLinkStore({ db: options.db })
     this.relations = new ExtensionLibraryMediaRelationStore({ db: options.db })
     this.attachments = new ExtensionLibraryAttachmentStore({
@@ -133,6 +164,7 @@ export class ExtensionLibraryCapabilityProvider {
       db: options.db,
       entities: this.entities,
       episodes: this.episodes,
+      tv: this.tv,
       attachments: this.attachments,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
@@ -177,6 +209,32 @@ export class ExtensionLibraryCapabilityProvider {
           assertValidLibraryEntityId(episodeId, 'library.animes.episodes.patchWatchState id')
           assertValidLibraryAnimeEpisodeWatchStatePatch(patch)
           return { episode: this.episodes.patchWatchState(episodeId, patch) }
+        })
+    )
+
+    rpc.handleHostRequest(
+      'capabilities.library.tvs.seasons.list',
+      async ({ runtimeHandle, query }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryTvSeasonQuery(query)
+          return { items: this.tv.listSeasons(query) }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.tvs.episodes.list',
+      async ({ runtimeHandle, query }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryTvEpisodeQuery(query)
+          return { items: this.tv.listEpisodes(query) }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.tvs.episodes.patchWatchState',
+      async ({ runtimeHandle, episodeId, patch }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryEntityId(episodeId, 'library.tvs.episodes.patchWatchState id')
+          assertValidLibraryTvEpisodeWatchStatePatch(patch)
+          return { episode: this.tv.patchEpisodeWatchState(episodeId, patch) }
         })
     )
 
@@ -293,6 +351,20 @@ export class ExtensionLibraryCapabilityProvider {
       LibraryAnimeQuery
     >,
     LibraryEntityRpcDescriptor<
+      'tvs',
+      LibraryTv,
+      LibraryTvCreateInput,
+      LibraryTvPatch,
+      LibraryTvQuery
+    >,
+    LibraryEntityRpcDescriptor<
+      'movies',
+      LibraryMovie,
+      LibraryMovieCreateInput,
+      LibraryMoviePatch,
+      LibraryMovieQuery
+    >,
+    LibraryEntityRpcDescriptor<
       'characters',
       LibraryCharacter,
       LibraryCharacterCreateInput,
@@ -352,6 +424,30 @@ export class ExtensionLibraryCapabilityProvider {
         assertQuery: assertValidLibraryAnimeQuery,
         assertCreate: assertValidLibraryAnimeCreateInput,
         assertPatch: assertValidLibraryAnimePatch
+      },
+      {
+        namespace: 'tvs',
+        methods: createLibraryEntityRpcMethods('tvs'),
+        get: (id) => this.entities.getTv(id),
+        list: (query) => this.entities.listTvs(query),
+        create: (input) => this.entities.createTv(input),
+        update: (id, patch) => this.entities.updateTv(id, patch),
+        remove: (id) => this.entities.removeTv(id),
+        assertQuery: assertValidLibraryTvQuery,
+        assertCreate: assertValidLibraryTvCreateInput,
+        assertPatch: assertValidLibraryTvPatch
+      },
+      {
+        namespace: 'movies',
+        methods: createLibraryEntityRpcMethods('movies'),
+        get: (id) => this.entities.getMovie(id),
+        list: (query) => this.entities.listMovies(query),
+        create: (input) => this.entities.createMovie(input),
+        update: (id, patch) => this.entities.updateMovie(id, patch),
+        remove: (id) => this.entities.removeMovie(id),
+        assertQuery: assertValidLibraryMovieQuery,
+        assertCreate: assertValidLibraryMovieCreateInput,
+        assertPatch: assertValidLibraryMoviePatch
       },
       {
         namespace: 'characters',

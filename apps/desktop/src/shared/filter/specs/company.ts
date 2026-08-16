@@ -1,4 +1,12 @@
-import { collectionCompanyLinks, companies, companyTagLinks, gameCompanyLinks } from '@shared/db'
+import {
+  animeCompanyLinks,
+  collectionCompanyLinks,
+  companies,
+  companyTagLinks,
+  gameCompanyLinks,
+  movieCompanyLinks,
+  tvCompanyLinks
+} from '@shared/db'
 import { defineFilterQuerySpec } from '../spec'
 
 export const companyFilterQuerySpec = defineFilterQuerySpec({
@@ -21,6 +29,36 @@ export const companyFilterQuerySpec = defineFilterQuerySpec({
         table: gameCompanyLinks,
         entityIdColumn: gameCompanyLinks.companyId,
         relatedIdColumn: gameCompanyLinks.gameId
+      }
+    },
+    {
+      key: 'animes',
+      kind: 'relation',
+      targetEntity: 'anime',
+      link: {
+        table: animeCompanyLinks,
+        entityIdColumn: animeCompanyLinks.companyId,
+        relatedIdColumn: animeCompanyLinks.animeId
+      }
+    },
+    {
+      key: 'tvs',
+      kind: 'relation',
+      targetEntity: 'tv',
+      link: {
+        table: tvCompanyLinks,
+        entityIdColumn: tvCompanyLinks.companyId,
+        relatedIdColumn: tvCompanyLinks.tvId
+      }
+    },
+    {
+      key: 'movies',
+      kind: 'relation',
+      targetEntity: 'movie',
+      link: {
+        table: movieCompanyLinks,
+        entityIdColumn: movieCompanyLinks.companyId,
+        relatedIdColumn: movieCompanyLinks.movieId
       }
     },
     {

@@ -33,6 +33,28 @@ export function buildEntityFieldPatch(
       applyFirst(patch, target, source, 'totalEpisodes')
       applyFirst(patch, target, source, 'animeDirPath')
       break
+    case 'tv':
+      applyFirst(patch, target, source, 'releaseDate')
+      applyFirst(patch, target, source, 'endDate')
+      patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
+      patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
+      applyFirst(patch, target, source, 'totalSeasons')
+      applyFirst(patch, target, source, 'totalEpisodes')
+      applyFirst(patch, target, source, 'tvDirPath')
+      break
+    case 'movie':
+      applyFirst(patch, target, source, 'releaseDate')
+      patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
+      patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
+      applyFirst(patch, target, source, 'runtimeMs')
+      // A movie's watch state lives on the entry row, so the merge folds it the
+      // same way an episode fold does.
+      patch.watched = Boolean(target.watched || source.watched)
+      patch.watchedAt = latestDateValue(target.watchedAt, source.watchedAt)
+      patch.playCount = toDuration(target.playCount) + toDuration(source.playCount)
+      applyFirst(patch, target, source, 'resumePositionMs')
+      applyFirst(patch, target, source, 'movieDirPath')
+      break
     case 'person':
       applyFirst(patch, target, source, 'birthDate')
       applyFirst(patch, target, source, 'deathDate')

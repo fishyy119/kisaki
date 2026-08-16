@@ -1,2 +1,6 @@
 export { AnimeFileSyncHandler } from './anime'
 export type { AnimeFileSyncParams } from './anime'
+export { MovieFileSyncHandler } from './movie'
+export type { MovieFileSyncParams } from './movie'
+export { TvFileSyncHandler } from './tv'
+export type { TvFileSyncParams } from './tv'

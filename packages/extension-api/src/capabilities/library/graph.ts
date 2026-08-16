@@ -7,8 +7,12 @@ import type {
   LibraryGameCreateInput,
   LibraryGameNoteCreateInput,
   LibraryGameSessionCreateInput,
+  LibraryMovieCreateInput,
   LibraryPersonCreateInput,
-  LibraryTagCreateInput
+  LibraryTagCreateInput,
+  LibraryTvCreateInput,
+  LibraryTvEpisodeCreateInput,
+  LibraryTvSeasonCreateInput
 } from './entities'
 import type {
   LibraryAnimeCharacterRole,
@@ -18,10 +22,16 @@ import type {
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
-  LibraryMediaRelationType
+  LibraryMediaRelationType,
+  LibraryMovieCharacterRole,
+  LibraryMovieCompanyRole,
+  LibraryMoviePersonRole,
+  LibraryTvCharacterRole,
+  LibraryTvCompanyRole,
+  LibraryTvPersonRole
 } from '../../shared/library'
 
-export const LIBRARY_MEDIA_TYPES = ['game', 'anime'] as const
+export const LIBRARY_MEDIA_TYPES = ['game', 'anime', 'tv', 'movie'] as const
 
 export type LibraryMediaType = (typeof LIBRARY_MEDIA_TYPES)[number]
 
@@ -42,6 +52,7 @@ export const LIBRARY_GRAPH_NODE_KINDS = [
   'character',
   'note',
   'session',
+  'season',
   'episode',
   'attachment'
 ] as const
@@ -58,8 +69,11 @@ export const LIBRARY_GRAPH_EDGE_KINDS = [
   'media-media',
   'media-note',
   'media-session',
+  'media-season',
   'media-episode',
+  'season-episode',
   'media-attachment',
+  'season-attachment',
   'episode-attachment'
 ] as const
 
@@ -76,6 +90,12 @@ export const LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS = [
 
 export type LibraryGraphMediaAttachmentSlot = (typeof LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS)[number]
 
+/** Seasons own exactly one attachment slot: the season poster. */
+export const LIBRARY_GRAPH_SEASON_ATTACHMENT_SLOTS = ['poster'] as const
+
+export type LibraryGraphSeasonAttachmentSlot =
+  (typeof LIBRARY_GRAPH_SEASON_ATTACHMENT_SLOTS)[number]
+
 /** Episodes own exactly one attachment slot: the still frame. */
 export const LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS = ['still'] as const
 
@@ -84,6 +104,7 @@ export type LibraryGraphEpisodeAttachmentSlot =
 
 export const LIBRARY_GRAPH_ATTACHMENT_SLOTS = [
   ...LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS,
+  ...LIBRARY_GRAPH_SEASON_ATTACHMENT_SLOTS,
   ...LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS
 ] as const
 
@@ -128,6 +149,7 @@ export interface LibraryGraphNodes {
   characters?: readonly LibraryGraphCharacterNode[]
   notes?: readonly LibraryGraphNoteNode[]
   sessions?: readonly LibraryGraphSessionNode[]
+  seasons?: readonly LibraryGraphSeasonNode[]
   episodes?: readonly LibraryGraphEpisodeNode[]
   attachments?: readonly LibraryGraphAttachmentNode[]
 }
@@ -136,7 +158,8 @@ export interface LibraryGraphNodeBase {
   key: string
 }
 
-export type LibraryGraphMediaNode = LibraryGraphGameNode | LibraryGraphAnimeNode
+export type LibraryGraphMediaNode =
+  LibraryGraphGameNode | LibraryGraphAnimeNode | LibraryGraphTvNode | LibraryGraphMovieNode
 
 export interface LibraryGraphGameNode extends LibraryGraphNodeBase {
   kind: 'media'
@@ -148,6 +171,18 @@ export interface LibraryGraphAnimeNode extends LibraryGraphNodeBase {
   kind: 'media'
   mediaType: 'anime'
   input: LibraryAnimeCreateInput
+}
+
+export interface LibraryGraphTvNode extends LibraryGraphNodeBase {
+  kind: 'media'
+  mediaType: 'tv'
+  input: LibraryTvCreateInput
+}
+
+export interface LibraryGraphMovieNode extends LibraryGraphNodeBase {
+  kind: 'media'
+  mediaType: 'movie'
+  input: LibraryMovieCreateInput
 }
 
 export interface LibraryGraphCollectionNode extends LibraryGraphNodeBase {
@@ -185,9 +220,24 @@ export interface LibraryGraphSessionNode extends LibraryGraphNodeBase {
   input: LibraryGameSessionCreateInput
 }
 
-export interface LibraryGraphEpisodeNode extends LibraryGraphNodeBase {
+/** Seasons exist only under a show, so the node needs no media discriminator. */
+export interface LibraryGraphSeasonNode extends LibraryGraphNodeBase {
+  kind: 'season'
+  input: LibraryTvSeasonCreateInput
+}
+
+export type LibraryGraphEpisodeNode = LibraryGraphAnimeEpisodeNode | LibraryGraphTvEpisodeNode
+
+export interface LibraryGraphAnimeEpisodeNode extends LibraryGraphNodeBase {
   kind: 'episode'
+  mediaType: 'anime'
   input: LibraryAnimeEpisodeCreateInput
+}
+
+export interface LibraryGraphTvEpisodeNode extends LibraryGraphNodeBase {
+  kind: 'episode'
+  mediaType: 'tv'
+  input: LibraryTvEpisodeCreateInput
 }
 
 export interface LibraryGraphAttachmentNode extends LibraryGraphNodeBase {
@@ -212,8 +262,11 @@ export type LibraryGraphEdge =
   | LibraryGraphMediaMediaEdge
   | LibraryGraphMediaNoteEdge
   | LibraryGraphMediaSessionEdge
+  | LibraryGraphMediaSeasonEdge
   | LibraryGraphMediaEpisodeEdge
+  | LibraryGraphSeasonEpisodeEdge
   | LibraryGraphMediaAttachmentEdge
+  | LibraryGraphSeasonAttachmentEdge
   | LibraryGraphEpisodeAttachmentEdge
 
 export interface LibraryGraphCollectionMediaEdge {
@@ -235,7 +288,11 @@ export interface LibraryGraphMediaCompanyEdge {
   kind: 'media-company'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  role: LibraryGameCompanyRole | LibraryAnimeCompanyRole
+  role:
+    | LibraryGameCompanyRole
+    | LibraryAnimeCompanyRole
+    | LibraryTvCompanyRole
+    | LibraryMovieCompanyRole
   order?: number
 }
 
@@ -243,7 +300,8 @@ export interface LibraryGraphMediaPersonEdge {
   kind: 'media-person'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  role: LibraryGamePersonRole | LibraryAnimePersonRole
+  role:
+    LibraryGamePersonRole | LibraryAnimePersonRole | LibraryTvPersonRole | LibraryMoviePersonRole
   order?: number
   note?: string
 }
@@ -253,7 +311,11 @@ export interface LibraryGraphMediaCharacterEdge {
   kind: 'media-character'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  role: LibraryGameCharacterRole | LibraryAnimeCharacterRole
+  role:
+    | LibraryGameCharacterRole
+    | LibraryAnimeCharacterRole
+    | LibraryTvCharacterRole
+    | LibraryMovieCharacterRole
   order?: number
   note?: string
 }
@@ -295,8 +357,24 @@ export interface LibraryGraphMediaSessionEdge {
   to: LibraryGraphNodeRef
 }
 
+export interface LibraryGraphMediaSeasonEdge {
+  kind: 'media-season'
+  from: LibraryGraphNodeRef
+  to: LibraryGraphNodeRef
+}
+
+/**
+ * Attaches an episode to its owning entry. A tv episode also needs a
+ * `season-episode` edge: the show owns it, the season places it.
+ */
 export interface LibraryGraphMediaEpisodeEdge {
   kind: 'media-episode'
+  from: LibraryGraphNodeRef
+  to: LibraryGraphNodeRef
+}
+
+export interface LibraryGraphSeasonEpisodeEdge {
+  kind: 'season-episode'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
 }
@@ -308,6 +386,14 @@ export interface LibraryGraphMediaAttachmentEdge {
   slot: LibraryGraphMediaAttachmentSlot
   replace?: boolean
   saveBackup?: LibraryGraphSaveBackupInput
+}
+
+export interface LibraryGraphSeasonAttachmentEdge {
+  kind: 'season-attachment'
+  from: LibraryGraphNodeRef
+  to: LibraryGraphNodeRef
+  slot: LibraryGraphSeasonAttachmentSlot
+  replace?: boolean
 }
 
 export interface LibraryGraphEpisodeAttachmentEdge {

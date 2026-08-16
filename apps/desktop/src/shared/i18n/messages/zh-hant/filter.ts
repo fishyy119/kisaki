@@ -29,5 +29,6 @@ export const filter = {
   minPlaceholder: '最小',
   maxPlaceholder: '最大',
   hoursUnit: '小時',
+  minutesUnit: '分鐘',
   favorite: '我喜歡'
 } satisfies Messages['filter']

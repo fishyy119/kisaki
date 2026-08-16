@@ -16,6 +16,6 @@
   "homepage": "https://www.themoviedb.org",
   "keywords": ["tmdb", "scraper", "anime", "tv", "movie", "episode-group"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.12"
+    "kisakiExtensionApi": "=0.0.13"
   }
 }

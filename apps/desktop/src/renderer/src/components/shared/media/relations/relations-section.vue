@@ -1,16 +1,20 @@
 <!--
   MediaRelationsSection
-  Related media entries as one ordered card row; incoming edges arrive
-  pre-labelled with the inverse vocabulary. The relation type renders as
-  the card's bottom badge and clicking opens the target's detail dialog.
+  Overview row of related media entries as one horizontal scroll; incoming
+  edges arrive pre-labelled with the inverse vocabulary. The relation type
+  renders as the card's bottom badge and clicking opens the target's detail
+  dialog.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Section } from '@renderer/components/ui/section'
-import { AnimeCard, AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
+import { SectionScroll } from '@renderer/components/ui/section'
+import { AnimeDetailDialog } from '@renderer/components/shared/anime'
+import { EntityCard } from '@renderer/components/shared/entity'
+import { GameDetailDialog } from '@renderer/components/shared/game'
+import { MovieDetailDialog } from '@renderer/components/shared/movie'
+import { TvDetailDialog } from '@renderer/components/shared/tv'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { MediaRelationEntry } from '@renderer/core/db/media-relations'
+import type { MediaRelationEntry, MediaRelationTarget } from '@renderer/core/db/media-relations'
 
 interface Props {
   relations: MediaRelationEntry[]
@@ -27,69 +31,66 @@ const { m } = useI18n()
 
 const RELATION_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.mediaRelation)
 
-const openGameId = ref<string | null>(null)
-const openAnimeId = ref<string | null>(null)
+/** The entry whose detail dialog is open, keyed by media type as well as id. */
+const openTarget = ref<{ mediaType: MediaRelationTarget['mediaType']; id: string } | null>(null)
 
-const gameDialogOpen = computed({
-  get: () => openGameId.value !== null,
+const dialogOpen = computed({
+  get: () => openTarget.value !== null,
   set: (value) => {
-    if (!value) openGameId.value = null
-  }
-})
-
-const animeDialogOpen = computed({
-  get: () => openAnimeId.value !== null,
-  set: (value) => {
-    if (!value) openAnimeId.value = null
+    if (!value) openTarget.value = null
   }
 })
 
 function getTypeLabel(entry: MediaRelationEntry): string {
   return RELATION_TYPE_LABELS.value[entry.type] || entry.type
 }
+
+function openDetail(target: MediaRelationTarget): void {
+  openTarget.value = { mediaType: target.mediaType, id: target.entity.id }
+}
 </script>
 
 <template>
-  <Section
+  <SectionScroll
     :title="m.library.fields.relatedEntries"
     :editable="editable"
-    :empty="relations.length === 0"
+    :items="relations"
+    :get-key="(entry) => `${entry.id}:${entry.direction}`"
     :empty-text="m.library.detail.empty.relatedEntries"
     @edit="emit('edit')"
   >
-    <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3">
-      <template
-        v-for="entry in relations"
-        :key="`${entry.id}:${entry.direction}`"
-      >
-        <GameCard
-          v-if="entry.targetGame"
-          :game="entry.targetGame"
-          size="sm"
-          align="left"
-          :badge-label="getTypeLabel(entry)"
-          @click="openGameId = entry.targetGame.id"
-        />
-        <AnimeCard
-          v-else-if="entry.targetAnime"
-          :anime="entry.targetAnime"
-          size="sm"
-          align="left"
-          :badge-label="getTypeLabel(entry)"
-          @click="openAnimeId = entry.targetAnime.id"
-        />
-      </template>
-    </div>
+    <template #item="{ item: entry }">
+      <EntityCard
+        :entity-type="entry.target.mediaType"
+        :entity="entry.target.entity"
+        size="sm"
+        align="left"
+        :badge-label="getTypeLabel(entry)"
+        @click="openDetail(entry.target)"
+      />
+    </template>
+  </SectionScroll>
 
+  <template v-if="openTarget">
     <GameDetailDialog
-      v-if="openGameId"
-      v-model:open="gameDialogOpen"
-      :game-id="openGameId"
+      v-if="openTarget.mediaType === 'game'"
+      v-model:open="dialogOpen"
+      :game-id="openTarget.id"
     />
     <AnimeDetailDialog
-      v-if="openAnimeId"
-      v-model:open="animeDialogOpen"
-      :anime-id="openAnimeId"
+      v-else-if="openTarget.mediaType === 'anime'"
+      v-model:open="dialogOpen"
+      :anime-id="openTarget.id"
     />
-  </Section>
+    <TvDetailDialog
+      v-else-if="openTarget.mediaType === 'tv'"
+      v-model:open="dialogOpen"
+      :tv-id="openTarget.id"
+    />
+    <MovieDetailDialog
+      v-else
+      v-model:open="dialogOpen"
+      :movie-id="openTarget.id"
+    />
+  </template>
 </template>

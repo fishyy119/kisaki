@@ -1,5 +1,6 @@
 import type {
   LibraryGraphEdge,
+  LibraryGraphEdgeKind,
   LibraryGraphResult,
   LibraryGraphResultAction
 } from '@kisaki3/extension-api'
@@ -13,15 +14,20 @@ import { applyEntityNodes, previewEntityNodes } from './entities'
 import {
   applyAttachmentEdge,
   applyEpisodeAttachmentEdge,
+  applySeasonAttachmentEdge,
   previewAttachmentEdge,
-  previewEpisodeAttachmentEdge
+  previewEpisodeAttachmentEdge,
+  previewSeasonAttachmentEdge
 } from './media'
 import {
   applyEpisodeEdge,
   applyNoteEdge,
+  applySeasonEdge,
   applySessionEdge,
   previewEpisodeEdge,
   previewNoteEdge,
+  previewSeasonEdge,
+  resolveSeasonEpisodeEdge,
   previewSessionEdge
 } from './owned-items'
 import {
@@ -81,13 +87,40 @@ export async function applyLibraryGraph(
   return toGraphResult(graph, context, draft)
 }
 
+/**
+ * Edges run in dependency order rather than input order: a season must exist
+ * before its episodes can be placed, and both must exist before their
+ * attachments resolve. Edges within one phase keep their input order.
+ */
+const EDGE_PHASES: Record<LibraryGraphEdgeKind, number> = {
+  'collection-media': 0,
+  'media-tag': 0,
+  'media-company': 0,
+  'media-person': 0,
+  'media-character': 0,
+  'character-person': 0,
+  'media-media': 0,
+  'media-note': 0,
+  'media-session': 0,
+  'media-season': 1,
+  'season-episode': 2,
+  'media-episode': 3,
+  'media-attachment': 4,
+  'season-attachment': 4,
+  'episode-attachment': 4
+}
+
+function orderedEdges(graph: NormalizedLibraryGraph): readonly LibraryGraphEdge[] {
+  return [...graph.edges].sort((a, b) => EDGE_PHASES[a.kind] - EDGE_PHASES[b.kind])
+}
+
 async function previewEdges(
   graph: NormalizedLibraryGraph,
   draft: LibraryGraphResultDraft,
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): Promise<void> {
-  for (const edge of graph.edges) {
+  for (const edge of orderedEdges(graph)) {
     pushEdgeResult(draft, edge, await previewEdge(edge, graph, draft, state, options))
   }
 }
@@ -99,7 +132,7 @@ async function applyEdges(
   context: LibraryGraphExecutionContext,
   options: ExecuteLibraryGraphOptions
 ): Promise<void> {
-  for (const edge of graph.edges) {
+  for (const edge of orderedEdges(graph)) {
     if (context.signal?.aborted) {
       throw context.signal.reason ?? new Error('Library graph apply was aborted.')
     }
@@ -131,10 +164,16 @@ async function previewEdge(
       return previewNoteEdge(edge, graph, draft, state, options)
     case 'media-session':
       return previewSessionEdge(edge, graph, draft, state, options)
+    case 'media-season':
+      return previewSeasonEdge(edge, graph, draft, state, options)
+    case 'season-episode':
+      return resolveSeasonEpisodeEdge(edge)
     case 'media-episode':
       return previewEpisodeEdge(edge, graph, draft, state, options)
     case 'media-attachment':
       return await previewAttachmentEdge(edge, graph, draft, state, options)
+    case 'season-attachment':
+      return await previewSeasonAttachmentEdge(edge, graph, draft, state, options)
     case 'episode-attachment':
       return await previewEpisodeAttachmentEdge(edge, graph, draft, state, options)
   }
@@ -167,10 +206,16 @@ async function applyEdge(
       return await applyNoteEdge(edge, graph, draft, state, context, options)
     case 'media-session':
       return applySessionEdge(edge, graph, draft, state, options)
+    case 'media-season':
+      return applySeasonEdge(edge, graph, draft, state, options)
+    case 'season-episode':
+      return resolveSeasonEpisodeEdge(edge)
     case 'media-episode':
       return applyEpisodeEdge(edge, graph, draft, state, options)
     case 'media-attachment':
       return await applyAttachmentEdge(edge, graph, draft, state, context, options)
+    case 'season-attachment':
+      return await applySeasonAttachmentEdge(edge, graph, draft, state, context, options)
     case 'episode-attachment':
       return await applyEpisodeAttachmentEdge(edge, graph, draft, state, context, options)
   }
