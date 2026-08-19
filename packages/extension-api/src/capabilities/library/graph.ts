@@ -304,6 +304,11 @@ export interface LibraryGraphMediaPersonEdge {
     LibraryGamePersonRole | LibraryAnimePersonRole | LibraryTvPersonRole | LibraryMoviePersonRole
   order?: number
   note?: string
+  /**
+   * Characters this person is credited for in the entry, as credited. Stating
+   * it replaces the stored list; omitting it leaves the stored list untouched.
+   */
+  playing?: readonly string[]
 }
 
 /** Role vocabulary is per media type; the host checks it against the `from` node. */

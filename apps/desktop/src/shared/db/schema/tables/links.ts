@@ -13,12 +13,26 @@ import {
   movieCharacterRole,
   movieCompanyRole,
   moviePersonRole,
+  stringArrayJson,
   tvCharacterRole,
   tvCompanyRole,
   tvPersonRole
 } from '../../columns'
 import { collections } from './collections'
 import { animes, characters, companies, games, movies, persons, tvs } from './content'
+
+/**
+ * Characters a credited person performs in this entry, as credited at scrape
+ * time.
+ *
+ * The entry-scoped cast pairing has nowhere else to live: an (entry, character,
+ * person) fact is stored as separate binary edges, and `character_person_links`
+ * is global, so joining back through it only approximates who played whom in a
+ * given entry. `null` means no source stated a role for this credit.
+ */
+function playingColumn() {
+  return stringArrayJson('playing')
+}
 
 export const gamePersonLinks = sqliteTable(
   'game_person_links',
@@ -32,6 +46,7 @@ export const gamePersonLinks = sqliteTable(
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
     role: gamePersonRole('role').notNull().default('other'),
+    playing: playingColumn(),
     note: text('note'),
     orderInGame: integer('order_in_game').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)
@@ -101,6 +116,7 @@ export const animePersonLinks = sqliteTable(
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
     role: animePersonRole('role').notNull().default('other'),
+    playing: playingColumn(),
     note: text('note'),
     orderInAnime: integer('order_in_anime').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)
@@ -170,6 +186,7 @@ export const tvPersonLinks = sqliteTable(
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
     role: tvPersonRole('role').notNull().default('other'),
+    playing: playingColumn(),
     note: text('note'),
     orderInTv: integer('order_in_tv').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)
@@ -239,6 +256,7 @@ export const moviePersonLinks = sqliteTable(
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
     role: moviePersonRole('role').notNull().default('other'),
+    playing: playingColumn(),
     note: text('note'),
     orderInMovie: integer('order_in_movie').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)

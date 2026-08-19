@@ -1,7 +1,7 @@
 <!--
   LinkItemFormDialog
   Dialog for adding/editing one cross-entity link row: target select, role,
-  note and spoiler flag, all resolved from the view spec.
+  played characters, note and spoiler flag, all resolved from the view spec.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
@@ -27,6 +27,7 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { parsePlayingInput } from '@renderer/utils/format'
 import {
   LINK_TARGET_FETCHERS,
   LINK_TARGET_META,
@@ -42,6 +43,7 @@ interface LinkItemData {
   targetName: string
   targetImage: string | null
   role: string
+  playing: string[]
   note: string
   isSpoiler: boolean
 }
@@ -71,8 +73,8 @@ const roleOptions = computed(() => {
   return spec.value.roleOrder.map((value) => ({ value, label: labels[value] }))
 })
 
-// Form state
-const formData = ref<LinkItemData>({
+// Form state; played characters are edited as one comma-separated line
+const formData = ref<Omit<LinkItemData, 'playing'>>({
   targetId: '',
   targetName: '',
   targetImage: null,
@@ -80,6 +82,7 @@ const formData = ref<LinkItemData>({
   note: '',
   isSpoiler: false
 })
+const playingInput = ref('')
 
 const isAddMode = computed(() => !props.initialData)
 
@@ -89,7 +92,9 @@ watch(
   (isOpen) => {
     if (isOpen) {
       if (props.initialData) {
-        formData.value = { ...props.initialData }
+        const { playing, ...rest } = props.initialData
+        formData.value = { ...rest }
+        playingInput.value = playing.join(', ')
       } else {
         formData.value = {
           targetId: '',
@@ -99,6 +104,7 @@ watch(
           note: '',
           isSpoiler: false
         }
+        playingInput.value = ''
       }
     }
   },
@@ -141,6 +147,7 @@ function handleSubmit() {
     targetName: formData.value.targetName || 'Unknown',
     targetImage: formData.value.targetImage,
     role: formData.value.role,
+    playing: spec.value.supportsPlaying ? parsePlayingInput(playingInput.value) : [],
     note: formData.value.note.trim(),
     isSpoiler: formData.value.isSpoiler
   })
@@ -193,6 +200,15 @@ function handleCancel() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </FieldContent>
+            </Field>
+            <Field v-if="spec.supportsPlaying">
+              <FieldLabel>{{ m.library.fields.playing }}</FieldLabel>
+              <FieldContent>
+                <Input
+                  v-model="playingInput"
+                  :placeholder="m.library.forms.playingPlaceholder"
+                />
               </FieldContent>
             </Field>
             <Field>

@@ -26,6 +26,8 @@ interface Props {
   variant?: 'card' | 'button'
   // Card variant props
   size?: MediaCardSize
+  /** Secondary line under the name, such as the characters played in this entry */
+  subtitle?: string
   hideName?: boolean
   badgeLabel?: string
   align?: MediaCardAlign
@@ -68,6 +70,7 @@ const imageUrl = computed(() =>
     <MediaCard
       v-if="props.variant === 'card'"
       :name="props.anime.name"
+      :subtitle="props.subtitle"
       :image-url="imageUrl"
       :fallback-icon="getEntityIcon('anime')"
       :size="props.size"

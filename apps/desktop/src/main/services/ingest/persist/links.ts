@@ -7,11 +7,13 @@
  * fed by every root media graph, so their row builder is shared here too.
  */
 
-import type { NewCharacterPersonLink } from '@shared/db'
+import { unionPlaying, type NewCharacterPersonLink } from '@shared/db'
 import type { IngestCharacterPersonLink } from '../graph'
 
 export interface ResolvedRelationState {
   isSpoiler: boolean
+  /** Only media-person link tables carry a cast pairing. */
+  playing?: string[]
   note?: string
 }
 
@@ -29,8 +31,9 @@ export class LinkOrderCounters {
 
 /**
  * Deduplicates link inputs by `key`, merging duplicates so a relation is
- * spoiler-tagged when any occurrence is and keeps the first available note,
- * then builds one row per surviving relation with ordered sequence numbers.
+ * spoiler-tagged when any occurrence is, keeps the first available note and
+ * unions the characters played, then builds one row per surviving relation
+ * with ordered sequence numbers.
  */
 export function resolveOrderedLinks<TInput, TResolved extends ResolvedRelationState, TRow>(params: {
   links: TInput[]
@@ -48,6 +51,7 @@ export function resolveOrderedLinks<TInput, TResolved extends ResolvedRelationSt
     }
 
     existing.isSpoiler = existing.isSpoiler || value.isSpoiler
+    existing.playing = unionPlaying(existing.playing, value.playing)
     existing.note = existing.note ?? value.note
   }
 

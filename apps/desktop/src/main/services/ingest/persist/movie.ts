@@ -66,6 +66,7 @@ function resolveMoviePersonLinks(params: {
           personId,
           role: link.role,
           isSpoiler: link.isSpoiler,
+          playing: link.playing,
           note: link.note
         }
       }
@@ -75,6 +76,7 @@ function resolveMoviePersonLinks(params: {
       personId: link.personId,
       role: link.role,
       isSpoiler: link.isSpoiler,
+      playing: link.playing ?? null,
       note: link.note ?? null,
       orderInMovie,
       orderInPerson: counters.next('person', link.personId)

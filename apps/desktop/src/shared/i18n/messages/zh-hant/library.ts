@@ -51,6 +51,7 @@ export const library = {
     icons: '圖示',
     note: '備註',
     role: '職位',
+    playing: '飾演',
     type: '類型',
     status: '狀態',
     playDuration: '遊玩時長',
@@ -424,7 +425,9 @@ export const library = {
       description: '簡介',
       tags: '標籤',
       externalSites: '外部連結',
-      details: '詳細資訊'
+      details: '詳細資訊',
+      cast: '演員',
+      crew: '製作人員'
     },
     empty: {
       description: '暫無簡介',
@@ -436,7 +439,9 @@ export const library = {
       relatedEntries: '暫無關聯條目',
       characters: '暫無角色',
       persons: '暫無人物',
-      companies: '暫無公司'
+      companies: '暫無公司',
+      cast: '暫無演員',
+      crew: '暫無製作人員'
     },
     manage: '管理',
     viewAll: ({ count }: { count: number }) => `查看全部 (${count})`,
@@ -509,6 +514,7 @@ export const library = {
     editCollectionEntities: '編輯合集內容',
 
     notePlaceholder: '選填備註…',
+    playingPlaceholder: '飾演的角色，以逗號分隔',
     noteInfoPlaceholder: '備註資訊…',
     includesSpoiler: '包含劇透',
     showSpoilers: '顯示劇透',

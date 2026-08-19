@@ -4,7 +4,8 @@
  * One generic load/replace/apply pipeline drives every link table; per-table
  * differences are declared as schema facts in `LINK_ROW_SPECS`. Row semantics:
  * `replace` makes the stored set equal the incoming one, `merge` only adds,
- * duplicate rows OR their spoiler flags and keep the first non-empty note.
+ * duplicate rows OR their spoiler flags, union the characters played, and keep
+ * the first non-empty note.
  */
 
 import { eq } from 'drizzle-orm'
@@ -19,6 +20,7 @@ import {
   animeCharacterLinks,
   animeCompanyLinks,
   animePersonLinks,
+  arePlayingEqual,
   characterPersonLinks,
   gameCharacterLinks,
   gameCompanyLinks,
@@ -26,9 +28,11 @@ import {
   movieCharacterLinks,
   movieCompanyLinks,
   moviePersonLinks,
+  normalizePlaying,
   tvCharacterLinks,
   tvCompanyLinks,
-  tvPersonLinks
+  tvPersonLinks,
+  unionPlaying
 } from '@shared/db'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
@@ -47,6 +51,8 @@ interface OrderedLinkRow {
   relatedId: string
   role: string
   isSpoiler: boolean
+  /** Always `null` for link tables without a `playing` column. */
+  playing: string[] | null
   note: string | null
 }
 
@@ -58,6 +64,8 @@ interface LinkRowSpec {
   relatedIdField: string
   orderInEntityField: string
   orderInRelatedField: string
+  /** Media-person tables also store the characters the credit performs. */
+  carriesPlaying?: boolean
 }
 
 const LINK_ROW_SPECS = {
@@ -67,7 +75,8 @@ const LINK_ROW_SPECS = {
     entityIdField: 'gameId',
     relatedIdField: 'personId',
     orderInEntityField: 'orderInGame',
-    orderInRelatedField: 'orderInPerson'
+    orderInRelatedField: 'orderInPerson',
+    carriesPlaying: true
   },
   gameCompany: {
     table: gameCompanyLinks,
@@ -91,7 +100,8 @@ const LINK_ROW_SPECS = {
     entityIdField: 'animeId',
     relatedIdField: 'personId',
     orderInEntityField: 'orderInAnime',
-    orderInRelatedField: 'orderInPerson'
+    orderInRelatedField: 'orderInPerson',
+    carriesPlaying: true
   },
   animeCompany: {
     table: animeCompanyLinks,
@@ -115,7 +125,8 @@ const LINK_ROW_SPECS = {
     entityIdField: 'tvId',
     relatedIdField: 'personId',
     orderInEntityField: 'orderInTv',
-    orderInRelatedField: 'orderInPerson'
+    orderInRelatedField: 'orderInPerson',
+    carriesPlaying: true
   },
   tvCompany: {
     table: tvCompanyLinks,
@@ -139,7 +150,8 @@ const LINK_ROW_SPECS = {
     entityIdField: 'movieId',
     relatedIdField: 'personId',
     orderInEntityField: 'orderInMovie',
-    orderInRelatedField: 'orderInPerson'
+    orderInRelatedField: 'orderInPerson',
+    carriesPlaying: true
   },
   movieCompany: {
     table: movieCompanyLinks,
@@ -173,6 +185,11 @@ function normalizeLinkNote(note: string | null | undefined): string | null {
   return normalizeOptionalString(note) ?? null
 }
 
+function normalizeLinkPlaying(playing: readonly string[] | null | undefined): string[] | null {
+  const names = normalizePlaying(playing)
+  return names.length > 0 ? names : null
+}
+
 function linkRowKey(row: OrderedLinkRow): string {
   return `${row.relatedId}:${row.role}`
 }
@@ -186,6 +203,7 @@ function areLinkRowsEqual(current: OrderedLinkRow[], next: OrderedLinkRow[]): bo
       row.relatedId === candidate.relatedId &&
       row.role === candidate.role &&
       row.isSpoiler === candidate.isSpoiler &&
+      arePlayingEqual(row.playing, candidate.playing) &&
       normalizeLinkNote(row.note) === normalizeLinkNote(candidate.note)
     )
   })
@@ -210,7 +228,11 @@ function buildFinalLinkRows(
 ): LinkRowPlan {
   if (collectionMode === 'replace') {
     return {
-      rows: incoming.map((row) => ({ ...row, note: normalizeLinkNote(row.note) })),
+      rows: incoming.map((row) => ({
+        ...row,
+        playing: normalizeLinkPlaying(row.playing),
+        note: normalizeLinkNote(row.note)
+      })),
       preservedRowCount: 0
     }
   }
@@ -220,7 +242,11 @@ function buildFinalLinkRows(
 
   if (incoming.length === 0) return { preservedRowCount }
 
-  const merged = current.map((row) => ({ ...row, note: normalizeLinkNote(row.note) }))
+  const merged = current.map((row) => ({
+    ...row,
+    playing: normalizeLinkPlaying(row.playing),
+    note: normalizeLinkNote(row.note)
+  }))
   const indexByKey = new Map(merged.map((row, index) => [linkRowKey(row), index]))
 
   for (const row of incoming) {
@@ -228,7 +254,11 @@ function buildFinalLinkRows(
     const existingIndex = indexByKey.get(key)
     if (existingIndex === undefined) {
       indexByKey.set(key, merged.length)
-      merged.push({ ...row, note: normalizeLinkNote(row.note) })
+      merged.push({
+        ...row,
+        playing: normalizeLinkPlaying(row.playing),
+        note: normalizeLinkNote(row.note)
+      })
       continue
     }
 
@@ -236,6 +266,7 @@ function buildFinalLinkRows(
     merged[existingIndex] = {
       ...currentRow,
       isSpoiler: currentRow.isSpoiler || row.isSpoiler,
+      playing: unionPlaying(currentRow.playing, row.playing) ?? null,
       note: normalizeLinkNote(currentRow.note) ?? normalizeLinkNote(row.note)
     }
   }
@@ -264,6 +295,7 @@ function loadLinkRows(tx: DbContext, spec: LinkRowSpec, entityId: string): Order
       relatedId: String(row[spec.relatedIdField]),
       role: String(row.role),
       isSpoiler: Boolean(row.isSpoiler),
+      playing: normalizeLinkPlaying(row.playing as string[] | null | undefined),
       note: normalizeLinkNote(row.note as string | null)
     }))
 }
@@ -287,6 +319,7 @@ function replaceLinkRows(
       [spec.relatedIdField]: row.relatedId,
       role: row.role,
       isSpoiler: row.isSpoiler,
+      ...(spec.carriesPlaying ? { playing: normalizeLinkPlaying(row.playing) } : {}),
       note: normalizeLinkNote(row.note),
       [spec.orderInEntityField]: orderInEntity,
       [spec.orderInRelatedField]: orderInRelated
@@ -302,7 +335,12 @@ function replaceLinkRows(
  * @returns How many stored rows a `replace` would have deleted but merge kept.
  */
 export function applyLinkRows<
-  TLink extends { role: string; isSpoiler: boolean; note?: string | null }
+  TLink extends {
+    role: string
+    isSpoiler: boolean
+    playing?: readonly string[] | null
+    note?: string | null
+  }
 >(params: {
   tx: DbContext
   kind: LinkRowKind
@@ -325,6 +363,7 @@ export function applyLinkRows<
       relatedId,
       role: link.role,
       isSpoiler: link.isSpoiler,
+      playing: normalizeLinkPlaying(link.playing),
       note: normalizeLinkNote(link.note)
     })
   }
@@ -420,7 +459,12 @@ const EMPTY_RESOLUTION: NodeResolution = { idByIdentity: new Map(), pendingAsset
 /** One media-side link family: its link-table kind, resolved mode, and graph rows. */
 export interface MediaGraphLinkInput<
   K extends LinkRowKind,
-  TLink extends { role: string; isSpoiler: boolean; note?: string | null }
+  TLink extends {
+    role: string
+    isSpoiler: boolean
+    playing?: readonly string[] | null
+    note?: string | null
+  }
 > {
   kind: K
   mode: IngestUpdatePolicy['collectionUpdate'] | undefined
@@ -446,7 +490,13 @@ export function applyMediaLinkGraph<K extends LinkRowKind>(params: {
   }
   person: MediaGraphLinkInput<
     K,
-    { personIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }
+    {
+      personIdentityKey: string
+      role: string
+      isSpoiler: boolean
+      playing?: string[]
+      note?: string | null
+    }
   >
   company: MediaGraphLinkInput<
     K,

@@ -248,6 +248,11 @@ export const TV_PERSON_ROLE_VALUES = [
   'other'
 ] as const satisfies readonly TvPersonRole[]
 
+/** TV-person crew roles, i.e. every role but the on-screen cast. */
+export const TV_CREW_ROLE_VALUES = TV_PERSON_ROLE_VALUES.filter(
+  (role) => role !== 'actor'
+) as readonly TvPersonRole[]
+
 /** TV-character link role */
 export type TvCharacterRole = 'main' | 'supporting' | 'cameo' | 'other'
 
@@ -325,6 +330,11 @@ export const MOVIE_PERSON_ROLE_VALUES = [
   'actor',
   'other'
 ] as const satisfies readonly MoviePersonRole[]
+
+/** Movie-person crew roles, i.e. every role but the on-screen cast. */
+export const MOVIE_CREW_ROLE_VALUES = MOVIE_PERSON_ROLE_VALUES.filter(
+  (role) => role !== 'actor'
+) as readonly MoviePersonRole[]
 
 /** Movie-character link role */
 export type MovieCharacterRole = 'main' | 'supporting' | 'cameo' | 'other'

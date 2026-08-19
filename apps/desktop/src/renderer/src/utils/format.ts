@@ -109,6 +109,31 @@ export function formatEpisodeNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
 
+/** Format the characters a credited person plays into one display line. */
+export function formatPlaying(playing: readonly string[] | null | undefined): string | undefined {
+  const names = (playing ?? []).map((name) => name.trim()).filter(Boolean)
+  return names.length > 0 ? names.join(' / ') : undefined
+}
+
+/** Parse the comma-separated playing input of the link form into names. */
+export function parsePlayingInput(value: string): string[] {
+  const names: string[] = []
+  const seen = new Set<string>()
+
+  for (const part of value.split(',')) {
+    const name = part.trim()
+    if (!name) continue
+
+    const key = name.toLocaleLowerCase()
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    names.push(name)
+  }
+
+  return names
+}
+
 // =============================================================================
 // File Size Formatting
 // =============================================================================

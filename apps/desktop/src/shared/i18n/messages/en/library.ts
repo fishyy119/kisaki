@@ -54,6 +54,7 @@ export const library = {
     icons: 'Icons',
     note: 'Note',
     role: 'Role',
+    playing: 'Playing',
     type: 'Type',
     status: 'Status',
     playDuration: 'Play time',
@@ -432,7 +433,9 @@ export const library = {
       description: 'Description',
       tags: 'Tags',
       externalSites: 'External links',
-      details: 'Details'
+      details: 'Details',
+      cast: 'Cast',
+      crew: 'Crew'
     },
     empty: {
       description: 'No description yet.',
@@ -444,7 +447,9 @@ export const library = {
       relatedEntries: 'No related entries yet.',
       characters: 'No characters yet.',
       persons: 'No people yet.',
-      companies: 'No companies yet.'
+      companies: 'No companies yet.',
+      cast: 'No cast yet.',
+      crew: 'No crew yet.'
     },
     manage: 'Manage',
     viewAll: ({ count }: { count: number }) => `View all (${count})`,
@@ -522,6 +527,7 @@ export const library = {
 
     // Shared field bits
     notePlaceholder: 'Optional note…',
+    playingPlaceholder: 'Characters played, separated by commas',
     noteInfoPlaceholder: 'Note…',
     includesSpoiler: 'Contains spoilers',
     showSpoilers: 'Show spoilers',

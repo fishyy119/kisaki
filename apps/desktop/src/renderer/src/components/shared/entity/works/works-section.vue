@@ -38,6 +38,7 @@ const entries = computed(() => flattenWorks(props.blocks))
       <EntityCard
         :entity-type="entry.mediaType"
         :entity="entry.entity"
+        :subtitle="entry.subtitle"
         align="left"
         size="sm"
         :badge-label="entry.roleLabel"

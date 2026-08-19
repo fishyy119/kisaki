@@ -37,6 +37,11 @@ export interface IngestLinkBase {
   note?: string
 }
 
+/** Media-person edges also carry the characters the credit performs. */
+export interface IngestPersonLinkBase extends IngestLinkBase {
+  playing?: string[]
+}
+
 export type IngestGameNode = IngestEntityNode<CoreGameMetadata>
 
 export type IngestAnimeNode = IngestEntityNode<CoreAnimeMetadata>
@@ -65,7 +70,7 @@ export interface IngestCharacterPersonLink extends IngestLinkBase {
   orderInPerson: number
 }
 
-export interface IngestGamePersonLink extends IngestLinkBase {
+export interface IngestGamePersonLink extends IngestPersonLinkBase {
   gameIdentityKey: string
   personIdentityKey: string
   role: GamePersonRole
@@ -113,7 +118,7 @@ export interface IngestGameGraph {
   }
 }
 
-export interface IngestAnimePersonLink extends IngestLinkBase {
+export interface IngestAnimePersonLink extends IngestPersonLinkBase {
   animeIdentityKey: string
   personIdentityKey: string
   role: AnimePersonRole
@@ -162,7 +167,7 @@ export interface IngestAnimeGraph {
   }
 }
 
-export interface IngestTvPersonLink extends IngestLinkBase {
+export interface IngestTvPersonLink extends IngestPersonLinkBase {
   tvIdentityKey: string
   personIdentityKey: string
   role: TvPersonRole
@@ -213,7 +218,7 @@ export interface IngestTvGraph {
   }
 }
 
-export interface IngestMoviePersonLink extends IngestLinkBase {
+export interface IngestMoviePersonLink extends IngestPersonLinkBase {
   movieIdentityKey: string
   personIdentityKey: string
   role: MoviePersonRole

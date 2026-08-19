@@ -23,6 +23,7 @@ export {
   mergeExternalIds,
   mergeImageUrls,
   mergePersonMetadataFields,
+  mergePlaying,
   mergeExternalSites,
   mergeScalarFields,
   mergeTagsArray,

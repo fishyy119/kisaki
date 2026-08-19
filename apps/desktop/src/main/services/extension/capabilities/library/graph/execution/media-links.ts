@@ -44,10 +44,15 @@ import {
 } from '@shared/db'
 import type { DbContext } from '@main/services/db'
 
-/** Every media link row carries an order within the media entry and an optional note. */
+/**
+ * Every media link row carries an order within the media entry and an optional
+ * note. `playing` is present only on person links, whose table alone stores the
+ * characters a credit covers.
+ */
 export interface MediaLinkRow {
   order: number
   note: string | null
+  playing?: string[] | null
 }
 
 export interface MediaLinkInsertInput {
@@ -56,12 +61,14 @@ export interface MediaLinkInsertInput {
   /** Set on the link kinds whose rows are keyed by role. */
   role?: string
   note?: string
+  playing?: string[] | null
   order: number
 }
 
 export interface MediaLinkPatch {
   order?: number
   note?: string
+  playing?: string[] | null
 }
 
 /**
@@ -189,15 +196,20 @@ const GAME_LINKS: MediaLinkConfigs = {
     mediaIdColumn: gamePersonLinks.gameId,
     targetIdColumn: gamePersonLinks.personId,
     buildRoleCondition: (role) => eq(gamePersonLinks.role, role as LibraryGamePersonRole),
-    toRow: (row) => ({ order: row.orderInGame, note: row.note }),
+    toRow: (row) => ({ order: row.orderInGame, note: row.note, playing: row.playing }),
     buildInsertValue: (input) => ({
       gameId: input.mediaId,
       personId: input.targetId,
       role: input.role as LibraryGamePersonRole,
       note: input.note,
+      playing: input.playing,
       orderInGame: input.order
     }),
-    buildPatchValues: (patch) => ({ orderInGame: patch.order, note: patch.note })
+    buildPatchValues: (patch) => ({
+      orderInGame: patch.order,
+      note: patch.note,
+      playing: patch.playing
+    })
   },
   character: {
     table: gameCharacterLinks,
@@ -261,15 +273,20 @@ const ANIME_LINKS: MediaLinkConfigs = {
     mediaIdColumn: animePersonLinks.animeId,
     targetIdColumn: animePersonLinks.personId,
     buildRoleCondition: (role) => eq(animePersonLinks.role, role as LibraryAnimePersonRole),
-    toRow: (row) => ({ order: row.orderInAnime, note: row.note }),
+    toRow: (row) => ({ order: row.orderInAnime, note: row.note, playing: row.playing }),
     buildInsertValue: (input) => ({
       animeId: input.mediaId,
       personId: input.targetId,
       role: input.role as LibraryAnimePersonRole,
       note: input.note,
+      playing: input.playing,
       orderInAnime: input.order
     }),
-    buildPatchValues: (patch) => ({ orderInAnime: patch.order, note: patch.note })
+    buildPatchValues: (patch) => ({
+      orderInAnime: patch.order,
+      note: patch.note,
+      playing: patch.playing
+    })
   },
   character: {
     table: animeCharacterLinks,
@@ -333,15 +350,20 @@ const TV_LINKS: MediaLinkConfigs = {
     mediaIdColumn: tvPersonLinks.tvId,
     targetIdColumn: tvPersonLinks.personId,
     buildRoleCondition: (role) => eq(tvPersonLinks.role, role as LibraryTvPersonRole),
-    toRow: (row) => ({ order: row.orderInTv, note: row.note }),
+    toRow: (row) => ({ order: row.orderInTv, note: row.note, playing: row.playing }),
     buildInsertValue: (input) => ({
       tvId: input.mediaId,
       personId: input.targetId,
       role: input.role as LibraryTvPersonRole,
       note: input.note,
+      playing: input.playing,
       orderInTv: input.order
     }),
-    buildPatchValues: (patch) => ({ orderInTv: patch.order, note: patch.note })
+    buildPatchValues: (patch) => ({
+      orderInTv: patch.order,
+      note: patch.note,
+      playing: patch.playing
+    })
   },
   character: {
     table: tvCharacterLinks,
@@ -405,15 +427,20 @@ const MOVIE_LINKS: MediaLinkConfigs = {
     mediaIdColumn: moviePersonLinks.movieId,
     targetIdColumn: moviePersonLinks.personId,
     buildRoleCondition: (role) => eq(moviePersonLinks.role, role as LibraryMoviePersonRole),
-    toRow: (row) => ({ order: row.orderInMovie, note: row.note }),
+    toRow: (row) => ({ order: row.orderInMovie, note: row.note, playing: row.playing }),
     buildInsertValue: (input) => ({
       movieId: input.mediaId,
       personId: input.targetId,
       role: input.role as LibraryMoviePersonRole,
       note: input.note,
+      playing: input.playing,
       orderInMovie: input.order
     }),
-    buildPatchValues: (patch) => ({ orderInMovie: patch.order, note: patch.note })
+    buildPatchValues: (patch) => ({
+      orderInMovie: patch.order,
+      note: patch.note,
+      playing: patch.playing
+    })
   },
   character: {
     table: movieCharacterLinks,

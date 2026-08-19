@@ -48,6 +48,11 @@ export interface RelationMergeConfig {
   orderField?: string
   spoilerField?: string
   noteField?: string
+  /**
+   * Credited-character field on person link tables. Duplicate credits union it
+   * so a merge never drops a character the losing row was the only witness of.
+   */
+  playingField?: string
 }
 
 export interface EntityMergeConfig {

@@ -23,6 +23,7 @@ import {
   mergeCharacterMetadataFields,
   mergeCompanyMetadataFields,
   mergePersonMetadataFields,
+  mergePlaying,
   mergeScrapedIdentities,
   sortByRank,
   type RelationCollectionMergeOptions
@@ -59,6 +60,7 @@ function mergeMoviePerson(
     ...mergePersonMetadataFields(existing, incoming),
     role: existing.role,
     isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
+    playing: mergePlaying(existing.playing, incoming.playing),
     note: existing.note || incoming.note
   }
 }

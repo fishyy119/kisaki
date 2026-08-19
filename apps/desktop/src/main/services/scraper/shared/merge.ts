@@ -423,6 +423,20 @@ export function mergePersonMetadataFields(
 }
 
 /**
+ * Pick the characters a media-person credit performs.
+ *
+ * The higher-ranked source wins as a whole so a merge never interleaves two
+ * spellings of the same character across sources.
+ */
+export function mergePlaying(
+  existing: readonly string[] | undefined,
+  incoming: readonly string[] | undefined
+): string[] | undefined {
+  const stated = existing?.length ? existing : incoming
+  return stated ? [...stated] : undefined
+}
+
+/**
  * Merge CoreCompanyMetadata fields (fill-in-the-blanks + array merge).
  */
 export function mergeCompanyMetadataFields(

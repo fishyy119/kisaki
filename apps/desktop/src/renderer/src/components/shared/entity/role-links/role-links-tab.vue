@@ -106,6 +106,7 @@ const detailDialogOpen = computed({
               :key="item.id"
               :entity-type="props.entityType"
               :entity="item.entity!"
+              :subtitle="item.subtitle"
               align="left"
               size="sm"
               @click="openEntityId = item.entity!.id"

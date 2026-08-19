@@ -30,8 +30,11 @@ import type {
   ScraperLookup
 } from '@shared/scraper'
 import {
+  absorbPlaying,
   compareText,
   createIdentityAliasIndex,
+  createPendingPlaying,
+  finalizePlaying,
   firstNonEmpty,
   mergeExternalIds,
   normalizeCharacterCore,
@@ -42,13 +45,16 @@ import {
   pickFirstUrl,
   upsertCharacterNode,
   upsertCompanyNode,
-  upsertPersonNode
+  upsertPersonNode,
+  type PendingPlaying,
+  type PlayingInput
 } from './common'
 
 interface PendingGamePersonLink {
   personIdentityKey: string
   role: GamePersonRole
   isSpoiler: boolean
+  playing: PendingPlaying
   note?: string
 }
 
@@ -91,21 +97,26 @@ function upsertGamePersonLink(
   personIdentityKey: string,
   role: GamePersonRole,
   isSpoiler: boolean | undefined,
+  playing: PlayingInput,
   note: string | undefined
 ): void {
   const key = `${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
+    const pendingPlaying = createPendingPlaying()
+    absorbPlaying(pendingPlaying, playing)
     edgeMap.set(key, {
       personIdentityKey,
       role,
       isSpoiler: !!isSpoiler,
+      playing: pendingPlaying,
       note: normalizeOptionalString(note)
     })
     return
   }
 
   existing.isSpoiler = existing.isSpoiler || !!isSpoiler
+  absorbPlaying(existing.playing, playing)
   existing.note = firstNonEmpty(existing.note, note)
 }
 
@@ -200,6 +211,7 @@ function finalizeGamePersonLinks(
       personIdentityKey: edge.personIdentityKey,
       role: edge.role,
       isSpoiler: edge.isSpoiler,
+      playing: finalizePlaying(edge.playing),
       note: edge.note,
       orderInGame,
       orderInPerson
@@ -359,6 +371,7 @@ function buildGameGraphInternal(
       personIdentityKey,
       fact.role,
       fact.isSpoiler,
+      { stated: fact.playing },
       normalizeOptionalString(fact.note)
     )
   }
@@ -424,6 +437,7 @@ function buildGameGraphInternal(
         personIdentityKey,
         toGamePersonRoleFromCharacterPerson(personFact.role),
         personFact.isSpoiler,
+        { derived: core.name },
         note
       )
     }
@@ -468,6 +482,7 @@ function buildGameGraphInternal(
       personIdentityKey,
       toGamePersonRoleFromCharacterPerson(fact.role),
       fact.isSpoiler,
+      { derived: characterCore.name },
       note
     )
   }

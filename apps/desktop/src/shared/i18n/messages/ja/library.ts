@@ -51,6 +51,7 @@ export const library = {
     icons: 'アイコン',
     note: 'メモ',
     role: '役割',
+    playing: '役',
     type: '種類',
     status: 'ステータス',
     playDuration: 'プレイ時間',
@@ -425,7 +426,9 @@ export const library = {
       description: '概要',
       tags: 'タグ',
       externalSites: '外部リンク',
-      details: '詳細情報'
+      details: '詳細情報',
+      cast: '出演',
+      crew: 'スタッフ'
     },
     empty: {
       description: '概要はまだありません',
@@ -437,7 +440,9 @@ export const library = {
       relatedEntries: '関連エントリーはまだありません',
       characters: 'キャラクターはまだいません',
       persons: '人物はまだいません',
-      companies: '会社はまだありません'
+      companies: '会社はまだありません',
+      cast: '出演者はまだいません',
+      crew: 'スタッフはまだいません'
     },
     manage: '管理',
     viewAll: ({ count }: { count: number }) => `すべて表示 (${count})`,
@@ -512,6 +517,7 @@ export const library = {
     editCollectionEntities: 'コレクション内容を編集',
 
     notePlaceholder: '任意のメモ…',
+    playingPlaceholder: '演じた役をカンマ区切りで入力',
     noteInfoPlaceholder: 'メモ…',
     includesSpoiler: 'ネタバレを含む',
     showSpoilers: 'ネタバレを表示',

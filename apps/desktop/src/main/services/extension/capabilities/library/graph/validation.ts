@@ -408,6 +408,7 @@ function validateEdge(
       )
       validateOptionalFiniteNumber(edge.order, `${label}.order`)
       validateOptionalString(edge.note, `${label}.note`)
+      validateOptionalStringArray(edge.playing, `${label}.playing`)
       return
     case 'media-character':
       validateEndpointKinds(edge, label, 'media', 'character')
@@ -665,6 +666,15 @@ function requireString(value: unknown, label: string): string {
 function validateOptionalString(value: unknown, label: string): void {
   if (value !== undefined && typeof value !== 'string') {
     throw createValidationError(`${label} must be a string.`)
+  }
+}
+
+function validateOptionalStringArray(value: unknown, label: string): void {
+  if (value === undefined) {
+    return
+  }
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+    throw createValidationError(`${label} must be an array of strings.`)
   }
 }
 

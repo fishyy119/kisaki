@@ -1,8 +1,11 @@
 <!--
   Movie Overview Tab
 
-  Left: description, characters, relations, tags.
-  Right: details, persons, companies, links.
+  Live action credits the cast first, so the main column leads with actor
+  cards subtitled by the characters they play.
+
+  Left: description, cast, relations, tags.
+  Right: details, crew, characters, companies, links.
   Role-grouped sidebar lists clamp per role; "+N" jumps to the full tab.
 -->
 
@@ -11,17 +14,18 @@ import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
-import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
+import { CharacterDetailDialog } from '@renderer/components/shared/character'
 import { CompanyDetailDialog } from '@renderer/components/shared/company'
 import {
   MediaRelationsFormDialog,
   MediaRelationsSection,
   MediaDescriptionFormDialog
 } from '@renderer/components/shared/media'
-import { PersonDetailDialog } from '@renderer/components/shared/person'
+import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useMovie } from '@renderer/composables/use-movie'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { formatPlaying } from '@renderer/utils/format'
 import { MovieInfoFormDialog } from '../../forms'
 import {
   EntityLinksFormDialog,
@@ -33,7 +37,7 @@ import {
 import {
   MOVIE_CHARACTER_ROLE_VALUES,
   MOVIE_COMPANY_ROLE_VALUES,
-  MOVIE_PERSON_ROLE_VALUES
+  MOVIE_CREW_ROLE_VALUES
 } from '@shared/db'
 
 const { movie, tags, characters, persons, companies, relations } = useMovie()
@@ -41,7 +45,7 @@ const { m, f } = useI18n()
 
 const emit = defineEmits<{
   /** Ask the host tab shell to switch to another detail tab. */
-  navigate: [tab: 'persons' | 'companies']
+  navigate: [tab: 'persons' | 'characters' | 'companies']
 }>()
 
 const PERSON_ROLE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.moviePerson)
@@ -77,28 +81,20 @@ const hasExternalSites = computed(
   () => movie.value?.externalSites && movie.value.externalSites.length > 0
 )
 
-const sortedCharacters = computed(() =>
-  [...characters.value]
-    .sort((a, b) => {
-      const roleIndexA = MOVIE_CHARACTER_ROLE_VALUES.indexOf(
-        (a.role || 'other') as (typeof MOVIE_CHARACTER_ROLE_VALUES)[number]
-      )
-      const roleIndexB = MOVIE_CHARACTER_ROLE_VALUES.indexOf(
-        (b.role || 'other') as (typeof MOVIE_CHARACTER_ROLE_VALUES)[number]
-      )
-      if (roleIndexA !== roleIndexB) return roleIndexA - roleIndexB
-      return a.orderInMovie - b.orderInMovie
-    })
-    .map((link) => ({
-      link,
-      character: link.character,
-      roleLabel: link.role ? CHARACTER_ROLE_LABELS.value[link.role] : undefined
-    }))
-    .filter((item) => item.character !== null)
+const castEntries = computed(() =>
+  persons.value
+    .filter((link) => link.role === 'actor' && link.person !== null)
+    .map((link) => ({ link, person: link.person!, subtitle: formatPlaying(link.playing) }))
 )
 
-const personItems = computed<RoleLinkItem[]>(() =>
-  persons.value.map((link) => ({ id: link.id, role: link.role, entity: link.person }))
+const crewItems = computed<RoleLinkItem[]>(() =>
+  persons.value
+    .filter((link) => link.role !== 'actor')
+    .map((link) => ({ id: link.id, role: link.role, entity: link.person }))
+)
+
+const characterItems = computed<RoleLinkItem[]>(() =>
+  characters.value.map((link) => ({ id: link.id, role: link.role, entity: link.character }))
 )
 
 const companyItems = computed<RoleLinkItem[]>(() =>
@@ -149,21 +145,20 @@ const tagDialogOpen = computed({
         </Section>
 
         <SectionScroll
-          :title="m.library.detail.tabs.characters"
+          :title="m.library.detail.sections.cast"
           editable
-          :items="sortedCharacters"
+          :items="castEntries"
           :get-key="(item) => item.link.id"
-          :empty-text="m.library.detail.empty.characters"
-          @edit="openEditDialog('characters')"
+          :empty-text="m.library.detail.empty.cast"
+          @edit="openEditDialog('persons')"
         >
           <template #item="{ item }">
-            <CharacterCard
-              v-if="item.character"
-              :character="item.character"
+            <PersonCard
+              :person="item.person"
+              :subtitle="item.subtitle"
               size="sm"
               align="left"
-              :badge-label="item.roleLabel"
-              @click="openCharacterId = item.character.id"
+              @click="openPersonId = item.person.id"
             />
           </template>
         </SectionScroll>
@@ -219,15 +214,27 @@ const tagDialogOpen = computed({
         </Section>
 
         <EntityRoleLinksSection
-          :title="m.library.detail.tabs.persons"
-          :empty-text="m.library.detail.empty.persons"
+          :title="m.library.detail.sections.crew"
+          :empty-text="m.library.detail.empty.crew"
           entity-type="person"
-          :items="personItems"
-          :role-order="MOVIE_PERSON_ROLE_VALUES"
+          :items="crewItems"
+          :role-order="MOVIE_CREW_ROLE_VALUES"
           :role-labels="PERSON_ROLE_LABELS"
           @edit="openEditDialog('persons')"
           @open="openPersonId = $event"
           @view-all="emit('navigate', 'persons')"
+        />
+
+        <EntityRoleLinksSection
+          :title="m.library.detail.tabs.characters"
+          :empty-text="m.library.detail.empty.characters"
+          entity-type="character"
+          :items="characterItems"
+          :role-order="MOVIE_CHARACTER_ROLE_VALUES"
+          :role-labels="CHARACTER_ROLE_LABELS"
+          @edit="openEditDialog('characters')"
+          @open="openCharacterId = $event"
+          @view-all="emit('navigate', 'characters')"
         />
 
         <EntityRoleLinksSection

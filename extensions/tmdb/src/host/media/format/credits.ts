@@ -17,21 +17,22 @@ import {
 import { buildExternalSites, tmdbPersonUrl, tmdbSite } from './sites'
 import { trimToUndefined } from './text'
 
-/** Joins the several characters one cast credit can cover. */
-const CHARACTER_SEPARATOR = ' | '
-
 /**
  * TMDB decorations on a credited character name.
  *
  * `(voice)` restates what an animation actor role already says, and
  * `(as <name>)` gives the performer's credit alias rather than the character.
- * Both are noise in a cast note, and dropping them lets a character credited
+ * Both are noise in a cast credit, and dropping them lets a character credited
  * under two spellings collapse into one entry instead of reading as two.
  */
 const CHARACTER_DECORATIONS = /\s*\((?:voice|as\s[^)]*)\)/gi
 
 /** One credit as a library person fact, with the media type's own role. */
-type PersonFact<TRole extends string> = ScrapedPersonMetadata & { role: TRole; note?: string }
+type PersonFact<TRole extends string> = ScrapedPersonMetadata & {
+  role: TRole
+  playing?: string[]
+  note?: string
+}
 
 /**
  * Credits as library person facts.
@@ -39,8 +40,9 @@ type PersonFact<TRole extends string> = ScrapedPersonMetadata & { role: TRole; n
  * TMDB reports one credit per job, and aggregate TV credits pack several jobs
  * or characters into a single row, so both shapes are flattened first. A person
  * keeps one fact per distinct role: the same name credited as both writer and
- * director is two facts, but two writing credits are one. The characters played
- * travel as the note, because TMDB has no character entity of its own.
+ * director is two facts, but two writing credits are one. Cast credits state
+ * the characters played as `playing`, because TMDB has no character entity of
+ * its own.
  */
 function buildPersonFacts<TRole extends string>(
   credits: TmdbCredits,
@@ -62,7 +64,7 @@ function buildPersonFacts<TRole extends string>(
         continue
       }
 
-      facts.set(key, toPersonFact(member, role, job, imageBaseUrl))
+      facts.set(key, { ...toPersonFact(member, role, imageBaseUrl), note: job })
     }
   }
 
@@ -72,8 +74,11 @@ function buildPersonFacts<TRole extends string>(
       continue
     }
 
-    const characters = readCharacters(member).join(CHARACTER_SEPARATOR)
-    facts.set(key, toPersonFact(member, actorRole, characters, imageBaseUrl))
+    const characters = readCharacters(member)
+    facts.set(key, {
+      ...toPersonFact(member, actorRole, imageBaseUrl),
+      ...(characters.length > 0 && { playing: characters })
+    })
   }
 
   return [...facts.values()]
@@ -127,7 +132,7 @@ function readCharacters(member: TmdbCastMember): string[] {
     characters.push(flatCharacter)
   }
 
-  // One note carries them all, so a repeat would be visible to the reader.
+  // One credit carries them all, so a repeat would be visible to the reader.
   return [...new Set(characters)]
 }
 
@@ -138,7 +143,6 @@ function toCharacterLabel(character: string | undefined): string | undefined {
 function toPersonFact<TRole extends string>(
   member: TmdbCreditPerson,
   role: TRole,
-  note: string | undefined,
   imageBaseUrl: string
 ): PersonFact<TRole> {
   const originalName = trimToUndefined(member.original_name)
@@ -153,8 +157,7 @@ function toPersonFact<TRole extends string>(
       originalName: originalName && originalName !== name ? originalName : undefined,
       gender: mapTmdbGender(member.gender),
       externalSites: buildExternalSites([tmdbSite(tmdbPersonUrl(member.id))]),
-      photos: photo ? [photo] : undefined,
-      note: trimToUndefined(note)
+      photos: photo ? [photo] : undefined
     }),
     identity: { externalIds: [{ source: TMDB_SOURCE_ID, id: String(member.id) }] },
     role

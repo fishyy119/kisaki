@@ -1,9 +1,9 @@
 <!--
   MediaCard - Poster-style card for library entities.
 
-  Cover image with fallback icon, hover scale, optional name line and
-  badge label. Entity wrappers own data mapping, context menus, and
-  overlay indicators (via #overlay).
+  Cover image with fallback icon, hover scale, optional name line,
+  subtitle and badge label. Entity wrappers own data mapping, context
+  menus, and overlay indicators (via #overlay).
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
@@ -36,6 +36,8 @@ const alignStyles: Record<MediaCardAlign, { container: string; text: string }> =
 
 interface Props {
   name: string
+  /** Secondary line under the name, such as the characters an actor plays */
+  subtitle?: string
   imageUrl?: string | null
   /** Fallback icon when there is no image */
   fallbackIcon?: string
@@ -96,6 +98,12 @@ const alignStyle = computed(() => alignStyles[props.align])
         <p :class="cn('text-xs font-medium truncate w-full px-1 hover:underline', alignStyle.text)">
           {{ props.name }}
         </p>
+        <p
+          v-if="props.subtitle"
+          :class="cn('text-[11px] text-muted-foreground truncate w-full px-1', alignStyle.text)"
+        >
+          {{ props.subtitle }}
+        </p>
         <Badge
           variant="secondary"
           class="mt-1 text-[10px] px-1.5 py-0"
@@ -106,16 +114,26 @@ const alignStyle = computed(() => alignStyles[props.align])
     </template>
 
     <!-- Name only -->
-    <p
+    <div
       v-else-if="!props.hideName"
-      :class="
-        cn(
-          'mt-1.5 text-xs font-medium truncate w-full text-foreground/90 hover:underline',
-          alignStyle.text
-        )
-      "
+      :class="cn('mt-1.5 flex flex-col w-full', alignStyle.container)"
     >
-      {{ props.name }}
-    </p>
+      <p
+        :class="
+          cn(
+            'text-xs font-medium truncate w-full text-foreground/90 hover:underline',
+            alignStyle.text
+          )
+        "
+      >
+        {{ props.name }}
+      </p>
+      <p
+        v-if="props.subtitle"
+        :class="cn('text-[11px] text-muted-foreground truncate w-full', alignStyle.text)"
+      >
+        {{ props.subtitle }}
+      </p>
+    </div>
   </div>
 </template>

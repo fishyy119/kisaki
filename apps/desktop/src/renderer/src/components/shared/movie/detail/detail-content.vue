@@ -4,7 +4,7 @@
   Main content area for the movie detail view.
   Used by both the page and the dialog surface.
   Owns the active tab so child tabs can request navigation (e.g. sidebar
-  "+N" jumping to the persons/companies tab).
+  "+N" jumping to the persons/characters/companies tab).
 -->
 
 <script setup lang="ts">
@@ -53,19 +53,19 @@ const activeTab = ref('overview')
           />
           {{ m.movie.files.title }}
         </TabsTrigger>
-        <TabsTrigger value="characters">
-          <Icon
-            :icon="getEntityIcon('character')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.characters }}
-        </TabsTrigger>
         <TabsTrigger value="persons">
           <Icon
             :icon="getEntityIcon('person')"
             class="size-3.5"
           />
           {{ m.library.detail.tabs.persons }}
+        </TabsTrigger>
+        <TabsTrigger value="characters">
+          <Icon
+            :icon="getEntityIcon('character')"
+            class="size-3.5"
+          />
+          {{ m.library.detail.tabs.characters }}
         </TabsTrigger>
         <TabsTrigger value="companies">
           <Icon
@@ -103,11 +103,11 @@ const activeTab = ref('overview')
       <TabsContent value="files">
         <MovieDetailFilesTab />
       </TabsContent>
-      <TabsContent value="characters">
-        <MovieDetailCharactersTab />
-      </TabsContent>
       <TabsContent value="persons">
         <MovieDetailPersonsTab />
+      </TabsContent>
+      <TabsContent value="characters">
+        <MovieDetailCharactersTab />
       </TabsContent>
       <TabsContent value="companies">
         <MovieDetailCompaniesTab />

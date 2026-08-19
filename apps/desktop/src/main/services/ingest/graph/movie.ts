@@ -30,8 +30,11 @@ import type {
   ScraperLookup
 } from '@shared/scraper'
 import {
+  absorbPlaying,
   compareText,
   createIdentityAliasIndex,
+  createPendingPlaying,
+  finalizePlaying,
   firstNonEmpty,
   mergeExternalIds,
   normalizeCharacterCore,
@@ -42,13 +45,16 @@ import {
   pickFirstUrl,
   upsertCharacterNode,
   upsertCompanyNode,
-  upsertPersonNode
+  upsertPersonNode,
+  type PendingPlaying,
+  type PlayingInput
 } from './common'
 
 interface PendingMoviePersonLink {
   personIdentityKey: string
   role: MoviePersonRole
   isSpoiler: boolean
+  playing: PendingPlaying
   note?: string
 }
 
@@ -96,21 +102,26 @@ function upsertMoviePersonLink(
   personIdentityKey: string,
   role: MoviePersonRole,
   isSpoiler: boolean | undefined,
+  playing: PlayingInput,
   note: string | undefined
 ): void {
   const key = `${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
+    const pendingPlaying = createPendingPlaying()
+    absorbPlaying(pendingPlaying, playing)
     edgeMap.set(key, {
       personIdentityKey,
       role,
       isSpoiler: !!isSpoiler,
+      playing: pendingPlaying,
       note: normalizeOptionalString(note)
     })
     return
   }
 
   existing.isSpoiler = existing.isSpoiler || !!isSpoiler
+  absorbPlaying(existing.playing, playing)
   existing.note = firstNonEmpty(existing.note, note)
 }
 
@@ -201,6 +212,7 @@ function finalizeMoviePersonLinks(
       personIdentityKey: edge.personIdentityKey,
       role: edge.role,
       isSpoiler: edge.isSpoiler,
+      playing: finalizePlaying(edge.playing),
       note: edge.note,
       orderInMovie,
       orderInPerson
@@ -354,6 +366,7 @@ function buildMovieGraphInternal(
       personIdentityKey,
       fact.role,
       fact.isSpoiler,
+      { stated: fact.playing },
       normalizeOptionalString(fact.note)
     )
   }
@@ -396,7 +409,8 @@ function buildMovieGraphInternal(
     )
 
     // Cast credits bind to the character and to the film: the character link
-    // says who plays whom, the movie link says which entry that casting is for.
+    // says who plays whom, the movie link says which entry that casting is for
+    // and carries the credited character name so the pairing survives the split.
     for (const personFact of fact.persons ?? []) {
       const personCore = normalizeCharacterPersonFactCore(personFact)
       if (!personCore) continue
@@ -421,6 +435,7 @@ function buildMovieGraphInternal(
         personIdentityKey,
         toMoviePersonRoleFromCharacterPerson(personFact.role),
         personFact.isSpoiler,
+        { derived: core.name },
         note
       )
     }
@@ -465,6 +480,7 @@ function buildMovieGraphInternal(
       personIdentityKey,
       toMoviePersonRoleFromCharacterPerson(fact.role),
       fact.isSpoiler,
+      { derived: characterCore.name },
       note
     )
   }

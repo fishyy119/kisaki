@@ -2,7 +2,8 @@
  * Link-view specs for the shared role-grouped link dialogs.
  *
  * Every cross-entity link table (media <-> satellite, character <-> person)
- * stores the same shape: role + note + spoiler + one order column per side.
+ * stores the same shape: role + note + spoiler + one order column per side,
+ * plus the characters played on media-person tables.
  * A view is one editing direction over one table; its spec owns the concrete
  * table columns, the role vocabulary and the target-entity presentation, so
  * the dialogs stay entirely spec-driven.
@@ -86,6 +87,8 @@ export interface LinkRow {
   targetName: string
   targetImage: string | null
   role: string
+  /** Only media-person views carry the characters the credit performs. */
+  playing?: string[] | null
   note: string | null
   isSpoiler: boolean
   /** Order value on the opposite side, carried through replaces untouched. */
@@ -96,6 +99,7 @@ export interface LinkReplaceRow {
   id: string
   targetId: string
   role: string
+  playing?: string[] | null
   note: string | null
   isSpoiler: boolean
   order: number
@@ -110,6 +114,8 @@ export interface LinkViewSpec {
   /** Field label for the role select; owned by the role vocabulary. */
   roleFieldLabel: (m: Messages) => string
   title: (m: Messages) => string
+  /** Whether this view's table stores the characters a credit performs. */
+  supportsPlaying?: boolean
   list: (anchorId: string) => Promise<LinkRow[]>
   replace: (anchorId: string, rows: LinkReplaceRow[]) => Promise<void>
 }
@@ -164,6 +170,7 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.gamePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editGamePersons,
+    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.gamePersonLinks.findMany({
         where: eq(gamePersonLinks.gameId, anchorId),
@@ -178,6 +185,7 @@ export const LINK_VIEW_SPECS = {
           targetName: row.person!.name,
           targetImage: row.person!.photoFile,
           role: row.role,
+          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInPerson
@@ -192,6 +200,7 @@ export const LINK_VIEW_SPECS = {
             gameId: anchorId,
             personId: row.targetId,
             role: row.role as GamePersonRole,
+            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInGame: row.order,
@@ -293,6 +302,7 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.animePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editAnimePersons,
+    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.animePersonLinks.findMany({
         where: eq(animePersonLinks.animeId, anchorId),
@@ -307,6 +317,7 @@ export const LINK_VIEW_SPECS = {
           targetName: row.person!.name,
           targetImage: row.person!.photoFile,
           role: row.role,
+          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInPerson
@@ -321,6 +332,7 @@ export const LINK_VIEW_SPECS = {
             animeId: anchorId,
             personId: row.targetId,
             role: row.role as AnimePersonRole,
+            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInAnime: row.order,
@@ -422,6 +434,7 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.tvPerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editTvPersons,
+    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.tvPersonLinks.findMany({
         where: eq(tvPersonLinks.tvId, anchorId),
@@ -436,6 +449,7 @@ export const LINK_VIEW_SPECS = {
           targetName: row.person!.name,
           targetImage: row.person!.photoFile,
           role: row.role,
+          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInPerson
@@ -450,6 +464,7 @@ export const LINK_VIEW_SPECS = {
             tvId: anchorId,
             personId: row.targetId,
             role: row.role as TvPersonRole,
+            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInTv: row.order,
@@ -551,6 +566,7 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.moviePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editMoviePersons,
+    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.moviePersonLinks.findMany({
         where: eq(moviePersonLinks.movieId, anchorId),
@@ -565,6 +581,7 @@ export const LINK_VIEW_SPECS = {
           targetName: row.person!.name,
           targetImage: row.person!.photoFile,
           role: row.role,
+          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInPerson
@@ -579,6 +596,7 @@ export const LINK_VIEW_SPECS = {
             movieId: anchorId,
             personId: row.targetId,
             role: row.role as MoviePersonRole,
+            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInMovie: row.order,
@@ -852,6 +870,7 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.gamePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editPersonGames,
+    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.gamePersonLinks.findMany({
         where: eq(gamePersonLinks.personId, anchorId),
@@ -866,6 +885,7 @@ export const LINK_VIEW_SPECS = {
           targetName: row.game!.name,
           targetImage: row.game!.coverFile,
           role: row.role,
+          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInGame
@@ -880,6 +900,7 @@ export const LINK_VIEW_SPECS = {
             personId: anchorId,
             gameId: row.targetId,
             role: row.role as GamePersonRole,
+            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInPerson: row.order,
@@ -895,6 +916,7 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.animePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editPersonAnimes,
+    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.animePersonLinks.findMany({
         where: eq(animePersonLinks.personId, anchorId),
@@ -909,6 +931,7 @@ export const LINK_VIEW_SPECS = {
           targetName: row.anime!.name,
           targetImage: row.anime!.coverFile,
           role: row.role,
+          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInAnime
@@ -923,6 +946,7 @@ export const LINK_VIEW_SPECS = {
             personId: anchorId,
             animeId: row.targetId,
             role: row.role as AnimePersonRole,
+            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInPerson: row.order,
@@ -938,6 +962,7 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.tvPerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editPersonTvs,
+    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.tvPersonLinks.findMany({
         where: eq(tvPersonLinks.personId, anchorId),
@@ -952,6 +977,7 @@ export const LINK_VIEW_SPECS = {
           targetName: row.tv!.name,
           targetImage: row.tv!.coverFile,
           role: row.role,
+          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInTv
@@ -966,6 +992,7 @@ export const LINK_VIEW_SPECS = {
             personId: anchorId,
             tvId: row.targetId,
             role: row.role as TvPersonRole,
+            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInPerson: row.order,
@@ -981,6 +1008,7 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.moviePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editPersonMovies,
+    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.moviePersonLinks.findMany({
         where: eq(moviePersonLinks.personId, anchorId),
@@ -995,6 +1023,7 @@ export const LINK_VIEW_SPECS = {
           targetName: row.movie!.name,
           targetImage: row.movie!.coverFile,
           role: row.role,
+          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInMovie
@@ -1009,6 +1038,7 @@ export const LINK_VIEW_SPECS = {
             personId: anchorId,
             movieId: row.targetId,
             role: row.role as MoviePersonRole,
+            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInPerson: row.order,

@@ -4,7 +4,13 @@ import type {
   LibraryGraphResultAction,
   LibraryMediaType
 } from '@kisaki3/extension-api'
-import { characterPersonLinks, getMediaRelationTypeRules, mediaRelations } from '@shared/db'
+import {
+  arePlayingEqual,
+  characterPersonLinks,
+  getMediaRelationTypeRules,
+  mediaRelations,
+  normalizePlaying
+} from '@shared/db'
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
 import {
   insertMediaLink,
@@ -324,6 +330,7 @@ function applyRelationEdge(
   const { config, role } = resolveRelationLink(edge, state)
   const existing = readMediaLink(options.db.client, config, mediaId, targetId, role)
   const note = edge.kind === 'media-tag' || edge.kind === 'media-company' ? undefined : edge.note
+  const playing = edge.kind === 'media-person' ? toStoredPlaying(edge.playing) : undefined
 
   if (!existing) {
     insertMediaLink(options.db.client, config, {
@@ -331,6 +338,7 @@ function applyRelationEdge(
       targetId,
       role,
       note,
+      playing,
       order: edge.order ?? 0
     })
     return 'create'
@@ -338,7 +346,9 @@ function applyRelationEdge(
 
   const patch = stripUndefined({
     order: edge.order !== undefined && existing.order !== edge.order ? edge.order : undefined,
-    note: note !== undefined && existing.note !== note ? note : undefined
+    note: note !== undefined && existing.note !== note ? note : undefined,
+    playing:
+      playing !== undefined && !arePlayingEqual(existing.playing, playing) ? playing : undefined
   })
   if (Object.keys(patch).length > 0) {
     updateMediaLink(options.db.client, config, mediaId, targetId, role, patch)
@@ -367,12 +377,27 @@ function resolveRelationLink(
 
 function planLinkUpdate(
   existing: MediaLinkRow,
-  edge: { order?: number; note?: string }
+  edge: { order?: number; note?: string; playing?: readonly string[] }
 ): LibraryGraphResultAction {
+  const playing = toStoredPlaying(edge.playing)
   return (edge.order !== undefined && existing.order !== edge.order) ||
-    (edge.note !== undefined && existing.note !== edge.note)
+    (edge.note !== undefined && existing.note !== edge.note) ||
+    (playing !== undefined && !arePlayingEqual(existing.playing, playing))
     ? 'update'
     : 'skip'
+}
+
+/**
+ * Brings a stated list to storage shape. `undefined` marks an edge that left
+ * the stored list alone, and an empty list clears it.
+ */
+function toStoredPlaying(playing: readonly string[] | undefined): string[] | null | undefined {
+  if (playing === undefined) {
+    return undefined
+  }
+
+  const names = normalizePlaying(playing)
+  return names.length > 0 ? names : null
 }
 
 function readCharacterPersonLink(

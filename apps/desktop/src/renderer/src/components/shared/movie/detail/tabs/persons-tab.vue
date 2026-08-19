@@ -8,13 +8,19 @@ import { computed } from 'vue'
 import { EntityRoleLinksTab, type RoleLinkItem } from '@renderer/components/shared/entity'
 import { useMovie } from '@renderer/composables/use-movie'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { formatPlaying } from '@renderer/utils/format'
 import { MOVIE_PERSON_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
 const { movie, persons } = useMovie()
 
 const items = computed<RoleLinkItem[]>(() =>
-  persons.value.map((link) => ({ id: link.id, role: link.role, entity: link.person }))
+  persons.value.map((link) => ({
+    id: link.id,
+    role: link.role,
+    subtitle: formatPlaying(link.playing),
+    entity: link.person
+  }))
 )
 </script>
 

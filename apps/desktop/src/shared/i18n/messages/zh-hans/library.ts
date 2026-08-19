@@ -51,6 +51,7 @@ export const library = {
     icons: '图标',
     note: '备注',
     role: '职位',
+    playing: '饰演',
     type: '类型',
     status: '状态',
     playDuration: '游玩时长',
@@ -424,7 +425,9 @@ export const library = {
       description: '简介',
       tags: '标签',
       externalSites: '外部链接',
-      details: '详细信息'
+      details: '详细信息',
+      cast: '演员',
+      crew: '制作人员'
     },
     empty: {
       description: '暂无简介',
@@ -436,7 +439,9 @@ export const library = {
       relatedEntries: '暂无关联条目',
       characters: '暂无角色',
       persons: '暂无人物',
-      companies: '暂无公司'
+      companies: '暂无公司',
+      cast: '暂无演员',
+      crew: '暂无制作人员'
     },
     manage: '管理',
     viewAll: ({ count }: { count: number }) => `查看全部 (${count})`,
@@ -509,6 +514,7 @@ export const library = {
     editCollectionEntities: '编辑合集内容',
 
     notePlaceholder: '可选备注…',
+    playingPlaceholder: '饰演的角色，用逗号分隔',
     noteInfoPlaceholder: '备注信息…',
     includesSpoiler: '包含剧透',
     showSpoilers: '显示剧透',

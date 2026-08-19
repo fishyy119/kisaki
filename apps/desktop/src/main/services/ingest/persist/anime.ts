@@ -68,6 +68,7 @@ function resolveAnimePersonLinks(params: {
           personId,
           role: link.role,
           isSpoiler: link.isSpoiler,
+          playing: link.playing,
           note: link.note
         }
       }
@@ -77,6 +78,7 @@ function resolveAnimePersonLinks(params: {
       personId: link.personId,
       role: link.role,
       isSpoiler: link.isSpoiler,
+      playing: link.playing ?? null,
       note: link.note ?? null,
       orderInAnime,
       orderInPerson: counters.next('person', link.personId)

@@ -108,7 +108,8 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         uniqueKeyFields: ['gameId', 'personId', 'role'],
         orderField: 'orderInGame',
         spoilerField: 'isSpoiler',
-        noteField: 'note'
+        noteField: 'note',
+        playingField: 'playing'
       }),
       relation({
         table: gameCompanyLinks,
@@ -159,7 +160,8 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         uniqueKeyFields: ['animeId', 'personId', 'role'],
         orderField: 'orderInAnime',
         spoilerField: 'isSpoiler',
-        noteField: 'note'
+        noteField: 'note',
+        playingField: 'playing'
       }),
       relation({
         table: animeCompanyLinks,
@@ -210,7 +212,8 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         uniqueKeyFields: ['tvId', 'personId', 'role'],
         orderField: 'orderInTv',
         spoilerField: 'isSpoiler',
-        noteField: 'note'
+        noteField: 'note',
+        playingField: 'playing'
       }),
       relation({
         table: tvCompanyLinks,
@@ -261,7 +264,8 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         uniqueKeyFields: ['movieId', 'personId', 'role'],
         orderField: 'orderInMovie',
         spoilerField: 'isSpoiler',
-        noteField: 'note'
+        noteField: 'note',
+        playingField: 'playing'
       }),
       relation({
         table: movieCompanyLinks,
@@ -381,7 +385,8 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         uniqueKeyFields: ['gameId', 'personId', 'role'],
         orderField: 'orderInPerson',
         spoilerField: 'isSpoiler',
-        noteField: 'note'
+        noteField: 'note',
+        playingField: 'playing'
       }),
       relation({
         table: animePersonLinks,
@@ -390,7 +395,8 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         uniqueKeyFields: ['animeId', 'personId', 'role'],
         orderField: 'orderInPerson',
         spoilerField: 'isSpoiler',
-        noteField: 'note'
+        noteField: 'note',
+        playingField: 'playing'
       }),
       relation({
         table: tvPersonLinks,
@@ -399,7 +405,8 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         uniqueKeyFields: ['tvId', 'personId', 'role'],
         orderField: 'orderInPerson',
         spoilerField: 'isSpoiler',
-        noteField: 'note'
+        noteField: 'note',
+        playingField: 'playing'
       }),
       relation({
         table: moviePersonLinks,
@@ -408,7 +415,8 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         uniqueKeyFields: ['movieId', 'personId', 'role'],
         orderField: 'orderInPerson',
         spoilerField: 'isSpoiler',
-        noteField: 'note'
+        noteField: 'note',
+        playingField: 'playing'
       }),
       relation({
         table: characterPersonLinks,

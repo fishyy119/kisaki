@@ -13,6 +13,8 @@ export interface RoleLinkItem {
   /** Link row id (stable list key) */
   id: string
   role: string | null
+  /** Secondary line for card layouts, such as the characters a person plays */
+  subtitle?: string
   entity: Character | Person | Company | null
 }
 

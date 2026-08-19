@@ -1,4 +1,4 @@
-import type { ExternalSite } from '@shared/db'
+import { normalizePlaying, unionPlaying, type ExternalSite } from '@shared/db'
 import {
   buildEntityCanonicalIdentityKey,
   buildEntityExternalIdKeys,
@@ -137,6 +137,43 @@ export function mergeTags(
 
   const values = [...byKey.values()]
   return values.length > 0 ? values : undefined
+}
+
+/** How one upsert states the characters a media-person credit performs. */
+export interface PlayingInput {
+  /** Names the source put on the credit itself. */
+  stated?: readonly string[]
+  /** Name of the character entity this credit was derived from. */
+  derived?: string
+}
+
+/**
+ * Cast pairing collected for one media-person edge.
+ *
+ * Stated names win as a whole so a multi-source merge never interleaves two
+ * spellings of the same character; derived names only fill the slot no source
+ * stated directly.
+ */
+export interface PendingPlaying {
+  stated?: string[]
+  derived: string[]
+}
+
+export function createPendingPlaying(): PendingPlaying {
+  return { derived: [] }
+}
+
+export function absorbPlaying(pending: PendingPlaying, input: PlayingInput): void {
+  if (!pending.stated) {
+    pending.stated = unionPlaying(input.stated, undefined)
+  }
+  if (input.derived) {
+    pending.derived = normalizePlaying([...pending.derived, input.derived])
+  }
+}
+
+export function finalizePlaying(pending: PendingPlaying): string[] | undefined {
+  return pending.stated ?? (pending.derived.length > 0 ? pending.derived : undefined)
 }
 
 function toUrlKey(url: string): string {

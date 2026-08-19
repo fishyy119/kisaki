@@ -20,6 +20,7 @@ import {
   tvNotes,
   tvSeasons,
   tvSessions,
+  unionPlaying,
   type AnimeEpisode,
   type TvEpisode,
   type TvSeason
@@ -935,6 +936,13 @@ function mergeDuplicateRelation(
   if (config.noteField && !hasText(target[config.noteField]) && hasText(source[config.noteField])) {
     target[config.noteField] = source[config.noteField]
   }
+  if (config.playingField) {
+    target[config.playingField] =
+      unionPlaying(
+        readPlaying(target[config.playingField]),
+        readPlaying(source[config.playingField])
+      ) ?? null
+  }
   target.updatedAt = now
 }
 
@@ -960,6 +968,11 @@ function toTime(value: unknown): number {
 
 function hasText(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0
+}
+
+function readPlaying(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  return value.filter((name): name is string => typeof name === 'string')
 }
 
 function createMergedNoteName(name: string, usedNames: Set<string>): string {

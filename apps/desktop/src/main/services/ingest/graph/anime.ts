@@ -31,8 +31,11 @@ import type {
   ScraperLookup
 } from '@shared/scraper'
 import {
+  absorbPlaying,
   compareText,
   createIdentityAliasIndex,
+  createPendingPlaying,
+  finalizePlaying,
   firstNonEmpty,
   mergeExternalIds,
   normalizeAnimeCore,
@@ -43,13 +46,16 @@ import {
   pickFirstUrl,
   upsertCharacterNode,
   upsertCompanyNode,
-  upsertPersonNode
+  upsertPersonNode,
+  type PendingPlaying,
+  type PlayingInput
 } from './common'
 
 interface PendingAnimePersonLink {
   personIdentityKey: string
   role: AnimePersonRole
   isSpoiler: boolean
+  playing: PendingPlaying
   note?: string
 }
 
@@ -98,21 +104,26 @@ function upsertAnimePersonLink(
   personIdentityKey: string,
   role: AnimePersonRole,
   isSpoiler: boolean | undefined,
+  playing: PlayingInput,
   note: string | undefined
 ): void {
   const key = `${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
+    const pendingPlaying = createPendingPlaying()
+    absorbPlaying(pendingPlaying, playing)
     edgeMap.set(key, {
       personIdentityKey,
       role,
       isSpoiler: !!isSpoiler,
+      playing: pendingPlaying,
       note: normalizeOptionalString(note)
     })
     return
   }
 
   existing.isSpoiler = existing.isSpoiler || !!isSpoiler
+  absorbPlaying(existing.playing, playing)
   existing.note = firstNonEmpty(existing.note, note)
 }
 
@@ -203,6 +214,7 @@ function finalizeAnimePersonLinks(
       personIdentityKey: edge.personIdentityKey,
       role: edge.role,
       isSpoiler: edge.isSpoiler,
+      playing: finalizePlaying(edge.playing),
       note: edge.note,
       orderInAnime,
       orderInPerson
@@ -388,6 +400,7 @@ function buildAnimeGraphInternal(
       personIdentityKey,
       fact.role,
       fact.isSpoiler,
+      { stated: fact.playing },
       normalizeOptionalString(fact.note)
     )
   }
@@ -430,7 +443,8 @@ function buildAnimeGraphInternal(
     )
 
     // Cast credits bind to the character and to the anime: the character link
-    // says who plays whom, the anime link says which entry that casting is for.
+    // says who plays whom, the anime link says which entry that casting is for
+    // and carries the credited character name so the pairing survives the split.
     for (const personFact of fact.persons ?? []) {
       const personCore = normalizeCharacterPersonFactCore(personFact)
       if (!personCore) continue
@@ -455,6 +469,7 @@ function buildAnimeGraphInternal(
         personIdentityKey,
         toAnimePersonRoleFromCharacterPerson(personFact.role),
         personFact.isSpoiler,
+        { derived: core.name },
         note
       )
     }
@@ -499,6 +514,7 @@ function buildAnimeGraphInternal(
       personIdentityKey,
       toAnimePersonRoleFromCharacterPerson(fact.role),
       fact.isSpoiler,
+      { derived: characterCore.name },
       note
     )
   }

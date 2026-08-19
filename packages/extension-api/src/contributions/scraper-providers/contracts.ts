@@ -362,6 +362,8 @@ export interface ScrapedCharacterMetadata extends ScrapedCharacterInfo, ScrapedI
 export interface ScrapedGamePersonFact extends ScrapedPersonMetadata {
   role: LibraryGamePersonRole
   isSpoiler?: boolean
+  /** Characters this credit performs in the entry, as credited by the source. */
+  playing?: readonly string[]
   note?: string
 }
 
@@ -402,6 +404,8 @@ export interface ScrapedRelatedEntryFact {
 export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
   role: LibraryAnimePersonRole
   isSpoiler?: boolean
+  /** Characters this credit performs in the entry, as credited by the source. */
+  playing?: readonly string[]
   note?: string
 }
 
@@ -420,6 +424,8 @@ export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
 export interface ScrapedTvPersonFact extends ScrapedPersonMetadata {
   role: LibraryTvPersonRole
   isSpoiler?: boolean
+  /** Characters this credit performs in the entry, as credited by the source. */
+  playing?: readonly string[]
   note?: string
 }
 
@@ -438,6 +444,8 @@ export interface ScrapedTvCharacterFact extends ScrapedCharacterMetadata {
 export interface ScrapedMoviePersonFact extends ScrapedPersonMetadata {
   role: LibraryMoviePersonRole
   isSpoiler?: boolean
+  /** Characters this credit performs in the entry, as credited by the source. */
+  playing?: readonly string[]
   note?: string
 }
 

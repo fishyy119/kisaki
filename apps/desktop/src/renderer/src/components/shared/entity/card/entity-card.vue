@@ -48,6 +48,8 @@ interface Props {
   // Card variant props (for content entities)
   variant?: 'card' | 'button'
   size?: CardSize
+  /** Secondary line under the name; ignored by the tag and collection cards */
+  subtitle?: string
   hideName?: boolean
   badgeLabel?: string
   align?: CardAlign
@@ -80,6 +82,7 @@ const emit = defineEmits<{
     :game="props.entity as Game"
     :variant="props.variant"
     :size="props.size"
+    :subtitle="props.subtitle"
     :hide-name="props.hideName"
     :badge-label="props.badgeLabel"
     :align="props.align"
@@ -96,6 +99,7 @@ const emit = defineEmits<{
     :anime="props.entity as Anime"
     :variant="props.variant"
     :size="props.size"
+    :subtitle="props.subtitle"
     :hide-name="props.hideName"
     :badge-label="props.badgeLabel"
     :align="props.align"
@@ -112,6 +116,7 @@ const emit = defineEmits<{
     :tv="props.entity as Tv"
     :variant="props.variant"
     :size="props.size"
+    :subtitle="props.subtitle"
     :hide-name="props.hideName"
     :badge-label="props.badgeLabel"
     :align="props.align"
@@ -128,6 +133,7 @@ const emit = defineEmits<{
     :movie="props.entity as Movie"
     :variant="props.variant"
     :size="props.size"
+    :subtitle="props.subtitle"
     :hide-name="props.hideName"
     :badge-label="props.badgeLabel"
     :align="props.align"
@@ -144,6 +150,7 @@ const emit = defineEmits<{
     :character="props.entity as Character"
     :variant="props.variant"
     :size="props.size"
+    :subtitle="props.subtitle"
     :hide-name="props.hideName"
     :badge-label="props.badgeLabel"
     :align="props.align"
@@ -160,6 +167,7 @@ const emit = defineEmits<{
     :person="props.entity as Person"
     :variant="props.variant"
     :size="props.size"
+    :subtitle="props.subtitle"
     :hide-name="props.hideName"
     :badge-label="props.badgeLabel"
     :align="props.align"
@@ -176,6 +184,7 @@ const emit = defineEmits<{
     :company="props.entity as Company"
     :variant="props.variant"
     :size="props.size"
+    :subtitle="props.subtitle"
     :hide-name="props.hideName"
     :badge-label="props.badgeLabel"
     :align="props.align"
