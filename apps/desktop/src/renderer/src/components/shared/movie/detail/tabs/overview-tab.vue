@@ -35,6 +35,7 @@ import {
   type RoleLinkItem
 } from '@renderer/components/shared/entity'
 import {
+  MOVIE_CAST_ROLE_VALUES,
   MOVIE_CHARACTER_ROLE_VALUES,
   MOVIE_COMPANY_ROLE_VALUES,
   MOVIE_CREW_ROLE_VALUES
@@ -62,7 +63,8 @@ const editDialogs = ref({
   details: false,
   tags: false,
   characters: false,
-  persons: false,
+  cast: false,
+  crew: false,
   companies: false,
   externalSites: false,
   relations: false
@@ -83,13 +85,13 @@ const hasExternalSites = computed(
 
 const castEntries = computed(() =>
   persons.value
-    .filter((link) => link.role === 'actor' && link.person !== null)
+    .filter((link) => MOVIE_CAST_ROLE_VALUES.includes(link.role) && link.person !== null)
     .map((link) => ({ link, person: link.person!, subtitle: formatPlaying(link.playing) }))
 )
 
 const crewItems = computed<RoleLinkItem[]>(() =>
   persons.value
-    .filter((link) => link.role !== 'actor')
+    .filter((link) => !MOVIE_CAST_ROLE_VALUES.includes(link.role))
     .map((link) => ({ id: link.id, role: link.role, entity: link.person }))
 )
 
@@ -150,7 +152,7 @@ const tagDialogOpen = computed({
           :items="castEntries"
           :get-key="(item) => item.link.id"
           :empty-text="m.library.detail.empty.cast"
-          @edit="openEditDialog('persons')"
+          @edit="openEditDialog('cast')"
         >
           <template #item="{ item }">
             <PersonCard
@@ -220,7 +222,7 @@ const tagDialogOpen = computed({
           :items="crewItems"
           :role-order="MOVIE_CREW_ROLE_VALUES"
           :role-labels="PERSON_ROLE_LABELS"
-          @edit="openEditDialog('persons')"
+          @edit="openEditDialog('crew')"
           @open="openPersonId = $event"
           @view-all="emit('navigate', 'persons')"
         />
@@ -301,9 +303,15 @@ const tagDialogOpen = computed({
       :entity-id="movie.id"
     />
     <EntityLinksFormDialog
-      v-if="editDialogs.persons"
-      v-model:open="editDialogs.persons"
-      view="movie-persons"
+      v-if="editDialogs.cast"
+      v-model:open="editDialogs.cast"
+      view="movie-cast"
+      :entity-id="movie.id"
+    />
+    <EntityLinksFormDialog
+      v-if="editDialogs.crew"
+      v-model:open="editDialogs.crew"
+      view="movie-crew"
       :entity-id="movie.id"
     />
     <EntityLinksFormDialog

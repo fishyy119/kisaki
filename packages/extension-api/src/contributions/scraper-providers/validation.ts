@@ -216,6 +216,7 @@ const GAME_PERSON_FACT_KEYS = new Set<string>([
   ...PERSON_METADATA_KEYS,
   'role',
   'isSpoiler',
+  'playing',
   'note'
 ])
 const GAME_COMPANY_FACT_KEYS = new Set<string>([
@@ -916,6 +917,7 @@ function validateGamePersonFact(value: unknown, path: string): ValidationIssue[]
   return [
     ...validateFactObject(value, path, GAME_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
+    ...validatePlayingField(value, path),
     ...validateRequiredFactRole(value, path, LIBRARY_GAME_PERSON_ROLES, 'game person role')
   ]
 }
@@ -940,6 +942,7 @@ function validateAnimePersonFact(value: unknown, path: string): ValidationIssue[
   return [
     ...validateFactObject(value, path, ANIME_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
+    ...validatePlayingField(value, path),
     ...validateRequiredFactRole(value, path, LIBRARY_ANIME_PERSON_ROLES, 'anime person role')
   ]
 }
@@ -964,6 +967,7 @@ function validateTvPersonFact(value: unknown, path: string): ValidationIssue[] {
   return [
     ...validateFactObject(value, path, TV_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
+    ...validatePlayingField(value, path),
     ...validateRequiredFactRole(value, path, LIBRARY_TV_PERSON_ROLES, 'tv person role')
   ]
 }
@@ -988,6 +992,7 @@ function validateMoviePersonFact(value: unknown, path: string): ValidationIssue[
   return [
     ...validateFactObject(value, path, MOVIE_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
+    ...validatePlayingField(value, path),
     ...validateRequiredFactRole(value, path, LIBRARY_MOVIE_PERSON_ROLES, 'movie person role')
   ]
 }
@@ -1081,6 +1086,15 @@ function validateFactFields(value: unknown, path: string): ValidationIssue[] {
     ...validateOptionalBoolean(value.isSpoiler, `${path}.isSpoiler`),
     ...validateOptionalString(value.note, `${path}.note`)
   ]
+}
+
+/** Media-person facts alone state the characters a credit performs. */
+function validatePlayingField(value: unknown, path: string): ValidationIssue[] {
+  if (!isPlainObject(value)) {
+    return []
+  }
+
+  return validateOptionalStringArray(value.playing, `${path}.playing`, 'playing must be an array.')
 }
 
 function validateOptionalCharacterInfo(value: unknown, path: string): ValidationIssue[] {

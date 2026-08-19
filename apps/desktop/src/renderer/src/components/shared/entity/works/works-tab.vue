@@ -121,7 +121,6 @@ const detailDialogOpen = computed({
           :key="entry.key"
           :entity-type="entry.mediaType"
           :entity="entry.entity"
-          :subtitle="entry.subtitle"
           align="left"
           size="sm"
           :badge-label="entry.roleLabel"

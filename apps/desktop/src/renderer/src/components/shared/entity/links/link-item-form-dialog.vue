@@ -147,7 +147,11 @@ function handleSubmit() {
     targetName: formData.value.targetName || 'Unknown',
     targetImage: formData.value.targetImage,
     role: formData.value.role,
-    playing: spec.value.supportsPlaying ? parsePlayingInput(playingInput.value) : [],
+    // A view that does not edit the played characters carries them through, so
+    // editing a crew credit never clears a list only the cast view can state.
+    playing: spec.value.supportsPlaying
+      ? parsePlayingInput(playingInput.value)
+      : (props.initialData?.playing ?? []),
     note: formData.value.note.trim(),
     isSpoiler: formData.value.isSpoiler
   })

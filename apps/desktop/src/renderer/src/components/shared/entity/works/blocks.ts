@@ -17,8 +17,6 @@ export interface WorkItem {
   /** Link row id (stable list key) */
   id: string
   role: string | null
-  /** Secondary line for the card, such as the characters played in this entry */
-  subtitle?: string
   entity: WorkMedia | null
 }
 
@@ -38,7 +36,6 @@ export interface WorkEntry {
   mediaType: MediaType
   entity: WorkMedia
   roleLabel: string | undefined
-  subtitle: string | undefined
 }
 
 export interface ResolvedWorksBlock {
@@ -56,8 +53,7 @@ export function resolveWorksBlocks(blocks: WorksBlock[]): ResolvedWorksBlock[] {
               key: `${block.mediaType}:${item.id}`,
               mediaType: block.mediaType,
               entity: item.entity,
-              roleLabel: item.role ? block.roleLabels[item.role] : undefined,
-              subtitle: item.subtitle
+              roleLabel: item.role ? block.roleLabels[item.role] : undefined
             }
           ]
         : []

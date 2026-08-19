@@ -2,7 +2,7 @@
   MediaCard - Poster-style card for library entities.
 
   Cover image with fallback icon, hover scale, optional name line,
-  subtitle and badge label. Entity wrappers own data mapping, context
+  subtitle chip and badge label. Entity wrappers own data mapping, context
   menus, and overlay indicators (via #overlay).
 -->
 <script setup lang="ts">
@@ -36,7 +36,7 @@ const alignStyles: Record<MediaCardAlign, { container: string; text: string }> =
 
 interface Props {
   name: string
-  /** Secondary line under the name, such as the characters an actor plays */
+  /** Chip under the name, such as the characters an actor plays */
   subtitle?: string
   imageUrl?: string | null
   /** Fallback icon when there is no image */
@@ -98,12 +98,13 @@ const alignStyle = computed(() => alignStyles[props.align])
         <p :class="cn('text-xs font-medium truncate w-full px-1 hover:underline', alignStyle.text)">
           {{ props.name }}
         </p>
-        <p
+        <Badge
           v-if="props.subtitle"
-          :class="cn('text-[11px] text-muted-foreground truncate w-full px-1', alignStyle.text)"
+          variant="secondary"
+          class="mt-1 max-w-full px-1.5 py-0 text-[10px] font-normal"
         >
-          {{ props.subtitle }}
-        </p>
+          <span class="min-w-0 truncate">{{ props.subtitle }}</span>
+        </Badge>
         <Badge
           variant="secondary"
           class="mt-1 text-[10px] px-1.5 py-0"
@@ -128,12 +129,13 @@ const alignStyle = computed(() => alignStyles[props.align])
       >
         {{ props.name }}
       </p>
-      <p
+      <Badge
         v-if="props.subtitle"
-        :class="cn('text-[11px] text-muted-foreground truncate w-full', alignStyle.text)"
+        variant="secondary"
+        class="mt-1 max-w-full px-1.5 py-0 text-[10px] font-normal"
       >
-        {{ props.subtitle }}
-      </p>
+        <span class="min-w-0 truncate">{{ props.subtitle }}</span>
+      </Badge>
     </div>
   </div>
 </template>
