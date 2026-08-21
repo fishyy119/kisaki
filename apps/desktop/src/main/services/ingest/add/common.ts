@@ -7,9 +7,7 @@ import {
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
-  collectionMovieLinks,
-  collectionPersonLinks,
-  collectionTvLinks
+  collectionPersonLinks
 } from '@shared/db'
 
 export interface NormalizedIngestLookupInput<TLookup extends ScraperLookup> {
@@ -95,42 +93,6 @@ export function addAnimeToCollection(
     .values({
       collectionId: targetCollectionId,
       animeId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
-}
-
-export function addTvToCollection(
-  dbService: DbService,
-  tvId: string,
-  targetCollectionId: string | undefined
-): void {
-  if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionTvLinks)
-    .values({
-      collectionId: targetCollectionId,
-      tvId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
-}
-
-export function addMovieToCollection(
-  dbService: DbService,
-  movieId: string,
-  targetCollectionId: string | undefined
-): void {
-  if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionMovieLinks)
-    .values({
-      collectionId: targetCollectionId,
-      movieId,
       orderInCollection: 0
     })
     .onConflictDoNothing()

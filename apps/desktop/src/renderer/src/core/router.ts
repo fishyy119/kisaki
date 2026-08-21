@@ -12,8 +12,6 @@ import { installRouteData } from '@renderer/core/route-data'
 import {
   gameDetailData,
   animeDetailData,
-  tvDetailData,
-  movieDetailData,
   characterDetailData,
   personDetailData,
   companyDetailData,
@@ -85,20 +83,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@renderer/features/library/pages/anime-detail-page.vue'),
         props: true,
         meta: { entityType: 'anime', dataLoaders: [animeDetailData] }
-      },
-      {
-        path: 'tv/:tvId',
-        name: 'tv-detail',
-        component: () => import('@renderer/features/library/pages/tv-detail-page.vue'),
-        props: true,
-        meta: { entityType: 'tv', dataLoaders: [tvDetailData] }
-      },
-      {
-        path: 'movie/:movieId',
-        name: 'movie-detail',
-        component: () => import('@renderer/features/library/pages/movie-detail-page.vue'),
-        props: true,
-        meta: { entityType: 'movie', dataLoaders: [movieDetailData] }
       },
       {
         path: 'person/:personId',

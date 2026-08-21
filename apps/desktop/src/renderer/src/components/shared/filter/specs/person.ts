@@ -29,8 +29,6 @@ export const personFilterUiSpec: ComputedRef<FilterUiSpec<typeof personFilterQue
 
         { key: 'games', label: m.library.fields.relatedGames, kind: 'relation' },
         { key: 'animes', label: m.library.fields.relatedAnimes, kind: 'relation' },
-        { key: 'tvs', label: m.library.fields.relatedTvs, kind: 'relation' },
-        { key: 'movies', label: m.library.fields.relatedMovies, kind: 'relation' },
         { key: 'characters', label: m.library.fields.relatedCharacters, kind: 'relation' },
         { key: 'tags', label: m.library.fields.tags, kind: 'relation' },
         { key: 'collections', label: m.library.fields.collections, kind: 'relation' }

@@ -19,10 +19,6 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
-  LibraryMovie,
-  LibraryMovieCreateInput,
-  LibraryMoviePatch,
-  LibraryMovieQuery,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -31,10 +27,6 @@ import type {
   LibraryTagCreateInput,
   LibraryTagPatch,
   LibraryTagQuery,
-  LibraryTv,
-  LibraryTvCreateInput,
-  LibraryTvPatch,
-  LibraryTvQuery,
   ExternalId
 } from '@kisaki3/extension-api'
 import {
@@ -54,10 +46,8 @@ import {
   COLLECTION_CONFIG,
   COMPANY_CONFIG,
   GAME_CONFIG,
-  MOVIE_CONFIG,
   PERSON_CONFIG,
-  TAG_CONFIG,
-  TV_CONFIG
+  TAG_CONFIG
 } from './configs'
 import { loadExternalIds, syncExternalIds } from './external-ids'
 import type {
@@ -114,46 +104,6 @@ export class ExtensionLibraryEntityStore {
 
   removeAnime(id: string): void {
     this.removeEntity(id, ANIME_CONFIG)
-  }
-
-  getTv(id: string): LibraryTv | null {
-    return this.getEntity(id, TV_CONFIG)
-  }
-
-  listTvs(query?: LibraryTvQuery): readonly LibraryTv[] {
-    return this.listEntities(query, TV_CONFIG)
-  }
-
-  createTv(input: LibraryTvCreateInput): LibraryTv {
-    return this.createEntity(input, TV_CONFIG)
-  }
-
-  updateTv(id: string, patch: LibraryTvPatch): LibraryTv {
-    return this.updateEntity(id, patch, TV_CONFIG)
-  }
-
-  removeTv(id: string): void {
-    this.removeEntity(id, TV_CONFIG)
-  }
-
-  getMovie(id: string): LibraryMovie | null {
-    return this.getEntity(id, MOVIE_CONFIG)
-  }
-
-  listMovies(query?: LibraryMovieQuery): readonly LibraryMovie[] {
-    return this.listEntities(query, MOVIE_CONFIG)
-  }
-
-  createMovie(input: LibraryMovieCreateInput): LibraryMovie {
-    return this.createEntity(input, MOVIE_CONFIG)
-  }
-
-  updateMovie(id: string, patch: LibraryMoviePatch): LibraryMovie {
-    return this.updateEntity(id, patch, MOVIE_CONFIG)
-  }
-
-  removeMovie(id: string): void {
-    this.removeEntity(id, MOVIE_CONFIG)
   }
 
   getCharacter(id: string): LibraryCharacter | null {

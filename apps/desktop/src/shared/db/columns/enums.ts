@@ -7,6 +7,7 @@ import {
   type MediaType
 } from '../../common'
 import { MEDIA_RELATION_TYPES, type MediaRelationType } from '../contracts/media-relations'
+import { COMPANY_RELATION_TYPES, type CompanyRelationType } from '../contracts/company-relations'
 import { CONTENT_LOCALES, UI_LOCALES, type ContentLocale, type UiLocale } from '../../i18n'
 import {
   SCANNER_INGEST_MODE_VALUES,
@@ -31,19 +32,7 @@ import {
   GAME_CHARACTER_ROLE_VALUES,
   GAME_COMPANY_ROLE_VALUES,
   GAME_PERSON_ROLE_VALUES,
-  GAME_STATUS_VALUES,
-  MOVIE_CHARACTER_ROLE_VALUES,
-  MOVIE_COMPANY_ROLE_VALUES,
-  MOVIE_EXTRA_TYPE_VALUES,
-  MOVIE_FORMAT_VALUES,
-  MOVIE_PERSON_ROLE_VALUES,
-  MOVIE_STATUS_VALUES,
-  TV_CHARACTER_ROLE_VALUES,
-  TV_COMPANY_ROLE_VALUES,
-  TV_EXTRA_TYPE_VALUES,
-  TV_FORMAT_VALUES,
-  TV_PERSON_ROLE_VALUES,
-  TV_STATUS_VALUES
+  GAME_STATUS_VALUES
 } from '../contracts/enums'
 import type {
   AnimeCharacterRole,
@@ -68,19 +57,7 @@ import type {
   GameStatus,
   Gender,
   MainWindowCloseAction,
-  MovieCharacterRole,
-  MovieCompanyRole,
-  MovieExtraType,
-  MovieFormat,
-  MoviePersonRole,
-  MovieStatus,
-  ScannerIngestMode,
-  TvCharacterRole,
-  TvCompanyRole,
-  TvExtraType,
-  TvFormat,
-  TvPersonRole,
-  TvStatus
+  ScannerIngestMode
 } from '../contracts/enums'
 import { createBoundedIntegerType, createEnumType, createNullableEnumType } from './factories'
 
@@ -165,66 +142,6 @@ export const animeExtraType = createEnumType<AnimeExtraType>(
   'animeExtraType'
 )
 
-export const tvStatus = createEnumType<TvStatus>(TV_STATUS_VALUES, 'planned', 'tvStatus')
-
-export const tvFormat = createEnumType<TvFormat>(TV_FORMAT_VALUES, 'scripted', 'tvFormat')
-
-export const tvPersonRole = createEnumType<TvPersonRole>(
-  TV_PERSON_ROLE_VALUES,
-  'other',
-  'tvPersonRole'
-)
-
-export const tvCharacterRole = createEnumType<TvCharacterRole>(
-  TV_CHARACTER_ROLE_VALUES,
-  'other',
-  'tvCharacterRole'
-)
-
-export const tvCompanyRole = createEnumType<TvCompanyRole>(
-  TV_COMPANY_ROLE_VALUES,
-  'other',
-  'tvCompanyRole'
-)
-
-export const tvExtraType = createEnumType<TvExtraType>(TV_EXTRA_TYPE_VALUES, 'other', 'tvExtraType')
-
-export const movieStatus = createEnumType<MovieStatus>(
-  MOVIE_STATUS_VALUES,
-  'planned',
-  'movieStatus'
-)
-
-export const movieFormat = createEnumType<MovieFormat>(
-  MOVIE_FORMAT_VALUES,
-  'theatrical',
-  'movieFormat'
-)
-
-export const moviePersonRole = createEnumType<MoviePersonRole>(
-  MOVIE_PERSON_ROLE_VALUES,
-  'other',
-  'moviePersonRole'
-)
-
-export const movieCharacterRole = createEnumType<MovieCharacterRole>(
-  MOVIE_CHARACTER_ROLE_VALUES,
-  'other',
-  'movieCharacterRole'
-)
-
-export const movieCompanyRole = createEnumType<MovieCompanyRole>(
-  MOVIE_COMPANY_ROLE_VALUES,
-  'other',
-  'movieCompanyRole'
-)
-
-export const movieExtraType = createEnumType<MovieExtraType>(
-  MOVIE_EXTRA_TYPE_VALUES,
-  'other',
-  'movieExtraType'
-)
-
 const BLOOD_TYPE_VALUES = ['a', 'b', 'ab', 'o'] as const
 export const bloodType = createNullableEnumType<BloodType>(BLOOD_TYPE_VALUES, 'bloodType')
 
@@ -251,6 +168,12 @@ export const mediaRelationType = createEnumType<MediaRelationType>(
   MEDIA_RELATION_TYPES,
   'other',
   'mediaRelationType'
+)
+
+export const companyRelationType = createEnumType<CompanyRelationType>(
+  COMPANY_RELATION_TYPES,
+  'other',
+  'companyRelationType'
 )
 export const contentLocale = createNullableEnumType<ContentLocale>(CONTENT_LOCALES, 'contentLocale')
 export const uiLocale = createNullableEnumType<UiLocale>(UI_LOCALES, 'uiLocale')

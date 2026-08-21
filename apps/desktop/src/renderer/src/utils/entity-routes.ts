@@ -10,8 +10,6 @@ import type { AllEntityType } from '@shared/common'
 const ENTITY_ROUTE_SEGMENTS: Record<AllEntityType, string> = {
   game: 'game',
   anime: 'anime',
-  tv: 'tv',
-  movie: 'movie',
   character: 'character',
   person: 'person',
   company: 'company',

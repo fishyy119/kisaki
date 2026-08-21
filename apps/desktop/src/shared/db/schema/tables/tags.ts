@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-co
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import { baseColumns, identityKeyText } from '../../columns'
-import { animes, characters, companies, movies, persons, games, tvs } from './content'
+import { animes, characters, companies, persons, games } from './content'
 
 export const tags = sqliteTable(
   'tags',
@@ -68,50 +68,6 @@ export const animeTagLinks = sqliteTable(
     unique().on(t.animeId, t.tagId),
     index('idx_anime_tag_links_anime_id').on(t.animeId),
     index('idx_anime_tag_links_tag_id').on(t.tagId)
-  ]
-)
-
-export const tvTagLinks = sqliteTable(
-  'tv_tag_links',
-  {
-    ...baseColumns,
-    tvId: text('tv_id')
-      .notNull()
-      .references(() => tvs.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    tagId: text('tag_id')
-      .notNull()
-      .references(() => tags.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    note: text('note'),
-    orderInTv: integer('order_in_tv').notNull().default(0),
-    orderInTag: integer('order_in_tag').notNull().default(0)
-  },
-  (t) => [
-    unique().on(t.tvId, t.tagId),
-    index('idx_tv_tag_links_tv_id').on(t.tvId),
-    index('idx_tv_tag_links_tag_id').on(t.tagId)
-  ]
-)
-
-export const movieTagLinks = sqliteTable(
-  'movie_tag_links',
-  {
-    ...baseColumns,
-    movieId: text('movie_id')
-      .notNull()
-      .references(() => movies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    tagId: text('tag_id')
-      .notNull()
-      .references(() => tags.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    note: text('note'),
-    orderInMovie: integer('order_in_movie').notNull().default(0),
-    orderInTag: integer('order_in_tag').notNull().default(0)
-  },
-  (t) => [
-    unique().on(t.movieId, t.tagId),
-    index('idx_movie_tag_links_movie_id').on(t.movieId),
-    index('idx_movie_tag_links_tag_id').on(t.tagId)
   ]
 )
 
@@ -187,10 +143,6 @@ export type GameTagLink = InferSelectModel<typeof gameTagLinks>
 export type NewGameTagLink = InferInsertModel<typeof gameTagLinks>
 export type AnimeTagLink = InferSelectModel<typeof animeTagLinks>
 export type NewAnimeTagLink = InferInsertModel<typeof animeTagLinks>
-export type TvTagLink = InferSelectModel<typeof tvTagLinks>
-export type NewTvTagLink = InferInsertModel<typeof tvTagLinks>
-export type MovieTagLink = InferSelectModel<typeof movieTagLinks>
-export type NewMovieTagLink = InferInsertModel<typeof movieTagLinks>
 export type CharacterTagLink = InferSelectModel<typeof characterTagLinks>
 export type NewCharacterTagLink = InferInsertModel<typeof characterTagLinks>
 export type PersonTagLink = InferSelectModel<typeof personTagLinks>

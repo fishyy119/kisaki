@@ -23,12 +23,9 @@ export {
   companyExternalIdLink,
   findExternalIdOwners,
   gameExternalIdLink,
-  movieExternalIdLink,
   personExternalIdLink,
   requireExternalIdsAvailable,
   resolveTagId,
-  tvEpisodeExternalIdLink,
-  tvExternalIdLink,
   type ExternalIdLinkTable
 } from './helper'
 export { SettingsStore } from './settings'

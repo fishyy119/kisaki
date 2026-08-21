@@ -14,25 +14,22 @@ import { applyEntityNodes, previewEntityNodes } from './entities'
 import {
   applyAttachmentEdge,
   applyEpisodeAttachmentEdge,
-  applySeasonAttachmentEdge,
   previewAttachmentEdge,
-  previewEpisodeAttachmentEdge,
-  previewSeasonAttachmentEdge
+  previewEpisodeAttachmentEdge
 } from './media'
 import {
   applyEpisodeEdge,
   applyNoteEdge,
-  applySeasonEdge,
   applySessionEdge,
   previewEpisodeEdge,
   previewNoteEdge,
-  previewSeasonEdge,
-  resolveSeasonEpisodeEdge,
   previewSessionEdge
 } from './owned-items'
 import {
   applyCharacterPersonEdge,
   applyCollectionMediaEdge,
+  applyCompanyCompanyEdge,
+  applyMediaCastEdge,
   applyMediaCharacterEdge,
   applyMediaCompanyEdge,
   applyMediaMediaEdge,
@@ -40,6 +37,8 @@ import {
   applyMediaTagEdge,
   previewCharacterPersonEdge,
   previewCollectionMediaEdge,
+  previewCompanyCompanyEdge,
+  previewMediaCastEdge,
   previewMediaMediaEdge,
   previewRelationEdge
 } from './relationships'
@@ -98,15 +97,14 @@ const EDGE_PHASES: Record<LibraryGraphEdgeKind, number> = {
   'media-company': 0,
   'media-person': 0,
   'media-character': 0,
+  'media-cast': 0,
   'character-person': 0,
   'media-media': 0,
+  'company-company': 0,
   'media-note': 0,
   'media-session': 0,
-  'media-season': 1,
-  'season-episode': 2,
   'media-episode': 3,
   'media-attachment': 4,
-  'season-attachment': 4,
   'episode-attachment': 4
 }
 
@@ -156,24 +154,22 @@ async function previewEdge(
     case 'media-person':
     case 'media-character':
       return previewRelationEdge(edge, state, options)
+    case 'media-cast':
+      return previewMediaCastEdge(edge, state, options)
     case 'character-person':
       return previewCharacterPersonEdge(edge, state, options)
     case 'media-media':
       return previewMediaMediaEdge(edge, state, options)
+    case 'company-company':
+      return previewCompanyCompanyEdge(edge, state, options)
     case 'media-note':
       return previewNoteEdge(edge, graph, draft, state, options)
     case 'media-session':
       return previewSessionEdge(edge, graph, draft, state, options)
-    case 'media-season':
-      return previewSeasonEdge(edge, graph, draft, state, options)
-    case 'season-episode':
-      return resolveSeasonEpisodeEdge(edge)
     case 'media-episode':
       return previewEpisodeEdge(edge, graph, draft, state, options)
     case 'media-attachment':
       return await previewAttachmentEdge(edge, graph, draft, state, options)
-    case 'season-attachment':
-      return await previewSeasonAttachmentEdge(edge, graph, draft, state, options)
     case 'episode-attachment':
       return await previewEpisodeAttachmentEdge(edge, graph, draft, state, options)
   }
@@ -198,24 +194,22 @@ async function applyEdge(
       return applyMediaPersonEdge(edge, state, options)
     case 'media-character':
       return applyMediaCharacterEdge(edge, state, options)
+    case 'media-cast':
+      return applyMediaCastEdge(edge, state, options)
     case 'character-person':
       return applyCharacterPersonEdge(edge, state, options)
     case 'media-media':
       return applyMediaMediaEdge(edge, state, options)
+    case 'company-company':
+      return applyCompanyCompanyEdge(edge, state, options)
     case 'media-note':
       return await applyNoteEdge(edge, graph, draft, state, context, options)
     case 'media-session':
       return applySessionEdge(edge, graph, draft, state, options)
-    case 'media-season':
-      return applySeasonEdge(edge, graph, draft, state, options)
-    case 'season-episode':
-      return resolveSeasonEpisodeEdge(edge)
     case 'media-episode':
       return applyEpisodeEdge(edge, graph, draft, state, options)
     case 'media-attachment':
       return await applyAttachmentEdge(edge, graph, draft, state, context, options)
-    case 'season-attachment':
-      return await applySeasonAttachmentEdge(edge, graph, draft, state, context, options)
     case 'episode-attachment':
       return await applyEpisodeAttachmentEdge(edge, graph, draft, state, context, options)
   }

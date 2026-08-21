@@ -5,17 +5,19 @@ import type {
   LibraryMediaType
 } from '@kisaki3/extension-api'
 import {
-  arePlayingEqual,
   characterPersonLinks,
+  companyRelations,
   getMediaRelationTypeRules,
-  mediaRelations,
-  normalizePlaying
+  mediaRelations
 } from '@shared/db'
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
 import {
+  insertMediaCast,
   insertMediaLink,
   mediaLinkConfigs,
+  readMediaCast,
   readMediaLink,
+  updateMediaCastNote,
   updateMediaLink,
   type MediaLinkConfig,
   type MediaLinkRow
@@ -28,8 +30,10 @@ type TagEdge = Extract<LibraryGraphEdge, { kind: 'media-tag' }>
 type CompanyEdge = Extract<LibraryGraphEdge, { kind: 'media-company' }>
 type PersonEdge = Extract<LibraryGraphEdge, { kind: 'media-person' }>
 type CharacterEdge = Extract<LibraryGraphEdge, { kind: 'media-character' }>
+type CastEdge = Extract<LibraryGraphEdge, { kind: 'media-cast' }>
 type CharacterPersonEdge = Extract<LibraryGraphEdge, { kind: 'character-person' }>
 type MediaMediaEdge = Extract<LibraryGraphEdge, { kind: 'media-media' }>
+type CompanyCompanyEdge = Extract<LibraryGraphEdge, { kind: 'company-company' }>
 type RelationEdge = TagEdge | CompanyEdge | PersonEdge | CharacterEdge
 
 export function previewCollectionMediaEdge(
@@ -80,6 +84,150 @@ export function previewRelationEdge(
     return 'create'
   }
   return planLinkUpdate(existing, edge)
+}
+
+export function previewMediaCastEdge(
+  edge: CastEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isCastEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  if (state.skippedMedia.has(edge.from.key)) {
+    return 'skip'
+  }
+
+  const mediaId = getEntityId(state, edge.from.kind, edge.from.key)
+  const characterId = getEntityId(state, edge.to.kind, edge.to.key)
+  const personId = getEntityId(state, edge.person.kind, edge.person.key)
+  if (!mediaId || !characterId || !personId) {
+    return 'create'
+  }
+
+  const config = mediaLinkConfigs(state.mediaTypes.get(edge.from.key)).cast
+  const existing = readMediaCast(options.db.client, config, mediaId, characterId, personId)
+  if (!existing) {
+    return 'create'
+  }
+  return edge.note !== undefined && existing.note !== edge.note ? 'update' : 'skip'
+}
+
+export function applyMediaCastEdge(
+  edge: CastEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isCastEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  if (state.skippedMedia.has(edge.from.key)) {
+    return 'skip'
+  }
+
+  const mediaId = requireEntityId(state, edge.from.kind, edge.from.key)
+  const characterId = requireEntityId(state, edge.to.kind, edge.to.key)
+  const personId = requireEntityId(state, edge.person.kind, edge.person.key)
+  const config = mediaLinkConfigs(state.mediaTypes.get(edge.from.key)).cast
+  const existing = readMediaCast(options.db.client, config, mediaId, characterId, personId)
+
+  if (!existing) {
+    insertMediaCast(options.db.client, config, {
+      mediaId,
+      characterId,
+      personId,
+      note: edge.note
+    })
+    return 'create'
+  }
+
+  if (edge.note !== undefined && existing.note !== edge.note) {
+    updateMediaCastNote(options.db.client, config, mediaId, characterId, personId, edge.note)
+    return 'update'
+  }
+
+  return 'skip'
+}
+
+export function previewCompanyCompanyEdge(
+  edge: CompanyCompanyEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  if (edge.from.key === edge.to.key) {
+    return 'skip'
+  }
+
+  const fromId = getEntityId(state, edge.from.kind, edge.from.key)
+  const toId = getEntityId(state, edge.to.kind, edge.to.key)
+  if (!fromId || !toId) {
+    return 'create'
+  }
+  if (fromId === toId) {
+    return 'skip'
+  }
+
+  const existing = readCompanyRelation(fromId, toId, edge.type, options)
+  if (!existing) {
+    return 'create'
+  }
+  return (edge.order !== undefined && existing.orderInFrom !== edge.order) ||
+    (edge.note !== undefined && existing.note !== edge.note)
+    ? 'update'
+    : 'skip'
+}
+
+export function applyCompanyCompanyEdge(
+  edge: CompanyCompanyEdge,
+  state: ApplyState,
+  options: ExecuteLibraryGraphOptions
+): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
+  const fromId = requireEntityId(state, edge.from.kind, edge.from.key)
+  const toId = requireEntityId(state, edge.to.kind, edge.to.key)
+  if (fromId === toId) {
+    return 'skip'
+  }
+
+  const existing = readCompanyRelation(fromId, toId, edge.type, options)
+  if (!existing) {
+    options.db.client
+      .insert(companyRelations)
+      .values({
+        fromId,
+        toId,
+        type: edge.type,
+        note: edge.note,
+        orderInFrom: edge.order ?? 0
+      })
+      .run()
+    return 'create'
+  }
+
+  const patch = stripUndefined({
+    orderInFrom:
+      edge.order !== undefined && existing.orderInFrom !== edge.order ? edge.order : undefined,
+    note: edge.note !== undefined && existing.note !== edge.note ? edge.note : undefined
+  })
+  if (Object.keys(patch).length > 0) {
+    options.db.client
+      .update(companyRelations)
+      .set(patch)
+      .where(companyRelationCondition(fromId, toId, edge.type))
+      .run()
+    return 'update'
+  }
+
+  return 'skip'
 }
 
 export function previewCharacterPersonEdge(
@@ -330,7 +478,6 @@ function applyRelationEdge(
   const { config, role } = resolveRelationLink(edge, state)
   const existing = readMediaLink(options.db.client, config, mediaId, targetId, role)
   const note = edge.kind === 'media-tag' || edge.kind === 'media-company' ? undefined : edge.note
-  const playing = edge.kind === 'media-person' ? toStoredPlaying(edge.playing) : undefined
 
   if (!existing) {
     insertMediaLink(options.db.client, config, {
@@ -338,7 +485,6 @@ function applyRelationEdge(
       targetId,
       role,
       note,
-      playing,
       order: edge.order ?? 0
     })
     return 'create'
@@ -346,9 +492,7 @@ function applyRelationEdge(
 
   const patch = stripUndefined({
     order: edge.order !== undefined && existing.order !== edge.order ? edge.order : undefined,
-    note: note !== undefined && existing.note !== note ? note : undefined,
-    playing:
-      playing !== undefined && !arePlayingEqual(existing.playing, playing) ? playing : undefined
+    note: note !== undefined && existing.note !== note ? note : undefined
   })
   if (Object.keys(patch).length > 0) {
     updateMediaLink(options.db.client, config, mediaId, targetId, role, patch)
@@ -377,27 +521,12 @@ function resolveRelationLink(
 
 function planLinkUpdate(
   existing: MediaLinkRow,
-  edge: { order?: number; note?: string; playing?: readonly string[] }
+  edge: { order?: number; note?: string }
 ): LibraryGraphResultAction {
-  const playing = toStoredPlaying(edge.playing)
   return (edge.order !== undefined && existing.order !== edge.order) ||
-    (edge.note !== undefined && existing.note !== edge.note) ||
-    (playing !== undefined && !arePlayingEqual(existing.playing, playing))
+    (edge.note !== undefined && existing.note !== edge.note)
     ? 'update'
     : 'skip'
-}
-
-/**
- * Brings a stated list to storage shape. `undefined` marks an edge that left
- * the stored list alone, and an empty list clears it.
- */
-function toStoredPlaying(playing: readonly string[] | undefined): string[] | null | undefined {
-  if (playing === undefined) {
-    return undefined
-  }
-
-  const names = normalizePlaying(playing)
-  return names.length > 0 ? names : null
 }
 
 function readCharacterPersonLink(
@@ -475,12 +604,48 @@ function readMediaRelation(
   return row ? { orderInFrom: row.orderInFrom, note: row.note } : undefined
 }
 
+function companyRelationCondition(
+  fromId: string,
+  toId: string,
+  type: CompanyCompanyEdge['type']
+): SQL {
+  return and(
+    eq(companyRelations.fromId, fromId),
+    eq(companyRelations.toId, toId),
+    eq(companyRelations.type, type)
+  ) as SQL
+}
+
+function readCompanyRelation(
+  fromId: string,
+  toId: string,
+  type: CompanyCompanyEdge['type'],
+  options: ExecuteLibraryGraphOptions
+): { orderInFrom: number; note: string | null } | undefined {
+  const row = options.db.client
+    .select()
+    .from(companyRelations)
+    .where(companyRelationCondition(fromId, toId, type))
+    .get()
+  return row ? { orderInFrom: row.orderInFrom, note: row.note } : undefined
+}
+
 function isEndpointFailed(
-  edge: CollectionMediaEdge | RelationEdge | CharacterPersonEdge | MediaMediaEdge,
+  edge:
+    CollectionMediaEdge | RelationEdge | CharacterPersonEdge | MediaMediaEdge | CompanyCompanyEdge,
   state: ApplyState
 ): boolean {
   return (
     isEntityNodeFailed(state, edge.from.kind, edge.from.key) ||
     isEntityNodeFailed(state, edge.to.kind, edge.to.key)
+  )
+}
+
+/** A cast edge fails when any of its three endpoints did. */
+function isCastEndpointFailed(edge: CastEdge, state: ApplyState): boolean {
+  return (
+    isEntityNodeFailed(state, edge.from.kind, edge.from.key) ||
+    isEntityNodeFailed(state, edge.to.kind, edge.to.key) ||
+    isEntityNodeFailed(state, edge.person.kind, edge.person.key)
   )
 }

@@ -33,29 +33,8 @@ export function buildEntityFieldPatch(
       applyFirst(patch, target, source, 'totalEpisodes')
       applyFirst(patch, target, source, 'animeDirPath')
       break
-    case 'tv':
-      applyFirst(patch, target, source, 'releaseDate')
-      applyFirst(patch, target, source, 'endDate')
-      patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
-      patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
-      applyFirst(patch, target, source, 'totalSeasons')
-      applyFirst(patch, target, source, 'totalEpisodes')
-      applyFirst(patch, target, source, 'tvDirPath')
-      break
-    case 'movie':
-      applyFirst(patch, target, source, 'releaseDate')
-      patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
-      patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
-      applyFirst(patch, target, source, 'runtimeMs')
-      // A movie's watch state lives on the entry row, so the merge folds it the
-      // same way an episode fold does.
-      patch.watched = Boolean(target.watched || source.watched)
-      patch.watchedAt = latestDateValue(target.watchedAt, source.watchedAt)
-      patch.playCount = toDuration(target.playCount) + toDuration(source.playCount)
-      applyFirst(patch, target, source, 'resumePositionMs')
-      applyFirst(patch, target, source, 'movieDirPath')
-      break
     case 'person':
+      patch.aliases = mergeAliases(target, source)
       applyFirst(patch, target, source, 'birthDate')
       applyFirst(patch, target, source, 'deathDate')
       applyFirst(patch, target, source, 'gender')
@@ -64,6 +43,7 @@ export function buildEntityFieldPatch(
       applyFirst(patch, target, source, 'foundedDate')
       break
     case 'character':
+      patch.aliases = mergeAliases(target, source)
       for (const field of [
         'birthDate',
         'gender',
@@ -128,6 +108,49 @@ function hasValue(value: unknown): boolean {
   if (value === null || value === undefined) return false
   if (typeof value === 'string') return value.trim().length > 0
   return true
+}
+
+/**
+ * Union both rows' aliases and absorb the names the source row is losing.
+ *
+ * A merge is the moment two records of one person or character become one, and
+ * the source's own name is often the very alias worth keeping — pen names and
+ * adult-work credits arrive from sources as separate entities.
+ */
+function mergeAliases(target: MergeRow, source: MergeRow): string[] {
+  const merged: string[] = []
+  const seen = new Set<string>()
+
+  const candidates = [
+    ...toStringArray(target.aliases),
+    ...toStringArray(source.aliases),
+    source.name,
+    source.originalName
+  ]
+
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue
+    const name = candidate.trim()
+    if (!name) continue
+
+    const key = normalizeKeyText(name)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    merged.push(name)
+  }
+
+  // The surviving row's own names are not aliases of itself.
+  const ownKeys = new Set(
+    [target.name, target.originalName]
+      .filter((value): value is string => typeof value === 'string')
+      .map((value) => normalizeKeyText(value.trim()))
+  )
+
+  return merged.filter((name) => !ownKeys.has(normalizeKeyText(name)))
+}
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? (value as string[]) : []
 }
 
 // Rows arrive through the column's lenient read parser, so the array shape is

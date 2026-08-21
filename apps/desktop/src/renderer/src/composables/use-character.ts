@@ -31,18 +31,15 @@ import type {
   CharacterTagLink,
   GameCharacterLink,
   AnimeCharacterLink,
-  TvCharacterLink,
-  MovieCharacterLink,
   CharacterPersonLink,
   Game,
   Anime,
-  Tv,
-  Movie,
   Person,
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
+import type { MediaType } from '@shared/common'
 import { useDbChanges } from './use-db-changes'
 
 // =============================================================================
@@ -54,9 +51,22 @@ interface CharacterData {
   tags: (CharacterTagLink & { tag: Tag | null })[]
   games: (GameCharacterLink & { game: Game | null })[]
   animes: (AnimeCharacterLink & { anime: Anime | null })[]
-  tvs: (TvCharacterLink & { tv: Tv | null })[]
-  movies: (MovieCharacterLink & { movie: Movie | null })[]
   persons: (CharacterPersonLink & { person: Person | null })[]
+  cast: CharacterCastEntry[]
+}
+
+/**
+ * One entry where this character is voiced, and by whom.
+ *
+ * The knowledge-layer `persons` list says who voices the character at all; this
+ * says where that was actually credited, which is what makes a recast visible.
+ */
+export interface CharacterCastEntry {
+  id: string
+  mediaType: MediaType
+  mediaId: string
+  mediaName: string
+  person: Person | null
 }
 
 export interface CharacterContext {
@@ -64,9 +74,9 @@ export interface CharacterContext {
   tags: ComputedRef<(CharacterTagLink & { tag: Tag | null })[]>
   games: ComputedRef<(GameCharacterLink & { game: Game | null })[]>
   animes: ComputedRef<(AnimeCharacterLink & { anime: Anime | null })[]>
-  tvs: ComputedRef<(TvCharacterLink & { tv: Tv | null })[]>
-  movies: ComputedRef<(MovieCharacterLink & { movie: Movie | null })[]>
   persons: ComputedRef<(CharacterPersonLink & { person: Person | null })[]>
+  /** Confirmed voice credits of this character, one row per entry and actor */
+  cast: ComputedRef<CharacterCastEntry[]>
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
   error: Ref<string | null>
@@ -121,26 +131,27 @@ async function fetchCharacterData(
     showNsfw ? undefined : eq(schema.animes.isNsfw, false)
   )
 
-  const tvCharacterLinksWhere = and(
-    eq(schema.tvCharacterLinks.characterId, characterId),
-    spoilersRevealed ? undefined : eq(schema.tvCharacterLinks.isSpoiler, false),
-    showNsfw ? undefined : eq(schema.tvs.isNsfw, false)
-  )
-
-  const movieCharacterLinksWhere = and(
-    eq(schema.movieCharacterLinks.characterId, characterId),
-    spoilersRevealed ? undefined : eq(schema.movieCharacterLinks.isSpoiler, false),
-    showNsfw ? undefined : eq(schema.movies.isNsfw, false)
-  )
-
   const characterPersonLinksWhere = and(
     eq(schema.characterPersonLinks.characterId, characterId),
     spoilersRevealed ? undefined : eq(schema.characterPersonLinks.isSpoiler, false),
     showNsfw ? undefined : eq(schema.persons.isNsfw, false)
   )
 
+  // A cast row names both endpoints, so either being hidden hides the credit.
+  const gameCastLinksWhere = and(
+    eq(schema.gameCastLinks.characterId, characterId),
+    showNsfw ? undefined : eq(schema.games.isNsfw, false),
+    showNsfw ? undefined : eq(schema.persons.isNsfw, false)
+  )
+
+  const animeCastLinksWhere = and(
+    eq(schema.animeCastLinks.characterId, characterId),
+    showNsfw ? undefined : eq(schema.animes.isNsfw, false),
+    showNsfw ? undefined : eq(schema.persons.isNsfw, false)
+  )
+
   // Parallel fetch all related data
-  const [tagLinks, gameLinks, animeLinks, tvLinks, movieLinks, personLinks] = await Promise.all([
+  const [tagLinks, gameLinks, animeLinks, personLinks, gameCast, animeCast] = await Promise.all([
     db
       .select()
       .from(schema.characterTagLinks)
@@ -161,22 +172,24 @@ async function fetchCharacterData(
       .orderBy(asc(schema.animeCharacterLinks.orderInCharacter)),
     db
       .select()
-      .from(schema.tvCharacterLinks)
-      .leftJoin(schema.tvs, eq(schema.tvCharacterLinks.tvId, schema.tvs.id))
-      .where(tvCharacterLinksWhere)
-      .orderBy(asc(schema.tvCharacterLinks.orderInCharacter)),
-    db
-      .select()
-      .from(schema.movieCharacterLinks)
-      .leftJoin(schema.movies, eq(schema.movieCharacterLinks.movieId, schema.movies.id))
-      .where(movieCharacterLinksWhere)
-      .orderBy(asc(schema.movieCharacterLinks.orderInCharacter)),
-    db
-      .select()
       .from(schema.characterPersonLinks)
       .leftJoin(schema.persons, eq(schema.characterPersonLinks.personId, schema.persons.id))
       .where(characterPersonLinksWhere)
-      .orderBy(asc(schema.characterPersonLinks.orderInCharacter))
+      .orderBy(asc(schema.characterPersonLinks.orderInCharacter)),
+    db
+      .select()
+      .from(schema.gameCastLinks)
+      .innerJoin(schema.games, eq(schema.gameCastLinks.gameId, schema.games.id))
+      .leftJoin(schema.persons, eq(schema.gameCastLinks.personId, schema.persons.id))
+      .where(gameCastLinksWhere)
+      .orderBy(asc(schema.games.name)),
+    db
+      .select()
+      .from(schema.animeCastLinks)
+      .innerJoin(schema.animes, eq(schema.animeCastLinks.animeId, schema.animes.id))
+      .leftJoin(schema.persons, eq(schema.animeCastLinks.personId, schema.persons.id))
+      .where(animeCastLinksWhere)
+      .orderBy(asc(schema.animes.name))
   ])
 
   return {
@@ -184,9 +197,23 @@ async function fetchCharacterData(
     tags: tagLinks.map((row) => ({ ...row.character_tag_links, tag: row.tags })),
     games: gameLinks.map((row) => ({ ...row.game_character_links, game: row.games })),
     animes: animeLinks.map((row) => ({ ...row.anime_character_links, anime: row.animes })),
-    tvs: tvLinks.map((row) => ({ ...row.tv_character_links, tv: row.tvs })),
-    movies: movieLinks.map((row) => ({ ...row.movie_character_links, movie: row.movies })),
-    persons: personLinks.map((row) => ({ ...row.character_person_links, person: row.persons }))
+    persons: personLinks.map((row) => ({ ...row.character_person_links, person: row.persons })),
+    cast: [
+      ...gameCast.map((row) => ({
+        id: row.game_cast_links.id,
+        mediaType: 'game' as const,
+        mediaId: row.games.id,
+        mediaName: row.games.name,
+        person: row.persons
+      })),
+      ...animeCast.map((row) => ({
+        id: row.anime_cast_links.id,
+        mediaType: 'anime' as const,
+        mediaId: row.animes.id,
+        mediaName: row.animes.name,
+        person: row.persons
+      }))
+    ]
   }
 }
 
@@ -227,9 +254,8 @@ function provideCharacterContext(source: CharacterDataSource): CharacterContext 
     tags: computed(() => source.data.value?.tags ?? []),
     games: computed(() => source.data.value?.games ?? []),
     animes: computed(() => source.data.value?.animes ?? []),
-    tvs: computed(() => source.data.value?.tvs ?? []),
-    movies: computed(() => source.data.value?.movies ?? []),
     persons: computed(() => source.data.value?.persons ?? []),
+    cast: computed(() => source.data.value?.cast ?? []),
     isLoading: source.isLoading,
     isFetching: source.isFetching,
     error: source.error,
@@ -245,8 +271,8 @@ const CHARACTER_LINK_TABLES: readonly TableName[] = [
   'character_tag_links',
   'game_character_links',
   'anime_character_links',
-  'tv_character_links',
-  'movie_character_links',
+  'game_cast_links',
+  'anime_cast_links',
   'character_person_links'
 ]
 

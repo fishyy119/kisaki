@@ -1,16 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { AllEntityType } from '@shared/common'
-import {
-  animes,
-  characters,
-  collections,
-  companies,
-  games,
-  movies,
-  persons,
-  tags,
-  tvs
-} from '@shared/db'
+import { animes, characters, collections, companies, games, persons, tags } from '@shared/db'
 import { db } from '@renderer/core/db'
 import { messages } from '@renderer/core/i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
@@ -54,38 +44,6 @@ export async function fetchEntityMergeSummary(
         subText: getNameSubText(row.name, row.originalName),
         imageUrl: row.coverFile
           ? getAttachmentUrl('animes', row.id, row.coverFile, { width: 96, height: 96 })
-          : null
-      }
-    }
-    case 'tv': {
-      const row = await db.query.tvs.findFirst({
-        columns: { id: true, name: true, originalName: true, coverFile: true },
-        where: eq(tvs.id, id)
-      })
-      if (!row) return null
-      return {
-        entityType,
-        id: row.id,
-        name: row.name,
-        subText: getNameSubText(row.name, row.originalName),
-        imageUrl: row.coverFile
-          ? getAttachmentUrl('tvs', row.id, row.coverFile, { width: 96, height: 96 })
-          : null
-      }
-    }
-    case 'movie': {
-      const row = await db.query.movies.findFirst({
-        columns: { id: true, name: true, originalName: true, coverFile: true },
-        where: eq(movies.id, id)
-      })
-      if (!row) return null
-      return {
-        entityType,
-        id: row.id,
-        name: row.name,
-        subText: getNameSubText(row.name, row.originalName),
-        imageUrl: row.coverFile
-          ? getAttachmentUrl('movies', row.id, row.coverFile, { width: 96, height: 96 })
           : null
       }
     }

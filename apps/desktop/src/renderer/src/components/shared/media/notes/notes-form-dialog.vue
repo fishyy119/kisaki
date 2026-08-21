@@ -9,7 +9,7 @@ import { useAsyncData, useInlineAttachments, useStagedImagePick } from '@rendere
 import { notify } from '@renderer/core/notify'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import type { MediaType } from '@shared/common'
-import { animeNotes, gameNotes, movieNotes, tvNotes } from '@shared/db'
+import { animeNotes, gameNotes } from '@shared/db'
 import {
   Dialog,
   DialogContent,
@@ -67,9 +67,7 @@ const noteIdRef = toRef(props, 'noteId')
 const rowId = computed(() => noteIdRef.value || '')
 const INLINE_ATTACHMENTS: Record<MediaType, ReturnType<typeof useInlineAttachments>> = {
   game: useInlineAttachments({ table: gameNotes, rowId, field: 'contentInlineFiles' }),
-  anime: useInlineAttachments({ table: animeNotes, rowId, field: 'contentInlineFiles' }),
-  tv: useInlineAttachments({ table: tvNotes, rowId, field: 'contentInlineFiles' }),
-  movie: useInlineAttachments({ table: movieNotes, rowId, field: 'contentInlineFiles' })
+  anime: useInlineAttachments({ table: animeNotes, rowId, field: 'contentInlineFiles' })
 }
 
 const attachments = computed(() => INLINE_ATTACHMENTS[props.mediaType])

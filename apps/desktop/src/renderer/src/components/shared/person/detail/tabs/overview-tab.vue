@@ -12,8 +12,6 @@ import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { GameDetailDialog } from '@renderer/components/shared/game'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { TvDetailDialog } from '@renderer/components/shared/tv'
-import { MovieDetailDialog } from '@renderer/components/shared/movie'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import {
@@ -37,7 +35,7 @@ const CHARACTER_PERSON_ROLE_LABELS = computed<Record<string, string>>(
 // State
 // =============================================================================
 
-const { person, tags, characters } = usePerson()
+const { person, tags, characters, cast } = usePerson()
 const worksBlocks = usePersonWorksBlocks()
 
 /** Edit dialog states */
@@ -61,6 +59,7 @@ const hasExternalSites = computed(
   () => person.value?.externalSites && person.value.externalSites.length > 0
 )
 const hasTags = computed(() => tags.value && tags.value.length > 0)
+const hasCast = computed(() => cast.value.length > 0)
 
 const characterLinks = computed(() => characters.value.filter((link) => link.character))
 
@@ -157,8 +156,43 @@ const tagDialogOpen = computed({
         </Section>
       </div>
 
-      <!-- Right column: Related Sites -->
+      <!-- Right column: Voice credits, Related Sites -->
       <div class="space-y-6 min-w-0">
+        <!--
+          Where the person is actually credited voicing a character. The list
+          above says who they voice at all; this says where that was credited,
+          which is what separates a role they hold from one they lost.
+        -->
+        <Section
+          :title="m.library.fields.voiceCredits"
+          :empty="!hasCast"
+          :empty-text="m.library.detail.empty.voiceCredits"
+        >
+          <div class="space-y-1.5 text-sm">
+            <div
+              v-for="credit in cast"
+              :key="credit.id"
+              class="flex items-baseline gap-2 min-w-0"
+            >
+              <button
+                type="button"
+                class="text-primary hover:underline truncate"
+                @click="openWork = { mediaType: credit.mediaType, id: credit.mediaId }"
+              >
+                {{ credit.mediaName }}
+              </button>
+              <button
+                v-if="credit.character"
+                type="button"
+                class="text-muted-foreground text-xs hover:underline truncate"
+                @click="openCharacterId = credit.character.id"
+              >
+                {{ credit.character.name }}
+              </button>
+            </div>
+          </div>
+        </Section>
+
         <Section
           :title="m.library.fields.externalSites"
           editable
@@ -220,19 +254,9 @@ const tagDialogOpen = computed({
         :game-id="openWork.id"
       />
       <AnimeDetailDialog
-        v-else-if="openWork.mediaType === 'anime'"
-        v-model:open="workDialogOpen"
-        :anime-id="openWork.id"
-      />
-      <TvDetailDialog
-        v-else-if="openWork.mediaType === 'tv'"
-        v-model:open="workDialogOpen"
-        :tv-id="openWork.id"
-      />
-      <MovieDetailDialog
         v-else
         v-model:open="workDialogOpen"
-        :movie-id="openWork.id"
+        :anime-id="openWork.id"
       />
     </template>
     <CharacterDetailDialog

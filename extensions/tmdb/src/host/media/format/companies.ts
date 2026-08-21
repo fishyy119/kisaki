@@ -1,15 +1,13 @@
 import type {
   ScrapedAnimeCompanyFact,
   ScrapedCompanyMetadata,
-  ScrapedMovieCompanyFact,
-  ScrapedTag,
-  ScrapedTvCompanyFact
+  ScrapedTag
 } from '@kisaki3/extension-sdk'
 import type { TmdbCompanySummary } from '../../api/types'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
 import { omitUndefined } from '../../utils/object'
 import { buildImageUrl } from './images'
-import { mapTmdbCompanyRole, mapTmdbMovieCompanyRole, mapTmdbTvCompanyRole } from './roles'
+import { mapTmdbCompanyRole } from './roles'
 import { buildExternalSites, tmdbCompanyUrl, tmdbSite } from './sites'
 import { trimToUndefined } from './text'
 
@@ -56,22 +54,6 @@ export function buildAnimeCompanyFacts(
   imageBaseUrl: string
 ): ScrapedAnimeCompanyFact[] {
   return buildCompanyFacts(production, networks, imageBaseUrl, mapTmdbCompanyRole)
-}
-
-export function buildTvCompanyFacts(
-  production: readonly TmdbCompanySummary[] | undefined,
-  networks: readonly TmdbCompanySummary[] | undefined,
-  imageBaseUrl: string
-): ScrapedTvCompanyFact[] {
-  return buildCompanyFacts(production, networks, imageBaseUrl, mapTmdbTvCompanyRole)
-}
-
-/** TMDB credits a film's companies as production only. */
-export function buildMovieCompanyFacts(
-  production: readonly TmdbCompanySummary[] | undefined,
-  imageBaseUrl: string
-): ScrapedMovieCompanyFact[] {
-  return buildCompanyFacts(production, undefined, imageBaseUrl, mapTmdbMovieCompanyRole)
 }
 
 function toCompanyFact<TRole extends string>(

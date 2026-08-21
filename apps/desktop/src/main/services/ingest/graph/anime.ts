@@ -13,6 +13,7 @@ import type {
   CorePersonMetadata
 } from '@shared/metadata'
 import type {
+  IngestAnimeCastLink,
   IngestAnimeCharacterLink,
   IngestAnimeCompanyLink,
   IngestAnimeGraph,
@@ -31,11 +32,8 @@ import type {
   ScraperLookup
 } from '@shared/scraper'
 import {
-  absorbPlaying,
   compareText,
   createIdentityAliasIndex,
-  createPendingPlaying,
-  finalizePlaying,
   firstNonEmpty,
   mergeExternalIds,
   normalizeAnimeCore,
@@ -46,16 +44,19 @@ import {
   pickFirstUrl,
   upsertCharacterNode,
   upsertCompanyNode,
-  upsertPersonNode,
-  type PendingPlaying,
-  type PlayingInput
+  upsertPersonNode
 } from './common'
 
 interface PendingAnimePersonLink {
   personIdentityKey: string
   role: AnimePersonRole
   isSpoiler: boolean
-  playing: PendingPlaying
+  note?: string
+}
+
+interface PendingAnimeCastLink {
+  characterIdentityKey: string
+  personIdentityKey: string
   note?: string
 }
 
@@ -104,26 +105,41 @@ function upsertAnimePersonLink(
   personIdentityKey: string,
   role: AnimePersonRole,
   isSpoiler: boolean | undefined,
-  playing: PlayingInput,
   note: string | undefined
 ): void {
   const key = `${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
-    const pendingPlaying = createPendingPlaying()
-    absorbPlaying(pendingPlaying, playing)
     edgeMap.set(key, {
       personIdentityKey,
       role,
       isSpoiler: !!isSpoiler,
-      playing: pendingPlaying,
       note: normalizeOptionalString(note)
     })
     return
   }
 
   existing.isSpoiler = existing.isSpoiler || !!isSpoiler
-  absorbPlaying(existing.playing, playing)
+  existing.note = firstNonEmpty(existing.note, note)
+}
+
+function upsertAnimeCastLink(
+  edgeMap: Map<string, PendingAnimeCastLink>,
+  characterIdentityKey: string,
+  personIdentityKey: string,
+  note: string | undefined
+): void {
+  const key = `${characterIdentityKey}:${personIdentityKey}`
+  const existing = edgeMap.get(key)
+  if (!existing) {
+    edgeMap.set(key, {
+      characterIdentityKey,
+      personIdentityKey,
+      note: normalizeOptionalString(note)
+    })
+    return
+  }
+
   existing.note = firstNonEmpty(existing.note, note)
 }
 
@@ -214,12 +230,23 @@ function finalizeAnimePersonLinks(
       personIdentityKey: edge.personIdentityKey,
       role: edge.role,
       isSpoiler: edge.isSpoiler,
-      playing: finalizePlaying(edge.playing),
       note: edge.note,
       orderInAnime,
       orderInPerson
     }
   })
+}
+
+function finalizeAnimeCastLinks(
+  animeIdentityKey: string,
+  edgeMap: Map<string, PendingAnimeCastLink>
+): IngestAnimeCastLink[] {
+  return [...edgeMap.values()].map((edge) => ({
+    animeIdentityKey,
+    characterIdentityKey: edge.characterIdentityKey,
+    personIdentityKey: edge.personIdentityKey,
+    note: edge.note
+  }))
 }
 
 function finalizeAnimeCompanyLinks(
@@ -388,6 +415,7 @@ function buildAnimeGraphInternal(
   const animePersonLinks = new Map<string, PendingAnimePersonLink>()
   const animeCompanyLinks = new Map<string, PendingAnimeCompanyLink>()
   const animeCharacterLinks = new Map<string, PendingAnimeCharacterLink>()
+  const animeCastLinks = new Map<string, PendingAnimeCastLink>()
   const characterPersonLinks = new Map<string, PendingCharacterPersonLink>()
 
   for (const fact of bundle?.relationFacts?.animePerson ?? []) {
@@ -400,7 +428,6 @@ function buildAnimeGraphInternal(
       personIdentityKey,
       fact.role,
       fact.isSpoiler,
-      { stated: fact.playing },
       normalizeOptionalString(fact.note)
     )
   }
@@ -442,9 +469,8 @@ function buildAnimeGraphInternal(
       normalizeOptionalString(fact.note)
     )
 
-    // Cast credits bind to the character and to the anime: the character link
-    // says who plays whom, the anime link says which entry that casting is for
-    // and carries the credited character name so the pairing survives the split.
+    // A voice credit is three-way, so it is written whole to the cast table; the
+    // person link records the credit itself, which staff listings also want.
     for (const personFact of fact.persons ?? []) {
       const personCore = normalizeCharacterPersonFactCore(personFact)
       if (!personCore) continue
@@ -469,9 +495,11 @@ function buildAnimeGraphInternal(
         personIdentityKey,
         toAnimePersonRoleFromCharacterPerson(personFact.role),
         personFact.isSpoiler,
-        { derived: core.name },
         note
       )
+      if (personFact.role === 'actor') {
+        upsertAnimeCastLink(animeCastLinks, characterIdentityKey, personIdentityKey, note)
+      }
     }
   }
 
@@ -514,9 +542,11 @@ function buildAnimeGraphInternal(
       personIdentityKey,
       toAnimePersonRoleFromCharacterPerson(fact.role),
       fact.isSpoiler,
-      { derived: characterCore.name },
       note
     )
+    if (fact.role === 'actor') {
+      upsertAnimeCastLink(animeCastLinks, characterIdentityKey, personIdentityKey, note)
+    }
   }
 
   const media = bundle?.mediaCandidates
@@ -536,6 +566,7 @@ function buildAnimeGraphInternal(
       animePerson: finalizeAnimePersonLinks(animeIdentityKey, animePersonLinks),
       animeCompany: finalizeAnimeCompanyLinks(animeIdentityKey, animeCompanyLinks),
       animeCharacter: finalizeAnimeCharacterLinks(animeIdentityKey, animeCharacterLinks),
+      animeCast: finalizeAnimeCastLinks(animeIdentityKey, animeCastLinks),
       characterPerson: finalizeCharacterPersonLinks(characterPersonLinks)
     },
     relatedEntries: bundle?.relationFacts?.relatedEntries,

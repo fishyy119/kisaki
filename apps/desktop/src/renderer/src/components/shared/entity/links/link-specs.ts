@@ -2,20 +2,16 @@
  * Link-view specs for the shared role-grouped link dialogs.
  *
  * Every cross-entity link table (media <-> satellite, character <-> person)
- * stores the same shape: role + note + spoiler + one order column per side,
- * plus the characters played on media-person tables.
+ * stores the same shape: role + note + spoiler + one order column per side.
  * A view is one editing direction over one table; its spec owns the concrete
  * table columns, the role vocabulary and the target-entity presentation, so
  * the dialogs stay entirely spec-driven.
  *
  * Replacing a view rewrites the anchor's rows with fresh anchor-side order
  * values while carrying each surviving row's opposite-side order through.
- *
- * Media-person tables also carry role-scoped views such as cast and crew, so a
- * detail section that shows one part of the credits edits exactly that part.
  */
 
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import type { Component } from 'vue'
 import { db } from '@renderer/core/db'
 import {
@@ -26,16 +22,6 @@ import {
   GAME_CHARACTER_ROLE_VALUES,
   GAME_COMPANY_ROLE_VALUES,
   GAME_PERSON_ROLE_VALUES,
-  MOVIE_CAST_ROLE_VALUES,
-  MOVIE_CHARACTER_ROLE_VALUES,
-  MOVIE_COMPANY_ROLE_VALUES,
-  MOVIE_CREW_ROLE_VALUES,
-  MOVIE_PERSON_ROLE_VALUES,
-  TV_CAST_ROLE_VALUES,
-  TV_CHARACTER_ROLE_VALUES,
-  TV_COMPANY_ROLE_VALUES,
-  TV_CREW_ROLE_VALUES,
-  TV_PERSON_ROLE_VALUES,
   animeCharacterLinks,
   animeCompanyLinks,
   animePersonLinks,
@@ -43,36 +29,22 @@ import {
   gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
-  movieCharacterLinks,
-  movieCompanyLinks,
-  moviePersonLinks,
-  tvCharacterLinks,
-  tvCompanyLinks,
-  tvPersonLinks,
   type AnimeCharacterRole,
   type AnimeCompanyRole,
   type AnimePersonRole,
   type CharacterPersonRole,
   type GameCharacterRole,
   type GameCompanyRole,
-  type GamePersonRole,
-  type MovieCharacterRole,
-  type MovieCompanyRole,
-  type MoviePersonRole,
-  type TvCharacterRole,
-  type TvCompanyRole,
-  type TvPersonRole
+  type GamePersonRole
 } from '@shared/db'
 import { AnimeSelect } from '@renderer/components/shared/anime'
 import { CharacterSelect } from '@renderer/components/shared/character'
 import { CompanySelect } from '@renderer/components/shared/company'
 import { GameSelect } from '@renderer/components/shared/game'
-import { MovieSelect } from '@renderer/components/shared/movie'
 import { PersonSelect } from '@renderer/components/shared/person'
-import { TvSelect } from '@renderer/components/shared/tv'
 import type { Messages } from '@shared/i18n'
 
-export type LinkTargetType = 'game' | 'anime' | 'tv' | 'movie' | 'character' | 'person' | 'company'
+export type LinkTargetType = 'game' | 'anime' | 'character' | 'person' | 'company'
 
 /** Target-entity presentation shared by every view pointing at that entity. */
 export const LINK_TARGET_META: Record<
@@ -81,8 +53,6 @@ export const LINK_TARGET_META: Record<
 > = {
   game: { attachmentTable: 'games', select: GameSelect },
   anime: { attachmentTable: 'animes', select: AnimeSelect },
-  tv: { attachmentTable: 'tvs', select: TvSelect },
-  movie: { attachmentTable: 'movies', select: MovieSelect },
   character: { attachmentTable: 'characters', select: CharacterSelect },
   person: { attachmentTable: 'persons', select: PersonSelect },
   company: { attachmentTable: 'companies', select: CompanySelect }
@@ -94,8 +64,6 @@ export interface LinkRow {
   targetName: string
   targetImage: string | null
   role: string
-  /** Only media-person views carry the characters the credit performs. */
-  playing?: string[] | null
   note: string | null
   isSpoiler: boolean
   /** Order value on the opposite side, carried through replaces untouched. */
@@ -106,7 +74,6 @@ export interface LinkReplaceRow {
   id: string
   targetId: string
   role: string
-  playing?: string[] | null
   note: string | null
   isSpoiler: boolean
   order: number
@@ -121,8 +88,6 @@ export interface LinkViewSpec {
   /** Field label for the role select; owned by the role vocabulary. */
   roleFieldLabel: (m: Messages) => string
   title: (m: Messages) => string
-  /** Whether this view's table stores the characters a credit performs. */
-  supportsPlaying?: boolean
   list: (anchorId: string) => Promise<LinkRow[]>
   replace: (anchorId: string, rows: LinkReplaceRow[]) => Promise<void>
 }
@@ -133,113 +98,6 @@ export interface LinkViewSpec {
  * Anchor-side order is assigned per role group, so a scoped view sees the same
  * sequence the full view would show for those roles.
  */
-async function listMoviePersonLinks(
-  anchorId: string,
-  roles?: readonly MoviePersonRole[]
-): Promise<LinkRow[]> {
-  const rows = await db.query.moviePersonLinks.findMany({
-    where: and(
-      eq(moviePersonLinks.movieId, anchorId),
-      roles && inArray(moviePersonLinks.role, [...roles])
-    ),
-    with: { person: true },
-    orderBy: asc(moviePersonLinks.orderInMovie)
-  })
-  return rows
-    .filter((row) => row.person)
-    .map((row) => ({
-      id: row.id,
-      targetId: row.personId,
-      targetName: row.person!.name,
-      targetImage: row.person!.photoFile,
-      role: row.role,
-      playing: row.playing,
-      note: row.note,
-      isSpoiler: row.isSpoiler,
-      counterOrder: row.orderInPerson
-    }))
-}
-
-/** Rewrites an entry's person rows; a role scope leaves the other roles alone. */
-async function replaceMoviePersonLinks(
-  anchorId: string,
-  rows: LinkReplaceRow[],
-  roles?: readonly MoviePersonRole[]
-): Promise<void> {
-  await db
-    .delete(moviePersonLinks)
-    .where(
-      and(
-        eq(moviePersonLinks.movieId, anchorId),
-        roles && inArray(moviePersonLinks.role, [...roles])
-      )
-    )
-  if (rows.length === 0) return
-
-  await db.insert(moviePersonLinks).values(
-    rows.map((row) => ({
-      id: row.id,
-      movieId: anchorId,
-      personId: row.targetId,
-      role: row.role as MoviePersonRole,
-      playing: row.playing ?? null,
-      note: row.note,
-      isSpoiler: row.isSpoiler,
-      orderInMovie: row.order,
-      orderInPerson: row.counterOrder
-    }))
-  )
-}
-
-async function listTvPersonLinks(
-  anchorId: string,
-  roles?: readonly TvPersonRole[]
-): Promise<LinkRow[]> {
-  const rows = await db.query.tvPersonLinks.findMany({
-    where: and(eq(tvPersonLinks.tvId, anchorId), roles && inArray(tvPersonLinks.role, [...roles])),
-    with: { person: true },
-    orderBy: asc(tvPersonLinks.orderInTv)
-  })
-  return rows
-    .filter((row) => row.person)
-    .map((row) => ({
-      id: row.id,
-      targetId: row.personId,
-      targetName: row.person!.name,
-      targetImage: row.person!.photoFile,
-      role: row.role,
-      playing: row.playing,
-      note: row.note,
-      isSpoiler: row.isSpoiler,
-      counterOrder: row.orderInPerson
-    }))
-}
-
-async function replaceTvPersonLinks(
-  anchorId: string,
-  rows: LinkReplaceRow[],
-  roles?: readonly TvPersonRole[]
-): Promise<void> {
-  await db
-    .delete(tvPersonLinks)
-    .where(and(eq(tvPersonLinks.tvId, anchorId), roles && inArray(tvPersonLinks.role, [...roles])))
-  if (rows.length === 0) return
-
-  await db.insert(tvPersonLinks).values(
-    rows.map((row) => ({
-      id: row.id,
-      tvId: anchorId,
-      personId: row.targetId,
-      role: row.role as TvPersonRole,
-      playing: row.playing ?? null,
-      note: row.note,
-      isSpoiler: row.isSpoiler,
-      orderInTv: row.order,
-      orderInPerson: row.counterOrder
-    }))
-  )
-}
-
 export const LINK_VIEW_SPECS = {
   'game-characters': {
     targetType: 'character',
@@ -290,7 +148,6 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.gamePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editGamePersons,
-    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.gamePersonLinks.findMany({
         where: eq(gamePersonLinks.gameId, anchorId),
@@ -305,7 +162,6 @@ export const LINK_VIEW_SPECS = {
           targetName: row.person!.name,
           targetImage: row.person!.photoFile,
           role: row.role,
-          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInPerson
@@ -320,7 +176,6 @@ export const LINK_VIEW_SPECS = {
             gameId: anchorId,
             personId: row.targetId,
             role: row.role as GamePersonRole,
-            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInGame: row.order,
@@ -422,7 +277,6 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.animePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editAnimePersons,
-    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.animePersonLinks.findMany({
         where: eq(animePersonLinks.animeId, anchorId),
@@ -437,7 +291,6 @@ export const LINK_VIEW_SPECS = {
           targetName: row.person!.name,
           targetImage: row.person!.photoFile,
           role: row.role,
-          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInPerson
@@ -452,7 +305,6 @@ export const LINK_VIEW_SPECS = {
             animeId: anchorId,
             personId: row.targetId,
             role: row.role as AnimePersonRole,
-            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInAnime: row.order,
@@ -499,236 +351,6 @@ export const LINK_VIEW_SPECS = {
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInAnime: row.order,
-            orderInCompany: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
-  'tv-characters': {
-    targetType: 'character',
-    roleOrder: TV_CHARACTER_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.tvCharacter,
-    roleFieldLabel: (m) => m.library.forms.characterRoleLabel,
-    title: (m) => m.library.forms.editTvCharacters,
-    list: async (anchorId) => {
-      const rows = await db.query.tvCharacterLinks.findMany({
-        where: eq(tvCharacterLinks.tvId, anchorId),
-        with: { character: true },
-        orderBy: asc(tvCharacterLinks.orderInTv)
-      })
-      return rows
-        .filter((row) => row.character)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.characterId,
-          targetName: row.character!.name,
-          targetImage: row.character!.photoFile,
-          role: row.role,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInCharacter
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(tvCharacterLinks).where(eq(tvCharacterLinks.tvId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(tvCharacterLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            tvId: anchorId,
-            characterId: row.targetId,
-            role: row.role as TvCharacterRole,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInTv: row.order,
-            orderInCharacter: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
-  'tv-persons': {
-    targetType: 'person',
-    roleOrder: TV_PERSON_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.tvPerson,
-    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
-    title: (m) => m.library.forms.editTvPersons,
-    supportsPlaying: true,
-    list: (anchorId) => listTvPersonLinks(anchorId),
-    replace: (anchorId, rows) => replaceTvPersonLinks(anchorId, rows)
-  },
-  'tv-cast': {
-    targetType: 'person',
-    roleOrder: TV_CAST_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.tvPerson,
-    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
-    title: (m) => m.library.forms.editTvCast,
-    supportsPlaying: true,
-    list: (anchorId) => listTvPersonLinks(anchorId, TV_CAST_ROLE_VALUES),
-    replace: (anchorId, rows) => replaceTvPersonLinks(anchorId, rows, TV_CAST_ROLE_VALUES)
-  },
-  'tv-crew': {
-    targetType: 'person',
-    roleOrder: TV_CREW_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.tvPerson,
-    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
-    title: (m) => m.library.forms.editTvCrew,
-    list: (anchorId) => listTvPersonLinks(anchorId, TV_CREW_ROLE_VALUES),
-    replace: (anchorId, rows) => replaceTvPersonLinks(anchorId, rows, TV_CREW_ROLE_VALUES)
-  },
-  'tv-companies': {
-    targetType: 'company',
-    roleOrder: TV_COMPANY_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.tvCompany,
-    roleFieldLabel: (m) => m.library.forms.companyRoleLabel,
-    title: (m) => m.library.forms.editTvCompanies,
-    list: async (anchorId) => {
-      const rows = await db.query.tvCompanyLinks.findMany({
-        where: eq(tvCompanyLinks.tvId, anchorId),
-        with: { company: true },
-        orderBy: asc(tvCompanyLinks.orderInTv)
-      })
-      return rows
-        .filter((row) => row.company)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.companyId,
-          targetName: row.company!.name,
-          targetImage: row.company!.logoFile,
-          role: row.role,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInCompany
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(tvCompanyLinks).where(eq(tvCompanyLinks.tvId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(tvCompanyLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            tvId: anchorId,
-            companyId: row.targetId,
-            role: row.role as TvCompanyRole,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInTv: row.order,
-            orderInCompany: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
-  'movie-characters': {
-    targetType: 'character',
-    roleOrder: MOVIE_CHARACTER_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.movieCharacter,
-    roleFieldLabel: (m) => m.library.forms.characterRoleLabel,
-    title: (m) => m.library.forms.editMovieCharacters,
-    list: async (anchorId) => {
-      const rows = await db.query.movieCharacterLinks.findMany({
-        where: eq(movieCharacterLinks.movieId, anchorId),
-        with: { character: true },
-        orderBy: asc(movieCharacterLinks.orderInMovie)
-      })
-      return rows
-        .filter((row) => row.character)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.characterId,
-          targetName: row.character!.name,
-          targetImage: row.character!.photoFile,
-          role: row.role,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInCharacter
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(movieCharacterLinks).where(eq(movieCharacterLinks.movieId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(movieCharacterLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            movieId: anchorId,
-            characterId: row.targetId,
-            role: row.role as MovieCharacterRole,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInMovie: row.order,
-            orderInCharacter: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
-  'movie-persons': {
-    targetType: 'person',
-    roleOrder: MOVIE_PERSON_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.moviePerson,
-    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
-    title: (m) => m.library.forms.editMoviePersons,
-    supportsPlaying: true,
-    list: (anchorId) => listMoviePersonLinks(anchorId),
-    replace: (anchorId, rows) => replaceMoviePersonLinks(anchorId, rows)
-  },
-  'movie-cast': {
-    targetType: 'person',
-    roleOrder: MOVIE_CAST_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.moviePerson,
-    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
-    title: (m) => m.library.forms.editMovieCast,
-    supportsPlaying: true,
-    list: (anchorId) => listMoviePersonLinks(anchorId, MOVIE_CAST_ROLE_VALUES),
-    replace: (anchorId, rows) => replaceMoviePersonLinks(anchorId, rows, MOVIE_CAST_ROLE_VALUES)
-  },
-  'movie-crew': {
-    targetType: 'person',
-    roleOrder: MOVIE_CREW_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.moviePerson,
-    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
-    title: (m) => m.library.forms.editMovieCrew,
-    list: (anchorId) => listMoviePersonLinks(anchorId, MOVIE_CREW_ROLE_VALUES),
-    replace: (anchorId, rows) => replaceMoviePersonLinks(anchorId, rows, MOVIE_CREW_ROLE_VALUES)
-  },
-  'movie-companies': {
-    targetType: 'company',
-    roleOrder: MOVIE_COMPANY_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.movieCompany,
-    roleFieldLabel: (m) => m.library.forms.companyRoleLabel,
-    title: (m) => m.library.forms.editMovieCompanies,
-    list: async (anchorId) => {
-      const rows = await db.query.movieCompanyLinks.findMany({
-        where: eq(movieCompanyLinks.movieId, anchorId),
-        with: { company: true },
-        orderBy: asc(movieCompanyLinks.orderInMovie)
-      })
-      return rows
-        .filter((row) => row.company)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.companyId,
-          targetName: row.company!.name,
-          targetImage: row.company!.logoFile,
-          role: row.role,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInCompany
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(movieCompanyLinks).where(eq(movieCompanyLinks.movieId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(movieCompanyLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            movieId: anchorId,
-            companyId: row.targetId,
-            role: row.role as MovieCompanyRole,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInMovie: row.order,
             orderInCompany: row.counterOrder
           }))
         )
@@ -821,92 +443,6 @@ export const LINK_VIEW_SPECS = {
       }
     }
   },
-  'character-tvs': {
-    targetType: 'tv',
-    roleOrder: TV_CHARACTER_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.tvCharacter,
-    roleFieldLabel: (m) => m.library.forms.characterRoleLabel,
-    title: (m) => m.library.forms.editCharacterTvs,
-    list: async (anchorId) => {
-      const rows = await db.query.tvCharacterLinks.findMany({
-        where: eq(tvCharacterLinks.characterId, anchorId),
-        with: { tv: true },
-        orderBy: asc(tvCharacterLinks.orderInCharacter)
-      })
-      return rows
-        .filter((row) => row.tv)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.tvId,
-          targetName: row.tv!.name,
-          targetImage: row.tv!.coverFile,
-          role: row.role,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInTv
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(tvCharacterLinks).where(eq(tvCharacterLinks.characterId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(tvCharacterLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            characterId: anchorId,
-            tvId: row.targetId,
-            role: row.role as TvCharacterRole,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInCharacter: row.order,
-            orderInTv: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
-  'character-movies': {
-    targetType: 'movie',
-    roleOrder: MOVIE_CHARACTER_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.movieCharacter,
-    roleFieldLabel: (m) => m.library.forms.characterRoleLabel,
-    title: (m) => m.library.forms.editCharacterMovies,
-    list: async (anchorId) => {
-      const rows = await db.query.movieCharacterLinks.findMany({
-        where: eq(movieCharacterLinks.characterId, anchorId),
-        with: { movie: true },
-        orderBy: asc(movieCharacterLinks.orderInCharacter)
-      })
-      return rows
-        .filter((row) => row.movie)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.movieId,
-          targetName: row.movie!.name,
-          targetImage: row.movie!.coverFile,
-          role: row.role,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInMovie
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(movieCharacterLinks).where(eq(movieCharacterLinks.characterId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(movieCharacterLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            characterId: anchorId,
-            movieId: row.targetId,
-            role: row.role as MovieCharacterRole,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInCharacter: row.order,
-            orderInMovie: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
   'character-persons': {
     targetType: 'person',
     roleOrder: CHARACTER_PERSON_ROLE_VALUES,
@@ -956,7 +492,6 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.gamePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editPersonGames,
-    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.gamePersonLinks.findMany({
         where: eq(gamePersonLinks.personId, anchorId),
@@ -971,7 +506,6 @@ export const LINK_VIEW_SPECS = {
           targetName: row.game!.name,
           targetImage: row.game!.coverFile,
           role: row.role,
-          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInGame
@@ -986,7 +520,6 @@ export const LINK_VIEW_SPECS = {
             personId: anchorId,
             gameId: row.targetId,
             role: row.role as GamePersonRole,
-            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInPerson: row.order,
@@ -1002,7 +535,6 @@ export const LINK_VIEW_SPECS = {
     roleLabels: (m) => m.library.roles.animePerson,
     roleFieldLabel: (m) => m.library.forms.personRoleLabel,
     title: (m) => m.library.forms.editPersonAnimes,
-    supportsPlaying: true,
     list: async (anchorId) => {
       const rows = await db.query.animePersonLinks.findMany({
         where: eq(animePersonLinks.personId, anchorId),
@@ -1017,7 +549,6 @@ export const LINK_VIEW_SPECS = {
           targetName: row.anime!.name,
           targetImage: row.anime!.coverFile,
           role: row.role,
-          playing: row.playing,
           note: row.note,
           isSpoiler: row.isSpoiler,
           counterOrder: row.orderInAnime
@@ -1032,103 +563,10 @@ export const LINK_VIEW_SPECS = {
             personId: anchorId,
             animeId: row.targetId,
             role: row.role as AnimePersonRole,
-            playing: row.playing ?? null,
             note: row.note,
             isSpoiler: row.isSpoiler,
             orderInPerson: row.order,
             orderInAnime: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
-  'person-tvs': {
-    targetType: 'tv',
-    roleOrder: TV_PERSON_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.tvPerson,
-    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
-    title: (m) => m.library.forms.editPersonTvs,
-    supportsPlaying: true,
-    list: async (anchorId) => {
-      const rows = await db.query.tvPersonLinks.findMany({
-        where: eq(tvPersonLinks.personId, anchorId),
-        with: { tv: true },
-        orderBy: asc(tvPersonLinks.orderInPerson)
-      })
-      return rows
-        .filter((row) => row.tv)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.tvId,
-          targetName: row.tv!.name,
-          targetImage: row.tv!.coverFile,
-          role: row.role,
-          playing: row.playing,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInTv
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(tvPersonLinks).where(eq(tvPersonLinks.personId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(tvPersonLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            personId: anchorId,
-            tvId: row.targetId,
-            role: row.role as TvPersonRole,
-            playing: row.playing ?? null,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInPerson: row.order,
-            orderInTv: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
-  'person-movies': {
-    targetType: 'movie',
-    roleOrder: MOVIE_PERSON_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.moviePerson,
-    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
-    title: (m) => m.library.forms.editPersonMovies,
-    supportsPlaying: true,
-    list: async (anchorId) => {
-      const rows = await db.query.moviePersonLinks.findMany({
-        where: eq(moviePersonLinks.personId, anchorId),
-        with: { movie: true },
-        orderBy: asc(moviePersonLinks.orderInPerson)
-      })
-      return rows
-        .filter((row) => row.movie)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.movieId,
-          targetName: row.movie!.name,
-          targetImage: row.movie!.coverFile,
-          role: row.role,
-          playing: row.playing,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInMovie
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(moviePersonLinks).where(eq(moviePersonLinks.personId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(moviePersonLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            personId: anchorId,
-            movieId: row.targetId,
-            role: row.role as MoviePersonRole,
-            playing: row.playing ?? null,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInPerson: row.order,
-            orderInMovie: row.counterOrder
           }))
         )
       }
@@ -1262,92 +700,6 @@ export const LINK_VIEW_SPECS = {
         )
       }
     }
-  },
-  'company-tvs': {
-    targetType: 'tv',
-    roleOrder: TV_COMPANY_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.tvCompany,
-    roleFieldLabel: (m) => m.library.forms.companyRoleLabel,
-    title: (m) => m.library.forms.editCompanyTvs,
-    list: async (anchorId) => {
-      const rows = await db.query.tvCompanyLinks.findMany({
-        where: eq(tvCompanyLinks.companyId, anchorId),
-        with: { tv: true },
-        orderBy: asc(tvCompanyLinks.orderInCompany)
-      })
-      return rows
-        .filter((row) => row.tv)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.tvId,
-          targetName: row.tv!.name,
-          targetImage: row.tv!.coverFile,
-          role: row.role,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInTv
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(tvCompanyLinks).where(eq(tvCompanyLinks.companyId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(tvCompanyLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            companyId: anchorId,
-            tvId: row.targetId,
-            role: row.role as TvCompanyRole,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInCompany: row.order,
-            orderInTv: row.counterOrder
-          }))
-        )
-      }
-    }
-  },
-  'company-movies': {
-    targetType: 'movie',
-    roleOrder: MOVIE_COMPANY_ROLE_VALUES,
-    roleLabels: (m) => m.library.roles.movieCompany,
-    roleFieldLabel: (m) => m.library.forms.companyRoleLabel,
-    title: (m) => m.library.forms.editCompanyMovies,
-    list: async (anchorId) => {
-      const rows = await db.query.movieCompanyLinks.findMany({
-        where: eq(movieCompanyLinks.companyId, anchorId),
-        with: { movie: true },
-        orderBy: asc(movieCompanyLinks.orderInCompany)
-      })
-      return rows
-        .filter((row) => row.movie)
-        .map((row) => ({
-          id: row.id,
-          targetId: row.movieId,
-          targetName: row.movie!.name,
-          targetImage: row.movie!.coverFile,
-          role: row.role,
-          note: row.note,
-          isSpoiler: row.isSpoiler,
-          counterOrder: row.orderInMovie
-        }))
-    },
-    replace: async (anchorId, rows) => {
-      await db.delete(movieCompanyLinks).where(eq(movieCompanyLinks.companyId, anchorId))
-      if (rows.length > 0) {
-        await db.insert(movieCompanyLinks).values(
-          rows.map((row) => ({
-            id: row.id,
-            companyId: anchorId,
-            movieId: row.targetId,
-            role: row.role as MovieCompanyRole,
-            note: row.note,
-            isSpoiler: row.isSpoiler,
-            orderInCompany: row.order,
-            orderInMovie: row.counterOrder
-          }))
-        )
-      }
-    }
   }
 } satisfies Record<string, LinkViewSpec>
 
@@ -1364,14 +716,6 @@ export const LINK_TARGET_FETCHERS: Record<
   },
   anime: async (id) => {
     const row = await db.query.animes.findFirst({ where: (t, { eq: eqOp }) => eqOp(t.id, id) })
-    return row ? { name: row.name, image: row.coverFile } : undefined
-  },
-  tv: async (id) => {
-    const row = await db.query.tvs.findFirst({ where: (t, { eq: eqOp }) => eqOp(t.id, id) })
-    return row ? { name: row.name, image: row.coverFile } : undefined
-  },
-  movie: async (id) => {
-    const row = await db.query.movies.findFirst({ where: (t, { eq: eqOp }) => eqOp(t.id, id) })
     return row ? { name: row.name, image: row.coverFile } : undefined
   },
   character: async (id) => {

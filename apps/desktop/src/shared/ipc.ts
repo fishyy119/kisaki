@@ -27,12 +27,6 @@ import type {
   AnimeScraperLookup,
   AnimeSearchResult,
   AnimeScraperProviderInfo,
-  TvScraperLookup,
-  TvSearchResult,
-  TvScraperProviderInfo,
-  MovieScraperLookup,
-  MovieSearchResult,
-  MovieScraperProviderInfo,
   PersonSearchResult,
   PersonScraperProviderInfo,
   CompanySearchResult,
@@ -41,12 +35,8 @@ import type {
   CharacterScraperProviderInfo,
   GameImageSlot,
   AnimeImageSlot,
-  TvImageSlot,
-  MovieImageSlot,
   ScrapedGameBundle,
   ScrapedAnimeBundle,
-  ScrapedTvBundle,
-  ScrapedMovieBundle,
   ScraperProfileListQuery,
   ScraperProfileSummary,
   ScrapedPersonBundle,
@@ -63,27 +53,13 @@ import type {
   IngestAddCharacterFromScraperOptions,
   IngestAddCompanyFromScraperOptions,
   IngestAddGameFromScraperOptions,
-  IngestAddMovieDirectOptions,
-  IngestAddMovieDirectSeed,
-  IngestAddMovieFromScraperOptions,
-  IngestAddPersonFromScraperOptions,
-  IngestAddTvDirectOptions,
-  IngestAddTvDirectSeed,
-  IngestAddTvFromScraperOptions
+  IngestAddPersonFromScraperOptions
 } from './ingest/add'
 import type {
   IngestAttachAnimeEpisodeFileParams,
   IngestAttachAnimeExtraFileParams,
-  IngestAttachMovieExtraFileParams,
-  IngestAttachMovieFileParams,
-  IngestAttachTvEpisodeFileParams,
-  IngestAttachTvExtraFileParams,
   IngestSyncAnimeFilesParams,
-  IngestSyncAnimeFilesResult,
-  IngestSyncMovieFilesParams,
-  IngestSyncMovieFilesResult,
-  IngestSyncTvFilesParams,
-  IngestSyncTvFilesResult
+  IngestSyncAnimeFilesResult
 } from './ingest/files'
 import type {
   AnimeBatchUpdateRequest,
@@ -94,12 +70,8 @@ import type {
   CompanyUpdateRequest,
   GameBatchUpdateRequest,
   GameUpdateRequest,
-  MovieBatchUpdateRequest,
-  MovieUpdateRequest,
   PersonBatchUpdateRequest,
-  PersonUpdateRequest,
-  TvBatchUpdateRequest,
-  TvUpdateRequest
+  PersonUpdateRequest
 } from './ingest/update'
 import type { PortableStatus, PortableSwitchTarget } from './portable'
 import type {
@@ -180,19 +152,7 @@ import type {
   GameLaunchResult,
   GameMonitorPathConfig,
   GameRunningStatus,
-  GameStopResult,
-  MovieExtraPlayingState,
-  MovieExtraPlayResult,
-  MovieExtraStopResult,
-  MovieStopResult,
-  MovieWatchingState,
-  MovieWatchResult,
-  TvExtraPlayingState,
-  TvExtraPlayResult,
-  TvExtraStopResult,
-  TvStopResult,
-  TvWatchingState,
-  TvWatchResult
+  GameStopResult
 } from './activity'
 import type { PlaybackEndReport, PlaybackProgress, PlaybackSessionState } from './player'
 
@@ -393,32 +353,6 @@ export interface IpcMainHandlers {
   ) => IpcResult<IngestSyncAnimeFilesResult>
   'ingest:attach-anime-episode-file': (params: IngestAttachAnimeEpisodeFileParams) => IpcVoidResult
   'ingest:attach-anime-extra-file': (params: IngestAttachAnimeExtraFileParams) => IpcVoidResult
-  'ingest:add-tv-direct': (
-    seed: IngestAddTvDirectSeed,
-    options?: IngestAddTvDirectOptions
-  ) => IpcResult<TaskRunStartResult>
-  'ingest:add-tv-from-scraper': (
-    profileId: string,
-    lookup: TvScraperLookup,
-    options?: IngestAddTvFromScraperOptions
-  ) => IpcResult<TaskRunStartResult>
-  'ingest:sync-tv-files': (params: IngestSyncTvFilesParams) => IpcResult<IngestSyncTvFilesResult>
-  'ingest:attach-tv-episode-file': (params: IngestAttachTvEpisodeFileParams) => IpcVoidResult
-  'ingest:attach-tv-extra-file': (params: IngestAttachTvExtraFileParams) => IpcVoidResult
-  'ingest:add-movie-direct': (
-    seed: IngestAddMovieDirectSeed,
-    options?: IngestAddMovieDirectOptions
-  ) => IpcResult<TaskRunStartResult>
-  'ingest:add-movie-from-scraper': (
-    profileId: string,
-    lookup: MovieScraperLookup,
-    options?: IngestAddMovieFromScraperOptions
-  ) => IpcResult<TaskRunStartResult>
-  'ingest:sync-movie-files': (
-    params: IngestSyncMovieFilesParams
-  ) => IpcResult<IngestSyncMovieFilesResult>
-  'ingest:attach-movie-file': (params: IngestAttachMovieFileParams) => IpcVoidResult
-  'ingest:attach-movie-extra-file': (params: IngestAttachMovieExtraFileParams) => IpcVoidResult
   'ingest:add-person-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
@@ -438,8 +372,6 @@ export interface IpcMainHandlers {
   // Ingest update
   'ingest:update-game-from-scraper': (request: GameUpdateRequest) => IpcResult<TaskRunStartResult>
   'ingest:update-anime-from-scraper': (request: AnimeUpdateRequest) => IpcResult<TaskRunStartResult>
-  'ingest:update-tv-from-scraper': (request: TvUpdateRequest) => IpcResult<TaskRunStartResult>
-  'ingest:update-movie-from-scraper': (request: MovieUpdateRequest) => IpcResult<TaskRunStartResult>
   'ingest:update-person-from-scraper': (
     request: PersonUpdateRequest
   ) => IpcResult<TaskRunStartResult>
@@ -454,12 +386,6 @@ export interface IpcMainHandlers {
   ) => IpcResult<TaskRunStartResult>
   'ingest:batch-update-anime-from-scraper': (
     request: AnimeBatchUpdateRequest
-  ) => IpcResult<TaskRunStartResult>
-  'ingest:batch-update-tv-from-scraper': (
-    request: TvBatchUpdateRequest
-  ) => IpcResult<TaskRunStartResult>
-  'ingest:batch-update-movie-from-scraper': (
-    request: MovieBatchUpdateRequest
   ) => IpcResult<TaskRunStartResult>
   'ingest:batch-update-person-from-scraper': (
     request: PersonBatchUpdateRequest
@@ -498,32 +424,6 @@ export interface IpcMainHandlers {
     providerId: string,
     lookup: AnimeScraperLookup,
     imageType: AnimeImageSlot
-  ) => IpcResult<string[]>
-
-  'scraper:list-tv-providers': () => IpcResult<TvScraperProviderInfo[]>
-  'scraper:get-tv-provider': (providerId: string) => IpcResult<TvScraperProviderInfo>
-  'scraper:search-tv': (profileId: string, query: string) => IpcResult<TvSearchResult[]>
-  'scraper:scrape-tv': (
-    profileId: string,
-    lookup: TvScraperLookup
-  ) => IpcResult<ScrapedTvBundle | null>
-  'scraper:get-tv-provider-images': (
-    providerId: string,
-    lookup: TvScraperLookup,
-    imageType: TvImageSlot
-  ) => IpcResult<string[]>
-
-  'scraper:list-movie-providers': () => IpcResult<MovieScraperProviderInfo[]>
-  'scraper:get-movie-provider': (providerId: string) => IpcResult<MovieScraperProviderInfo>
-  'scraper:search-movie': (profileId: string, query: string) => IpcResult<MovieSearchResult[]>
-  'scraper:scrape-movie': (
-    profileId: string,
-    lookup: MovieScraperLookup
-  ) => IpcResult<ScrapedMovieBundle | null>
-  'scraper:get-movie-provider-images': (
-    providerId: string,
-    lookup: MovieScraperLookup,
-    imageType: MovieImageSlot
   ) => IpcResult<string[]>
 
   'scraper:list-person-providers': () => IpcResult<PersonScraperProviderInfo[]>
@@ -583,22 +483,6 @@ export interface IpcMainHandlers {
   'activity:stop-anime-extra': (extraId: string) => IpcResult<AnimeExtraStopResult>
   'activity:list-anime-watching': () => IpcResult<AnimeWatchingState[]>
   'activity:list-anime-extras-playing': () => IpcResult<AnimeExtraPlayingState[]>
-  'activity:watch-tv': (
-    tvId: string,
-    episodeId?: string,
-    fileId?: string
-  ) => IpcResult<TvWatchResult>
-  'activity:stop-tv': (tvId: string) => IpcResult<TvStopResult>
-  'activity:play-tv-extra': (extraId: string, fileId?: string) => IpcResult<TvExtraPlayResult>
-  'activity:stop-tv-extra': (extraId: string) => IpcResult<TvExtraStopResult>
-  'activity:list-tv-watching': () => IpcResult<TvWatchingState[]>
-  'activity:list-tv-extras-playing': () => IpcResult<TvExtraPlayingState[]>
-  'activity:watch-movie': (movieId: string, fileId?: string) => IpcResult<MovieWatchResult>
-  'activity:stop-movie': (movieId: string) => IpcResult<MovieStopResult>
-  'activity:play-movie-extra': (extraId: string, fileId?: string) => IpcResult<MovieExtraPlayResult>
-  'activity:stop-movie-extra': (extraId: string) => IpcResult<MovieExtraStopResult>
-  'activity:list-movie-watching': () => IpcResult<MovieWatchingState[]>
-  'activity:list-movie-extras-playing': () => IpcResult<MovieExtraPlayingState[]>
 
   // Player
   'player:list-sessions': () => IpcResult<PlaybackSessionState[]>
@@ -741,14 +625,6 @@ export interface IpcRendererEvents {
   'activity:anime-stopped': [state: AnimeWatchingState]
   'activity:anime-extra-started': [state: AnimeExtraPlayingState]
   'activity:anime-extra-stopped': [state: AnimeExtraPlayingState]
-  'activity:tv-started': [state: TvWatchingState]
-  'activity:tv-stopped': [state: TvWatchingState]
-  'activity:tv-extra-started': [state: TvExtraPlayingState]
-  'activity:tv-extra-stopped': [state: TvExtraPlayingState]
-  'activity:movie-started': [state: MovieWatchingState]
-  'activity:movie-stopped': [state: MovieWatchingState]
-  'activity:movie-extra-started': [state: MovieExtraPlayingState]
-  'activity:movie-extra-stopped': [state: MovieExtraPlayingState]
   'player:session-started': [state: PlaybackSessionState]
   'player:session-changed': [state: PlaybackSessionState]
   'player:session-progress': [progress: PlaybackProgress]

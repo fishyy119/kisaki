@@ -35,6 +35,7 @@ import {
   type PartialDateInputExpose
 } from '@renderer/components/ui/partial-date-input'
 import { createLogger } from '@renderer/core/log'
+import { parseAliasesInput } from '@renderer/utils/format'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -62,6 +63,7 @@ interface FormData {
   name: string
   originalName: string
   sortName: string
+  aliases: string
   gender: '' | 'male' | 'female' | 'other'
   birthDate: PartialDate | null
   deathDate: PartialDate | null
@@ -71,6 +73,7 @@ const formData = ref<FormData>({
   name: '',
   originalName: '',
   sortName: '',
+  aliases: '',
   gender: '',
   birthDate: null,
   deathDate: null
@@ -94,6 +97,7 @@ watch(person, (personData) => {
     formData.value.name = personData.name || ''
     formData.value.originalName = personData.originalName || ''
     formData.value.sortName = personData.sortName || ''
+    formData.value.aliases = (personData.aliases ?? []).join(', ')
     formData.value.gender = personData.gender || ''
     formData.value.birthDate = personData.birthDate ?? null
     formData.value.deathDate = personData.deathDate ?? null
@@ -137,6 +141,7 @@ async function handleSubmit() {
         name: formData.value.name || 'unknown person',
         originalName: formData.value.originalName || null,
         sortName: formData.value.sortName || null,
+        aliases: parseAliasesInput(formData.value.aliases),
         gender: formData.value.gender || null,
         birthDate,
         deathDate
@@ -206,6 +211,15 @@ function handleCancel() {
                   <Input
                     v-model="formData.sortName"
                     :placeholder="m.library.forms.sortNamePlaceholder"
+                  />
+                </FieldContent>
+              </Field>
+              <Field>
+                <FieldLabel>{{ m.library.fields.aliases }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="formData.aliases"
+                    :placeholder="m.library.forms.aliasesPlaceholder"
                   />
                 </FieldContent>
               </Field>

@@ -228,19 +228,28 @@ fills missing entity keys with disabled defaults).
 
 ## Target Media Types
 
-Kisaki targets eight root media types. The list is the product's closed growth plan: a new root
-media type is added only when it fails every existing type's split test below.
+Kisaki is an ACGN library manager. Its scope is the works that share one metadata graph — visual
+novels and games, anime, comics, novels, and the audio works around them — and the list below
+is the product's closed growth plan: a new root media type is added only when it fails every
+existing type's split test.
 
-| Media type | Consumption unit                  | Playback/technical layer    | Status  |
-| ---------- | --------------------------------- | --------------------------- | ------- |
-| game       | Session on an installed build     | Process launch + monitoring | Shipped |
-| anime      | Episode within a season entry     | Video playback (mpv)        | Shipped |
-| tv         | Episode within a season of a show | Video playback (mpv)        | Planned |
-| movie      | Single feature                    | Video playback (mpv)        | Planned |
-| music      | Track within a release            | Audio playback              | Planned |
-| audio      | Track within a release (voice)    | Audio playback              | Planned |
-| comic      | Page within a volume/chapter      | Image reading               | Planned |
-| book       | Page/position within a volume     | Text reading                | Planned |
+Live-action film and television are deliberately out of scope. They fail the shared-graph test in
+both directions: they have no character entity worth modelling (a cast credit names an actor, not a
+character with an identity, a designer, and physical attributes), and their consumption habits,
+sources, and UI conventions have nothing to reuse from an ACGN library. Serving them would mean
+carrying a second, weaker data model behind the same tables.
+
+| Media type | Consumption unit               | Playback/technical layer    | Status  |
+| ---------- | ------------------------------ | --------------------------- | ------- |
+| game       | Session on an installed build  | Process launch + monitoring | Shipped |
+| anime      | Episode within a season entry  | Video playback (mpv)        | Shipped |
+| comic      | Page within a volume/chapter   | Image reading               | Planned |
+| novel      | Page/position within a volume  | Text reading                | Planned |
+| music      | Track within a release         | Audio playback              | Planned |
+| audio      | Track within a release (voice) | Audio playback              | Planned |
+
+The first four are the core ring; `music` and `audio` are the second ring, reached through the works
+they accompany.
 
 Splitting rules, in the order they decide:
 
@@ -256,11 +265,14 @@ Splitting rules, in the order they decide:
 
 Consequences of the taxonomy:
 
-- `anime` and `tv` share the video engine and the episode progress model, but their metadata graphs,
-  sources, and entry grain all differ, so they keep separate tables; whatever they prove invariant
-  may be extracted once both exist.
-- `movie` has one playable file per entry, so it owns no episode table.
-- `comic` and `book` split on the technical layer (image reading vs. text reflow), not on genre.
+- `game` is ACGN games, visual novels first. A general video-game catalogue is not a goal; what
+  keeps a game in scope is that it has characters the rest of the graph can point at.
+- `comic` is comics at large — manga, manhua, manhwa, doujinshi — not one country's style. Like
+  `game`, the identifier is structural and the ACGN scope doctrine above draws the boundary.
+- `novel` is narrative fiction, light novels first. It is not `book`: a work qualifies by having
+  characters the graph can point at, which excludes non-fiction and reference works by the same
+  test that excludes live-action.
+- `comic` and `novel` split on the technical layer (image reading vs. text reflow), not on genre.
 - Trailers and creditless openings are extras of an entry, not episodes.
 
 ### Entry Grain
@@ -279,19 +291,13 @@ inherited from whichever media type shipped first.
   (Bangumi, MAL, AniList, AniDB) anchors ids, ratings, and watch status there, and none issues a
   franchise id. A franchise is therefore a connected component of `media_relations`, not a row: the
   sequel graph is not a tree (interleaved films, split cours, side stories, summaries, alternative
-  retellings), so an integer season number would lose information.
-- **`tv` entries are shows**, with seasons as weak child rows and episodes beneath them. Seasons are
-  renewals under one contract: brand, showrunner, and source ids persist at show level, seasons
-  usually carry no title of their own, the season graph is a tree (specials as season 0), `SxxEyy` is
-  the industry's own encoding, and one show owns one directory tree — often with episodes flat in its
-  root. Season-level facts that some ecosystems do carry (season posters, anthology season titles,
-  per-season external ids) are columns on the season row.
+  retellings), so an integer season number would lose information. Anime owns no season table: with
+  the entry at season grain there is nothing left for one to hold.
 - Remaining planned types decide their grain when they land, by the same question.
 
-Grain differences stay contained. Below the entry, mechanics are isomorphic across the video types
-(watch state, resume position, sessions, file probing, player integration), and above it the entity
-seam is unchanged: the `tv` key in a `Record<AllEntityType, ...>` registry means the show, so adding
-the type still costs +1 table, +1 query spec, +1 UI spec, +1 registry entry.
+Grain differences stay contained. Below the entry, mechanics are isomorphic (watch state, resume
+position, sessions, file probing, player integration), and above it the entity seam is unchanged, so
+adding a type still costs +1 table, +1 query spec, +1 UI spec, +1 registry entry.
 
 Do not resolve a grain mismatch by letting grain vary per row, by adding a franchise entity no
 source can identify, or by collapsing every type into one generic parent-child item table. Each
@@ -369,7 +375,7 @@ entity spec that every future media type must fully satisfy.
 
 ## Relationship Families
 
-Entity-to-entity relationships split into two families with different shapes. Classify by the
+Entity-to-entity relationships split into three families with different shapes. Classify by the
 question the row answers, not by table name.
 
 ### Links: cross-class attachments
@@ -383,6 +389,27 @@ question the row answers, not by table name.
   config, feed projection, and extension link store key on.
 - Reserved future pairs follow the same shape: `person_company_links` (employment) when needed.
 
+### Cast: the one ternary fact
+
+- **Casting is three-way** — a person voices a character _in a given entry_ — so it gets its own
+  tables (`game_cast_links`, `anime_cast_links`) keyed on all three endpoints. Splitting it into a
+  media-person link and a character-person link loses the pairing: no join can tell which of an
+  entry's actors voices which of its characters.
+- This is the only ternary in the schema, and it earns the exception because ACGN recasts are
+  routine: the same character is voiced by different people across an adult original, its all-ages
+  port, and its anime adaptation. A `playing` string column on the person link cannot express that
+  and cannot be joined to a character row; it was removed for exactly this reason.
+- A cast row carries no role, spoiler flag, or order of its own. Being there is the fact; the
+  spoiler decision belongs to the character link, and display order follows the character link.
+- Cast and `character_person_links` are two layers, not duplicates. `character_person_links` is the
+  **knowledge layer** — who voices this character at all, independent of any one work — so it is
+  merge-only and a scrape never deletes from it. Cast is the **confirmed credit** for one entry, so
+  it is replaced wholesale and a removed row means the credit is gone. A recast reads as a new cast
+  row plus a retained knowledge row, which is the truth.
+- Cast rows are derived, not hand-authored twice: an `actor`-role character-person fact on a media
+  entry produces both the person link and the cast row. A provider without character entities
+  (TMDB) contributes the person link only, and the entry simply has actors without attribution.
+
 ### Relations: same-class entry graphs
 
 - A **relation** connects entries of the _same_ class: media↔media lives in the single polymorphic
@@ -395,12 +422,43 @@ question the row answers, not by table name.
   map. Never write mirror rows to make a pair visible from both sides.
 - The ordered endpoint pair constrains the vocabulary (`MEDIA_RELATION_TYPE_RULES`): same-type
   pairs carry the structural words (sequel/prequel, sideStory/parentStory, summary/fullStory,
-  alternative), cross-type pairs carry provenance only (adaptation/sourceMaterial). Adding a media
-  type forces new pair entries at compile time.
-- Which structures those words express follows entry grain: anime seasons are sequel edges between
-  entries, while tv seasons live inside the show entry, so tv edges carry spin-offs and remakes only.
-- A same-class metadata graph (for example `company_relations` for corporate succession) would
-  follow the same polymorphic directed shape if the product ever needs it.
+  alternative), cross-type pairs carry provenance plus derivation (adaptation/sourceMaterial,
+  sideStory/parentStory). Adding a media type forces new pair entries at compile time.
+- `sideStory`/`parentStory` is a cross-type pair precisely because ACGN spin-offs cross media: a
+  fandisc of a visual novel, a spin-off comic of an anime. Restricting derivation words to same-type
+  pairs would force those edges into `other`.
+- The vocabulary states narrative derivation between two entries and nothing else. A shared setting
+  is an n-ary group fact and belongs in a collection; a shared cast is already encoded by two entries
+  linking the same character. Neither becomes an edge type.
+- **`company_relations`** is the same-class graph for companies (parent/subsidiary, brand/owner,
+  renames, spin-offs). Both ends are companies, so unlike `media_relations` it carries real FKs and
+  needs no pair-dependent vocabulary; it is otherwise the same directed shape with a total inverse
+  map. It exists because a brand and its parent are different companies that credit different works,
+  and collapsing them loses credits while leaving them unlinked loses the succession.
+- Merging two entities of the class **remaps both ends of its relations in one pass**
+  (`SAME_CLASS_RELATION_MERGES`), never through the cross-class link machinery. An edge between the
+  two merged entities collapses onto itself and must vanish, which is only visible while both ends
+  are being rewritten together; a second pass over the other end would store the self-edge first and
+  leave a hole in the surviving order. Renumbering happens after all collapsing, and only for the
+  target's own out-edges — third entities' edge lists were loaded partially and keep their ordering.
+
+### Which satellite edges exist
+
+The satellite entities are character, person, and company. The graph between them is closed, and
+each absent edge is a decision, not an omission:
+
+| Edge                           | Status   | Why                                                                                      |
+| ------------------------------ | -------- | ---------------------------------------------------------------------------------------- |
+| media↔character/person/company | Present  | The credit lists every source publishes.                                                 |
+| character↔person               | Present  | Work-independent knowledge: who voices, draws, or designed this character.               |
+| (media, character, person)     | Present  | Cast — the ternary above; the only three-endpoint fact in the schema.                    |
+| company↔company                | Present  | `company_relations`: succession a single company row cannot express.                     |
+| character↔character            | Absent   | Sources state relations in prose, per work, and they are spoilers; no stable vocabulary. |
+| person↔person                  | Absent   | Real-person biography, not work metadata, and no source publishes it structurally.       |
+| person↔company                 | Reserved | Employment is real but time-bounded; add `person_company_links` only with dated columns. |
+
+Before adding a satellite edge, require all three: a source publishes it structurally, it is not
+derivable from the existing graph, and it has a closed vocabulary the UI can label.
 
 ### Vocabulary: kind / role / type
 

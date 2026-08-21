@@ -11,14 +11,8 @@ import { eq } from 'drizzle-orm'
 import { attachment, db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import type { Messages } from '@shared/i18n'
-import type {
-  AnimeImageSlot,
-  GameImageSlot,
-  MovieImageSlot,
-  ScraperCapability,
-  TvImageSlot
-} from '@shared/scraper'
-import { animes, characters, companies, games, movies, persons, tvs } from '@shared/db'
+import type { AnimeImageSlot, GameImageSlot, ScraperCapability } from '@shared/scraper'
+import { animes, characters, companies, games, persons } from '@shared/db'
 import type { TableName } from '@shared/db/table-names'
 import type { TableEntityType } from '../entity-tables'
 
@@ -221,88 +215,6 @@ export const ENTITY_ASSET_SPECS: Record<TableEntityType, EntityAssetSpec> = {
           format: row?.format ?? undefined
         },
         capability as AnimeImageSlot
-      )
-    }
-  },
-  tv: {
-    attachmentTable: 'tvs',
-    slots: [
-      COVER_SLOT((m) => m.library.forms.mediaDescriptions.tvCover),
-      BACKDROP_SLOT((m) => m.library.forms.mediaDescriptions.tvBackdrop),
-      LOGO_SLOT((m) => m.library.forms.mediaDescriptions.tvLogo, 'aspect-[3/1]')
-    ],
-    loadEntry: async (id) => {
-      const row = await db.query.tvs.findFirst({ where: eq(tvs.id, id) })
-      if (!row) return undefined
-      return {
-        name: row.name,
-        originalName: row.originalName,
-        files: {
-          cover: row.coverFile,
-          backdrop: row.backdropFile,
-          logo: row.logoFile
-        }
-      }
-    },
-    setFile: async (id, slotType, source) => {
-      await attachment.setFile(tvs, id, MEDIA_FIELDS[slotType as MediaFieldKey], source)
-    },
-    clearFile: async (id, slotType) => {
-      await attachment.clearFile(tvs, id, MEDIA_FIELDS[slotType as MediaFieldKey])
-    },
-    searchImages: async (providerId, request, capability) => {
-      const row = await db.query.tvs.findFirst({ where: eq(tvs.id, request.entityId) })
-
-      return ipcManager.invoke(
-        'scraper:get-tv-provider-images',
-        providerId,
-        {
-          name: request.name,
-          releaseDate: row?.releaseDate ?? undefined,
-          format: row?.format ?? undefined
-        },
-        capability as TvImageSlot
-      )
-    }
-  },
-  movie: {
-    attachmentTable: 'movies',
-    slots: [
-      COVER_SLOT((m) => m.library.forms.mediaDescriptions.movieCover),
-      BACKDROP_SLOT((m) => m.library.forms.mediaDescriptions.movieBackdrop),
-      LOGO_SLOT((m) => m.library.forms.mediaDescriptions.movieLogo, 'aspect-[3/1]')
-    ],
-    loadEntry: async (id) => {
-      const row = await db.query.movies.findFirst({ where: eq(movies.id, id) })
-      if (!row) return undefined
-      return {
-        name: row.name,
-        originalName: row.originalName,
-        files: {
-          cover: row.coverFile,
-          backdrop: row.backdropFile,
-          logo: row.logoFile
-        }
-      }
-    },
-    setFile: async (id, slotType, source) => {
-      await attachment.setFile(movies, id, MEDIA_FIELDS[slotType as MediaFieldKey], source)
-    },
-    clearFile: async (id, slotType) => {
-      await attachment.clearFile(movies, id, MEDIA_FIELDS[slotType as MediaFieldKey])
-    },
-    searchImages: async (providerId, request, capability) => {
-      const row = await db.query.movies.findFirst({ where: eq(movies.id, request.entityId) })
-
-      return ipcManager.invoke(
-        'scraper:get-movie-provider-images',
-        providerId,
-        {
-          name: request.name,
-          releaseDate: row?.releaseDate ?? undefined,
-          format: row?.format ?? undefined
-        },
-        capability as MovieImageSlot
       )
     }
   },

@@ -40,30 +40,6 @@ export interface EntityMenuAnimeBatchInput extends EntityMenuInputBase {
   entityIds: readonly string[]
 }
 
-export interface EntityMenuTvSingleInput extends EntityMenuInputBase {
-  domain: 'tv'
-  scope: 'single'
-  entityId: string
-}
-
-export interface EntityMenuTvBatchInput extends EntityMenuInputBase {
-  domain: 'tv'
-  scope: 'batch'
-  entityIds: readonly string[]
-}
-
-export interface EntityMenuMovieSingleInput extends EntityMenuInputBase {
-  domain: 'movie'
-  scope: 'single'
-  entityId: string
-}
-
-export interface EntityMenuMovieBatchInput extends EntityMenuInputBase {
-  domain: 'movie'
-  scope: 'batch'
-  entityIds: readonly string[]
-}
-
 export interface EntityMenuCharacterSingleInput extends EntityMenuInputBase {
   domain: 'character'
   scope: 'single'
@@ -102,14 +78,6 @@ export interface EntityMenuInputMap {
   anime: {
     single: EntityMenuAnimeSingleInput
     batch: EntityMenuAnimeBatchInput
-  }
-  tv: {
-    single: EntityMenuTvSingleInput
-    batch: EntityMenuTvBatchInput
-  }
-  movie: {
-    single: EntityMenuMovieSingleInput
-    batch: EntityMenuMovieBatchInput
   }
   character: {
     single: EntityMenuCharacterSingleInput

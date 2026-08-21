@@ -25,13 +25,11 @@ import type {
   HookTapOptions,
   JsonValue,
   KisakiApi,
-  MovieScraperProvider,
   PersonScraperProvider,
   ScraperMediaType,
   ScraperProviderRegistration,
   ThemeRegistration,
   ThemeContribution,
-  TvScraperProvider,
   WebviewDialogContribution,
   WebviewDialogRegistration,
   WebviewPageContribution,
@@ -42,15 +40,11 @@ export type ScraperProviderFor<TMediaType extends ScraperMediaType> = TMediaType
   ? GameScraperProvider
   : TMediaType extends 'anime'
     ? AnimeScraperProvider
-    : TMediaType extends 'tv'
-      ? TvScraperProvider
-      : TMediaType extends 'movie'
-        ? MovieScraperProvider
-        : TMediaType extends 'person'
-          ? PersonScraperProvider
-          : TMediaType extends 'company'
-            ? CompanyScraperProvider
-            : CharacterScraperProvider
+    : TMediaType extends 'person'
+      ? PersonScraperProvider
+      : TMediaType extends 'company'
+        ? CompanyScraperProvider
+        : CharacterScraperProvider
 
 /**
  * Identifies the extension runtime currently allowed to call SDK APIs.

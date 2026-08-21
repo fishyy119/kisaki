@@ -19,10 +19,6 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
-  LibraryMovie,
-  LibraryMovieCreateInput,
-  LibraryMoviePatch,
-  LibraryMovieQuery,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -30,11 +26,7 @@ import type {
   LibraryTag,
   LibraryTagCreateInput,
   LibraryTagPatch,
-  LibraryTagQuery,
-  LibraryTv,
-  LibraryTvCreateInput,
-  LibraryTvPatch,
-  LibraryTvQuery
+  LibraryTagQuery
 } from '@kisaki3/extension-api'
 import { eq, sql } from 'drizzle-orm'
 import {
@@ -47,13 +39,9 @@ import {
   companyExternalIds,
   gameExternalIds,
   games,
-  movieExternalIds,
-  movies,
   personExternalIds,
   persons,
-  tags,
-  tvExternalIds,
-  tvs
+  tags
 } from '@shared/db'
 import {
   animeFilterQuerySpec,
@@ -61,10 +49,8 @@ import {
   collectionFilterQuerySpec,
   companyFilterQuerySpec,
   gameFilterQuerySpec,
-  movieFilterQuerySpec,
   personFilterQuerySpec,
-  tagFilterQuerySpec,
-  tvFilterQuerySpec
+  tagFilterQuerySpec
 } from '@shared/filter'
 import {
   animeSearchQuerySpec,
@@ -72,10 +58,8 @@ import {
   collectionSearchQuerySpec,
   companySearchQuerySpec,
   gameSearchQuerySpec,
-  movieSearchQuerySpec,
   personSearchQuerySpec,
-  tagSearchQuerySpec,
-  tvSearchQuerySpec
+  tagSearchQuerySpec
 } from '@shared/search/specs'
 import { createEmptyFilter } from '@shared/filter'
 import { buildRankedEntityDtoBase } from './dto'
@@ -140,50 +124,6 @@ const ANIME_EXTERNAL_IDS_CONFIG = {
     }
   }
 } satisfies ExternalIdConfig<typeof animeExternalIds>
-
-const TV_EXTERNAL_IDS_CONFIG = {
-  table: tvExternalIds,
-  entityIdColumn: tvExternalIds.tvId,
-  sourceColumn: tvExternalIds.source,
-  externalIdColumn: tvExternalIds.externalId,
-  orderColumn: tvExternalIds.orderInTv,
-  toEntityId(row) {
-    return row.tvId
-  },
-  toExternalId(row) {
-    return { source: row.source, id: row.externalId }
-  },
-  buildInsertValue(entityId, externalId, order) {
-    return {
-      tvId: entityId,
-      source: externalId.source,
-      externalId: externalId.id,
-      orderInTv: order
-    }
-  }
-} satisfies ExternalIdConfig<typeof tvExternalIds>
-
-const MOVIE_EXTERNAL_IDS_CONFIG = {
-  table: movieExternalIds,
-  entityIdColumn: movieExternalIds.movieId,
-  sourceColumn: movieExternalIds.source,
-  externalIdColumn: movieExternalIds.externalId,
-  orderColumn: movieExternalIds.orderInMovie,
-  toEntityId(row) {
-    return row.movieId
-  },
-  toExternalId(row) {
-    return { source: row.source, id: row.externalId }
-  },
-  buildInsertValue(entityId, externalId, order) {
-    return {
-      movieId: entityId,
-      source: externalId.source,
-      externalId: externalId.id,
-      orderInMovie: order
-    }
-  }
-} satisfies ExternalIdConfig<typeof movieExternalIds>
 
 const PERSON_EXTERNAL_IDS_CONFIG = {
   table: personExternalIds,
@@ -468,237 +408,6 @@ export const ANIME_CONFIG = {
   LibraryAnimeQuery,
   typeof animes,
   typeof animeExternalIds
->
-
-export const TV_CONFIG = {
-  table: tvs,
-  filterSpec: tvFilterQuerySpec,
-  searchSpec: tvSearchQuerySpec,
-  externalIds: TV_EXTERNAL_IDS_CONFIG,
-  toFilter(query) {
-    return conditionsFilter([
-      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
-      anyOfCondition('status', query?.statuses),
-      anyOfCondition('format', query?.formats),
-      hasAnyOfCondition('tags', query?.tagIds),
-      hasAnyOfCondition('collections', query?.collectionIds)
-    ])
-  },
-  toDto(row, externalIds) {
-    return {
-      ...buildRankedEntityDtoBase(row, externalIds),
-      coverFile: optionalValue(row.coverFile),
-      backdropFile: optionalValue(row.backdropFile),
-      logoFile: optionalValue(row.logoFile),
-      releaseDate: optionalValue(row.releaseDate),
-      endDate: optionalValue(row.endDate),
-      status: row.status,
-      format: row.format,
-      totalSeasons: row.totalSeasons,
-      totalEpisodes: row.totalEpisodes,
-      lastActiveAt: toNullableTimestampMs(row.lastActiveAt),
-      totalDuration: row.totalDuration,
-      tvDirPath: optionalValue(row.tvDirPath),
-      descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
-    }
-  },
-  buildCreateValues(id, input) {
-    return {
-      id,
-      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
-      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
-      name: input.name,
-      description: input.description,
-      originalName: input.originalName,
-      sortName: input.sortName,
-      coverFile: input.coverFile,
-      backdropFile: input.backdropFile,
-      logoFile: input.logoFile,
-      releaseDate: input.releaseDate,
-      endDate: input.endDate,
-      status: input.status,
-      format: input.format,
-      totalSeasons: input.totalSeasons,
-      totalEpisodes: input.totalEpisodes,
-      lastActiveAt:
-        input.lastActiveAt === undefined
-          ? undefined
-          : input.lastActiveAt === null
-            ? null
-            : new Date(input.lastActiveAt),
-      totalDuration: input.totalDuration,
-      tvDirPath: input.tvDirPath,
-      descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
-      score: input.score,
-      isFavorite: input.isFavorite,
-      isNsfw: input.isNsfw,
-      externalSites: copyReadonlyArray(input.externalSites)
-    }
-  },
-  buildPatchValues(patch) {
-    return stripUndefined({
-      name: patch.name,
-      description: patch.description,
-      originalName: patch.originalName,
-      sortName: patch.sortName,
-      coverFile: patch.coverFile,
-      backdropFile: patch.backdropFile,
-      logoFile: patch.logoFile,
-      releaseDate: patch.releaseDate,
-      endDate: patch.endDate,
-      status: patch.status,
-      format: patch.format,
-      totalSeasons: patch.totalSeasons,
-      totalEpisodes: patch.totalEpisodes,
-      tvDirPath: patch.tvDirPath,
-      descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
-      score: patch.score,
-      isFavorite: patch.isFavorite,
-      isNsfw: patch.isNsfw,
-      externalSites: copyReadonlyArray(patch.externalSites),
-      lastActiveAt:
-        patch.lastActiveAt === undefined
-          ? undefined
-          : patch.lastActiveAt === null
-            ? null
-            : new Date(patch.lastActiveAt),
-      totalDuration: patch.totalDuration
-    })
-  },
-  buildExtraConditions(query) {
-    return query?.includeNsfw ? [] : [eq(tvs.isNsfw, false)]
-  }
-} satisfies EntityConfig<
-  LibraryTv,
-  LibraryTvCreateInput,
-  LibraryTvPatch,
-  LibraryTvQuery,
-  typeof tvs,
-  typeof tvExternalIds
->
-
-export const MOVIE_CONFIG = {
-  table: movies,
-  filterSpec: movieFilterQuerySpec,
-  searchSpec: movieSearchQuerySpec,
-  externalIds: MOVIE_EXTERNAL_IDS_CONFIG,
-  toFilter(query) {
-    return conditionsFilter([
-      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
-      isCondition('watched', query?.watchedOnly ? true : query?.unwatchedOnly ? false : undefined),
-      anyOfCondition('status', query?.statuses),
-      anyOfCondition('format', query?.formats),
-      hasAnyOfCondition('tags', query?.tagIds),
-      hasAnyOfCondition('collections', query?.collectionIds)
-    ])
-  },
-  toDto(row, externalIds) {
-    return {
-      ...buildRankedEntityDtoBase(row, externalIds),
-      coverFile: optionalValue(row.coverFile),
-      backdropFile: optionalValue(row.backdropFile),
-      logoFile: optionalValue(row.logoFile),
-      releaseDate: optionalValue(row.releaseDate),
-      status: row.status,
-      format: row.format,
-      runtimeMs: row.runtimeMs,
-      watched: row.watched,
-      watchedAt: toNullableTimestampMs(row.watchedAt),
-      playCount: row.playCount,
-      resumePositionMs: row.resumePositionMs,
-      lastActiveAt: toNullableTimestampMs(row.lastActiveAt),
-      totalDuration: row.totalDuration,
-      movieDirPath: optionalValue(row.movieDirPath),
-      descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
-    }
-  },
-  buildCreateValues(id, input) {
-    return {
-      id,
-      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
-      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
-      name: input.name,
-      description: input.description,
-      originalName: input.originalName,
-      sortName: input.sortName,
-      coverFile: input.coverFile,
-      backdropFile: input.backdropFile,
-      logoFile: input.logoFile,
-      releaseDate: input.releaseDate,
-      status: input.status,
-      format: input.format,
-      runtimeMs: input.runtimeMs,
-      watched: input.watched,
-      watchedAt:
-        input.watchedAt === undefined
-          ? undefined
-          : input.watchedAt === null
-            ? null
-            : new Date(input.watchedAt),
-      playCount: input.playCount,
-      resumePositionMs: input.resumePositionMs,
-      lastActiveAt:
-        input.lastActiveAt === undefined
-          ? undefined
-          : input.lastActiveAt === null
-            ? null
-            : new Date(input.lastActiveAt),
-      totalDuration: input.totalDuration,
-      movieDirPath: input.movieDirPath,
-      descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
-      score: input.score,
-      isFavorite: input.isFavorite,
-      isNsfw: input.isNsfw,
-      externalSites: copyReadonlyArray(input.externalSites)
-    }
-  },
-  buildPatchValues(patch) {
-    return stripUndefined({
-      name: patch.name,
-      description: patch.description,
-      originalName: patch.originalName,
-      sortName: patch.sortName,
-      coverFile: patch.coverFile,
-      backdropFile: patch.backdropFile,
-      logoFile: patch.logoFile,
-      releaseDate: patch.releaseDate,
-      status: patch.status,
-      format: patch.format,
-      runtimeMs: patch.runtimeMs,
-      watched: patch.watched,
-      watchedAt:
-        patch.watchedAt === undefined
-          ? undefined
-          : patch.watchedAt === null
-            ? null
-            : new Date(patch.watchedAt),
-      playCount: patch.playCount,
-      resumePositionMs: patch.resumePositionMs,
-      movieDirPath: patch.movieDirPath,
-      descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
-      score: patch.score,
-      isFavorite: patch.isFavorite,
-      isNsfw: patch.isNsfw,
-      externalSites: copyReadonlyArray(patch.externalSites),
-      lastActiveAt:
-        patch.lastActiveAt === undefined
-          ? undefined
-          : patch.lastActiveAt === null
-            ? null
-            : new Date(patch.lastActiveAt),
-      totalDuration: patch.totalDuration
-    })
-  },
-  buildExtraConditions(query) {
-    return query?.includeNsfw ? [] : [eq(movies.isNsfw, false)]
-  }
-} satisfies EntityConfig<
-  LibraryMovie,
-  LibraryMovieCreateInput,
-  LibraryMoviePatch,
-  LibraryMovieQuery,
-  typeof movies,
-  typeof movieExternalIds
 >
 
 export const PERSON_CONFIG = {

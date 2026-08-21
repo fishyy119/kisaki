@@ -28,14 +28,6 @@ export const scraper = {
     anime: {
       name: 'Anime',
       description: 'Bangumi metadata, with TMDB artwork filling the gaps (TMDB needs an API key)'
-    },
-    tv: {
-      name: 'TV series',
-      description: 'TMDB metadata, seasons, and artwork for television (TMDB needs an API key)'
-    },
-    movie: {
-      name: 'Movies',
-      description: 'TMDB metadata, credits, and artwork for films (TMDB needs an API key)'
     }
   },
 

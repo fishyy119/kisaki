@@ -12,7 +12,7 @@ import { useCharacter } from '@renderer/composables/use-character'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 export function useCharacterWorksBlocks(): ComputedRef<WorksBlock[]> {
-  const { games, animes, tvs, movies } = useCharacter()
+  const { games, animes } = useCharacter()
   const { m } = useI18n()
 
   return computed<WorksBlock[]>(() => [
@@ -27,18 +27,6 @@ export function useCharacterWorksBlocks(): ComputedRef<WorksBlock[]> {
       items: animes.value.map((link) => ({ id: link.id, role: link.role, entity: link.anime })),
       roleLabels: m.value.library.roles.animeCharacter,
       linkView: 'character-animes'
-    },
-    {
-      mediaType: 'tv',
-      items: tvs.value.map((link) => ({ id: link.id, role: link.role, entity: link.tv })),
-      roleLabels: m.value.library.roles.tvCharacter,
-      linkView: 'character-tvs'
-    },
-    {
-      mediaType: 'movie',
-      items: movies.value.map((link) => ({ id: link.id, role: link.role, entity: link.movie })),
-      roleLabels: m.value.library.roles.movieCharacter,
-      linkView: 'character-movies'
     }
   ])
 }

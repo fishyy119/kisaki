@@ -25,7 +25,7 @@ import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { animes, games, movies, tvs } from '@shared/db'
+import { animes, games } from '@shared/db'
 import { MEDIA_TABLES } from '../media-tables'
 
 const { m } = useI18n()
@@ -51,9 +51,7 @@ const didSave = ref(false)
 const rowId = toRef(props, 'entityId')
 const INLINE_ATTACHMENTS: Record<MediaType, ReturnType<typeof useInlineAttachments>> = {
   game: useInlineAttachments({ table: games, rowId, field: 'descriptionInlineFiles' }),
-  anime: useInlineAttachments({ table: animes, rowId, field: 'descriptionInlineFiles' }),
-  tv: useInlineAttachments({ table: tvs, rowId, field: 'descriptionInlineFiles' }),
-  movie: useInlineAttachments({ table: movies, rowId, field: 'descriptionInlineFiles' })
+  anime: useInlineAttachments({ table: animes, rowId, field: 'descriptionInlineFiles' })
 }
 
 const attachments = computed(() => INLINE_ATTACHMENTS[props.mediaType])

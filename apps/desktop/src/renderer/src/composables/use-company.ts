@@ -30,15 +30,12 @@ import type {
   Company,
   GameCompanyLink,
   AnimeCompanyLink,
-  TvCompanyLink,
-  MovieCompanyLink,
   CompanyTagLink,
   Game,
   Anime,
-  Tv,
-  Movie,
   Tag
 } from '@shared/db/schema'
+import { COMPANY_RELATION_TYPE_INVERSE, type CompanyRelationType } from '@shared/db'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
 import { useDbChanges } from './use-db-changes'
@@ -47,13 +44,24 @@ import { useDbChanges } from './use-db-changes'
 // Types
 // =============================================================================
 
+/**
+ * One company relation as seen from this company. In-edges are relabelled
+ * through the inverse map, so the list reads uniformly regardless of which side
+ * stored the row.
+ */
+export interface CompanyRelationEntry {
+  id: string
+  type: CompanyRelationType
+  note: string | null
+  company: Company
+}
+
 interface CompanyData {
   company: Company
   tags: (CompanyTagLink & { tag: Tag | null })[]
   games: (GameCompanyLink & { game: Game | null })[]
   animes: (AnimeCompanyLink & { anime: Anime | null })[]
-  tvs: (TvCompanyLink & { tv: Tv | null })[]
-  movies: (MovieCompanyLink & { movie: Movie | null })[]
+  relations: CompanyRelationEntry[]
 }
 
 export interface CompanyContext {
@@ -61,8 +69,7 @@ export interface CompanyContext {
   tags: ComputedRef<(CompanyTagLink & { tag: Tag | null })[]>
   games: ComputedRef<(GameCompanyLink & { game: Game | null })[]>
   animes: ComputedRef<(AnimeCompanyLink & { anime: Anime | null })[]>
-  tvs: ComputedRef<(TvCompanyLink & { tv: Tv | null })[]>
-  movies: ComputedRef<(MovieCompanyLink & { movie: Movie | null })[]>
+  relations: ComputedRef<CompanyRelationEntry[]>
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
   error: Ref<string | null>
@@ -117,20 +124,10 @@ async function fetchCompanyData(
     showNsfw ? undefined : eq(schema.animes.isNsfw, false)
   )
 
-  const tvCompanyLinksWhere = and(
-    eq(schema.tvCompanyLinks.companyId, companyId),
-    spoilersRevealed ? undefined : eq(schema.tvCompanyLinks.isSpoiler, false),
-    showNsfw ? undefined : eq(schema.tvs.isNsfw, false)
-  )
-
-  const movieCompanyLinksWhere = and(
-    eq(schema.movieCompanyLinks.companyId, companyId),
-    spoilersRevealed ? undefined : eq(schema.movieCompanyLinks.isSpoiler, false),
-    showNsfw ? undefined : eq(schema.movies.isNsfw, false)
-  )
+  const relatedCompanyWhere = showNsfw ? undefined : eq(schema.companies.isNsfw, false)
 
   // Parallel fetch all related data
-  const [tagLinks, gameLinks, animeLinks, tvLinks, movieLinks] = await Promise.all([
+  const [tagLinks, gameLinks, animeLinks, outRelations, inRelations] = await Promise.all([
     db
       .select()
       .from(schema.companyTagLinks)
@@ -151,16 +148,16 @@ async function fetchCompanyData(
       .orderBy(asc(schema.animeCompanyLinks.orderInCompany)),
     db
       .select()
-      .from(schema.tvCompanyLinks)
-      .leftJoin(schema.tvs, eq(schema.tvCompanyLinks.tvId, schema.tvs.id))
-      .where(tvCompanyLinksWhere)
-      .orderBy(asc(schema.tvCompanyLinks.orderInCompany)),
+      .from(schema.companyRelations)
+      .innerJoin(schema.companies, eq(schema.companyRelations.toId, schema.companies.id))
+      .where(and(eq(schema.companyRelations.fromId, companyId), relatedCompanyWhere))
+      .orderBy(asc(schema.companyRelations.orderInFrom)),
     db
       .select()
-      .from(schema.movieCompanyLinks)
-      .leftJoin(schema.movies, eq(schema.movieCompanyLinks.movieId, schema.movies.id))
-      .where(movieCompanyLinksWhere)
-      .orderBy(asc(schema.movieCompanyLinks.orderInCompany))
+      .from(schema.companyRelations)
+      .innerJoin(schema.companies, eq(schema.companyRelations.fromId, schema.companies.id))
+      .where(and(eq(schema.companyRelations.toId, companyId), relatedCompanyWhere))
+      .orderBy(asc(schema.companyRelations.createdAt))
   ])
 
   return {
@@ -168,8 +165,20 @@ async function fetchCompanyData(
     tags: tagLinks.map((row) => ({ ...row.company_tag_links, tag: row.tags })),
     games: gameLinks.map((row) => ({ ...row.game_company_links, game: row.games })),
     animes: animeLinks.map((row) => ({ ...row.anime_company_links, anime: row.animes })),
-    tvs: tvLinks.map((row) => ({ ...row.tv_company_links, tv: row.tvs })),
-    movies: movieLinks.map((row) => ({ ...row.movie_company_links, movie: row.movies }))
+    relations: [
+      ...outRelations.map((row): CompanyRelationEntry => ({
+        id: row.company_relations.id,
+        type: row.company_relations.type,
+        note: row.company_relations.note,
+        company: row.companies
+      })),
+      ...inRelations.map((row): CompanyRelationEntry => ({
+        id: row.company_relations.id,
+        type: COMPANY_RELATION_TYPE_INVERSE[row.company_relations.type],
+        note: row.company_relations.note,
+        company: row.companies
+      }))
+    ]
   }
 }
 
@@ -210,8 +219,7 @@ function provideCompanyContext(source: CompanyDataSource): CompanyContext {
     tags: computed(() => source.data.value?.tags ?? []),
     games: computed(() => source.data.value?.games ?? []),
     animes: computed(() => source.data.value?.animes ?? []),
-    tvs: computed(() => source.data.value?.tvs ?? []),
-    movies: computed(() => source.data.value?.movies ?? []),
+    relations: computed(() => source.data.value?.relations ?? []),
     isLoading: source.isLoading,
     isFetching: source.isFetching,
     error: source.error,
@@ -227,8 +235,7 @@ const COMPANY_LINK_TABLES: readonly TableName[] = [
   'company_tag_links',
   'game_company_links',
   'anime_company_links',
-  'tv_company_links',
-  'movie_company_links'
+  'company_relations'
 ]
 
 function useCompanyDbSync(companyId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {

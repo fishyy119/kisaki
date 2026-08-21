@@ -29,14 +29,6 @@ export const scraper = {
     anime: {
       name: '動漫',
       description: '以 Bangumi 元資料為主，由 TMDB 補齊圖片（TMDB 需自備 API Key）'
-    },
-    tv: {
-      name: '劇集',
-      description: '由 TMDB 提供劇集元資料、分季與圖片（TMDB 需自備 API Key）'
-    },
-    movie: {
-      name: '電影',
-      description: '由 TMDB 提供電影元資料、演職人員與圖片（TMDB 需自備 API Key）'
     }
   },
 

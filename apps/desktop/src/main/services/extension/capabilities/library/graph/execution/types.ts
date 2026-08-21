@@ -5,17 +5,12 @@ import type {
 } from '@kisaki3/extension-api'
 import type { DbService } from '@main/services/db'
 import type { ExtensionLibraryAttachmentStore } from '../../attachments'
-import type {
-  ExtensionLibraryEntityStore,
-  ExtensionLibraryEpisodeStore,
-  ExtensionLibraryTvStore
-} from '../../entities'
+import type { ExtensionLibraryEntityStore, ExtensionLibraryEpisodeStore } from '../../entities'
 
 export interface ExecuteLibraryGraphOptions {
   db: DbService
   entities: ExtensionLibraryEntityStore
   episodes: ExtensionLibraryEpisodeStore
-  tv: ExtensionLibraryTvStore
   attachments: ExtensionLibraryAttachmentStore
 }
 
@@ -27,10 +22,7 @@ export interface ApplyState {
   skippedMedia: Set<string>
   noteOwners: Map<string, string>
   sessionOwners: Map<string, string>
-  seasonOwners: Map<string, string>
   episodeOwners: Map<string, string>
-  /** Episode node key to its season node key, read from `season-episode` edges. */
-  episodeSeasons: Map<string, string>
   attachmentActions: Map<string, LibraryGraphResultAction>
   attachmentDiagnostics: Map<string, LibraryGraphDiagnostic[]>
 }

@@ -5,9 +5,7 @@ import { SettingsStore } from './config/store'
 import { setHostUiLocale } from './i18n'
 import { TmdbAnimeProvider } from './media/anime/provider'
 import { TmdbCompanyProvider } from './media/company/provider'
-import { TmdbMovieProvider } from './media/movie/provider'
 import { TmdbPersonProvider } from './media/person/provider'
-import { TmdbTvProvider } from './media/tv/provider'
 import type { TmdbRuntime } from './media/runtime'
 import { registerTmdbSettingsUi } from './settings'
 
@@ -32,12 +30,6 @@ export default defineExtension({
 
     context.subscriptions.add(
       context.contributions.scraperProviders.anime.register(new TmdbAnimeProvider(runtime))
-    )
-    context.subscriptions.add(
-      context.contributions.scraperProviders.tv.register(new TmdbTvProvider(runtime))
-    )
-    context.subscriptions.add(
-      context.contributions.scraperProviders.movie.register(new TmdbMovieProvider(runtime))
     )
     context.subscriptions.add(
       context.contributions.scraperProviders.person.register(new TmdbPersonProvider(runtime))

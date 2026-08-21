@@ -25,9 +25,7 @@ import type { MediaType } from '@shared/common'
 
 const MEDIA_ATTACHMENT_TABLES = {
   game: 'games',
-  anime: 'animes',
-  tv: 'tvs',
-  movie: 'movies'
+  anime: 'animes'
 } as const satisfies Record<MediaType, string>
 
 interface Props {

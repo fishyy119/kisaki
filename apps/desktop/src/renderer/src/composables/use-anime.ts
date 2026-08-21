@@ -36,6 +36,7 @@ import type {
   AnimeExtraFile,
   AnimeNote,
   AnimeSession,
+  AnimeCastLink,
   AnimeCharacterLink,
   AnimePersonLink,
   AnimeCompanyLink,
@@ -71,9 +72,21 @@ interface AnimeData {
   tags: (AnimeTagLink & { tag: Tag | null })[]
   characters: (AnimeCharacterLink & { character: Character | null })[]
   persons: (AnimePersonLink & { person: Person | null })[]
+  cast: AnimeCastEntry[]
   companies: (AnimeCompanyLink & { company: Company | null })[]
   relations: MediaRelationEntry[]
   sessions: AnimeSession[]
+}
+
+/**
+ * One confirmed voice credit of this entry: who voices whom, here.
+ *
+ * Both endpoints travel with the row because the pairing is the fact; a
+ * character link and a person link on their own cannot be joined back into it.
+ */
+export interface AnimeCastEntry extends AnimeCastLink {
+  character: Character | null
+  person: Person | null
 }
 
 export interface AnimeContext {
@@ -91,6 +104,8 @@ export interface AnimeContext {
   characters: ComputedRef<(AnimeCharacterLink & { character: Character | null })[]>
   /** Person links with person data */
   persons: ComputedRef<(AnimePersonLink & { person: Person | null })[]>
+  /** Voice credits of this entry, each naming both its character and person */
+  cast: ComputedRef<AnimeCastEntry[]>
   /** Company links with company data */
   companies: ComputedRef<(AnimeCompanyLink & { company: Company | null })[]>
   /** Entry-to-entry relations merged from both edge directions */
@@ -155,6 +170,13 @@ async function fetchAnimeData(
     showNsfw ? undefined : eq(schema.persons.isNsfw, false)
   )
 
+  // A cast row names both endpoints, so either being hidden hides the credit.
+  const animeCastLinksWhere = and(
+    eq(schema.animeCastLinks.animeId, animeId),
+    showNsfw ? undefined : eq(schema.characters.isNsfw, false),
+    showNsfw ? undefined : eq(schema.persons.isNsfw, false)
+  )
+
   const animeCompanyLinksWhere = and(
     eq(schema.animeCompanyLinks.animeId, animeId),
     spoilersRevealed ? undefined : eq(schema.animeCompanyLinks.isSpoiler, false),
@@ -168,6 +190,7 @@ async function fetchAnimeData(
     tagLinks,
     charLinks,
     personLinks,
+    castLinks,
     companyLinks,
     relations,
     sessions
@@ -207,6 +230,12 @@ async function fetchAnimeData(
       .orderBy(asc(schema.animePersonLinks.orderInAnime)),
     db
       .select()
+      .from(schema.animeCastLinks)
+      .leftJoin(schema.characters, eq(schema.animeCastLinks.characterId, schema.characters.id))
+      .leftJoin(schema.persons, eq(schema.animeCastLinks.personId, schema.persons.id))
+      .where(animeCastLinksWhere),
+    db
+      .select()
       .from(schema.animeCompanyLinks)
       .leftJoin(schema.companies, eq(schema.animeCompanyLinks.companyId, schema.companies.id))
       .where(animeCompanyLinksWhere)
@@ -230,6 +259,11 @@ async function fetchAnimeData(
       character: row.characters
     })),
     persons: personLinks.map((row) => ({ ...row.anime_person_links, person: row.persons })),
+    cast: castLinks.map((row) => ({
+      ...row.anime_cast_links,
+      character: row.characters,
+      person: row.persons
+    })),
     companies: companyLinks.map((row) => ({
       ...row.anime_company_links,
       company: row.companies
@@ -335,6 +369,7 @@ function provideAnimeContext(source: AnimeDataSource): AnimeContext {
     tags: computed(() => source.data.value?.tags ?? []),
     characters: computed(() => source.data.value?.characters ?? []),
     persons: computed(() => source.data.value?.persons ?? []),
+    cast: computed(() => source.data.value?.cast ?? []),
     companies: computed(() => source.data.value?.companies ?? []),
     relations: computed(() => source.data.value?.relations ?? []),
     sessions: computed(() => source.data.value?.sessions ?? []),
@@ -359,6 +394,7 @@ const ANIME_OWNED_TABLES = [
   'anime_tag_links',
   'anime_character_links',
   'anime_person_links',
+  'anime_cast_links',
   'anime_company_links',
   'media_relations'
 ]

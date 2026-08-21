@@ -9,6 +9,7 @@ import { normalizeExternalIds } from '@shared/identity'
 import type { AnimeEpisodeInfo } from '@shared/metadata'
 import { nanoid } from 'nanoid'
 import {
+  animeCastLinks,
   animeCharacterLinks,
   animeCompanyLinks,
   animeExternalIds,
@@ -18,12 +19,14 @@ import {
   characterPersonLinks,
   collectionAnimeLinks,
   type NewAnime,
+  type NewAnimeCastLink,
   type NewAnimeCharacterLink,
   type NewAnimeCompanyLink,
   type NewAnimePersonLink,
   type NewCollectionAnimeLink
 } from '@shared/db'
 import type {
+  IngestAnimeCastLink,
   IngestAnimeCharacterLink,
   IngestAnimeCompanyLink,
   IngestAnimeGraph,
@@ -68,7 +71,6 @@ function resolveAnimePersonLinks(params: {
           personId,
           role: link.role,
           isSpoiler: link.isSpoiler,
-          playing: link.playing,
           note: link.note
         }
       }
@@ -78,12 +80,38 @@ function resolveAnimePersonLinks(params: {
       personId: link.personId,
       role: link.role,
       isSpoiler: link.isSpoiler,
-      playing: link.playing ?? null,
       note: link.note ?? null,
       orderInAnime,
       orderInPerson: counters.next('person', link.personId)
     })
   })
+}
+
+function resolveAnimeCastLinks(params: {
+  animeId: string
+  animeIdentityKey: string
+  links: IngestAnimeCastLink[]
+  characterIdByIdentity: Map<string, string>
+  personIdByIdentity: Map<string, string>
+}): NewAnimeCastLink[] {
+  const { animeId, animeIdentityKey, links, characterIdByIdentity, personIdByIdentity } = params
+
+  const byKey = new Map<string, NewAnimeCastLink>()
+  for (const link of links) {
+    requireOwnerIdentity(link.animeIdentityKey, animeIdentityKey, 'anime')
+    const characterId = requirePersistedId(
+      characterIdByIdentity,
+      link.characterIdentityKey,
+      'character'
+    )
+    const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
+    const key = `${characterId}:${personId}`
+    if (byKey.has(key)) continue
+
+    byKey.set(key, { animeId, characterId, personId, note: link.note ?? null })
+  }
+
+  return [...byKey.values()]
 }
 
 function resolveAnimeCompanyLinks(params: {
@@ -228,6 +256,9 @@ export class AnimeIngestPersistHandler {
     for (const link of graph.links.characterPerson) {
       requiredPersonIdentities.add(link.personIdentityKey)
     }
+    for (const link of graph.links.animeCast) {
+      requiredPersonIdentities.add(link.personIdentityKey)
+    }
 
     const requiredCompanyIdentities = new Set<string>()
     for (const link of graph.links.animeCompany) {
@@ -239,6 +270,9 @@ export class AnimeIngestPersistHandler {
       requiredCharacterIdentities.add(link.characterIdentityKey)
     }
     for (const link of graph.links.characterPerson) {
+      requiredCharacterIdentities.add(link.characterIdentityKey)
+    }
+    for (const link of graph.links.animeCast) {
       requiredCharacterIdentities.add(link.characterIdentityKey)
     }
 
@@ -303,6 +337,16 @@ export class AnimeIngestPersistHandler {
       characterIdByIdentity
     })) {
       tx.insert(animeCharacterLinks).values(link).run()
+    }
+
+    for (const link of resolveAnimeCastLinks({
+      animeId,
+      animeIdentityKey: graph.anime.identityKey,
+      links: graph.links.animeCast,
+      characterIdByIdentity,
+      personIdByIdentity
+    })) {
+      tx.insert(animeCastLinks).values(link).onConflictDoNothing().run()
     }
 
     for (const link of resolveCharacterPersonLinks({

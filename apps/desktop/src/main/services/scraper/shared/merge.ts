@@ -7,7 +7,12 @@ import type {
   ScrapedPersonMetadata
 } from '@shared/scraper'
 import type { Tag } from '@shared/metadata'
-import { buildEntityAliasKeys, normalizeExternalIds, type ExternalId } from '@shared/identity'
+import {
+  buildEntityAliasKeys,
+  normalizeExternalIds,
+  normalizeKeyText,
+  type ExternalId
+} from '@shared/identity'
 import { mergeScrapedIdentities } from './identity'
 
 interface MergeIdentityEntityBase {
@@ -408,6 +413,7 @@ export function mergePersonMetadataFields(
 ): ScrapedPersonMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'identity',
+    'aliases',
     'externalSites',
     'tags',
     'photos'
@@ -416,6 +422,7 @@ export function mergePersonMetadataFields(
   return {
     ...merged,
     identity: mergeScrapedIdentities(existing.identity, incoming.identity),
+    aliases: mergeAliases(existing.aliases, incoming.aliases),
     externalSites: mergeExternalSites(existing.externalSites, incoming.externalSites),
     tags: mergeTagsArray(existing.tags, incoming.tags),
     photos: mergeImageUrls(existing.photos, incoming.photos)
@@ -423,17 +430,27 @@ export function mergePersonMetadataFields(
 }
 
 /**
- * Pick the characters a media-person credit performs.
+ * Union the alternate names two sources credit an entity under.
  *
- * The higher-ranked source wins as a whole so a merge never interleaves two
- * spellings of the same character across sources.
+ * Every source's alias is true, so unlike scalar fields these accumulate;
+ * absent on both sides stays absent so a later source can still answer.
  */
-export function mergePlaying(
+export function mergeAliases(
   existing: readonly string[] | undefined,
   incoming: readonly string[] | undefined
 ): string[] | undefined {
-  const stated = existing?.length ? existing : incoming
-  return stated ? [...stated] : undefined
+  if (!existing && !incoming) return undefined
+
+  const byKey = new Map<string, string>()
+  for (const value of [...(existing ?? []), ...(incoming ?? [])]) {
+    const name = value.trim()
+    if (!name) continue
+
+    const key = normalizeKeyText(name)
+    if (!byKey.has(key)) byKey.set(key, name)
+  }
+
+  return [...byKey.values()]
 }
 
 /**
@@ -497,6 +514,7 @@ export function mergeCharacterMetadataFields(
 ): ScrapedCharacterMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'identity',
+    'aliases',
     'externalSites',
     'tags',
     'persons',
@@ -506,6 +524,7 @@ export function mergeCharacterMetadataFields(
   return {
     ...merged,
     identity: mergeScrapedIdentities(existing.identity, incoming.identity),
+    aliases: mergeAliases(existing.aliases, incoming.aliases),
     externalSites: mergeExternalSites(existing.externalSites, incoming.externalSites),
     tags: mergeTagsArray(existing.tags, incoming.tags),
     persons: mergeCharacterPersons(existing.persons, incoming.persons, relationCollectionOptions),

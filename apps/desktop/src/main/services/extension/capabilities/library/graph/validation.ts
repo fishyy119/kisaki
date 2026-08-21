@@ -8,30 +8,20 @@ import {
   LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS,
   LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS,
   LIBRARY_GRAPH_NODE_KINDS,
-  LIBRARY_GRAPH_SEASON_ATTACHMENT_SLOTS,
   LIBRARY_GAME_CHARACTER_ROLES,
   LIBRARY_GAME_COMPANY_ROLES,
   LIBRARY_GAME_PERSON_ROLES,
+  LIBRARY_COMPANY_RELATION_TYPES,
   LIBRARY_MEDIA_RELATION_TYPE_RULES,
   LIBRARY_MEDIA_TYPES,
-  LIBRARY_MOVIE_CHARACTER_ROLES,
-  LIBRARY_MOVIE_COMPANY_ROLES,
-  LIBRARY_MOVIE_PERSON_ROLES,
-  LIBRARY_TV_CHARACTER_ROLES,
-  LIBRARY_TV_COMPANY_ROLES,
-  LIBRARY_TV_PERSON_ROLES,
   assertValidLibraryAnimeCreateInput,
   assertValidLibraryAnimeEpisodeCreateInput,
   assertValidLibraryCharacterCreateInput,
   assertValidLibraryCollectionCreateInput,
   assertValidLibraryCompanyCreateInput,
   assertValidLibraryGameCreateInput,
-  assertValidLibraryMovieCreateInput,
   assertValidLibraryPersonCreateInput,
   assertValidLibraryTagCreateInput,
-  assertValidLibraryTvCreateInput,
-  assertValidLibraryTvEpisodeCreateInput,
-  assertValidLibraryTvSeasonCreateInput,
   createValidationError,
   type LibraryGraphEdge,
   type LibraryGraphInput,
@@ -53,7 +43,6 @@ const NODES_KEYS = new Set<string>([
   'characters',
   'notes',
   'sessions',
-  'seasons',
   'episodes',
   'attachments'
 ])
@@ -69,21 +58,15 @@ const NODE_BASE_KEYS = new Set<string>([
 const NODE_REF_KEYS = new Set<string>(['kind', 'key'])
 const COMPANY_ROLES: Record<LibraryMediaType, readonly string[]> = {
   game: LIBRARY_GAME_COMPANY_ROLES,
-  anime: LIBRARY_ANIME_COMPANY_ROLES,
-  tv: LIBRARY_TV_COMPANY_ROLES,
-  movie: LIBRARY_MOVIE_COMPANY_ROLES
+  anime: LIBRARY_ANIME_COMPANY_ROLES
 }
 const PERSON_ROLES: Record<LibraryMediaType, readonly string[]> = {
   game: LIBRARY_GAME_PERSON_ROLES,
-  anime: LIBRARY_ANIME_PERSON_ROLES,
-  tv: LIBRARY_TV_PERSON_ROLES,
-  movie: LIBRARY_MOVIE_PERSON_ROLES
+  anime: LIBRARY_ANIME_PERSON_ROLES
 }
 const CHARACTER_ROLES: Record<LibraryMediaType, readonly string[]> = {
   game: LIBRARY_GAME_CHARACTER_ROLES,
-  anime: LIBRARY_ANIME_CHARACTER_ROLES,
-  tv: LIBRARY_TV_CHARACTER_ROLES,
-  movie: LIBRARY_MOVIE_CHARACTER_ROLES
+  anime: LIBRARY_ANIME_CHARACTER_ROLES
 }
 const DIAGNOSTIC_KEYS = new Set<string>(['level', 'code', 'message', 'nodeKey', 'edgeKind'])
 const DIAGNOSTIC_LEVELS = ['info', 'warning', 'error'] as const
@@ -157,13 +140,6 @@ function validateNodes(value: unknown): void {
     validateSessionNode
   )
   validateNodeArray(
-    nodes.seasons,
-    'season',
-    'library.graph.nodes.seasons',
-    keys,
-    validateSeasonNode
-  )
-  validateNodeArray(
     nodes.episodes,
     'episode',
     'library.graph.nodes.episodes',
@@ -217,12 +193,6 @@ function validateMediaNode(node: JsonRecord, label: string): void {
   switch (node.mediaType as LibraryMediaType) {
     case 'anime':
       assertValidLibraryAnimeCreateInput(node.input)
-      return
-    case 'tv':
-      assertValidLibraryTvCreateInput(node.input)
-      return
-    case 'movie':
-      assertValidLibraryMovieCreateInput(node.input)
       return
     case 'game':
       assertValidLibraryGameCreateInput(node.input)
@@ -279,17 +249,9 @@ function validateSessionNode(node: JsonRecord, label: string): void {
   }
 }
 
-function validateSeasonNode(node: JsonRecord): void {
-  assertValidLibraryTvSeasonCreateInput(node.input)
-}
-
 function validateEpisodeNode(node: JsonRecord, label: string): void {
-  if (node.mediaType === 'tv') {
-    assertValidLibraryTvEpisodeCreateInput(node.input)
-    return
-  }
   if (node.mediaType !== 'anime') {
-    throw createValidationError(`${label}.mediaType must be "anime" or "tv".`)
+    throw createValidationError(`${label}.mediaType must be "anime".`)
   }
 
   assertValidLibraryAnimeEpisodeCreateInput(node.input)
@@ -313,7 +275,6 @@ function validateEdges(value: unknown, nodesValue: unknown): void {
   const mediaTypes = collectMediaTypes(nodesValue)
   const edgeKeys = new Set<string>()
   const singleOwnerKeys = new Set<string>()
-  const seasonPlacedEpisodes = new Set<string>()
 
   for (const [index, item] of value.entries()) {
     const edge = requireRecord(item, `library.graph.edges[${index}]`) as unknown as LibraryGraphEdge
@@ -328,41 +289,13 @@ function validateEdges(value: unknown, nodesValue: unknown): void {
     if (
       edge.kind === 'media-note' ||
       edge.kind === 'media-session' ||
-      edge.kind === 'media-season' ||
-      edge.kind === 'media-episode' ||
-      edge.kind === 'season-episode'
+      edge.kind === 'media-episode'
     ) {
-      const ownerKey =
-        edge.kind === 'season-episode'
-          ? `season-placement:${edge.to.key}`
-          : graphNodeIdentity(edge.to.kind, edge.to.key)
+      const ownerKey = graphNodeIdentity(edge.to.kind, edge.to.key)
       if (singleOwnerKeys.has(ownerKey)) {
         throw createValidationError(`${edge.to.kind} node "${edge.to.key}" has multiple owners.`)
       }
       singleOwnerKeys.add(ownerKey)
-    }
-
-    if (edge.kind === 'season-episode') {
-      seasonPlacedEpisodes.add(edge.to.key)
-    }
-  }
-
-  requireSeasonPlacements(nodesValue, seasonPlacedEpisodes)
-}
-
-/** Tv episodes live in a season, so the show edge alone cannot place them. */
-function requireSeasonPlacements(nodesValue: unknown, placed: ReadonlySet<string>): void {
-  const nodes = requireRecord(nodesValue, 'library.graph.nodes')
-  if (!Array.isArray(nodes.episodes)) {
-    return
-  }
-
-  for (const node of nodes.episodes) {
-    const episode = requireRecord(node, 'library.graph.nodes.episodes[]')
-    if (episode.mediaType === 'tv' && !placed.has(episode.key as string)) {
-      throw createValidationError(
-        `Tv episode node "${String(episode.key)}" requires a season-episode edge.`
-      )
     }
   }
 }
@@ -408,7 +341,6 @@ function validateEdge(
       )
       validateOptionalFiniteNumber(edge.order, `${label}.order`)
       validateOptionalString(edge.note, `${label}.note`)
-      validateOptionalStringArray(edge.playing, `${label}.playing`)
       return
     case 'media-character':
       validateEndpointKinds(edge, label, 'media', 'character')
@@ -418,6 +350,14 @@ function validateEdge(
         `${label}.role`
       )
       validateOptionalFiniteNumber(edge.order, `${label}.order`)
+      validateOptionalString(edge.note, `${label}.note`)
+      return
+    case 'media-cast':
+      validateEndpointKinds(edge, label, 'media', 'character')
+      validateNodeRef((edge as unknown as JsonRecord).person, `${label}.person`, nodeKinds)
+      if (edge.person.kind !== 'person') {
+        throw createValidationError(`${label}.person.kind must be "person".`)
+      }
       validateOptionalString(edge.note, `${label}.note`)
       return
     case 'character-person':
@@ -439,6 +379,12 @@ function validateEdge(
       validateOptionalFiniteNumber(edge.order, `${label}.order`)
       return
     }
+    case 'company-company':
+      validateEndpointKinds(edge, label, 'company', 'company')
+      validateRole(edge.type, LIBRARY_COMPANY_RELATION_TYPES, `${label}.type`)
+      validateOptionalString(edge.note, `${label}.note`)
+      validateOptionalFiniteNumber(edge.order, `${label}.order`)
+      return
     case 'media-note':
       validateEndpointKinds(edge, label, 'media', 'note')
       requireMediaType(edge.from.key, 'game', mediaTypes, label)
@@ -447,20 +393,9 @@ function validateEdge(
       validateEndpointKinds(edge, label, 'media', 'session')
       requireMediaType(edge.from.key, 'game', mediaTypes, label)
       return
-    case 'media-season':
-      validateEndpointKinds(edge, label, 'media', 'season')
-      requireMediaType(edge.from.key, 'tv', mediaTypes, label)
-      return
-    case 'media-episode': {
+    case 'media-episode':
       validateEndpointKinds(edge, label, 'media', 'episode')
-      const ownerType = edgeMediaType(edge.from.key, mediaTypes)
-      if (ownerType !== 'anime' && ownerType !== 'tv') {
-        throw createValidationError(`${label} requires an anime or tv media node.`)
-      }
-      return
-    }
-    case 'season-episode':
-      validateEndpointKinds(edge, label, 'season', 'episode')
+      requireMediaType(edge.from.key, 'anime', mediaTypes, label)
       return
     case 'media-attachment':
       validateEndpointKinds(edge, label, 'media', 'attachment')
@@ -471,15 +406,6 @@ function validateEdge(
         throw createValidationError(`${label}.replace must be a boolean.`)
       }
       validateSaveBackup(edge.saveBackup, `${label}.saveBackup`)
-      return
-    case 'season-attachment':
-      validateEndpointKinds(edge, label, 'season', 'attachment')
-      if (!LIBRARY_GRAPH_SEASON_ATTACHMENT_SLOTS.includes(edge.slot as never)) {
-        throw createValidationError(`${label}.slot is not supported.`)
-      }
-      if (edge.replace !== undefined && typeof edge.replace !== 'boolean') {
-        throw createValidationError(`${label}.replace must be a boolean.`)
-      }
       return
     case 'episode-attachment':
       validateEndpointKinds(edge, label, 'episode', 'attachment')
@@ -590,7 +516,6 @@ function collectNodeKinds(nodesValue: unknown): Map<string, LibraryGraphNodeKind
     [nodes.characters, 'character'],
     [nodes.notes, 'note'],
     [nodes.sessions, 'session'],
-    [nodes.seasons, 'season'],
     [nodes.episodes, 'episode'],
     [nodes.attachments, 'attachment']
   ]
@@ -666,15 +591,6 @@ function requireString(value: unknown, label: string): string {
 function validateOptionalString(value: unknown, label: string): void {
   if (value !== undefined && typeof value !== 'string') {
     throw createValidationError(`${label} must be a string.`)
-  }
-}
-
-function validateOptionalStringArray(value: unknown, label: string): void {
-  if (value === undefined) {
-    return
-  }
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    throw createValidationError(`${label} must be an array of strings.`)
   }
 }
 

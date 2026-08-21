@@ -12,7 +12,7 @@ import { CoverImage } from '@renderer/components/ui/cover-image'
 import { useCharacter } from '@renderer/composables/use-character'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { getEntityIcon } from '@renderer/utils/format'
+import { formatAliases, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { CharacterBasicFormDialog } from '../forms'
 
@@ -28,6 +28,8 @@ const isEditOpen = ref(false)
 // =============================================================================
 // Constants
 // =============================================================================
+
+const aliasesLine = computed(() => formatAliases(character.value?.aliases))
 
 const GENDER_LABELS = computed<Record<string, string>>(() => m.value.library.gender)
 
@@ -97,6 +99,12 @@ function getBodyStats() {
               class="text-sm text-muted-foreground truncate"
             >
               {{ character.originalName }}
+            </p>
+            <p
+              v-if="aliasesLine"
+              class="text-xs text-muted-foreground/80 truncate"
+            >
+              {{ aliasesLine }}
             </p>
           </div>
           <Button

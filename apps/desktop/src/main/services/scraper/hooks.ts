@@ -13,19 +13,13 @@ import type {
   CompanySearchResult,
   GameScraperLookup,
   GameSearchResult,
-  MovieScraperLookup,
-  MovieSearchResult,
   PersonSearchResult,
   ScrapedAnimeBundle,
   ScrapedCharacterBundle,
   ScrapedCompanyBundle,
   ScrapedGameBundle,
-  ScrapedMovieBundle,
   ScrapedPersonBundle,
-  ScrapedTvBundle,
-  ScraperLookup,
-  TvScraperLookup,
-  TvSearchResult
+  ScraperLookup
 } from '@shared/scraper'
 
 export interface ScraperMediaHooks<TLookup extends ScraperLookup, TSearchResult, TBundle> {
@@ -40,8 +34,6 @@ export interface ScraperMediaHooks<TLookup extends ScraperLookup, TSearchResult,
 export interface ScraperHooks {
   game: ScraperMediaHooks<GameScraperLookup, GameSearchResult, ScrapedGameBundle>
   anime: ScraperMediaHooks<AnimeScraperLookup, AnimeSearchResult, ScrapedAnimeBundle>
-  tv: ScraperMediaHooks<TvScraperLookup, TvSearchResult, ScrapedTvBundle>
-  movie: ScraperMediaHooks<MovieScraperLookup, MovieSearchResult, ScrapedMovieBundle>
   person: ScraperMediaHooks<ScraperLookup, PersonSearchResult, ScrapedPersonBundle>
   company: ScraperMediaHooks<ScraperLookup, CompanySearchResult, ScrapedCompanyBundle>
   character: ScraperMediaHooks<ScraperLookup, CharacterSearchResult, ScrapedCharacterBundle>
@@ -51,8 +43,6 @@ export function createScraperHooks(): ScraperHooks {
   return {
     game: createScraperMediaHooks('scraper.game'),
     anime: createScraperMediaHooks('scraper.anime'),
-    tv: createScraperMediaHooks('scraper.tv'),
-    movie: createScraperMediaHooks('scraper.movie'),
     person: createScraperMediaHooks('scraper.person'),
     company: createScraperMediaHooks('scraper.company'),
     character: createScraperMediaHooks('scraper.character')

@@ -274,6 +274,11 @@ export function applyAnimePlan(
           mode: plan.links.animeCharacter,
           links: relationGraph.links.animeCharacter
         },
+        cast: {
+          kind: 'animeCast',
+          mode: plan.links.animeCast,
+          links: relationGraph.links.animeCast
+        },
         characterPerson: {
           mode: plan.links.characterPerson,
           links: relationGraph.links.characterPerson

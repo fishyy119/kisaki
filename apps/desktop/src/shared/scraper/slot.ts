@@ -12,8 +12,6 @@ import type {
   CompanyScraperSlotConfigs,
   GameScraperSlot,
   GameScraperSlotConfigs,
-  MovieScraperSlot,
-  MovieScraperSlotConfigs,
   PersonScraperSlot,
   PersonScraperSlotConfigs,
   RelationCollectionSlotConfig,
@@ -22,8 +20,6 @@ import type {
   ScraperSlotConfigs,
   SlotConfig,
   SlotStrategy,
-  TvScraperSlot,
-  TvScraperSlotConfigs,
   UnmatchedEntityPolicy
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
@@ -34,9 +30,7 @@ import {
   CHARACTER_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
   GAME_SCRAPER_SLOTS,
-  MOVIE_SCRAPER_SLOTS,
-  PERSON_SCRAPER_SLOTS,
-  TV_SCRAPER_SLOTS
+  PERSON_SCRAPER_SLOTS
 } from '@shared/db'
 
 export type ScraperMediaType = ContentEntityType
@@ -50,8 +44,6 @@ export type SlotConfigForSlot<S extends ScraperSlot> = S extends RelationCollect
 export interface ScraperSlotConfigsByMediaType {
   game: GameScraperSlotConfigs
   anime: AnimeScraperSlotConfigs
-  tv: TvScraperSlotConfigs
-  movie: MovieScraperSlotConfigs
   person: PersonScraperSlotConfigs
   company: CompanyScraperSlotConfigs
   character: CharacterScraperSlotConfigs
@@ -79,18 +71,6 @@ export type AnimeImageSlot = 'covers' | 'backdrops' | 'logos'
 
 /** Anime image slot list. */
 export const ANIME_IMAGE_SLOTS: AnimeImageSlot[] = ['covers', 'backdrops', 'logos']
-
-/** TV image slot types. */
-export type TvImageSlot = 'covers' | 'backdrops' | 'logos'
-
-/** TV image slot list. */
-export const TV_IMAGE_SLOTS: TvImageSlot[] = ['covers', 'backdrops', 'logos']
-
-/** Movie image slot types. */
-export type MovieImageSlot = 'covers' | 'backdrops' | 'logos'
-
-/** Movie image slot list. */
-export const MOVIE_IMAGE_SLOTS: MovieImageSlot[] = ['covers', 'backdrops', 'logos']
 
 /** Every image slot across media types; must stay in sync with ScraperImageSlot. */
 export const SCRAPER_IMAGE_SLOTS: ScraperImageSlot[] = [
@@ -178,8 +158,6 @@ function normalizeBasicSlotConfig(value: unknown): BasicSlotConfig | null {
 
 export function getScraperSlotsForMediaType(mediaType: 'game'): readonly GameScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'anime'): readonly AnimeScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: 'tv'): readonly TvScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: 'movie'): readonly MovieScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'person'): readonly PersonScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'company'): readonly CompanyScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'character'): readonly CharacterScraperSlot[]
@@ -190,10 +168,6 @@ export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readon
       return GAME_SCRAPER_SLOTS
     case 'anime':
       return ANIME_SCRAPER_SLOTS
-    case 'tv':
-      return TV_SCRAPER_SLOTS
-    case 'movie':
-      return MOVIE_SCRAPER_SLOTS
     case 'person':
       return PERSON_SCRAPER_SLOTS
     case 'company':
@@ -217,14 +191,6 @@ export function normalizeSlotConfigs(
   mediaType: 'anime',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): AnimeScraperSlotConfigs
-export function normalizeSlotConfigs(
-  mediaType: 'tv',
-  slotConfigs: ScraperSlotConfigs | null | undefined
-): TvScraperSlotConfigs
-export function normalizeSlotConfigs(
-  mediaType: 'movie',
-  slotConfigs: ScraperSlotConfigs | null | undefined
-): MovieScraperSlotConfigs
 export function normalizeSlotConfigs(
   mediaType: 'person',
   slotConfigs: ScraperSlotConfigs | null | undefined
@@ -401,18 +367,6 @@ export function createSlotConfigs(
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): AnimeScraperSlotConfigs
-export function createSlotConfigs(
-  mediaType: 'tv',
-  providerId: string,
-  capabilities: ScraperCapability[],
-  locale?: ContentLocale
-): TvScraperSlotConfigs
-export function createSlotConfigs(
-  mediaType: 'movie',
-  providerId: string,
-  capabilities: ScraperCapability[],
-  locale?: ContentLocale
-): MovieScraperSlotConfigs
 export function createSlotConfigs(
   mediaType: 'person',
   providerId: string,

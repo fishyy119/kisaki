@@ -79,6 +79,11 @@ export function rebuildLinkSnapshotBefore(
       after.characterLinkIds,
       changes.filter((change) => change.table === tables.character),
       'id'
+    ),
+    castLinkIds: rebuildIdSetBefore(
+      after.castLinkIds,
+      changes.filter((change) => change.table === tables.cast),
+      'id'
     )
   }
 }

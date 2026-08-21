@@ -20,6 +20,8 @@ import type { ExternalId, Tag } from './common'
 export interface PersonInfo {
   name: string
   originalName?: string
+  /** Other names this person is credited under, such as pen names. */
+  aliases?: string[]
   birthDate?: PartialDate
   deathDate?: PartialDate
   gender?: Gender

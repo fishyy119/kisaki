@@ -20,6 +20,7 @@ export { EntityExternalSitesFormDialog } from './sites'
 export { EntityExternalIdsFormDialog } from './identities'
 export { EntityTagsFormDialog } from './tags'
 export { EntityLinksFormDialog, type LinkViewKey } from './links'
+export { EntityCastFormDialog } from './cast'
 export {
   EntityRoleLinksSection,
   EntityRoleLinksTab,

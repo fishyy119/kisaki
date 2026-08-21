@@ -7,10 +7,8 @@ import type {
   CharacterScraperProvider,
   CompanyScraperProvider,
   GameScraperProvider,
-  MovieScraperProvider,
   PersonScraperProvider,
-  ScraperService,
-  TvScraperProvider
+  ScraperService
 } from '@main/services/scraper'
 import {
   requireContributionOwner,
@@ -45,22 +43,6 @@ const SCRAPER_DOMAINS = {
       scraper.anime.registerProvider(provider as AnimeScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
       scraper.anime.unregisterProvider(registryProviderId)
-  },
-  tv: {
-    kind: 'tvs',
-    mediaType: 'tv',
-    registerWithScraper: (scraper, provider) =>
-      scraper.tv.registerProvider(provider as TvScraperProvider),
-    unregisterFromScraper: (scraper, registryProviderId) =>
-      scraper.tv.unregisterProvider(registryProviderId)
-  },
-  movie: {
-    kind: 'movies',
-    mediaType: 'movie',
-    registerWithScraper: (scraper, provider) =>
-      scraper.movie.registerProvider(provider as MovieScraperProvider),
-    unregisterFromScraper: (scraper, registryProviderId) =>
-      scraper.movie.unregisterProvider(registryProviderId)
   },
   person: {
     kind: 'persons',

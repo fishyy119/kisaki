@@ -13,6 +13,7 @@ import type {
 } from '@shared/metadata'
 import type {
   IngestGameGraph,
+  IngestGameCastLink,
   IngestGameCharacterLink,
   IngestCharacterPersonLink,
   IngestGameCompanyLink,
@@ -30,11 +31,8 @@ import type {
   ScraperLookup
 } from '@shared/scraper'
 import {
-  absorbPlaying,
   compareText,
   createIdentityAliasIndex,
-  createPendingPlaying,
-  finalizePlaying,
   firstNonEmpty,
   mergeExternalIds,
   normalizeCharacterCore,
@@ -45,16 +43,19 @@ import {
   pickFirstUrl,
   upsertCharacterNode,
   upsertCompanyNode,
-  upsertPersonNode,
-  type PendingPlaying,
-  type PlayingInput
+  upsertPersonNode
 } from './common'
 
 interface PendingGamePersonLink {
   personIdentityKey: string
   role: GamePersonRole
   isSpoiler: boolean
-  playing: PendingPlaying
+  note?: string
+}
+
+interface PendingGameCastLink {
+  characterIdentityKey: string
+  personIdentityKey: string
   note?: string
 }
 
@@ -97,26 +98,41 @@ function upsertGamePersonLink(
   personIdentityKey: string,
   role: GamePersonRole,
   isSpoiler: boolean | undefined,
-  playing: PlayingInput,
   note: string | undefined
 ): void {
   const key = `${personIdentityKey}:${role}`
   const existing = edgeMap.get(key)
   if (!existing) {
-    const pendingPlaying = createPendingPlaying()
-    absorbPlaying(pendingPlaying, playing)
     edgeMap.set(key, {
       personIdentityKey,
       role,
       isSpoiler: !!isSpoiler,
-      playing: pendingPlaying,
       note: normalizeOptionalString(note)
     })
     return
   }
 
   existing.isSpoiler = existing.isSpoiler || !!isSpoiler
-  absorbPlaying(existing.playing, playing)
+  existing.note = firstNonEmpty(existing.note, note)
+}
+
+function upsertGameCastLink(
+  edgeMap: Map<string, PendingGameCastLink>,
+  characterIdentityKey: string,
+  personIdentityKey: string,
+  note: string | undefined
+): void {
+  const key = `${characterIdentityKey}:${personIdentityKey}`
+  const existing = edgeMap.get(key)
+  if (!existing) {
+    edgeMap.set(key, {
+      characterIdentityKey,
+      personIdentityKey,
+      note: normalizeOptionalString(note)
+    })
+    return
+  }
+
   existing.note = firstNonEmpty(existing.note, note)
 }
 
@@ -211,12 +227,23 @@ function finalizeGamePersonLinks(
       personIdentityKey: edge.personIdentityKey,
       role: edge.role,
       isSpoiler: edge.isSpoiler,
-      playing: finalizePlaying(edge.playing),
       note: edge.note,
       orderInGame,
       orderInPerson
     }
   })
+}
+
+function finalizeGameCastLinks(
+  gameIdentityKey: string,
+  edgeMap: Map<string, PendingGameCastLink>
+): IngestGameCastLink[] {
+  return [...edgeMap.values()].map((edge) => ({
+    gameIdentityKey,
+    characterIdentityKey: edge.characterIdentityKey,
+    personIdentityKey: edge.personIdentityKey,
+    note: edge.note
+  }))
 }
 
 function finalizeGameCompanyLinks(
@@ -359,6 +386,7 @@ function buildGameGraphInternal(
   const gamePersonLinks = new Map<string, PendingGamePersonLink>()
   const gameCompanyLinks = new Map<string, PendingGameCompanyLink>()
   const gameCharacterLinks = new Map<string, PendingGameCharacterLink>()
+  const gameCastLinks = new Map<string, PendingGameCastLink>()
   const characterPersonLinks = new Map<string, PendingCharacterPersonLink>()
 
   for (const fact of bundle?.relationFacts?.gamePerson ?? []) {
@@ -371,7 +399,6 @@ function buildGameGraphInternal(
       personIdentityKey,
       fact.role,
       fact.isSpoiler,
-      { stated: fact.playing },
       normalizeOptionalString(fact.note)
     )
   }
@@ -437,9 +464,13 @@ function buildGameGraphInternal(
         personIdentityKey,
         toGamePersonRoleFromCharacterPerson(personFact.role),
         personFact.isSpoiler,
-        { derived: core.name },
         note
       )
+      // Only a voice credit pairs a person with a character inside this entry;
+      // an illustrator of the same character is not part of the cast.
+      if (personFact.role === 'actor') {
+        upsertGameCastLink(gameCastLinks, characterIdentityKey, personIdentityKey, note)
+      }
     }
   }
 
@@ -482,9 +513,11 @@ function buildGameGraphInternal(
       personIdentityKey,
       toGamePersonRoleFromCharacterPerson(fact.role),
       fact.isSpoiler,
-      { derived: characterCore.name },
       note
     )
+    if (fact.role === 'actor') {
+      upsertGameCastLink(gameCastLinks, characterIdentityKey, personIdentityKey, note)
+    }
   }
 
   const media = bundle?.mediaCandidates
@@ -503,6 +536,7 @@ function buildGameGraphInternal(
       gamePerson: finalizeGamePersonLinks(gameIdentityKey, gamePersonLinks),
       gameCompany: finalizeGameCompanyLinks(gameIdentityKey, gameCompanyLinks),
       gameCharacter: finalizeGameCharacterLinks(gameIdentityKey, gameCharacterLinks),
+      gameCast: finalizeGameCastLinks(gameIdentityKey, gameCastLinks),
       characterPerson: finalizeCharacterPersonLinks(characterPersonLinks)
     },
     relatedEntries: bundle?.relationFacts?.relatedEntries,

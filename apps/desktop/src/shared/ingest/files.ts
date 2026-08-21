@@ -5,7 +5,7 @@
  * so its request and report shapes cross the process boundary.
  */
 
-import type { AnimeExtraType, MovieExtraType, TvExtraType } from '../db/contracts/enums'
+import type { AnimeExtraType } from '../db/contracts/enums'
 
 export interface IngestSyncAnimeFilesParams {
   animeId: string
@@ -40,75 +40,4 @@ export interface IngestAttachAnimeExtraFileParams {
   name?: string
   /** Explicit type; filename recognition guesses a new extra's type when omitted. */
   type?: AnimeExtraType
-}
-
-export interface IngestSyncTvFilesParams {
-  tvId: string
-  /** Defaults to the show's stored library directory. */
-  dirPath?: string
-}
-
-export interface IngestSyncTvFilesResult {
-  seasonCount: number
-  episodeCount: number
-  fileCount: number
-  /** Extra rows after the sync pass. */
-  extraCount: number
-  /** Files whose season and episode numbers could not be read from the file name. */
-  unrecognizedFiles: string[]
-}
-
-/** Attach one on-disk video file to an episode as a user-owned file row. */
-export interface IngestAttachTvEpisodeFileParams {
-  episodeId: string
-  /** Absolute path; may live outside the show's library directory. */
-  path: string
-}
-
-/** Register one on-disk video file as a user-owned extra file row. */
-export interface IngestAttachTvExtraFileParams {
-  tvId: string
-  /** Absolute path; may live outside the show's library directory. */
-  path: string
-  /** Attach the file to this existing extra; a new extra is created when omitted. */
-  extraId?: string
-  /** Explicit display name; filename recognition names a new extra when omitted. */
-  name?: string
-  /** Explicit type; filename recognition guesses a new extra's type when omitted. */
-  type?: TvExtraType
-}
-
-export interface IngestSyncMovieFilesParams {
-  movieId: string
-  /** Defaults to the movie's stored library directory. */
-  dirPath?: string
-}
-
-export interface IngestSyncMovieFilesResult {
-  /** Playable release rows after the sync pass. */
-  fileCount: number
-  /** Extra rows after the sync pass. */
-  extraCount: number
-}
-
-/** Attach one on-disk video file to a movie as a user-owned release row. */
-export interface IngestAttachMovieFileParams {
-  movieId: string
-  /** Absolute path; may live outside the movie's library directory. */
-  path: string
-  /** Explicit edition label; filename recognition reads one when omitted. */
-  edition?: string
-}
-
-/** Register one on-disk video file as a user-owned extra file row. */
-export interface IngestAttachMovieExtraFileParams {
-  movieId: string
-  /** Absolute path; may live outside the movie's library directory. */
-  path: string
-  /** Attach the file to this existing extra; a new extra is created when omitted. */
-  extraId?: string
-  /** Explicit display name; filename recognition names a new extra when omitted. */
-  name?: string
-  /** Explicit type; filename recognition guesses a new extra's type when omitted. */
-  type?: MovieExtraType
 }

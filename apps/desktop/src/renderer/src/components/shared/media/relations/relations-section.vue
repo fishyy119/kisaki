@@ -11,8 +11,6 @@ import { SectionScroll } from '@renderer/components/ui/section'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { EntityCard } from '@renderer/components/shared/entity'
 import { GameDetailDialog } from '@renderer/components/shared/game'
-import { MovieDetailDialog } from '@renderer/components/shared/movie'
-import { TvDetailDialog } from '@renderer/components/shared/tv'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { MediaRelationEntry, MediaRelationTarget } from '@renderer/core/db/media-relations'
 
@@ -78,19 +76,9 @@ function openDetail(target: MediaRelationTarget): void {
       :game-id="openTarget.id"
     />
     <AnimeDetailDialog
-      v-else-if="openTarget.mediaType === 'anime'"
-      v-model:open="dialogOpen"
-      :anime-id="openTarget.id"
-    />
-    <TvDetailDialog
-      v-else-if="openTarget.mediaType === 'tv'"
-      v-model:open="dialogOpen"
-      :tv-id="openTarget.id"
-    />
-    <MovieDetailDialog
       v-else
       v-model:open="dialogOpen"
-      :movie-id="openTarget.id"
+      :anime-id="openTarget.id"
     />
   </template>
 </template>

@@ -6,15 +6,16 @@ import type {
   LibraryCharacterPersonRole,
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
-  LibraryGamePersonRole,
-  LibraryMovieCharacterRole,
-  LibraryMovieCompanyRole,
-  LibraryMoviePersonRole,
-  LibraryTvCharacterRole,
-  LibraryTvCompanyRole,
-  LibraryTvPersonRole
+  LibraryGamePersonRole
 } from '../../shared/library'
 
+/**
+ * Two-endpoint links an extension can manage directly.
+ *
+ * An entry's cast is a three-way fact, so it is not a link kind: extensions
+ * write it through the graph's `media-cast` edge, which can name all three
+ * endpoints at once.
+ */
 export const LIBRARY_LINK_KINDS = [
   'game-person',
   'game-company',
@@ -22,24 +23,14 @@ export const LIBRARY_LINK_KINDS = [
   'anime-person',
   'anime-company',
   'anime-character',
-  'tv-person',
-  'tv-company',
-  'tv-character',
-  'movie-person',
-  'movie-company',
-  'movie-character',
   'character-person',
   'game-tag',
   'anime-tag',
-  'tv-tag',
-  'movie-tag',
   'character-tag',
   'person-tag',
   'company-tag',
   'collection-game',
   'collection-anime',
-  'collection-tv',
-  'collection-movie',
   'collection-character',
   'collection-person',
   'collection-company'
@@ -80,30 +71,6 @@ export interface AnimeCharacterLinkMetadata extends LibrarySpoilerLinkMetadata {
   role: LibraryAnimeCharacterRole
 }
 
-export interface TvPersonLinkMetadata extends LibrarySpoilerLinkMetadata {
-  role: LibraryTvPersonRole
-}
-
-export interface TvCompanyLinkMetadata extends LibrarySpoilerLinkMetadata {
-  role: LibraryTvCompanyRole
-}
-
-export interface TvCharacterLinkMetadata extends LibrarySpoilerLinkMetadata {
-  role: LibraryTvCharacterRole
-}
-
-export interface MoviePersonLinkMetadata extends LibrarySpoilerLinkMetadata {
-  role: LibraryMoviePersonRole
-}
-
-export interface MovieCompanyLinkMetadata extends LibrarySpoilerLinkMetadata {
-  role: LibraryMovieCompanyRole
-}
-
-export interface MovieCharacterLinkMetadata extends LibrarySpoilerLinkMetadata {
-  role: LibraryMovieCharacterRole
-}
-
 export interface CharacterPersonLinkMetadata extends LibrarySpoilerLinkMetadata {
   role: LibraryCharacterPersonRole
 }
@@ -119,24 +86,14 @@ export interface LibraryLinkMetadataMap {
   'anime-person': AnimePersonLinkMetadata
   'anime-company': AnimeCompanyLinkMetadata
   'anime-character': AnimeCharacterLinkMetadata
-  'tv-person': TvPersonLinkMetadata
-  'tv-company': TvCompanyLinkMetadata
-  'tv-character': TvCharacterLinkMetadata
-  'movie-person': MoviePersonLinkMetadata
-  'movie-company': MovieCompanyLinkMetadata
-  'movie-character': MovieCharacterLinkMetadata
   'character-person': CharacterPersonLinkMetadata
   'game-tag': TagMembershipMetadata
   'anime-tag': TagMembershipMetadata
-  'tv-tag': TagMembershipMetadata
-  'movie-tag': TagMembershipMetadata
   'character-tag': TagMembershipMetadata
   'person-tag': TagMembershipMetadata
   'company-tag': TagMembershipMetadata
   'collection-game': CollectionMembershipMetadata
   'collection-anime': CollectionMembershipMetadata
-  'collection-tv': CollectionMembershipMetadata
-  'collection-movie': CollectionMembershipMetadata
   'collection-character': CollectionMembershipMetadata
   'collection-person': CollectionMembershipMetadata
   'collection-company': CollectionMembershipMetadata
@@ -149,24 +106,14 @@ export interface LibraryLinkEndpointMap {
   'anime-person': { from: 'anime'; to: 'person' }
   'anime-company': { from: 'anime'; to: 'company' }
   'anime-character': { from: 'anime'; to: 'character' }
-  'tv-person': { from: 'tv'; to: 'person' }
-  'tv-company': { from: 'tv'; to: 'company' }
-  'tv-character': { from: 'tv'; to: 'character' }
-  'movie-person': { from: 'movie'; to: 'person' }
-  'movie-company': { from: 'movie'; to: 'company' }
-  'movie-character': { from: 'movie'; to: 'character' }
   'character-person': { from: 'character'; to: 'person' }
   'game-tag': { from: 'game'; to: 'tag' }
   'anime-tag': { from: 'anime'; to: 'tag' }
-  'tv-tag': { from: 'tv'; to: 'tag' }
-  'movie-tag': { from: 'movie'; to: 'tag' }
   'character-tag': { from: 'character'; to: 'tag' }
   'person-tag': { from: 'person'; to: 'tag' }
   'company-tag': { from: 'company'; to: 'tag' }
   'collection-game': { from: 'collection'; to: 'game' }
   'collection-anime': { from: 'collection'; to: 'anime' }
-  'collection-tv': { from: 'collection'; to: 'tv' }
-  'collection-movie': { from: 'collection'; to: 'movie' }
   'collection-character': { from: 'collection'; to: 'character' }
   'collection-person': { from: 'collection'; to: 'person' }
   'collection-company': { from: 'collection'; to: 'company' }

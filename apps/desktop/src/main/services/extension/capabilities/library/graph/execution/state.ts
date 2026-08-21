@@ -7,7 +7,6 @@ import type {
   LibraryGraphNoteNode,
   LibraryGraphResult,
   LibraryGraphResultAction,
-  LibraryGraphSeasonNode,
   LibraryGraphSessionNode
 } from '@kisaki3/extension-api'
 import { createDiagnostic } from '../diagnostics'
@@ -44,21 +43,15 @@ export function createApplyState(graph: NormalizedLibraryGraph): ApplyState {
     skippedMedia: new Set(),
     noteOwners: new Map(),
     sessionOwners: new Map(),
-    seasonOwners: new Map(),
     episodeOwners: new Map(),
-    episodeSeasons: new Map(
-      graph.edges
-        .filter((edge) => edge.kind === 'season-episode')
-        .map((edge) => [edge.to.key, edge.from.key])
-    ),
     attachmentActions: new Map(),
     attachmentDiagnostics: new Map()
   }
 }
 
 /**
- * Owned rows (notes, sessions, seasons, episodes) publish their ids through the
- * same map as entity nodes so later edges can resolve their endpoints.
+ * Owned rows (notes, sessions, episodes) publish their ids through the same map
+ * as entity nodes so later edges can resolve their endpoints.
  */
 export function setOwnedEntityId(
   state: ApplyState,
@@ -230,19 +223,6 @@ export function markUnownedNodes(
     }
   }
 
-  for (const entry of graph.nodes.seasons) {
-    if (!state.seasonOwners.has(entry.key)) {
-      const diagnostic = createDiagnostic({
-        level: 'error',
-        code: 'kisaki.graph.seasonUnowned',
-        message: 'Season nodes require a media-season edge.',
-        nodeKey: entry.key
-      })
-      draft.diagnostics.push(diagnostic)
-      setOwnedNodeResult(draft, entry, 'fail', undefined, [diagnostic])
-    }
-  }
-
   for (const entry of graph.nodes.episodes) {
     if (!state.episodeOwners.has(entry.key)) {
       const diagnostic = createDiagnostic({
@@ -297,11 +277,6 @@ export function requireNodeEntry(
 ): LibraryGraphNodeEntry<LibraryGraphSessionNode>
 export function requireNodeEntry(
   graph: NormalizedLibraryGraph,
-  kind: 'season',
-  key: string
-): LibraryGraphNodeEntry<LibraryGraphSeasonNode>
-export function requireNodeEntry(
-  graph: NormalizedLibraryGraph,
   kind: 'episode',
   key: string
 ): LibraryGraphNodeEntry<LibraryGraphEpisodeNode>
@@ -312,18 +287,16 @@ export function requireNodeEntry(
 ): LibraryGraphNodeEntry<LibraryGraphAttachmentNode>
 export function requireNodeEntry(
   graph: NormalizedLibraryGraph,
-  kind: 'note' | 'session' | 'season' | 'episode' | 'attachment',
+  kind: 'note' | 'session' | 'episode' | 'attachment',
   key: string
 ):
   | LibraryGraphNodeEntry<LibraryGraphNoteNode>
   | LibraryGraphNodeEntry<LibraryGraphSessionNode>
-  | LibraryGraphNodeEntry<LibraryGraphSeasonNode>
   | LibraryGraphNodeEntry<LibraryGraphEpisodeNode>
   | LibraryGraphNodeEntry<LibraryGraphAttachmentNode> {
   return graph.nodes.byIdentity.get(graphNodeIdentity(kind, key)) as
     | LibraryGraphNodeEntry<LibraryGraphNoteNode>
     | LibraryGraphNodeEntry<LibraryGraphSessionNode>
-    | LibraryGraphNodeEntry<LibraryGraphSeasonNode>
     | LibraryGraphNodeEntry<LibraryGraphEpisodeNode>
     | LibraryGraphNodeEntry<LibraryGraphAttachmentNode>
 }

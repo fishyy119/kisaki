@@ -12,8 +12,6 @@ import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/con
 import type { MediaType } from '@shared/common'
 import { AnimeActivityHandler } from './handlers/anime'
 import { GameActivityHandler } from './handlers/game'
-import { MovieActivityHandler } from './handlers/movie'
-import { TvActivityHandler } from './handlers/tv'
 import { createActivityHooks } from './hooks'
 import { registerActivityIpc } from './ipc'
 
@@ -34,8 +32,6 @@ export class ActivityService implements IMediaService {
 
   game!: GameActivityHandler
   anime!: AnimeActivityHandler
-  tv!: TvActivityHandler
-  movie!: MovieActivityHandler
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const ipc = container.get('ipc')
@@ -51,24 +47,19 @@ export class ActivityService implements IMediaService {
       this.hooks
     )
 
-    const player = container.get('player')
-    this.anime = new AnimeActivityHandler(db, player, ipc, this.hooks)
-    this.tv = new TvActivityHandler(db, player, ipc, this.hooks)
-    this.movie = new MovieActivityHandler(db, player, ipc, this.hooks)
+    this.anime = new AnimeActivityHandler(db, container.get('player'), ipc, this.hooks)
 
     registerActivityIpc(this, ipc)
     log.info('Initialized')
   }
 
   async dispose(): Promise<void> {
-    await this.movie.dispose()
-    await this.tv.dispose()
     await this.anime.dispose()
     await this.game.dispose()
     log.info('Disposed')
   }
 
   getSupportedMedia(): MediaType[] {
-    return ['game', 'anime', 'tv', 'movie']
+    return ['game', 'anime']
   }
 }

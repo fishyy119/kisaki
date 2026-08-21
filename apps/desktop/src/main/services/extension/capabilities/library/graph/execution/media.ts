@@ -6,14 +6,9 @@ import type {
   LibraryGraphResultAction,
   LibraryMediaType
 } from '@kisaki3/extension-api'
-import { animeEpisodes, animes, games, movies, tvEpisodes, tvSeasons, tvs } from '@shared/db'
+import { animeEpisodes, animes, games } from '@shared/db'
 import type { DbService } from '@main/services/db'
-import {
-  persistEpisodeStill,
-  persistSaveBackup,
-  persistSeasonPoster,
-  validateGraphFile
-} from '../attachments'
+import { persistEpisodeStill, persistSaveBackup, validateGraphFile } from '../attachments'
 import { createAttachmentPersistDiagnostic } from '../diagnostics'
 import type {
   LibraryGraphExecutionContext,
@@ -31,7 +26,6 @@ import {
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
 
 type EpisodeAttachmentEdge = Extract<LibraryGraphEdge, { kind: 'episode-attachment' }>
-type SeasonAttachmentEdge = Extract<LibraryGraphEdge, { kind: 'season-attachment' }>
 
 /** Slots that live on a media row column rather than in a list or backup set. */
 type MediaFileSlot = Exclude<
@@ -136,65 +130,6 @@ export async function previewEpisodeAttachmentEdge(
   return action
 }
 
-export async function previewSeasonAttachmentEdge(
-  edge: SeasonAttachmentEdge,
-  graph: NormalizedLibraryGraph,
-  draft: LibraryGraphResultDraft,
-  state: ApplyState,
-  options: ExecuteLibraryGraphOptions
-): Promise<LibraryGraphResultAction> {
-  const attachment = requireNodeEntry(graph, 'attachment', edge.to.key).node
-  const fileDiagnostic = await validateGraphFile(attachment.path, edge.to.key)
-  if (fileDiagnostic) {
-    recordAttachmentDiagnostic(draft, state, edge.to.key, fileDiagnostic)
-    if (graph.options.strictAttachments) {
-      recordAttachmentAction(state, edge.to.key, 'fail')
-      return 'fail'
-    }
-  }
-
-  const action = previewSeasonPosterAction(edge, graph.options.conflictMode, state, options)
-  recordAttachmentAction(state, edge.to.key, action)
-  return action
-}
-
-export async function applySeasonAttachmentEdge(
-  edge: SeasonAttachmentEdge,
-  graph: NormalizedLibraryGraph,
-  draft: LibraryGraphResultDraft,
-  state: ApplyState,
-  context: LibraryGraphExecutionContext,
-  options: ExecuteLibraryGraphOptions
-): Promise<LibraryGraphResultAction> {
-  const attachment = requireNodeEntry(graph, 'attachment', edge.to.key).node
-  const fileDiagnostic = await validateGraphFile(attachment.path, edge.to.key)
-  if (fileDiagnostic) {
-    recordAttachmentDiagnostic(draft, state, edge.to.key, fileDiagnostic)
-    const actionOnMissing = graph.options.strictAttachments ? 'fail' : 'skip'
-    recordAttachmentAction(state, edge.to.key, actionOnMissing)
-    return actionOnMissing
-  }
-
-  const action = previewSeasonPosterAction(edge, graph.options.conflictMode, state, options)
-  if (action === 'skip') {
-    recordAttachmentAction(state, edge.to.key, 'skip')
-    return 'skip'
-  }
-
-  try {
-    const seasonId = requireEntityId(state, edge.from.kind, edge.from.key)
-    await persistSeasonPoster(options.db, seasonId, attachment.path, context.signal)
-    recordAttachmentAction(state, edge.to.key, action)
-    return action
-  } catch (error) {
-    const diagnostic = createAttachmentPersistDiagnostic(error, edge.to.key)
-    recordAttachmentDiagnostic(draft, state, edge.to.key, diagnostic)
-    const actionOnError = graph.options.strictAttachments ? 'fail' : 'skip'
-    recordAttachmentAction(state, edge.to.key, actionOnError)
-    return actionOnError
-  }
-}
-
 export async function applyEpisodeAttachmentEdge(
   edge: EpisodeAttachmentEdge,
   graph: NormalizedLibraryGraph,
@@ -220,8 +155,7 @@ export async function applyEpisodeAttachmentEdge(
 
   try {
     const episodeId = requireEntityId(state, edge.from.kind, edge.from.key)
-    const mediaType = requireNodeEntry(graph, 'episode', edge.from.key).node.mediaType
-    await persistEpisodeStill(options.db, mediaType, episodeId, attachment.path, context.signal)
+    await persistEpisodeStill(options.db, episodeId, attachment.path, context.signal)
     recordAttachmentAction(state, edge.to.key, action)
     return action
   } catch (error) {
@@ -312,19 +246,11 @@ function previewEpisodeStillAction(
     return 'create'
   }
 
-  const mediaType = requireNodeEntry(graph, 'episode', edge.from.key).node.mediaType
-  const episode =
-    mediaType === 'tv'
-      ? options.db.client
-          .select({ stillFile: tvEpisodes.stillFile })
-          .from(tvEpisodes)
-          .where(eq(tvEpisodes.id, episodeId))
-          .get()
-      : options.db.client
-          .select({ stillFile: animeEpisodes.stillFile })
-          .from(animeEpisodes)
-          .where(eq(animeEpisodes.id, episodeId))
-          .get()
+  const episode = options.db.client
+    .select({ stillFile: animeEpisodes.stillFile })
+    .from(animeEpisodes)
+    .where(eq(animeEpisodes.id, episodeId))
+    .get()
   if (!episode) {
     return 'fail'
   }
@@ -332,31 +258,6 @@ function previewEpisodeStillAction(
     return 'create'
   }
   return shouldReplaceAttachment(edge.replace, graph.options.conflictMode) ? 'update' : 'skip'
-}
-
-function previewSeasonPosterAction(
-  edge: SeasonAttachmentEdge,
-  conflictMode: NormalizedLibraryGraph['options']['conflictMode'],
-  state: ApplyState,
-  options: ExecuteLibraryGraphOptions
-): LibraryGraphResultAction {
-  const seasonId = getEntityId(state, edge.from.kind, edge.from.key)
-  if (!seasonId) {
-    return 'create'
-  }
-
-  const season = options.db.client
-    .select({ posterFile: tvSeasons.posterFile })
-    .from(tvSeasons)
-    .where(eq(tvSeasons.id, seasonId))
-    .get()
-  if (!season) {
-    return 'fail'
-  }
-  if (!season.posterFile) {
-    return 'create'
-  }
-  return shouldReplaceAttachment(edge.replace, conflictMode) ? 'update' : 'skip'
 }
 
 interface MediaAttachmentRow {
@@ -373,24 +274,6 @@ function readMediaRow(
   switch (mediaType) {
     case 'anime': {
       const row = options.db.client.select().from(animes).where(eq(animes.id, mediaId)).get()
-      return row
-        ? {
-            files: { cover: row.coverFile, backdrop: row.backdropFile, logo: row.logoFile },
-            descriptionInlineFiles: row.descriptionInlineFiles ?? []
-          }
-        : undefined
-    }
-    case 'tv': {
-      const row = options.db.client.select().from(tvs).where(eq(tvs.id, mediaId)).get()
-      return row
-        ? {
-            files: { cover: row.coverFile, backdrop: row.backdropFile, logo: row.logoFile },
-            descriptionInlineFiles: row.descriptionInlineFiles ?? []
-          }
-        : undefined
-    }
-    case 'movie': {
-      const row = options.db.client.select().from(movies).where(eq(movies.id, mediaId)).get()
       return row
         ? {
             files: { cover: row.coverFile, backdrop: row.backdropFile, logo: row.logoFile },

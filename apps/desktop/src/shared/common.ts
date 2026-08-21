@@ -23,12 +23,14 @@
  * - Scraper support
  * - Independent library page at /library/$mediaType
  *
- * Media types are divided by metadata ecosystem and user-facing library, not by
- * playback technology: several media types share one technical capability
- * (anime/tv/movie all play video). Target set: game, anime, tv, movie, music,
- * audio, comic, book.
+ * Kisaki serves ACGN collections, so a media type must both consume differently
+ * (session/episode/page) and fit the shared ACGN metadata graph, where a
+ * character is a first-class entity a work links to. Target set: game, anime,
+ * comic, novel, plus music and audio in a second ring; live-action ecosystems
+ * are out of scope because their sources issue cast credits rather than
+ * characters.
  */
-export type MediaType = 'game' | 'anime' | 'tv' | 'movie'
+export type MediaType = 'game' | 'anime'
 
 /**
  * Metadata entity types - Entities associated with media
@@ -80,7 +82,7 @@ export type AllEntityType = ContentEntityType | OrganizerType
 // Type Constants (for iteration and validation)
 // =============================================================================
 
-export const MEDIA_TYPES: readonly MediaType[] = ['game', 'anime', 'tv', 'movie']
+export const MEDIA_TYPES: readonly MediaType[] = ['game', 'anime']
 
 export const METADATA_TYPES: readonly MetadataType[] = ['character', 'person', 'company']
 

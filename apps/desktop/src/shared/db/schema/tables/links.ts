@@ -9,30 +9,10 @@ import {
   characterPersonRole,
   gameCharacterRole,
   gameCompanyRole,
-  gamePersonRole,
-  movieCharacterRole,
-  movieCompanyRole,
-  moviePersonRole,
-  stringArrayJson,
-  tvCharacterRole,
-  tvCompanyRole,
-  tvPersonRole
+  gamePersonRole
 } from '../../columns'
 import { collections } from './collections'
-import { animes, characters, companies, games, movies, persons, tvs } from './content'
-
-/**
- * Characters a credited person performs in this entry, as credited at scrape
- * time.
- *
- * The entry-scoped cast pairing has nowhere else to live: an (entry, character,
- * person) fact is stored as separate binary edges, and `character_person_links`
- * is global, so joining back through it only approximates who played whom in a
- * given entry. `null` means no source stated a role for this credit.
- */
-function playingColumn() {
-  return stringArrayJson('playing')
-}
+import { animes, characters, companies, games, persons } from './content'
 
 export const gamePersonLinks = sqliteTable(
   'game_person_links',
@@ -46,7 +26,6 @@ export const gamePersonLinks = sqliteTable(
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
     role: gamePersonRole('role').notNull().default('other'),
-    playing: playingColumn(),
     note: text('note'),
     orderInGame: integer('order_in_game').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)
@@ -116,7 +95,6 @@ export const animePersonLinks = sqliteTable(
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
     role: animePersonRole('role').notNull().default('other'),
-    playing: playingColumn(),
     note: text('note'),
     orderInAnime: integer('order_in_anime').notNull().default(0),
     orderInPerson: integer('order_in_person').notNull().default(0)
@@ -174,143 +152,62 @@ export const animeCharacterLinks = sqliteTable(
   ]
 )
 
-export const tvPersonLinks = sqliteTable(
-  'tv_person_links',
+/**
+ * A voice credit: which person voices which character in this entry.
+ *
+ * Casting is a three-way fact — sources issue it per work, and the same
+ * character is voiced by different people across an adult original, its
+ * all-ages adaptation, and its remakes — so it is stored whole rather than
+ * split into binary edges that no join can put back together.
+ *
+ * The row carries no role, spoiler flag, or order of its own: being here is the
+ * fact, the spoiler decision belongs to the character link, and display order
+ * follows the character link's order.
+ */
+export const gameCastLinks = sqliteTable(
+  'game_cast_links',
   {
     ...baseColumns,
-    tvId: text('tv_id')
+    gameId: text('game_id')
       .notNull()
-      .references(() => tvs.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    personId: text('person_id')
-      .notNull()
-      .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    role: tvPersonRole('role').notNull().default('other'),
-    playing: playingColumn(),
-    note: text('note'),
-    orderInTv: integer('order_in_tv').notNull().default(0),
-    orderInPerson: integer('order_in_person').notNull().default(0)
-  },
-  (t) => [
-    unique().on(t.tvId, t.personId, t.role),
-    index('idx_tv_person_links_tv_id').on(t.tvId),
-    index('idx_tv_person_links_person_id').on(t.personId)
-  ]
-)
-
-export const tvCompanyLinks = sqliteTable(
-  'tv_company_links',
-  {
-    ...baseColumns,
-    tvId: text('tv_id')
-      .notNull()
-      .references(() => tvs.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    companyId: text('company_id')
-      .notNull()
-      .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    role: tvCompanyRole('role').notNull().default('other'),
-    note: text('note'),
-    orderInTv: integer('order_in_tv').notNull().default(0),
-    orderInCompany: integer('order_in_company').notNull().default(0)
-  },
-  (t) => [
-    unique().on(t.tvId, t.companyId, t.role),
-    index('idx_tv_company_links_tv_id').on(t.tvId),
-    index('idx_tv_company_links_company_id').on(t.companyId)
-  ]
-)
-
-export const tvCharacterLinks = sqliteTable(
-  'tv_character_links',
-  {
-    ...baseColumns,
-    tvId: text('tv_id')
-      .notNull()
-      .references(() => tvs.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+      .references(() => games.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     characterId: text('character_id')
       .notNull()
       .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    role: tvCharacterRole('role').notNull().default('other'),
-    note: text('note'),
-    orderInTv: integer('order_in_tv').notNull().default(0),
-    orderInCharacter: integer('order_in_character').notNull().default(0)
-  },
-  (t) => [
-    unique().on(t.tvId, t.characterId, t.role),
-    index('idx_tv_character_links_tv_id').on(t.tvId),
-    index('idx_tv_character_links_character_id').on(t.characterId)
-  ]
-)
-
-export const moviePersonLinks = sqliteTable(
-  'movie_person_links',
-  {
-    ...baseColumns,
-    movieId: text('movie_id')
-      .notNull()
-      .references(() => movies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     personId: text('person_id')
       .notNull()
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    role: moviePersonRole('role').notNull().default('other'),
-    playing: playingColumn(),
-    note: text('note'),
-    orderInMovie: integer('order_in_movie').notNull().default(0),
-    orderInPerson: integer('order_in_person').notNull().default(0)
+    note: text('note')
   },
   (t) => [
-    unique().on(t.movieId, t.personId, t.role),
-    index('idx_movie_person_links_movie_id').on(t.movieId),
-    index('idx_movie_person_links_person_id').on(t.personId)
+    unique().on(t.gameId, t.characterId, t.personId),
+    index('idx_game_cast_links_game_id').on(t.gameId),
+    index('idx_game_cast_links_character_id').on(t.characterId),
+    index('idx_game_cast_links_person_id').on(t.personId)
   ]
 )
 
-export const movieCompanyLinks = sqliteTable(
-  'movie_company_links',
+/** Voice credits of an anime entry; see `gameCastLinks` for the shape's rationale. */
+export const animeCastLinks = sqliteTable(
+  'anime_cast_links',
   {
     ...baseColumns,
-    movieId: text('movie_id')
+    animeId: text('anime_id')
       .notNull()
-      .references(() => movies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    companyId: text('company_id')
-      .notNull()
-      .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    role: movieCompanyRole('role').notNull().default('other'),
-    note: text('note'),
-    orderInMovie: integer('order_in_movie').notNull().default(0),
-    orderInCompany: integer('order_in_company').notNull().default(0)
-  },
-  (t) => [
-    unique().on(t.movieId, t.companyId, t.role),
-    index('idx_movie_company_links_movie_id').on(t.movieId),
-    index('idx_movie_company_links_company_id').on(t.companyId)
-  ]
-)
-
-export const movieCharacterLinks = sqliteTable(
-  'movie_character_links',
-  {
-    ...baseColumns,
-    movieId: text('movie_id')
-      .notNull()
-      .references(() => movies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+      .references(() => animes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     characterId: text('character_id')
       .notNull()
       .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
-    role: movieCharacterRole('role').notNull().default('other'),
-    note: text('note'),
-    orderInMovie: integer('order_in_movie').notNull().default(0),
-    orderInCharacter: integer('order_in_character').notNull().default(0)
+    personId: text('person_id')
+      .notNull()
+      .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    note: text('note')
   },
   (t) => [
-    unique().on(t.movieId, t.characterId, t.role),
-    index('idx_movie_character_links_movie_id').on(t.movieId),
-    index('idx_movie_character_links_character_id').on(t.characterId)
+    unique().on(t.animeId, t.characterId, t.personId),
+    index('idx_anime_cast_links_anime_id').on(t.animeId),
+    index('idx_anime_cast_links_character_id').on(t.characterId),
+    index('idx_anime_cast_links_person_id').on(t.personId)
   ]
 )
 
@@ -351,46 +248,6 @@ export const collectionAnimeLinks = sqliteTable(
     unique().on(t.collectionId, t.animeId),
     index('idx_collection_anime_links_collection_id').on(t.collectionId),
     index('idx_collection_anime_links_anime_id').on(t.animeId)
-  ]
-)
-
-export const collectionTvLinks = sqliteTable(
-  'collection_tv_links',
-  {
-    ...baseColumns,
-    collectionId: text('collection_id')
-      .notNull()
-      .references(() => collections.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    tvId: text('tv_id')
-      .notNull()
-      .references(() => tvs.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    note: text('note'),
-    orderInCollection: integer('order_in_collection').notNull().default(0)
-  },
-  (t) => [
-    unique().on(t.collectionId, t.tvId),
-    index('idx_collection_tv_links_collection_id').on(t.collectionId),
-    index('idx_collection_tv_links_tv_id').on(t.tvId)
-  ]
-)
-
-export const collectionMovieLinks = sqliteTable(
-  'collection_movie_links',
-  {
-    ...baseColumns,
-    collectionId: text('collection_id')
-      .notNull()
-      .references(() => collections.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    movieId: text('movie_id')
-      .notNull()
-      .references(() => movies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    note: text('note'),
-    orderInCollection: integer('order_in_collection').notNull().default(0)
-  },
-  (t) => [
-    unique().on(t.collectionId, t.movieId),
-    index('idx_collection_movie_links_collection_id').on(t.collectionId),
-    index('idx_collection_movie_links_movie_id').on(t.movieId)
   ]
 )
 
@@ -454,6 +311,15 @@ export const collectionCompanyLinks = sqliteTable(
   ]
 )
 
+/**
+ * What a person is to a character, independent of any one work: who voices
+ * them, who draws them, who designed them.
+ *
+ * This is the knowledge layer, so it survives a work leaving the library and it
+ * is written by merge only — one work's scrape proves a credit exists, never
+ * that a missing one is wrong. Which credit applies inside a given entry is the
+ * cast tables' answer, not this one's.
+ */
 export const characterPersonLinks = sqliteTable(
   'character_person_links',
   {
@@ -483,24 +349,12 @@ export type AnimeCompanyLink = InferSelectModel<typeof animeCompanyLinks>
 export type NewAnimeCompanyLink = InferInsertModel<typeof animeCompanyLinks>
 export type AnimeCharacterLink = InferSelectModel<typeof animeCharacterLinks>
 export type NewAnimeCharacterLink = InferInsertModel<typeof animeCharacterLinks>
+export type AnimeCastLink = InferSelectModel<typeof animeCastLinks>
+export type NewAnimeCastLink = InferInsertModel<typeof animeCastLinks>
 export type CollectionAnimeLink = InferSelectModel<typeof collectionAnimeLinks>
 export type NewCollectionAnimeLink = InferInsertModel<typeof collectionAnimeLinks>
-export type TvPersonLink = InferSelectModel<typeof tvPersonLinks>
-export type NewTvPersonLink = InferInsertModel<typeof tvPersonLinks>
-export type TvCompanyLink = InferSelectModel<typeof tvCompanyLinks>
-export type NewTvCompanyLink = InferInsertModel<typeof tvCompanyLinks>
-export type TvCharacterLink = InferSelectModel<typeof tvCharacterLinks>
-export type NewTvCharacterLink = InferInsertModel<typeof tvCharacterLinks>
-export type CollectionTvLink = InferSelectModel<typeof collectionTvLinks>
-export type NewCollectionTvLink = InferInsertModel<typeof collectionTvLinks>
-export type MoviePersonLink = InferSelectModel<typeof moviePersonLinks>
-export type NewMoviePersonLink = InferInsertModel<typeof moviePersonLinks>
-export type MovieCompanyLink = InferSelectModel<typeof movieCompanyLinks>
-export type NewMovieCompanyLink = InferInsertModel<typeof movieCompanyLinks>
-export type MovieCharacterLink = InferSelectModel<typeof movieCharacterLinks>
-export type NewMovieCharacterLink = InferInsertModel<typeof movieCharacterLinks>
-export type CollectionMovieLink = InferSelectModel<typeof collectionMovieLinks>
-export type NewCollectionMovieLink = InferInsertModel<typeof collectionMovieLinks>
+export type GameCastLink = InferSelectModel<typeof gameCastLinks>
+export type NewGameCastLink = InferInsertModel<typeof gameCastLinks>
 export type GamePersonLink = InferSelectModel<typeof gamePersonLinks>
 export type NewGamePersonLink = InferInsertModel<typeof gamePersonLinks>
 export type GameCompanyLink = InferSelectModel<typeof gameCompanyLinks>

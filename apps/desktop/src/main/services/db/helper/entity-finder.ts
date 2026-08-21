@@ -16,15 +16,11 @@ import {
   characters,
   games,
   animes,
-  tvs,
-  movies,
   type Person,
   type Company,
   type Character,
   type Game,
-  type Anime,
-  type Tv,
-  type Movie
+  type Anime
 } from '@shared/db/schema'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { DbContext, DbQueryContext } from '../types'
@@ -34,9 +30,7 @@ import {
   companyExternalIdLink,
   findExternalIdOwners,
   gameExternalIdLink,
-  movieExternalIdLink,
   personExternalIdLink,
-  tvExternalIdLink,
   type ExternalIdLinkTable
 } from './external-id'
 
@@ -125,51 +119,6 @@ export class DbEntityFinderHelper {
 
     return this.findByExternalIds<Anime>(
       { entityTable: animes, idColumn: animes.id, link: animeExternalIdLink },
-      params.externalIds,
-      ctx
-    )
-  }
-
-  findExistingTv(
-    params: { externalIds?: ExternalId[]; path?: string },
-    ctx?: DbContext
-  ): Tv | undefined {
-    const db = this.getDb(ctx)
-
-    // The show directory is the most specific identity a local series has.
-    if (params.path) {
-      const [result] = db.select().from(tvs).where(eq(tvs.tvDirPath, params.path)).limit(1).all()
-
-      if (result) return result
-    }
-
-    return this.findByExternalIds<Tv>(
-      { entityTable: tvs, idColumn: tvs.id, link: tvExternalIdLink },
-      params.externalIds,
-      ctx
-    )
-  }
-
-  findExistingMovie(
-    params: { externalIds?: ExternalId[]; path?: string },
-    ctx?: DbContext
-  ): Movie | undefined {
-    const db = this.getDb(ctx)
-
-    // The movie directory is the most specific identity a local movie has.
-    if (params.path) {
-      const [result] = db
-        .select()
-        .from(movies)
-        .where(eq(movies.movieDirPath, params.path))
-        .limit(1)
-        .all()
-
-      if (result) return result
-    }
-
-    return this.findByExternalIds<Movie>(
-      { entityTable: movies, idColumn: movies.id, link: movieExternalIdLink },
       params.externalIds,
       ctx
     )

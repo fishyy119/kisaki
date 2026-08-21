@@ -3,9 +3,7 @@ import type {
   IngestAddCharacterResult,
   IngestAddCompanyResult,
   IngestAddGameResult,
-  IngestAddMovieResult,
-  IngestAddPersonResult,
-  IngestAddTvResult
+  IngestAddPersonResult
 } from '@shared/ingest/add'
 import type { PendingAssetTask } from '../assets'
 
@@ -14,14 +12,6 @@ export interface PersistGameGraphResult extends IngestAddGameResult {
 }
 
 export interface PersistAnimeGraphResult extends IngestAddAnimeResult {
-  pendingAssets: PendingAssetTask[]
-}
-
-export interface PersistTvGraphResult extends IngestAddTvResult {
-  pendingAssets: PendingAssetTask[]
-}
-
-export interface PersistMovieGraphResult extends IngestAddMovieResult {
   pendingAssets: PendingAssetTask[]
 }
 

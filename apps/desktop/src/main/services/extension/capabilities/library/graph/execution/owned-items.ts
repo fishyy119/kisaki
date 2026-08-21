@@ -6,7 +6,7 @@ import type {
 } from '@kisaki3/extension-api'
 import { gameNotes, gameSessions } from '@shared/db'
 import { persistNoteCover } from '../attachments'
-import { createAttachmentPersistDiagnostic, createDiagnostic } from '../diagnostics'
+import { createAttachmentPersistDiagnostic } from '../diagnostics'
 import { mergeNodeAction } from '../results'
 import type {
   LibraryGraphExecutionContext,
@@ -26,9 +26,7 @@ import {
 
 type NoteEdge = Extract<LibraryGraphEdge, { kind: 'media-note' }>
 type SessionEdge = Extract<LibraryGraphEdge, { kind: 'media-session' }>
-type SeasonEdge = Extract<LibraryGraphEdge, { kind: 'media-season' }>
 type EpisodeEdge = Extract<LibraryGraphEdge, { kind: 'media-episode' }>
-type SeasonEpisodeEdge = Extract<LibraryGraphEdge, { kind: 'season-episode' }>
 
 export function previewNoteEdge(
   edge: NoteEdge,
@@ -87,71 +85,6 @@ export function previewSessionEdge(
   return action
 }
 
-export function previewSeasonEdge(
-  edge: SeasonEdge,
-  graph: NormalizedLibraryGraph,
-  draft: LibraryGraphResultDraft,
-  state: ApplyState,
-  options: ExecuteLibraryGraphOptions
-): LibraryGraphResultAction {
-  state.seasonOwners.set(edge.to.key, edge.from.key)
-  const seasonEntry = requireNodeEntry(graph, 'season', edge.to.key)
-  if (state.skippedMedia.has(edge.from.key)) {
-    setOwnedNodeResult(draft, seasonEntry, 'skip')
-    return 'skip'
-  }
-
-  const tvId = getEntityId(state, edge.from.kind, edge.from.key)
-  if (!tvId) {
-    setOwnedNodeResult(draft, seasonEntry, 'create')
-    return 'create'
-  }
-
-  const existing = options.tv.findSeasonMatch(tvId, seasonEntry.node.input.seasonNumber)
-  const action = existing ? 'update' : 'create'
-  if (existing) {
-    setOwnedEntityId(state, 'season', edge.to.key, existing.id)
-  }
-  setOwnedNodeResult(draft, seasonEntry, action, existing?.id)
-  return action
-}
-
-export function applySeasonEdge(
-  edge: SeasonEdge,
-  graph: NormalizedLibraryGraph,
-  draft: LibraryGraphResultDraft,
-  state: ApplyState,
-  options: ExecuteLibraryGraphOptions
-): LibraryGraphResultAction {
-  state.seasonOwners.set(edge.to.key, edge.from.key)
-  const seasonEntry = requireNodeEntry(graph, 'season', edge.to.key)
-  if (state.skippedMedia.has(edge.from.key)) {
-    setOwnedNodeResult(draft, seasonEntry, 'skip')
-    return 'skip'
-  }
-
-  const tvId = requireEntityId(state, edge.from.kind, edge.from.key)
-  const input = seasonEntry.node.input
-  const existing = options.tv.findSeasonMatch(tvId, input.seasonNumber)
-  const season = existing
-    ? options.tv.updateSeason(existing.id, input)
-    : options.tv.createSeason(tvId, input)
-  const action = existing ? 'update' : 'create'
-
-  setOwnedEntityId(state, 'season', edge.to.key, season.id)
-  setOwnedNodeResult(draft, seasonEntry, action, season.id)
-  return action
-}
-
-/**
- * Placement of a tv episode inside its season is written with the episode row
- * itself, so this edge only records the season the episode belongs to. The
- * mapping is collected up front, which is why the edge needs no work here.
- */
-export function resolveSeasonEpisodeEdge(_edge: SeasonEpisodeEdge): LibraryGraphResultAction {
-  return 'skip'
-}
-
 export function previewEpisodeEdge(
   edge: EpisodeEdge,
   graph: NormalizedLibraryGraph,
@@ -172,24 +105,7 @@ export function previewEpisodeEdge(
     return 'create'
   }
 
-  const node = episodeEntry.node
-  if (node.mediaType === 'tv') {
-    const seasonId = getSeasonId(state, edge.to.key)
-    if (!seasonId) {
-      setOwnedNodeResult(draft, episodeEntry, 'create')
-      return 'create'
-    }
-
-    const existingEpisode = options.tv.findEpisodeMatch(seasonId, node.input)
-    const tvAction = existingEpisode ? 'update' : 'create'
-    setOwnedNodeResult(draft, episodeEntry, tvAction, existingEpisode?.id)
-    if (existingEpisode) {
-      setOwnedEntityId(state, 'episode', edge.to.key, existingEpisode.id)
-    }
-    return tvAction
-  }
-
-  const existing = options.episodes.findMatch(mediaId, node.input)
+  const existing = options.episodes.findMatch(mediaId, episodeEntry.node.input)
   const action = existing ? 'update' : 'create'
   setOwnedNodeResult(draft, episodeEntry, action, existing?.id)
   if (existing) {
@@ -213,33 +129,7 @@ export function applyEpisodeEdge(
   }
 
   const mediaId = requireEntityId(state, edge.from.kind, edge.from.key)
-  const node = episodeEntry.node
-  if (node.mediaType === 'tv') {
-    const seasonId = getSeasonId(state, edge.to.key)
-    if (!seasonId) {
-      const diagnostic = createDiagnostic({
-        level: 'error',
-        code: 'kisaki.graph.episodeSeasonUnresolved',
-        message: 'Tv episode nodes require a season-episode edge to a written season.',
-        nodeKey: edge.to.key
-      })
-      draft.diagnostics.push(diagnostic)
-      setOwnedNodeResult(draft, episodeEntry, 'fail', undefined, [diagnostic])
-      return 'fail'
-    }
-
-    const existingEpisode = options.tv.findEpisodeMatch(seasonId, node.input)
-    const episode = existingEpisode
-      ? options.tv.updateEpisode(existingEpisode.id, node.input)
-      : options.tv.createEpisode(seasonId, node.input)
-    const tvAction = existingEpisode ? 'update' : 'create'
-
-    setOwnedEntityId(state, 'episode', edge.to.key, episode.id)
-    setOwnedNodeResult(draft, episodeEntry, tvAction, episode.id)
-    return tvAction
-  }
-
-  const input = node.input
+  const input = episodeEntry.node.input
   const existing = options.episodes.findMatch(mediaId, input)
   const episode = existing
     ? options.episodes.update(existing.id, input)
@@ -249,11 +139,6 @@ export function applyEpisodeEdge(
   setOwnedEntityId(state, 'episode', edge.to.key, episode.id)
   setOwnedNodeResult(draft, episodeEntry, action, episode.id)
   return action
-}
-
-function getSeasonId(state: ApplyState, episodeKey: string): string | undefined {
-  const seasonKey = state.episodeSeasons.get(episodeKey)
-  return seasonKey ? getEntityId(state, 'season', seasonKey) : undefined
 }
 
 export async function applyNoteEdge(

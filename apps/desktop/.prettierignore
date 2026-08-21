@@ -1,6 +1,7 @@
 out
 dist
 dev
+drizzle
 resources/extensions
 resources/webview-fonts
 node_modules

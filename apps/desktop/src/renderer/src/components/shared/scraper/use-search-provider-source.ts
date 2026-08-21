@@ -7,8 +7,6 @@ import { scraperProfiles } from '@shared/db'
 const PROVIDER_CHANNELS = {
   game: 'scraper:get-game-provider',
   anime: 'scraper:get-anime-provider',
-  tv: 'scraper:get-tv-provider',
-  movie: 'scraper:get-movie-provider',
   person: 'scraper:get-person-provider',
   company: 'scraper:get-company-provider',
   character: 'scraper:get-character-provider'

@@ -11,14 +11,12 @@ import { ingest } from './ingest'
 import { library } from './library'
 import { media } from './media'
 import { merge } from './merge'
-import { movie } from './movie'
 import { nav } from './nav'
 import { scanner } from './scanner'
 import { scraper } from './scraper'
 import { settings } from './settings'
 import { statistics } from './statistics'
 import { task } from './task'
-import { tv } from './tv'
 import { ui } from './ui'
 import { updater } from './updater'
 
@@ -37,14 +35,12 @@ export const en = {
   library,
   media,
   merge,
-  movie,
   nav,
   scanner,
   scraper,
   settings,
   statistics,
   task,
-  tv,
   ui,
   updater
 }

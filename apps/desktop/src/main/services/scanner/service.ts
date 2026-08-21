@@ -3,7 +3,7 @@
  *
  * Manages media scanning from disk.
  * Provides:
- * - Namespace-style access to media-specific handlers (game, anime, tv, movie)
+ * - Namespace-style access to media-specific handlers (game, anime)
  * - Routing of scanner-id controls to the handler owning that scanner
  * - Discovery utilities shared across all media types
  */
@@ -18,8 +18,6 @@ import type { ScannerRunStartResult, ScannerRunState } from '@shared/scanner'
 import type { TaskRunInitiator } from '@shared/task-run'
 import { AnimeScannerHandler } from './handlers/anime'
 import { GameScannerHandler } from './handlers/game'
-import { MovieScannerHandler } from './handlers/movie'
-import { TvScannerHandler } from './handlers/tv'
 import type { MediaScannerHandler } from './handlers/common'
 import { ScannerDiscovery } from './discovery'
 import { createScannerHooks } from './hooks'
@@ -44,8 +42,6 @@ export class ScannerService implements IMediaService {
 
   game!: GameScannerHandler
   anime!: AnimeScannerHandler
-  tv!: TvScannerHandler
-  movie!: MovieScannerHandler
   discovery!: ScannerDiscovery
 
   private dbService!: DbService
@@ -69,9 +65,7 @@ export class ScannerService implements IMediaService {
 
     this.game = new GameScannerHandler(deps, ingestService)
     this.anime = new AnimeScannerHandler(deps, ingestService)
-    this.tv = new TvScannerHandler(deps, ingestService)
-    this.movie = new MovieScannerHandler(deps, ingestService)
-    this.handlers = { game: this.game, anime: this.anime, tv: this.tv, movie: this.movie }
+    this.handlers = { game: this.game, anime: this.anime }
 
     registerScannerIpc(this, container.get('ipc'))
     log.info('Initialized')

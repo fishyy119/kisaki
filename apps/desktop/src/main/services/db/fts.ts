@@ -46,25 +46,15 @@ const FTS_TABLES: Record<FtsEntityType, FtsTableConfig> = {
     ftsTableName: 'animes_fts',
     columns: ['name', 'original_name', 'sort_name', 'description']
   },
-  tv: {
-    tableName: 'tvs',
-    ftsTableName: 'tvs_fts',
-    columns: ['name', 'original_name', 'sort_name', 'description']
-  },
-  movie: {
-    tableName: 'movies',
-    ftsTableName: 'movies_fts',
-    columns: ['name', 'original_name', 'sort_name', 'description']
-  },
   character: {
     tableName: 'characters',
     ftsTableName: 'characters_fts',
-    columns: ['name', 'original_name', 'sort_name', 'description']
+    columns: ['name', 'original_name', 'sort_name', 'aliases', 'description']
   },
   person: {
     tableName: 'persons',
     ftsTableName: 'persons_fts',
-    columns: ['name', 'original_name', 'sort_name', 'description']
+    columns: ['name', 'original_name', 'sort_name', 'aliases', 'description']
   },
   company: {
     tableName: 'companies',

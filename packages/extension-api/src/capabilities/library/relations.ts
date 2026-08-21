@@ -15,36 +15,27 @@ const SAME_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
   'other'
 ]
 
+/**
+ * Cross-type pairs carry provenance plus the side-story pair: an anime's
+ * spin-off game and a visual novel's fandisc adaptation are told across media.
+ */
 const CROSS_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
   'adaptation',
   'sourceMaterial',
+  'sideStory',
+  'parentStory',
   'other'
 ]
 
-/**
- * Allowed relation types per ordered endpoint pair. Same-type pairs carry the
- * structural vocabulary; cross-type pairs carry provenance only.
- */
+/** Allowed relation types per ordered endpoint pair. */
 export const LIBRARY_MEDIA_RELATION_TYPE_RULES: Record<
   LibraryMediaTypePair,
   readonly LibraryMediaRelationType[]
 > = {
   'game-game': SAME_TYPE_RELATION_TYPES,
   'anime-anime': SAME_TYPE_RELATION_TYPES,
-  'tv-tv': SAME_TYPE_RELATION_TYPES,
-  'movie-movie': SAME_TYPE_RELATION_TYPES,
   'game-anime': CROSS_TYPE_RELATION_TYPES,
-  'game-tv': CROSS_TYPE_RELATION_TYPES,
-  'game-movie': CROSS_TYPE_RELATION_TYPES,
-  'anime-game': CROSS_TYPE_RELATION_TYPES,
-  'anime-tv': CROSS_TYPE_RELATION_TYPES,
-  'anime-movie': CROSS_TYPE_RELATION_TYPES,
-  'tv-game': CROSS_TYPE_RELATION_TYPES,
-  'tv-anime': CROSS_TYPE_RELATION_TYPES,
-  'tv-movie': CROSS_TYPE_RELATION_TYPES,
-  'movie-game': CROSS_TYPE_RELATION_TYPES,
-  'movie-anime': CROSS_TYPE_RELATION_TYPES,
-  'movie-tv': CROSS_TYPE_RELATION_TYPES
+  'anime-game': CROSS_TYPE_RELATION_TYPES
 }
 
 /**

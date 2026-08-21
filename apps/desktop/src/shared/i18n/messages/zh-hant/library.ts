@@ -4,8 +4,6 @@ export const library = {
   entities: {
     game: '遊戲',
     anime: '動漫',
-    tv: '劇集',
-    movie: '電影',
     character: '角色',
     person: '人物',
     company: '公司',
@@ -17,6 +15,7 @@ export const library = {
     name: '名稱',
     sortName: '排序名',
     originalName: '原名',
+    aliases: '別名',
     description: '簡介',
     score: '評分',
     myScore: '我的評分',
@@ -42,6 +41,10 @@ export const library = {
     relatedCharacters: '相關角色',
     relatedCompanies: '相關公司',
     characterPersons: '角色關聯人物',
+    cast: '聲優陣容',
+    voicedBy: '配音',
+    voiceCredits: '配音作品',
+    companyRelations: '公司關係',
     externalSites: '外部連結',
     externalIds: '外部 ID',
     photos: '照片',
@@ -51,7 +54,6 @@ export const library = {
     icons: '圖示',
     note: '備註',
     role: '職位',
-    playing: '飾演',
     type: '類型',
     status: '狀態',
     playDuration: '遊玩時長',
@@ -72,8 +74,6 @@ export const library = {
     watchDuration: '觀看時長',
     lastWatchedAt: '最近觀看',
     relatedAnimes: '相關動漫',
-    relatedTvs: '相關劇集',
-    relatedMovies: '相關電影',
     relatedEntries: '關聯條目',
     relatedWorks: '相關作品'
   },
@@ -93,22 +93,6 @@ export const library = {
     completed: '已看完',
     onHold: '擱置',
     dropped: '棄番'
-  },
-
-  tvStatus: {
-    planned: '想看',
-    watching: '在看',
-    completed: '已看完',
-    onHold: '擱置',
-    dropped: '棄劇'
-  },
-
-  movieStatus: {
-    planned: '想看',
-    watching: '在看',
-    completed: '已看完',
-    onHold: '擱置',
-    dropped: '棄看'
   },
 
   gender: {
@@ -180,52 +164,6 @@ export const library = {
       producer: '出品',
       distributor: '發行',
       other: '其他'
-    },
-    tvPerson: {
-      creator: '主創',
-      director: '導演',
-      writer: '編劇',
-      producer: '製片人',
-      music: '音樂',
-      cinematography: '攝影',
-      editing: '剪輯',
-      actor: '演員',
-      other: '其他'
-    },
-    tvCharacter: {
-      main: '主角',
-      supporting: '配角',
-      cameo: '客串',
-      other: '其他'
-    },
-    tvCompany: {
-      network: '播出平台',
-      studio: '製作',
-      producer: '出品',
-      distributor: '發行',
-      other: '其他'
-    },
-    moviePerson: {
-      director: '導演',
-      writer: '編劇',
-      producer: '製片人',
-      music: '音樂',
-      cinematography: '攝影',
-      editing: '剪輯',
-      actor: '演員',
-      other: '其他'
-    },
-    movieCharacter: {
-      main: '主角',
-      supporting: '配角',
-      cameo: '客串',
-      other: '其他'
-    },
-    movieCompany: {
-      studio: '製作',
-      producer: '出品',
-      distributor: '發行',
-      other: '其他'
     }
   },
 
@@ -243,25 +181,6 @@ export const library = {
     special: '特別篇'
   },
 
-  tvFormat: {
-    scripted: '劇情',
-    miniseries: '迷你劇',
-    documentary: '紀錄片',
-    reality: '真人秀',
-    talkShow: '脫口秀',
-    variety: '綜藝',
-    news: '新聞',
-    other: '其他'
-  },
-
-  movieFormat: {
-    theatrical: '院線',
-    documentary: '紀錄片',
-    short: '短片',
-    tvMovie: '電視電影',
-    other: '其他'
-  },
-
   mediaRelation: {
     sequel: '續作',
     prequel: '前作',
@@ -275,6 +194,18 @@ export const library = {
     other: '其他'
   },
 
+  companyRelation: {
+    parent: '母公司',
+    subsidiary: '子公司',
+    brand: '旗下品牌',
+    brandOwner: '品牌母體',
+    renamedTo: '更名為',
+    renamedFrom: '原名為',
+    spinOff: '分立公司',
+    spinOffOrigin: '分立自',
+    other: '其他'
+  },
+
   animeExtraType: {
     trailer: '預告',
     pv: 'PV',
@@ -284,31 +215,9 @@ export const library = {
     other: '其他'
   },
 
-  tvExtraType: {
-    trailer: '預告',
-    teaser: '先導預告',
-    behindTheScenes: '幕後花絮',
-    featurette: '製作特輯',
-    deletedScene: '刪減片段',
-    interview: '訪談',
-    other: '其他'
-  },
-
-  movieExtraType: {
-    trailer: '預告',
-    teaser: '先導預告',
-    behindTheScenes: '幕後花絮',
-    featurette: '製作特輯',
-    deletedScene: '刪減片段',
-    interview: '訪談',
-    other: '其他'
-  },
-
   counts: {
     game: ({ count }: { count: number }) => `${count} 款遊戲`,
     anime: ({ count }: { count: number }) => `${count} 部動漫`,
-    tv: ({ count }: { count: number }) => `${count} 部劇集`,
-    movie: ({ count }: { count: number }) => `${count} 部電影`,
     character: ({ count }: { count: number }) => `${count} 個角色`,
     person: ({ count }: { count: number }) => `${count} 位人物`,
     company: ({ count }: { count: number }) => `${count} 家公司`,
@@ -441,7 +350,9 @@ export const library = {
       persons: '暫無人物',
       companies: '暫無公司',
       cast: '暫無演員',
-      crew: '暫無製作人員'
+      crew: '暫無製作人員',
+      voiceCredits: '暫無配音作品',
+      companyRelations: '暫無公司關係'
     },
     manage: '管理',
     viewAll: ({ count }: { count: number }) => `查看全部 (${count})`,
@@ -491,34 +402,26 @@ export const library = {
     editAnimeCharacters: '編輯角色',
     editAnimePersons: '編輯製作人員',
     editAnimeCompanies: '編輯公司',
-    editTvCharacters: '編輯角色',
-    editTvPersons: '編輯演職人員',
-    editTvCast: '編輯演員',
-    editTvCrew: '編輯職員',
-    editTvCompanies: '編輯公司',
-    editMovieCharacters: '編輯角色',
-    editMoviePersons: '編輯演職人員',
-    editMovieCast: '編輯演員',
-    editMovieCrew: '編輯職員',
-    editMovieCompanies: '編輯公司',
+    editGameCast: '編輯聲優陣容',
+    editAnimeCast: '編輯聲優陣容',
     editCharacterGames: '編輯登場遊戲',
     editCharacterAnimes: '編輯出演動漫',
-    editCharacterTvs: '編輯出演劇集',
-    editCharacterMovies: '編輯出演電影',
     editCharacterPersons: '編輯相關人員',
     editPersonGames: '編輯參與遊戲',
     editPersonAnimes: '編輯參與動漫',
-    editPersonTvs: '編輯參與劇集',
-    editPersonMovies: '編輯參與電影',
     editPersonCharacters: '編輯配音角色',
     editCompanyGames: '編輯相關遊戲',
     editCompanyAnimes: '編輯相關動漫',
-    editCompanyTvs: '編輯相關劇集',
-    editCompanyMovies: '編輯相關電影',
+    editCompanyRelations: '編輯公司關係',
     editCollectionEntities: '編輯合集內容',
 
+    castCharacterLabel: '角色',
+    castPersonLabel: '聲優',
+    castEmptyHint: '尚無聲優陣容，使用下方按鈕新增。',
+    castDuplicate: '該角色與聲優在本條目中已配對。',
+
     notePlaceholder: '選填備註…',
-    playingPlaceholder: '飾演的角色，以逗號分隔',
+    aliasesPlaceholder: '別名，以逗號分隔',
     noteInfoPlaceholder: '備註資訊…',
     includesSpoiler: '包含劇透',
     showSpoilers: '顯示劇透',
@@ -606,12 +509,6 @@ export const library = {
       animeCover: '動漫封面圖，用於卡片和列表顯示。',
       animeBackdrop: '詳情頁背景圖。',
       animeLogo: '動漫標題標誌。',
-      tvCover: '劇集海報，用於卡片和列表顯示。',
-      tvBackdrop: '詳情頁背景圖。',
-      tvLogo: '劇集標題標誌。',
-      movieCover: '電影海報，用於卡片和列表顯示。',
-      movieBackdrop: '詳情頁背景圖。',
-      movieLogo: '電影標題標誌。',
       characterPhoto: '角色照片，用於卡片和詳情顯示。',
       personPhoto: '人物照片，用於卡片和詳情顯示。',
       companyLogo: '公司標誌，用於卡片和詳情顯示。'
@@ -706,8 +603,6 @@ export const library = {
 
     gameLabel: '遊戲',
     animeLabel: '動漫',
-    tvLabel: '劇集',
-    movieLabel: '電影',
     characterLabel: '角色',
     personLabel: '人物',
     companyLabel: '公司',
@@ -724,8 +619,6 @@ export const library = {
     linkLabels: {
       game: '遊戲關聯',
       anime: '動漫關聯',
-      tv: '劇集關聯',
-      movie: '電影關聯',
       character: '角色關聯',
       person: '人物關聯',
       company: '公司關聯',
@@ -840,13 +733,6 @@ export const library = {
       recentlyWatched: { name: '最近觀看', description: '依最近觀看時間排序的動漫' },
       topRatedAnime: { name: '高分動漫', description: '依評分排序的動漫' },
       recentlyAddedAnime: { name: '最新加入的動漫', description: '依加入時間排序的動漫' },
-      recentlyWatchedTv: { name: '最近觀看的劇集', description: '依最近觀看時間排序的劇集' },
-      topRatedTv: { name: '高分劇集', description: '依評分排序的劇集' },
-      recentlyAddedTv: { name: '最新加入的劇集', description: '依加入時間排序的劇集' },
-      recentlyWatchedMovies: { name: '最近觀看的電影', description: '依最近觀看時間排序的電影' },
-      topRatedMovies: { name: '高分電影', description: '依評分排序的電影' },
-      recentlyAddedMovies: { name: '最新加入的電影', description: '依加入時間排序的電影' },
-      unwatchedMovies: { name: '尚未觀看', description: '尚未觀看的電影' },
       favoriteCharacters: { name: '喜歡的角色', description: '已加紅心的角色' },
       favoritePersons: { name: '喜歡的人物', description: '已加紅心的人物' },
       favoriteCompanies: { name: '喜歡的公司', description: '已加紅心的公司' },

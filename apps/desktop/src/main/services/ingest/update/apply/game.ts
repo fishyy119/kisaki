@@ -81,6 +81,11 @@ export function applyGamePlan(
           mode: plan.links.gameCharacter,
           links: relationGraph.links.gameCharacter
         },
+        cast: {
+          kind: 'gameCast',
+          mode: plan.links.gameCast,
+          links: relationGraph.links.gameCast
+        },
         characterPerson: {
           mode: plan.links.characterPerson,
           links: relationGraph.links.characterPerson

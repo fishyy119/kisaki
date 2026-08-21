@@ -29,14 +29,6 @@ export const scraper = {
     anime: {
       name: 'アニメ',
       description: 'Bangumi を主軸に、TMDB が画像を補完（TMDB は API キーが必要）'
-    },
-    tv: {
-      name: 'ドラマ',
-      description: 'TMDB からドラマのメタデータ・シーズン・画像を取得（TMDB は API キーが必要）'
-    },
-    movie: {
-      name: '映画',
-      description: 'TMDB から映画のメタデータ・クレジット・画像を取得（TMDB は API キーが必要）'
     }
   },
 

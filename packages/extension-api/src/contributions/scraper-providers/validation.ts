@@ -3,16 +3,12 @@ import {
   CHARACTER_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
   GAME_SCRAPER_SLOTS,
-  MOVIE_SCRAPER_SLOTS,
   PERSON_SCRAPER_SLOTS,
-  TV_SCRAPER_SLOTS,
   type AnimeScraperSlot,
   type CharacterScraperSlot,
   type CompanyScraperSlot,
   type GameScraperSlot,
-  type MovieScraperSlot,
-  type PersonScraperSlot,
-  type TvScraperSlot
+  type PersonScraperSlot
 } from './contracts'
 import {
   LIBRARY_ANIME_CHARACTER_ROLES,
@@ -27,15 +23,7 @@ import {
   LIBRARY_GAME_COMPANY_ROLES,
   LIBRARY_GAME_PERSON_ROLES,
   LIBRARY_GENDERS,
-  LIBRARY_MEDIA_RELATION_TYPES,
-  LIBRARY_MOVIE_CHARACTER_ROLES,
-  LIBRARY_MOVIE_COMPANY_ROLES,
-  LIBRARY_MOVIE_FORMATS,
-  LIBRARY_MOVIE_PERSON_ROLES,
-  LIBRARY_TV_CHARACTER_ROLES,
-  LIBRARY_TV_COMPANY_ROLES,
-  LIBRARY_TV_FORMATS,
-  LIBRARY_TV_PERSON_ROLES
+  LIBRARY_MEDIA_RELATION_TYPES
 } from '../../shared/library'
 import { LIBRARY_MEDIA_TYPES } from '../../capabilities/library/graph'
 import type { ValidationIssue } from '../../shared/validation'
@@ -75,15 +63,6 @@ const ANIME_SEARCH_RESULT_KEYS = new Set<string>([
   'format',
   'externalIds'
 ])
-const TV_SEARCH_RESULT_KEYS = new Set<string>([
-  'id',
-  'name',
-  'originalName',
-  'releaseDate',
-  'format',
-  'externalIds'
-])
-const MOVIE_SEARCH_RESULT_KEYS = TV_SEARCH_RESULT_KEYS
 const PERSON_SEARCH_RESULT_KEYS = new Set<string>([
   'id',
   'name',
@@ -132,47 +111,10 @@ const ANIME_EPISODE_KEYS = new Set<string>([
   'durationMs',
   'externalIds'
 ])
-const TV_INFO_KEYS = new Set<string>([
-  'name',
-  'originalName',
-  'releaseDate',
-  'endDate',
-  'description',
-  'format',
-  'totalSeasons',
-  'totalEpisodes',
-  'externalSites'
-])
-const TV_SEASON_KEYS = new Set<string>([
-  'number',
-  'name',
-  'originalName',
-  'airDate',
-  'description',
-  'totalEpisodes'
-])
-const TV_EPISODE_KEYS = new Set<string>([
-  'seasonNumber',
-  'number',
-  'name',
-  'originalName',
-  'airDate',
-  'description',
-  'durationMs',
-  'externalIds'
-])
-const MOVIE_INFO_KEYS = new Set<string>([
-  'name',
-  'originalName',
-  'releaseDate',
-  'description',
-  'format',
-  'runtimeMs',
-  'externalSites'
-])
 const PERSON_INFO_KEYS = new Set<string>([
   'name',
   'originalName',
+  'aliases',
   'birthDate',
   'deathDate',
   'gender',
@@ -191,6 +133,7 @@ const COMPANY_METADATA_KEYS = new Set<string>([...COMPANY_INFO_KEYS, 'identity',
 const CHARACTER_INFO_KEYS = new Set<string>([
   'name',
   'originalName',
+  'aliases',
   'birthDate',
   'gender',
   'age',
@@ -216,7 +159,6 @@ const GAME_PERSON_FACT_KEYS = new Set<string>([
   ...PERSON_METADATA_KEYS,
   'role',
   'isSpoiler',
-  'playing',
   'note'
 ])
 const GAME_COMPANY_FACT_KEYS = new Set<string>([
@@ -234,12 +176,6 @@ const GAME_CHARACTER_FACT_KEYS = new Set<string>([
 const ANIME_PERSON_FACT_KEYS = GAME_PERSON_FACT_KEYS
 const ANIME_COMPANY_FACT_KEYS = GAME_COMPANY_FACT_KEYS
 const ANIME_CHARACTER_FACT_KEYS = GAME_CHARACTER_FACT_KEYS
-const TV_PERSON_FACT_KEYS = GAME_PERSON_FACT_KEYS
-const TV_COMPANY_FACT_KEYS = GAME_COMPANY_FACT_KEYS
-const TV_CHARACTER_FACT_KEYS = GAME_CHARACTER_FACT_KEYS
-const MOVIE_PERSON_FACT_KEYS = GAME_PERSON_FACT_KEYS
-const MOVIE_COMPANY_FACT_KEYS = GAME_COMPANY_FACT_KEYS
-const MOVIE_CHARACTER_FACT_KEYS = GAME_CHARACTER_FACT_KEYS
 const CHARACTER_PERSON_FACT_KEYS = new Set<string>([
   ...PERSON_METADATA_KEYS,
   'character',
@@ -256,8 +192,6 @@ const RELATED_ENTRY_FACT_KEYS = new Set<string>([
 ])
 const GAME_SESSION_KEYS: ReadonlySet<GameScraperSlot> = new Set(GAME_SCRAPER_SLOTS)
 const ANIME_SESSION_KEYS: ReadonlySet<AnimeScraperSlot> = new Set(ANIME_SCRAPER_SLOTS)
-const TV_SESSION_KEYS: ReadonlySet<TvScraperSlot> = new Set(TV_SCRAPER_SLOTS)
-const MOVIE_SESSION_KEYS: ReadonlySet<MovieScraperSlot> = new Set(MOVIE_SCRAPER_SLOTS)
 const PERSON_SESSION_KEYS: ReadonlySet<PersonScraperSlot> = new Set(PERSON_SCRAPER_SLOTS)
 const COMPANY_SESSION_KEYS: ReadonlySet<CompanyScraperSlot> = new Set(COMPANY_SCRAPER_SLOTS)
 const CHARACTER_SESSION_KEYS: ReadonlySet<CharacterScraperSlot> = new Set(CHARACTER_SCRAPER_SLOTS)
@@ -347,14 +281,6 @@ export function validateAnimeScraperProviderShape(value: unknown): ValidationIss
   return validateScraperProviderShape(value, ANIME_SCRAPER_SLOTS, 'Anime scraper provider')
 }
 
-export function validateTvScraperProviderShape(value: unknown): ValidationIssue[] {
-  return validateScraperProviderShape(value, TV_SCRAPER_SLOTS, 'TV scraper provider')
-}
-
-export function validateMovieScraperProviderShape(value: unknown): ValidationIssue[] {
-  return validateScraperProviderShape(value, MOVIE_SCRAPER_SLOTS, 'Movie scraper provider')
-}
-
 export function validatePersonScraperProviderShape(value: unknown): ValidationIssue[] {
   return validateScraperProviderShape(value, PERSON_SCRAPER_SLOTS, 'Person scraper provider')
 }
@@ -390,18 +316,6 @@ export function validateGameScraperSearchResults(value: unknown): ValidationIssu
 export function validateAnimeScraperSearchResults(value: unknown): ValidationIssue[] {
   return validateArrayOf(value, '$', 'Search results must be an array.', (item, path) =>
     validateAnimeSearchResult(item, path)
-  )
-}
-
-export function validateTvScraperSearchResults(value: unknown): ValidationIssue[] {
-  return validateArrayOf(value, '$', 'Search results must be an array.', (item, path) =>
-    validateTvSearchResult(item, path)
-  )
-}
-
-export function validateMovieScraperSearchResults(value: unknown): ValidationIssue[] {
-  return validateArrayOf(value, '$', 'Search results must be an array.', (item, path) =>
-    validateMovieSearchResult(item, path)
   )
 }
 
@@ -455,14 +369,6 @@ export function validateAnimeScraperSessionResults(value: unknown): ValidationIs
   return validateSessionResults(value, ANIME_SESSION_KEYS, validateAnimeSessionSlot)
 }
 
-export function validateTvScraperSessionResults(value: unknown): ValidationIssue[] {
-  return validateSessionResults(value, TV_SESSION_KEYS, validateTvSessionSlot)
-}
-
-export function validateMovieScraperSessionResults(value: unknown): ValidationIssue[] {
-  return validateSessionResults(value, MOVIE_SESSION_KEYS, validateMovieSessionSlot)
-}
-
 export function validatePersonScraperSessionResults(value: unknown): ValidationIssue[] {
   return validateSessionResults(value, PERSON_SESSION_KEYS, validatePersonSessionSlot)
 }
@@ -505,46 +411,6 @@ function validateAnimeSearchResult(value: unknown, path: string): ValidationIssu
       `${path}.format`,
       LIBRARY_ANIME_FORMATS,
       'format must be one of the supported anime formats.'
-    )
-  ]
-}
-
-function validateTvSearchResult(value: unknown, path: string): ValidationIssue[] {
-  const recordIssues = validateRecord(value, path, 'TV search result must be an object.')
-  if (recordIssues) {
-    return recordIssues
-  }
-
-  const result = value as Record<string, unknown>
-  return [
-    ...validateUnknownKeys(result, TV_SEARCH_RESULT_KEYS, path),
-    ...validateSearchResultBase(result, path),
-    ...validateOptionalPartialDate(result.releaseDate, `${path}.releaseDate`),
-    ...validateOptionalEnumString(
-      result.format,
-      `${path}.format`,
-      LIBRARY_TV_FORMATS,
-      'format must be one of the supported tv formats.'
-    )
-  ]
-}
-
-function validateMovieSearchResult(value: unknown, path: string): ValidationIssue[] {
-  const recordIssues = validateRecord(value, path, 'Movie search result must be an object.')
-  if (recordIssues) {
-    return recordIssues
-  }
-
-  const result = value as Record<string, unknown>
-  return [
-    ...validateUnknownKeys(result, MOVIE_SEARCH_RESULT_KEYS, path),
-    ...validateSearchResultBase(result, path),
-    ...validateOptionalPartialDate(result.releaseDate, `${path}.releaseDate`),
-    ...validateOptionalEnumString(
-      result.format,
-      `${path}.format`,
-      LIBRARY_MOVIE_FORMATS,
-      'format must be one of the supported movie formats.'
     )
   ]
 }
@@ -671,93 +537,6 @@ function validateAnimeEpisode(value: unknown, path: string): ValidationIssue[] {
   ]
 }
 
-function validateTvInfo(value: unknown, path: string): ValidationIssue[] {
-  const recordIssues = validateRecord(value, path, 'TV info must be an object.')
-  if (recordIssues) {
-    return recordIssues
-  }
-
-  const info = value as Record<string, unknown>
-  return [
-    ...validateUnknownKeys(info, TV_INFO_KEYS, path),
-    ...validateNamedInfoFields(info, path),
-    ...validateOptionalPartialDate(info.releaseDate, `${path}.releaseDate`),
-    ...validateOptionalPartialDate(info.endDate, `${path}.endDate`),
-    ...validateOptionalEnumString(
-      info.format,
-      `${path}.format`,
-      LIBRARY_TV_FORMATS,
-      'format must be one of the supported tv formats.'
-    ),
-    ...validateOptionalInteger(info.totalSeasons, `${path}.totalSeasons`),
-    ...validateOptionalInteger(info.totalEpisodes, `${path}.totalEpisodes`)
-  ]
-}
-
-function validateTvSeason(value: unknown, path: string): ValidationIssue[] {
-  const recordIssues = validateRecord(value, path, 'TV season must be an object.')
-  if (recordIssues) {
-    return recordIssues
-  }
-
-  const season = value as Record<string, unknown>
-  return [
-    ...validateUnknownKeys(season, TV_SEASON_KEYS, path),
-    ...validateRequiredFiniteNumber(season.number, `${path}.number`),
-    ...validateOptionalString(season.name, `${path}.name`),
-    ...validateOptionalString(season.originalName, `${path}.originalName`),
-    ...validateOptionalPartialDate(season.airDate, `${path}.airDate`),
-    ...validateOptionalString(season.description, `${path}.description`),
-    ...validateOptionalInteger(season.totalEpisodes, `${path}.totalEpisodes`)
-  ]
-}
-
-function validateTvEpisode(value: unknown, path: string): ValidationIssue[] {
-  const recordIssues = validateRecord(value, path, 'TV episode must be an object.')
-  if (recordIssues) {
-    return recordIssues
-  }
-
-  const episode = value as Record<string, unknown>
-  return [
-    ...validateUnknownKeys(episode, TV_EPISODE_KEYS, path),
-    ...validateRequiredFiniteNumber(episode.seasonNumber, `${path}.seasonNumber`),
-    ...validateRequiredFiniteNumber(episode.number, `${path}.number`),
-    ...validateOptionalString(episode.name, `${path}.name`),
-    ...validateOptionalString(episode.originalName, `${path}.originalName`),
-    ...validateOptionalPartialDate(episode.airDate, `${path}.airDate`),
-    ...validateOptionalString(episode.description, `${path}.description`),
-    ...validateOptionalFiniteNumber(episode.durationMs, `${path}.durationMs`),
-    ...validateOptionalArrayOf(
-      episode.externalIds,
-      `${path}.externalIds`,
-      'externalIds must be an array.',
-      validateExternalId
-    )
-  ]
-}
-
-function validateMovieInfo(value: unknown, path: string): ValidationIssue[] {
-  const recordIssues = validateRecord(value, path, 'Movie info must be an object.')
-  if (recordIssues) {
-    return recordIssues
-  }
-
-  const info = value as Record<string, unknown>
-  return [
-    ...validateUnknownKeys(info, MOVIE_INFO_KEYS, path),
-    ...validateNamedInfoFields(info, path),
-    ...validateOptionalPartialDate(info.releaseDate, `${path}.releaseDate`),
-    ...validateOptionalEnumString(
-      info.format,
-      `${path}.format`,
-      LIBRARY_MOVIE_FORMATS,
-      'format must be one of the supported movie formats.'
-    ),
-    ...validateOptionalFiniteNumber(info.runtimeMs, `${path}.runtimeMs`)
-  ]
-}
-
 function validatePersonInfo(value: unknown, path: string): ValidationIssue[] {
   const recordIssues = validateRecord(value, path, 'Person info must be an object.')
   if (recordIssues) {
@@ -807,6 +586,7 @@ function validateGameInfoFields(info: Record<string, unknown>, path: string): Va
 function validatePersonInfoFields(info: Record<string, unknown>, path: string): ValidationIssue[] {
   return [
     ...validateNamedInfoFields(info, path),
+    ...validateOptionalStringArray(info.aliases, `${path}.aliases`, 'aliases must be an array.'),
     ...validateOptionalPartialDate(info.birthDate, `${path}.birthDate`),
     ...validateOptionalPartialDate(info.deathDate, `${path}.deathDate`),
     ...validateOptionalEnumString(
@@ -831,6 +611,7 @@ function validateCharacterInfoFields(
 ): ValidationIssue[] {
   return [
     ...validateNamedInfoFields(info, path),
+    ...validateOptionalStringArray(info.aliases, `${path}.aliases`, 'aliases must be an array.'),
     ...validateOptionalPartialDate(info.birthDate, `${path}.birthDate`),
     ...validateOptionalEnumString(
       info.gender,
@@ -917,7 +698,6 @@ function validateGamePersonFact(value: unknown, path: string): ValidationIssue[]
   return [
     ...validateFactObject(value, path, GAME_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
-    ...validatePlayingField(value, path),
     ...validateRequiredFactRole(value, path, LIBRARY_GAME_PERSON_ROLES, 'game person role')
   ]
 }
@@ -942,7 +722,6 @@ function validateAnimePersonFact(value: unknown, path: string): ValidationIssue[
   return [
     ...validateFactObject(value, path, ANIME_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
-    ...validatePlayingField(value, path),
     ...validateRequiredFactRole(value, path, LIBRARY_ANIME_PERSON_ROLES, 'anime person role')
   ]
 }
@@ -960,56 +739,6 @@ function validateAnimeCharacterFact(value: unknown, path: string): ValidationIss
     ...validateFactObject(value, path, ANIME_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
     ...validateFactFields(value, path),
     ...validateRequiredFactRole(value, path, LIBRARY_ANIME_CHARACTER_ROLES, 'anime character role')
-  ]
-}
-
-function validateTvPersonFact(value: unknown, path: string): ValidationIssue[] {
-  return [
-    ...validateFactObject(value, path, TV_PERSON_FACT_KEYS, validatePersonMetadataFields),
-    ...validateFactFields(value, path),
-    ...validatePlayingField(value, path),
-    ...validateRequiredFactRole(value, path, LIBRARY_TV_PERSON_ROLES, 'tv person role')
-  ]
-}
-
-function validateTvCompanyFact(value: unknown, path: string): ValidationIssue[] {
-  return [
-    ...validateFactObject(value, path, TV_COMPANY_FACT_KEYS, validateCompanyMetadataFields),
-    ...validateFactFields(value, path),
-    ...validateRequiredFactRole(value, path, LIBRARY_TV_COMPANY_ROLES, 'tv company role')
-  ]
-}
-
-function validateTvCharacterFact(value: unknown, path: string): ValidationIssue[] {
-  return [
-    ...validateFactObject(value, path, TV_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
-    ...validateFactFields(value, path),
-    ...validateRequiredFactRole(value, path, LIBRARY_TV_CHARACTER_ROLES, 'tv character role')
-  ]
-}
-
-function validateMoviePersonFact(value: unknown, path: string): ValidationIssue[] {
-  return [
-    ...validateFactObject(value, path, MOVIE_PERSON_FACT_KEYS, validatePersonMetadataFields),
-    ...validateFactFields(value, path),
-    ...validatePlayingField(value, path),
-    ...validateRequiredFactRole(value, path, LIBRARY_MOVIE_PERSON_ROLES, 'movie person role')
-  ]
-}
-
-function validateMovieCompanyFact(value: unknown, path: string): ValidationIssue[] {
-  return [
-    ...validateFactObject(value, path, MOVIE_COMPANY_FACT_KEYS, validateCompanyMetadataFields),
-    ...validateFactFields(value, path),
-    ...validateRequiredFactRole(value, path, LIBRARY_MOVIE_COMPANY_ROLES, 'movie company role')
-  ]
-}
-
-function validateMovieCharacterFact(value: unknown, path: string): ValidationIssue[] {
-  return [
-    ...validateFactObject(value, path, MOVIE_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
-    ...validateFactFields(value, path),
-    ...validateRequiredFactRole(value, path, LIBRARY_MOVIE_CHARACTER_ROLES, 'movie character role')
   ]
 }
 
@@ -1086,15 +815,6 @@ function validateFactFields(value: unknown, path: string): ValidationIssue[] {
     ...validateOptionalBoolean(value.isSpoiler, `${path}.isSpoiler`),
     ...validateOptionalString(value.note, `${path}.note`)
   ]
-}
-
-/** Media-person facts alone state the characters a credit performs. */
-function validatePlayingField(value: unknown, path: string): ValidationIssue[] {
-  if (!isPlainObject(value)) {
-    return []
-  }
-
-  return validateOptionalStringArray(value.playing, `${path}.playing`, 'playing must be an array.')
 }
 
 function validateOptionalCharacterInfo(value: unknown, path: string): ValidationIssue[] {
@@ -1185,71 +905,6 @@ function validateAnimeSessionSlot(slot: AnimeScraperSlot, value: unknown, path: 
       return validateArrayOf(value, path, 'persons must be an array.', validateAnimePersonFact)
     case 'companies':
       return validateArrayOf(value, path, 'companies must be an array.', validateAnimeCompanyFact)
-    case 'relatedEntries':
-      return validateArrayOf(
-        value,
-        path,
-        'relatedEntries must be an array.',
-        validateRelatedEntryFact
-      )
-    case 'covers':
-    case 'backdrops':
-    case 'logos':
-      return validateStringArray(value, path, `${slot} must be an array of strings.`)
-  }
-
-  return []
-}
-
-function validateTvSessionSlot(slot: TvScraperSlot, value: unknown, path: string) {
-  switch (slot) {
-    case 'info':
-      return validateTvInfo(value, path)
-    case 'tags':
-      return validateArrayOf(value, path, 'tags must be an array.', validateScrapedTag)
-    case 'seasons':
-      return validateArrayOf(value, path, 'seasons must be an array.', validateTvSeason)
-    case 'episodes':
-      return validateArrayOf(value, path, 'episodes must be an array.', validateTvEpisode)
-    case 'characters':
-      return validateArrayOf(value, path, 'characters must be an array.', validateTvCharacterFact)
-    case 'persons':
-      return validateArrayOf(value, path, 'persons must be an array.', validateTvPersonFact)
-    case 'companies':
-      return validateArrayOf(value, path, 'companies must be an array.', validateTvCompanyFact)
-    case 'relatedEntries':
-      return validateArrayOf(
-        value,
-        path,
-        'relatedEntries must be an array.',
-        validateRelatedEntryFact
-      )
-    case 'covers':
-    case 'backdrops':
-    case 'logos':
-      return validateStringArray(value, path, `${slot} must be an array of strings.`)
-  }
-
-  return []
-}
-
-function validateMovieSessionSlot(slot: MovieScraperSlot, value: unknown, path: string) {
-  switch (slot) {
-    case 'info':
-      return validateMovieInfo(value, path)
-    case 'tags':
-      return validateArrayOf(value, path, 'tags must be an array.', validateScrapedTag)
-    case 'characters':
-      return validateArrayOf(
-        value,
-        path,
-        'characters must be an array.',
-        validateMovieCharacterFact
-      )
-    case 'persons':
-      return validateArrayOf(value, path, 'persons must be an array.', validateMoviePersonFact)
-    case 'companies':
-      return validateArrayOf(value, path, 'companies must be an array.', validateMovieCompanyFact)
     case 'relatedEntries':
       return validateArrayOf(
         value,

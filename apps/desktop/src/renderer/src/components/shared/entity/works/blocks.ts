@@ -8,10 +8,10 @@
  */
 
 import type { MediaType } from '@shared/common'
-import type { Anime, Game, Movie, Tv } from '@shared/db'
+import type { Anime, Game } from '@shared/db'
 import type { LinkViewKey } from '../links'
 
-export type WorkMedia = Game | Anime | Tv | Movie
+export type WorkMedia = Game | Anime
 
 export interface WorkItem {
   /** Link row id (stable list key) */

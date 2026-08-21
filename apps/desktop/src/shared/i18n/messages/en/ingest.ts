@@ -1,12 +1,10 @@
 /** Ingest pipeline: task-run titles, phase labels, and results owned by the main process. */
 
-type IngestEntity = 'game' | 'anime' | 'tv' | 'movie' | 'character' | 'person' | 'company'
+type IngestEntity = 'game' | 'anime' | 'character' | 'person' | 'company'
 
 const NOUNS: Record<IngestEntity, string> = {
   game: 'game',
   anime: 'anime',
-  tv: 'series',
-  movie: 'movie',
   character: 'character',
   person: 'person',
   company: 'company'
@@ -15,8 +13,6 @@ const NOUNS: Record<IngestEntity, string> = {
 const PLURALS: Record<IngestEntity, string> = {
   game: 'games',
   anime: 'anime',
-  tv: 'series',
-  movie: 'movies',
   character: 'characters',
   person: 'people',
   company: 'companies'

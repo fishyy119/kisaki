@@ -6,13 +6,11 @@
  * listed tables — exactly the columns every listed entity shares.
  */
 
-import { animes, characters, companies, games, movies, persons, tvs } from '@shared/db'
+import { animes, characters, companies, games, persons } from '@shared/db'
 
 export const ENTITY_TABLES = {
   game: games,
   anime: animes,
-  tv: tvs,
-  movie: movies,
   character: characters,
   person: persons,
   company: companies

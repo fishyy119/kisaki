@@ -1,14 +1,12 @@
 /**
- * Library entity domain: shared copy for the nine entity types
- * (game/anime/tv/movie/character/person/company/collection/tag) across menus,
- * searchers, selects, detail views, and form dialogs.
+ * Library entity domain: shared copy for the seven entity types
+ * (game/anime/character/person/company/collection/tag) across menus, searchers,
+ * selects, detail views, and form dialogs.
  */
 export const library = {
   entities: {
     game: 'Game',
     anime: 'Anime',
-    tv: 'TV series',
-    movie: 'Movie',
     character: 'Character',
     person: 'Person',
     company: 'Company',
@@ -20,6 +18,7 @@ export const library = {
     name: 'Name',
     sortName: 'Sort name',
     originalName: 'Original name',
+    aliases: 'Aliases',
     description: 'Description',
     score: 'Score',
     myScore: 'My score',
@@ -45,6 +44,10 @@ export const library = {
     relatedCharacters: 'Related characters',
     relatedCompanies: 'Related companies',
     characterPersons: 'People per character',
+    cast: 'Voice cast',
+    voicedBy: 'Voiced by',
+    voiceCredits: 'Voice credits',
+    companyRelations: 'Company relations',
     externalSites: 'External links',
     externalIds: 'External IDs',
     photos: 'Photos',
@@ -54,7 +57,6 @@ export const library = {
     icons: 'Icons',
     note: 'Note',
     role: 'Role',
-    playing: 'Playing',
     type: 'Type',
     status: 'Status',
     playDuration: 'Play time',
@@ -75,8 +77,6 @@ export const library = {
     watchDuration: 'Watch time',
     lastWatchedAt: 'Last watched',
     relatedAnimes: 'Related anime',
-    relatedTvs: 'Related series',
-    relatedMovies: 'Related movies',
     relatedEntries: 'Related entries',
     relatedWorks: 'Related works'
   },
@@ -91,22 +91,6 @@ export const library = {
   },
 
   animeStatus: {
-    planned: 'Plan to watch',
-    watching: 'Watching',
-    completed: 'Completed',
-    onHold: 'On hold',
-    dropped: 'Dropped'
-  },
-
-  tvStatus: {
-    planned: 'Plan to watch',
-    watching: 'Watching',
-    completed: 'Completed',
-    onHold: 'On hold',
-    dropped: 'Dropped'
-  },
-
-  movieStatus: {
     planned: 'Plan to watch',
     watching: 'Watching',
     completed: 'Completed',
@@ -183,52 +167,6 @@ export const library = {
       producer: 'Producer',
       distributor: 'Distributor',
       other: 'Other'
-    },
-    tvPerson: {
-      creator: 'Creator',
-      director: 'Director',
-      writer: 'Writer',
-      producer: 'Producer',
-      music: 'Music',
-      cinematography: 'Cinematography',
-      editing: 'Editing',
-      actor: 'Actor',
-      other: 'Other'
-    },
-    tvCharacter: {
-      main: 'Main',
-      supporting: 'Supporting',
-      cameo: 'Cameo',
-      other: 'Other'
-    },
-    tvCompany: {
-      network: 'Network',
-      studio: 'Studio',
-      producer: 'Producer',
-      distributor: 'Distributor',
-      other: 'Other'
-    },
-    moviePerson: {
-      director: 'Director',
-      writer: 'Writer',
-      producer: 'Producer',
-      music: 'Music',
-      cinematography: 'Cinematography',
-      editing: 'Editing',
-      actor: 'Actor',
-      other: 'Other'
-    },
-    movieCharacter: {
-      main: 'Main',
-      supporting: 'Supporting',
-      cameo: 'Cameo',
-      other: 'Other'
-    },
-    movieCompany: {
-      studio: 'Studio',
-      producer: 'Producer',
-      distributor: 'Distributor',
-      other: 'Other'
     }
   },
 
@@ -246,25 +184,6 @@ export const library = {
     special: 'Special'
   },
 
-  tvFormat: {
-    scripted: 'Scripted',
-    miniseries: 'Miniseries',
-    documentary: 'Documentary',
-    reality: 'Reality',
-    talkShow: 'Talk show',
-    variety: 'Variety',
-    news: 'News',
-    other: 'Other'
-  },
-
-  movieFormat: {
-    theatrical: 'Theatrical',
-    documentary: 'Documentary',
-    short: 'Short',
-    tvMovie: 'TV movie',
-    other: 'Other'
-  },
-
   mediaRelation: {
     sequel: 'Sequel',
     prequel: 'Prequel',
@@ -278,6 +197,18 @@ export const library = {
     other: 'Other'
   },
 
+  companyRelation: {
+    parent: 'Parent company',
+    subsidiary: 'Subsidiary',
+    brand: 'Brand',
+    brandOwner: 'Brand owner',
+    renamedTo: 'Renamed to',
+    renamedFrom: 'Renamed from',
+    spinOff: 'Spin-off',
+    spinOffOrigin: 'Spun off from',
+    other: 'Other'
+  },
+
   animeExtraType: {
     trailer: 'Trailer',
     pv: 'PV',
@@ -287,31 +218,9 @@ export const library = {
     other: 'Other'
   },
 
-  tvExtraType: {
-    trailer: 'Trailer',
-    teaser: 'Teaser',
-    behindTheScenes: 'Behind the scenes',
-    featurette: 'Featurette',
-    deletedScene: 'Deleted scene',
-    interview: 'Interview',
-    other: 'Other'
-  },
-
-  movieExtraType: {
-    trailer: 'Trailer',
-    teaser: 'Teaser',
-    behindTheScenes: 'Behind the scenes',
-    featurette: 'Featurette',
-    deletedScene: 'Deleted scene',
-    interview: 'Interview',
-    other: 'Other'
-  },
-
   counts: {
     game: ({ count }: { count: number }) => (count === 1 ? '1 game' : `${count} games`),
     anime: ({ count }: { count: number }) => (count === 1 ? '1 anime' : `${count} anime`),
-    tv: ({ count }: { count: number }) => (count === 1 ? '1 series' : `${count} series`),
-    movie: ({ count }: { count: number }) => (count === 1 ? '1 movie' : `${count} movies`),
     character: ({ count }: { count: number }) =>
       count === 1 ? '1 character' : `${count} characters`,
     person: ({ count }: { count: number }) => (count === 1 ? '1 person' : `${count} people`),
@@ -449,7 +358,9 @@ export const library = {
       persons: 'No people yet.',
       companies: 'No companies yet.',
       cast: 'No cast yet.',
-      crew: 'No crew yet.'
+      crew: 'No crew yet.',
+      voiceCredits: 'No voice credits yet.',
+      companyRelations: 'No company relations yet.'
     },
     manage: 'Manage',
     viewAll: ({ count }: { count: number }) => `View all (${count})`,
@@ -503,35 +414,28 @@ export const library = {
     editAnimeCharacters: 'Edit characters',
     editAnimePersons: 'Edit staff',
     editAnimeCompanies: 'Edit companies',
-    editTvCharacters: 'Edit characters',
-    editTvPersons: 'Edit cast and crew',
-    editTvCast: 'Edit cast',
-    editTvCrew: 'Edit crew',
-    editTvCompanies: 'Edit companies',
-    editMovieCharacters: 'Edit characters',
-    editMoviePersons: 'Edit cast and crew',
-    editMovieCast: 'Edit cast',
-    editMovieCrew: 'Edit crew',
-    editMovieCompanies: 'Edit companies',
+    editGameCast: 'Edit voice cast',
+    editAnimeCast: 'Edit voice cast',
     editCharacterGames: 'Edit game appearances',
     editCharacterAnimes: 'Edit anime appearances',
-    editCharacterTvs: 'Edit series appearances',
-    editCharacterMovies: 'Edit movie appearances',
     editCharacterPersons: 'Edit related people',
     editPersonGames: 'Edit game credits',
     editPersonAnimes: 'Edit anime credits',
-    editPersonTvs: 'Edit series credits',
-    editPersonMovies: 'Edit movie credits',
     editPersonCharacters: 'Edit voiced characters',
     editCompanyGames: 'Edit related games',
     editCompanyAnimes: 'Edit related anime',
-    editCompanyTvs: 'Edit related series',
-    editCompanyMovies: 'Edit related movies',
+    editCompanyRelations: 'Edit company relations',
     editCollectionEntities: 'Edit collection contents',
+
+    // Cast dialog
+    castCharacterLabel: 'Character',
+    castPersonLabel: 'Voice actor',
+    castEmptyHint: 'No voice cast yet. Use the button below to add one.',
+    castDuplicate: 'That character and voice actor are already paired here.',
 
     // Shared field bits
     notePlaceholder: 'Optional note…',
-    playingPlaceholder: 'Characters played, separated by commas',
+    aliasesPlaceholder: 'Alternative names, separated by commas',
     noteInfoPlaceholder: 'Note…',
     includesSpoiler: 'Contains spoilers',
     showSpoilers: 'Show spoilers',
@@ -630,12 +534,6 @@ export const library = {
       animeCover: 'Anime cover art shown on cards and lists.',
       animeBackdrop: 'Backdrop image for the detail page.',
       animeLogo: 'Anime title logo.',
-      tvCover: 'Series poster shown on cards and lists.',
-      tvBackdrop: 'Backdrop image for the detail page.',
-      tvLogo: 'Series title logo.',
-      movieCover: 'Movie poster shown on cards and lists.',
-      movieBackdrop: 'Backdrop image for the detail page.',
-      movieLogo: 'Movie title logo.',
       characterPhoto: 'Character photo shown on cards and detail pages.',
       personPhoto: 'Person photo shown on cards and detail pages.',
       companyLogo: 'Company logo shown on cards and detail pages.'
@@ -743,8 +641,6 @@ export const library = {
     // Link relation labels
     gameLabel: 'Game',
     animeLabel: 'Anime',
-    tvLabel: 'TV series',
-    movieLabel: 'Movie',
     characterLabel: 'Character',
     personLabel: 'Person',
     companyLabel: 'Company',
@@ -762,8 +658,6 @@ export const library = {
     linkLabels: {
       game: 'Game link',
       anime: 'Anime link',
-      tv: 'Series link',
-      movie: 'Movie link',
       character: 'Character link',
       person: 'Person link',
       company: 'Company link',
@@ -884,25 +778,6 @@ export const library = {
         name: 'Recently added anime',
         description: 'Anime sorted by date added'
       },
-      recentlyWatchedTv: {
-        name: 'Recently watched series',
-        description: 'Series sorted by last watched'
-      },
-      topRatedTv: { name: 'Top rated series', description: 'Series sorted by score' },
-      recentlyAddedTv: {
-        name: 'Recently added series',
-        description: 'Series sorted by date added'
-      },
-      recentlyWatchedMovies: {
-        name: 'Recently watched movies',
-        description: 'Movies sorted by last watched'
-      },
-      topRatedMovies: { name: 'Top rated movies', description: 'Movies sorted by score' },
-      recentlyAddedMovies: {
-        name: 'Recently added movies',
-        description: 'Movies sorted by date added'
-      },
-      unwatchedMovies: { name: 'Not watched yet', description: 'Movies you have not watched' },
       favoriteCharacters: { name: 'Favorite characters', description: 'Characters you favorited' },
       favoritePersons: { name: 'Favorite people', description: 'People you favorited' },
       favoriteCompanies: { name: 'Favorite companies', description: 'Companies you favorited' },

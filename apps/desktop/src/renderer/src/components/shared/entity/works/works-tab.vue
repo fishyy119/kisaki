@@ -18,8 +18,6 @@ import {
 import { StateView } from '@renderer/components/ui/state-view'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { GameDetailDialog } from '@renderer/components/shared/game'
-import { MovieDetailDialog } from '@renderer/components/shared/movie'
-import { TvDetailDialog } from '@renderer/components/shared/tv'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { MediaType } from '@shared/common'
@@ -146,19 +144,9 @@ const detailDialogOpen = computed({
       :game-id="openTarget.id"
     />
     <AnimeDetailDialog
-      v-else-if="openTarget.mediaType === 'anime'"
-      v-model:open="detailDialogOpen"
-      :anime-id="openTarget.id"
-    />
-    <TvDetailDialog
-      v-else-if="openTarget.mediaType === 'tv'"
-      v-model:open="detailDialogOpen"
-      :tv-id="openTarget.id"
-    />
-    <MovieDetailDialog
       v-else
       v-model:open="detailDialogOpen"
-      :movie-id="openTarget.id"
+      :anime-id="openTarget.id"
     />
   </template>
 </template>

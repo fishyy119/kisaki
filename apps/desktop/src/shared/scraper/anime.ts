@@ -30,8 +30,7 @@ export interface AnimeScraperProviderInfo {
  * Anime lookup, adding the release format to the shared media facts.
  *
  * The format tells providers which kind of entry to look for when a name search
- * spans several: TMDB lists a show's seasons, its specials collection and its
- * movies under one name.
+ * spans several: a series, its OVA and its theatrical release share a name.
  */
 export interface AnimeScraperLookup extends MediaScraperLookup {
   /** Release format of the entry. */

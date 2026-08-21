@@ -18,10 +18,7 @@ import {
   characterExternalIds,
   companyExternalIds,
   gameExternalIds,
-  movieExternalIds,
-  personExternalIds,
-  tvEpisodeExternalIds,
-  tvExternalIds
+  personExternalIds
 } from '@shared/db/schema'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { DbContext, DbQueryContext } from '../types'
@@ -58,30 +55,6 @@ export const animeEpisodeExternalIdLink: ExternalIdLinkTable = {
   sourceColumn: animeEpisodeExternalIds.source,
   externalIdColumn: animeEpisodeExternalIds.externalId,
   ownerLabel: 'anime episode'
-}
-
-export const tvExternalIdLink: ExternalIdLinkTable = {
-  table: tvExternalIds,
-  entityIdColumn: tvExternalIds.tvId,
-  sourceColumn: tvExternalIds.source,
-  externalIdColumn: tvExternalIds.externalId,
-  ownerLabel: 'tv'
-}
-
-export const tvEpisodeExternalIdLink: ExternalIdLinkTable = {
-  table: tvEpisodeExternalIds,
-  entityIdColumn: tvEpisodeExternalIds.episodeId,
-  sourceColumn: tvEpisodeExternalIds.source,
-  externalIdColumn: tvEpisodeExternalIds.externalId,
-  ownerLabel: 'tv episode'
-}
-
-export const movieExternalIdLink: ExternalIdLinkTable = {
-  table: movieExternalIds,
-  entityIdColumn: movieExternalIds.movieId,
-  sourceColumn: movieExternalIds.source,
-  externalIdColumn: movieExternalIds.externalId,
-  ownerLabel: 'movie'
 }
 
 export const personExternalIdLink: ExternalIdLinkTable = {

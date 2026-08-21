@@ -30,8 +30,6 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { AnimeSelect } from '@renderer/components/shared/anime'
 import { GameSelect } from '@renderer/components/shared/game'
-import { MovieSelect } from '@renderer/components/shared/movie'
-import { TvSelect } from '@renderer/components/shared/tv'
 import { queryEntityNames } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -200,27 +198,11 @@ function handleCancel() {
                   "
                 />
                 <AnimeSelect
-                  v-else-if="formData.targetType === 'anime'"
-                  v-model="formData.targetId"
-                  :exclude-ids="selectExcludeIds"
-                  :placeholder="
-                    m.library.select.selectPlaceholder({ label: m.library.entities.anime })
-                  "
-                />
-                <TvSelect
-                  v-else-if="formData.targetType === 'tv'"
-                  v-model="formData.targetId"
-                  :exclude-ids="selectExcludeIds"
-                  :placeholder="
-                    m.library.select.selectPlaceholder({ label: m.library.entities.tv })
-                  "
-                />
-                <MovieSelect
                   v-else
                   v-model="formData.targetId"
                   :exclude-ids="selectExcludeIds"
                   :placeholder="
-                    m.library.select.selectPlaceholder({ label: m.library.entities.movie })
+                    m.library.select.selectPlaceholder({ label: m.library.entities.anime })
                   "
                 />
               </FieldContent>

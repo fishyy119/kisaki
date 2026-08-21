@@ -60,7 +60,6 @@ interface LinkItem {
   targetName: string
   targetImage: string | null
   role: string
-  playing: string[]
   note: string
   isSpoiler: boolean
   order: number
@@ -102,7 +101,6 @@ watch(results, (data) => {
       targetName: row.targetName,
       targetImage: row.targetImage,
       role: row.role,
-      playing: row.playing ?? [],
       note: row.note || '',
       isSpoiler: row.isSpoiler,
       order: index,
@@ -158,7 +156,6 @@ const itemFormInitialData = computed(() => {
     targetName: editingItem.value.targetName,
     targetImage: editingItem.value.targetImage,
     role: editingItem.value.role,
-    playing: editingItem.value.playing,
     note: editingItem.value.note,
     isSpoiler: editingItem.value.isSpoiler
   }
@@ -174,7 +171,6 @@ async function handleSave() {
           id: link.isNew ? nanoid() : link.id,
           targetId: link.targetId,
           role: link.role,
-          playing: link.playing.length > 0 ? link.playing : null,
           note: link.note || null,
           isSpoiler: link.isSpoiler,
           order: index,
@@ -234,7 +230,6 @@ function handleAddNew() {
     targetName: '',
     targetImage: null,
     role: spec.value.roleOrder[0],
-    playing: [],
     note: '',
     isSpoiler: false,
     order: items.value.length,
@@ -250,7 +245,6 @@ function handleItemFormSubmit(data: {
   targetName: string
   targetImage: string | null
   role: string
-  playing: string[]
   note: string
   isSpoiler: boolean
 }) {
@@ -260,7 +254,6 @@ function handleItemFormSubmit(data: {
     targetName: data.targetName,
     targetImage: data.targetImage,
     role: data.role,
-    playing: data.playing,
     note: data.note,
     isSpoiler: data.isSpoiler,
     order: editingItem.value!.order,

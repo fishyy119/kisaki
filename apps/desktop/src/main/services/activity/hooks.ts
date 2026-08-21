@@ -55,33 +55,6 @@ export interface AnimeWatchEndedPayload {
   watchTimeSeconds: number
 }
 
-export interface TvWatchStartedPayload {
-  tvId: string
-  episodeId: string
-}
-
-export interface TvWatchEndedPayload {
-  tvId: string
-  episodeId: string
-  /** Whether the session reached the point that counts the episode as watched. */
-  watched: boolean
-  /** Total session duration in seconds. */
-  watchTimeSeconds: number
-}
-
-/** A film is one unit, so its watch payloads name no part of the entry. */
-export interface MovieWatchStartedPayload {
-  movieId: string
-}
-
-export interface MovieWatchEndedPayload {
-  movieId: string
-  /** Whether the session reached the point that counts the film as watched. */
-  watched: boolean
-  /** Total session duration in seconds. */
-  watchTimeSeconds: number
-}
-
 export interface ActivityHooks {
   gameLaunching: WaterfallHook<GameLaunchConfig>
   gameSessionStarted: NotifyHook<GameSessionStartedPayload>
@@ -89,10 +62,6 @@ export interface ActivityHooks {
   gameSessionEnded: NotifyHook<GameSessionEndedPayload>
   animeWatchStarted: NotifyHook<AnimeWatchStartedPayload>
   animeWatchEnded: NotifyHook<AnimeWatchEndedPayload>
-  tvWatchStarted: NotifyHook<TvWatchStartedPayload>
-  tvWatchEnded: NotifyHook<TvWatchEndedPayload>
-  movieWatchStarted: NotifyHook<MovieWatchStartedPayload>
-  movieWatchEnded: NotifyHook<MovieWatchEndedPayload>
 }
 
 export function createActivityHooks(): ActivityHooks {
@@ -102,10 +71,6 @@ export function createActivityHooks(): ActivityHooks {
     gameSessionEnding: createWaterfallHook<GameSessionRecord>('play.game.session.ending'),
     gameSessionEnded: createNotifyHook<GameSessionEndedPayload>('play.game.session.ended'),
     animeWatchStarted: createNotifyHook<AnimeWatchStartedPayload>('play.anime.watch.started'),
-    animeWatchEnded: createNotifyHook<AnimeWatchEndedPayload>('play.anime.watch.ended'),
-    tvWatchStarted: createNotifyHook<TvWatchStartedPayload>('play.tv.watch.started'),
-    tvWatchEnded: createNotifyHook<TvWatchEndedPayload>('play.tv.watch.ended'),
-    movieWatchStarted: createNotifyHook<MovieWatchStartedPayload>('play.movie.watch.started'),
-    movieWatchEnded: createNotifyHook<MovieWatchEndedPayload>('play.movie.watch.ended')
+    animeWatchEnded: createNotifyHook<AnimeWatchEndedPayload>('play.anime.watch.ended')
   }
 }

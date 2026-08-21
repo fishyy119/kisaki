@@ -14,9 +14,7 @@ import {
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
-  collectionMovieLinks,
-  collectionPersonLinks,
-  collectionTvLinks
+  collectionPersonLinks
 } from '@shared/db'
 import { ENTITY_TABLES } from './entity-tables'
 import { db } from './proxy'
@@ -65,30 +63,6 @@ export const COLLECTION_LINKS: Record<ContentEntityType, CollectionLinkDef> = {
     orderColumn: collectionAnimeLinks.orderInCollection,
     buildInsertValue({ id, collectionId, entityId, note, orderInCollection }) {
       return { id, collectionId, animeId: entityId, note, orderInCollection }
-    }
-  },
-  tv: {
-    table: collectionTvLinks,
-    tableName: getTableName(collectionTvLinks),
-    idColumn: collectionTvLinks.id,
-    collectionIdColumn: collectionTvLinks.collectionId,
-    entityIdColumn: collectionTvLinks.tvId,
-    noteColumn: collectionTvLinks.note,
-    orderColumn: collectionTvLinks.orderInCollection,
-    buildInsertValue({ id, collectionId, entityId, note, orderInCollection }) {
-      return { id, collectionId, tvId: entityId, note, orderInCollection }
-    }
-  },
-  movie: {
-    table: collectionMovieLinks,
-    tableName: getTableName(collectionMovieLinks),
-    idColumn: collectionMovieLinks.id,
-    collectionIdColumn: collectionMovieLinks.collectionId,
-    entityIdColumn: collectionMovieLinks.movieId,
-    noteColumn: collectionMovieLinks.note,
-    orderColumn: collectionMovieLinks.orderInCollection,
-    buildInsertValue({ id, collectionId, entityId, note, orderInCollection }) {
-      return { id, collectionId, movieId: entityId, note, orderInCollection }
     }
   },
   character: {

@@ -6,6 +6,11 @@
  * (scrape or edit); readers merge both directions, labelling incoming edges
  * through the total inverse map, so a half-written pair stays visible from
  * both endpoints.
+ *
+ * The vocabulary states narrative derivation between two entries and nothing
+ * else. Group facts such as a shared setting are n-ary and belong in a
+ * collection, and a shared cast is already encoded by two entries linking the
+ * same character; neither becomes an edge type here.
  */
 
 import type { MediaType } from '../../common'
@@ -52,39 +57,33 @@ const SAME_TYPE_RELATION_TYPES: readonly MediaRelationType[] = [
   'other'
 ]
 
+/**
+ * Cross-type pairs carry provenance plus the side-story pair: an anime's spin-off
+ * game and a visual novel's fandisc adaptation are told across media, so the
+ * derivation an edge states does not narrow to one type.
+ */
 const CROSS_TYPE_RELATION_TYPES: readonly MediaRelationType[] = [
   'adaptation',
   'sourceMaterial',
+  'sideStory',
+  'parentStory',
   'other'
 ]
 
 /**
  * Allowed relation types per ordered endpoint pair. Same-type pairs carry the
- * structural vocabulary (sequels, summaries, versions); cross-type pairs carry
- * provenance only. Adding a media type forces entries here at compile time.
+ * full vocabulary (sequels, summaries, versions). Adding a media type forces
+ * entries here at compile time.
  *
  * Which structures that vocabulary expresses follows entry grain: anime seasons
- * and film series are separate entries joined by these edges, while tv seasons
- * live inside the show entry, so tv edges connect distinct shows — spin-offs,
- * remakes, and the occasional prequel series.
+ * are separate entries joined by these edges, so a franchise is a connected
+ * component of the graph rather than a row.
  */
 export const MEDIA_RELATION_TYPE_RULES: Record<MediaTypePair, readonly MediaRelationType[]> = {
   'game-game': SAME_TYPE_RELATION_TYPES,
   'anime-anime': SAME_TYPE_RELATION_TYPES,
-  'tv-tv': SAME_TYPE_RELATION_TYPES,
-  'movie-movie': SAME_TYPE_RELATION_TYPES,
   'game-anime': CROSS_TYPE_RELATION_TYPES,
-  'game-tv': CROSS_TYPE_RELATION_TYPES,
-  'game-movie': CROSS_TYPE_RELATION_TYPES,
-  'anime-game': CROSS_TYPE_RELATION_TYPES,
-  'anime-tv': CROSS_TYPE_RELATION_TYPES,
-  'anime-movie': CROSS_TYPE_RELATION_TYPES,
-  'tv-game': CROSS_TYPE_RELATION_TYPES,
-  'tv-anime': CROSS_TYPE_RELATION_TYPES,
-  'tv-movie': CROSS_TYPE_RELATION_TYPES,
-  'movie-game': CROSS_TYPE_RELATION_TYPES,
-  'movie-anime': CROSS_TYPE_RELATION_TYPES,
-  'movie-tv': CROSS_TYPE_RELATION_TYPES
+  'anime-game': CROSS_TYPE_RELATION_TYPES
 }
 
 /** Allowed relation types for a directed edge from `fromType` to `toType`. */

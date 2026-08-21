@@ -2,7 +2,7 @@
  * Playback progress thresholds shared by the watch-session handlers.
  *
  * These are properties of video playback rather than of any one media type, so
- * anime, tv, and movie sessions read the same numbers here.
+ * every watch session reads the same numbers here.
  */
 
 /**

@@ -7,10 +7,10 @@
  */
 
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
-import type { Anime, Game, Character, Movie, Person, Company, Tv } from '@shared/db'
+import type { Anime, Game, Character, Person, Company } from '@shared/db'
 
 /** Union type for content entities */
-export type ContentEntityData = Game | Anime | Tv | Movie | Character | Person | Company
+export type ContentEntityData = Game | Anime | Character | Person | Company
 
 /** Entity count by type */
 export type ContentEntityCounts = Record<ContentEntityType, number>

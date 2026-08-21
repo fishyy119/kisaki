@@ -1,7 +1,8 @@
 import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
-import { baseColumns, mediaRelationType, mediaType } from '../../columns'
+import { baseColumns, companyRelationType, mediaRelationType, mediaType } from '../../columns'
+import { companies } from './content'
 
 /**
  * Directed entry-to-entry edges between media entries of any media type.
@@ -30,5 +31,35 @@ export const mediaRelations = sqliteTable(
   ]
 )
 
+/**
+ * Directed edges between companies: houses, labels, renames, and spin-offs.
+ *
+ * Both endpoints are one type, so unlike `media_relations` these are real
+ * foreign keys and the database owns referential integrity. Reads merge both
+ * directions through the inverse vocabulary, as media relations do.
+ */
+export const companyRelations = sqliteTable(
+  'company_relations',
+  {
+    ...baseColumns,
+    fromId: text('from_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    toId: text('to_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    type: companyRelationType('type').notNull().default('other'),
+    note: text('note'),
+    orderInFrom: integer('order_in_from').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.fromId, t.toId, t.type),
+    index('idx_company_relations_from').on(t.fromId),
+    index('idx_company_relations_to').on(t.toId)
+  ]
+)
+
 export type MediaRelation = InferSelectModel<typeof mediaRelations>
 export type NewMediaRelation = InferInsertModel<typeof mediaRelations>
+export type CompanyRelation = InferSelectModel<typeof companyRelations>
+export type NewCompanyRelation = InferInsertModel<typeof companyRelations>

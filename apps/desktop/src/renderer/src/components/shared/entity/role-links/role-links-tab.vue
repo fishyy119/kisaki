@@ -72,12 +72,13 @@ const detailDialogOpen = computed({
         />
         {{ m.library.detail.addEntity({ label: m.library.entities[props.entityType] }) }}
       </Button>
+      <slot name="actions" />
     </template>
   </StateView>
 
   <!-- Grouped card grid -->
   <template v-else>
-    <div class="flex items-center justify-start mb-4">
+    <div class="flex items-center justify-start gap-2 mb-4">
       <Button
         variant="outline"
         size="sm"
@@ -89,6 +90,7 @@ const detailDialogOpen = computed({
         />
         {{ m.library.detail.manage }}
       </Button>
+      <slot name="actions" />
     </div>
 
     <div class="space-y-4">

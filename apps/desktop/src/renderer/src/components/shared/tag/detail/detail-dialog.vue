@@ -9,8 +9,6 @@ import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
 import { GameDetailDialog } from '@renderer/components/shared/game'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { TvDetailDialog } from '@renderer/components/shared/tv'
-import { MovieDetailDialog } from '@renderer/components/shared/movie'
 import { CharacterDetailDialog } from '@renderer/components/shared/character'
 import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyDetailDialog } from '@renderer/components/shared/company'
@@ -65,8 +63,6 @@ type EntityClickPayload = { type: ContentEntityType; id: string }
 
 const openGameId = ref<string | null>(null)
 const openAnimeId = ref<string | null>(null)
-const openTvId = ref<string | null>(null)
-const openMovieId = ref<string | null>(null)
 const openCharacterId = ref<string | null>(null)
 const openPersonId = ref<string | null>(null)
 const openCompanyId = ref<string | null>(null)
@@ -81,18 +77,6 @@ const animeDialogOpen = computed({
   get: () => openAnimeId.value !== null,
   set: (value) => {
     if (!value) openAnimeId.value = null
-  }
-})
-const tvDialogOpen = computed({
-  get: () => openTvId.value !== null,
-  set: (value) => {
-    if (!value) openTvId.value = null
-  }
-})
-const movieDialogOpen = computed({
-  get: () => openMovieId.value !== null,
-  set: (value) => {
-    if (!value) openMovieId.value = null
   }
 })
 const characterDialogOpen = computed({
@@ -117,8 +101,6 @@ const companyDialogOpen = computed({
 function handleEntityClick(payload: EntityClickPayload) {
   openGameId.value = null
   openAnimeId.value = null
-  openTvId.value = null
-  openMovieId.value = null
   openCharacterId.value = null
   openPersonId.value = null
   openCompanyId.value = null
@@ -129,12 +111,6 @@ function handleEntityClick(payload: EntityClickPayload) {
       return
     case 'anime':
       openAnimeId.value = payload.id
-      return
-    case 'tv':
-      openTvId.value = payload.id
-      return
-    case 'movie':
-      openMovieId.value = payload.id
       return
     case 'character':
       openCharacterId.value = payload.id
@@ -260,16 +236,6 @@ const entityTypeModel = computed({
     v-if="openAnimeId"
     v-model:open="animeDialogOpen"
     :anime-id="openAnimeId"
-  />
-  <TvDetailDialog
-    v-if="openTvId"
-    v-model:open="tvDialogOpen"
-    :tv-id="openTvId"
-  />
-  <MovieDetailDialog
-    v-if="openMovieId"
-    v-model:open="movieDialogOpen"
-    :movie-id="openMovieId"
   />
   <CharacterDetailDialog
     v-if="openCharacterId"

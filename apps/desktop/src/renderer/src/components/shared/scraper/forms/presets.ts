@@ -136,79 +136,10 @@ const ANIME: ScraperPresetDefinition = {
 }
 
 // =============================================================================
-// Tv Presets
-// =============================================================================
-
-/**
- * Series preset built on TMDB alone.
- *
- * TMDB is the only source that catalogues a show as one entry with its seasons
- * beneath it, which is the shape the library stores. It states no character
- * entity and never relates two shows, so those slots stay empty rather than
- * borrowing a second source that numbers seasons differently.
- */
-const TV: ScraperPresetDefinition = {
-  id: 'tv',
-  copy: (m) => m.scraper.presets.tv,
-  mediaType: 'tv',
-  defaultLocale: 'zh-Hans',
-  searchProviderId: TMDB_PROVIDER_ID,
-  slotConfigs: {
-    info: createSlotConfig('info', [TMDB_PROVIDER_ID]),
-    tags: createSlotConfig('tags', [TMDB_PROVIDER_ID]),
-    seasons: createSlotConfig('seasons', [TMDB_PROVIDER_ID]),
-    episodes: createSlotConfig('episodes', [TMDB_PROVIDER_ID]),
-    characters: createEmptySlotConfig('characters'),
-    persons: createSlotConfig('persons', [TMDB_PROVIDER_ID]),
-    companies: createSlotConfig('companies', [TMDB_PROVIDER_ID]),
-    relatedEntries: createEmptySlotConfig('relatedEntries'),
-    covers: createSlotConfig('covers', [TMDB_PROVIDER_ID]),
-    backdrops: createSlotConfig('backdrops', [TMDB_PROVIDER_ID]),
-    logos: createSlotConfig('logos', [TMDB_PROVIDER_ID])
-  }
-}
-
-// =============================================================================
-// Movie Presets
-// =============================================================================
-
-/**
- * Film preset built on TMDB alone.
- *
- * TMDB carries the credits and artwork a film entry needs, and its collections
- * name the sequels a film belongs with, so `relatedEntries` is worth asking
- * for. Characters stay empty: a cast credit alone cannot name the character.
- */
-const MOVIE: ScraperPresetDefinition = {
-  id: 'movie',
-  copy: (m) => m.scraper.presets.movie,
-  mediaType: 'movie',
-  defaultLocale: 'zh-Hans',
-  searchProviderId: TMDB_PROVIDER_ID,
-  slotConfigs: {
-    info: createSlotConfig('info', [TMDB_PROVIDER_ID]),
-    tags: createSlotConfig('tags', [TMDB_PROVIDER_ID]),
-    characters: createEmptySlotConfig('characters'),
-    persons: createSlotConfig('persons', [TMDB_PROVIDER_ID]),
-    companies: createSlotConfig('companies', [TMDB_PROVIDER_ID]),
-    relatedEntries: createSlotConfig('relatedEntries', [TMDB_PROVIDER_ID]),
-    covers: createSlotConfig('covers', [TMDB_PROVIDER_ID]),
-    backdrops: createSlotConfig('backdrops', [TMDB_PROVIDER_ID]),
-    logos: createSlotConfig('logos', [TMDB_PROVIDER_ID])
-  }
-}
-
-// =============================================================================
 // Preset Registry
 // =============================================================================
 
-const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [
-  VISUAL_NOVEL_CN,
-  VIDEO_GAME,
-  ANIME,
-  TV,
-  MOVIE
-]
+const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [VISUAL_NOVEL_CN, VIDEO_GAME, ANIME]
 
 function resolvePreset({ copy, ...preset }: ScraperPresetDefinition): ScraperPreset {
   return { ...preset, ...copy(messages.value) }

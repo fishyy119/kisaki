@@ -1,5 +1,5 @@
 /**
- * TMDB entry identity grammar, shared by every media type scraped from TMDB.
+ * TMDB entry identity grammar.
  *
  * An external id names *which slice of TMDB* an entry mirrors, so a re-scrape
  * reproduces the exact same ordering and switching orderings is just a
@@ -10,10 +10,9 @@
  *   tv:{seriesId}:s{seasonNumber}          one season
  *   tv:{seriesId}:eg:{setId}:{groupId}     one group of an episode group
  *
- * A tv entry owns its seasons and episodes, so it is always the whole show, and
- * a movie entry is always one film. The sliced forms exist for anime entries,
- * which are one flat episode list against a source that models a show as a
- * series with seasons plus any number of alternate episode groups.
+ * `movie` and `tv` here are TMDB's own namespaces, not library media types. An
+ * anime entry is one flat episode list, so it binds to whichever slice of a
+ * series matches it; the whole-show form flattens seasons into one run.
  *
  * Everything here is a pure function over strings: no library or TMDB API
  * concepts leak in, so the grammar survives changes to either side.

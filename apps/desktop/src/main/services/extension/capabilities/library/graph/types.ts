@@ -21,14 +21,11 @@ import type {
   LibraryGraphNoteNode,
   LibraryGraphPersonNode,
   LibraryGraphResultMode,
-  LibraryGraphSeasonNode,
   LibraryGraphSessionNode,
   LibraryGraphTagNode,
   LibraryMediaType,
-  LibraryMovie,
   LibraryPerson,
-  LibraryTag,
-  LibraryTv
+  LibraryTag
 } from '@kisaki3/extension-api'
 
 export type LibraryGraphNode =
@@ -40,7 +37,6 @@ export type LibraryGraphNode =
   | LibraryGraphCharacterNode
   | LibraryGraphNoteNode
   | LibraryGraphSessionNode
-  | LibraryGraphSeasonNode
   | LibraryGraphEpisodeNode
   | LibraryGraphAttachmentNode
 
@@ -68,7 +64,6 @@ export interface NormalizedLibraryGraphNodes {
   characters: readonly LibraryGraphNodeEntry<LibraryGraphCharacterNode>[]
   notes: readonly LibraryGraphNodeEntry<LibraryGraphNoteNode>[]
   sessions: readonly LibraryGraphNodeEntry<LibraryGraphSessionNode>[]
-  seasons: readonly LibraryGraphNodeEntry<LibraryGraphSeasonNode>[]
   episodes: readonly LibraryGraphNodeEntry<LibraryGraphEpisodeNode>[]
   attachments: readonly LibraryGraphNodeEntry<LibraryGraphAttachmentNode>[]
 }
@@ -84,8 +79,6 @@ export interface NormalizedLibraryGraph {
 export type LibraryGraphEntity =
   | LibraryGame
   | LibraryAnime
-  | LibraryTv
-  | LibraryMovie
   | LibraryCollection
   | LibraryTag
   | LibraryCompany

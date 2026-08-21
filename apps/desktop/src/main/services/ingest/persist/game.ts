@@ -10,6 +10,7 @@ import { nanoid } from 'nanoid'
 import {
   characterPersonLinks,
   collectionGameLinks,
+  gameCastLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   gameExternalIds,
@@ -18,11 +19,13 @@ import {
   gameTagLinks,
   type NewCollectionGameLink,
   type NewGame,
+  type NewGameCastLink,
   type NewGameCharacterLink,
   type NewGameCompanyLink,
   type NewGamePersonLink
 } from '@shared/db'
 import type {
+  IngestGameCastLink,
   IngestGameCharacterLink,
   IngestGameCompanyLink,
   IngestGameGraph,
@@ -66,7 +69,6 @@ function resolveGamePersonLinks(params: {
           personId,
           role: link.role,
           isSpoiler: link.isSpoiler,
-          playing: link.playing,
           note: link.note
         }
       }
@@ -76,12 +78,38 @@ function resolveGamePersonLinks(params: {
       personId: link.personId,
       role: link.role,
       isSpoiler: link.isSpoiler,
-      playing: link.playing ?? null,
       note: link.note ?? null,
       orderInGame,
       orderInPerson: counters.next('person', link.personId)
     })
   })
+}
+
+function resolveGameCastLinks(params: {
+  gameId: string
+  gameIdentityKey: string
+  links: IngestGameCastLink[]
+  characterIdByIdentity: Map<string, string>
+  personIdByIdentity: Map<string, string>
+}): NewGameCastLink[] {
+  const { gameId, gameIdentityKey, links, characterIdByIdentity, personIdByIdentity } = params
+
+  const byKey = new Map<string, NewGameCastLink>()
+  for (const link of links) {
+    requireOwnerIdentity(link.gameIdentityKey, gameIdentityKey, 'game')
+    const characterId = requirePersistedId(
+      characterIdByIdentity,
+      link.characterIdentityKey,
+      'character'
+    )
+    const personId = requirePersistedId(personIdByIdentity, link.personIdentityKey, 'person')
+    const key = `${characterId}:${personId}`
+    if (byKey.has(key)) continue
+
+    byKey.set(key, { gameId, characterId, personId, note: link.note ?? null })
+  }
+
+  return [...byKey.values()]
 }
 
 function resolveGameCompanyLinks(params: {
@@ -224,6 +252,9 @@ export class GameIngestPersistHandler {
     for (const link of graph.links.characterPerson) {
       requiredPersonIdentities.add(link.personIdentityKey)
     }
+    for (const link of graph.links.gameCast) {
+      requiredPersonIdentities.add(link.personIdentityKey)
+    }
 
     const requiredCompanyIdentities = new Set<string>()
     for (const link of graph.links.gameCompany) {
@@ -235,6 +266,9 @@ export class GameIngestPersistHandler {
       requiredCharacterIdentities.add(link.characterIdentityKey)
     }
     for (const link of graph.links.characterPerson) {
+      requiredCharacterIdentities.add(link.characterIdentityKey)
+    }
+    for (const link of graph.links.gameCast) {
       requiredCharacterIdentities.add(link.characterIdentityKey)
     }
 
@@ -302,6 +336,17 @@ export class GameIngestPersistHandler {
     })
     for (const link of resolvedGameCharacterLinks) {
       tx.insert(gameCharacterLinks).values(link).run()
+    }
+
+    const resolvedGameCastLinks = resolveGameCastLinks({
+      gameId,
+      gameIdentityKey: graph.game.identityKey,
+      links: graph.links.gameCast,
+      characterIdByIdentity,
+      personIdByIdentity
+    })
+    for (const link of resolvedGameCastLinks) {
+      tx.insert(gameCastLinks).values(link).onConflictDoNothing().run()
     }
 
     const resolvedCharacterPersonLinks = resolveCharacterPersonLinks({

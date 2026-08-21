@@ -9,8 +9,6 @@ import { Section } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { GameDetailDialog } from '@renderer/components/shared/game'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { TvDetailDialog } from '@renderer/components/shared/tv'
-import { MovieDetailDialog } from '@renderer/components/shared/movie'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useCompany } from '@renderer/composables'
 import {
@@ -21,21 +19,26 @@ import {
 } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
 import type { MediaType } from '@shared/common'
+import { COMPANY_RELATION_TYPES } from '@shared/db'
+import { CompanyRelationsFormDialog } from '../../relations'
+import CompanyDetailDialog from '../detail-dialog.vue'
 import { useCompanyWorksBlocks } from '../works'
 
 const { m } = useI18n()
 
-const { company, tags } = useCompany()
+const { company, tags, relations } = useCompany()
 const worksBlocks = useCompanyWorksBlocks()
 
 // Edit dialog states
 const descriptionDialogOpen = ref(false)
 const sitesDialogOpen = ref(false)
 const tagsDialogOpen = ref(false)
+const relationsDialogOpen = ref(false)
 
 // Detail dialog states
 const openWork = ref<{ mediaType: MediaType; id: string } | null>(null)
 const openTagId = ref<string | null>(null)
+const openCompanyId = ref<string | null>(null)
 
 const workDialogOpen = computed({
   get: () => openWork.value !== null,
@@ -48,11 +51,29 @@ const hasExternalSites = computed(
   () => company.value?.externalSites && company.value.externalSites.length > 0
 )
 const hasTags = computed(() => tags.value && tags.value.length > 0)
+const hasRelations = computed(() => relations.value.length > 0)
+
+const RELATION_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.companyRelation)
+
+/** Grouped by relation type so a house reads as its own structure. */
+const relationGroups = computed(() =>
+  COMPANY_RELATION_TYPES.map((type) => ({
+    type,
+    items: relations.value.filter((relation) => relation.type === type)
+  })).filter((group) => group.items.length > 0)
+)
 
 const tagDialogOpen = computed({
   get: () => openTagId.value !== null,
   set: (value) => {
     if (!value) openTagId.value = null
+  }
+})
+
+const companyDialogOpen = computed({
+  get: () => openCompanyId.value !== null,
+  set: (value) => {
+    if (!value) openCompanyId.value = null
   }
 })
 </script>
@@ -101,8 +122,38 @@ const tagDialogOpen = computed({
         </Section>
       </div>
 
-      <!-- Right column: Related Sites -->
+      <!-- Right column: Company Relations, Related Sites -->
       <div class="space-y-6 min-w-0">
+        <Section
+          :title="m.library.fields.companyRelations"
+          editable
+          :empty="!hasRelations"
+          :empty-text="m.library.detail.empty.companyRelations"
+          @edit="relationsDialogOpen = true"
+        >
+          <div class="space-y-3">
+            <div
+              v-for="group in relationGroups"
+              :key="group.type"
+            >
+              <h4 class="text-xs font-medium text-muted-foreground mb-1">
+                {{ RELATION_TYPE_LABELS[group.type] }}
+              </h4>
+              <div class="flex flex-col gap-1 text-sm">
+                <button
+                  v-for="relation in group.items"
+                  :key="relation.id"
+                  type="button"
+                  class="text-left text-primary hover:underline truncate"
+                  @click="openCompanyId = relation.company.id"
+                >
+                  {{ relation.company.name }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Section>
+
         <Section
           :title="m.library.fields.externalSites"
           editable
@@ -149,6 +200,11 @@ const tagDialogOpen = computed({
       entity-type="company"
       :entity-id="company.id"
     />
+    <CompanyRelationsFormDialog
+      v-if="relationsDialogOpen"
+      v-model:open="relationsDialogOpen"
+      :company-id="company.id"
+    />
 
     <!-- Entity Dialogs -->
     <template v-if="openWork">
@@ -158,21 +214,17 @@ const tagDialogOpen = computed({
         :game-id="openWork.id"
       />
       <AnimeDetailDialog
-        v-else-if="openWork.mediaType === 'anime'"
+        v-else
         v-model:open="workDialogOpen"
         :anime-id="openWork.id"
       />
-      <TvDetailDialog
-        v-else-if="openWork.mediaType === 'tv'"
-        v-model:open="workDialogOpen"
-        :tv-id="openWork.id"
-      />
-      <MovieDetailDialog
-        v-else
-        v-model:open="workDialogOpen"
-        :movie-id="openWork.id"
-      />
     </template>
+
+    <CompanyDetailDialog
+      v-if="openCompanyId"
+      v-model:open="companyDialogOpen"
+      :company-id="openCompanyId"
+    />
 
     <!-- Tag Detail Dialog -->
     <TagDetailDialog

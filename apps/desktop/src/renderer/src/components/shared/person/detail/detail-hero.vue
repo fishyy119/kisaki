@@ -10,7 +10,7 @@ import { CoverImage } from '@renderer/components/ui/cover-image'
 import { usePerson } from '@renderer/composables/use-person'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { getEntityIcon } from '@renderer/utils/format'
+import { formatAliases, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { PersonBasicFormDialog } from '../forms'
 
@@ -18,6 +18,8 @@ const GENDER_LABELS = computed<Record<string, string>>(() => m.value.library.gen
 
 const { person } = usePerson()
 const { m, f } = useI18n()
+
+const aliasesLine = computed(() => formatAliases(person.value?.aliases))
 
 const isEditOpen = ref(false)
 </script>
@@ -47,6 +49,12 @@ const isEditOpen = ref(false)
               class="text-sm text-muted-foreground truncate"
             >
               {{ person.originalName }}
+            </p>
+            <p
+              v-if="aliasesLine"
+              class="text-xs text-muted-foreground/80 truncate"
+            >
+              {{ aliasesLine }}
             </p>
           </div>
           <Button

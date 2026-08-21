@@ -15,18 +15,12 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGraphResultAction,
-  LibraryMovie,
-  LibraryMovieCreateInput,
-  LibraryMoviePatch,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
   LibraryTag,
   LibraryTagCreateInput,
-  LibraryTagPatch,
-  LibraryTv,
-  LibraryTvCreateInput,
-  LibraryTvPatch
+  LibraryTagPatch
 } from '@kisaki3/extension-api'
 import { normalizeExternalIds } from '@shared/identity'
 import type { NormalizedLibraryGraph } from '../types'
@@ -55,30 +49,6 @@ export function planAnimeAction(
   }
 
   return Object.keys(buildAnimePatch(existing, input, conflictMode)).length > 0 ? 'update' : 'skip'
-}
-
-export function planTvAction(
-  existing: LibraryTv | undefined,
-  input: LibraryTvCreateInput,
-  conflictMode: ConflictMode
-): LibraryGraphResultAction {
-  if (!existing) {
-    return 'create'
-  }
-
-  return Object.keys(buildTvPatch(existing, input, conflictMode)).length > 0 ? 'update' : 'skip'
-}
-
-export function planMovieAction(
-  existing: LibraryMovie | undefined,
-  input: LibraryMovieCreateInput,
-  conflictMode: ConflictMode
-): LibraryGraphResultAction {
-  if (!existing) {
-    return 'create'
-  }
-
-  return Object.keys(buildMoviePatch(existing, input, conflictMode)).length > 0 ? 'update' : 'skip'
 }
 
 export function planCollectionAction(
@@ -151,54 +121,6 @@ export function buildAnimePatch(
   assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
   assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
   assignPatchValue(patch, existing, input, 'animeDirPath', conflictMode)
-  assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
-  patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
-  if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
-    delete patch.externalIds
-  }
-  return patch
-}
-
-export function buildTvPatch(
-  existing: LibraryTv,
-  input: LibraryTvCreateInput,
-  conflictMode: ConflictMode
-): LibraryTvPatch {
-  const patch = buildRankedEntityPatch(existing, input, conflictMode) as LibraryTvPatch
-  assignPatchValue(patch, existing, input, 'releaseDate', conflictMode)
-  assignPatchValue(patch, existing, input, 'endDate', conflictMode)
-  assignPatchValue(patch, existing, input, 'status', conflictMode)
-  assignPatchValue(patch, existing, input, 'format', conflictMode)
-  assignPatchValue(patch, existing, input, 'totalSeasons', conflictMode)
-  assignPatchValue(patch, existing, input, 'totalEpisodes', conflictMode)
-  assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
-  assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
-  assignPatchValue(patch, existing, input, 'tvDirPath', conflictMode)
-  assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
-  patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
-  if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
-    delete patch.externalIds
-  }
-  return patch
-}
-
-export function buildMoviePatch(
-  existing: LibraryMovie,
-  input: LibraryMovieCreateInput,
-  conflictMode: ConflictMode
-): LibraryMoviePatch {
-  const patch = buildRankedEntityPatch(existing, input, conflictMode) as LibraryMoviePatch
-  assignPatchValue(patch, existing, input, 'releaseDate', conflictMode)
-  assignPatchValue(patch, existing, input, 'status', conflictMode)
-  assignPatchValue(patch, existing, input, 'format', conflictMode)
-  assignPatchValue(patch, existing, input, 'runtimeMs', conflictMode)
-  assignPatchValue(patch, existing, input, 'watched', conflictMode)
-  assignPatchValue(patch, existing, input, 'watchedAt', conflictMode)
-  assignPatchValue(patch, existing, input, 'playCount', conflictMode)
-  assignPatchValue(patch, existing, input, 'resumePositionMs', conflictMode)
-  assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
-  assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
-  assignPatchValue(patch, existing, input, 'movieDirPath', conflictMode)
   assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
   patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
   if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
@@ -322,27 +244,16 @@ type RankedEntityPatch =
   | LibraryCharacterPatch
   | LibraryCompanyPatch
   | LibraryGamePatch
-  | LibraryMoviePatch
   | LibraryPersonPatch
-  | LibraryTvPatch
 
 function buildRankedEntityPatch(
-  existing:
-    | LibraryAnime
-    | LibraryCharacter
-    | LibraryCompany
-    | LibraryGame
-    | LibraryMovie
-    | LibraryPerson
-    | LibraryTv,
+  existing: LibraryAnime | LibraryCharacter | LibraryCompany | LibraryGame | LibraryPerson,
   input:
     | LibraryAnimeCreateInput
     | LibraryCharacterCreateInput
     | LibraryCompanyCreateInput
     | LibraryGameCreateInput
-    | LibraryMovieCreateInput
-    | LibraryPersonCreateInput
-    | LibraryTvCreateInput,
+    | LibraryPersonCreateInput,
   conflictMode: ConflictMode
 ): RankedEntityPatch {
   const patch: RankedEntityPatch = {}

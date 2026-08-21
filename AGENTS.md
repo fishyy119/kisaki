@@ -1,8 +1,12 @@
 # Kisaki Repository Guide
 
-Kisaki is a multifunctional media library manager. It aims to provide one coherent desktop
-experience and data model for recording, managing, building, syncing, and showcasing media
-collections and memories.
+Kisaki is an ACGN library manager. It aims to provide one coherent desktop experience and data model
+for recording, managing, building, syncing, and showcasing collections and memories across visual
+novels and games, anime, comics, novels, and the audio works around them.
+
+Its scope is what shares one metadata graph — works whose characters are entities in their own
+right, with the staff, studios, and voice cast that surround them. Live-action film and television
+are deliberately out of scope; they would need a second, weaker data model behind the same tables.
 
 This project is still before `0.1.0`; prefer clean architecture and clear ownership over preserving
 old internal shapes.
@@ -15,6 +19,8 @@ old internal shapes.
   and background task behavior.
 - Make feature surfaces useful before making them decorative; renderer UI should be efficient,
   scannable, and consistent with the existing design system.
+- Serve ACGN habits specifically. A surface that would look the same for a generic media catalogue is
+  usually the wrong surface.
 
 ## Architecture
 

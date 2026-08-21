@@ -1,4 +1,4 @@
-import { normalizePlaying, unionPlaying, type ExternalSite } from '@shared/db'
+import type { ExternalSite } from '@shared/db'
 import {
   buildEntityCanonicalIdentityKey,
   buildEntityExternalIdKeys,
@@ -12,9 +12,7 @@ import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
-  CoreMovieMetadata,
   CorePersonMetadata,
-  CoreTvMetadata,
   Tag
 } from '@shared/metadata'
 import type {
@@ -103,6 +101,35 @@ export function mergeExternalSites(
   return [...byKey.values()]
 }
 
+/**
+ * Trims alias names and drops duplicates, keeping the first spelling of each.
+ *
+ * Absent stays absent: an omitted list means the source could not answer, while
+ * an empty one means it says there are none.
+ */
+export function normalizeAliases(aliases: string[] | undefined): string[] | undefined {
+  if (!aliases) return undefined
+
+  const byKey = new Map<string, string>()
+  for (const value of aliases) {
+    const name = normalizeOptionalString(value)
+    if (!name) continue
+
+    const key = normalizeKeyText(name)
+    if (!byKey.has(key)) byKey.set(key, name)
+  }
+
+  return [...byKey.values()]
+}
+
+export function mergeAliases(
+  existing: string[] | undefined,
+  incoming: string[] | undefined
+): string[] | undefined {
+  if (!existing && !incoming) return undefined
+  return normalizeAliases([...(existing ?? []), ...(incoming ?? [])])
+}
+
 export function mergeTags(
   existing: Tag[] | undefined,
   incoming: Tag[] | undefined
@@ -137,43 +164,6 @@ export function mergeTags(
 
   const values = [...byKey.values()]
   return values.length > 0 ? values : undefined
-}
-
-/** How one upsert states the characters a media-person credit performs. */
-export interface PlayingInput {
-  /** Names the source put on the credit itself. */
-  stated?: readonly string[]
-  /** Name of the character entity this credit was derived from. */
-  derived?: string
-}
-
-/**
- * Cast pairing collected for one media-person edge.
- *
- * Stated names win as a whole so a multi-source merge never interleaves two
- * spellings of the same character; derived names only fill the slot no source
- * stated directly.
- */
-export interface PendingPlaying {
-  stated?: string[]
-  derived: string[]
-}
-
-export function createPendingPlaying(): PendingPlaying {
-  return { derived: [] }
-}
-
-export function absorbPlaying(pending: PendingPlaying, input: PlayingInput): void {
-  if (!pending.stated) {
-    pending.stated = unionPlaying(input.stated, undefined)
-  }
-  if (input.derived) {
-    pending.derived = normalizePlaying([...pending.derived, input.derived])
-  }
-}
-
-export function finalizePlaying(pending: PendingPlaying): string[] | undefined {
-  return pending.stated ?? (pending.derived.length > 0 ? pending.derived : undefined)
 }
 
 function toUrlKey(url: string): string {
@@ -241,42 +231,6 @@ export function normalizeAnimeCore(raw: Partial<CoreAnimeMetadata>): CoreAnimeMe
   }
 }
 
-export function normalizeTvCore(raw: Partial<CoreTvMetadata>): CoreTvMetadata | null {
-  const name = normalizeOptionalString(raw.name)
-  if (!name) return null
-
-  return {
-    name,
-    originalName: normalizeOptionalString(raw.originalName),
-    releaseDate: raw.releaseDate,
-    endDate: raw.endDate,
-    description: normalizeOptionalString(raw.description),
-    format: raw.format,
-    totalSeasons: raw.totalSeasons,
-    totalEpisodes: raw.totalEpisodes,
-    externalSites: mergeExternalSites(undefined, raw.externalSites),
-    externalIds: mergeExternalIds(undefined, raw.externalIds),
-    tags: mergeTags(undefined, raw.tags)
-  }
-}
-
-export function normalizeMovieCore(raw: Partial<CoreMovieMetadata>): CoreMovieMetadata | null {
-  const name = normalizeOptionalString(raw.name)
-  if (!name) return null
-
-  return {
-    name,
-    originalName: normalizeOptionalString(raw.originalName),
-    releaseDate: raw.releaseDate,
-    description: normalizeOptionalString(raw.description),
-    format: raw.format,
-    runtimeMs: raw.runtimeMs,
-    externalSites: mergeExternalSites(undefined, raw.externalSites),
-    externalIds: mergeExternalIds(undefined, raw.externalIds),
-    tags: mergeTags(undefined, raw.tags)
-  }
-}
-
 export function normalizePersonCore(raw: Partial<CorePersonMetadata>): CorePersonMetadata | null {
   const name = normalizeOptionalString(raw.name)
   if (!name) return null
@@ -284,6 +238,7 @@ export function normalizePersonCore(raw: Partial<CorePersonMetadata>): CorePerso
   return {
     name,
     originalName: normalizeOptionalString(raw.originalName),
+    aliases: normalizeAliases(raw.aliases),
     birthDate: raw.birthDate,
     deathDate: raw.deathDate,
     gender: raw.gender,
@@ -320,6 +275,7 @@ export function normalizeCharacterCore(
   return {
     name,
     originalName: normalizeOptionalString(raw.originalName),
+    aliases: normalizeAliases(raw.aliases),
     birthDate: raw.birthDate,
     gender: raw.gender,
     age: raw.age,

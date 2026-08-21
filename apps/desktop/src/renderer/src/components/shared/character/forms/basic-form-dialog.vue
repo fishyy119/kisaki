@@ -34,6 +34,7 @@ import {
   type PartialDateInputExpose
 } from '@renderer/components/ui/partial-date-input'
 import { createLogger } from '@renderer/core/log'
+import { parseAliasesInput } from '@renderer/utils/format'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -52,6 +53,7 @@ interface FormData {
   name: string
   originalName: string
   sortName: string
+  aliases: string
   gender: '' | 'male' | 'female' | 'other'
   birthDate: PartialDate | null
   bloodType: '' | 'a' | 'b' | 'o' | 'ab'
@@ -100,6 +102,7 @@ const formData = ref<FormData>({
   name: '',
   originalName: '',
   sortName: '',
+  aliases: '',
   gender: '',
   birthDate: null,
   bloodType: '',
@@ -130,6 +133,7 @@ watch(character, (characterData) => {
       name: characterData.name || '',
       originalName: characterData.originalName || '',
       sortName: characterData.sortName || '',
+      aliases: (characterData.aliases ?? []).join(', '),
       gender: characterData.gender || '',
       birthDate: characterData.birthDate ?? null,
       bloodType: characterData.bloodType || '',
@@ -204,6 +208,7 @@ async function handleSubmit() {
         name: formData.value.name || 'unknown character',
         originalName: formData.value.originalName || null,
         sortName: formData.value.sortName || null,
+        aliases: parseAliasesInput(formData.value.aliases),
         gender: formData.value.gender || null,
         birthDate,
         bloodType: formData.value.bloodType || null,
@@ -280,6 +285,15 @@ function handleCancel() {
                   <Input
                     v-model="formData.sortName"
                     :placeholder="m.library.forms.sortNamePlaceholder"
+                  />
+                </FieldContent>
+              </Field>
+              <Field>
+                <FieldLabel>{{ m.library.fields.aliases }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="formData.aliases"
+                    :placeholder="m.library.forms.aliasesPlaceholder"
                   />
                 </FieldContent>
               </Field>

@@ -9,10 +9,8 @@ import type {
   LibraryGraphDiagnostic,
   LibraryGraphMediaNode,
   LibraryMediaType,
-  LibraryMovie,
   LibraryPerson,
-  LibraryTag,
-  LibraryTv
+  LibraryTag
 } from '@kisaki3/extension-api'
 import {
   animeExternalIds,
@@ -22,12 +20,8 @@ import {
   companyExternalIds,
   gameExternalIds,
   games,
-  movieExternalIds,
-  movies,
   personExternalIds,
-  tags,
-  tvExternalIds,
-  tvs
+  tags
 } from '@shared/db'
 import { normalizeExternalIds } from '@shared/identity'
 import type { DbService } from '@main/services/db'
@@ -272,7 +266,7 @@ function matchCharacterNode(
   return { key, kind: 'character', diagnostics: [] }
 }
 
-type LibraryMediaEntity = LibraryAnime | LibraryGame | LibraryMovie | LibraryTv
+type LibraryMediaEntity = LibraryAnime | LibraryGame
 
 function findMediaExternalIdMatches(
   mediaType: LibraryMediaType,
@@ -282,10 +276,6 @@ function findMediaExternalIdMatches(
   switch (mediaType) {
     case 'anime':
       return findAnimeExternalIdMatches(externalIds, options)
-    case 'tv':
-      return findTvExternalIdMatches(externalIds, options)
-    case 'movie':
-      return findMovieExternalIdMatches(externalIds, options)
     case 'game':
       return findGameExternalIdMatches(externalIds, options)
   }
@@ -298,10 +288,6 @@ function findMediaByPath(
   switch (node.mediaType) {
     case 'anime':
       return findAnimeByPath(node.input.animeDirPath, options)
-    case 'tv':
-      return findTvByPath(node.input.tvDirPath, options)
-    case 'movie':
-      return findMovieByPath(node.input.movieDirPath, options)
     case 'game':
       return findGameByPath(node.input.gameDirPath, options)
   }
@@ -358,64 +344,6 @@ function findAnimeExternalIdMatches(
         externalId,
         entityId: row.animeId,
         existing: options.entities.getAnime(row.animeId)
-      })
-    }
-  }
-
-  return matches
-}
-
-function findTvExternalIdMatches(
-  externalIds: readonly ExternalId[] | undefined,
-  options: MatchLibraryGraphOptions
-): ExternalIdEntityMatch<LibraryTv>[] {
-  const matches: ExternalIdEntityMatch<LibraryTv>[] = []
-  for (const externalId of normalizeExternalIds([...(externalIds ?? [])])) {
-    const rows = options.db.client
-      .select({ tvId: tvExternalIds.tvId })
-      .from(tvExternalIds)
-      .where(
-        and(
-          eq(tvExternalIds.source, externalId.source),
-          eq(tvExternalIds.externalId, externalId.id)
-        )
-      )
-      .all()
-
-    for (const row of rows) {
-      matches.push({
-        externalId,
-        entityId: row.tvId,
-        existing: options.entities.getTv(row.tvId)
-      })
-    }
-  }
-
-  return matches
-}
-
-function findMovieExternalIdMatches(
-  externalIds: readonly ExternalId[] | undefined,
-  options: MatchLibraryGraphOptions
-): ExternalIdEntityMatch<LibraryMovie>[] {
-  const matches: ExternalIdEntityMatch<LibraryMovie>[] = []
-  for (const externalId of normalizeExternalIds([...(externalIds ?? [])])) {
-    const rows = options.db.client
-      .select({ movieId: movieExternalIds.movieId })
-      .from(movieExternalIds)
-      .where(
-        and(
-          eq(movieExternalIds.source, externalId.source),
-          eq(movieExternalIds.externalId, externalId.id)
-        )
-      )
-      .all()
-
-    for (const row of rows) {
-      matches.push({
-        externalId,
-        entityId: row.movieId,
-        existing: options.entities.getMovie(row.movieId)
       })
     }
   }
@@ -540,38 +468,6 @@ function findAnimeByPath(
     .where(eq(animes.animeDirPath, animeDirPath))
     .get()
   return row ? options.entities.getAnime(row.id) : null
-}
-
-function findTvByPath(
-  tvDirPath: string | undefined,
-  options: MatchLibraryGraphOptions
-): LibraryTv | null {
-  if (!tvDirPath) {
-    return null
-  }
-
-  const row = options.db.client
-    .select({ id: tvs.id })
-    .from(tvs)
-    .where(eq(tvs.tvDirPath, tvDirPath))
-    .get()
-  return row ? options.entities.getTv(row.id) : null
-}
-
-function findMovieByPath(
-  movieDirPath: string | undefined,
-  options: MatchLibraryGraphOptions
-): LibraryMovie | null {
-  if (!movieDirPath) {
-    return null
-  }
-
-  const row = options.db.client
-    .select({ id: movies.id })
-    .from(movies)
-    .where(eq(movies.movieDirPath, movieDirPath))
-    .get()
-  return row ? options.entities.getMovie(row.id) : null
 }
 
 function createExternalIdConflictDiagnostic(

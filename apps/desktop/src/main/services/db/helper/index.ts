@@ -7,11 +7,8 @@ export {
   companyExternalIdLink,
   findExternalIdOwners,
   gameExternalIdLink,
-  movieExternalIdLink,
   personExternalIdLink,
   requireExternalIdsAvailable,
-  tvEpisodeExternalIdLink,
-  tvExternalIdLink,
   type ExternalIdLinkTable
 } from './external-id'
 export { findTagByName, resolveTagId, type TagIdentityInput } from './tag'

@@ -4,7 +4,7 @@
  * Time-related formatting functions are in datetime.ts
  */
 
-import type { AnimeStatus, GameStatus, Gender, MovieStatus, TvStatus } from '@shared/db'
+import type { AnimeStatus, GameStatus, Gender } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
 import { messages } from '@renderer/core/i18n'
 
@@ -25,22 +25,6 @@ const GAME_STATUS_VARIANTS: Record<GameStatus, StatusVariant> = {
 }
 
 const ANIME_STATUS_VARIANTS: Record<AnimeStatus, StatusVariant> = {
-  planned: 'secondary',
-  watching: 'default',
-  completed: 'success',
-  onHold: 'warning',
-  dropped: 'destructive'
-}
-
-const TV_STATUS_VARIANTS: Record<TvStatus, StatusVariant> = {
-  planned: 'secondary',
-  watching: 'default',
-  completed: 'success',
-  onHold: 'warning',
-  dropped: 'destructive'
-}
-
-const MOVIE_STATUS_VARIANTS: Record<MovieStatus, StatusVariant> = {
   planned: 'secondary',
   watching: 'default',
   completed: 'success',
@@ -76,47 +60,19 @@ export function getAnimeStatusVariant(status: AnimeStatus): StatusVariant {
   return ANIME_STATUS_VARIANTS[status] ?? 'secondary'
 }
 
-/**
- * Format series watch status to a localized label
- */
-export function formatTvStatus(status: TvStatus): string {
-  return messages.value.library.tvStatus[status]
-}
-
-/**
- * Map series watch status to badge variant for UI display
- */
-export function getTvStatusVariant(status: TvStatus): StatusVariant {
-  return TV_STATUS_VARIANTS[status] ?? 'secondary'
-}
-
-/**
- * Format movie watch status to a localized label
- */
-export function formatMovieStatus(status: MovieStatus): string {
-  return messages.value.library.movieStatus[status]
-}
-
-/**
- * Map movie watch status to badge variant for UI display
- */
-export function getMovieStatusVariant(status: MovieStatus): StatusVariant {
-  return MOVIE_STATUS_VARIANTS[status] ?? 'secondary'
-}
-
 /** Format an episode number, keeping one decimal only for half-numbered episodes. */
 export function formatEpisodeNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
 
-/** Format the characters a credited person plays into one display line. */
-export function formatPlaying(playing: readonly string[] | null | undefined): string | undefined {
-  const names = (playing ?? []).map((name) => name.trim()).filter(Boolean)
+/** Join alternative names into one display line. */
+export function formatAliases(aliases: readonly string[] | null | undefined): string | undefined {
+  const names = (aliases ?? []).map((name) => name.trim()).filter(Boolean)
   return names.length > 0 ? names.join(' / ') : undefined
 }
 
-/** Parse the comma-separated playing input of the link form into names. */
-export function parsePlayingInput(value: string): string[] {
+/** Parse the comma-separated aliases input of an entity form into names. */
+export function parseAliasesInput(value: string): string[] {
   const names: string[] = []
   const seen = new Set<string>()
 
@@ -229,8 +185,6 @@ export function getSpoilerDisplay(
 const ENTITY_ICONS: Record<AllEntityType, string> = {
   game: 'icon-[mdi--gamepad-variant-outline]',
   anime: 'icon-[mdi--television-classic]',
-  tv: 'icon-[mdi--television-play]',
-  movie: 'icon-[mdi--movie-open-outline]',
   character: 'icon-[mdi--ghost-outline]',
   person: 'icon-[mdi--account-circle-outline]',
   company: 'icon-[mdi--company]',

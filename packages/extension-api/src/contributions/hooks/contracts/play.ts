@@ -42,33 +42,6 @@ export interface AnimeWatchEndedPayload {
   watchTimeSeconds: number
 }
 
-export interface TvWatchStartedPayload {
-  tvId: string
-  episodeId: string
-}
-
-export interface TvWatchEndedPayload {
-  tvId: string
-  episodeId: string
-  /** Whether the session reached the point that counts the episode as watched. */
-  watched: boolean
-  /** Total session duration in seconds. */
-  watchTimeSeconds: number
-}
-
-/** A film is one unit, so its watch payloads name no part of the entry. */
-export interface MovieWatchStartedPayload {
-  movieId: string
-}
-
-export interface MovieWatchEndedPayload {
-  movieId: string
-  /** Whether the session reached the point that counts the film as watched. */
-  watched: boolean
-  /** Total session duration in seconds. */
-  watchTimeSeconds: number
-}
-
 /**
  * Play hook points.
  *
@@ -85,8 +58,4 @@ export interface PlayHookPoints {
   'play.game.session.ended': HookPointSpec<'notify', GameSessionEndedPayload>
   'play.anime.watch.started': HookPointSpec<'notify', AnimeWatchStartedPayload>
   'play.anime.watch.ended': HookPointSpec<'notify', AnimeWatchEndedPayload>
-  'play.tv.watch.started': HookPointSpec<'notify', TvWatchStartedPayload>
-  'play.tv.watch.ended': HookPointSpec<'notify', TvWatchEndedPayload>
-  'play.movie.watch.started': HookPointSpec<'notify', MovieWatchStartedPayload>
-  'play.movie.watch.ended': HookPointSpec<'notify', MovieWatchEndedPayload>
 }

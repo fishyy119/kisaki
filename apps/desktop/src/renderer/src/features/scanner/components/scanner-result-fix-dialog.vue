@@ -16,8 +16,6 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import type { EntitySearcherSelection } from '@renderer/components/shared/entity'
 import { AnimeSearcher } from '@renderer/components/shared/anime'
 import { GameSearcher } from '@renderer/components/shared/game'
-import { MovieSearcher } from '@renderer/components/shared/movie'
-import { TvSearcher } from '@renderer/components/shared/tv'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Form } from '@renderer/components/ui/form'
@@ -34,20 +32,10 @@ import { scanners as scannersTable } from '@shared/db'
 import {
   ANIME_UPDATE_SURFACE_KEYS,
   GAME_UPDATE_SURFACE_KEYS,
-  MOVIE_UPDATE_SURFACE_KEYS,
-  TV_UPDATE_SURFACE_KEYS,
   type AnimeUpdateRequest,
-  type GameUpdateRequest,
-  type MovieUpdateRequest,
-  type TvUpdateRequest
+  type GameUpdateRequest
 } from '@shared/ingest/update'
-import type {
-  AnimeScraperLookup,
-  GameScraperLookup,
-  MovieScraperLookup,
-  ScraperLookup,
-  TvScraperLookup
-} from '@shared/scraper'
+import type { AnimeScraperLookup, GameScraperLookup, ScraperLookup } from '@shared/scraper'
 import { assertNever } from '@shared/utils/exhaustive'
 import type { ScannerFixTarget } from './scanner-problem'
 
@@ -70,8 +58,6 @@ const { m } = useI18n()
 type FixSelection =
   | { mediaType: 'game'; selection: EntitySearcherSelection<GameScraperLookup> }
   | { mediaType: 'anime'; selection: EntitySearcherSelection<AnimeScraperLookup> }
-  | { mediaType: 'tv'; selection: EntitySearcherSelection<TvScraperLookup> }
-  | { mediaType: 'movie'; selection: EntitySearcherSelection<MovieScraperLookup> }
 
 const isSubmitting = ref(false)
 const selection = shallowRef<FixSelection | null>(null)
@@ -153,64 +139,12 @@ async function submitAnime(chosen: EntitySearcherSelection<AnimeScraperLookup>):
     .then(unwrapIpcData)
 }
 
-async function submitTv(chosen: EntitySearcherSelection<TvScraperLookup>): Promise<void> {
-  const lookup = resolveLookup(chosen.lookup)
-  const entityId = props.problem.entityId
-
-  if (entityId) {
-    const request: TvUpdateRequest = {
-      rootId: entityId,
-      profileId: chosen.profileId,
-      lookup,
-      selection: { surfaces: [...TV_UPDATE_SURFACE_KEYS] },
-      policy: { singularUpdate: 'overwrite', collectionUpdate: 'replace' }
-    }
-    await ipcManager.invoke('ingest:update-tv-from-scraper', request).then(unwrapIpcData)
-    return
-  }
-
-  await ipcManager
-    .invoke('ingest:add-tv-from-scraper', chosen.profileId, lookup, {
-      tvDirPath: props.problem.path,
-      targetCollectionId: targetCollectionId.value
-    })
-    .then(unwrapIpcData)
-}
-
-async function submitMovie(chosen: EntitySearcherSelection<MovieScraperLookup>): Promise<void> {
-  const lookup = resolveLookup(chosen.lookup)
-  const entityId = props.problem.entityId
-
-  if (entityId) {
-    const request: MovieUpdateRequest = {
-      rootId: entityId,
-      profileId: chosen.profileId,
-      lookup,
-      selection: { surfaces: [...MOVIE_UPDATE_SURFACE_KEYS] },
-      policy: { singularUpdate: 'overwrite', collectionUpdate: 'replace' }
-    }
-    await ipcManager.invoke('ingest:update-movie-from-scraper', request).then(unwrapIpcData)
-    return
-  }
-
-  await ipcManager
-    .invoke('ingest:add-movie-from-scraper', chosen.profileId, lookup, {
-      movieDirPath: props.problem.path,
-      targetCollectionId: targetCollectionId.value
-    })
-    .then(unwrapIpcData)
-}
-
 function startIngest(chosen: FixSelection): Promise<void> {
   switch (chosen.mediaType) {
     case 'game':
       return submitGame(chosen.selection)
     case 'anime':
       return submitAnime(chosen.selection)
-    case 'tv':
-      return submitTv(chosen.selection)
-    case 'movie':
-      return submitMovie(chosen.selection)
     default:
       return assertNever(chosen, 'scanner fix media type')
   }
@@ -290,25 +224,11 @@ watch(
             @selection-change="selection = { mediaType: 'game', selection: $event }"
           />
           <AnimeSearcher
-            v-else-if="props.problem.mediaType === 'anime'"
-            :default-profile-id="defaultProfileId"
-            :default-search-query="defaultSearchQuery"
-            :is-submitting="isSubmitting"
-            @selection-change="selection = { mediaType: 'anime', selection: $event }"
-          />
-          <TvSearcher
-            v-else-if="props.problem.mediaType === 'tv'"
-            :default-profile-id="defaultProfileId"
-            :default-search-query="defaultSearchQuery"
-            :is-submitting="isSubmitting"
-            @selection-change="selection = { mediaType: 'tv', selection: $event }"
-          />
-          <MovieSearcher
             v-else
             :default-profile-id="defaultProfileId"
             :default-search-query="defaultSearchQuery"
             :is-submitting="isSubmitting"
-            @selection-change="selection = { mediaType: 'movie', selection: $event }"
+            @selection-change="selection = { mediaType: 'anime', selection: $event }"
           />
         </DialogBody>
 

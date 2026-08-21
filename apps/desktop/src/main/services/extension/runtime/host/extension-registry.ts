@@ -14,11 +14,9 @@ import type {
   ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
   GameScraperProvider,
-  MovieScraperProvider,
   PersonScraperProvider,
   CompanyScraperProvider,
   ScraperMediaType,
-  TvScraperProvider,
   ThemeContribution,
   DisposableStore,
   WebviewDialogContribution,
@@ -55,8 +53,6 @@ export type EntityMenuRegistrationMaps = {
 export interface ScraperProviderMaps {
   game: Map<string, GameScraperProvider>
   anime: Map<string, AnimeScraperProvider>
-  tv: Map<string, TvScraperProvider>
-  movie: Map<string, MovieScraperProvider>
   person: Map<string, PersonScraperProvider>
   company: Map<string, CompanyScraperProvider>
   character: Map<string, CharacterScraperProvider>
@@ -264,14 +260,6 @@ export function createEntityMenuRegistrationMaps(): EntityMenuRegistrationMaps {
       single: new Map(),
       batch: new Map()
     },
-    tv: {
-      single: new Map(),
-      batch: new Map()
-    },
-    movie: {
-      single: new Map(),
-      batch: new Map()
-    },
     character: {
       single: new Map()
     },
@@ -314,10 +302,6 @@ export function getEntityMenuRegistrationForInput(
       return runtime.entityMenus.game[input.scope].get(contributionId)
     case 'anime':
       return runtime.entityMenus.anime[input.scope].get(contributionId)
-    case 'tv':
-      return runtime.entityMenus.tv[input.scope].get(contributionId)
-    case 'movie':
-      return runtime.entityMenus.movie[input.scope].get(contributionId)
     case 'character':
       return runtime.entityMenus.character.single.get(contributionId)
     case 'person':
@@ -345,8 +329,6 @@ export function createScraperProviderMaps(): ScraperProviderMaps {
   return {
     game: new Map(),
     anime: new Map(),
-    tv: new Map(),
-    movie: new Map(),
     person: new Map(),
     company: new Map(),
     character: new Map()

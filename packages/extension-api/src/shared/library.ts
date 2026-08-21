@@ -85,102 +85,6 @@ export const LIBRARY_ANIME_COMPANY_ROLES = ['studio', 'producer', 'distributor',
 
 export type LibraryAnimeCompanyRole = (typeof LIBRARY_ANIME_COMPANY_ROLES)[number]
 
-export const LIBRARY_TV_FORMATS = [
-  'scripted',
-  'miniseries',
-  'documentary',
-  'reality',
-  'talkShow',
-  'variety',
-  'news',
-  'other'
-] as const
-
-export type LibraryTvFormat = (typeof LIBRARY_TV_FORMATS)[number]
-
-export const LIBRARY_TV_PERSON_ROLES = [
-  'creator',
-  'director',
-  'writer',
-  'producer',
-  'music',
-  'cinematography',
-  'editing',
-  'actor',
-  'other'
-] as const
-
-export type LibraryTvPersonRole = (typeof LIBRARY_TV_PERSON_ROLES)[number]
-
-export const LIBRARY_TV_CHARACTER_ROLES = ['main', 'supporting', 'cameo', 'other'] as const
-
-export type LibraryTvCharacterRole = (typeof LIBRARY_TV_CHARACTER_ROLES)[number]
-
-export const LIBRARY_TV_COMPANY_ROLES = [
-  'network',
-  'studio',
-  'producer',
-  'distributor',
-  'other'
-] as const
-
-export type LibraryTvCompanyRole = (typeof LIBRARY_TV_COMPANY_ROLES)[number]
-
-export const LIBRARY_TV_EXTRA_TYPES = [
-  'trailer',
-  'teaser',
-  'behindTheScenes',
-  'featurette',
-  'deletedScene',
-  'interview',
-  'other'
-] as const
-
-export type LibraryTvExtraType = (typeof LIBRARY_TV_EXTRA_TYPES)[number]
-
-export const LIBRARY_MOVIE_FORMATS = [
-  'theatrical',
-  'documentary',
-  'short',
-  'tvMovie',
-  'other'
-] as const
-
-export type LibraryMovieFormat = (typeof LIBRARY_MOVIE_FORMATS)[number]
-
-export const LIBRARY_MOVIE_PERSON_ROLES = [
-  'director',
-  'writer',
-  'producer',
-  'music',
-  'cinematography',
-  'editing',
-  'actor',
-  'other'
-] as const
-
-export type LibraryMoviePersonRole = (typeof LIBRARY_MOVIE_PERSON_ROLES)[number]
-
-export const LIBRARY_MOVIE_CHARACTER_ROLES = ['main', 'supporting', 'cameo', 'other'] as const
-
-export type LibraryMovieCharacterRole = (typeof LIBRARY_MOVIE_CHARACTER_ROLES)[number]
-
-export const LIBRARY_MOVIE_COMPANY_ROLES = ['studio', 'producer', 'distributor', 'other'] as const
-
-export type LibraryMovieCompanyRole = (typeof LIBRARY_MOVIE_COMPANY_ROLES)[number]
-
-export const LIBRARY_MOVIE_EXTRA_TYPES = [
-  'trailer',
-  'teaser',
-  'behindTheScenes',
-  'featurette',
-  'deletedScene',
-  'interview',
-  'other'
-] as const
-
-export type LibraryMovieExtraType = (typeof LIBRARY_MOVIE_EXTRA_TYPES)[number]
-
 export const LIBRARY_CHARACTER_PERSON_ROLES = [
   'actor',
   'illustration',
@@ -204,3 +108,17 @@ export const LIBRARY_MEDIA_RELATION_TYPES = [
 ] as const
 
 export type LibraryMediaRelationType = (typeof LIBRARY_MEDIA_RELATION_TYPES)[number]
+
+export const LIBRARY_COMPANY_RELATION_TYPES = [
+  'parent',
+  'subsidiary',
+  'brand',
+  'brandOwner',
+  'renamedTo',
+  'renamedFrom',
+  'spinOff',
+  'spinOffOrigin',
+  'other'
+] as const
+
+export type LibraryCompanyRelationType = (typeof LIBRARY_COMPANY_RELATION_TYPES)[number]

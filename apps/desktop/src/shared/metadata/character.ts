@@ -20,6 +20,8 @@ import type { ExternalId, Tag } from './common'
 export interface CharacterInfo {
   name: string
   originalName?: string
+  /** Nicknames and romanizations this character is also known by. */
+  aliases?: string[]
   birthDate?: PartialDate
   gender?: Gender
   age?: number

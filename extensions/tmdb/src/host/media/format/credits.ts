@@ -1,48 +1,29 @@
-import type {
-  ScrapedAnimePersonFact,
-  ScrapedMoviePersonFact,
-  ScrapedPersonMetadata,
-  ScrapedTvPersonFact
-} from '@kisaki3/extension-sdk'
-import type { TmdbCastMember, TmdbCreditPerson, TmdbCredits, TmdbCrewMember } from '../../api/types'
+import type { ScrapedAnimePersonFact, ScrapedPersonMetadata } from '@kisaki3/extension-sdk'
+import type { TmdbCreditPerson, TmdbCredits, TmdbCrewMember } from '../../api/types'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
 import { omitUndefined } from '../../utils/object'
 import { buildImageUrl } from './images'
-import {
-  mapTmdbCrewRole,
-  mapTmdbGender,
-  mapTmdbMoviePersonRole,
-  mapTmdbTvPersonRole
-} from './roles'
+import { mapTmdbCrewRole, mapTmdbGender } from './roles'
 import { buildExternalSites, tmdbPersonUrl, tmdbSite } from './sites'
 import { trimToUndefined } from './text'
-
-/**
- * TMDB decorations on a credited character name.
- *
- * `(voice)` restates what an animation actor role already says, and
- * `(as <name>)` gives the performer's credit alias rather than the character.
- * Both are noise in a cast credit, and dropping them lets a character credited
- * under two spellings collapse into one entry instead of reading as two.
- */
-const CHARACTER_DECORATIONS = /\s*\((?:voice|as\s[^)]*)\)/gi
 
 /** One credit as a library person fact, with the media type's own role. */
 type PersonFact<TRole extends string> = ScrapedPersonMetadata & {
   role: TRole
-  playing?: string[]
   note?: string
 }
 
 /**
  * Credits as library person facts.
  *
- * TMDB reports one credit per job, and aggregate TV credits pack several jobs
- * or characters into a single row, so both shapes are flattened first. A person
- * keeps one fact per distinct role: the same name credited as both writer and
- * director is two facts, but two writing credits are one. Cast credits state
- * the characters played as `playing`, because TMDB has no character entity of
- * its own.
+ * TMDB reports one credit per job and aggregate credits pack several jobs into
+ * a single row, so both shapes are flattened first. A person keeps one fact per
+ * distinct role: the same name credited as both writer and director is two
+ * facts, but two writing credits are one.
+ *
+ * A cast credit states only that the person is credited in this entry. TMDB has
+ * no character entity, so it cannot name who they voice; that three-way fact
+ * comes from providers whose characters have identities of their own.
  */
 function buildPersonFacts<TRole extends string>(
   credits: TmdbCredits,
@@ -70,15 +51,9 @@ function buildPersonFacts<TRole extends string>(
 
   for (const member of credits.cast ?? []) {
     const key = `${member.id}:${actorRole}`
-    if (facts.has(key)) {
-      continue
+    if (!facts.has(key)) {
+      facts.set(key, toPersonFact(member, actorRole, imageBaseUrl))
     }
-
-    const characters = readCharacters(member)
-    facts.set(key, {
-      ...toPersonFact(member, actorRole, imageBaseUrl),
-      ...(characters.length > 0 && { playing: characters })
-    })
   }
 
   return [...facts.values()]
@@ -95,20 +70,6 @@ export function buildAnimePersonFacts(
   return buildPersonFacts(credits, imageBaseUrl, mapTmdbCrewRole, 'actor')
 }
 
-export function buildTvPersonFacts(
-  credits: TmdbCredits,
-  imageBaseUrl: string
-): ScrapedTvPersonFact[] {
-  return buildPersonFacts(credits, imageBaseUrl, mapTmdbTvPersonRole, 'actor')
-}
-
-export function buildMoviePersonFacts(
-  credits: TmdbCredits,
-  imageBaseUrl: string
-): ScrapedMoviePersonFact[] {
-  return buildPersonFacts(credits, imageBaseUrl, mapTmdbMoviePersonRole, 'actor')
-}
-
 function readJobs(member: TmdbCrewMember): string[] {
   const jobs = (member.jobs ?? [])
     .map((entry) => trimToUndefined(entry.job))
@@ -120,24 +81,6 @@ function readJobs(member: TmdbCrewMember): string[] {
   }
 
   return jobs
-}
-
-function readCharacters(member: TmdbCastMember): string[] {
-  const characters = (member.roles ?? [])
-    .map((entry) => toCharacterLabel(entry.character))
-    .filter((character): character is string => character !== undefined)
-
-  const flatCharacter = toCharacterLabel(member.character)
-  if (flatCharacter) {
-    characters.push(flatCharacter)
-  }
-
-  // One credit carries them all, so a repeat would be visible to the reader.
-  return [...new Set(characters)]
-}
-
-function toCharacterLabel(character: string | undefined): string | undefined {
-  return trimToUndefined(character?.replace(CHARACTER_DECORATIONS, ''))
 }
 
 function toPersonFact<TRole extends string>(

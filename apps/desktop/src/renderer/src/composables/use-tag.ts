@@ -27,7 +27,7 @@ import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { usePreferencesStore } from '@renderer/stores'
-import type { Tag, Game, Anime, Character, Movie, Person, Company, Tv } from '@shared/db/schema'
+import type { Tag, Game, Anime, Character, Person, Company } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { ContentEntityType } from '@shared/common'
 import { createEmptyContentEntityCounts } from './content-entities'
@@ -78,10 +78,6 @@ function getLinkTableName(type: ContentEntityType): string {
       return 'gameTagLinks'
     case 'anime':
       return 'animeTagLinks'
-    case 'tv':
-      return 'tvTagLinks'
-    case 'movie':
-      return 'movieTagLinks'
     case 'character':
       return 'characterTagLinks'
     case 'person':
@@ -114,8 +110,6 @@ async function fetchTagWithCounts(
     [tagData],
     [gameCountRow],
     [animeCountRow],
-    [tvCountRow],
-    [movieCountRow],
     [characterCountRow],
     [personCountRow],
     [companyCountRow]
@@ -143,23 +137,6 @@ async function fetchTagWithCounts(
         and(
           eq(schema.animeTagLinks.tagId, tagId),
           showNsfw ? undefined : eq(schema.animes.isNsfw, false)
-        )
-      ),
-    db
-      .select({ value: count() })
-      .from(schema.tvTagLinks)
-      .innerJoin(schema.tvs, eq(schema.tvTagLinks.tvId, schema.tvs.id))
-      .where(
-        and(eq(schema.tvTagLinks.tagId, tagId), showNsfw ? undefined : eq(schema.tvs.isNsfw, false))
-      ),
-    db
-      .select({ value: count() })
-      .from(schema.movieTagLinks)
-      .innerJoin(schema.movies, eq(schema.movieTagLinks.movieId, schema.movies.id))
-      .where(
-        and(
-          eq(schema.movieTagLinks.tagId, tagId),
-          showNsfw ? undefined : eq(schema.movies.isNsfw, false)
         )
       ),
     db
@@ -199,8 +176,6 @@ async function fetchTagWithCounts(
     counts: {
       game: Number(gameCountRow?.value ?? 0),
       anime: Number(animeCountRow?.value ?? 0),
-      tv: Number(tvCountRow?.value ?? 0),
-      movie: Number(movieCountRow?.value ?? 0),
       character: Number(characterCountRow?.value ?? 0),
       person: Number(personCountRow?.value ?? 0),
       company: Number(companyCountRow?.value ?? 0)
@@ -241,34 +216,6 @@ async function fetchEntitiesByType(
         .orderBy(asc(schema.animeTagLinks.orderInTag))
 
       return rows.map((row) => row.animes) as Anime[]
-    }
-    case 'tv': {
-      const whereCondition = and(
-        eq(schema.tvTagLinks.tagId, tagId),
-        showNsfw ? undefined : eq(schema.tvs.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.tvTagLinks)
-        .innerJoin(schema.tvs, eq(schema.tvTagLinks.tvId, schema.tvs.id))
-        .where(whereCondition)
-        .orderBy(asc(schema.tvTagLinks.orderInTag))
-
-      return rows.map((row) => row.tvs) as Tv[]
-    }
-    case 'movie': {
-      const whereCondition = and(
-        eq(schema.movieTagLinks.tagId, tagId),
-        showNsfw ? undefined : eq(schema.movies.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.movieTagLinks)
-        .innerJoin(schema.movies, eq(schema.movieTagLinks.movieId, schema.movies.id))
-        .where(whereCondition)
-        .orderBy(asc(schema.movieTagLinks.orderInTag))
-
-      return rows.map((row) => row.movies) as Movie[]
     }
     case 'character': {
       const whereCondition = and(

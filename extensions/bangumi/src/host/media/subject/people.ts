@@ -14,7 +14,11 @@ import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 import { omitUndefined } from '../../utils/object'
 import { dedupeExternalIds } from '../format/dedupe'
 import { toPartialDateFromParts } from '../format/dates'
-import { extractExternalIdsFromSites, extractExternalSitesFromInfobox } from '../format/infobox'
+import {
+  extractAliasesFromInfobox,
+  extractExternalIdsFromSites,
+  extractExternalSitesFromInfobox
+} from '../format/infobox'
 import { extractImageUrls } from '../format/images'
 import { resolveLocalizedEntityName } from '../format/names'
 import { composeBangumiRoleNote, mapBangumiCareersToTags, mapBangumiGender } from '../format/roles'
@@ -137,11 +141,13 @@ function mapSubjectPerson<TRole extends string>(
   const photos = dedupeUrls(extractImageUrls(detail?.images || relatedPerson.images))
   const careers = detail?.career ?? relatedPerson.career
   const tags = mapBangumiCareersToTags(careers)
+  const aliases = extractAliasesFromInfobox(detail?.infobox, [name, originalName])
 
   return {
     ...omitUndefined({
       name,
       originalName,
+      aliases: aliases.length > 0 ? aliases : undefined,
       description: normalizeDescription(detail?.summary),
       externalSites,
       identity: { externalIds },

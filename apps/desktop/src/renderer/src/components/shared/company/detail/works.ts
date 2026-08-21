@@ -12,7 +12,7 @@ import { useCompany } from '@renderer/composables/use-company'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 export function useCompanyWorksBlocks(): ComputedRef<WorksBlock[]> {
-  const { games, animes, tvs, movies } = useCompany()
+  const { games, animes } = useCompany()
   const { m } = useI18n()
 
   return computed<WorksBlock[]>(() => [
@@ -27,18 +27,6 @@ export function useCompanyWorksBlocks(): ComputedRef<WorksBlock[]> {
       items: animes.value.map((link) => ({ id: link.id, role: link.role, entity: link.anime })),
       roleLabels: m.value.library.roles.animeCompany,
       linkView: 'company-animes'
-    },
-    {
-      mediaType: 'tv',
-      items: tvs.value.map((link) => ({ id: link.id, role: link.role, entity: link.tv })),
-      roleLabels: m.value.library.roles.tvCompany,
-      linkView: 'company-tvs'
-    },
-    {
-      mediaType: 'movie',
-      items: movies.value.map((link) => ({ id: link.id, role: link.role, entity: link.movie })),
-      roleLabels: m.value.library.roles.movieCompany,
-      linkView: 'company-movies'
     }
   ])
 }

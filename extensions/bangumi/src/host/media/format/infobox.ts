@@ -87,6 +87,52 @@ export function extractInfoboxValuesByKeys(
     .filter((value) => !isLikelyUrl(value))
 }
 
+/**
+ * Infobox keys that hold alternative names.
+ *
+ * Bangumi files every spelling a work or a person is also known by under these
+ * keys: romanizations, the pen name a writer credits scenario under, the
+ * nickname a character is called in-story.
+ */
+const ALIAS_KEYS = new Set(['别名', '又名', '昵称', '本名'])
+
+/**
+ * Alternative names stated by an infobox.
+ *
+ * `exclude` drops the spellings the entity already carries as its name, so an
+ * alias list never repeats what is displayed next to it. Nested entries keep
+ * only their value: the sub-key names which kind of alias it is, which the
+ * alias list itself does not record.
+ */
+export function extractAliasesFromInfobox(
+  infobox: BangumiInfoboxItem[] | null | undefined,
+  exclude: readonly (string | undefined)[] = []
+): string[] {
+  if (!infobox?.length) {
+    return []
+  }
+
+  const excluded = new Set(
+    exclude.map((value) => value?.trim()).filter((value): value is string => !!value)
+  )
+  const aliases = new Set<string>()
+
+  for (const item of infobox) {
+    if (!ALIAS_KEYS.has(item.key?.trim() ?? '')) {
+      continue
+    }
+
+    for (const value of flattenInfoboxValues(item.value)) {
+      const alias = value.trim()
+      if (alias && !isLikelyUrl(alias) && !excluded.has(alias)) {
+        aliases.add(alias)
+      }
+    }
+  }
+
+  return [...aliases]
+}
+
 export function extractChineseNameFromInfobox(
   infobox: BangumiInfoboxItem[] | null | undefined
 ): string | undefined {

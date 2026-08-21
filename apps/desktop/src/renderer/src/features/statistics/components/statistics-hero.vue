@@ -153,9 +153,7 @@ const composition = computed<CompositionSegment[] | null>(() => {
 
 const MEDIA_ATTACHMENT_TABLES = {
   game: 'games',
-  anime: 'animes',
-  tv: 'tvs',
-  movie: 'movies'
+  anime: 'animes'
 } as const satisfies Record<MediaType, string>
 
 const mostPlayed = computed(() => {

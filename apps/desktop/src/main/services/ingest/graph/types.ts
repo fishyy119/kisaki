@@ -5,13 +5,7 @@ import type {
   CharacterPersonRole,
   GameCharacterRole,
   GameCompanyRole,
-  GamePersonRole,
-  MovieCharacterRole,
-  MovieCompanyRole,
-  MoviePersonRole,
-  TvCharacterRole,
-  TvCompanyRole,
-  TvPersonRole
+  GamePersonRole
 } from '@shared/db'
 import type { ScrapedRelatedEntryFact } from '@shared/scraper'
 import type {
@@ -20,11 +14,7 @@ import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
-  CoreMovieMetadata,
-  CorePersonMetadata,
-  CoreTvMetadata,
-  TvEpisodeInfo,
-  TvSeasonInfo
+  CorePersonMetadata
 } from '@shared/metadata'
 
 export interface IngestEntityNode<TCore> {
@@ -37,18 +27,9 @@ export interface IngestLinkBase {
   note?: string
 }
 
-/** Media-person edges also carry the characters the credit performs. */
-export interface IngestPersonLinkBase extends IngestLinkBase {
-  playing?: string[]
-}
-
 export type IngestGameNode = IngestEntityNode<CoreGameMetadata>
 
 export type IngestAnimeNode = IngestEntityNode<CoreAnimeMetadata>
-
-export type IngestTvNode = IngestEntityNode<CoreTvMetadata>
-
-export type IngestMovieNode = IngestEntityNode<CoreMovieMetadata>
 
 export interface IngestPersonNode extends IngestEntityNode<CorePersonMetadata> {
   photoUrls?: string[]
@@ -70,12 +51,25 @@ export interface IngestCharacterPersonLink extends IngestLinkBase {
   orderInPerson: number
 }
 
-export interface IngestGamePersonLink extends IngestPersonLinkBase {
+export interface IngestGamePersonLink extends IngestLinkBase {
   gameIdentityKey: string
   personIdentityKey: string
   role: GamePersonRole
   orderInGame: number
   orderInPerson: number
+}
+
+/**
+ * One entry-scoped voice credit.
+ *
+ * Carries no role or order of its own: the fact is the pairing, and the
+ * character link it accompanies owns presentation.
+ */
+export interface IngestGameCastLink {
+  gameIdentityKey: string
+  characterIdentityKey: string
+  personIdentityKey: string
+  note?: string
 }
 
 export interface IngestGameCompanyLink extends IngestLinkBase {
@@ -99,6 +93,7 @@ export interface IngestGameGraphLinks {
   gamePerson: IngestGamePersonLink[]
   gameCompany: IngestGameCompanyLink[]
   gameCharacter: IngestGameCharacterLink[]
+  gameCast: IngestGameCastLink[]
   characterPerson: IngestCharacterPersonLink[]
 }
 
@@ -118,12 +113,20 @@ export interface IngestGameGraph {
   }
 }
 
-export interface IngestAnimePersonLink extends IngestPersonLinkBase {
+export interface IngestAnimePersonLink extends IngestLinkBase {
   animeIdentityKey: string
   personIdentityKey: string
   role: AnimePersonRole
   orderInAnime: number
   orderInPerson: number
+}
+
+/** One entry-scoped voice credit; see `IngestGameCastLink`. */
+export interface IngestAnimeCastLink {
+  animeIdentityKey: string
+  characterIdentityKey: string
+  personIdentityKey: string
+  note?: string
 }
 
 export interface IngestAnimeCompanyLink extends IngestLinkBase {
@@ -147,6 +150,7 @@ export interface IngestAnimeGraphLinks {
   animePerson: IngestAnimePersonLink[]
   animeCompany: IngestAnimeCompanyLink[]
   animeCharacter: IngestAnimeCharacterLink[]
+  animeCast: IngestAnimeCastLink[]
   characterPerson: IngestCharacterPersonLink[]
 }
 
@@ -158,104 +162,6 @@ export interface IngestAnimeGraph {
   companies: IngestCompanyNode[]
   characters: IngestCharacterNode[]
   links: IngestAnimeGraphLinks
-  /** Media-relation facts pass through unresolved; persist resolves against the library. */
-  relatedEntries?: ScrapedRelatedEntryFact[]
-  media: {
-    coverUrl?: string
-    backdropUrl?: string
-    logoUrl?: string
-  }
-}
-
-export interface IngestTvPersonLink extends IngestPersonLinkBase {
-  tvIdentityKey: string
-  personIdentityKey: string
-  role: TvPersonRole
-  orderInTv: number
-  orderInPerson: number
-}
-
-export interface IngestTvCompanyLink extends IngestLinkBase {
-  tvIdentityKey: string
-  companyIdentityKey: string
-  role: TvCompanyRole
-  orderInTv: number
-  orderInCompany: number
-}
-
-export interface IngestTvCharacterLink extends IngestLinkBase {
-  tvIdentityKey: string
-  characterIdentityKey: string
-  role: TvCharacterRole
-  orderInTv: number
-  orderInCharacter: number
-}
-
-/** Link rows a tv graph produces, keyed by the link table they populate. */
-export interface IngestTvGraphLinks {
-  tvPerson: IngestTvPersonLink[]
-  tvCompany: IngestTvCompanyLink[]
-  tvCharacter: IngestTvCharacterLink[]
-  characterPerson: IngestCharacterPersonLink[]
-}
-
-export interface IngestTvGraph {
-  tv: IngestTvNode
-  /** Absent means the scrape could not answer seasons; an empty array means none exist. */
-  seasons?: TvSeasonInfo[]
-  /** Absent means the scrape could not answer episodes; an empty array means none exist. */
-  episodes?: TvEpisodeInfo[]
-  persons: IngestPersonNode[]
-  companies: IngestCompanyNode[]
-  characters: IngestCharacterNode[]
-  links: IngestTvGraphLinks
-  /** Media-relation facts pass through unresolved; persist resolves against the library. */
-  relatedEntries?: ScrapedRelatedEntryFact[]
-  media: {
-    coverUrl?: string
-    backdropUrl?: string
-    logoUrl?: string
-  }
-}
-
-export interface IngestMoviePersonLink extends IngestPersonLinkBase {
-  movieIdentityKey: string
-  personIdentityKey: string
-  role: MoviePersonRole
-  orderInMovie: number
-  orderInPerson: number
-}
-
-export interface IngestMovieCompanyLink extends IngestLinkBase {
-  movieIdentityKey: string
-  companyIdentityKey: string
-  role: MovieCompanyRole
-  orderInMovie: number
-  orderInCompany: number
-}
-
-export interface IngestMovieCharacterLink extends IngestLinkBase {
-  movieIdentityKey: string
-  characterIdentityKey: string
-  role: MovieCharacterRole
-  orderInMovie: number
-  orderInCharacter: number
-}
-
-/** Link rows a movie graph produces, keyed by the link table they populate. */
-export interface IngestMovieGraphLinks {
-  moviePerson: IngestMoviePersonLink[]
-  movieCompany: IngestMovieCompanyLink[]
-  movieCharacter: IngestMovieCharacterLink[]
-  characterPerson: IngestCharacterPersonLink[]
-}
-
-export interface IngestMovieGraph {
-  movie: IngestMovieNode
-  persons: IngestPersonNode[]
-  companies: IngestCompanyNode[]
-  characters: IngestCharacterNode[]
-  links: IngestMovieGraphLinks
   /** Media-relation facts pass through unresolved; persist resolves against the library. */
   relatedEntries?: ScrapedRelatedEntryFact[]
   media: {

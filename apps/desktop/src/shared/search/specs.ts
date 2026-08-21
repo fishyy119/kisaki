@@ -14,18 +14,6 @@ export const animeSearchQuerySpec: SearchQuerySpec = {
   sourceTable: 'animes'
 }
 
-export const tvSearchQuerySpec: SearchQuerySpec = {
-  kind: 'fts',
-  ftsTable: 'tvs_fts',
-  sourceTable: 'tvs'
-}
-
-export const movieSearchQuerySpec: SearchQuerySpec = {
-  kind: 'fts',
-  ftsTable: 'movies_fts',
-  sourceTable: 'movies'
-}
-
 export const characterSearchQuerySpec: SearchQuerySpec = {
   kind: 'fts',
   ftsTable: 'characters_fts',
@@ -60,10 +48,6 @@ export function getSearchQuerySpec(entityType: AllEntityType): SearchQuerySpec {
       return gameSearchQuerySpec
     case 'anime':
       return animeSearchQuerySpec
-    case 'tv':
-      return tvSearchQuerySpec
-    case 'movie':
-      return movieSearchQuerySpec
     case 'character':
       return characterSearchQuerySpec
     case 'person':

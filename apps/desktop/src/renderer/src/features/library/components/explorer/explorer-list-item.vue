@@ -18,7 +18,7 @@ import { useLibraryExplorerStore } from '../../stores'
 import { parseExplorerSelectionKey, toExplorerSelectionKey } from '../../utils/explorer-selection'
 import type { EntityData } from '../../composables'
 import type { ContentEntityType } from '@shared/common'
-import type { Anime, Game, Tv, Movie, Character, Person, Company } from '@shared/db'
+import type { Anime, Game, Character, Person, Company } from '@shared/db'
 
 interface Props {
   entity: EntityData
@@ -105,20 +105,6 @@ const imageUrl = computed(() => {
       const anime = props.entity as Anime
       if (anime.coverFile) {
         return getAttachmentUrl('animes', anime.id, anime.coverFile, { width: 100, height: 100 })
-      }
-      return null
-    }
-    case 'tv': {
-      const tv = props.entity as Tv
-      if (tv.coverFile) {
-        return getAttachmentUrl('tvs', tv.id, tv.coverFile, { width: 100, height: 100 })
-      }
-      return null
-    }
-    case 'movie': {
-      const movie = props.entity as Movie
-      if (movie.coverFile) {
-        return getAttachmentUrl('movies', movie.id, movie.coverFile, { width: 100, height: 100 })
       }
       return null
     }

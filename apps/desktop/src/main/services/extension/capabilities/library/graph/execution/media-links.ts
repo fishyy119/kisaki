@@ -12,47 +12,29 @@ import type {
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
-  LibraryMediaType,
-  LibraryMovieCharacterRole,
-  LibraryMovieCompanyRole,
-  LibraryMoviePersonRole,
-  LibraryTvCharacterRole,
-  LibraryTvCompanyRole,
-  LibraryTvPersonRole
+  LibraryMediaType
 } from '@kisaki3/extension-api'
 import {
+  animeCastLinks,
   animeCharacterLinks,
   animeCompanyLinks,
   animePersonLinks,
   animeTagLinks,
   collectionAnimeLinks,
   collectionGameLinks,
-  collectionMovieLinks,
-  collectionTvLinks,
+  gameCastLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
-  gameTagLinks,
-  movieCharacterLinks,
-  movieCompanyLinks,
-  moviePersonLinks,
-  movieTagLinks,
-  tvCharacterLinks,
-  tvCompanyLinks,
-  tvPersonLinks,
-  tvTagLinks
+  gameTagLinks
 } from '@shared/db'
+import type { AnySQLiteColumn as CastColumn } from 'drizzle-orm/sqlite-core'
 import type { DbContext } from '@main/services/db'
 
-/**
- * Every media link row carries an order within the media entry and an optional
- * note. `playing` is present only on person links, whose table alone stores the
- * characters a credit covers.
- */
+/** Every media link row carries an order within the media entry and a note. */
 export interface MediaLinkRow {
   order: number
   note: string | null
-  playing?: string[] | null
 }
 
 export interface MediaLinkInsertInput {
@@ -61,14 +43,12 @@ export interface MediaLinkInsertInput {
   /** Set on the link kinds whose rows are keyed by role. */
   role?: string
   note?: string
-  playing?: string[] | null
   order: number
 }
 
 export interface MediaLinkPatch {
   order?: number
   note?: string
-  playing?: string[] | null
 }
 
 /**
@@ -96,6 +76,82 @@ export interface MediaLinkConfigs {
   company: MediaLinkConfig
   person: MediaLinkConfig
   character: MediaLinkConfig
+  cast: MediaCastConfig
+}
+
+/**
+ * Addressing of one entry's cast table.
+ *
+ * Cast rows name three endpoints and carry no order, so they use their own
+ * descriptor rather than the ordered two-endpoint link shape.
+ */
+export interface MediaCastConfig<TTable extends SQLiteTable = SQLiteTable> {
+  table: TTable
+  mediaIdColumn: CastColumn<{ data: string }>
+  characterIdColumn: CastColumn<{ data: string }>
+  personIdColumn: CastColumn<{ data: string }>
+  buildInsertValue(input: MediaCastInsertInput): SQLiteInsertValue<TTable>
+}
+
+export interface MediaCastInsertInput {
+  mediaId: string
+  characterId: string
+  personId: string
+  note?: string
+}
+
+export interface MediaCastRow {
+  note: string | null
+}
+
+export function readMediaCast<TTable extends SQLiteTable>(
+  db: DbContext,
+  config: MediaCastConfig<TTable>,
+  mediaId: string,
+  characterId: string,
+  personId: string
+): MediaCastRow | undefined {
+  const row = db
+    .select()
+    .from(config.table)
+    .where(mediaCastCondition(config, mediaId, characterId, personId))
+    .get() as { note: string | null } | undefined
+  return row ? { note: row.note } : undefined
+}
+
+export function insertMediaCast<TTable extends SQLiteTable>(
+  db: DbContext,
+  config: MediaCastConfig<TTable>,
+  input: MediaCastInsertInput
+): void {
+  db.insert(config.table).values(config.buildInsertValue(input)).run()
+}
+
+export function updateMediaCastNote<TTable extends SQLiteTable>(
+  db: DbContext,
+  config: MediaCastConfig<TTable>,
+  mediaId: string,
+  characterId: string,
+  personId: string,
+  note: string
+): void {
+  db.update(config.table)
+    .set({ note } as SQLiteUpdateSetSource<TTable>)
+    .where(mediaCastCondition(config, mediaId, characterId, personId))
+    .run()
+}
+
+function mediaCastCondition<TTable extends SQLiteTable>(
+  config: MediaCastConfig<TTable>,
+  mediaId: string,
+  characterId: string,
+  personId: string
+): SQL {
+  return and(
+    eq(config.mediaIdColumn, mediaId),
+    eq(config.characterIdColumn, characterId),
+    eq(config.personIdColumn, personId)
+  ) as SQL
 }
 
 export function readMediaLink<TTable extends SQLiteTable>(
@@ -196,20 +252,15 @@ const GAME_LINKS: MediaLinkConfigs = {
     mediaIdColumn: gamePersonLinks.gameId,
     targetIdColumn: gamePersonLinks.personId,
     buildRoleCondition: (role) => eq(gamePersonLinks.role, role as LibraryGamePersonRole),
-    toRow: (row) => ({ order: row.orderInGame, note: row.note, playing: row.playing }),
+    toRow: (row) => ({ order: row.orderInGame, note: row.note }),
     buildInsertValue: (input) => ({
       gameId: input.mediaId,
       personId: input.targetId,
       role: input.role as LibraryGamePersonRole,
       note: input.note,
-      playing: input.playing,
       orderInGame: input.order
     }),
-    buildPatchValues: (patch) => ({
-      orderInGame: patch.order,
-      note: patch.note,
-      playing: patch.playing
-    })
+    buildPatchValues: (patch) => ({ orderInGame: patch.order, note: patch.note })
   },
   character: {
     table: gameCharacterLinks,
@@ -225,6 +276,18 @@ const GAME_LINKS: MediaLinkConfigs = {
       orderInGame: input.order
     }),
     buildPatchValues: (patch) => ({ orderInGame: patch.order, note: patch.note })
+  },
+  cast: {
+    table: gameCastLinks,
+    mediaIdColumn: gameCastLinks.gameId,
+    characterIdColumn: gameCastLinks.characterId,
+    personIdColumn: gameCastLinks.personId,
+    buildInsertValue: (input) => ({
+      gameId: input.mediaId,
+      characterId: input.characterId,
+      personId: input.personId,
+      note: input.note
+    })
   }
 }
 
@@ -273,20 +336,15 @@ const ANIME_LINKS: MediaLinkConfigs = {
     mediaIdColumn: animePersonLinks.animeId,
     targetIdColumn: animePersonLinks.personId,
     buildRoleCondition: (role) => eq(animePersonLinks.role, role as LibraryAnimePersonRole),
-    toRow: (row) => ({ order: row.orderInAnime, note: row.note, playing: row.playing }),
+    toRow: (row) => ({ order: row.orderInAnime, note: row.note }),
     buildInsertValue: (input) => ({
       animeId: input.mediaId,
       personId: input.targetId,
       role: input.role as LibraryAnimePersonRole,
       note: input.note,
-      playing: input.playing,
       orderInAnime: input.order
     }),
-    buildPatchValues: (patch) => ({
-      orderInAnime: patch.order,
-      note: patch.note,
-      playing: patch.playing
-    })
+    buildPatchValues: (patch) => ({ orderInAnime: patch.order, note: patch.note })
   },
   character: {
     table: animeCharacterLinks,
@@ -302,168 +360,24 @@ const ANIME_LINKS: MediaLinkConfigs = {
       orderInAnime: input.order
     }),
     buildPatchValues: (patch) => ({ orderInAnime: patch.order, note: patch.note })
-  }
-}
-
-const TV_LINKS: MediaLinkConfigs = {
-  collection: {
-    table: collectionTvLinks,
-    mediaIdColumn: collectionTvLinks.tvId,
-    targetIdColumn: collectionTvLinks.collectionId,
-    toRow: (row) => ({ order: row.orderInCollection, note: row.note }),
-    buildInsertValue: (input) => ({
-      tvId: input.mediaId,
-      collectionId: input.targetId,
-      orderInCollection: input.order
-    }),
-    buildPatchValues: (patch) => ({ orderInCollection: patch.order, note: patch.note })
   },
-  tag: {
-    table: tvTagLinks,
-    mediaIdColumn: tvTagLinks.tvId,
-    targetIdColumn: tvTagLinks.tagId,
-    toRow: (row) => ({ order: row.orderInTv, note: row.note }),
+  cast: {
+    table: animeCastLinks,
+    mediaIdColumn: animeCastLinks.animeId,
+    characterIdColumn: animeCastLinks.characterId,
+    personIdColumn: animeCastLinks.personId,
     buildInsertValue: (input) => ({
-      tvId: input.mediaId,
-      tagId: input.targetId,
-      orderInTv: input.order
-    }),
-    buildPatchValues: (patch) => ({ orderInTv: patch.order, note: patch.note })
-  },
-  company: {
-    table: tvCompanyLinks,
-    mediaIdColumn: tvCompanyLinks.tvId,
-    targetIdColumn: tvCompanyLinks.companyId,
-    buildRoleCondition: (role) => eq(tvCompanyLinks.role, role as LibraryTvCompanyRole),
-    toRow: (row) => ({ order: row.orderInTv, note: row.note }),
-    buildInsertValue: (input) => ({
-      tvId: input.mediaId,
-      companyId: input.targetId,
-      role: input.role as LibraryTvCompanyRole,
-      note: input.note,
-      orderInTv: input.order
-    }),
-    buildPatchValues: (patch) => ({ orderInTv: patch.order, note: patch.note })
-  },
-  person: {
-    table: tvPersonLinks,
-    mediaIdColumn: tvPersonLinks.tvId,
-    targetIdColumn: tvPersonLinks.personId,
-    buildRoleCondition: (role) => eq(tvPersonLinks.role, role as LibraryTvPersonRole),
-    toRow: (row) => ({ order: row.orderInTv, note: row.note, playing: row.playing }),
-    buildInsertValue: (input) => ({
-      tvId: input.mediaId,
-      personId: input.targetId,
-      role: input.role as LibraryTvPersonRole,
-      note: input.note,
-      playing: input.playing,
-      orderInTv: input.order
-    }),
-    buildPatchValues: (patch) => ({
-      orderInTv: patch.order,
-      note: patch.note,
-      playing: patch.playing
+      animeId: input.mediaId,
+      characterId: input.characterId,
+      personId: input.personId,
+      note: input.note
     })
-  },
-  character: {
-    table: tvCharacterLinks,
-    mediaIdColumn: tvCharacterLinks.tvId,
-    targetIdColumn: tvCharacterLinks.characterId,
-    buildRoleCondition: (role) => eq(tvCharacterLinks.role, role as LibraryTvCharacterRole),
-    toRow: (row) => ({ order: row.orderInTv, note: row.note }),
-    buildInsertValue: (input) => ({
-      tvId: input.mediaId,
-      characterId: input.targetId,
-      role: input.role as LibraryTvCharacterRole,
-      note: input.note,
-      orderInTv: input.order
-    }),
-    buildPatchValues: (patch) => ({ orderInTv: patch.order, note: patch.note })
-  }
-}
-
-const MOVIE_LINKS: MediaLinkConfigs = {
-  collection: {
-    table: collectionMovieLinks,
-    mediaIdColumn: collectionMovieLinks.movieId,
-    targetIdColumn: collectionMovieLinks.collectionId,
-    toRow: (row) => ({ order: row.orderInCollection, note: row.note }),
-    buildInsertValue: (input) => ({
-      movieId: input.mediaId,
-      collectionId: input.targetId,
-      orderInCollection: input.order
-    }),
-    buildPatchValues: (patch) => ({ orderInCollection: patch.order, note: patch.note })
-  },
-  tag: {
-    table: movieTagLinks,
-    mediaIdColumn: movieTagLinks.movieId,
-    targetIdColumn: movieTagLinks.tagId,
-    toRow: (row) => ({ order: row.orderInMovie, note: row.note }),
-    buildInsertValue: (input) => ({
-      movieId: input.mediaId,
-      tagId: input.targetId,
-      orderInMovie: input.order
-    }),
-    buildPatchValues: (patch) => ({ orderInMovie: patch.order, note: patch.note })
-  },
-  company: {
-    table: movieCompanyLinks,
-    mediaIdColumn: movieCompanyLinks.movieId,
-    targetIdColumn: movieCompanyLinks.companyId,
-    buildRoleCondition: (role) => eq(movieCompanyLinks.role, role as LibraryMovieCompanyRole),
-    toRow: (row) => ({ order: row.orderInMovie, note: row.note }),
-    buildInsertValue: (input) => ({
-      movieId: input.mediaId,
-      companyId: input.targetId,
-      role: input.role as LibraryMovieCompanyRole,
-      note: input.note,
-      orderInMovie: input.order
-    }),
-    buildPatchValues: (patch) => ({ orderInMovie: patch.order, note: patch.note })
-  },
-  person: {
-    table: moviePersonLinks,
-    mediaIdColumn: moviePersonLinks.movieId,
-    targetIdColumn: moviePersonLinks.personId,
-    buildRoleCondition: (role) => eq(moviePersonLinks.role, role as LibraryMoviePersonRole),
-    toRow: (row) => ({ order: row.orderInMovie, note: row.note, playing: row.playing }),
-    buildInsertValue: (input) => ({
-      movieId: input.mediaId,
-      personId: input.targetId,
-      role: input.role as LibraryMoviePersonRole,
-      note: input.note,
-      playing: input.playing,
-      orderInMovie: input.order
-    }),
-    buildPatchValues: (patch) => ({
-      orderInMovie: patch.order,
-      note: patch.note,
-      playing: patch.playing
-    })
-  },
-  character: {
-    table: movieCharacterLinks,
-    mediaIdColumn: movieCharacterLinks.movieId,
-    targetIdColumn: movieCharacterLinks.characterId,
-    buildRoleCondition: (role) => eq(movieCharacterLinks.role, role as LibraryMovieCharacterRole),
-    toRow: (row) => ({ order: row.orderInMovie, note: row.note }),
-    buildInsertValue: (input) => ({
-      movieId: input.mediaId,
-      characterId: input.targetId,
-      role: input.role as LibraryMovieCharacterRole,
-      note: input.note,
-      orderInMovie: input.order
-    }),
-    buildPatchValues: (patch) => ({ orderInMovie: patch.order, note: patch.note })
   }
 }
 
 const MEDIA_LINKS: Record<LibraryMediaType, MediaLinkConfigs> = {
   game: GAME_LINKS,
-  anime: ANIME_LINKS,
-  tv: TV_LINKS,
-  movie: MOVIE_LINKS
+  anime: ANIME_LINKS
 }
 
 export function mediaLinkConfigs(mediaType: LibraryMediaType | undefined): MediaLinkConfigs {

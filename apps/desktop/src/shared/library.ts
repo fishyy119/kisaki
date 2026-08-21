@@ -11,11 +11,7 @@ import type {
   BloodType,
   CupSize,
   GameStatus,
-  Gender,
-  MovieFormat,
-  MovieStatus,
-  TvFormat,
-  TvStatus
+  Gender
 } from './db/contracts/enums'
 import type { DynamicCollectionConfig, PartialDate, ExternalSite } from './db/contracts/json'
 import type { MediaRelationType } from './db/contracts/media-relations'
@@ -23,7 +19,7 @@ import type { ExternalId } from './identity'
 import type { AllEntityType, MediaType } from './common'
 
 export type LibraryEntityTopic =
-  'game' | 'anime' | 'tv' | 'movie' | 'person' | 'company' | 'character' | 'collection' | 'tag'
+  'game' | 'anime' | 'person' | 'company' | 'character' | 'collection' | 'tag'
 
 export type LibraryChangeKind = 'created' | 'updated' | 'deleted'
 
@@ -43,26 +39,6 @@ export interface LibraryAnimeCoreSnapshot {
   totalEpisodes?: number | null
 }
 
-export interface LibraryTvCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  description?: string | null
-  releaseDate?: PartialDate | null
-  endDate?: PartialDate | null
-  format?: TvFormat
-  totalSeasons?: number | null
-  totalEpisodes?: number | null
-}
-
-export interface LibraryMovieCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  description?: string | null
-  releaseDate?: PartialDate | null
-  format?: MovieFormat
-  runtimeMs?: number | null
-}
-
 export interface LibraryGameAssetSnapshot {
   coverFile?: string | null
   backdropFile?: string | null
@@ -71,18 +47,6 @@ export interface LibraryGameAssetSnapshot {
 }
 
 export interface LibraryAnimeAssetSnapshot {
-  coverFile?: string | null
-  backdropFile?: string | null
-  logoFile?: string | null
-}
-
-export interface LibraryTvAssetSnapshot {
-  coverFile?: string | null
-  backdropFile?: string | null
-  logoFile?: string | null
-}
-
-export interface LibraryMovieAssetSnapshot {
   coverFile?: string | null
   backdropFile?: string | null
   logoFile?: string | null
@@ -98,6 +62,7 @@ export interface LibraryMediaLinkSnapshot {
   personLinkIds: string[]
   companyLinkIds: string[]
   characterLinkIds: string[]
+  castLinkIds: string[]
 }
 
 /** One outgoing entry-to-entry edge as seen from the changed entity. */
@@ -113,8 +78,8 @@ export interface LibraryMediaRelationsSnapshot {
 
 export type LibraryStatusChange = {
   facet: 'status'
-  before: { status: GameStatus | AnimeStatus | TvStatus | MovieStatus }
-  after: { status: GameStatus | AnimeStatus | TvStatus | MovieStatus }
+  before: { status: GameStatus | AnimeStatus }
+  after: { status: GameStatus | AnimeStatus }
   fields?: ['status']
 }
 
@@ -145,23 +110,11 @@ export type LibraryEpisodesChange = {
   fields?: ['watchedEpisodeIds']
 }
 
-/**
- * Watch-state transition of a single-unit entry.
- *
- * A movie has no episode grain, so its watched flag is the whole facet; resume
- * position and play count are deliberately left out for the reason above.
- */
-export type LibraryWatchedChange = {
-  facet: 'watched'
-  before: { watched: boolean }
-  after: { watched: boolean }
-  fields?: ['watched']
-}
-
 export interface LibraryPersonCoreSnapshot {
   name?: string
   originalName?: string | null
   sortName?: string | null
+  aliases?: string[]
   description?: string | null
   isFavorite?: boolean
   isNsfw?: boolean
@@ -186,6 +139,7 @@ export interface LibraryCharacterCoreSnapshot {
   name?: string
   originalName?: string | null
   sortName?: string | null
+  aliases?: string[]
   description?: string | null
   isFavorite?: boolean
   isNsfw?: boolean
@@ -239,8 +193,6 @@ export interface LibraryCollectionAssetSnapshot {
 export interface LibraryCollectionMembershipSnapshot {
   gameIds?: string[]
   animeIds?: string[]
-  tvIds?: string[]
-  movieIds?: string[]
   personIds?: string[]
   companyIds?: string[]
   characterIds?: string[]
@@ -334,32 +286,6 @@ export type LibraryAnimeChange =
   | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
   | LibraryEpisodesChange
 
-export type LibraryTvChange =
-  | LibraryCoreChange<LibraryTvCoreSnapshot>
-  | LibraryStatusChange
-  | LibraryScoreChange
-  | LibraryIdentityChange
-  | LibraryActivityChange
-  | LibraryTagsChange
-  | LibraryCollectionsChange
-  | LibraryAssetChange<LibraryTvAssetSnapshot>
-  | LibraryLinksChange<LibraryMediaLinkSnapshot>
-  | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
-  | LibraryEpisodesChange
-
-export type LibraryMovieChange =
-  | LibraryCoreChange<LibraryMovieCoreSnapshot>
-  | LibraryStatusChange
-  | LibraryScoreChange
-  | LibraryIdentityChange
-  | LibraryActivityChange
-  | LibraryTagsChange
-  | LibraryCollectionsChange
-  | LibraryAssetChange<LibraryMovieAssetSnapshot>
-  | LibraryLinksChange<LibraryMediaLinkSnapshot>
-  | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
-  | LibraryWatchedChange
-
 export type LibraryPersonChange =
   | LibraryCoreChange<LibraryPersonCoreSnapshot>
   | LibraryScoreChange
@@ -396,12 +322,7 @@ export type LibraryEntityChange =
   | LibraryCollectionChange
   | LibraryTagChange
 
-export type LibraryChange =
-  | LibraryGameChange
-  | LibraryAnimeChange
-  | LibraryTvChange
-  | LibraryMovieChange
-  | LibraryEntityChange
+export type LibraryChange = LibraryGameChange | LibraryAnimeChange | LibraryEntityChange
 
 /** One debounced, entity-grouped change carried by the `library.changed` hook. */
 export interface LibraryEntityChangeSummary {

@@ -31,46 +31,6 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
     wrapIpcVoid(() => service.files.anime.attachExtra(params))
   )
 
-  ipc.handle('ingest:add-tv-direct', async (_, seed, options) =>
-    wrapIpc(() => service.add.tv.startAddDirect(seed, options))
-  )
-
-  ipc.handle('ingest:add-tv-from-scraper', async (_, profileId, lookup, options) =>
-    wrapIpc(() => service.add.tv.startAddFromScraper(profileId, lookup, options))
-  )
-
-  ipc.handle('ingest:sync-tv-files', async (_, params) =>
-    wrapIpc(() => service.files.tv.sync(params))
-  )
-
-  ipc.handle('ingest:attach-tv-episode-file', async (_, params) =>
-    wrapIpcVoid(() => service.files.tv.attachFile(params))
-  )
-
-  ipc.handle('ingest:attach-tv-extra-file', async (_, params) =>
-    wrapIpcVoid(() => service.files.tv.attachExtra(params))
-  )
-
-  ipc.handle('ingest:add-movie-direct', async (_, seed, options) =>
-    wrapIpc(() => service.add.movie.startAddDirect(seed, options))
-  )
-
-  ipc.handle('ingest:add-movie-from-scraper', async (_, profileId, lookup, options) =>
-    wrapIpc(() => service.add.movie.startAddFromScraper(profileId, lookup, options))
-  )
-
-  ipc.handle('ingest:sync-movie-files', async (_, params) =>
-    wrapIpc(() => service.files.movie.sync(params))
-  )
-
-  ipc.handle('ingest:attach-movie-file', async (_, params) =>
-    wrapIpcVoid(() => service.files.movie.attachFile(params))
-  )
-
-  ipc.handle('ingest:attach-movie-extra-file', async (_, params) =>
-    wrapIpcVoid(() => service.files.movie.attachExtra(params))
-  )
-
   ipc.handle('ingest:add-person-from-scraper', async (_, profileId, lookup, options) =>
     wrapIpc(() => service.add.person.startAddFromScraper(profileId, lookup, options))
   )
@@ -91,14 +51,6 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
     wrapIpc(() => service.update.anime.startUpdateFromScraper(request))
   )
 
-  ipc.handle('ingest:update-tv-from-scraper', async (_, request) =>
-    wrapIpc(() => service.update.tv.startUpdateFromScraper(request))
-  )
-
-  ipc.handle('ingest:update-movie-from-scraper', async (_, request) =>
-    wrapIpc(() => service.update.movie.startUpdateFromScraper(request))
-  )
-
   ipc.handle('ingest:update-person-from-scraper', async (_, request) =>
     wrapIpc(() => service.update.person.startUpdateFromScraper(request))
   )
@@ -117,14 +69,6 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
 
   ipc.handle('ingest:batch-update-anime-from-scraper', async (_, request) =>
     wrapIpc(() => service.batch.anime.startUpdateFromScraper(request))
-  )
-
-  ipc.handle('ingest:batch-update-tv-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.tv.startUpdateFromScraper(request))
-  )
-
-  ipc.handle('ingest:batch-update-movie-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.movie.startUpdateFromScraper(request))
   )
 
   ipc.handle('ingest:batch-update-person-from-scraper', async (_, request) =>

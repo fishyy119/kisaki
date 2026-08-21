@@ -16,10 +16,6 @@ import type {
   IngestAddAnimeFromScraperResult,
   IngestAddGameFromScraperOptions,
   IngestAddGameFromScraperResult,
-  IngestAddMovieFromScraperOptions,
-  IngestAddMovieFromScraperResult,
-  IngestAddTvFromScraperOptions,
-  IngestAddTvFromScraperResult,
   IngestGameUpdateFromScraperInput,
   IngestTaskRunStart,
   IngestUpdateResult
@@ -63,10 +59,6 @@ import type {
   LibraryMediaRelationPatch,
   LibraryMediaRelationQuery,
   LibraryMediaRelationSelector,
-  LibraryMovie,
-  LibraryMovieCreateInput,
-  LibraryMoviePatch,
-  LibraryMovieQuery,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -74,16 +66,7 @@ import type {
   LibraryTag,
   LibraryTagCreateInput,
   LibraryTagPatch,
-  LibraryTagQuery,
-  LibraryTv,
-  LibraryTvCreateInput,
-  LibraryTvEpisode,
-  LibraryTvEpisodeQuery,
-  LibraryTvEpisodeWatchStatePatch,
-  LibraryTvPatch,
-  LibraryTvQuery,
-  LibraryTvSeason,
-  LibraryTvSeasonQuery
+  LibraryTagQuery
 } from '../capabilities/library'
 import type {
   NetworkDownloadRequest,
@@ -103,12 +86,7 @@ import type {
   TaskRunSnapshot
 } from '../capabilities/task-runs'
 import type { WebviewOpenOptions } from '../capabilities/webviews'
-import type {
-  AnimeScraperLookup,
-  GameScraperLookup,
-  MovieScraperLookup,
-  TvScraperLookup
-} from '../contributions/scraper-providers'
+import type { AnimeScraperLookup, GameScraperLookup } from '../contributions/scraper-providers'
 import type { JsonObject, JsonValue } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload, RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
@@ -179,18 +157,6 @@ export interface IngestAnimeAddFromScraperRequest extends ExtensionScopedRpcPara
   profileId: string
   lookup: AnimeScraperLookup
   options?: IngestAddAnimeFromScraperOptions
-}
-
-export interface IngestTvAddFromScraperRequest extends ExtensionScopedRpcParams {
-  profileId: string
-  lookup: TvScraperLookup
-  options?: IngestAddTvFromScraperOptions
-}
-
-export interface IngestMovieAddFromScraperRequest extends ExtensionScopedRpcParams {
-  profileId: string
-  lookup: MovieScraperLookup
-  options?: IngestAddMovieFromScraperOptions
 }
 
 export interface LibraryGraphRpcRequest extends ExtensionScopedRpcParams {
@@ -398,18 +364,6 @@ export type HostToMainCapabilityRpcRequestMap = {
     ExtensionScopedRpcParams & { episodeId: string; patch: LibraryAnimeEpisodeWatchStatePatch },
     { episode: LibraryAnimeEpisode }
   >
-  'capabilities.library.tvs.seasons.list': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { query: LibraryTvSeasonQuery },
-    { items: readonly LibraryTvSeason[] }
-  >
-  'capabilities.library.tvs.episodes.list': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { query: LibraryTvEpisodeQuery },
-    { items: readonly LibraryTvEpisode[] }
-  >
-  'capabilities.library.tvs.episodes.patchWatchState': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { episodeId: string; patch: LibraryTvEpisodeWatchStatePatch },
-    { episode: LibraryTvEpisode }
-  >
   'capabilities.library.attachments.list': RpcMethodDefinition<
     ExtensionScopedRpcParams & { entity: LibraryAttachment['entity'] },
     { items: readonly LibraryAttachment[] }
@@ -465,22 +419,6 @@ export type HostToMainCapabilityRpcRequestMap = {
   >
   'capabilities.ingest.anime.add.startFromScraper': RpcMethodDefinition<
     IngestAnimeAddFromScraperRequest,
-    { start: IngestTaskRunStart }
-  >
-  'capabilities.ingest.tv.add.fromScraper': RpcMethodDefinition<
-    IngestTvAddFromScraperRequest,
-    { result: IngestAddTvFromScraperResult }
-  >
-  'capabilities.ingest.tv.add.startFromScraper': RpcMethodDefinition<
-    IngestTvAddFromScraperRequest,
-    { start: IngestTaskRunStart }
-  >
-  'capabilities.ingest.movie.add.fromScraper': RpcMethodDefinition<
-    IngestMovieAddFromScraperRequest,
-    { result: IngestAddMovieFromScraperResult }
-  >
-  'capabilities.ingest.movie.add.startFromScraper': RpcMethodDefinition<
-    IngestMovieAddFromScraperRequest,
     { start: IngestTaskRunStart }
   >
   'capabilities.commands.list': RpcMethodDefinition<
@@ -579,20 +517,6 @@ export type HostToMainCapabilityRpcRequestMap = {
     LibraryAnimeCreateInput,
     LibraryAnimePatch,
     LibraryAnimeQuery
-  > &
-  LibraryEntityRpcRequestMap<
-    'capabilities.library.tvs',
-    LibraryTv,
-    LibraryTvCreateInput,
-    LibraryTvPatch,
-    LibraryTvQuery
-  > &
-  LibraryEntityRpcRequestMap<
-    'capabilities.library.movies',
-    LibraryMovie,
-    LibraryMovieCreateInput,
-    LibraryMoviePatch,
-    LibraryMovieQuery
   > &
   LibraryEntityRpcRequestMap<
     'capabilities.library.characters',

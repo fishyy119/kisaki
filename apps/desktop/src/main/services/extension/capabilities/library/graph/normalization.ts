@@ -8,7 +8,6 @@ import {
   type LibraryGraphMediaNode,
   type LibraryGraphNoteNode,
   type LibraryGraphPersonNode,
-  type LibraryGraphSeasonNode,
   type LibraryGraphSessionNode,
   type LibraryGraphTagNode
 } from '@kisaki3/extension-api'
@@ -29,7 +28,6 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
   const characters = toEntries(input.nodes.characters ?? [], 'character')
   const notes = toEntries(input.nodes.notes ?? [], 'note')
   const sessions = toEntries(input.nodes.sessions ?? [], 'session')
-  const seasons = toEntries(input.nodes.seasons ?? [], 'season')
   const episodes = toEntries(input.nodes.episodes ?? [], 'episode')
   const attachments = toEntries(input.nodes.attachments ?? [], 'attachment')
   const all = [
@@ -41,7 +39,6 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
     ...characters,
     ...notes,
     ...sessions,
-    ...seasons,
     ...episodes,
     ...attachments
   ]
@@ -58,7 +55,6 @@ export function normalizeLibraryGraph(input: LibraryGraphInput): NormalizedLibra
     characters,
     notes,
     sessions,
-    seasons,
     episodes,
     attachments
   }
@@ -107,10 +103,6 @@ function toEntries(
   nodes: readonly LibraryGraphSessionNode[],
   kind: 'session'
 ): LibraryGraphNodeEntry<LibraryGraphSessionNode>[]
-function toEntries(
-  nodes: readonly LibraryGraphSeasonNode[],
-  kind: 'season'
-): LibraryGraphNodeEntry<LibraryGraphSeasonNode>[]
 function toEntries(
   nodes: readonly LibraryGraphEpisodeNode[],
   kind: 'episode'

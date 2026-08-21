@@ -26,6 +26,7 @@ export interface MediaLinkTables {
   person: string
   company: string
   character: string
+  cast: string
 }
 
 /** Table and column layout of one playable media type, for change projection. */
@@ -46,8 +47,6 @@ export interface MediaFeedProjection {
   assetFields: Record<string, string>
   /** Present when the media type tracks per-episode watch state. */
   episodesTable?: string
-  /** Present when the entry row itself carries the watch flag, as movies do. */
-  watchedColumn?: string
 }
 
 export interface EntityProjection {

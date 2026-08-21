@@ -31,6 +31,7 @@ import { usePreferencesStore } from '@renderer/stores'
 import type {
   Game,
   GameNote,
+  GameCastLink,
   GameCharacterLink,
   GamePersonLink,
   GameCompanyLink,
@@ -55,9 +56,21 @@ interface GameData {
   tags: (GameTagLink & { tag: Tag | null })[]
   characters: (GameCharacterLink & { character: Character | null })[]
   persons: (GamePersonLink & { person: Person | null })[]
+  cast: GameCastEntry[]
   companies: (GameCompanyLink & { company: Company | null })[]
   relations: MediaRelationEntry[]
   sessions: GameSession[]
+}
+
+/**
+ * One confirmed voice credit of this entry: who voices whom, here.
+ *
+ * Both endpoints travel with the row because the pairing is the fact; a
+ * character link and a person link on their own cannot be joined back into it.
+ */
+export interface GameCastEntry extends GameCastLink {
+  character: Character | null
+  person: Person | null
 }
 
 export interface GameContext {
@@ -71,6 +84,8 @@ export interface GameContext {
   characters: ComputedRef<(GameCharacterLink & { character: Character | null })[]>
   /** Person links with person data */
   persons: ComputedRef<(GamePersonLink & { person: Person | null })[]>
+  /** Voice credits of this entry, each naming both its character and person */
+  cast: ComputedRef<GameCastEntry[]>
   /** Company links with company data */
   companies: ComputedRef<(GameCompanyLink & { company: Company | null })[]>
   /** Entry-to-entry relations merged from both edge directions */
@@ -136,6 +151,13 @@ async function fetchGameData(
     showNsfw ? undefined : eq(schema.persons.isNsfw, false)
   )
 
+  // A cast row names both endpoints, so either being hidden hides the credit.
+  const gameCastLinksWhere = and(
+    eq(schema.gameCastLinks.gameId, gameId),
+    showNsfw ? undefined : eq(schema.characters.isNsfw, false),
+    showNsfw ? undefined : eq(schema.persons.isNsfw, false)
+  )
+
   const gameCompanyLinksWhere = and(
     eq(schema.gameCompanyLinks.gameId, gameId),
     spoilersRevealed ? undefined : eq(schema.gameCompanyLinks.isSpoiler, false),
@@ -143,7 +165,7 @@ async function fetchGameData(
   )
 
   // Parallel fetch all related data
-  const [notes, tagLinks, charLinks, personLinks, companyLinks, relations, sessions] =
+  const [notes, tagLinks, charLinks, personLinks, castLinks, companyLinks, relations, sessions] =
     await Promise.all([
       db
         .select()
@@ -173,6 +195,12 @@ async function fetchGameData(
         .orderBy(asc(schema.gamePersonLinks.orderInGame)),
       db
         .select()
+        .from(schema.gameCastLinks)
+        .leftJoin(schema.characters, eq(schema.gameCastLinks.characterId, schema.characters.id))
+        .leftJoin(schema.persons, eq(schema.gameCastLinks.personId, schema.persons.id))
+        .where(gameCastLinksWhere),
+      db
+        .select()
         .from(schema.gameCompanyLinks)
         .leftJoin(schema.companies, eq(schema.gameCompanyLinks.companyId, schema.companies.id))
         .where(gameCompanyLinksWhere)
@@ -194,6 +222,11 @@ async function fetchGameData(
       character: row.characters
     })),
     persons: personLinks.map((row) => ({ ...row.game_person_links, person: row.persons })),
+    cast: castLinks.map((row) => ({
+      ...row.game_cast_links,
+      character: row.characters,
+      person: row.persons
+    })),
     companies: companyLinks.map((row) => ({
       ...row.game_company_links,
       company: row.companies
@@ -241,6 +274,7 @@ function provideGameContext(source: GameDataSource): GameContext {
     tags: computed(() => source.data.value?.tags ?? []),
     characters: computed(() => source.data.value?.characters ?? []),
     persons: computed(() => source.data.value?.persons ?? []),
+    cast: computed(() => source.data.value?.cast ?? []),
     companies: computed(() => source.data.value?.companies ?? []),
     relations: computed(() => source.data.value?.relations ?? []),
     sessions: computed(() => source.data.value?.sessions ?? []),
@@ -261,6 +295,7 @@ const GAME_OWNED_TABLES = [
   'game_tag_links',
   'game_character_links',
   'game_person_links',
+  'game_cast_links',
   'game_company_links',
   'media_relations'
 ]

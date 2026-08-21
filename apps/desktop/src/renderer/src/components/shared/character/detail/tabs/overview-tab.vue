@@ -10,8 +10,6 @@ import { Section } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { GameDetailDialog } from '@renderer/components/shared/game'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { TvDetailDialog } from '@renderer/components/shared/tv'
-import { MovieDetailDialog } from '@renderer/components/shared/movie'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
 import { useI18n } from '@renderer/composables'
@@ -32,7 +30,7 @@ const { m } = useI18n()
 // State
 // =============================================================================
 
-const { character, tags, persons } = useCharacter()
+const { character, tags, persons, cast } = useCharacter()
 const worksBlocks = useCharacterWorksBlocks()
 
 // Edit dialog states
@@ -76,6 +74,7 @@ const hasExternalSites = computed(
   () => character.value?.externalSites && character.value.externalSites.length > 0
 )
 const hasPersons = computed(() => persons.value.length > 0)
+const hasCast = computed(() => cast.value.length > 0)
 const hasTags = computed(() => tags.value && tags.value.length > 0)
 
 // =============================================================================
@@ -197,6 +196,39 @@ const tagDialogOpen = computed({
           </div>
         </Section>
 
+        <!--
+          Where the character is actually voiced, entry by entry. The list above
+          says who voices them at all; this says where that was credited, which
+          is what makes a recast visible.
+        -->
+        <Section
+          :title="m.library.fields.voiceCredits"
+          :empty="!hasCast"
+          :empty-text="m.library.detail.empty.voiceCredits"
+        >
+          <div class="space-y-1.5 text-sm">
+            <div
+              v-for="credit in cast"
+              :key="credit.id"
+              class="flex items-baseline gap-2 min-w-0"
+            >
+              <button
+                type="button"
+                class="text-primary hover:underline truncate"
+                @click="openWork = { mediaType: credit.mediaType, id: credit.mediaId }"
+              >
+                {{ credit.mediaName }}
+              </button>
+              <span
+                v-if="credit.person"
+                class="text-muted-foreground text-xs truncate"
+              >
+                {{ credit.person.name }}
+              </span>
+            </div>
+          </div>
+        </Section>
+
         <Section
           :title="m.library.fields.externalSites"
           editable
@@ -258,19 +290,9 @@ const tagDialogOpen = computed({
         :game-id="openWork.id"
       />
       <AnimeDetailDialog
-        v-else-if="openWork.mediaType === 'anime'"
-        v-model:open="workDialogOpen"
-        :anime-id="openWork.id"
-      />
-      <TvDetailDialog
-        v-else-if="openWork.mediaType === 'tv'"
-        v-model:open="workDialogOpen"
-        :tv-id="openWork.id"
-      />
-      <MovieDetailDialog
         v-else
         v-model:open="workDialogOpen"
-        :movie-id="openWork.id"
+        :anime-id="openWork.id"
       />
     </template>
     <PersonDetailDialog

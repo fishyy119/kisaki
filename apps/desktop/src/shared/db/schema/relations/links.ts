@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
 
 import {
+  animeCastLinks,
   animeCharacterLinks,
   animeCompanyLinks,
   animePersonLinks,
@@ -11,24 +12,15 @@ import {
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
-  collectionMovieLinks,
   collectionPersonLinks,
   collections,
-  collectionTvLinks,
   companies,
+  gameCastLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
   games,
-  movieCharacterLinks,
-  movieCompanyLinks,
-  moviePersonLinks,
-  movies,
-  persons,
-  tvCharacterLinks,
-  tvCompanyLinks,
-  tvPersonLinks,
-  tvs
+  persons
 } from '../tables'
 
 export const gamePersonLinksRelations = relations(gamePersonLinks, ({ one }) => ({
@@ -61,6 +53,21 @@ export const gameCharacterLinksRelations = relations(gameCharacterLinks, ({ one 
   character: one(characters, {
     fields: [gameCharacterLinks.characterId],
     references: [characters.id]
+  })
+}))
+
+export const gameCastLinksRelations = relations(gameCastLinks, ({ one }) => ({
+  game: one(games, {
+    fields: [gameCastLinks.gameId],
+    references: [games.id]
+  }),
+  character: one(characters, {
+    fields: [gameCastLinks.characterId],
+    references: [characters.id]
+  }),
+  person: one(persons, {
+    fields: [gameCastLinks.personId],
+    references: [persons.id]
   })
 }))
 
@@ -97,91 +104,18 @@ export const animeCharacterLinksRelations = relations(animeCharacterLinks, ({ on
   })
 }))
 
-export const tvPersonLinksRelations = relations(tvPersonLinks, ({ one }) => ({
-  tv: one(tvs, {
-    fields: [tvPersonLinks.tvId],
-    references: [tvs.id]
-  }),
-  person: one(persons, {
-    fields: [tvPersonLinks.personId],
-    references: [persons.id]
-  })
-}))
-
-export const tvCompanyLinksRelations = relations(tvCompanyLinks, ({ one }) => ({
-  tv: one(tvs, {
-    fields: [tvCompanyLinks.tvId],
-    references: [tvs.id]
-  }),
-  company: one(companies, {
-    fields: [tvCompanyLinks.companyId],
-    references: [companies.id]
-  })
-}))
-
-export const tvCharacterLinksRelations = relations(tvCharacterLinks, ({ one }) => ({
-  tv: one(tvs, {
-    fields: [tvCharacterLinks.tvId],
-    references: [tvs.id]
+export const animeCastLinksRelations = relations(animeCastLinks, ({ one }) => ({
+  anime: one(animes, {
+    fields: [animeCastLinks.animeId],
+    references: [animes.id]
   }),
   character: one(characters, {
-    fields: [tvCharacterLinks.characterId],
+    fields: [animeCastLinks.characterId],
     references: [characters.id]
-  })
-}))
-
-export const moviePersonLinksRelations = relations(moviePersonLinks, ({ one }) => ({
-  movie: one(movies, {
-    fields: [moviePersonLinks.movieId],
-    references: [movies.id]
   }),
   person: one(persons, {
-    fields: [moviePersonLinks.personId],
+    fields: [animeCastLinks.personId],
     references: [persons.id]
-  })
-}))
-
-export const movieCompanyLinksRelations = relations(movieCompanyLinks, ({ one }) => ({
-  movie: one(movies, {
-    fields: [movieCompanyLinks.movieId],
-    references: [movies.id]
-  }),
-  company: one(companies, {
-    fields: [movieCompanyLinks.companyId],
-    references: [companies.id]
-  })
-}))
-
-export const movieCharacterLinksRelations = relations(movieCharacterLinks, ({ one }) => ({
-  movie: one(movies, {
-    fields: [movieCharacterLinks.movieId],
-    references: [movies.id]
-  }),
-  character: one(characters, {
-    fields: [movieCharacterLinks.characterId],
-    references: [characters.id]
-  })
-}))
-
-export const collectionTvLinksRelations = relations(collectionTvLinks, ({ one }) => ({
-  collection: one(collections, {
-    fields: [collectionTvLinks.collectionId],
-    references: [collections.id]
-  }),
-  tv: one(tvs, {
-    fields: [collectionTvLinks.tvId],
-    references: [tvs.id]
-  })
-}))
-
-export const collectionMovieLinksRelations = relations(collectionMovieLinks, ({ one }) => ({
-  collection: one(collections, {
-    fields: [collectionMovieLinks.collectionId],
-    references: [collections.id]
-  }),
-  movie: one(movies, {
-    fields: [collectionMovieLinks.movieId],
-    references: [movies.id]
   })
 }))
 

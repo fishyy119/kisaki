@@ -1,8 +1,0 @@
-export { default as MovieDetailOverviewTab } from './overview-tab.vue'
-export { default as MovieDetailCharactersTab } from './characters-tab.vue'
-export { default as MovieDetailPersonsTab } from './persons-tab.vue'
-export { default as MovieDetailCompaniesTab } from './companies-tab.vue'
-export { default as MovieDetailRelationsTab } from './relations-tab.vue'
-export { default as MovieDetailNotesTab } from './notes-tab.vue'
-export { default as MovieDetailActivityTab } from './activity-tab.vue'
-export { MovieDetailFilesTab } from './files-tab'

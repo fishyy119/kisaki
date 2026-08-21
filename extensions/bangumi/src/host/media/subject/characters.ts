@@ -17,6 +17,7 @@ import { omitUndefined } from '../../utils/object'
 import { dedupeTags } from '../format/dedupe'
 import { toPartialDateFromParts } from '../format/dates'
 import { extractImageUrls } from '../format/images'
+import { extractAliasesFromInfobox } from '../format/infobox'
 import { extractCharacterMeasurementsFromInfobox } from '../format/measurements'
 import { resolveLocalizedEntityName } from '../format/names'
 import {
@@ -160,10 +161,12 @@ function mapSubjectCharacter({
   const measurements = extractCharacterMeasurementsFromInfobox(detail?.infobox)
   const persons = buildCharacterPersons(subjectId, subjectType, relatedCharacter, characterPersons)
   const photos = dedupeUrls(extractImageUrls(detail?.images || relatedCharacter.images))
+  const aliases = extractAliasesFromInfobox(detail?.infobox, [name, originalName])
 
   return omitUndefined({
     name,
     originalName,
+    aliases: aliases.length > 0 ? aliases : undefined,
     description: normalizeDescription(detail?.summary || relatedCharacter.summary),
     externalSites: [{ label: 'Bangumi', url: buildBangumiCharacterUrl(relatedCharacter.id) }],
     identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(relatedCharacter.id) }] },

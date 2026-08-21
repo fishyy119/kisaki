@@ -38,48 +38,4 @@ export function registerActivityIpc(service: ActivityService, ipc: IpcService): 
   ipc.handle('activity:list-anime-extras-playing', async () =>
     wrapIpc(() => service.anime.listPlayingExtras())
   )
-
-  ipc.handle('activity:watch-tv', async (_, tvId, episodeId, fileId) =>
-    wrapIpc(() => service.tv.watch(tvId, episodeId, fileId))
-  )
-
-  ipc.handle('activity:stop-tv', async (_, tvId) => wrapIpc(() => service.tv.stop(tvId)))
-
-  ipc.handle('activity:play-tv-extra', async (_, extraId, fileId) =>
-    wrapIpc(() => service.tv.playExtra(extraId, fileId))
-  )
-
-  ipc.handle('activity:stop-tv-extra', async (_, extraId) =>
-    wrapIpc(() => service.tv.stopExtra(extraId))
-  )
-
-  ipc.handle('activity:list-tv-watching', async () => wrapIpc(() => service.tv.listWatching()))
-
-  ipc.handle('activity:list-tv-extras-playing', async () =>
-    wrapIpc(() => service.tv.listPlayingExtras())
-  )
-
-  ipc.handle('activity:watch-movie', async (_, movieId, fileId) =>
-    wrapIpc(() => service.movie.watch(movieId, fileId))
-  )
-
-  ipc.handle('activity:stop-movie', async (_, movieId) =>
-    wrapIpc(() => service.movie.stop(movieId))
-  )
-
-  ipc.handle('activity:play-movie-extra', async (_, extraId, fileId) =>
-    wrapIpc(() => service.movie.playExtra(extraId, fileId))
-  )
-
-  ipc.handle('activity:stop-movie-extra', async (_, extraId) =>
-    wrapIpc(() => service.movie.stopExtra(extraId))
-  )
-
-  ipc.handle('activity:list-movie-watching', async () =>
-    wrapIpc(() => service.movie.listWatching())
-  )
-
-  ipc.handle('activity:list-movie-extras-playing', async () =>
-    wrapIpc(() => service.movie.listPlayingExtras())
-  )
 }

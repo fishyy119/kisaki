@@ -32,9 +32,7 @@ import {
   collectionCharacterLinks,
   collectionCompanyLinks,
   collectionGameLinks,
-  collectionMovieLinks,
   collectionPersonLinks,
-  collectionTvLinks,
   companies,
   companyTagLinks,
   gameCharacterLinks,
@@ -43,32 +41,20 @@ import {
   gamePersonLinks,
   gameTagLinks,
   mediaRelations,
-  movieCharacterLinks,
-  movieCompanyLinks,
-  moviePersonLinks,
-  movies,
-  movieTagLinks,
   persons,
   personTagLinks,
-  tags,
-  tvCharacterLinks,
-  tvCompanyLinks,
-  tvPersonLinks,
-  tvs,
-  tvTagLinks
+  tags
 } from '@shared/db/schema'
 import type { DbContext } from '../types'
 
 const DIRECT_RELATED_ENTITY_TYPES: Record<AllEntityType, readonly AllEntityType[]> = {
   game: ['character', 'person', 'company', 'tag'],
   anime: ['character', 'person', 'company', 'tag'],
-  tv: ['character', 'person', 'company', 'tag'],
-  movie: ['character', 'person', 'company', 'tag'],
-  character: ['game', 'anime', 'tv', 'movie', 'person', 'tag'],
-  person: ['game', 'anime', 'tv', 'movie', 'character', 'tag'],
-  company: ['game', 'anime', 'tv', 'movie', 'tag'],
-  tag: ['game', 'anime', 'tv', 'movie', 'character', 'person', 'company'],
-  collection: ['game', 'anime', 'tv', 'movie', 'character', 'person', 'company']
+  character: ['game', 'anime', 'person', 'tag'],
+  person: ['game', 'anime', 'character', 'tag'],
+  company: ['game', 'anime', 'tag'],
+  tag: ['game', 'anime', 'character', 'person', 'company'],
+  collection: ['game', 'anime', 'character', 'person', 'company']
 }
 
 type RelatedIdMap = Partial<Record<AllEntityType, Set<string>>>
@@ -209,55 +195,6 @@ export class DbEntityDeleteHelper {
             entityIds
           )
         }
-      case 'tv':
-        return {
-          character: this.selectDistinctIds(
-            tvCharacterLinks,
-            tvCharacterLinks.tvId,
-            tvCharacterLinks.characterId,
-            entityIds
-          ),
-          person: this.selectDistinctIds(
-            tvPersonLinks,
-            tvPersonLinks.tvId,
-            tvPersonLinks.personId,
-            entityIds
-          ),
-          company: this.selectDistinctIds(
-            tvCompanyLinks,
-            tvCompanyLinks.tvId,
-            tvCompanyLinks.companyId,
-            entityIds
-          ),
-          tag: this.selectDistinctIds(tvTagLinks, tvTagLinks.tvId, tvTagLinks.tagId, entityIds)
-        }
-      case 'movie':
-        return {
-          character: this.selectDistinctIds(
-            movieCharacterLinks,
-            movieCharacterLinks.movieId,
-            movieCharacterLinks.characterId,
-            entityIds
-          ),
-          person: this.selectDistinctIds(
-            moviePersonLinks,
-            moviePersonLinks.movieId,
-            moviePersonLinks.personId,
-            entityIds
-          ),
-          company: this.selectDistinctIds(
-            movieCompanyLinks,
-            movieCompanyLinks.movieId,
-            movieCompanyLinks.companyId,
-            entityIds
-          ),
-          tag: this.selectDistinctIds(
-            movieTagLinks,
-            movieTagLinks.movieId,
-            movieTagLinks.tagId,
-            entityIds
-          )
-        }
       case 'character':
         return {
           game: this.selectDistinctIds(
@@ -270,18 +207,6 @@ export class DbEntityDeleteHelper {
             animeCharacterLinks,
             animeCharacterLinks.characterId,
             animeCharacterLinks.animeId,
-            entityIds
-          ),
-          tv: this.selectDistinctIds(
-            tvCharacterLinks,
-            tvCharacterLinks.characterId,
-            tvCharacterLinks.tvId,
-            entityIds
-          ),
-          movie: this.selectDistinctIds(
-            movieCharacterLinks,
-            movieCharacterLinks.characterId,
-            movieCharacterLinks.movieId,
             entityIds
           ),
           person: this.selectDistinctIds(
@@ -311,18 +236,6 @@ export class DbEntityDeleteHelper {
             animePersonLinks.animeId,
             entityIds
           ),
-          tv: this.selectDistinctIds(
-            tvPersonLinks,
-            tvPersonLinks.personId,
-            tvPersonLinks.tvId,
-            entityIds
-          ),
-          movie: this.selectDistinctIds(
-            moviePersonLinks,
-            moviePersonLinks.personId,
-            moviePersonLinks.movieId,
-            entityIds
-          ),
           character: this.selectDistinctIds(
             characterPersonLinks,
             characterPersonLinks.personId,
@@ -350,18 +263,6 @@ export class DbEntityDeleteHelper {
             animeCompanyLinks.animeId,
             entityIds
           ),
-          tv: this.selectDistinctIds(
-            tvCompanyLinks,
-            tvCompanyLinks.companyId,
-            tvCompanyLinks.tvId,
-            entityIds
-          ),
-          movie: this.selectDistinctIds(
-            movieCompanyLinks,
-            movieCompanyLinks.companyId,
-            movieCompanyLinks.movieId,
-            entityIds
-          ),
           tag: this.selectDistinctIds(
             companyTagLinks,
             companyTagLinks.companyId,
@@ -381,13 +282,6 @@ export class DbEntityDeleteHelper {
             animeTagLinks,
             animeTagLinks.tagId,
             animeTagLinks.animeId,
-            entityIds
-          ),
-          tv: this.selectDistinctIds(tvTagLinks, tvTagLinks.tagId, tvTagLinks.tvId, entityIds),
-          movie: this.selectDistinctIds(
-            movieTagLinks,
-            movieTagLinks.tagId,
-            movieTagLinks.movieId,
             entityIds
           ),
           character: this.selectDistinctIds(
@@ -421,18 +315,6 @@ export class DbEntityDeleteHelper {
             collectionAnimeLinks,
             collectionAnimeLinks.collectionId,
             collectionAnimeLinks.animeId,
-            entityIds
-          ),
-          tv: this.selectDistinctIds(
-            collectionTvLinks,
-            collectionTvLinks.collectionId,
-            collectionTvLinks.tvId,
-            entityIds
-          ),
-          movie: this.selectDistinctIds(
-            collectionMovieLinks,
-            collectionMovieLinks.collectionId,
-            collectionMovieLinks.movieId,
             entityIds
           ),
           character: this.selectDistinctIds(
@@ -475,18 +357,6 @@ export class DbEntityDeleteHelper {
           .select({ id: animes.id, name: animes.name })
           .from(animes)
           .where(inArray(animes.id, entityIds))
-          .all()
-      case 'tv':
-        return this.db
-          .select({ id: tvs.id, name: tvs.name })
-          .from(tvs)
-          .where(inArray(tvs.id, entityIds))
-          .all()
-      case 'movie':
-        return this.db
-          .select({ id: movies.id, name: movies.name })
-          .from(movies)
-          .where(inArray(movies.id, entityIds))
           .all()
       case 'character':
         return this.db
@@ -537,14 +407,6 @@ export class DbEntityDeleteHelper {
       case 'anime':
         db.delete(animes).where(inArray(animes.id, entityIds)).run()
         this.deleteMediaRelationEnds(db, 'anime', entityIds)
-        return
-      case 'tv':
-        db.delete(tvs).where(inArray(tvs.id, entityIds)).run()
-        this.deleteMediaRelationEnds(db, 'tv', entityIds)
-        return
-      case 'movie':
-        db.delete(movies).where(inArray(movies.id, entityIds)).run()
-        this.deleteMediaRelationEnds(db, 'movie', entityIds)
         return
       case 'character':
         db.delete(characters).where(inArray(characters.id, entityIds)).run()

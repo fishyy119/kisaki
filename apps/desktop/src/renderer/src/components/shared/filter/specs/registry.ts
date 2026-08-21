@@ -14,10 +14,8 @@ import { characterFilterUiSpec } from './character'
 import { collectionFilterUiSpec } from './collection'
 import { companyFilterUiSpec } from './company'
 import { gameFilterUiSpec } from './game'
-import { movieFilterUiSpec } from './movie'
 import { personFilterUiSpec } from './person'
 import { tagFilterUiSpec } from './tag'
-import { tvFilterUiSpec } from './tv'
 
 export function getFilterUiSpec(entityType: AllEntityType): ComputedRef<FilterUiSpec> {
   switch (entityType) {
@@ -25,10 +23,6 @@ export function getFilterUiSpec(entityType: AllEntityType): ComputedRef<FilterUi
       return gameFilterUiSpec
     case 'anime':
       return animeFilterUiSpec
-    case 'tv':
-      return tvFilterUiSpec
-    case 'movie':
-      return movieFilterUiSpec
     case 'character':
       return characterFilterUiSpec
     case 'person':

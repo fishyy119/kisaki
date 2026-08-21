@@ -19,12 +19,10 @@ import type {
   GameScraperProvider,
   HooksRegistrar,
   HookTapOptions,
-  MovieScraperProvider,
   PersonScraperProvider,
   ScraperProviderRegistrar,
   ThemeRegistrar,
   ThemeContribution,
-  TvScraperProvider,
   WebviewDialogContribution,
   WebviewPageContribution,
   WebviewRegistrar
@@ -78,14 +76,6 @@ export function createEntityMenuRegistrar(
     anime: {
       single: point('anime', 'single'),
       batch: point('anime', 'batch')
-    },
-    tv: {
-      single: point('tv', 'single'),
-      batch: point('tv', 'batch')
-    },
-    movie: {
-      single: point('movie', 'single'),
-      batch: point('movie', 'batch')
     },
     character: {
       single: point('character', 'single')
@@ -141,20 +131,6 @@ export function createScraperProviderRegistrar(
     anime: {
       register(provider: AnimeScraperProvider) {
         const disposable = bridge.registerScraperProvider(scope, 'anime', provider)
-        subscriptions.add(disposable)
-        return disposable
-      }
-    },
-    tv: {
-      register(provider: TvScraperProvider) {
-        const disposable = bridge.registerScraperProvider(scope, 'tv', provider)
-        subscriptions.add(disposable)
-        return disposable
-      }
-    },
-    movie: {
-      register(provider: MovieScraperProvider) {
-        const disposable = bridge.registerScraperProvider(scope, 'movie', provider)
         subscriptions.add(disposable)
         return disposable
       }

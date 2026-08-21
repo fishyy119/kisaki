@@ -26,13 +26,13 @@ import { cn } from '@renderer/utils/cn'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { getEntityIcon } from '@renderer/utils/format'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
-import type { Game, Anime, Tv, Movie, Character, Person, Company } from '@shared/db'
+import type { Game, Anime, Character, Person, Company } from '@shared/db'
 
 // =============================================================================
 // Types
 // =============================================================================
 
-type SearchResultItem = Game | Anime | Tv | Movie | Character | Person | Company
+type SearchResultItem = Game | Anime | Character | Person | Company
 
 interface ColumnConfig {
   type: ContentEntityType
@@ -43,8 +43,6 @@ interface ColumnConfig {
 const RESULT_KEYS: Record<ContentEntityType, keyof LibrarySearchResult> = {
   game: 'games',
   anime: 'animes',
-  tv: 'tvs',
-  movie: 'movies',
   character: 'characters',
   person: 'persons',
   company: 'companies'
@@ -126,18 +124,6 @@ function getThumbnailUrl(item: SearchResultItem, type: ContentEntityType): strin
       const anime = item as Anime
       return anime.coverFile
         ? getAttachmentUrl('animes', anime.id, anime.coverFile, { width: 100, height: 100 })
-        : null
-    }
-    case 'tv': {
-      const tv = item as Tv
-      return tv.coverFile
-        ? getAttachmentUrl('tvs', tv.id, tv.coverFile, { width: 100, height: 100 })
-        : null
-    }
-    case 'movie': {
-      const movie = item as Movie
-      return movie.coverFile
-        ? getAttachmentUrl('movies', movie.id, movie.coverFile, { width: 100, height: 100 })
         : null
     }
     case 'character': {

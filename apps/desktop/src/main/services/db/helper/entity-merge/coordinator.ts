@@ -13,7 +13,7 @@ import { ENTITY_MERGE_CONFIGS } from './configs'
 import { cleanupStagedMergeFiles, stageEntityAttachments } from './attachments'
 import { buildEntityFieldPatch } from './fields'
 import { rewriteMergeFilters } from './filters'
-import { OWNED_DATA_MERGES, mergeRelationRows } from './relations'
+import { OWNED_DATA_MERGES, SAME_CLASS_RELATION_MERGES, mergeRelationRows } from './relations'
 import type {
   EntityMergeConfig,
   ExternalIdMergeConfig,
@@ -124,6 +124,11 @@ export class DbEntityMergeCoordinator {
         const mergeOwnedData = OWNED_DATA_MERGES[entityType]
         if (mergeOwnedData) {
           relationChanges += mergeOwnedData(tx, targetId, sourceId, now)
+        }
+
+        const mergeSameClassRelations = SAME_CLASS_RELATION_MERGES[entityType]
+        if (mergeSameClassRelations) {
+          relationChanges += mergeSameClassRelations(tx, targetId, sourceId, now)
         }
 
         for (const relationConfig of config.relations) {

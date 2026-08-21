@@ -39,6 +39,23 @@ export type OwnedDataMerge = (
   now: Date
 ) => number
 
+/**
+ * Folds the source's same-class relation edges into the target. Both ends name
+ * the merged class, so these cannot go through the link machinery below: an
+ * edge between the two merged entities collapses onto itself and must vanish,
+ * which is only visible when both ends are rewritten in one pass.
+ */
+export type SameClassRelationMerge = (
+  db: DbContext,
+  targetId: string,
+  sourceId: string,
+  now: Date
+) => number
+
+/**
+ * A cross-class attachment link, owned by one endpoint. The other endpoints
+ * belong to a different class and are never rewritten by this entity's merge.
+ */
 export interface RelationMergeConfig {
   table: SQLiteTable
   /** Owner id property on the row object, rewritten from source to target. */
@@ -48,11 +65,6 @@ export interface RelationMergeConfig {
   orderField?: string
   spoilerField?: string
   noteField?: string
-  /**
-   * Credited-character field on person link tables. Duplicate credits union it
-   * so a merge never drops a character the losing row was the only witness of.
-   */
-  playingField?: string
 }
 
 export interface EntityMergeConfig {

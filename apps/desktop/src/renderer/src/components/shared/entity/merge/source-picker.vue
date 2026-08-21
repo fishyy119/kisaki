@@ -4,8 +4,6 @@ import type { AllEntityType } from '@shared/common'
 import { useI18n } from '@renderer/composables'
 import GameSelect from '../../game/game-select.vue'
 import AnimeSelect from '../../anime/anime-select.vue'
-import TvSelect from '../../tv/tv-select.vue'
-import MovieSelect from '../../movie/movie-select.vue'
 import PersonSelect from '../../person/person-select.vue'
 import CompanySelect from '../../company/company-select.vue'
 import CharacterSelect from '../../character/character-select.vue'
@@ -49,22 +47,6 @@ const collectionSourceId = computed<string | null>({
   />
   <AnimeSelect
     v-else-if="props.entityType === 'anime'"
-    v-model="sourceId"
-    class="w-full"
-    :empty-text="emptyText"
-    :exclude-ids="excludeIds"
-    :disabled="props.disabled"
-  />
-  <TvSelect
-    v-else-if="props.entityType === 'tv'"
-    v-model="sourceId"
-    class="w-full"
-    :empty-text="emptyText"
-    :exclude-ids="excludeIds"
-    :disabled="props.disabled"
-  />
-  <MovieSelect
-    v-else-if="props.entityType === 'movie'"
     v-model="sourceId"
     class="w-full"
     :empty-text="emptyText"
