@@ -35,7 +35,7 @@ import {
   ANIME_COMPANY_ROLE_VALUES,
   ANIME_PERSON_ROLE_VALUES
 } from '@shared/db'
-const { anime, tags, characters, persons, companies, relations } = useAnime()
+const { anime, episodes, tags, characters, persons, companies, relations } = useAnime()
 const { m, f } = useI18n()
 
 const emit = defineEmits<{
@@ -75,6 +75,13 @@ const openTagId = ref<string | null>(null)
 const aliases = computed(() => anime.value?.aliases ?? [])
 const hasExternalSites = computed(
   () => anime.value?.externalSites && anime.value.externalSites.length > 0
+)
+
+const isFilm = computed(() => anime.value?.format === 'movie')
+
+/** Runtime of a film, carried by the single episode its entry owns. */
+const runtimeMs = computed(
+  () => episodes.value.find((episode) => episode.type === 'regular')?.durationMs ?? null
 )
 
 const sortedCharacters = computed(() =>
@@ -222,8 +229,16 @@ const tagDialogOpen = computed({
             <dd v-else>{{ m.common.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.format }}</dt>
             <dd>{{ m.library.animeFormat[anime.format] }}</dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.totalEpisodes }}</dt>
-            <dd>{{ anime.totalEpisodes ?? m.common.emptyValue }}</dd>
+            <!-- A film is watched in one sitting, so its runtime is the fact an
+                 episode count would only restate. -->
+            <template v-if="isFilm">
+              <dt class="text-muted-foreground">{{ m.library.fields.runtime }}</dt>
+              <dd>{{ runtimeMs ? f.duration(runtimeMs) : m.common.emptyValue }}</dd>
+            </template>
+            <template v-else>
+              <dt class="text-muted-foreground">{{ m.library.fields.totalEpisodes }}</dt>
+              <dd>{{ anime.totalEpisodes ?? m.common.emptyValue }}</dd>
+            </template>
             <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
             <dd>{{ anime.releaseDate ? f.date(anime.releaseDate) : m.common.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>

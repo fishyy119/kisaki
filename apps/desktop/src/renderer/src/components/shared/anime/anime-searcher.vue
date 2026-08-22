@@ -97,7 +97,7 @@ const isSearching = ref(false)
 const searchResults = shallowRef<AnimeSearchResult[]>([])
 const hasSearched = ref(false)
 
-const RESULT_TABLE_COLUMNS = ['', '30%', '7.5rem']
+const RESULT_TABLE_COLUMNS = ['', '25%', '5rem', '7.5rem']
 
 const animeId = ref('')
 watch(
@@ -253,6 +253,7 @@ const animeIdModel = computed({
             <TableRow>
               <TableHead>{{ m.library.searcher.columnName }}</TableHead>
               <TableHead>{{ m.library.searcher.columnOriginalName }}</TableHead>
+              <TableHead>{{ m.library.fields.format }}</TableHead>
               <TableHead>{{ m.library.searcher.columnReleaseDate }}</TableHead>
             </TableRow>
           </TableHeader>
@@ -298,6 +299,11 @@ const animeIdModel = computed({
             <TableCell class="text-muted-foreground truncate">
               {{ result.originalName || '-' }}
             </TableCell>
+            <!-- A name search spans every entry of a work, so the kind of entry
+                 is what tells a season from the film that shares its name. -->
+            <TableCell class="text-muted-foreground">
+              {{ result.format ? m.library.animeFormat[result.format] : m.common.emptyValue }}
+            </TableCell>
             <TableCell class="text-muted-foreground">
               {{ result.releaseDate ? f.date(result.releaseDate) : m.common.emptyValue }}
             </TableCell>
@@ -308,7 +314,7 @@ const animeIdModel = computed({
           <TableFooter>
             <TableRow>
               <TableCell
-                colspan="3"
+                colspan="4"
                 class="h-6 py-0 text-[10px] text-muted-foreground"
               >
                 {{ m.library.searcher.resultCount({ count: searchResults.length }) }}

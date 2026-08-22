@@ -476,7 +476,17 @@ export class AnimeActivityHandler {
   }
 }
 
+/**
+ * Player window title for one playing episode.
+ *
+ * A film is its entry, so its single episode adds nothing but repetition; a
+ * series names the episode being watched within it.
+ */
 function formatEpisodeTitle(anime: Anime, episode: AnimeEpisode): string {
+  if (anime.format === 'movie') {
+    return anime.name
+  }
+
   const parts = [anime.name]
   if (episode.episodeNumber !== null) {
     parts.push(`#${episode.episodeNumber}`)

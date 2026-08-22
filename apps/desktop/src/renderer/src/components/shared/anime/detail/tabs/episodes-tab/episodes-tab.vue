@@ -37,6 +37,9 @@ const openEpisodeId = ref<string | null>(null)
 
 const watchedCount = computed(() => episodes.value.filter((episode) => episode.watched).length)
 
+/** A film is one episode, so a watched-of-total count states nothing. */
+const isFilm = computed(() => anime.value?.format === 'movie')
+
 const canSyncFiles = computed(() => !!anime.value?.animeDirPath)
 
 const episodeDetailOpen = computed({
@@ -87,7 +90,10 @@ const extraDetailOpen = computed({
     <Section :title="m.anime.episodes.title">
       <template #actions>
         <div class="flex items-center gap-2">
-          <span class="text-xs text-muted-foreground">
+          <span
+            v-if="!isFilm"
+            class="text-xs text-muted-foreground"
+          >
             {{ m.anime.episodes.progress({ watched: watchedCount, total: episodes.length }) }}
           </span>
 

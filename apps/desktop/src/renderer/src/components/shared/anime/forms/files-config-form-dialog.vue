@@ -1,12 +1,13 @@
 <!--
   AnimeFilesConfigFormDialog
   Dialog for the anime's file-system configuration: the library directory file
-  sync scans and the episode file-number offset it matches with. Saving a
-  change re-syncs files so the new configuration takes effect immediately;
-  clearing the directory switches the entry to fully manual file management.
+  sync scans and the episode file-number offset it matches with (films number
+  from the entry, so they show no offset). Saving a change re-syncs files so the
+  new configuration takes effect immediately; clearing the directory switches
+  the entry to fully manual file management.
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
@@ -78,6 +79,8 @@ watch(anime, (animeData) => {
     formData.value.offsetText = String(animeData.episodeFileNumberOffset)
   }
 })
+
+const isFilm = computed(() => anime.value?.format === 'movie')
 
 async function handleSelectDir() {
   const result = await ipcManager.invoke('native:open-dialog', {
@@ -187,7 +190,9 @@ function handleCancel() {
                 <FieldDescription>{{ m.anime.filesConfig.animeDirHint }}</FieldDescription>
               </Field>
 
-              <Field>
+              <!-- A film reads its numbering from the entry, so it has no
+                   file numbering to shift. -->
+              <Field v-if="!isFilm">
                 <FieldLabel>{{ m.anime.filesConfig.offsetLabel }}</FieldLabel>
                 <FieldContent>
                   <Input

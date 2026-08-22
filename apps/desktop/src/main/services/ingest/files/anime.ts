@@ -28,6 +28,7 @@ import {
   type AnimeEpisode,
   type AnimeEpisodeFile,
   type AnimeExtra,
+  type AnimeFormat,
   type NewAnimeEpisode,
   type NewAnimeEpisodeFile,
   type NewAnimeExtraFile
@@ -53,6 +54,9 @@ const log = createLogger('Ingest')
 
 /** Depth cap that covers `Anime/Season/Disc` layouts without walking archives. */
 const MAX_WALK_DEPTH = 4
+
+/** The one episode a film entry owns; providers list the film as episode 1. */
+const FILM_EPISODE_NUMBER = 1
 
 export interface AnimeFileSyncParams extends IngestSyncAnimeFilesParams {
   signal?: AbortSignal
@@ -126,6 +130,23 @@ function applyEpisodeFileNumberOffset(candidates: AnimeEpisodeCandidate[], offse
   }
 }
 
+/**
+ * Point every regular candidate of a film at its single episode.
+ *
+ * A film is one consumption unit, so a filename number is not evidence of an
+ * episode: numeric titles and part labels would otherwise invent episodes, and
+ * an unreadable name would split one film across per-file rows. Every regular
+ * file therefore describes the same episode and lands as a version of it.
+ * Explicitly marked specials keep their own rows — a bonus video shipped
+ * beside the film is not another cut of it.
+ */
+function claimFilmEpisodeCandidates(candidates: AnimeEpisodeCandidate[]): void {
+  for (const candidate of candidates) {
+    if (candidate.type !== 'regular') continue
+    candidate.number = FILM_EPISODE_NUMBER
+  }
+}
+
 /** File-row column values derived from one probe pass. */
 function toProbedFileValues(stat: FileStat, info: MediaFileInfo | null) {
   return {
@@ -174,7 +195,13 @@ export class AnimeFileSyncHandler {
     walked.episodes = walked.episodes.filter((candidate) => !manualPaths.has(candidate.path))
     walked.extras = walked.extras.filter((extra) => !manualPaths.has(extra.path))
 
-    applyEpisodeFileNumberOffset(walked.episodes, animeRow?.episodeFileNumberOffset ?? 0)
+    // A film's files are versions of one episode, so it reads its numbering
+    // from the entry rather than from filenames; a series keeps its own.
+    if (animeRow?.format === 'movie') {
+      claimFilmEpisodeCandidates(walked.episodes)
+    } else {
+      applyEpisodeFileNumberOffset(walked.episodes, animeRow?.episodeFileNumberOffset ?? 0)
+    }
     walked.episodes.sort(compareEpisodes)
 
     const probedEpisodes: ProbedEpisodeFile[] = []
@@ -398,13 +425,16 @@ export class AnimeFileSyncHandler {
     }
   }
 
-  private readAnimeSyncConfig(
-    animeId: string
-  ): { animeDirPath: string | null; episodeFileNumberOffset: number } | null {
+  private readAnimeSyncConfig(animeId: string): {
+    animeDirPath: string | null
+    episodeFileNumberOffset: number
+    format: AnimeFormat
+  } | null {
     const [row] = this.dbService.client
       .select({
         animeDirPath: animes.animeDirPath,
-        episodeFileNumberOffset: animes.episodeFileNumberOffset
+        episodeFileNumberOffset: animes.episodeFileNumberOffset,
+        format: animes.format
       })
       .from(animes)
       .where(eq(animes.id, animeId))
