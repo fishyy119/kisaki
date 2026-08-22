@@ -5,6 +5,7 @@ import { normalizeAnimeEpisodes } from '../../graph'
 import type { AnimeIncomingBuildResult } from '../types'
 import { buildCompleteAnimeLinks } from '../link-topology'
 import {
+  normalizeAliases,
   normalizeOptionalString,
   normalizeExternalSites,
   normalizeTags,
@@ -23,6 +24,9 @@ function buildAnimeCore(
 
   const originalName = normalizeOptionalString(bundleCore?.originalName)
   if (originalName) core.originalName = originalName
+
+  const aliases = normalizeAliases(bundleCore?.aliases)
+  if (aliases) core.aliases = aliases
 
   if (bundleCore?.releaseDate) core.releaseDate = bundleCore.releaseDate
 
@@ -73,6 +77,7 @@ export function buildAnimeIncoming(
 
   if (core.name) availability.surfaces.add('name')
   if (core.originalName) availability.surfaces.add('originalName')
+  if (core.aliases) availability.surfaces.add('aliases')
   if (core.releaseDate) availability.surfaces.add('releaseDate')
   if (core.description) availability.surfaces.add('description')
   if (core.format) availability.surfaces.add('format')

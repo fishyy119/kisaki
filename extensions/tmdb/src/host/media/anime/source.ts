@@ -42,7 +42,7 @@ export function createMovieSource(
   const images = toImageContext(ctx)
 
   return {
-    info: () => buildMovieInfo(loaders),
+    info: () => buildMovieInfo(loaders, ctx.titleCountries),
     tags: async () => buildTags((await loaders.getMovie()).genres, await loaders.getKeywords()),
     episodes: () => buildMovieEpisodes(loaders),
     persons: async () => buildAnimePersonFacts(await loaders.getCredits(), ctx.imageBaseUrl),
@@ -82,11 +82,11 @@ export function createSeriesSource(
     info: () => {
       switch (ref.kind) {
         case 'series':
-          return buildSeriesInfo(ref, loaders)
+          return buildSeriesInfo(ref, loaders, ctx.titleCountries)
         case 'season':
-          return buildSeasonInfo(ref, loaders)
+          return buildSeasonInfo(ref, loaders, ctx.titleCountries)
         case 'episodeGroup':
-          return buildEpisodeGroupInfo(ref, loaders)
+          return buildEpisodeGroupInfo(ref, loaders, ctx.titleCountries)
       }
     },
     tags: async () => buildTags((await loaders.getSeries()).genres, await loaders.getKeywords()),

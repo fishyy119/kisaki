@@ -24,6 +24,8 @@ export const games = sqliteTable(
     name: text('name').notNull().default('unknown game'),
     originalName: text('original_name'),
     sortName: text('sort_name'),
+    /** Other titles this entry is known by: localized names, abbreviations, fan names. */
+    aliases: stringArrayJson('aliases').notNull().default([]),
     coverFile: text('cover_file'),
     backdropFile: text('backdrop_file'),
     logoFile: text('logo_file'),
@@ -91,6 +93,8 @@ export const animes = sqliteTable(
     name: text('name').notNull().default('unknown anime'),
     originalName: text('original_name'),
     sortName: text('sort_name'),
+    /** Other titles this entry is known by: localized names, abbreviations, fan names. */
+    aliases: stringArrayJson('aliases').notNull().default([]),
     coverFile: text('cover_file'),
     backdropFile: text('backdrop_file'),
     logoFile: text('logo_file'),

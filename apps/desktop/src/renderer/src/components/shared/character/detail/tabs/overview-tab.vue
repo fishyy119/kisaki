@@ -23,8 +23,9 @@ import {
 import type { MediaType } from '@shared/common'
 import { CHARACTER_PERSON_ROLE_VALUES } from '@shared/db'
 import { useCharacterWorksBlocks } from '../works'
+import { CharacterInfoFormDialog, CharacterPhysiqueFormDialog } from '../../forms'
 
-const { m } = useI18n()
+const { m, f } = useI18n()
 
 // =============================================================================
 // State
@@ -35,6 +36,8 @@ const worksBlocks = useCharacterWorksBlocks()
 
 // Edit dialog states
 const editDialogs = ref({
+  details: false,
+  physique: false,
   description: false,
   persons: false,
   sites: false,
@@ -54,6 +57,10 @@ const PERSON_ROLE_LABELS = computed<Record<string, string>>(
   () => m.value.library.roles.characterPerson
 )
 
+const GENDER_LABELS = computed<Record<string, string>>(() => m.value.library.gender)
+
+const BLOOD_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.bloodType)
+
 // =============================================================================
 // Computed
 // =============================================================================
@@ -67,6 +74,40 @@ const groupedPersons = computed(() => {
       return acc
     },
     {} as Record<string, typeof persons.value>
+  )
+})
+
+const aliases = computed(() => character.value?.aliases ?? [])
+
+/**
+ * The bust-waist-hips triple in the notation every source publishes it in.
+ *
+ * Sources issue it as one fact, so a partly known triple still reads as one
+ * value with `?` for the missing parts rather than as separate fields.
+ */
+const threeSizes = computed(() => {
+  const entity = character.value
+  if (!entity) return undefined
+  if (entity.bust === null && entity.waist === null && entity.hips === null) return undefined
+
+  return `B${entity.bust ?? '?'}-W${entity.waist ?? '?'}-H${entity.hips ?? '?'}`
+})
+
+/**
+ * Whether any physique field is filled.
+ *
+ * Most characters carry none, and the section's own empty state says that in
+ * one line instead of four placeholder rows.
+ */
+const hasPhysique = computed(() => {
+  const entity = character.value
+  if (!entity) return false
+
+  return (
+    entity.height !== null ||
+    entity.weight !== null ||
+    entity.cup !== null ||
+    threeSizes.value !== undefined
   )
 })
 
@@ -151,8 +192,77 @@ const tagDialogOpen = computed({
         </Section>
       </div>
 
-      <!-- Right column: Related Persons, Related Sites -->
+      <!-- Right column: Details, Physique, Related Persons, Voice credits, Related Sites -->
       <div class="space-y-6 min-w-0">
+        <Section
+          :title="m.library.detail.sections.details"
+          editable
+          @edit="openEditDialog('details')"
+        >
+          <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
+            <dt class="text-muted-foreground">{{ m.library.fields.aliases }}</dt>
+            <!-- One name per line: a name is atomic and must not wrap mid-word. -->
+            <dd
+              v-if="aliases.length > 0"
+              class="min-w-0 space-y-0.5"
+            >
+              <div
+                v-for="alias in aliases"
+                :key="alias"
+                class="break-words"
+              >
+                {{ alias }}
+              </div>
+            </dd>
+            <dd v-else>{{ m.common.emptyValue }}</dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.gender }}</dt>
+            <dd>{{ character.gender ? GENDER_LABELS[character.gender] : m.common.emptyValue }}</dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.birthDate }}</dt>
+            <dd>{{ character.birthDate ? f.date(character.birthDate) : m.common.emptyValue }}</dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.age }}</dt>
+            <dd>
+              {{
+                character.age !== null
+                  ? m.library.detail.ageValue({ age: character.age })
+                  : m.common.emptyValue
+              }}
+            </dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.bloodType }}</dt>
+            <dd>
+              {{
+                character.bloodType ? BLOOD_TYPE_LABELS[character.bloodType] : m.common.emptyValue
+              }}
+            </dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
+            <dd>{{ character.createdAt ? f.date(character.createdAt) : m.common.emptyValue }}</dd>
+          </dl>
+        </Section>
+
+        <Section
+          :title="m.library.detail.sections.physique"
+          editable
+          :empty="!hasPhysique"
+          :empty-text="m.library.detail.empty.physique"
+          @edit="openEditDialog('physique')"
+        >
+          <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
+            <dt class="text-muted-foreground">{{ m.library.fields.height }}</dt>
+            <dd>{{ character.height !== null ? `${character.height}cm` : m.common.emptyValue }}</dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.weight }}</dt>
+            <dd>{{ character.weight !== null ? `${character.weight}kg` : m.common.emptyValue }}</dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.measurements }}</dt>
+            <dd>{{ threeSizes ?? m.common.emptyValue }}</dd>
+            <!--
+              Cup applies to a subset of characters, so an empty value means
+              inapplicable rather than unknown; the row renders only when filled.
+            -->
+            <template v-if="character.cup">
+              <dt class="text-muted-foreground">{{ m.library.fields.cup }}</dt>
+              <dd>{{ character.cup.toUpperCase() }}</dd>
+            </template>
+          </dl>
+        </Section>
+
         <Section
           :title="m.library.fields.relatedPersons"
           editable
@@ -257,6 +367,16 @@ const tagDialogOpen = computed({
     </div>
 
     <!-- Edit Dialogs - conditionally rendered -->
+    <CharacterInfoFormDialog
+      v-if="editDialogs.details"
+      v-model:open="editDialogs.details"
+      :character-id="character.id"
+    />
+    <CharacterPhysiqueFormDialog
+      v-if="editDialogs.physique"
+      v-model:open="editDialogs.physique"
+      :character-id="character.id"
+    />
     <EntityDescriptionFormDialog
       v-if="editDialogs.description"
       v-model:open="editDialogs.description"

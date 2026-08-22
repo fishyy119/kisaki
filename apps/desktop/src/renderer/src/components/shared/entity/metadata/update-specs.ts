@@ -55,6 +55,7 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
     surfaceLabels: (m) => ({
       name: m.library.fields.name,
       originalName: m.library.fields.originalName,
+      aliases: m.library.fields.aliases,
       releaseDate: m.library.fields.releaseDate,
       description: m.library.fields.description,
       externalSites: m.library.fields.externalSites,
@@ -81,6 +82,7 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
     surfaceLabels: (m) => ({
       name: m.library.fields.name,
       originalName: m.library.fields.originalName,
+      aliases: m.library.fields.aliases,
       releaseDate: m.library.fields.releaseDate,
       description: m.library.fields.description,
       format: m.library.fields.format,
@@ -112,6 +114,7 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
     surfaceLabels: (m) => ({
       name: m.library.fields.name,
       originalName: m.library.fields.originalName,
+      aliases: m.library.fields.aliases,
       birthDate: m.library.fields.birthDate,
       gender: m.library.fields.gender,
       age: m.library.fields.age,
@@ -143,6 +146,7 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
     surfaceLabels: (m) => ({
       name: m.library.fields.name,
       originalName: m.library.fields.originalName,
+      aliases: m.library.fields.aliases,
       birthDate: m.library.fields.birthDate,
       deathDate: m.library.fields.deathDate,
       gender: m.library.fields.gender,

@@ -1,7 +1,7 @@
 <!--
   AnimeInfoFormDialog
-  Dialog for editing anime info (sort name, format, total episodes, release
-  date, created date).
+  Dialog for editing anime info (sort name, aliases, format, total episodes,
+  release date, created date).
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
@@ -36,6 +36,7 @@ import {
   type PartialDateInputExpose
 } from '@renderer/components/ui/partial-date-input'
 import { createLogger } from '@renderer/core/log'
+import { parseAliasesInput } from '@renderer/utils/format'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -59,6 +60,7 @@ const FORMAT_OPTIONS = computed<{ value: AnimeFormat; label: string }[]>(() =>
 // Form state
 interface FormData {
   sortName: string
+  aliases: string
   format: AnimeFormat
   totalEpisodes: string
   releaseDate: PartialDate | null
@@ -67,6 +69,7 @@ interface FormData {
 
 const formData = ref<FormData>({
   sortName: '',
+  aliases: '',
   format: 'tv',
   totalEpisodes: '',
   releaseDate: null,
@@ -88,6 +91,7 @@ const { data: anime, isLoading } = useAsyncData(
 watch(anime, (animeData) => {
   if (animeData) {
     formData.value.sortName = animeData.sortName || ''
+    formData.value.aliases = (animeData.aliases ?? []).join(', ')
     formData.value.format = animeData.format
     formData.value.totalEpisodes =
       animeData.totalEpisodes !== null ? String(animeData.totalEpisodes) : ''
@@ -119,6 +123,7 @@ async function handleSubmit() {
       .update(animes)
       .set({
         sortName: formData.value.sortName || null,
+        aliases: parseAliasesInput(formData.value.aliases),
         format: formData.value.format,
         totalEpisodes,
         releaseDate,
@@ -168,6 +173,16 @@ function handleCancel() {
                   <Input
                     v-model="formData.sortName"
                     :placeholder="m.library.forms.sortNamePlaceholder"
+                  />
+                </FieldContent>
+              </Field>
+
+              <Field>
+                <FieldLabel>{{ m.library.fields.aliases }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="formData.aliases"
+                    :placeholder="m.library.forms.aliasesPlaceholder"
                   />
                 </FieldContent>
               </Field>

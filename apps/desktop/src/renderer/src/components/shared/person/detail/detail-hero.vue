@@ -1,7 +1,9 @@
 <!--
   PersonDetailHero
-  Hero section for person detail dialog.
-  Shows photo and basic stats.
+
+  Hero section for the person detail view: photo plus identity (name, original
+  name) and the personal score, each editable on hover. Person attributes such
+  as gender, dates, and aliases live in the overview tab's details section.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
@@ -10,105 +12,129 @@ import { CoverImage } from '@renderer/components/ui/cover-image'
 import { usePerson } from '@renderer/composables/use-person'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { formatAliases, getEntityIcon } from '@renderer/utils/format'
+import { dbScoreToDisplay, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
-import { PersonBasicFormDialog } from '../forms'
-
-const GENDER_LABELS = computed<Record<string, string>>(() => m.value.library.gender)
+import {
+  EntityNameFormDialog,
+  EntityOriginalNameFormDialog,
+  EntityScoreFormDialog
+} from '@renderer/components/shared/entity'
 
 const { person } = usePerson()
-const { m, f } = useI18n()
+const { m } = useI18n()
 
-const aliasesLine = computed(() => formatAliases(person.value?.aliases))
+const editDialogs = ref({
+  name: false,
+  originalName: false,
+  score: false
+})
 
-const isEditOpen = ref(false)
+function openEditDialog(dialog: keyof typeof editDialogs.value) {
+  editDialogs.value[dialog] = true
+}
+
+const photoUrl = computed(() =>
+  person.value?.photoFile
+    ? getAttachmentUrl('persons', person.value.id, person.value.photoFile, {
+        width: 200,
+        height: 267
+      })
+    : null
+)
 </script>
 
 <template>
   <template v-if="person">
-    <div class="flex gap-4 mb-4 group">
-      <!-- Photo -->
+    <div class="flex gap-4 mb-4">
       <CoverImage
-        :src="
-          person.photoFile
-            ? getAttachmentUrl('persons', person.id, person.photoFile, { width: 200, height: 267 })
-            : null
-        "
+        :src="photoUrl"
         :alt="person.name"
         :icon="getEntityIcon('person')"
         class="w-24 aspect-[3/4] rounded-lg shrink-0 border shadow-raised"
       />
 
-      <!-- Basic info -->
-      <div class="flex-1 min-w-0 justify-between flex flex-col">
-        <div class="flex items-start justify-between gap-2">
-          <div>
+      <div class="flex-1 min-w-0 flex flex-col justify-between">
+        <div>
+          <!-- Name (Editable) -->
+          <div class="group/field relative flex items-center gap-3">
             <h2 class="text-lg font-semibold truncate">{{ person.name }}</h2>
-            <p
-              v-if="person.originalName"
-              class="text-sm text-muted-foreground truncate"
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
+              :aria-label="m.common.edit"
+              @click="openEditDialog('name')"
             >
-              {{ person.originalName }}
-            </p>
-            <p
-              v-if="aliasesLine"
-              class="text-xs text-muted-foreground/80 truncate"
-            >
-              {{ aliasesLine }}
-            </p>
+              <Icon
+                icon="icon-[mdi--pencil-outline]"
+                class="size-3"
+              />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="group-hover:opacity-100 opacity-0 transition-opacity text-muted-foreground"
-            @click="isEditOpen = true"
-          >
-            <Icon
-              icon="icon-[mdi--pencil-outline]"
-              class="size-3.5"
-            />
-          </Button>
+
+          <!-- Original Name (Editable) -->
+          <div class="group/field relative flex items-center gap-3 mt-1">
+            <p class="text-sm text-muted-foreground truncate">
+              {{ person.originalName || person.name }}
+            </p>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
+              :aria-label="m.common.edit"
+              @click="openEditDialog('originalName')"
+            >
+              <Icon
+                icon="icon-[mdi--pencil-outline]"
+                class="size-3"
+              />
+            </Button>
+          </div>
         </div>
 
-        <!-- Stats grid -->
-        <div class="grid grid-cols-2 gap-x-6 gap-y-1 mt-2 text-xs">
-          <div
-            v-if="person.gender"
-            class="flex gap-2"
-          >
-            <span class="text-muted-foreground">{{ m.library.fields.gender }}</span>
-            <span>{{ GENDER_LABELS[person.gender] || person.gender }}</span>
-          </div>
-          <div
-            v-if="person.birthDate"
-            class="flex gap-2"
-          >
-            <span class="text-muted-foreground">{{ m.library.fields.birthDate }}</span>
-            <span>{{ f.date(person.birthDate) }}</span>
-          </div>
-          <div
-            v-if="person.deathDate"
-            class="flex gap-2"
-          >
-            <span class="text-muted-foreground">{{ m.library.fields.deathDate }}</span>
-            <span>{{ f.date(person.deathDate) }}</span>
-          </div>
-          <div
-            v-if="person.score !== null"
-            class="flex gap-2"
-          >
-            <span class="text-muted-foreground">{{ m.library.fields.score }}</span>
-            <span class="text-warning">{{ (person.score / 10).toFixed(1) }}</span>
-          </div>
+        <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">
+          <span class="flex items-center gap-1.5 text-muted-foreground">
+            <button
+              class="group/icon size-4 relative cursor-pointer"
+              :aria-label="m.common.edit"
+              @click="openEditDialog('score')"
+            >
+              <Icon
+                icon="icon-[mdi--starburst-outline]"
+                class="size-4 absolute inset-0 transition-opacity group-hover/icon:opacity-0"
+              />
+              <Icon
+                icon="icon-[mdi--pencil-outline]"
+                class="size-4 absolute inset-0 opacity-0 transition-opacity group-hover/icon:opacity-100"
+              />
+            </button>
+            <span class="text-xs">{{ m.library.fields.myScore }}</span>
+          </span>
+          <span class="font-medium truncate text-xs">
+            {{ person.score !== null ? dbScoreToDisplay(person.score) : m.common.emptyValue }}
+          </span>
         </div>
       </div>
     </div>
 
-    <!-- Edit Dialog -->
-    <PersonBasicFormDialog
-      v-if="isEditOpen"
-      v-model:open="isEditOpen"
-      :person-id="person.id"
+    <!-- Edit Dialogs - conditionally rendered -->
+    <EntityNameFormDialog
+      v-if="editDialogs.name"
+      v-model:open="editDialogs.name"
+      entity-type="person"
+      :entity-id="person.id"
+    />
+    <EntityOriginalNameFormDialog
+      v-if="editDialogs.originalName"
+      v-model:open="editDialogs.originalName"
+      entity-type="person"
+      :entity-id="person.id"
+    />
+    <EntityScoreFormDialog
+      v-if="editDialogs.score"
+      v-model:open="editDialogs.score"
+      entity-type="person"
+      :entity-id="person.id"
     />
   </template>
 </template>

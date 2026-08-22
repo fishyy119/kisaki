@@ -1,7 +1,7 @@
 import type { ContentLocale } from '@kisaki3/extension-sdk'
 import type { TmdbClient } from '../api/client'
 import type { TmdbSettingsV1 } from '../config/schema'
-import { toTmdbImageLanguages, toTmdbLanguage } from './format/languages'
+import { toTmdbImageLanguages, toTmdbLanguage, toTmdbTitleCountries } from './format/languages'
 import type { TmdbImageContext } from './format/images'
 import type { TmdbRequestContext } from './loaders'
 
@@ -28,6 +28,7 @@ export async function createRequestContext(
   return {
     language: toTmdbLanguage(locale),
     imageLanguages: toTmdbImageLanguages(locale),
+    titleCountries: toTmdbTitleCountries(locale),
     imageBaseUrl: settings.endpoints.imageBaseUrl,
     signal
   }

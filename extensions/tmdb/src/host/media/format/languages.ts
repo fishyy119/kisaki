@@ -36,6 +36,16 @@ const IMAGE_LANGUAGES_BY_LOCALE: Partial<Record<ContentLocale, readonly string[]
   'zh-Hant': ['zh', 'cn']
 }
 
+/**
+ * ISO-3166-1 codes whose alternative titles read as the locale's own. TMDB
+ * files a title under a country rather than a language, so a written language
+ * released in several markets counts every one of them.
+ */
+const TITLE_COUNTRIES_BY_LOCALE: Partial<Record<ContentLocale, readonly string[]>> = {
+  'zh-Hans': ['CN', 'SG'],
+  'zh-Hant': ['TW', 'HK']
+}
+
 export function toTmdbLanguage(locale: ContentLocale): string {
   return TMDB_LANGUAGE_BY_LOCALE[locale] ?? TMDB_LANGUAGE_BY_LOCALE.en
 }
@@ -44,4 +54,10 @@ export function toTmdbLanguage(locale: ContentLocale): string {
 export function toTmdbImageLanguages(locale: ContentLocale): readonly string[] {
   const localeCodes = IMAGE_LANGUAGES_BY_LOCALE[locale] ?? [locale.split('-')[0]!]
   return [...new Set([...localeCodes, 'en', 'null'])]
+}
+
+/** Countries whose titles count as the locale's own, in preference order. */
+export function toTmdbTitleCountries(locale: ContentLocale): readonly string[] {
+  const region = toTmdbLanguage(locale).split('-')[1]
+  return TITLE_COUNTRIES_BY_LOCALE[locale] ?? (region ? [region] : [])
 }

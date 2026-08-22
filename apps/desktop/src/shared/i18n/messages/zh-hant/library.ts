@@ -33,7 +33,7 @@ export const library = {
     waist: '腰圍',
     hips: '臀圍',
     cup: '罩杯',
-    measurements: '體型',
+    measurements: '三圍',
     tags: '標籤',
     collections: '合集',
     relatedGames: '相關遊戲',
@@ -335,6 +335,7 @@ export const library = {
       tags: '標籤',
       externalSites: '外部連結',
       details: '詳細資訊',
+      physique: '體格',
       cast: '演員',
       crew: '製作人員'
     },
@@ -352,7 +353,8 @@ export const library = {
       cast: '暫無演員',
       crew: '暫無製作人員',
       voiceCredits: '暫無配音作品',
-      companyRelations: '暫無公司關係'
+      companyRelations: '暫無公司關係',
+      physique: '暫無體格資料'
     },
     manage: '管理',
     viewAll: ({ count }: { count: number }) => `查看全部 (${count})`,
@@ -384,6 +386,7 @@ export const library = {
   forms: {
     editBasicInfo: '編輯基本資訊',
     editDetails: '編輯詳細資訊',
+    editPhysique: '編輯體格',
     editDescription: '編輯簡介',
     editScore: '編輯評分',
     editName: '編輯名稱',

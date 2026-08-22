@@ -403,9 +403,11 @@ question the row answers, not by table name.
   spoiler decision belongs to the character link, and display order follows the character link.
 - Cast and `character_person_links` are two layers, not duplicates. `character_person_links` is the
   **knowledge layer** — who voices this character at all, independent of any one work — so it is
-  merge-only and a scrape never deletes from it. Cast is the **confirmed credit** for one entry, so
-  it is replaced wholesale and a removed row means the credit is gone. A recast reads as a new cast
-  row plus a retained knowledge row, which is the truth.
+  merge-only and a scrape never deletes from it, whether the scrape entered through an entry or
+  through the character itself. That is declared once, as `mergeOnly` on the link topology, so no
+  update path can opt back into replace. Cast is the **confirmed credit** for one entry, so it is
+  replaced wholesale and a removed row means the credit is gone. A recast reads as a new cast row
+  plus a retained knowledge row, which is the truth.
 - Cast rows are derived, not hand-authored twice: an `actor`-role character-person fact on a media
   entry produces both the person link and the cast row. A provider without character entities
   (TMDB) contributes the person link only, and the entry simply has actors without attribution.
@@ -454,6 +456,7 @@ each absent edge is a decision, not an omission:
 | (media, character, person)     | Present  | Cast — the ternary above; the only three-endpoint fact in the schema.                    |
 | company↔company                | Present  | `company_relations`: succession a single company row cannot express.                     |
 | character↔character            | Absent   | Sources state relations in prose, per work, and they are spoilers; no stable vocabulary. |
+| character↔company              | Absent   | Ownership follows from the works it appears in; an edge would restate the media links.   |
 | person↔person                  | Absent   | Real-person biography, not work metadata, and no source publishes it structurally.       |
 | person↔company                 | Reserved | Employment is real but time-bounded; add `person_company_links` only with dated columns. |
 

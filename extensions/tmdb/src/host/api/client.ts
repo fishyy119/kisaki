@@ -15,6 +15,7 @@ import type {
   TmdbEpisodeGroupsResponse,
   TmdbExternalIds,
   TmdbImages,
+  TmdbMovieAlternativeTitles,
   TmdbMovieDetail,
   TmdbMovieKeywords,
   TmdbPaged,
@@ -24,6 +25,7 @@ import type {
   TmdbSearchPerson,
   TmdbSearchSeries,
   TmdbSeasonDetail,
+  TmdbSeriesAlternativeTitles,
   TmdbSeriesDetail,
   TmdbSeriesKeywords
 } from './types'
@@ -119,6 +121,14 @@ export class TmdbClient {
     return this.request(`/movie/${movieId}/keywords`, {}, { signal: options.signal })
   }
 
+  /** Language-independent: the response lists every country's title at once. */
+  async getMovieAlternativeTitles(
+    movieId: number,
+    options: TmdbRequestOptions = {}
+  ): Promise<TmdbMovieAlternativeTitles> {
+    return this.request(`/movie/${movieId}/alternative_titles`, {}, { signal: options.signal })
+  }
+
   async getCollection(
     collectionId: number,
     options: TmdbRequestOptions = {}
@@ -146,6 +156,14 @@ export class TmdbClient {
     options: TmdbRequestOptions = {}
   ): Promise<TmdbSeriesKeywords> {
     return this.request(`/tv/${seriesId}/keywords`, {}, { signal: options.signal })
+  }
+
+  /** Language-independent: the response lists every country's title at once. */
+  async getSeriesAlternativeTitles(
+    seriesId: number,
+    options: TmdbRequestOptions = {}
+  ): Promise<TmdbSeriesAlternativeTitles> {
+    return this.request(`/tv/${seriesId}/alternative_titles`, {}, { signal: options.signal })
   }
 
   async getSeriesExternalIds(

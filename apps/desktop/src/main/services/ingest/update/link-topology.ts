@@ -4,7 +4,8 @@
  * Each link table is declared once with the surface that owns it and the fact
  * sources that feed it. Writing a table needs its surface answered; clearing it
  * needs every source answered, so `replace` degrades to `merge` when the scrape
- * could not speak for one of them.
+ * could not speak for one of them. A table may also refuse deletion outright,
+ * which is a property of what it stores rather than of any one scrape.
  *
  * Link kinds come from the graph builder's output, so a new link table cannot
  * be added without declaring its surface and sources here. Adding another
@@ -38,6 +39,14 @@ interface LinkTopologySpec<TSurface extends string, TFactSource extends string> 
   label: string
   /** Fact sources that contribute rows; all must answer before rows may be deleted. */
   sources: readonly TFactSource[]
+  /**
+   * Rows a scrape may add but never delete, whatever mode was requested.
+   *
+   * Unlike a degraded replace this is not a shortfall a better-answering
+   * source could lift, so it reports no warning: the table states knowledge
+   * that outlives the work being scraped.
+   */
+  mergeOnly?: true
 }
 
 /** Fact sources a game scrape can answer for, named after the slots that fill them. */
@@ -85,7 +94,11 @@ export const GAME_LINK_TOPOLOGY: Record<
   characterPerson: {
     surface: 'characterPerson',
     label: 'character person links',
-    sources: ['cast']
+    sources: ['cast'],
+    // The knowledge layer: who voices a character at all, independent of any
+    // one work. This entry's scrape proves a credit exists, never that a
+    // stored one is wrong; the per-entry answer is the cast table's.
+    mergeOnly: true
   }
 }
 
@@ -134,7 +147,9 @@ export const ANIME_LINK_TOPOLOGY: Record<
   characterPerson: {
     surface: 'characterPerson',
     label: 'character person links',
-    sources: ['cast']
+    sources: ['cast'],
+    // Knowledge layer; see `GAME_LINK_TOPOLOGY.characterPerson`.
+    mergeOnly: true
   }
 }
 
@@ -154,7 +169,11 @@ export const CHARACTER_LINK_TOPOLOGY: Record<
   characterPerson: {
     surface: 'person',
     label: 'character person links',
-    sources: ['cast']
+    sources: ['cast'],
+    // Knowledge layer; see `GAME_LINK_TOPOLOGY.characterPerson`. Scraping the
+    // character directly is still one source's answer, so it may not delete
+    // either — removing a row stays a user or entity-merge decision.
+    mergeOnly: true
   }
 }
 
@@ -205,7 +224,7 @@ export interface ResolvedLinkWrites<TLinkKind extends string> {
  * A table is written when its surface was selected and answered. Replace also
  * requires every feeding source to have answered; otherwise it downgrades to
  * merge, because deleting rows the scrape was never asked about would drop data
- * no source contradicted.
+ * no source contradicted. Merge-only tables never resolve to replace at all.
  */
 export function resolveLinkWrites<
   TSurface extends string,
@@ -222,9 +241,14 @@ export function resolveLinkWrites<
   const degraded: TLinkKind[] = []
 
   for (const kind of Object.keys(topology) as TLinkKind[]) {
-    const { surface } = topology[kind]
+    const { surface, mergeOnly } = topology[kind]
     if (!selectedSurfaces.includes(surface)) continue
     if (!availability.surfaces.has(surface)) continue
+
+    if (mergeOnly) {
+      resolved[kind] = 'merge'
+      continue
+    }
 
     const downgraded = mode === 'replace' && !availability.completeLinks.has(kind)
     resolved[kind] = downgraded ? 'merge' : mode

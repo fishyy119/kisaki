@@ -4,6 +4,7 @@ import type { ScrapedCharacterBundle, ScraperLookup } from '@shared/scraper'
 import type { CharacterIncomingBuildResult } from '../types'
 import { buildCompleteCharacterLinks } from '../link-topology'
 import {
+  normalizeAliases,
   normalizeOptionalString,
   normalizeExternalSites,
   normalizeTags,
@@ -22,6 +23,9 @@ function buildCharacterCore(
 
   const originalName = normalizeOptionalString(bundleCore?.originalName)
   if (originalName) core.originalName = originalName
+
+  const aliases = normalizeAliases(bundleCore?.aliases)
+  if (aliases) core.aliases = aliases
 
   if (bundleCore?.birthDate) core.birthDate = bundleCore.birthDate
   if (bundleCore?.gender) core.gender = bundleCore.gender
@@ -69,6 +73,7 @@ export function buildCharacterIncoming(
 
   if (core.name) availability.surfaces.add('name')
   if (core.originalName) availability.surfaces.add('originalName')
+  if (core.aliases) availability.surfaces.add('aliases')
   if (core.birthDate) availability.surfaces.add('birthDate')
   if (core.gender) availability.surfaces.add('gender')
   if (typeof core.age === 'number') availability.surfaces.add('age')

@@ -33,7 +33,7 @@ export const library = {
     waist: '腰围',
     hips: '臀围',
     cup: '罩杯',
-    measurements: '体型',
+    measurements: '三围',
     tags: '标签',
     collections: '合集',
     relatedGames: '相关游戏',
@@ -335,6 +335,7 @@ export const library = {
       tags: '标签',
       externalSites: '外部链接',
       details: '详细信息',
+      physique: '体格',
       cast: '演员',
       crew: '制作人员'
     },
@@ -352,7 +353,8 @@ export const library = {
       cast: '暂无演员',
       crew: '暂无制作人员',
       voiceCredits: '暂无配音作品',
-      companyRelations: '暂无公司关系'
+      companyRelations: '暂无公司关系',
+      physique: '暂无体格数据'
     },
     manage: '管理',
     viewAll: ({ count }: { count: number }) => `查看全部 (${count})`,
@@ -384,6 +386,7 @@ export const library = {
   forms: {
     editBasicInfo: '编辑基本信息',
     editDetails: '编辑详细信息',
+    editPhysique: '编辑体格',
     editDescription: '编辑简介',
     editScore: '编辑评分',
     editName: '编辑名称',

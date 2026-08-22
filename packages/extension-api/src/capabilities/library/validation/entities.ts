@@ -75,6 +75,7 @@ const GAME_CREATE_KEYS = new Set<string>([
   'backdropFile',
   'logoFile',
   'iconFile',
+  'aliases',
   'releaseDate',
   'status',
   'lastActiveAt',
@@ -96,6 +97,7 @@ const GAME_PATCH_KEYS = new Set<string>([
   'backdropFile',
   'logoFile',
   'iconFile',
+  'aliases',
   'releaseDate',
   'status',
   'savePath',
@@ -117,6 +119,7 @@ const ANIME_CREATE_KEYS = new Set<string>([
   'coverFile',
   'backdropFile',
   'logoFile',
+  'aliases',
   'releaseDate',
   'status',
   'format',
@@ -132,6 +135,7 @@ const ANIME_PATCH_KEYS = new Set<string>([
   'coverFile',
   'backdropFile',
   'logoFile',
+  'aliases',
   'releaseDate',
   'status',
   'format',
@@ -701,6 +705,7 @@ function validateGameWriteInput(value: unknown, path: string, create: boolean): 
     ...validateOptionalNonEmptyString(input.backdropFile, `${path}.backdropFile`),
     ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
     ...validateOptionalNonEmptyString(input.iconFile, `${path}.iconFile`),
+    ...validateOptionalStringArray(input.aliases, `${path}.aliases`),
     ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
     ...validateOptionalEnumString(
       input.status,
@@ -751,6 +756,7 @@ function validateAnimeWriteInput(value: unknown, path: string, create: boolean):
     ...validateOptionalNonEmptyString(input.coverFile, `${path}.coverFile`),
     ...validateOptionalNonEmptyString(input.backdropFile, `${path}.backdropFile`),
     ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
+    ...validateOptionalStringArray(input.aliases, `${path}.aliases`),
     ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
     ...validateOptionalEnumString(
       input.status,
@@ -820,6 +826,7 @@ function validatePersonWriteInput(
     ...validateRankedEntityFields(input, path, create),
     ...validateCreateTimestamps(input, path, create),
     ...validateOptionalNonEmptyString(input.photoFile, `${path}.photoFile`),
+    ...validateOptionalStringArray(input.aliases, `${path}.aliases`),
     ...validateOptionalPartialDate(input.birthDate, `${path}.birthDate`),
     ...validateOptionalPartialDate(input.deathDate, `${path}.deathDate`),
     ...validateOptionalEnumString(
@@ -885,6 +892,7 @@ function validateCharacterWriteInput(
     ...validateRankedEntityFields(input, path, create),
     ...validateCreateTimestamps(input, path, create),
     ...validateOptionalNonEmptyString(input.photoFile, `${path}.photoFile`),
+    ...validateOptionalStringArray(input.aliases, `${path}.aliases`),
     ...validateOptionalPartialDate(input.birthDate, `${path}.birthDate`),
     ...validateOptionalEnumString(
       input.gender,

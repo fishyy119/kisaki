@@ -1,9 +1,11 @@
 import type { PersonPlanContext, PersonUpdatePlan } from '../types'
 import {
+  areAliasesEqual,
   areExternalIdsEqual,
   areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
+  mergeAliases,
   mergeExternalIds,
   mergeExternalSites,
   mergeTags
@@ -31,6 +33,18 @@ export function buildPersonPlan(context: PersonPlanContext): PersonUpdatePlan {
         if (!shouldApplyScalarUpdate(currentValue, incomingValue, policy.singularUpdate)) break
         if (areScalarValuesEqual(currentValue, incomingValue)) break
         ;(plan.patch as Record<string, unknown>)[surface] = incomingValue
+        break
+      }
+
+      case 'aliases': {
+        const next = mergeAliases(
+          current.person.aliases,
+          incoming.incoming.core.aliases ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areAliasesEqual(current.person.aliases, next)) break
+        plan.patch.aliases = next
         break
       }
 

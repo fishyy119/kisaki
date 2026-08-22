@@ -93,6 +93,7 @@ export class PersonIngestPersistHandler {
       id: personId,
       name: core.name,
       originalName: core.originalName,
+      aliases: core.aliases,
       birthDate: core.birthDate,
       deathDate: core.deathDate,
       gender: core.gender,

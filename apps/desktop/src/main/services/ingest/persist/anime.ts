@@ -402,6 +402,7 @@ export class AnimeIngestPersistHandler {
       id: animeId,
       name: core.name,
       originalName: core.originalName,
+      aliases: core.aliases,
       releaseDate: core.releaseDate,
       description: core.description,
       externalSites: core.externalSites || [],

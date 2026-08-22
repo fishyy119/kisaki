@@ -140,6 +140,8 @@ export interface ScrapedTag {
 export interface ScrapedGameInfo {
   name: string
   originalName?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: readonly string[]
   releaseDate?: PartialDate
   description?: string
   externalSites?: readonly ExternalSite[]
@@ -148,6 +150,8 @@ export interface ScrapedGameInfo {
 export interface ScrapedAnimeInfo {
   name: string
   originalName?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: readonly string[]
   releaseDate?: PartialDate
   description?: string
   format?: LibraryAnimeFormat

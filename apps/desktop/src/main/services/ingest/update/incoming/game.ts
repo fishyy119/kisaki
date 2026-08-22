@@ -4,6 +4,7 @@ import type { ScrapedGameBundle, ScraperLookup } from '@shared/scraper'
 import type { GameIncomingBuildResult } from '../types'
 import { buildCompleteGameLinks } from '../link-topology'
 import {
+  normalizeAliases,
   normalizeOptionalString,
   normalizeExternalSites,
   normalizeTags,
@@ -22,6 +23,9 @@ function buildGameCore(
 
   const originalName = normalizeOptionalString(bundleCore?.originalName)
   if (originalName) core.originalName = originalName
+
+  const aliases = normalizeAliases(bundleCore?.aliases)
+  if (aliases) core.aliases = aliases
 
   if (bundleCore?.releaseDate) core.releaseDate = bundleCore.releaseDate
 
@@ -66,6 +70,7 @@ export function buildGameIncoming(
 
   if (core.name) availability.surfaces.add('name')
   if (core.originalName) availability.surfaces.add('originalName')
+  if (core.aliases) availability.surfaces.add('aliases')
   if (core.releaseDate) availability.surfaces.add('releaseDate')
   if (core.description) availability.surfaces.add('description')
   if (core.externalSites) availability.surfaces.add('externalSites')

@@ -336,6 +336,7 @@ export const library = {
       tags: 'タグ',
       externalSites: '外部リンク',
       details: '詳細情報',
+      physique: '体格',
       cast: '出演',
       crew: 'スタッフ'
     },
@@ -353,7 +354,8 @@ export const library = {
       cast: '出演者はまだいません',
       crew: 'スタッフはまだいません',
       voiceCredits: '出演作品はまだありません',
-      companyRelations: '会社関係はまだありません'
+      companyRelations: '会社関係はまだありません',
+      physique: '体格データはまだありません'
     },
     manage: '管理',
     viewAll: ({ count }: { count: number }) => `すべて表示 (${count})`,
@@ -387,6 +389,7 @@ export const library = {
   forms: {
     editBasicInfo: '基本情報を編集',
     editDetails: '詳細情報を編集',
+    editPhysique: '体格を編集',
     editDescription: '概要を編集',
     editScore: 'スコアを編集',
     editName: '名前を編集',

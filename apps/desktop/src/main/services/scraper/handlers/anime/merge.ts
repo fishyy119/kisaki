@@ -21,6 +21,7 @@ import {
   buildScrapedEntityAliasKeys,
   filterBySlot,
   foldCollectionResults,
+  mergeAliases,
   mergeCharacterMetadataFields,
   mergeCompanyMetadataFields,
   mergePersonMetadataFields,
@@ -206,6 +207,11 @@ function mergeInfo(
     if (!metadata.format && info.format) metadata.format = info.format
     if (metadata.totalEpisodes == null && info.totalEpisodes != null) {
       metadata.totalEpisodes = info.totalEpisodes
+    }
+
+    // Every source's alias is true, so unlike scalars these accumulate.
+    if (info.aliases) {
+      metadata.aliases = mergeAliases(metadata.aliases, info.aliases)
     }
 
     // Presence is authority: a provider that reports no sites at all keeps the
@@ -405,6 +411,7 @@ export function toScrapedAnimeBundle(metadata: ScrapedAnimeMetadata): ScrapedAni
     core: {
       name: metadata.name,
       originalName: metadata.originalName,
+      aliases: metadata.aliases,
       releaseDate: metadata.releaseDate,
       description: metadata.description,
       format: metadata.format,

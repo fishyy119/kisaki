@@ -142,6 +142,8 @@ export class DbService implements IService {
     // Initialize FTS5 tables and triggers
     this.fts.init()
 
+    await this.attachment.reconcileStorage()
+
     this.backfillTagNormalizedNames()
 
     // Setup attachment:// protocol handler

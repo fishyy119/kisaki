@@ -671,10 +671,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
         links,
         relatedIdentityKeyOf: (link) => link.personIdentityKey,
         relatedIdByIdentity: personResolution.idByIdentity,
-        // Character-person rows are the work-independent knowledge layer: one
-        // entry's scrape proves a credit exists, never that a stored one is
-        // wrong, so it may only add. Removing a row is a user or merge decision.
-        collectionMode: 'merge'
+        collectionMode: characterPerson.mode
       })
     }
     preservedLinkRows.characterPerson = preserved

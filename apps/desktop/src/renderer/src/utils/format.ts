@@ -65,12 +65,6 @@ export function formatEpisodeNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
 
-/** Join alternative names into one display line. */
-export function formatAliases(aliases: readonly string[] | null | undefined): string | undefined {
-  const names = (aliases ?? []).map((name) => name.trim()).filter(Boolean)
-  return names.length > 0 ? names.join(' / ') : undefined
-}
-
 /** Parse the comma-separated aliases input of an entity form into names. */
 export function parseAliasesInput(value: string): string[] {
   const names: string[] = []

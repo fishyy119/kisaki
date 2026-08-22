@@ -343,6 +343,7 @@ export const library = {
       tags: 'Tags',
       externalSites: 'External links',
       details: 'Details',
+      physique: 'Physique',
       cast: 'Cast',
       crew: 'Crew'
     },
@@ -360,7 +361,8 @@ export const library = {
       cast: 'No cast yet.',
       crew: 'No crew yet.',
       voiceCredits: 'No voice credits yet.',
-      companyRelations: 'No company relations yet.'
+      companyRelations: 'No company relations yet.',
+      physique: 'No physique recorded yet.'
     },
     manage: 'Manage',
     viewAll: ({ count }: { count: number }) => `View all (${count})`,
@@ -395,6 +397,7 @@ export const library = {
     // Dialog titles
     editBasicInfo: 'Edit basic info',
     editDetails: 'Edit details',
+    editPhysique: 'Edit physique',
     editDescription: 'Edit description',
     editScore: 'Edit score',
     editName: 'Edit name',

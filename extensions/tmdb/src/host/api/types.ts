@@ -209,6 +209,21 @@ export interface TmdbSeriesKeywords {
   results?: TmdbKeyword[]
 }
 
+/** One title a title is also released under, per country and kind. */
+export interface TmdbAlternativeTitle {
+  iso_3166_1?: string
+  title?: string
+  type?: string
+}
+
+export interface TmdbMovieAlternativeTitles {
+  titles?: TmdbAlternativeTitle[]
+}
+
+export interface TmdbSeriesAlternativeTitles {
+  results?: TmdbAlternativeTitle[]
+}
+
 /** The person fields every credit row carries, whichever side it sits on. */
 export interface TmdbCreditPerson {
   id: number

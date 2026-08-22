@@ -403,6 +403,7 @@ export class GameIngestPersistHandler {
       id: gameId,
       name: gameCore.name,
       originalName: gameCore.originalName,
+      aliases: gameCore.aliases,
       releaseDate: gameCore.releaseDate,
       description: gameCore.description,
       externalSites: gameCore.externalSites || [],

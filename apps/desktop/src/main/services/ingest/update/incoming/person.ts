@@ -3,6 +3,7 @@ import type { CorePersonMetadata } from '@shared/metadata'
 import type { ScrapedPersonBundle, ScraperLookup } from '@shared/scraper'
 import type { PersonIncomingBuildResult } from '../types'
 import {
+  normalizeAliases,
   normalizeOptionalString,
   normalizeExternalSites,
   normalizeTags,
@@ -21,6 +22,9 @@ function buildPersonCore(
 
   const originalName = normalizeOptionalString(bundleCore?.originalName)
   if (originalName) core.originalName = originalName
+
+  const aliases = normalizeAliases(bundleCore?.aliases)
+  if (aliases) core.aliases = aliases
 
   if (bundleCore?.birthDate) core.birthDate = bundleCore.birthDate
   if (bundleCore?.deathDate) core.deathDate = bundleCore.deathDate
@@ -58,6 +62,7 @@ export function buildPersonIncoming(
 
   if (core.name) availability.surfaces.add('name')
   if (core.originalName) availability.surfaces.add('originalName')
+  if (core.aliases) availability.surfaces.add('aliases')
   if (core.birthDate) availability.surfaces.add('birthDate')
   if (core.deathDate) availability.surfaces.add('deathDate')
   if (core.gender) availability.surfaces.add('gender')

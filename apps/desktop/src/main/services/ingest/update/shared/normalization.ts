@@ -65,6 +65,17 @@ export function normalizeExternalSites(
   )
 }
 
+export function normalizeAliases(aliases: string[] | null | undefined): string[] | undefined {
+  if (!aliases) return undefined
+
+  return uniqueByKey(
+    aliases
+      .map((alias) => normalizeOptionalString(alias))
+      .filter((alias): alias is string => typeof alias === 'string'),
+    (alias) => normalizeKeyText(alias)
+  )
+}
+
 export function normalizeTags(tagsInput: Tag[] | null | undefined): Tag[] | undefined {
   if (!tagsInput) return undefined
 

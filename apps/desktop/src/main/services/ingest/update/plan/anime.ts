@@ -1,10 +1,12 @@
 import type { AnimePlanContext, AnimeUpdatePlan } from '../types'
 import { ANIME_LINK_TOPOLOGY, resolveLinkWrites } from '../link-topology'
 import {
+  areAliasesEqual,
   areExternalIdsEqual,
   areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
+  mergeAliases,
   mergeExternalIds,
   mergeExternalSites,
   mergeTags
@@ -42,6 +44,18 @@ export function buildAnimePlan(context: AnimePlanContext): AnimeUpdatePlan {
         if (!shouldApplyScalarUpdate(currentValue, incomingValue, policy.singularUpdate)) break
         if (areScalarValuesEqual(currentValue, incomingValue)) break
         ;(plan.patch as Record<string, unknown>)[surface] = incomingValue
+        break
+      }
+
+      case 'aliases': {
+        const next = mergeAliases(
+          current.anime.aliases,
+          incoming.incoming.core.aliases ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areAliasesEqual(current.anime.aliases, next)) break
+        plan.patch.aliases = next
         break
       }
 

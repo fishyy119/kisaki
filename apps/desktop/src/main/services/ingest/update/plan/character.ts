@@ -1,10 +1,12 @@
 import type { CharacterPlanContext, CharacterUpdatePlan } from '../types'
 import { CHARACTER_LINK_TOPOLOGY, resolveLinkWrites } from '../link-topology'
 import {
+  areAliasesEqual,
   areExternalIdsEqual,
   areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
+  mergeAliases,
   mergeExternalIds,
   mergeExternalSites,
   mergeTags
@@ -49,6 +51,18 @@ export function buildCharacterPlan(context: CharacterPlanContext): CharacterUpda
         if (!shouldApplyScalarUpdate(currentValue, incomingValue, policy.singularUpdate)) break
         if (areScalarValuesEqual(currentValue, incomingValue)) break
         ;(plan.patch as Record<string, unknown>)[surface] = incomingValue
+        break
+      }
+
+      case 'aliases': {
+        const next = mergeAliases(
+          current.character.aliases,
+          incoming.incoming.core.aliases ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areAliasesEqual(current.character.aliases, next)) break
+        plan.patch.aliases = next
         break
       }
 

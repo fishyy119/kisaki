@@ -19,6 +19,7 @@ import type {
 } from '@shared/entity-delete'
 import * as schema from '@shared/db/schema'
 import {
+  animeCastLinks,
   animeCharacterLinks,
   animeCompanyLinks,
   animePersonLinks,
@@ -35,6 +36,7 @@ import {
   collectionPersonLinks,
   companies,
   companyTagLinks,
+  gameCastLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   games,
@@ -58,6 +60,9 @@ const DIRECT_RELATED_ENTITY_TYPES: Record<AllEntityType, readonly AllEntityType[
 }
 
 type RelatedIdMap = Partial<Record<AllEntityType, Set<string>>>
+
+/** One junction table read from one side: the table, its source and target columns. */
+type JunctionEdge = readonly [SQLiteTable, AnySQLiteColumn, AnySQLiteColumn]
 
 export class DbEntityDeleteHelper {
   constructor(private db: BetterSQLite3Database<typeof schema>) {}
@@ -144,197 +149,170 @@ export class DbEntityDeleteHelper {
       case 'game':
         return {
           character: this.selectDistinctIds(
-            gameCharacterLinks,
-            gameCharacterLinks.gameId,
-            gameCharacterLinks.characterId,
-            entityIds
+            entityIds,
+            [gameCharacterLinks, gameCharacterLinks.gameId, gameCharacterLinks.characterId],
+            [gameCastLinks, gameCastLinks.gameId, gameCastLinks.characterId]
           ),
           person: this.selectDistinctIds(
-            gamePersonLinks,
-            gamePersonLinks.gameId,
-            gamePersonLinks.personId,
-            entityIds
+            entityIds,
+            [gamePersonLinks, gamePersonLinks.gameId, gamePersonLinks.personId],
+            [gameCastLinks, gameCastLinks.gameId, gameCastLinks.personId]
           ),
-          company: this.selectDistinctIds(
+          company: this.selectDistinctIds(entityIds, [
             gameCompanyLinks,
             gameCompanyLinks.gameId,
-            gameCompanyLinks.companyId,
-            entityIds
-          ),
-          tag: this.selectDistinctIds(
+            gameCompanyLinks.companyId
+          ]),
+          tag: this.selectDistinctIds(entityIds, [
             gameTagLinks,
             gameTagLinks.gameId,
-            gameTagLinks.tagId,
-            entityIds
-          )
+            gameTagLinks.tagId
+          ])
         }
       case 'anime':
         return {
           character: this.selectDistinctIds(
-            animeCharacterLinks,
-            animeCharacterLinks.animeId,
-            animeCharacterLinks.characterId,
-            entityIds
+            entityIds,
+            [animeCharacterLinks, animeCharacterLinks.animeId, animeCharacterLinks.characterId],
+            [animeCastLinks, animeCastLinks.animeId, animeCastLinks.characterId]
           ),
           person: this.selectDistinctIds(
-            animePersonLinks,
-            animePersonLinks.animeId,
-            animePersonLinks.personId,
-            entityIds
+            entityIds,
+            [animePersonLinks, animePersonLinks.animeId, animePersonLinks.personId],
+            [animeCastLinks, animeCastLinks.animeId, animeCastLinks.personId]
           ),
-          company: this.selectDistinctIds(
+          company: this.selectDistinctIds(entityIds, [
             animeCompanyLinks,
             animeCompanyLinks.animeId,
-            animeCompanyLinks.companyId,
-            entityIds
-          ),
-          tag: this.selectDistinctIds(
+            animeCompanyLinks.companyId
+          ]),
+          tag: this.selectDistinctIds(entityIds, [
             animeTagLinks,
             animeTagLinks.animeId,
-            animeTagLinks.tagId,
-            entityIds
-          )
+            animeTagLinks.tagId
+          ])
         }
       case 'character':
         return {
           game: this.selectDistinctIds(
-            gameCharacterLinks,
-            gameCharacterLinks.characterId,
-            gameCharacterLinks.gameId,
-            entityIds
+            entityIds,
+            [gameCharacterLinks, gameCharacterLinks.characterId, gameCharacterLinks.gameId],
+            [gameCastLinks, gameCastLinks.characterId, gameCastLinks.gameId]
           ),
           anime: this.selectDistinctIds(
-            animeCharacterLinks,
-            animeCharacterLinks.characterId,
-            animeCharacterLinks.animeId,
-            entityIds
+            entityIds,
+            [animeCharacterLinks, animeCharacterLinks.characterId, animeCharacterLinks.animeId],
+            [animeCastLinks, animeCastLinks.characterId, animeCastLinks.animeId]
           ),
           person: this.selectDistinctIds(
-            characterPersonLinks,
-            characterPersonLinks.characterId,
-            characterPersonLinks.personId,
-            entityIds
+            entityIds,
+            [characterPersonLinks, characterPersonLinks.characterId, characterPersonLinks.personId],
+            [gameCastLinks, gameCastLinks.characterId, gameCastLinks.personId],
+            [animeCastLinks, animeCastLinks.characterId, animeCastLinks.personId]
           ),
-          tag: this.selectDistinctIds(
+          tag: this.selectDistinctIds(entityIds, [
             characterTagLinks,
             characterTagLinks.characterId,
-            characterTagLinks.tagId,
-            entityIds
-          )
+            characterTagLinks.tagId
+          ])
         }
       case 'person':
         return {
           game: this.selectDistinctIds(
-            gamePersonLinks,
-            gamePersonLinks.personId,
-            gamePersonLinks.gameId,
-            entityIds
+            entityIds,
+            [gamePersonLinks, gamePersonLinks.personId, gamePersonLinks.gameId],
+            [gameCastLinks, gameCastLinks.personId, gameCastLinks.gameId]
           ),
           anime: this.selectDistinctIds(
-            animePersonLinks,
-            animePersonLinks.personId,
-            animePersonLinks.animeId,
-            entityIds
+            entityIds,
+            [animePersonLinks, animePersonLinks.personId, animePersonLinks.animeId],
+            [animeCastLinks, animeCastLinks.personId, animeCastLinks.animeId]
           ),
           character: this.selectDistinctIds(
-            characterPersonLinks,
-            characterPersonLinks.personId,
-            characterPersonLinks.characterId,
-            entityIds
+            entityIds,
+            [characterPersonLinks, characterPersonLinks.personId, characterPersonLinks.characterId],
+            [gameCastLinks, gameCastLinks.personId, gameCastLinks.characterId],
+            [animeCastLinks, animeCastLinks.personId, animeCastLinks.characterId]
           ),
-          tag: this.selectDistinctIds(
+          tag: this.selectDistinctIds(entityIds, [
             personTagLinks,
             personTagLinks.personId,
-            personTagLinks.tagId,
-            entityIds
-          )
+            personTagLinks.tagId
+          ])
         }
       case 'company':
         return {
-          game: this.selectDistinctIds(
+          game: this.selectDistinctIds(entityIds, [
             gameCompanyLinks,
             gameCompanyLinks.companyId,
-            gameCompanyLinks.gameId,
-            entityIds
-          ),
-          anime: this.selectDistinctIds(
+            gameCompanyLinks.gameId
+          ]),
+          anime: this.selectDistinctIds(entityIds, [
             animeCompanyLinks,
             animeCompanyLinks.companyId,
-            animeCompanyLinks.animeId,
-            entityIds
-          ),
-          tag: this.selectDistinctIds(
+            animeCompanyLinks.animeId
+          ]),
+          tag: this.selectDistinctIds(entityIds, [
             companyTagLinks,
             companyTagLinks.companyId,
-            companyTagLinks.tagId,
-            entityIds
-          )
+            companyTagLinks.tagId
+          ])
         }
       case 'tag':
         return {
-          game: this.selectDistinctIds(
+          game: this.selectDistinctIds(entityIds, [
             gameTagLinks,
             gameTagLinks.tagId,
-            gameTagLinks.gameId,
-            entityIds
-          ),
-          anime: this.selectDistinctIds(
+            gameTagLinks.gameId
+          ]),
+          anime: this.selectDistinctIds(entityIds, [
             animeTagLinks,
             animeTagLinks.tagId,
-            animeTagLinks.animeId,
-            entityIds
-          ),
-          character: this.selectDistinctIds(
+            animeTagLinks.animeId
+          ]),
+          character: this.selectDistinctIds(entityIds, [
             characterTagLinks,
             characterTagLinks.tagId,
-            characterTagLinks.characterId,
-            entityIds
-          ),
-          person: this.selectDistinctIds(
+            characterTagLinks.characterId
+          ]),
+          person: this.selectDistinctIds(entityIds, [
             personTagLinks,
             personTagLinks.tagId,
-            personTagLinks.personId,
-            entityIds
-          ),
-          company: this.selectDistinctIds(
+            personTagLinks.personId
+          ]),
+          company: this.selectDistinctIds(entityIds, [
             companyTagLinks,
             companyTagLinks.tagId,
-            companyTagLinks.companyId,
-            entityIds
-          )
+            companyTagLinks.companyId
+          ])
         }
       case 'collection':
         return {
-          game: this.selectDistinctIds(
+          game: this.selectDistinctIds(entityIds, [
             collectionGameLinks,
             collectionGameLinks.collectionId,
-            collectionGameLinks.gameId,
-            entityIds
-          ),
-          anime: this.selectDistinctIds(
+            collectionGameLinks.gameId
+          ]),
+          anime: this.selectDistinctIds(entityIds, [
             collectionAnimeLinks,
             collectionAnimeLinks.collectionId,
-            collectionAnimeLinks.animeId,
-            entityIds
-          ),
-          character: this.selectDistinctIds(
+            collectionAnimeLinks.animeId
+          ]),
+          character: this.selectDistinctIds(entityIds, [
             collectionCharacterLinks,
             collectionCharacterLinks.collectionId,
-            collectionCharacterLinks.characterId,
-            entityIds
-          ),
-          person: this.selectDistinctIds(
+            collectionCharacterLinks.characterId
+          ]),
+          person: this.selectDistinctIds(entityIds, [
             collectionPersonLinks,
             collectionPersonLinks.collectionId,
-            collectionPersonLinks.personId,
-            entityIds
-          ),
-          company: this.selectDistinctIds(
+            collectionPersonLinks.personId
+          ]),
+          company: this.selectDistinctIds(entityIds, [
             collectionCompanyLinks,
             collectionCompanyLinks.collectionId,
-            collectionCompanyLinks.companyId,
-            entityIds
-          )
+            collectionCompanyLinks.companyId
+          ])
         }
     }
   }
@@ -446,21 +424,28 @@ export class DbEntityDeleteHelper {
     return [...new Set(ids.filter((id): id is string => Boolean(id)))]
   }
 
-  /** Query distinct target IDs from a junction table given its schema facts. */
-  private selectDistinctIds(
-    table: SQLiteTable,
-    sourceColumn: AnySQLiteColumn,
-    targetColumn: AnySQLiteColumn,
-    sourceIds: string[]
-  ): Set<string> {
-    if (sourceIds.length === 0) return new Set()
+  /**
+   * Distinct target ids reachable from the source ids, unioned over every
+   * junction table that carries the pair. Two entities count as related when
+   * any one table joins them, so a credit stated only by a cast row is a
+   * relation like any other.
+   */
+  private selectDistinctIds(sourceIds: string[], ...edges: readonly JunctionEdge[]): Set<string> {
+    const ids = new Set<string>()
+    if (sourceIds.length === 0) return ids
 
-    const rows = this.db
-      .selectDistinct({ id: targetColumn })
-      .from(table)
-      .where(inArray(sourceColumn, sourceIds))
-      .all()
+    for (const [table, sourceColumn, targetColumn] of edges) {
+      const rows = this.db
+        .selectDistinct({ id: targetColumn })
+        .from(table)
+        .where(inArray(sourceColumn, sourceIds))
+        .all()
 
-    return new Set(rows.flatMap((row) => (typeof row.id === 'string' && row.id ? [row.id] : [])))
+      for (const row of rows) {
+        if (typeof row.id === 'string' && row.id) ids.add(row.id)
+      }
+    }
+
+    return ids
   }
 }

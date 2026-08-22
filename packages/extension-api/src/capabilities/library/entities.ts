@@ -169,6 +169,8 @@ export interface LibraryGame extends LibraryRankedEntityBase {
   backdropFile?: string
   logoFile?: string
   iconFile?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: readonly string[]
   releaseDate?: PartialDate
   status: LibraryGameStatus
   lastActiveAt?: number | null
@@ -189,6 +191,8 @@ export interface LibraryAnime extends LibraryRankedEntityBase {
   coverFile?: string
   backdropFile?: string
   logoFile?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: readonly string[]
   releaseDate?: PartialDate
   status: LibraryAnimeStatus
   format: LibraryAnimeFormat
@@ -332,6 +336,7 @@ export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
   backdropFile?: string
   logoFile?: string
   iconFile?: string
+  aliases?: readonly string[]
   releaseDate?: PartialDate
   status?: LibraryGameStatus
   lastActiveAt?: number | null
@@ -359,6 +364,7 @@ export interface LibraryAnimeCreateInput extends LibraryRankedEntityInputBase {
   coverFile?: string
   backdropFile?: string
   logoFile?: string
+  aliases?: readonly string[]
   releaseDate?: PartialDate
   status?: LibraryAnimeStatus
   format?: LibraryAnimeFormat

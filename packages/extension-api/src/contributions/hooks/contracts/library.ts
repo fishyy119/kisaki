@@ -24,6 +24,7 @@ export type LibraryChangeKind = 'created' | 'updated' | 'deleted'
 export interface LibraryGameCoreSnapshot {
   name?: string
   originalName?: string | null
+  aliases?: readonly string[]
   description?: string | null
   releaseDate?: PartialDate | null
 }
@@ -31,6 +32,7 @@ export interface LibraryGameCoreSnapshot {
 export interface LibraryAnimeCoreSnapshot {
   name?: string
   originalName?: string | null
+  aliases?: readonly string[]
   description?: string | null
   releaseDate?: PartialDate | null
   format?: LibraryAnimeFormat

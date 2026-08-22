@@ -1,5 +1,5 @@
 export function normalizeCoreValue(value: unknown, field: string): unknown {
-  if (field === 'releaseDate' || field === 'endDate') {
+  if (field === 'releaseDate' || field === 'endDate' || field === 'aliases') {
     return parseJsonValue(value)
   }
   if (field === 'totalSeasons' || field === 'totalEpisodes' || field === 'runtimeMs') {
@@ -35,6 +35,7 @@ export function normalizeEntityValue(value: unknown, field: string): unknown {
 
   if (
     [
+      'aliases',
       'birthDate',
       'deathDate',
       'dynamicConfig',

@@ -12,6 +12,7 @@ import {
 export const PERSON_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'name', group: 'core', cardinality: 'singular' },
   { key: 'originalName', group: 'core', cardinality: 'singular' },
+  { key: 'aliases', group: 'core', cardinality: 'collection' },
   { key: 'birthDate', group: 'core', cardinality: 'singular' },
   { key: 'deathDate', group: 'core', cardinality: 'singular' },
   { key: 'gender', group: 'core', cardinality: 'singular' },

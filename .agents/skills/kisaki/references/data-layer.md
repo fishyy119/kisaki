@@ -99,11 +99,25 @@ triggers left by older versions) before migrations run.
 
 ## Full-Text Search (FTS5)
 
-FTS is configured for entity tables (games, characters, persons, companies):
+FTS is configured for entity tables (games, animes, characters, persons, companies):
 
 - Virtual table with `tokenize='unicode61'`
 - Sync triggers keep FTS index updated
 - Rebuild one entity index via `db:rebuild-fts`; rebuild all via `db:rebuild-all-fts`
+
+### Derived State Reconciles, It Does Not Migrate
+
+Search indexes and attachment directories are derived from the schema, not part of it, so their
+declarations are the only truth and startup makes the database match them. Migrations never touch
+either.
+
+- `FTS_TABLES` in `db/fts.ts` declares which indexes exist and which columns they carry. `init`
+  compares each index's real columns against it, rebuilds and repopulates on any difference, and
+  drops indexes no entity type declares.
+- The attachment layout is `<storage>/<table>/<row>/<file>`, so `AttachmentStore.reconcileStorage`
+  drops directories of tables the schema no longer has — nothing else could ever reach them.
+- Both are stated as "match the declaration", not as recognition of known-old shapes, so they
+  resolve future drift (a new indexed column, a removed entity type) the same way.
 
 ## Search Patterns
 
@@ -131,7 +145,8 @@ FTS is configured for entity tables (games, characters, persons, companies):
 6. Check trigger impact:
    - Table renames affect event `table` values
    - Update renderer event filters accordingly
-7. Check FTS impact if modifying games/characters/persons/companies
+7. If the change adds or removes a searchable column, update `FTS_TABLES`; the index reconciles on
+   the next start and needs no migration statement
 
 ### Adding a New Table
 
@@ -159,7 +174,7 @@ FTS is configured for entity tables (games, characters, persons, companies):
 - **Transaction callbacks are synchronous**: No `await` inside `.transaction()` callback
 - Async side effects (network, file IO) must happen after transaction commits
 - Reading DB immediately after event may hit busy state; use `queueMicrotask()` if needed
-- FTS changes may require explicit rebuild strategy (drop/recreate)
+- FTS column changes need no migration: edit `FTS_TABLES` and the next start rebuilds the index
 
 ## Notes
 

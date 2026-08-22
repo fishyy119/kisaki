@@ -19,6 +19,8 @@ import type { ExternalId, Tag } from './common'
 export interface GameInfo {
   name: string
   originalName?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: string[]
   releaseDate?: PartialDate
   description?: string
   externalSites?: ExternalSite[]

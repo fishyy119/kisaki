@@ -1,10 +1,12 @@
 import type { GamePlanContext, GameUpdatePlan } from '../types'
 import { GAME_LINK_TOPOLOGY, resolveLinkWrites } from '../link-topology'
 import {
+  areAliasesEqual,
   areExternalIdsEqual,
   areExternalSitesEqual,
   areScalarValuesEqual,
   areTagsEqual,
+  mergeAliases,
   mergeExternalIds,
   mergeExternalSites,
   mergeTags
@@ -40,6 +42,18 @@ export function buildGamePlan(context: GamePlanContext): GameUpdatePlan {
         if (!shouldApplyScalarUpdate(currentValue, incomingValue, policy.singularUpdate)) break
         if (areScalarValuesEqual(currentValue, incomingValue)) break
         ;(plan.patch as Record<string, unknown>)[surface] = incomingValue
+        break
+      }
+
+      case 'aliases': {
+        const next = mergeAliases(
+          current.game.aliases,
+          incoming.incoming.core.aliases ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areAliasesEqual(current.game.aliases, next)) break
+        plan.patch.aliases = next
         break
       }
 

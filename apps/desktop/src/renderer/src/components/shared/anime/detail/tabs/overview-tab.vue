@@ -35,7 +35,6 @@ import {
   ANIME_COMPANY_ROLE_VALUES,
   ANIME_PERSON_ROLE_VALUES
 } from '@shared/db'
-
 const { anime, tags, characters, persons, companies, relations } = useAnime()
 const { m, f } = useI18n()
 
@@ -73,6 +72,7 @@ const openPersonId = ref<string | null>(null)
 const openCompanyId = ref<string | null>(null)
 const openTagId = ref<string | null>(null)
 
+const aliases = computed(() => anime.value?.aliases ?? [])
 const hasExternalSites = computed(
   () => anime.value?.externalSites && anime.value.externalSites.length > 0
 )
@@ -205,6 +205,21 @@ const tagDialogOpen = computed({
           @edit="openEditDialog('details')"
         >
           <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
+            <dt class="text-muted-foreground">{{ m.library.fields.aliases }}</dt>
+            <!-- One name per line: a name is atomic and must not wrap mid-word. -->
+            <dd
+              v-if="aliases.length > 0"
+              class="min-w-0 space-y-0.5"
+            >
+              <div
+                v-for="alias in aliases"
+                :key="alias"
+                class="break-words"
+              >
+                {{ alias }}
+              </div>
+            </dd>
+            <dd v-else>{{ m.common.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.format }}</dt>
             <dd>{{ m.library.animeFormat[anime.format] }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.totalEpisodes }}</dt>

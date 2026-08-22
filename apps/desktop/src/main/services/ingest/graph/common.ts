@@ -206,6 +206,7 @@ export function normalizeGameCore(raw: Partial<CoreGameMetadata>): CoreGameMetad
   return {
     name,
     originalName: normalizeOptionalString(raw.originalName),
+    aliases: normalizeAliases(raw.aliases),
     releaseDate: raw.releaseDate,
     description: normalizeOptionalString(raw.description),
     externalSites: mergeExternalSites(undefined, raw.externalSites),
@@ -221,6 +222,7 @@ export function normalizeAnimeCore(raw: Partial<CoreAnimeMetadata>): CoreAnimeMe
   return {
     name,
     originalName: normalizeOptionalString(raw.originalName),
+    aliases: normalizeAliases(raw.aliases),
     releaseDate: raw.releaseDate,
     description: normalizeOptionalString(raw.description),
     format: raw.format,
@@ -354,6 +356,7 @@ function mergePersonCore(
   return {
     name: firstNonEmpty(existing.name, incoming.name) ?? existing.name,
     originalName: firstNonEmpty(existing.originalName, incoming.originalName),
+    aliases: mergeAliases(existing.aliases, incoming.aliases),
     birthDate: existing.birthDate ?? incoming.birthDate,
     deathDate: existing.deathDate ?? incoming.deathDate,
     gender: existing.gender ?? incoming.gender,
@@ -386,6 +389,7 @@ function mergeCharacterCore(
   return {
     name: firstNonEmpty(existing.name, incoming.name) ?? existing.name,
     originalName: firstNonEmpty(existing.originalName, incoming.originalName),
+    aliases: mergeAliases(existing.aliases, incoming.aliases),
     birthDate: existing.birthDate ?? incoming.birthDate,
     gender: existing.gender ?? incoming.gender,
     age: existing.age ?? incoming.age,

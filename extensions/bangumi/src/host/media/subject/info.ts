@@ -2,6 +2,7 @@ import type { ContentLocale, PartialDate } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../api/types'
 import { omitUndefined } from '../../utils/object'
 import { parseBangumiSubjectDate } from '../format/dates'
+import { extractAliasesFromInfobox } from '../format/infobox'
 import { resolveLocalizedSubjectName } from '../format/names'
 import { normalizeDescription } from '../format/text'
 import type { ExternalSite } from '../format/urls'
@@ -11,6 +12,7 @@ import { buildSubjectExternalSites } from './identity'
 export interface SubjectCoreInfo {
   name: string
   originalName?: string
+  aliases?: string[]
   releaseDate?: PartialDate
   description?: string
   externalSites: ExternalSite[]
@@ -22,10 +24,12 @@ export async function buildSubjectCoreInfo(
 ): Promise<SubjectCoreInfo> {
   const subject = await getSubject()
   const { name, originalName } = resolveLocalizedSubjectName(subject.name, subject.name_cn, locale)
+  const aliases = extractAliasesFromInfobox(subject.infobox, [name, originalName])
 
   return omitUndefined({
     name,
     originalName,
+    aliases: aliases.length > 0 ? aliases : undefined,
     releaseDate: parseBangumiSubjectDate(subject.date),
     description: normalizeDescription(subject.summary),
     externalSites: buildSubjectExternalSites(subject)

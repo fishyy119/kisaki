@@ -3,7 +3,7 @@
 export { default as CharacterCard } from './character-card.vue'
 export { default as CharacterSearcher } from './character-searcher.vue'
 export { default as CharacterSelect } from './character-select.vue'
-export { CharacterBasicFormDialog } from './forms'
+export { CharacterInfoFormDialog, CharacterPhysiqueFormDialog } from './forms'
 export {
   CharacterDetailContent,
   CharacterDetailHero,

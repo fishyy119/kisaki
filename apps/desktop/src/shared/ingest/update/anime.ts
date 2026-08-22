@@ -17,6 +17,7 @@ import {
 export const ANIME_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'name', group: 'core', cardinality: 'singular' },
   { key: 'originalName', group: 'core', cardinality: 'singular' },
+  { key: 'aliases', group: 'core', cardinality: 'collection' },
   { key: 'releaseDate', group: 'core', cardinality: 'singular' },
   { key: 'description', group: 'core', cardinality: 'singular' },
   { key: 'format', group: 'core', cardinality: 'singular' },

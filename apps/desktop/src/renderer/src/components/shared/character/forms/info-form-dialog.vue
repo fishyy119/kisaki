@@ -1,13 +1,16 @@
 <!--
-  CharacterBasicFormDialog
-  Dialog for editing character basic information.
+  CharacterInfoFormDialog
+  Dialog for editing a character's details: sort name, aliases, personal facts,
+  and the date it entered the library. Name, original name, and score are hero
+  fields, and physique has its own editor.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { characters, type CupSize, type PartialDate } from '@shared/db'
+import { characters, type PartialDate } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
+import { formatDateInput } from '@renderer/utils/datetime'
 import {
   Dialog,
   DialogContent,
@@ -50,20 +53,13 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 interface FormData {
-  name: string
-  originalName: string
   sortName: string
   aliases: string
   gender: '' | 'male' | 'female' | 'other'
+  age: string
   birthDate: PartialDate | null
   bloodType: '' | 'a' | 'b' | 'o' | 'ab'
-  height: string
-  weight: string
-  bust: string
-  waist: string
-  hips: string
-  cup: '' | CupSize
-  age: string
+  createdAt: string
 }
 
 const NONE_VALUE = '#none'
@@ -80,39 +76,16 @@ const BLOOD_TYPE_OPTIONS = computed(() => [
   { value: 'o', label: m.value.library.bloodType.o },
   { value: 'ab', label: m.value.library.bloodType.ab }
 ])
-const CUP_SIZE_OPTIONS = computed(() => [
-  { value: NONE_VALUE, label: m.value.common.none },
-  { value: 'aaa', label: 'AAA' },
-  { value: 'aa', label: 'AA' },
-  { value: 'a', label: 'A' },
-  { value: 'b', label: 'B' },
-  { value: 'c', label: 'C' },
-  { value: 'd', label: 'D' },
-  { value: 'e', label: 'E' },
-  { value: 'f', label: 'F' },
-  { value: 'g', label: 'G' },
-  { value: 'h', label: 'H' },
-  { value: 'i', label: 'I' },
-  { value: 'j', label: 'J' },
-  { value: 'k', label: 'K' }
-])
 
 // Form state
 const formData = ref<FormData>({
-  name: '',
-  originalName: '',
   sortName: '',
   aliases: '',
   gender: '',
+  age: '',
   birthDate: null,
   bloodType: '',
-  height: '',
-  weight: '',
-  bust: '',
-  waist: '',
-  hips: '',
-  cup: '',
-  age: ''
+  createdAt: ''
 })
 const isSaving = ref(false)
 const birthDateInput = ref<PartialDateInputExpose | null>(null)
@@ -130,20 +103,13 @@ const { data: character, isLoading } = useAsyncData(
 watch(character, (characterData) => {
   if (characterData) {
     formData.value = {
-      name: characterData.name || '',
-      originalName: characterData.originalName || '',
       sortName: characterData.sortName || '',
       aliases: (characterData.aliases ?? []).join(', '),
       gender: characterData.gender || '',
+      age: characterData.age?.toString() || '',
       birthDate: characterData.birthDate ?? null,
       bloodType: characterData.bloodType || '',
-      height: characterData.height?.toString() || '',
-      weight: characterData.weight?.toString() || '',
-      bust: characterData.bust?.toString() || '',
-      waist: characterData.waist?.toString() || '',
-      hips: characterData.hips?.toString() || '',
-      cup: characterData.cup || '',
-      age: characterData.age?.toString() || ''
+      createdAt: formatDateInput(characterData.createdAt)
     }
   }
 })
@@ -175,23 +141,6 @@ const bloodTypeModel = computed({
   }
 })
 
-const cupModel = computed({
-  get: () => formData.value.cup || NONE_VALUE,
-  set: (v: unknown) => {
-    if (v === NONE_VALUE) {
-      formData.value.cup = ''
-      return
-    }
-    if (typeof v === 'string' && isCupSize(v)) {
-      formData.value.cup = v
-    }
-  }
-})
-
-function isCupSize(value: string): value is CupSize {
-  return value !== NONE_VALUE && CUP_SIZE_OPTIONS.value.some((o) => o.value === value)
-}
-
 async function handleSubmit() {
   isSaving.value = true
   try {
@@ -205,20 +154,13 @@ async function handleSubmit() {
     await db
       .update(characters)
       .set({
-        name: formData.value.name || 'unknown character',
-        originalName: formData.value.originalName || null,
         sortName: formData.value.sortName || null,
         aliases: parseAliasesInput(formData.value.aliases),
         gender: formData.value.gender || null,
+        age: formData.value.age ? parseInt(formData.value.age, 10) : null,
         birthDate,
         bloodType: formData.value.bloodType || null,
-        height: formData.value.height ? parseInt(formData.value.height, 10) : null,
-        weight: formData.value.weight ? parseInt(formData.value.weight, 10) : null,
-        bust: formData.value.bust ? parseInt(formData.value.bust, 10) : null,
-        waist: formData.value.waist ? parseInt(formData.value.waist, 10) : null,
-        hips: formData.value.hips ? parseInt(formData.value.hips, 10) : null,
-        cup: formData.value.cup || null,
-        age: formData.value.age ? parseInt(formData.value.age, 10) : null
+        createdAt: new Date(formData.value.createdAt)
       })
       .where(eq(characters.id, props.characterId))
 
@@ -253,32 +195,11 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>{{ m.library.forms.editBasicInfo }}</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editDetails }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
-              <Field>
-                <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
-                <FieldContent>
-                  <Input
-                    v-model="formData.name"
-                    :placeholder="
-                      m.library.forms.namePlaceholder({ label: m.library.entities.character })
-                    "
-                    required
-                  />
-                </FieldContent>
-              </Field>
-              <Field>
-                <FieldLabel>{{ m.library.fields.originalName }}</FieldLabel>
-                <FieldContent>
-                  <Input
-                    v-model="formData.originalName"
-                    :placeholder="m.library.forms.originalNamePlaceholder"
-                  />
-                </FieldContent>
-              </Field>
               <Field>
                 <FieldLabel>{{ m.library.fields.sortName }}</FieldLabel>
                 <FieldContent>
@@ -360,84 +281,15 @@ function handleCancel() {
                   </FieldContent>
                 </Field>
               </div>
-              <div class="grid grid-cols-2 gap-4">
-                <Field>
-                  <FieldLabel>{{ m.library.fields.height }}</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      v-model="formData.height"
-                      type="number"
-                      min="0"
-                      placeholder="cm"
-                    />
-                  </FieldContent>
-                </Field>
-                <Field>
-                  <FieldLabel>{{ m.library.fields.weight }}</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      v-model="formData.weight"
-                      type="number"
-                      min="0"
-                      placeholder="kg"
-                    />
-                  </FieldContent>
-                </Field>
-              </div>
-              <div class="grid grid-cols-4 gap-4">
-                <Field>
-                  <FieldLabel>B</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      v-model="formData.bust"
-                      type="number"
-                      min="0"
-                      placeholder="cm"
-                    />
-                  </FieldContent>
-                </Field>
-                <Field>
-                  <FieldLabel>W</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      v-model="formData.waist"
-                      type="number"
-                      min="0"
-                      placeholder="cm"
-                    />
-                  </FieldContent>
-                </Field>
-                <Field>
-                  <FieldLabel>H</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      v-model="formData.hips"
-                      type="number"
-                      min="0"
-                      placeholder="cm"
-                    />
-                  </FieldContent>
-                </Field>
-                <Field>
-                  <FieldLabel>{{ m.library.fields.cup }}</FieldLabel>
-                  <FieldContent>
-                    <Select v-model="cupModel">
-                      <SelectTrigger class="w-full">
-                        <SelectValue :placeholder="m.library.fields.cup" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem
-                          v-for="opt in CUP_SIZE_OPTIONS"
-                          :key="opt.value"
-                          :value="opt.value"
-                        >
-                          {{ opt.label }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FieldContent>
-                </Field>
-              </div>
+              <Field>
+                <FieldLabel>{{ m.library.fields.addedDate }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="formData.createdAt"
+                    type="date"
+                  />
+                </FieldContent>
+              </Field>
             </FieldGroup>
           </DialogBody>
           <DialogFooter>

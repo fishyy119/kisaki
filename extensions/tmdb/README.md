@@ -12,6 +12,10 @@ TMDB has no character entity, so this provider contributes no characters and no 
 person is credited in an entry, never which character they voice there. Pair it with a character-capable
 provider in a mixed scraper profile to get both.
 
+The info slot reports TMDB's alternative titles as entry aliases, so a show found by its romanization or a
+regional release name matches in search. TMDB titles a show rather than a season, so a season or episode-group
+entry takes the show's other titles, exactly as it already takes the show's original name.
+
 ## Entry identity
 
 An anime entry is one flat episode list, while TMDB models a show as a series with seasons plus any number of

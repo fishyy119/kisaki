@@ -54,6 +54,7 @@ const GAME_PROJECTION: MediaFeedProjection = {
   coreFields: {
     name: 'name',
     original_name: 'originalName',
+    aliases: 'aliases',
     description: 'description',
     release_date: 'releaseDate'
   },
@@ -88,6 +89,7 @@ const ANIME_PROJECTION: MediaFeedProjection = {
   coreFields: {
     name: 'name',
     original_name: 'originalName',
+    aliases: 'aliases',
     description: 'description',
     release_date: 'releaseDate',
     format: 'format',

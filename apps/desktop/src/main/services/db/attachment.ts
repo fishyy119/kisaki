@@ -15,9 +15,9 @@ import { SQLiteTable, getTableConfig, type AnySQLiteColumn } from 'drizzle-orm/s
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { nanoid } from 'nanoid'
 import { fileTypeFromBuffer } from 'file-type'
-import { cp, mkdir, open, rm, stat, writeFile } from 'node:fs/promises'
+import { cp, mkdir, open, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { movePath, pathExists } from '@main/utils/fs'
-import { createReadStream, createWriteStream, type Stats } from 'node:fs'
+import { createReadStream, createWriteStream, type Dirent, type Stats } from 'node:fs'
 import path from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { createLogger } from '@main/log'
@@ -374,6 +374,38 @@ export class AttachmentStore {
         log.warn('Failed to cleanup row dir.', error, { fileDir: fileDir })
       }
     })
+  }
+
+  /**
+   * Drops storage directories of tables the schema no longer has.
+   *
+   * The layout is keyed by table name, so a removed table leaves a directory
+   * that no row, cleanup, or path lookup can ever reach again. Runs once at
+   * startup; unreadable roots are logged rather than raised, since attachments
+   * are user data the app must open regardless.
+   */
+  async reconcileStorage(): Promise<void> {
+    let entries: Dirent[]
+    try {
+      entries = await readdir(this.storageDir, { withFileTypes: true })
+    } catch (error) {
+      log.warn('Failed to read attachment storage root.', error, { storageDir: this.storageDir })
+      return
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || STORAGE_TABLE_NAMES.has(entry.name)) continue
+
+      const tableDir = path.join(this.storageDir, entry.name)
+      try {
+        await rm(tableDir, { recursive: true, force: true })
+        log.info('Dropped attachment storage of a removed table.', { tableDir: tableDir })
+      } catch (error) {
+        log.warn('Failed to drop attachment storage of a removed table.', error, {
+          tableDir: tableDir
+        })
+      }
+    }
   }
 
   /**

@@ -1,7 +1,8 @@
 <!--
-  PersonBasicFormDialog
-  Dialog for editing person basic information.
-  Uses two-layer pattern: outer handles data fetching, inner handles form state.
+  PersonInfoFormDialog
+  Dialog for editing a person's details: sort name, aliases, gender, life dates,
+  and the date it entered the library. Name, original name, and score are hero
+  fields with their own editors.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
@@ -9,6 +10,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { persons, type PartialDate } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
+import { formatDateInput } from '@renderer/utils/datetime'
 import {
   Dialog,
   DialogContent,
@@ -50,6 +52,15 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
+interface FormData {
+  sortName: string
+  aliases: string
+  gender: '' | 'male' | 'female' | 'other'
+  birthDate: PartialDate | null
+  deathDate: PartialDate | null
+  createdAt: string
+}
+
 const NONE_VALUE = '#none'
 const GENDER_OPTIONS = computed(() => [
   { value: NONE_VALUE, label: m.value.common.none },
@@ -59,24 +70,13 @@ const GENDER_OPTIONS = computed(() => [
 ])
 
 // Form state
-interface FormData {
-  name: string
-  originalName: string
-  sortName: string
-  aliases: string
-  gender: '' | 'male' | 'female' | 'other'
-  birthDate: PartialDate | null
-  deathDate: PartialDate | null
-}
-
 const formData = ref<FormData>({
-  name: '',
-  originalName: '',
   sortName: '',
   aliases: '',
   gender: '',
   birthDate: null,
-  deathDate: null
+  deathDate: null,
+  createdAt: ''
 })
 const isSaving = ref(false)
 const birthDateInput = ref<PartialDateInputExpose | null>(null)
@@ -94,13 +94,14 @@ const { data: person, isLoading } = useAsyncData(
 // Initialize form state when data loads
 watch(person, (personData) => {
   if (personData) {
-    formData.value.name = personData.name || ''
-    formData.value.originalName = personData.originalName || ''
-    formData.value.sortName = personData.sortName || ''
-    formData.value.aliases = (personData.aliases ?? []).join(', ')
-    formData.value.gender = personData.gender || ''
-    formData.value.birthDate = personData.birthDate ?? null
-    formData.value.deathDate = personData.deathDate ?? null
+    formData.value = {
+      sortName: personData.sortName || '',
+      aliases: (personData.aliases ?? []).join(', '),
+      gender: personData.gender || '',
+      birthDate: personData.birthDate ?? null,
+      deathDate: personData.deathDate ?? null,
+      createdAt: formatDateInput(personData.createdAt)
+    }
   }
 })
 
@@ -138,13 +139,12 @@ async function handleSubmit() {
     await db
       .update(persons)
       .set({
-        name: formData.value.name || 'unknown person',
-        originalName: formData.value.originalName || null,
         sortName: formData.value.sortName || null,
         aliases: parseAliasesInput(formData.value.aliases),
         gender: formData.value.gender || null,
         birthDate,
-        deathDate
+        deathDate,
+        createdAt: new Date(formData.value.createdAt)
       })
       .where(eq(persons.id, props.personId))
 
@@ -179,32 +179,11 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>{{ m.library.forms.editBasicInfo }}</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editDetails }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
-              <Field>
-                <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
-                <FieldContent>
-                  <Input
-                    v-model="formData.name"
-                    :placeholder="
-                      m.library.forms.namePlaceholder({ label: m.library.entities.person })
-                    "
-                    required
-                  />
-                </FieldContent>
-              </Field>
-              <Field>
-                <FieldLabel>{{ m.library.fields.originalName }}</FieldLabel>
-                <FieldContent>
-                  <Input
-                    v-model="formData.originalName"
-                    :placeholder="m.library.forms.originalNamePlaceholder"
-                  />
-                </FieldContent>
-              </Field>
               <Field>
                 <FieldLabel>{{ m.library.fields.sortName }}</FieldLabel>
                 <FieldContent>
@@ -227,7 +206,7 @@ function handleCancel() {
                 <FieldLabel>{{ m.library.fields.gender }}</FieldLabel>
                 <FieldContent>
                   <Select v-model="genderModel">
-                    <SelectTrigger>
+                    <SelectTrigger class="w-full">
                       <SelectValue :placeholder="m.library.forms.selectGender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -264,6 +243,15 @@ function handleCancel() {
                   </FieldContent>
                 </Field>
               </div>
+              <Field>
+                <FieldLabel>{{ m.library.fields.addedDate }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="formData.createdAt"
+                    type="date"
+                  />
+                </FieldContent>
+              </Field>
             </FieldGroup>
           </DialogBody>
           <DialogFooter>

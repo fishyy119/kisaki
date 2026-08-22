@@ -1,6 +1,6 @@
 <!--
   GameInfoFormDialog
-  Dialog for editing game info (sort name, release date, created date).
+  Dialog for editing game info (sort name, aliases, release date, created date).
 -->
 <script setup lang="ts">
 import { ref, watch } from 'vue'
@@ -28,6 +28,7 @@ import {
   type PartialDateInputExpose
 } from '@renderer/components/ui/partial-date-input'
 import { createLogger } from '@renderer/core/log'
+import { parseAliasesInput } from '@renderer/utils/format'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -45,12 +46,14 @@ const open = defineModel<boolean>('open', { required: true })
 // Form state
 interface FormData {
   sortName: string
+  aliases: string
   releaseDate: PartialDate | null
   createdAt: string
 }
 
 const formData = ref<FormData>({
   sortName: '',
+  aliases: '',
   releaseDate: null,
   createdAt: ''
 })
@@ -70,6 +73,7 @@ const { data: game, isLoading } = useAsyncData(
 watch(game, (gameData) => {
   if (gameData) {
     formData.value.sortName = gameData.sortName || ''
+    formData.value.aliases = (gameData.aliases ?? []).join(', ')
     formData.value.releaseDate = gameData.releaseDate ?? null
     formData.value.createdAt = formatDateInput(gameData.createdAt)
   }
@@ -91,6 +95,7 @@ async function handleSubmit() {
       .update(games)
       .set({
         sortName: formData.value.sortName || null,
+        aliases: parseAliasesInput(formData.value.aliases),
         releaseDate,
         createdAt: new Date(formData.value.createdAt)
       })
@@ -138,6 +143,16 @@ function handleCancel() {
                   <Input
                     v-model="formData.sortName"
                     :placeholder="m.library.forms.sortNamePlaceholder"
+                  />
+                </FieldContent>
+              </Field>
+
+              <Field>
+                <FieldLabel>{{ m.library.fields.aliases }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="formData.aliases"
+                    :placeholder="m.library.forms.aliasesPlaceholder"
                   />
                 </FieldContent>
               </Field>

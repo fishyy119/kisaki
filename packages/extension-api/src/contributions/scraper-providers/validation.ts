@@ -88,6 +88,7 @@ const CHARACTER_SEARCH_RESULT_KEYS = new Set<string>([
 const GAME_INFO_KEYS = new Set<string>([
   'name',
   'originalName',
+  'aliases',
   'releaseDate',
   'description',
   'externalSites'
@@ -95,6 +96,7 @@ const GAME_INFO_KEYS = new Set<string>([
 const ANIME_INFO_KEYS = new Set<string>([
   'name',
   'originalName',
+  'aliases',
   'releaseDate',
   'description',
   'format',
@@ -496,6 +498,7 @@ function validateAnimeInfo(value: unknown, path: string): ValidationIssue[] {
   return [
     ...validateUnknownKeys(info, ANIME_INFO_KEYS, path),
     ...validateNamedInfoFields(info, path),
+    ...validateOptionalStringArray(info.aliases, `${path}.aliases`, 'aliases must be an array.'),
     ...validateOptionalPartialDate(info.releaseDate, `${path}.releaseDate`),
     ...validateOptionalEnumString(
       info.format,
@@ -579,6 +582,7 @@ function validateCharacterInfo(value: unknown, path: string): ValidationIssue[] 
 function validateGameInfoFields(info: Record<string, unknown>, path: string): ValidationIssue[] {
   return [
     ...validateNamedInfoFields(info, path),
+    ...validateOptionalStringArray(info.aliases, `${path}.aliases`, 'aliases must be an array.'),
     ...validateOptionalPartialDate(info.releaseDate, `${path}.releaseDate`)
   ]
 }

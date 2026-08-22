@@ -9,7 +9,7 @@ import type { ExternalSite } from '@shared/db'
 import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import type { Tag } from '@shared/metadata'
-import { normalizeExternalSites, normalizeTags } from './normalization'
+import { normalizeAliases, normalizeExternalSites, normalizeTags } from './normalization'
 
 export function mergeExternalIds(
   current: ExternalId[],
@@ -32,6 +32,20 @@ export function mergeExternalSites(
 
   const currentKeys = new Set(current.map((site) => normalizeKeyText(site.url)))
   const appended = normalizedIncoming.filter((site) => !currentKeys.has(normalizeKeyText(site.url)))
+  return appended.length > 0 ? [...current, ...appended] : undefined
+}
+
+export function mergeAliases(
+  current: string[],
+  incoming: string[],
+  mode: IngestUpdatePolicy['collectionUpdate']
+): string[] | undefined {
+  const normalizedIncoming = normalizeAliases(incoming) ?? []
+  if (mode === 'replace') return normalizedIncoming
+  if (normalizedIncoming.length === 0) return undefined
+
+  const currentKeys = new Set(current.map((alias) => normalizeKeyText(alias)))
+  const appended = normalizedIncoming.filter((alias) => !currentKeys.has(normalizeKeyText(alias)))
   return appended.length > 0 ? [...current, ...appended] : undefined
 }
 
@@ -62,6 +76,10 @@ export function areExternalSitesEqual(current: ExternalSite[], next: ExternalSit
     normalizeExternalSites(current) ?? [],
     normalizeExternalSites(next) ?? []
   )
+}
+
+export function areAliasesEqual(current: string[], next: string[]): boolean {
+  return areScalarValuesEqual(normalizeAliases(current) ?? [], normalizeAliases(next) ?? [])
 }
 
 export function areTagsEqual(current: Tag[], next: Tag[]): boolean {

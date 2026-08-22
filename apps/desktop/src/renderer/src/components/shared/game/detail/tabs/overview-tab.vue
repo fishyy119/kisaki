@@ -36,7 +36,6 @@ import {
   GAME_COMPANY_ROLE_VALUES,
   GAME_PERSON_ROLE_VALUES
 } from '@shared/db'
-
 // =============================================================================
 // Constants
 // =============================================================================
@@ -85,6 +84,7 @@ const openTagId = ref<string | null>(null)
 // Computed
 // =============================================================================
 
+const aliases = computed(() => game.value?.aliases ?? [])
 const hasExternalSites = computed(
   () => game.value?.externalSites && game.value.externalSites.length > 0
 )
@@ -232,6 +232,21 @@ const tagDialogOpen = computed({
           @edit="openEditDialog('details')"
         >
           <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
+            <dt class="text-muted-foreground">{{ m.library.fields.aliases }}</dt>
+            <!-- One name per line: a name is atomic and must not wrap mid-word. -->
+            <dd
+              v-if="aliases.length > 0"
+              class="min-w-0 space-y-0.5"
+            >
+              <div
+                v-for="alias in aliases"
+                :key="alias"
+                class="break-words"
+              >
+                {{ alias }}
+              </div>
+            </dd>
+            <dd v-else>{{ m.common.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
             <dd>{{ game.releaseDate ? f.date(game.releaseDate) : m.common.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>

@@ -174,6 +174,7 @@ export class CharacterIngestPersistHandler {
       id: characterId,
       name: core.name,
       originalName: core.originalName,
+      aliases: core.aliases,
       birthDate: core.birthDate,
       gender: core.gender,
       age: core.age,

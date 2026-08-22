@@ -8,6 +8,12 @@
  * - Uses SQLite FTS5 with content table mode (no data duplication)
  * - SQLite triggers automatically sync data changes
  * - unicode61 tokenizer for CJK character support
+ *
+ * Search indexes are derived state, not schema: `FTS_TABLES` below is the only
+ * truth about which indexes exist and which columns they carry, and `init`
+ * makes the database match it — a table whose columns differ is rebuilt from
+ * its source, and an index no entity type declares is dropped. Migrations
+ * therefore never touch FTS objects, and any drift resolves on the next start.
  */
 
 import type Database from 'better-sqlite3'
@@ -39,12 +45,12 @@ const FTS_TABLES: Record<FtsEntityType, FtsTableConfig> = {
   game: {
     tableName: 'games',
     ftsTableName: 'games_fts',
-    columns: ['name', 'original_name', 'sort_name', 'description']
+    columns: ['name', 'original_name', 'sort_name', 'aliases', 'description']
   },
   anime: {
     tableName: 'animes',
     ftsTableName: 'animes_fts',
-    columns: ['name', 'original_name', 'sort_name', 'description']
+    columns: ['name', 'original_name', 'sort_name', 'aliases', 'description']
   },
   character: {
     tableName: 'characters',
@@ -78,7 +84,7 @@ export class FtsStore {
    */
   init(): void {
     for (const [entityType, config] of Object.entries(FTS_TABLES)) {
-      const wasCreated = this.createFtsTable(config)
+      const wasCreated = this.reconcileFtsTable(config)
       this.createTriggers(config)
 
       // Populate FTS with existing data if table was just created
@@ -88,6 +94,7 @@ export class FtsStore {
         log.info('Populated FTS index.', { entityType: entityType })
       }
     }
+    this.dropUndeclaredFtsTables()
     log.info('FTS5 tables initialized')
   }
 
@@ -151,21 +158,33 @@ export class FtsStore {
   // ==================== Private Methods ====================
 
   /**
-   * Create FTS table if it doesn't exist
-   * @returns true if table was newly created, false if it already existed
+   * Bring one FTS table in line with its declared columns.
+   *
+   * An index whose columns no longer match the declaration is dropped and
+   * recreated rather than altered: FTS5 cannot add a column, and the index
+   * holds no truth of its own that a rebuild from the source could lose.
+   * @returns true when the table was created and still needs its rows.
    */
-  private createFtsTable(config: FtsTableConfig): boolean {
+  private reconcileFtsTable(config: FtsTableConfig): boolean {
+    const { ftsTableName, columns } = config
+    const currentColumns = this.readTableColumns(ftsTableName)
+
+    if (currentColumns.length > 0) {
+      if (currentColumns.join(', ') === columns.join(', ')) {
+        return false
+      }
+
+      this.sqlite.exec(`DROP TABLE ${ftsTableName}`)
+      log.info('Dropped FTS index with outdated columns.', { ftsTableName: ftsTableName })
+    }
+
+    this.createFtsTable(config)
+    return true
+  }
+
+  private createFtsTable(config: FtsTableConfig): void {
     const { tableName, ftsTableName, columns } = config
     const columnList = columns.join(', ')
-
-    // Check if table already exists
-    const exists = this.sqlite
-      .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?")
-      .get(ftsTableName)
-
-    if (exists) {
-      return false
-    }
 
     // Create FTS5 virtual table with content sync
     // - content: points to source table for contentless FTS
@@ -173,15 +192,46 @@ export class FtsStore {
     // - tokenize: unicode61 handles CJK characters well
     // - remove_diacritics: normalize accented characters
     this.sqlite.exec(`
-      CREATE VIRTUAL TABLE IF NOT EXISTS ${ftsTableName} USING fts5(
+      CREATE VIRTUAL TABLE ${ftsTableName} USING fts5(
         ${columnList},
         content='${tableName}',
         content_rowid='rowid',
         tokenize='unicode61 remove_diacritics 2'
       )
     `)
+  }
 
-    return true
+  /** Column names of a table, or an empty list when it does not exist. */
+  private readTableColumns(tableName: string): string[] {
+    const rows = this.sqlite
+      .prepare('SELECT name FROM pragma_table_info(?)')
+      .all(tableName) as Array<{ name: string }>
+
+    return rows.map((row) => row.name)
+  }
+
+  /**
+   * Drops search indexes no entity type declares any more.
+   *
+   * Their source tables are long gone with the entity types they served, so
+   * the indexes would otherwise sit in the database forever: nothing writes to
+   * them and no rebuild reaches them. FTS5 shadow tables are named after their
+   * index and disappear with it.
+   */
+  private dropUndeclaredFtsTables(): void {
+    const declared = new Set(Object.values(FTS_TABLES).map((config) => config.ftsTableName))
+    const rows = this.sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%\\_fts' ESCAPE '\\'"
+      )
+      .all() as Array<{ name: string }>
+
+    for (const { name } of rows) {
+      if (declared.has(name)) continue
+
+      this.sqlite.exec(`DROP TABLE ${name}`)
+      log.info('Dropped undeclared FTS index.', { ftsTableName: name })
+    }
   }
 
   /**

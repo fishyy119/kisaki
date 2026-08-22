@@ -7,6 +7,7 @@ export const characterEntityProjection = {
     name: 'name',
     original_name: 'originalName',
     sort_name: 'sortName',
+    aliases: 'aliases',
     description: 'description',
     is_favorite: 'isFavorite',
     is_nsfw: 'isNsfw',

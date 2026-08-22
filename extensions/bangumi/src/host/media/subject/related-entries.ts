@@ -1,12 +1,22 @@
-import type {
-  LibraryMediaRelationType,
-  LibraryMediaType,
-  ScrapedRelatedEntryFact
+import {
+  LIBRARY_MEDIA_RELATION_TYPE_RULES,
+  type LibraryMediaRelationType,
+  type LibraryMediaType,
+  type ScrapedRelatedEntryFact
 } from '@kisaki3/extension-sdk'
 import type { BangumiSubjectRelation } from '../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 
-/** Bangumi relation labels are upstream vocabulary, not i18n keys. */
+/**
+ * Bangumi relation labels are upstream vocabulary, not i18n keys.
+ *
+ * Labels missing here are deliberately unmapped rather than folded into
+ * `other`: "相同世界观" is an n-ary group fact whose container is a collection,
+ * and "角色出演" is already encoded by two entries linking the same character.
+ * A scrape that emitted `other` for them would assert a narrative derivation
+ * the source never stated, and no later scrape could tell it apart from a real
+ * one.
+ */
 const RELATION_TYPE_BY_LABEL: Record<string, LibraryMediaRelationType> = {
   续集: 'sequel',
   前传: 'prequel',
@@ -26,17 +36,12 @@ const MEDIA_TYPE_BY_SUBJECT_TYPE: Partial<Record<number, LibraryMediaType>> = {
   4: 'game'
 }
 
-const CROSS_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
-  'adaptation',
-  'sourceMaterial',
-  'other'
-]
-
 /**
  * Related media entries of a subject, referenced by Bangumi identity only.
- * Non-media subjects (books, music, real) are dropped; vocabulary outside the
- * cross-type provenance set folds to `other` when the target crosses media
- * types.
+ *
+ * Non-media subjects (books, music, real) are dropped, as is any relation this
+ * mapping cannot state in the library vocabulary: an unmapped label, or a word
+ * the endpoint pair does not allow.
  */
 export async function buildSubjectRelatedEntries(
   scopeMediaType: LibraryMediaType,
@@ -48,9 +53,10 @@ export async function buildSubjectRelatedEntries(
     const mediaType = MEDIA_TYPE_BY_SUBJECT_TYPE[relation.type]
     if (!mediaType) return []
 
-    let type = RELATION_TYPE_BY_LABEL[relation.relation?.trim() ?? ''] ?? 'other'
-    if (mediaType !== scopeMediaType && !CROSS_TYPE_RELATION_TYPES.includes(type)) {
-      type = 'other'
+    const type = RELATION_TYPE_BY_LABEL[relation.relation?.trim() ?? '']
+    if (!type) return []
+    if (!LIBRARY_MEDIA_RELATION_TYPE_RULES[`${scopeMediaType}-${mediaType}`].includes(type)) {
+      return []
     }
 
     return [

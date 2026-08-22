@@ -83,7 +83,6 @@ function mergeAnimeOwnedData(db: DbContext, targetId: string, sourceId: string, 
   changed += mergeAnimeSessions(db, targetId, sourceId, now)
   changed += mergeAnimeExtras(db, targetId, sourceId, now)
   changed += mergeAnimeNotes(db, targetId, sourceId, now)
-  changed += mergeMediaRelations(db, 'anime', targetId, sourceId, now)
   return changed
 }
 
