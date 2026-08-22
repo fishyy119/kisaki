@@ -16,12 +16,10 @@ import {
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
 import { StateView } from '@renderer/components/ui/state-view'
-import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { GameDetailDialog } from '@renderer/components/shared/game'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { MediaType } from '@shared/common'
 import EntityCard from '../card'
+import { EntityDetailDialog, type EntityDetailTarget } from '../detail'
 import { EntityLinksFormDialog, type LinkViewKey } from '../links'
 import { resolveWorksBlocks, type WorksBlock } from './blocks'
 
@@ -36,7 +34,7 @@ const props = defineProps<Props>()
 const { m } = useI18n()
 
 const editView = ref<LinkViewKey | null>(null)
-const openTarget = ref<{ mediaType: MediaType; id: string } | null>(null)
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 const resolvedBlocks = computed(() => resolveWorksBlocks(props.blocks))
 
@@ -44,13 +42,6 @@ const editDialogOpen = computed({
   get: () => editView.value !== null,
   set: (value) => {
     if (!value) editView.value = null
-  }
-})
-
-const detailDialogOpen = computed({
-  get: () => openTarget.value !== null,
-  set: (value) => {
-    if (!value) openTarget.value = null
   }
 })
 </script>
@@ -122,7 +113,7 @@ const detailDialogOpen = computed({
           align="left"
           size="sm"
           :badge-label="entry.roleLabel"
-          @click="openTarget = { mediaType: entry.mediaType, id: entry.entity.id }"
+          @click="openEntity = { entityType: entry.mediaType, entityId: entry.entity.id }"
         />
       </div>
     </div>
@@ -136,17 +127,6 @@ const detailDialogOpen = computed({
     :entity-id="props.entityId"
   />
 
-  <!-- Detail Dialogs -->
-  <template v-if="openTarget">
-    <GameDetailDialog
-      v-if="openTarget.mediaType === 'game'"
-      v-model:open="detailDialogOpen"
-      :game-id="openTarget.id"
-    />
-    <AnimeDetailDialog
-      v-else
-      v-model:open="detailDialogOpen"
-      :anime-id="openTarget.id"
-    />
-  </template>
+  <!-- Detail Dialog -->
+  <EntityDetailDialog v-model:target="openEntity" />
 </template>

@@ -13,9 +13,7 @@ import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { EntitySearcherSelection } from '@renderer/components/shared/entity'
-import { AnimeSearcher } from '@renderer/components/shared/anime'
-import { GameSearcher } from '@renderer/components/shared/game'
+import { EntitySearcher, type EntitySearcherSelection } from '@renderer/components/shared/entity'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Form } from '@renderer/components/ui/form'
@@ -216,15 +214,17 @@ watch(
             </div>
           </div>
 
-          <GameSearcher
+          <EntitySearcher
             v-if="props.problem.mediaType === 'game'"
+            entity-type="game"
             :default-profile-id="defaultProfileId"
             :default-search-query="defaultSearchQuery"
             :is-submitting="isSubmitting"
             @selection-change="selection = { mediaType: 'game', selection: $event }"
           />
-          <AnimeSearcher
+          <EntitySearcher
             v-else
+            entity-type="anime"
             :default-profile-id="defaultProfileId"
             :default-search-query="defaultSearchQuery"
             :is-submitting="isSubmitting"

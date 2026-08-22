@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
 import { eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
 import type { ExternalId } from '@shared/identity'
@@ -44,15 +44,15 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { EntitySearcherSelection } from '../searcher'
-import { ENTITY_TABLES, type TableEntityType } from '../entity-tables'
+import { EntitySearcher, type EntitySearcherSelection } from '../searcher'
+import type { ContentEntityType } from '@shared/common'
 import { IDENTITY_STORES } from '../identities/identity-tables'
 import { METADATA_UPDATE_SPECS } from './update-specs'
 
 const { m } = useI18n()
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
 }
 
@@ -61,7 +61,7 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 const spec = computed(() => METADATA_UPDATE_SPECS[props.entityType])
-const table = computed(() => ENTITY_TABLES[props.entityType])
+const table = computed(() => ENTITY_TABLES[props.entityType].table)
 const surfaceLabels = computed(() => spec.value.surfaceLabels(m.value))
 
 const isSubmitting = ref(false)
@@ -217,8 +217,8 @@ async function handleSubmit() {
 
         <Form @submit="handleSubmit">
           <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto">
-            <component
-              :is="spec.searcher"
+            <EntitySearcher
+              :entity-type="props.entityType"
               :default-search-query="defaultSearchQuery"
               :is-submitting="isSubmitting"
               @selection-change="handleSelectionChange"

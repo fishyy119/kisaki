@@ -9,11 +9,13 @@ import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
-import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { EntityCard } from '@renderer/components/shared/entity'
-import { GameDetailDialog } from '@renderer/components/shared/game'
+import {
+  EntityCard,
+  EntityDetailDialog,
+  type EntityDetailTarget
+} from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { MediaRelationEntry, MediaRelationTarget } from '@renderer/core/db/media-relations'
+import type { MediaRelationEntry } from '@renderer/core/db/media-relations'
 import type { MediaType } from '@shared/common'
 import { MEDIA_RELATION_TYPES } from '@shared/db'
 import MediaRelationsFormDialog from './relations-form-dialog/relations-form-dialog.vue'
@@ -30,8 +32,7 @@ const props = defineProps<Props>()
 const { m } = useI18n()
 
 const editDialogOpen = ref(false)
-/** The entry whose detail dialog is open, keyed by media type as well as id. */
-const openTarget = ref<{ mediaType: MediaRelationTarget['mediaType']; id: string } | null>(null)
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 const groups = computed(() => {
   const byType = new Map<string, MediaRelationEntry[]>()
@@ -45,13 +46,6 @@ const groups = computed(() => {
     label: m.value.library.mediaRelation[type],
     entries: byType.get(type)!
   }))
-})
-
-const detailDialogOpen = computed({
-  get: () => openTarget.value !== null,
-  set: (value) => {
-    if (!value) openTarget.value = null
-  }
 })
 </script>
 
@@ -111,7 +105,12 @@ const detailDialogOpen = computed({
             :entity="entry.target.entity"
             align="left"
             size="sm"
-            @click="openTarget = { mediaType: entry.target.mediaType, id: entry.target.entity.id }"
+            @click="
+              openEntity = {
+                entityType: entry.target.mediaType,
+                entityId: entry.target.entity.id
+              }
+            "
           />
         </div>
       </div>
@@ -126,17 +125,6 @@ const detailDialogOpen = computed({
     :entity-id="props.entityId"
   />
 
-  <!-- Detail Dialogs -->
-  <template v-if="openTarget">
-    <GameDetailDialog
-      v-if="openTarget.mediaType === 'game'"
-      v-model:open="detailDialogOpen"
-      :game-id="openTarget.id"
-    />
-    <AnimeDetailDialog
-      v-else
-      v-model:open="detailDialogOpen"
-      :anime-id="openTarget.id"
-    />
-  </template>
+  <!-- Detail Dialog -->
+  <EntityDetailDialog v-model:target="openEntity" />
 </template>

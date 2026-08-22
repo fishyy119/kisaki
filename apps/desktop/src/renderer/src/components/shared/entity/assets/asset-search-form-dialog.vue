@@ -22,13 +22,13 @@ import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { ScraperProviderSelect } from '@renderer/components/shared/scraper'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { ENTITY_ASSET_SPECS } from './asset-specs'
 
 const { m } = useI18n()
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
   slotType: string
 }

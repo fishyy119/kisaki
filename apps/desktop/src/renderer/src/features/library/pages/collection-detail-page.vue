@@ -27,7 +27,7 @@ import {
   useEntityDetailRoute
 } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { formatLibraryContext } from '@renderer/utils/library-context'
@@ -61,11 +61,8 @@ const {
 } = useCollectionRouteProvider()
 
 useAmbientLight(() =>
-  collection.value?.coverFile
-    ? getAttachmentUrl('collections', collection.value.id, collection.value.coverFile, {
-        width: 100,
-        height: 100
-      })
+  collection.value
+    ? getEntityImageUrl('collection', collection.value, 'cover', { width: 100, height: 100 })
     : null
 )
 

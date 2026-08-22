@@ -23,7 +23,7 @@ import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { IDENTITY_STORES } from './identity-tables'
 import EntityExternalIdItemFormDialog from './external-id-item-form-dialog.vue'
 
@@ -32,7 +32,7 @@ const { m } = useI18n()
 const log = createLogger('Library')
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
 }
 

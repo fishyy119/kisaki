@@ -40,7 +40,7 @@ const { m } = useI18n()
 // =============================================================================
 
 const props = defineProps<{
-  animeId: string
+  entityId: string
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -49,7 +49,7 @@ const open = defineModel<boolean>('open', { default: false })
 // Anime Context (Provider)
 // =============================================================================
 
-const animeId = computed(() => props.animeId)
+const animeId = computed(() => props.entityId)
 const { anime, isLoading, error, spoilersRevealed } = useAnimeDialogProvider(animeId)
 const state = useRenderState(isLoading, error, anime)
 
@@ -57,7 +57,7 @@ const spoilerConfirmOpen = ref(false)
 
 useDbChanges(({ operation, table, id }) => {
   if (operation !== 'deleted') return
-  if (table === 'animes' && id === props.animeId) {
+  if (table === 'animes' && id === props.entityId) {
     open.value = false
   }
 })

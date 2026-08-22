@@ -313,7 +313,7 @@ copy-paste.
 
 - Per-entity differences (tables, key columns, filter/search/sort fields, link tables) belong in
   specs and registries keyed by the entity-type union: `getFilterQuerySpec`, `getSearchQuerySpec`,
-  `getFilterUiSpec`, `ENTITY_TABLES`, `COLLECTION_LINKS`.
+  `getFilterUiSpec`, `ENTITY_TABLES`, `COLLECTION_LINKS`, `TAG_LINKS`.
 - Consumers resolve behavior through the registry and stay entity-generic. Do not duplicate
   per-entity `switch` statements across composables, stores, and dialogs; one registry plus one
   shared executor (for example `queryEntities` / `countEntities`) replaces them.
@@ -323,6 +323,30 @@ copy-paste.
 - Adding a media type should cost roughly: +1 table, +1 query spec, +1 UI spec, +1 entry per
   registry. If a change fans out into many scattered call sites, the consumer layer is
   under-abstracted; fix the registry or executor, not the call sites.
+
+### Keying, Correlation, and Exhaustiveness
+
+- Registries are keyed **by** the entity-type union, never the reverse: declare
+  `Record<AllEntityType, X>` (or a mapped type over the union) so the compiler demands one entry per
+  type. Do not derive the union from a registry with `keyof typeof` — a forgotten entry then
+  silently shrinks the union instead of failing. Use `as const satisfies Record<Union, Shape>` when
+  entries must keep precise value types (concrete tables, literal channel names) and still be
+  checked for coverage.
+- Every per-entity fact has exactly one holder. Before adding a column, table, or image field to a
+  new place, check whether an existing registry already owns it and read from there.
+- Keep the type and its payload correlated by construction: a generic parameter plus `EntityRowMap[T]`
+  ties `entityType` to `entity`, so no caller can pair one entity's id with another's row.
+- `as` on an entity payload is allowed only inside the single generic mechanism that owns that
+  correlation, with a comment saying why (`queryEntities`, `queryTaggedEntities`, `EntityCard`'s
+  target pair). Call sites never cast: a cast at a call site means the mechanism above it is missing.
+- Template dispatch narrows a discriminated union and ends with `assertNever`, so a new entity type
+  fails to compile instead of rendering nothing. A bare `v-else` tail in a dispatch chain is a
+  defect — it renders some other entity's component for the unhandled type.
+- Do not restate coverage with sentinel data (`satisfies Record<MediaType, true>`) or comments; make
+  the data flow as a union so the compiler states it.
+- None of this constrains boundary parsing of untrusted input, which stays total by design (see
+  Boundary Parsing above): a `default` that degrades unknown input to a documented safe value is a
+  contract, not a missing branch.
 
 ### Abstract Precisely, Not Speculatively
 

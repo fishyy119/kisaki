@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { useAsyncData } from '@renderer/composables'
 import {
   Dialog,
@@ -24,14 +24,14 @@ import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { ENTITY_TABLES, type TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 
 const { m } = useI18n()
 
 const log = createLogger('Library')
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
 }
 
@@ -39,7 +39,7 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const table = computed(() => ENTITY_TABLES[props.entityType])
+const table = computed(() => ENTITY_TABLES[props.entityType].table)
 
 const name = ref('')
 const isSaving = ref(false)

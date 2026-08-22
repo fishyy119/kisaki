@@ -10,7 +10,7 @@
 import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { formatGameStatus, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
@@ -58,11 +58,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
     <div class="flex gap-4 mb-4">
       <!-- Cover -->
       <CoverImage
-        :src="
-          game.coverFile
-            ? getAttachmentUrl('games', game.id, game.coverFile, { width: 300, height: 400 })
-            : null
-        "
+        :src="getEntityImageUrl('game', game, 'cover', { width: 300, height: 400 })"
         :alt="game.name"
         :icon="getEntityIcon('game')"
         class="w-28 aspect-[3/4] rounded-lg shrink-0 border shadow-raised"

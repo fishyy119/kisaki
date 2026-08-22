@@ -1,14 +1,14 @@
 <!--
-  PersonSearcher
-  Reusable person search component.
-  Supports both search by name and direct ID identification.
+  EntitySearcher
+  Names one provider entry for an entity: search by name and pick a row, or type
+  a provider id directly. The search channel, the columns that tell candidates
+  apart and the lookup facts a row contributes come from the spec registry.
 -->
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends ContentEntityType">
 import type { HTMLAttributes } from 'vue'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
-import { ipcManager } from '@renderer/core/ipc'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
@@ -30,43 +30,55 @@ import {
   TableCell
 } from '@renderer/components/ui/table'
 import { ScraperProfileSelect, useSearchProviderSource } from '@renderer/components/shared/scraper'
-import type { EntitySearcherSelection } from '@renderer/components/shared/entity'
-import type { PersonSearchResult } from '@shared/scraper'
+import type { ContentEntityType } from '@shared/common'
+import type { EntitySearcherSelection } from './selection'
+import { SEARCHER_SPECS, type ScraperLookupMap, type SearchResultMap } from './specs'
 
 interface Props {
-  /** Default profile ID to use */
+  entityType: T
+  /** Profile preselected when the caller already knows one. */
   defaultProfileId?: string
-  /** Default search query */
   defaultSearchQuery?: string
-  /** Default person ID */
-  defaultPersonId?: string
-  /** Whether the component is in a loading/submitting state */
+  /** Whether the caller is submitting, which locks the id input. */
   isSubmitting?: boolean
-  /** Custom class name */
   class?: HTMLAttributes['class']
 }
 
 const props = withDefaults(defineProps<Props>(), {
   defaultSearchQuery: '',
-  defaultPersonId: '',
   isSubmitting: false
 })
 
-const { m, f } = useI18n()
-
 const emit = defineEmits<{
-  selectionChange: [selection: EntitySearcherSelection]
+  selectionChange: [selection: EntitySearcherSelection<ScraperLookupMap[T]>]
 }>()
 
-// Profile state - initialized via watch to maintain reactivity
-const selectedProfileId = ref('')
-const searchProviderSource = useSearchProviderSource(selectedProfileId, 'person')
+const { m, f } = useI18n()
 
-function resetSelectionState() {
+const spec = computed(() => SEARCHER_SPECS[props.entityType])
+const entityLabel = computed(() => m.value.library.entities[props.entityType])
+const columnWidths = computed(() => spec.value.columns.map((column) => column.width))
+
+const selectedProfileId = ref('')
+const searchProviderSource = useSearchProviderSource(selectedProfileId, () => props.entityType)
+
+const searchQuery = ref('')
+const isSearching = ref(false)
+/**
+ * Shallow: the picked row travels back to the main process inside the emitted
+ * lookup, and a reactive proxy cannot cross IPC. Rows are only ever replaced
+ * wholesale, so nothing here needs deep tracking.
+ */
+const searchResults = shallowRef<SearchResultMap[T][]>([])
+const hasSearched = ref(false)
+const entityId = ref('')
+const selectedResultId = ref<string | null>(null)
+
+function resetSelectionState(): void {
   searchResults.value = []
   hasSearched.value = false
   selectedResultId.value = null
-  personId.value = ''
+  entityId.value = ''
 }
 
 watch(
@@ -85,52 +97,30 @@ watch(selectedProfileId, (id, previousId) => {
   }
 })
 
-// Search state
-const searchQuery = ref('')
+// A different entity type searches other providers, so nothing carries over.
+watch(
+  () => props.entityType,
+  () => resetSelectionState()
+)
+
 watch(
   () => props.defaultSearchQuery,
   (defaultQuery) => {
-    if (defaultQuery !== undefined) {
-      searchQuery.value = defaultQuery
-    }
+    searchQuery.value = defaultQuery
   },
   { immediate: true }
 )
-const isSearching = ref(false)
-/**
- * Shallow: the picked row travels back to the main process inside the emitted
- * lookup, and a reactive proxy cannot cross IPC. Rows are only ever replaced
- * wholesale, so nothing here needs deep tracking.
- */
-const searchResults = shallowRef<PersonSearchResult[]>([])
-const hasSearched = ref(false)
-
-const RESULT_TABLE_COLUMNS = ['', '28%', '7rem', '7rem']
-
-// ID state
-const personId = ref('')
-watch(
-  () => props.defaultPersonId,
-  (defaultId) => {
-    if (defaultId !== undefined) {
-      personId.value = defaultId
-    }
-  },
-  { immediate: true }
-)
-const selectedResultId = ref<string | null>(null)
 
 const canSubmit = computed(
-  () => !!selectedProfileId.value && !!personId.value.trim() && !props.isSubmitting
+  () => !!selectedProfileId.value && !!entityId.value.trim() && !props.isSubmitting
 )
 
 watch(
-  [selectedProfileId, searchProviderSource, personId, searchResults, selectedResultId],
+  [selectedProfileId, searchProviderSource, entityId, searchResults, selectedResultId],
   () => {
-    const trimmedId = personId.value.trim()
-    const selectedResult = selectedResultId.value
-      ? searchResults.value.find((r) => r.id === selectedResultId.value)
-      : null
+    const trimmedId = entityId.value.trim()
+    const selectedResult =
+      searchResults.value.find((result) => result.id === selectedResultId.value) ?? null
     const fallbackKnownIds =
       searchProviderSource.value && trimmedId
         ? [{ source: searchProviderSource.value, id: trimmedId }]
@@ -138,17 +128,20 @@ watch(
 
     emit('selectionChange', {
       profileId: selectedProfileId.value,
-      lookup: {
-        name: selectedResult?.originalName || selectedResult?.name || searchQuery.value.trim(),
-        knownIds: selectedResult?.externalIds ?? fallbackKnownIds
-      },
+      lookup: spec.value.buildLookup(
+        {
+          name: selectedResult?.originalName || selectedResult?.name || searchQuery.value.trim(),
+          knownIds: selectedResult?.externalIds ?? fallbackKnownIds
+        },
+        selectedResult
+      ),
       canSubmit: canSubmit.value
     })
   },
   { immediate: true }
 )
 
-async function handleSearch() {
+async function handleSearch(): Promise<void> {
   if (!searchQuery.value.trim() || !selectedProfileId.value) return
 
   isSearching.value = true
@@ -157,11 +150,7 @@ async function handleSearch() {
   selectedResultId.value = null
 
   try {
-    const result = await ipcManager.invoke(
-      'scraper:search-person',
-      selectedProfileId.value,
-      searchQuery.value.trim()
-    )
+    const result = await spec.value.search(selectedProfileId.value, searchQuery.value.trim())
 
     if (!result.success) {
       throw new Error('Search failed.')
@@ -178,22 +167,23 @@ async function handleSearch() {
   }
 }
 
-function handleSearchKeyDown(e: KeyboardEvent) {
-  if (e.key === 'Enter') {
-    e.preventDefault()
+function handleSearchKeyDown(event: KeyboardEvent): void {
+  if (event.key === 'Enter') {
+    event.preventDefault()
     handleSearch()
   }
 }
 
-function handleResultSelect(result: PersonSearchResult) {
+function handleResultSelect(result: SearchResultMap[T]): void {
   selectedResultId.value = result.id
-  personId.value = result.id
+  entityId.value = result.id
 }
 
-const personIdModel = computed({
-  get: () => personId.value,
-  set: (v: string) => {
-    personId.value = v
+// Clears the picked row when the id is edited by hand.
+const entityIdModel = computed({
+  get: () => entityId.value,
+  set: (value: string) => {
+    entityId.value = value
     selectedResultId.value = null
   }
 })
@@ -206,20 +196,18 @@ const personIdModel = computed({
       <FieldContent>
         <ScraperProfileSelect
           v-model="selectedProfileId"
-          media-type="person"
+          :media-type="props.entityType"
         />
       </FieldContent>
     </Field>
 
     <Field>
-      <FieldLabel>{{
-        m.library.searcher.searchLabel({ label: m.library.entities.person })
-      }}</FieldLabel>
+      <FieldLabel>{{ m.library.searcher.searchLabel({ label: entityLabel }) }}</FieldLabel>
       <FieldContent>
         <div class="flex gap-2">
           <Input
             v-model="searchQuery"
-            :placeholder="m.library.searcher.namePlaceholder({ label: m.library.entities.person })"
+            :placeholder="m.library.searcher.namePlaceholder({ label: entityLabel })"
             :disabled="!selectedProfileId || isSearching"
             class="flex-1"
             @keydown="handleSearchKeyDown"
@@ -249,18 +237,18 @@ const personIdModel = computed({
     <div class="border border-border rounded-md overflow-hidden">
       <Table
         fixed-header
-        :columns="RESULT_TABLE_COLUMNS"
+        :columns="columnWidths"
         body-class="h-[20vh]"
       >
         <template #header>
           <TableHeader>
             <TableRow>
-              <TableHead class="h-7 text-[11px]">{{ m.library.searcher.columnName }}</TableHead>
-              <TableHead class="h-7 text-[11px]">{{
-                m.library.searcher.columnOriginalName
-              }}</TableHead>
-              <TableHead class="h-7 text-[11px]">{{ m.library.searcher.columnBirth }}</TableHead>
-              <TableHead class="h-7 text-[11px]">{{ m.library.searcher.columnDeath }}</TableHead>
+              <TableHead
+                v-for="(column, index) in spec.columns"
+                :key="index"
+              >
+                {{ column.header(m) }}
+              </TableHead>
             </TableRow>
           </TableHeader>
         </template>
@@ -271,7 +259,7 @@ const personIdModel = computed({
             state="empty"
             size="sm"
             icon="icon-[mdi--magnify]"
-            :description="m.library.searcher.startHint({ label: m.library.entities.person })"
+            :description="m.library.searcher.startHint({ label: entityLabel })"
             class="h-full"
           />
 
@@ -301,15 +289,12 @@ const personIdModel = computed({
             class="cursor-pointer text-xs border-border"
             @click="handleResultSelect(result)"
           >
-            <TableCell class="truncate">{{ result.name }}</TableCell>
-            <TableCell class="text-muted-foreground truncate">
-              {{ result.originalName || '-' }}
-            </TableCell>
-            <TableCell class="text-muted-foreground">
-              {{ result.birthDate ? f.date(result.birthDate) : m.common.emptyValue }}
-            </TableCell>
-            <TableCell class="text-muted-foreground">
-              {{ result.deathDate ? f.date(result.deathDate) : m.common.emptyValue }}
+            <TableCell
+              v-for="(column, index) in spec.columns"
+              :key="index"
+              :class="index === 0 ? 'truncate' : 'text-muted-foreground truncate'"
+            >
+              {{ column.cell(result, m, f) }}
             </TableCell>
           </TableRow>
         </TableBody>
@@ -318,7 +303,7 @@ const personIdModel = computed({
           <TableFooter>
             <TableRow>
               <TableCell
-                colspan="4"
+                :colspan="spec.columns.length"
                 class="h-6 py-0 text-[10px] text-muted-foreground"
               >
                 {{ m.library.searcher.resultCount({ count: searchResults.length }) }}
@@ -332,12 +317,12 @@ const personIdModel = computed({
 
     <Field>
       <FieldLabel>
-        <span>{{ m.library.searcher.idLabel({ label: m.library.entities.person }) }}</span>
+        <span>{{ m.library.searcher.idLabel({ label: entityLabel }) }}</span>
         <FieldDescription>{{ m.library.searcher.idDescription }}</FieldDescription>
       </FieldLabel>
       <FieldContent>
         <Input
-          v-model="personIdModel"
+          v-model="entityIdModel"
           :placeholder="m.library.searcher.idPlaceholder"
           :disabled="!selectedProfileId || props.isSubmitting"
           class="font-mono text-xs"

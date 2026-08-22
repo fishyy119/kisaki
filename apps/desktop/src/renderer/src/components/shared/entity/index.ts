@@ -1,5 +1,6 @@
 export { default as EntityCard } from './card'
 export { EntityAssetsFormDialog } from './assets'
+export { EntityDetailDialog, type EntityDetailTarget } from './detail'
 export { EntityDeleteFormDialog, EntityBatchDeleteFormDialog } from './delete'
 export { EntityMergeDialog } from './merge'
 export {
@@ -28,4 +29,5 @@ export {
   type RoleLinkItem
 } from './role-links'
 export { EntityWorksSection, EntityWorksTab, type WorksBlock } from './works'
-export type { EntitySearcherSelection } from './searcher'
+export { EntitySearcher, type EntitySearcherSelection } from './searcher'
+export { ENTITY_SELECT_SPECS, type EntitySelectSpec } from './select-specs'

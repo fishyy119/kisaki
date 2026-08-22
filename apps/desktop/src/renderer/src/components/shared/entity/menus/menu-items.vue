@@ -13,20 +13,20 @@ import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
 import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
+import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
-import { ENTITY_TABLES, type TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { MENU_SPECS, type MenuStatusSection } from './menu-specs'
 
 const log = createLogger('Library')
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
   /** Whether to fetch data - for lazy loading in context menu */
   enabled?: boolean
@@ -58,7 +58,7 @@ const emit = defineEmits<{
 }>()
 
 const spec = computed(() => MENU_SPECS[props.entityType])
-const table = computed(() => ENTITY_TABLES[props.entityType])
+const table = computed(() => ENTITY_TABLES[props.entityType].table)
 
 type CollectionData = { id: string; name: string }
 

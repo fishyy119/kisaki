@@ -12,13 +12,7 @@ import { Section } from '@renderer/components/ui/section'
 import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid, VirtualHorizontalScroll } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
-import { GameDetailDialog } from '@renderer/components/shared/game'
-import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { CharacterDetailDialog } from '@renderer/components/shared/character'
-import { PersonDetailDialog } from '@renderer/components/shared/person'
-import { CompanyDetailDialog } from '@renderer/components/shared/company'
-import { CollectionDetailDialog } from '@renderer/components/shared/collection'
-import { TagDetailDialog } from '@renderer/components/shared/tag'
+import { EntityDetailDialog, type EntityDetailTarget } from '@renderer/components/shared/entity'
 import { useSectionData, type SectionEntityData } from '../../composables'
 import { useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -49,9 +43,7 @@ const showScrollButtons = computed(
 const entityType = computed(() => props.section.entityType as AllEntityType)
 const isDialogMode = computed(() => props.section.openMode === 'dialog')
 
-const detailDialogOpen = ref(false)
-const detailEntityId = ref<string | null>(null)
-const selectedEntityId = computed(() => detailEntityId.value ?? '')
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 const { m } = useI18n()
 
@@ -65,8 +57,7 @@ function handleItemClick(item: SectionEntityData) {
   const type = entityType.value
 
   if (isDialogMode.value) {
-    detailEntityId.value = item.id
-    detailDialogOpen.value = true
+    openEntity.value = { entityType: type, entityId: item.id }
     return
   }
 
@@ -172,40 +163,6 @@ function handleItemClick(item: SectionEntityData) {
     </template>
 
     <!-- Entity detail dialog -->
-    <GameDetailDialog
-      v-if="detailDialogOpen && detailEntityId && entityType === 'game' && isDialogMode"
-      v-model:open="detailDialogOpen"
-      :game-id="selectedEntityId"
-    />
-    <AnimeDetailDialog
-      v-if="detailDialogOpen && detailEntityId && entityType === 'anime' && isDialogMode"
-      v-model:open="detailDialogOpen"
-      :anime-id="selectedEntityId"
-    />
-    <CharacterDetailDialog
-      v-if="detailDialogOpen && detailEntityId && entityType === 'character' && isDialogMode"
-      v-model:open="detailDialogOpen"
-      :character-id="selectedEntityId"
-    />
-    <PersonDetailDialog
-      v-if="detailDialogOpen && detailEntityId && entityType === 'person' && isDialogMode"
-      v-model:open="detailDialogOpen"
-      :person-id="selectedEntityId"
-    />
-    <CompanyDetailDialog
-      v-if="detailDialogOpen && detailEntityId && entityType === 'company' && isDialogMode"
-      v-model:open="detailDialogOpen"
-      :company-id="selectedEntityId"
-    />
-    <CollectionDetailDialog
-      v-if="detailDialogOpen && detailEntityId && entityType === 'collection' && isDialogMode"
-      v-model:open="detailDialogOpen"
-      :collection-id="selectedEntityId"
-    />
-    <TagDetailDialog
-      v-if="detailDialogOpen && detailEntityId && entityType === 'tag' && isDialogMode"
-      v-model:open="detailDialogOpen"
-      :tag-id="selectedEntityId"
-    />
+    <EntityDetailDialog v-model:target="openEntity" />
   </Section>
 </template>

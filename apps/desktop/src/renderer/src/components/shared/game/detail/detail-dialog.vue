@@ -40,7 +40,7 @@ const { m } = useI18n()
 // =============================================================================
 
 const props = defineProps<{
-  gameId: string
+  entityId: string
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -49,7 +49,7 @@ const open = defineModel<boolean>('open', { default: false })
 // Game Context (Provider)
 // =============================================================================
 
-const gameId = computed(() => props.gameId)
+const gameId = computed(() => props.entityId)
 const { game, isLoading, error, spoilersRevealed } = useGameDialogProvider(gameId)
 const state = useRenderState(isLoading, error, game)
 
@@ -57,7 +57,7 @@ const spoilerConfirmOpen = ref(false)
 
 useDbChanges(({ operation, table, id }) => {
   if (operation !== 'deleted') return
-  if (table === 'games' && id === props.gameId) {
+  if (table === 'games' && id === props.entityId) {
     open.value = false
   }
 })

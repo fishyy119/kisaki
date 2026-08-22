@@ -10,7 +10,7 @@ import type { ScraperLookup } from '@shared/scraper'
  * replaces an empty one before submitting.
  *
  * The lookup must be plain data: dialogs forward it to the main process, and
- * IPC cannot clone a reactive proxy. Searchers therefore hold their results in
+ * IPC cannot clone a reactive proxy. The searcher therefore holds its results in
  * a `shallowRef`, and dialogs hold the selection in one.
  */
 export interface EntitySearcherSelection<TLookup extends ScraperLookup = ScraperLookup> {

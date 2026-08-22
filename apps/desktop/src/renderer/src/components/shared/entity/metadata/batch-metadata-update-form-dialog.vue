@@ -36,13 +36,13 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { METADATA_UPDATE_SPECS } from './update-specs'
 
 const { m } = useI18n()
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityIds: string[]
 }
 

@@ -11,14 +11,13 @@ import { RouterLink, useRoute, type LocationQuery } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { EntityContextMenu, EntityBatchContextMenu } from '@renderer/components/shared/entity'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { useLibraryExplorerStore } from '../../stores'
 import { parseExplorerSelectionKey, toExplorerSelectionKey } from '../../utils/explorer-selection'
 import type { EntityData } from '../../composables'
 import type { ContentEntityType } from '@shared/common'
-import type { Anime, Game, Character, Person, Company } from '@shared/db'
 
 interface Props {
   entity: EntityData
@@ -89,59 +88,9 @@ const isStrictActive = computed(() => {
   return isStrictQueryMatch(route.query, linkQuery.value)
 })
 
-const imageUrl = computed(() => {
-  switch (props.entityType) {
-    case 'game': {
-      const game = props.entity as Game
-      if (game.iconFile) {
-        return getAttachmentUrl('games', game.id, game.iconFile, { width: 100, height: 100 })
-      }
-      if (game.coverFile) {
-        return getAttachmentUrl('games', game.id, game.coverFile, { width: 100, height: 100 })
-      }
-      return null
-    }
-    case 'anime': {
-      const anime = props.entity as Anime
-      if (anime.coverFile) {
-        return getAttachmentUrl('animes', anime.id, anime.coverFile, { width: 100, height: 100 })
-      }
-      return null
-    }
-    case 'character': {
-      const character = props.entity as Character
-      if (character.photoFile) {
-        return getAttachmentUrl('characters', character.id, character.photoFile, {
-          width: 100,
-          height: 100
-        })
-      }
-      return null
-    }
-    case 'person': {
-      const person = props.entity as Person
-      if (person.photoFile) {
-        return getAttachmentUrl('persons', person.id, person.photoFile, {
-          width: 100,
-          height: 100
-        })
-      }
-      return null
-    }
-    case 'company': {
-      const company = props.entity as Company
-      if (company.logoFile) {
-        return getAttachmentUrl('companies', company.id, company.logoFile, {
-          width: 100,
-          height: 100
-        })
-      }
-      return null
-    }
-    default:
-      return null
-  }
-})
+const imageUrl = computed(() =>
+  getEntityImageUrl(props.entityType, props.entity, 'icon', { width: 100, height: 100 })
+)
 
 const entityIcon = computed(() => getEntityIcon(props.entityType))
 

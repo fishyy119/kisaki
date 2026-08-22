@@ -36,7 +36,7 @@ const { m } = useI18n()
 // =============================================================================
 
 const props = defineProps<{
-  personId: string
+  entityId: string
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -45,7 +45,7 @@ const open = defineModel<boolean>('open', { default: false })
 // Person Context (Provider)
 // =============================================================================
 
-const personId = computed(() => props.personId)
+const personId = computed(() => props.entityId)
 const { person, isLoading, error, spoilersRevealed } = usePersonDialogProvider(personId)
 const state = useRenderState(isLoading, error, person)
 
@@ -53,7 +53,7 @@ const spoilerConfirmOpen = ref(false)
 
 useDbChanges(({ operation, table, id }) => {
   if (operation !== 'deleted') return
-  if (table === 'persons' && id === props.personId) {
+  if (table === 'persons' && id === props.entityId) {
     open.value = false
   }
 })

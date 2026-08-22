@@ -9,9 +9,13 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
-import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
+import { PersonCard } from '@renderer/components/shared/person'
 import { useI18n } from '@renderer/composables'
-import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import {
+  EntityDetailDialog,
+  EntityLinksFormDialog,
+  type EntityDetailTarget
+} from '@renderer/components/shared/entity'
 import { CHARACTER_PERSON_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
@@ -23,7 +27,7 @@ const { m } = useI18n()
 const { character, persons } = useCharacter()
 
 const isEditOpen = ref(false)
-const openPersonId = ref<string | null>(null)
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 // =============================================================================
 // Constants
@@ -49,13 +53,6 @@ const groupedPersons = computed(() => {
     },
     {} as Record<string, typeof persons.value>
   )
-})
-
-const personDialogOpen = computed({
-  get: () => openPersonId.value !== null,
-  set: (value) => {
-    if (!value) openPersonId.value = null
-  }
 })
 </script>
 
@@ -120,7 +117,7 @@ const personDialogOpen = computed({
                   :person="link.person"
                   align="left"
                   size="sm"
-                  @click="openPersonId = link.person.id"
+                  @click="openEntity = { entityType: 'person', entityId: link.person.id }"
                 />
               </template>
             </div>
@@ -138,10 +135,6 @@ const personDialogOpen = computed({
     />
 
     <!-- Person Detail Dialog -->
-    <PersonDetailDialog
-      v-if="openPersonId"
-      v-model:open="personDialogOpen"
-      :person-id="openPersonId"
-    />
+    <EntityDetailDialog v-model:target="openEntity" />
   </template>
 </template>

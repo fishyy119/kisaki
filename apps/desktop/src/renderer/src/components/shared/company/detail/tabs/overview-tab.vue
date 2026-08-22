@@ -7,21 +7,19 @@ import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Section } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { GameDetailDialog } from '@renderer/components/shared/game'
-import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
+import { TagCard } from '@renderer/components/shared/tag'
 import { useCompany } from '@renderer/composables'
 import {
   EntityDescriptionFormDialog,
+  EntityDetailDialog,
   EntityExternalSitesFormDialog,
   EntityTagsFormDialog,
-  EntityWorksSection
+  EntityWorksSection,
+  type EntityDetailTarget
 } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables'
-import type { MediaType } from '@shared/common'
 import { COMPANY_RELATION_TYPES } from '@shared/db'
 import { CompanyRelationsFormDialog } from '../../relations'
-import CompanyDetailDialog from '../detail-dialog.vue'
 import { useCompanyWorksBlocks } from '../works'
 
 const { m } = useI18n()
@@ -35,17 +33,8 @@ const sitesDialogOpen = ref(false)
 const tagsDialogOpen = ref(false)
 const relationsDialogOpen = ref(false)
 
-// Detail dialog states
-const openWork = ref<{ mediaType: MediaType; id: string } | null>(null)
-const openTagId = ref<string | null>(null)
-const openCompanyId = ref<string | null>(null)
-
-const workDialogOpen = computed({
-  get: () => openWork.value !== null,
-  set: (value) => {
-    if (!value) openWork.value = null
-  }
-})
+/** The entity whose detail dialog is open, if any */
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 const hasExternalSites = computed(
   () => company.value?.externalSites && company.value.externalSites.length > 0
@@ -62,20 +51,6 @@ const relationGroups = computed(() =>
     items: relations.value.filter((relation) => relation.type === type)
   })).filter((group) => group.items.length > 0)
 )
-
-const tagDialogOpen = computed({
-  get: () => openTagId.value !== null,
-  set: (value) => {
-    if (!value) openTagId.value = null
-  }
-})
-
-const companyDialogOpen = computed({
-  get: () => openCompanyId.value !== null,
-  set: (value) => {
-    if (!value) openCompanyId.value = null
-  }
-})
 </script>
 
 <template>
@@ -95,7 +70,7 @@ const companyDialogOpen = computed({
 
         <EntityWorksSection
           :blocks="worksBlocks"
-          @open="(mediaType, id) => (openWork = { mediaType, id })"
+          @open="(mediaType, id) => (openEntity = { entityType: mediaType, entityId: id })"
         />
 
         <Section
@@ -115,7 +90,7 @@ const companyDialogOpen = computed({
                 :tag="tagLink.tag"
                 variant="button"
                 button-size="xs"
-                @click="openTagId = tagLink.tag.id"
+                @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
               />
             </template>
           </div>
@@ -145,7 +120,7 @@ const companyDialogOpen = computed({
                   :key="relation.id"
                   type="button"
                   class="text-left text-primary hover:underline truncate"
-                  @click="openCompanyId = relation.company.id"
+                  @click="openEntity = { entityType: 'company', entityId: relation.company.id }"
                 >
                   {{ relation.company.name }}
                 </button>
@@ -206,31 +181,7 @@ const companyDialogOpen = computed({
       :company-id="company.id"
     />
 
-    <!-- Entity Dialogs -->
-    <template v-if="openWork">
-      <GameDetailDialog
-        v-if="openWork.mediaType === 'game'"
-        v-model:open="workDialogOpen"
-        :game-id="openWork.id"
-      />
-      <AnimeDetailDialog
-        v-else
-        v-model:open="workDialogOpen"
-        :anime-id="openWork.id"
-      />
-    </template>
-
-    <CompanyDetailDialog
-      v-if="openCompanyId"
-      v-model:open="companyDialogOpen"
-      :company-id="openCompanyId"
-    />
-
-    <!-- Tag Detail Dialog -->
-    <TagDetailDialog
-      v-if="openTagId"
-      v-model:open="tagDialogOpen"
-      :tag-id="openTagId"
-    />
+    <!-- Entity Detail Dialog -->
+    <EntityDetailDialog v-model:target="openEntity" />
   </template>
 </template>

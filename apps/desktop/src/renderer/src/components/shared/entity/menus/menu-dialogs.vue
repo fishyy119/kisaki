@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { CollectionInfoFormDialog } from '@renderer/components/shared/collection'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { EntityScoreFormDialog } from '../fields'
 import { EntityExternalIdsFormDialog } from '../identities'
 import { EntityMergeDialog } from '../merge'
@@ -17,7 +17,7 @@ import { EntityAssetsFormDialog } from '../assets'
 import { MENU_SPECS } from './menu-specs'
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
 }
 

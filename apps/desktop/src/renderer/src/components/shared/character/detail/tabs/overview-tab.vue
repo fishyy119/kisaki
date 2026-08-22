@@ -8,19 +8,18 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
 import { Section } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { GameDetailDialog } from '@renderer/components/shared/game'
-import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
-import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
+import { PersonCard } from '@renderer/components/shared/person'
+import { TagCard } from '@renderer/components/shared/tag'
 import { useI18n } from '@renderer/composables'
 import {
   EntityDescriptionFormDialog,
+  EntityDetailDialog,
   EntityTagsFormDialog,
   EntityExternalSitesFormDialog,
   EntityLinksFormDialog,
-  EntityWorksSection
+  EntityWorksSection,
+  type EntityDetailTarget
 } from '@renderer/components/shared/entity'
-import type { MediaType } from '@shared/common'
 import { CHARACTER_PERSON_ROLE_VALUES } from '@shared/db'
 import { useCharacterWorksBlocks } from '../works'
 import { CharacterInfoFormDialog, CharacterPhysiqueFormDialog } from '../../forms'
@@ -44,10 +43,8 @@ const editDialogs = ref({
   tags: false
 })
 
-// Entity dialog states
-const openWork = ref<{ mediaType: MediaType; id: string } | null>(null)
-const openPersonId = ref<string | null>(null)
-const openTagId = ref<string | null>(null)
+/** The entity whose detail dialog is open, if any */
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 // =============================================================================
 // Constants
@@ -125,27 +122,6 @@ const hasTags = computed(() => tags.value && tags.value.length > 0)
 function openEditDialog(dialog: keyof typeof editDialogs.value) {
   editDialogs.value[dialog] = true
 }
-
-const workDialogOpen = computed({
-  get: () => openWork.value !== null,
-  set: (value) => {
-    if (!value) openWork.value = null
-  }
-})
-
-const personDialogOpen = computed({
-  get: () => openPersonId.value !== null,
-  set: (value) => {
-    if (!value) openPersonId.value = null
-  }
-})
-
-const tagDialogOpen = computed({
-  get: () => openTagId.value !== null,
-  set: (value) => {
-    if (!value) openTagId.value = null
-  }
-})
 </script>
 
 <template>
@@ -165,7 +141,7 @@ const tagDialogOpen = computed({
 
         <EntityWorksSection
           :blocks="worksBlocks"
-          @open="(mediaType, id) => (openWork = { mediaType, id })"
+          @open="(mediaType, id) => (openEntity = { entityType: mediaType, entityId: id })"
         />
 
         <Section
@@ -185,7 +161,7 @@ const tagDialogOpen = computed({
                 :tag="tagLink.tag"
                 variant="button"
                 button-size="xs"
-                @click="openTagId = tagLink.tag.id"
+                @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
               />
             </template>
           </div>
@@ -291,7 +267,7 @@ const tagDialogOpen = computed({
                         variant="button"
                         button-variant="link"
                         button-size="xs"
-                        @click="openPersonId = link.person.id"
+                        @click="openEntity = { entityType: 'person', entityId: link.person.id }"
                       />
                       <span
                         v-if="index < groupedPersons[role]!.length - 1"
@@ -325,7 +301,7 @@ const tagDialogOpen = computed({
               <button
                 type="button"
                 class="text-primary hover:underline truncate"
-                @click="openWork = { mediaType: credit.mediaType, id: credit.mediaId }"
+                @click="openEntity = { entityType: credit.mediaType, entityId: credit.mediaId }"
               >
                 {{ credit.mediaName }}
               </button>
@@ -402,28 +378,7 @@ const tagDialogOpen = computed({
       :entity-id="character.id"
     />
 
-    <!-- Entity Dialogs -->
-    <template v-if="openWork">
-      <GameDetailDialog
-        v-if="openWork.mediaType === 'game'"
-        v-model:open="workDialogOpen"
-        :game-id="openWork.id"
-      />
-      <AnimeDetailDialog
-        v-else
-        v-model:open="workDialogOpen"
-        :anime-id="openWork.id"
-      />
-    </template>
-    <PersonDetailDialog
-      v-if="openPersonId"
-      v-model:open="personDialogOpen"
-      :person-id="openPersonId"
-    />
-    <TagDetailDialog
-      v-if="openTagId"
-      v-model:open="tagDialogOpen"
-      :tag-id="openTagId"
-    />
+    <!-- Entity Detail Dialog -->
+    <EntityDetailDialog v-model:target="openEntity" />
   </template>
 </template>

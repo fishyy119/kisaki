@@ -11,13 +11,7 @@ import type { AllEntityType } from '@shared/common'
 import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import { GameSelect } from '@renderer/components/shared/game'
-import { AnimeSelect } from '@renderer/components/shared/anime'
-import { CharacterSelect } from '@renderer/components/shared/character'
-import { PersonSelect } from '@renderer/components/shared/person'
-import { CompanySelect } from '@renderer/components/shared/company'
-import { TagSelect } from '@renderer/components/shared/tag'
-import { CollectionSelect } from '@renderer/components/shared/collection'
+import { ENTITY_SELECT_SPECS } from '@renderer/components/shared/entity'
 import { useAsyncData } from '@renderer/composables'
 import { queryEntityNames } from '@renderer/core/db'
 import { usePreferencesStore } from '@renderer/stores'
@@ -31,6 +25,8 @@ const model = defineModel<string[]>({ required: true })
 
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
+
+const spec = computed(() => ENTITY_SELECT_SPECS[props.targetEntity])
 
 const selectedIds = computed({
   get: () => model.value,
@@ -51,47 +47,12 @@ function handleRemove(idToRemove: string) {
 
 <template>
   <div>
-    <GameSelect
-      v-if="props.targetEntity === 'game'"
+    <component
+      :is="spec.component()"
       v-model:selected-ids="selectedIds"
       multiple
       :show-selected-label="false"
-    />
-    <AnimeSelect
-      v-else-if="props.targetEntity === 'anime'"
-      v-model:selected-ids="selectedIds"
-      multiple
-      :show-selected-label="false"
-    />
-    <CharacterSelect
-      v-else-if="props.targetEntity === 'character'"
-      v-model:selected-ids="selectedIds"
-      multiple
-      :show-selected-label="false"
-    />
-    <PersonSelect
-      v-else-if="props.targetEntity === 'person'"
-      v-model:selected-ids="selectedIds"
-      multiple
-      :show-selected-label="false"
-    />
-    <CompanySelect
-      v-else-if="props.targetEntity === 'company'"
-      v-model:selected-ids="selectedIds"
-      multiple
-      :show-selected-label="false"
-    />
-    <TagSelect
-      v-else-if="props.targetEntity === 'tag'"
-      v-model:selected-ids="selectedIds"
-      multiple
-      :show-selected-label="false"
-    />
-    <CollectionSelect
-      v-else-if="props.targetEntity === 'collection'"
-      v-model:selected-ids="selectedIds"
-      multiple
-      :show-selected-label="false"
+      v-bind="spec.pickerProps"
     />
 
     <div

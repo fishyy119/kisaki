@@ -2,11 +2,10 @@
  * Metadata-update specs for the shared scraper update dialogs.
  *
  * Every entity exposes the same update workflow (pick scraper result, choose
- * surfaces, choose policies); the spec owns the per-entity surface vocabulary,
- * searcher component and typed IPC submission.
+ * surfaces, choose policies); the spec owns the per-entity surface vocabulary
+ * and typed IPC submission.
  */
 
-import type { Component } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import type { Messages } from '@shared/i18n'
 import {
@@ -28,12 +27,7 @@ import {
   type PersonBatchUpdateRequest,
   type PersonUpdateRequest
 } from '@shared/ingest/update'
-import { AnimeSearcher } from '@renderer/components/shared/anime'
-import { CharacterSearcher } from '@renderer/components/shared/character'
-import { CompanySearcher } from '@renderer/components/shared/company'
-import { GameSearcher } from '@renderer/components/shared/game'
-import { PersonSearcher } from '@renderer/components/shared/person'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 
 interface SubmitOutcome {
   success: boolean
@@ -44,12 +38,11 @@ export interface MetadataUpdateSpec {
   /** Update surfaces in display order; also the source of valid values. */
   surfaceKeys: readonly string[]
   surfaceLabels: (m: Messages) => Record<string, string>
-  searcher: Component
   submit: (request: IngestUpdateRequest<string>) => Promise<SubmitOutcome>
   submitBatch: (request: IngestBatchUpdateRequest<string>) => Promise<SubmitOutcome>
 }
 
-export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> = {
+export const METADATA_UPDATE_SPECS: Record<ContentEntityType, MetadataUpdateSpec> = {
   game: {
     surfaceKeys: GAME_UPDATE_SURFACE_KEYS,
     surfaceLabels: (m) => ({
@@ -71,7 +64,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       logos: m.library.fields.logos,
       icons: m.library.fields.icons
     }),
-    searcher: GameSearcher,
     submit: (request) =>
       ipcManager.invoke('ingest:update-game-from-scraper', request as GameUpdateRequest),
     submitBatch: (request) =>
@@ -100,7 +92,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       backdrops: m.library.fields.backdrops,
       logos: m.library.fields.logos
     }),
-    searcher: AnimeSearcher,
     submit: (request) =>
       ipcManager.invoke('ingest:update-anime-from-scraper', request as AnimeUpdateRequest),
     submitBatch: (request) =>
@@ -132,7 +123,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       person: m.library.entities.person,
       photos: m.library.fields.photos
     }),
-    searcher: CharacterSearcher,
     submit: (request) =>
       ipcManager.invoke('ingest:update-character-from-scraper', request as CharacterUpdateRequest),
     submitBatch: (request) =>
@@ -156,7 +146,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       tags: m.library.fields.tags,
       photos: m.library.fields.photos
     }),
-    searcher: PersonSearcher,
     submit: (request) =>
       ipcManager.invoke('ingest:update-person-from-scraper', request as PersonUpdateRequest),
     submitBatch: (request) =>
@@ -177,7 +166,6 @@ export const METADATA_UPDATE_SPECS: Record<TableEntityType, MetadataUpdateSpec> 
       tags: m.library.fields.tags,
       logos: m.library.fields.logos
     }),
-    searcher: CompanySearcher,
     submit: (request) =>
       ipcManager.invoke('ingest:update-company-from-scraper', request as CompanyUpdateRequest),
     submitBatch: (request) =>

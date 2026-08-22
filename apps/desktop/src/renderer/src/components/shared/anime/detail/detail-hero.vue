@@ -15,7 +15,7 @@ import { useAnime } from '@renderer/composables/use-anime'
 import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { formatAnimeStatus, getEntityIcon } from '@renderer/utils/format'
 import {
   EntityNameFormDialog,
@@ -65,12 +65,7 @@ async function handleStatusSaved(status: string): Promise<void> {
 }
 
 const coverUrl = computed(() =>
-  anime.value?.coverFile
-    ? getAttachmentUrl('animes', anime.value.id, anime.value.coverFile, {
-        width: 300,
-        height: 400
-      })
-    : null
+  anime.value ? getEntityImageUrl('anime', anime.value, 'cover', { width: 300, height: 400 }) : null
 )
 </script>
 

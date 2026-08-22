@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { and, eq, inArray } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
@@ -31,7 +31,6 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
-import { ENTITY_TABLES } from '@renderer/core/db/entity-tables'
 import { settings } from '@shared/db'
 import { MEDIA_TYPES, type MediaType } from '@shared/common'
 import type { ScannerRunIssueType } from '@shared/scanner'

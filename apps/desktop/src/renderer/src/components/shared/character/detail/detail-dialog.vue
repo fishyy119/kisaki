@@ -36,7 +36,7 @@ const { m } = useI18n()
 // =============================================================================
 
 interface Props {
-  characterId: string
+  entityId: string
 }
 
 const props = defineProps<Props>()
@@ -48,7 +48,7 @@ const open = defineModel<boolean>('open', { required: true })
 // =============================================================================
 
 const { character, isLoading, error, spoilersRevealed } = useCharacterDialogProvider(
-  () => props.characterId
+  () => props.entityId
 )
 const state = useRenderState(isLoading, error, character)
 
@@ -56,7 +56,7 @@ const spoilerConfirmOpen = ref(false)
 
 useDbChanges(({ operation, table, id }) => {
   if (operation !== 'deleted') return
-  if (table === 'characters' && id === props.characterId) {
+  if (table === 'characters' && id === props.entityId) {
     open.value = false
   }
 })

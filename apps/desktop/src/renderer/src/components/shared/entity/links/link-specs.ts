@@ -12,8 +12,7 @@
  */
 
 import { asc, eq } from 'drizzle-orm'
-import type { Component } from 'vue'
-import { db } from '@renderer/core/db'
+import { db, queryEntityRow } from '@renderer/core/db'
 import {
   ANIME_CHARACTER_ROLE_VALUES,
   ANIME_COMPANY_ROLE_VALUES,
@@ -37,26 +36,9 @@ import {
   type GameCompanyRole,
   type GamePersonRole
 } from '@shared/db'
-import { AnimeSelect } from '@renderer/components/shared/anime'
-import { CharacterSelect } from '@renderer/components/shared/character'
-import { CompanySelect } from '@renderer/components/shared/company'
-import { GameSelect } from '@renderer/components/shared/game'
-import { PersonSelect } from '@renderer/components/shared/person'
+import type { ContentEntityType } from '@shared/common'
 import type { Messages } from '@shared/i18n'
-
-export type LinkTargetType = 'game' | 'anime' | 'character' | 'person' | 'company'
-
-/** Target-entity presentation shared by every view pointing at that entity. */
-export const LINK_TARGET_META: Record<
-  LinkTargetType,
-  { attachmentTable: string; select: Component }
-> = {
-  game: { attachmentTable: 'games', select: GameSelect },
-  anime: { attachmentTable: 'animes', select: AnimeSelect },
-  character: { attachmentTable: 'characters', select: CharacterSelect },
-  person: { attachmentTable: 'persons', select: PersonSelect },
-  company: { attachmentTable: 'companies', select: CompanySelect }
-}
+import { getEntityImageFile } from '@renderer/utils/entity-image'
 
 export interface LinkRow {
   id: string
@@ -81,7 +63,7 @@ export interface LinkReplaceRow {
 }
 
 export interface LinkViewSpec {
-  targetType: LinkTargetType
+  targetType: ContentEntityType
   /** Role grouping/display order; also the source of valid role values. */
   roleOrder: readonly string[]
   roleLabels: (m: Messages) => Record<string, string>
@@ -706,28 +688,11 @@ export const LINK_VIEW_SPECS = {
 export type LinkViewKey = keyof typeof LINK_VIEW_SPECS
 
 /** Fetches a selected target's display fields for the item dialog. */
-export const LINK_TARGET_FETCHERS: Record<
-  LinkTargetType,
-  (id: string) => Promise<{ name: string; image: string | null } | undefined>
-> = {
-  game: async (id) => {
-    const row = await db.query.games.findFirst({ where: (t, { eq: eqOp }) => eqOp(t.id, id) })
-    return row ? { name: row.name, image: row.coverFile } : undefined
-  },
-  anime: async (id) => {
-    const row = await db.query.animes.findFirst({ where: (t, { eq: eqOp }) => eqOp(t.id, id) })
-    return row ? { name: row.name, image: row.coverFile } : undefined
-  },
-  character: async (id) => {
-    const row = await db.query.characters.findFirst({ where: (t, { eq: eqOp }) => eqOp(t.id, id) })
-    return row ? { name: row.name, image: row.photoFile } : undefined
-  },
-  person: async (id) => {
-    const row = await db.query.persons.findFirst({ where: (t, { eq: eqOp }) => eqOp(t.id, id) })
-    return row ? { name: row.name, image: row.photoFile } : undefined
-  },
-  company: async (id) => {
-    const row = await db.query.companies.findFirst({ where: (t, { eq: eqOp }) => eqOp(t.id, id) })
-    return row ? { name: row.name, image: row.logoFile } : undefined
-  }
+export async function fetchLinkTarget(
+  targetType: ContentEntityType,
+  id: string
+): Promise<{ name: string; image: string | null } | undefined> {
+  const row = await queryEntityRow(targetType, id)
+  if (!row) return undefined
+  return { name: row.name, image: getEntityImageFile(targetType, row, 'cover') }
 }

@@ -19,7 +19,7 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
-import type { EntitySearcherSelection } from '@renderer/components/shared/entity'
+import { EntitySearcher, type EntitySearcherSelection } from '@renderer/components/shared/entity'
 import type { ContentEntityType } from '@shared/common'
 import { ADDER_SPECS } from './adder-specs'
 
@@ -120,8 +120,8 @@ async function handleSubmit() {
         </DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <component
-          :is="spec.searcher"
+        <EntitySearcher
+          :entity-type="props.entityType"
           :is-submitting="isSubmitting"
           @selection-change="handleSelectionChange"
         />

@@ -1,16 +1,12 @@
 <!--
   PersonSelect
-  Person select component with built-in data fetching.
-  Supports both single and multiple selection modes.
-  Uses virtual scrolling for performance.
+  Person picker with built-in data fetching, in single or multiple mode.
 -->
 <script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { usePreferencesStore } from '@renderer/stores'
+import { useEntitySelectSource, useI18n } from '@renderer/composables'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
-import { db } from '@renderer/core/db'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 
 interface Props {
   /** Multiple selection mode */
@@ -19,21 +15,20 @@ interface Props {
   placeholder?: string
   /** Text when nothing selected */
   emptyText?: string
+  /** Class name for trigger button */
+  class?: HTMLAttributes['class']
   /** Whether the select is disabled */
   disabled?: boolean
   /** Person IDs to exclude from the list */
   excludeIds?: string[]
   /** Reflect the current selection in the trigger (see VirtualizedCombobox) */
   showSelectedLabel?: boolean
-  /** Custom class name */
-  class?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  multiple: false,
   placeholder: undefined,
   emptyText: undefined,
-  disabled: false,
+  multiple: false,
   excludeIds: () => [],
   showSelectedLabel: true
 })
@@ -51,35 +46,12 @@ const emptyTextValue = computed(
     m.value.library.select.selectPlaceholder({ label: m.value.library.entities.person })
 )
 
-/** Currently selected person ID (single mode) */
+/** For single selection mode */
 const modelValue = defineModel<string>({ default: '' })
-/** Currently selected person IDs (multiple mode) */
+/** For multiple selection mode */
 const selectedIdsModel = defineModel<string[]>('selectedIds', { default: () => [] })
 
-const preferencesStore = usePreferencesStore()
-const { showNsfw } = storeToRefs(preferencesStore)
-
-const { data: allPersons, refetch } = useAsyncData(
-  () =>
-    db.query.persons.findMany({
-      columns: { id: true, name: true },
-      ...(showNsfw.value ? {} : { where: (p, { eq }) => eq(p.isNsfw, false) })
-    }),
-  { watch: [showNsfw] }
-)
-
-useDbChanges(({ table }) => {
-  if (table === 'persons') refetch()
-})
-
-const personEntities = computed(() =>
-  (allPersons.value || [])
-    .filter((person) => !props.excludeIds.includes(person.id))
-    .map((person) => ({
-      id: person.id,
-      name: person.name
-    }))
-)
+const personEntities = useEntitySelectSource('person', () => props.excludeIds)
 
 // Handle both single and multiple selection modes
 const selectedIds = computed({
@@ -105,9 +77,9 @@ const selectedIds = computed({
     :entities="personEntities"
     :placeholder="placeholderText"
     :empty-text="emptyTextValue"
-    :multiple="multiple"
+    :multiple="props.multiple"
     :class="props.class"
-    :disabled="disabled"
+    :disabled="props.disabled"
     :show-selected-label="props.showSelectedLabel"
   />
 </template>

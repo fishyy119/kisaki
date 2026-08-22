@@ -9,7 +9,7 @@
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 import { useGameActivityStore } from '@renderer/stores'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ButtonVariants } from '@renderer/components/ui/button'
 import {
@@ -56,9 +56,7 @@ const gameActivityStore = useGameActivityStore()
 const isRunning = computed(() => gameActivityStore.isGameRunning(props.game.id))
 
 const imageUrl = computed(() =>
-  props.game.coverFile
-    ? getAttachmentUrl('games', props.game.id, props.game.coverFile, { width: 300, height: 400 })
-    : null
+  getEntityImageUrl('game', props.game, 'cover', { width: 300, height: 400 })
 )
 </script>
 

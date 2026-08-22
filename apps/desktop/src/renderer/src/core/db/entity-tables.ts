@@ -1,8 +1,15 @@
 /**
  * Entity table registry.
  *
- * Maps every entity type to its Drizzle table and the columns shared query
- * paths rely on (id, name, isNsfw). Single source for entity-generic queries.
+ * Single holder of "which table, which columns" per entity type: the Drizzle
+ * table, its SQL name (also the attachment folder), and the columns every
+ * entity-generic path relies on.
+ *
+ * Values stay concrete table and column references instead of the wide
+ * `SQLiteTable`, so shared write paths such as `db.update(def.table).set(...)`
+ * type-check against exactly the columns the caller's entity union shares.
+ * `satisfies` keeps that precision while still demanding one entry per entity
+ * type, so a new entity type does not compile until it is listed here.
  */
 import { getTableName } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
@@ -37,7 +44,7 @@ export interface EntityRowMap {
   tag: Tag
 }
 
-export interface EntityTableDef {
+interface EntityTableDef {
   table: SQLiteTable
   tableName: TableName
   idColumn: SQLiteColumn
@@ -45,7 +52,7 @@ export interface EntityTableDef {
   isNsfwColumn: SQLiteColumn
 }
 
-export const ENTITY_TABLES: Record<AllEntityType, EntityTableDef> = {
+export const ENTITY_TABLES = {
   game: {
     table: games,
     tableName: getTableName(games),
@@ -95,4 +102,4 @@ export const ENTITY_TABLES: Record<AllEntityType, EntityTableDef> = {
     nameColumn: tags.name,
     isNsfwColumn: tags.isNsfw
   }
-}
+} as const satisfies Record<AllEntityType, EntityTableDef>

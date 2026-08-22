@@ -21,17 +21,17 @@ import {
 } from '@renderer/components/ui/context-menu'
 import { useAsyncData, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
+import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
 import { isMediaType } from '@shared/common'
 import type { MenuComponents } from '@renderer/types'
-import { ENTITY_TABLES, type TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { MENU_SPECS } from './menu-specs'
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityIds: string[]
   enabled?: boolean
 }
@@ -51,7 +51,7 @@ const emit = defineEmits<{
 }>()
 
 const spec = computed(() => MENU_SPECS[props.entityType])
-const table = computed(() => ENTITY_TABLES[props.entityType])
+const table = computed(() => ENTITY_TABLES[props.entityType].table)
 
 const contextMenuComponents: MenuComponents = {
   Item: ContextMenuItem,

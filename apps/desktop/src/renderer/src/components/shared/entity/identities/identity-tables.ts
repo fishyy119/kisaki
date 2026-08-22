@@ -15,7 +15,7 @@ import {
   gameExternalIds,
   personExternalIds
 } from '@shared/db'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 
 export interface ExternalIdRow {
   id: string
@@ -29,7 +29,7 @@ interface IdentityStore {
   replace: (anchorId: string, rows: ExternalIdRow[]) => Promise<void>
 }
 
-export const IDENTITY_STORES: Record<TableEntityType, IdentityStore> = {
+export const IDENTITY_STORES: Record<ContentEntityType, IdentityStore> = {
   game: {
     list: (anchorId) =>
       db

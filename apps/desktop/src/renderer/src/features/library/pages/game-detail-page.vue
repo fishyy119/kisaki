@@ -31,7 +31,7 @@ import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { games, type GameStatus } from '@shared/db'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { formatGameStatus, getGameStatusVariant, getEntityIcon } from '@renderer/utils/format'
 
 const { m } = useI18n()
@@ -68,9 +68,7 @@ const { game, error, spoilersRevealed } = useGameRouteProvider()
 const spoilerConfirmOpen = ref(false)
 
 useAmbientLight(() =>
-  game.value?.coverFile
-    ? getAttachmentUrl('games', game.value.id, game.value.coverFile, { width: 100, height: 100 })
-    : null
+  game.value ? getEntityImageUrl('game', game.value, 'cover', { width: 100, height: 100 }) : null
 )
 
 // =============================================================================

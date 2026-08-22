@@ -19,14 +19,8 @@ import { RankingList, type RankingListItem } from '@renderer/components/ui/ranki
 import { Section } from '@renderer/components/ui/section'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { MediaType } from '@shared/common'
-
-const MEDIA_ATTACHMENT_TABLES = {
-  game: 'games',
-  anime: 'animes'
-} as const satisfies Record<MediaType, string>
 
 interface Props {
   /** Module header title */
@@ -72,15 +66,10 @@ const items = computed<RankingListItem[]>(() =>
           : m.value.statistics.hero.timesValue({ count: item.sessionCount }),
       coverUrl:
         entity?.coverFile != null
-          ? getAttachmentUrl(
-              MEDIA_ATTACHMENT_TABLES[entity.mediaType],
-              entity.id,
-              entity.coverFile,
-              {
-                width: 64,
-                height: 64
-              }
-            )
+          ? getEntityAttachmentUrl(entity.mediaType, entity.id, entity.coverFile, {
+              width: 64,
+              height: 64
+            })
           : undefined,
       icon: getEntityIcon(entity?.mediaType ?? 'game')
     }

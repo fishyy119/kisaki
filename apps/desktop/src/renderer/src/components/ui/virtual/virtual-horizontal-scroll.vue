@@ -11,7 +11,7 @@
   ```vue
   <VirtualHorizontalScroll :items="games" @scroll-state-change="handleScroll">
     <template #item="{ item }">
-      <GameCard :game="item as Game" size="md" />
+      <GameCard :game="item" size="md" />
     </template>
   </VirtualHorizontalScroll>
   ```

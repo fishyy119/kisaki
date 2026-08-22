@@ -14,7 +14,7 @@ import type { Messages } from '@shared/i18n'
 import type { AnimeImageSlot, GameImageSlot, ScraperCapability } from '@shared/scraper'
 import { animes, characters, companies, games, persons } from '@shared/db'
 import type { TableName } from '@shared/db/table-names'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 
 export type AssetFileSource = { kind: 'path'; path: string } | { kind: 'url'; url: string }
 
@@ -137,7 +137,7 @@ const MEDIA_FIELDS = {
 
 type MediaFieldKey = keyof typeof MEDIA_FIELDS
 
-export const ENTITY_ASSET_SPECS: Record<TableEntityType, EntityAssetSpec> = {
+export const ENTITY_ASSET_SPECS: Record<ContentEntityType, EntityAssetSpec> = {
   game: {
     attachmentTable: 'games',
     slots: [

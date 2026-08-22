@@ -25,7 +25,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { companies } from '@shared/db'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
@@ -49,11 +49,8 @@ const { company, error, spoilersRevealed } = useCompanyRouteProvider()
 const spoilerConfirmOpen = ref(false)
 
 useAmbientLight(() =>
-  company.value?.logoFile
-    ? getAttachmentUrl('companies', company.value.id, company.value.logoFile, {
-        width: 100,
-        height: 100
-      })
+  company.value
+    ? getEntityImageUrl('company', company.value, 'cover', { width: 100, height: 100 })
     : null
 )
 

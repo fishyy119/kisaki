@@ -20,7 +20,7 @@ import {
   collectionCompanyLinks
 } from '@shared/db'
 import { useAsyncData, useStagedImagePick } from '@renderer/composables'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import type { ContentEntityType } from '@shared/common'
 import {
   Dialog,
@@ -123,12 +123,8 @@ watch(
 const currentCoverUrl = computed(() => {
   if (!isEditMode) return null
   if (cover.mode.value !== 'keep') return null
-  if (!existingCollection.value?.coverFile) return null
-  return getAttachmentUrl(
-    'collections',
-    existingCollection.value.id,
-    existingCollection.value.coverFile
-  )
+  if (!existingCollection.value) return null
+  return getEntityImageUrl('collection', existingCollection.value, 'cover')
 })
 
 const coverClearDisabled = computed(

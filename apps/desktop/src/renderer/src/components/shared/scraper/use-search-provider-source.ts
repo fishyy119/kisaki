@@ -1,7 +1,8 @@
-import { ref, watch, type Ref } from 'vue'
+import { ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
+import type { ContentEntityType } from '@shared/common'
 import { scraperProfiles } from '@shared/db'
 
 const PROVIDER_CHANNELS = {
@@ -10,9 +11,7 @@ const PROVIDER_CHANNELS = {
   person: 'scraper:get-person-provider',
   company: 'scraper:get-company-provider',
   character: 'scraper:get-character-provider'
-} as const
-
-export type SearchProviderMediaType = keyof typeof PROVIDER_CHANNELS
+} as const satisfies Record<ContentEntityType, string>
 
 /**
  * External id source of a profile's search provider, or `null` while it is
@@ -26,14 +25,14 @@ export type SearchProviderMediaType = keyof typeof PROVIDER_CHANNELS
  */
 export function useSearchProviderSource(
   profileId: Ref<string>,
-  mediaType: SearchProviderMediaType
+  entityType: MaybeRefOrGetter<ContentEntityType>
 ): Ref<string | null> {
   const source = ref<string | null>(null)
   let latestRequest = 0
 
   watch(
-    profileId,
-    async (id) => {
+    [profileId, () => toValue(entityType)],
+    async ([id, type]) => {
       const request = (latestRequest += 1)
       source.value = null
       if (!id) {
@@ -47,7 +46,7 @@ export function useSearchProviderSource(
         return
       }
 
-      const result = await ipcManager.invoke(PROVIDER_CHANNELS[mediaType], profile.searchProviderId)
+      const result = await ipcManager.invoke(PROVIDER_CHANNELS[type], profile.searchProviderId)
       if (request !== latestRequest) {
         return
       }

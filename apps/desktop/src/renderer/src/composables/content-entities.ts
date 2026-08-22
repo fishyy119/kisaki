@@ -6,11 +6,11 @@
  * mixed-entity results.
  */
 
+import type { EntityRowMap } from '@renderer/core/db'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
-import type { Anime, Game, Character, Person, Company } from '@shared/db'
 
 /** Union type for content entities */
-export type ContentEntityData = Game | Anime | Character | Person | Company
+export type ContentEntityData = EntityRowMap[ContentEntityType]
 
 /** Entity count by type */
 export type ContentEntityCounts = Record<ContentEntityType, number>

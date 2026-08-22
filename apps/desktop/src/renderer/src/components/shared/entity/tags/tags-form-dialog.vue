@@ -7,6 +7,7 @@
 import { ref, computed, watch } from 'vue'
 import { nanoid } from 'nanoid'
 import { Icon } from '@renderer/components/ui/icon'
+import { queryEntityTagLinks, replaceEntityTagLinks } from '@renderer/core/db'
 import { useAsyncData } from '@renderer/composables'
 import {
   Dialog,
@@ -25,8 +26,7 @@ import { notify } from '@renderer/core/notify'
 import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { TableEntityType } from '../entity-tables'
-import { TAG_LINK_STORES } from './tag-tables'
+import type { ContentEntityType } from '@shared/common'
 import EntityTagItemFormDialog from './tag-item-form-dialog.vue'
 
 const { m } = useI18n()
@@ -34,15 +34,13 @@ const { m } = useI18n()
 const log = createLogger('Library')
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
 }
 
 const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
-
-const store = computed(() => TAG_LINK_STORES[props.entityType])
 
 interface TagItem {
   id: string
@@ -73,10 +71,13 @@ watch(
   }
 )
 
-const { data: results, isLoading } = useAsyncData(() => store.value.list(props.entityId), {
-  watch: [() => props.entityId],
-  enabled: () => open.value
-})
+const { data: results, isLoading } = useAsyncData(
+  () => queryEntityTagLinks(props.entityType, props.entityId),
+  {
+    watch: [() => props.entityId],
+    enabled: () => open.value
+  }
+)
 
 watch(results, (data) => {
   if (data) {
@@ -119,7 +120,8 @@ const itemFormInitialData = computed(() => {
 async function handleSave() {
   isSaving.value = true
   try {
-    await store.value.replace(
+    await replaceEntityTagLinks(
+      props.entityType,
       props.entityId,
       items.value.map((item) => ({
         id: item.isNew ? nanoid() : item.id,

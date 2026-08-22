@@ -9,9 +9,13 @@ import { usePerson } from '@renderer/composables/use-person'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
-import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
+import { CharacterCard } from '@renderer/components/shared/character'
 import { useI18n } from '@renderer/composables'
-import { EntityLinksFormDialog } from '@renderer/components/shared/entity'
+import {
+  EntityDetailDialog,
+  EntityLinksFormDialog,
+  type EntityDetailTarget
+} from '@renderer/components/shared/entity'
 import { CHARACTER_PERSON_ROLE_VALUES } from '@shared/db'
 
 const { m } = useI18n()
@@ -23,7 +27,7 @@ const CHARACTER_PERSON_ROLE_LABELS = computed<Record<string, string>>(
 const { person, characters } = usePerson()
 
 const editDialogOpen = ref(false)
-const openCharacterId = ref<string | null>(null)
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 const hasCharacters = computed(() => characters.value && characters.value.length > 0)
 
@@ -38,13 +42,6 @@ const groupedCharacters = computed(() => {
     },
     {} as Record<string, typeof characters.value>
   )
-})
-
-const characterDialogOpen = computed({
-  get: () => openCharacterId.value !== null,
-  set: (value) => {
-    if (!value) openCharacterId.value = null
-  }
 })
 </script>
 
@@ -109,7 +106,7 @@ const characterDialogOpen = computed({
                   :character="link.character"
                   size="sm"
                   align="left"
-                  @click="openCharacterId = link.character.id"
+                  @click="openEntity = { entityType: 'character', entityId: link.character.id }"
                 />
               </template>
             </div>
@@ -127,10 +124,6 @@ const characterDialogOpen = computed({
     />
 
     <!-- Character Detail Dialog -->
-    <CharacterDetailDialog
-      v-if="openCharacterId"
-      v-model:open="characterDialogOpen"
-      :character-id="openCharacterId"
-    />
+    <EntityDetailDialog v-model:target="openEntity" />
   </template>
 </template>

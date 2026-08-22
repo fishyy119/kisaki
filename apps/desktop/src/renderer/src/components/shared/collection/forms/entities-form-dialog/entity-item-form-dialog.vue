@@ -4,10 +4,9 @@
 -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
+import { queryEntityRow } from '@renderer/core/db'
 import {
   Dialog,
   DialogContent,
@@ -20,11 +19,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import { GameSelect } from '@renderer/components/shared/game'
-import { AnimeSelect } from '@renderer/components/shared/anime'
-import { CharacterSelect } from '@renderer/components/shared/character'
-import { PersonSelect } from '@renderer/components/shared/person'
-import { CompanySelect } from '@renderer/components/shared/company'
+import { ENTITY_SELECT_SPECS } from '@renderer/components/shared/entity'
 import type { ContentEntityType } from '@shared/common'
 import { useI18n } from '@renderer/composables/use-i18n'
 
@@ -39,18 +34,6 @@ interface EntityLink {
   orderInCollection: number
   isNew?: boolean
 }
-
-interface EntityConfig {
-  label: string
-}
-
-const ENTITY_CONFIG = computed<Record<ContentEntityType, EntityConfig>>(() => ({
-  game: { label: m.value.library.entities.game },
-  anime: { label: m.value.library.entities.anime },
-  character: { label: m.value.library.entities.character },
-  person: { label: m.value.library.entities.person },
-  company: { label: m.value.library.entities.company }
-}))
 
 interface Props {
   entityType: ContentEntityType
@@ -88,7 +71,7 @@ watch(
   { immediate: true }
 )
 
-// Watch for entity selection change - async side effect to fetch entity name
+// The link row stores the name it was created with, so a pick resolves it now.
 watch(
   () => formData.value.entityId,
   async (id) => {
@@ -97,59 +80,14 @@ watch(
       return
     }
 
-    let name = 'Unknown'
-
-    switch (props.entityType) {
-      case 'game': {
-        const entity = await db.query.games.findFirst({
-          where: eq(db._.fullSchema.games.id, id)
-        })
-        if (entity) name = entity.name
-        break
-      }
-      case 'anime': {
-        const entity = await db.query.animes.findFirst({
-          where: eq(db._.fullSchema.animes.id, id)
-        })
-        if (entity) name = entity.name
-        break
-      }
-      case 'character': {
-        const entity = await db.query.characters.findFirst({
-          where: eq(db._.fullSchema.characters.id, id)
-        })
-        if (entity) name = entity.name
-        break
-      }
-      case 'person': {
-        const entity = await db.query.persons.findFirst({
-          where: eq(db._.fullSchema.persons.id, id)
-        })
-        if (entity) name = entity.name
-        break
-      }
-      case 'company': {
-        const entity = await db.query.companies.findFirst({
-          where: eq(db._.fullSchema.companies.id, id)
-        })
-        if (entity) name = entity.name
-        break
-      }
-      default:
-        props.entityType satisfies never
-    }
-
-    formData.value.entityName = name
+    const row = await queryEntityRow(props.entityType, id)
+    formData.value.entityName = row?.name ?? 'Unknown'
   }
 )
 
 function handleSubmit() {
   if (!formData.value.entityId) {
-    notify.error(
-      m.value.library.forms.selectEntityRequired({
-        label: ENTITY_CONFIG.value[props.entityType].label
-      })
-    )
+    notify.error(m.value.library.forms.selectEntityRequired({ label: entityLabel.value }))
     return
   }
   emit('submit', {
@@ -171,7 +109,8 @@ const excludeIds = computed(() => {
   return props.existingEntityIds.filter((id) => id !== props.initialData?.entityId)
 })
 
-const config = computed(() => ENTITY_CONFIG.value[props.entityType])
+const entityLabel = computed(() => m.value.library.entities[props.entityType])
+const selectSpec = computed(() => ENTITY_SELECT_SPECS[props.entityType])
 </script>
 
 <template>
@@ -180,7 +119,7 @@ const config = computed(() => ENTITY_CONFIG.value[props.entityType])
       <DialogHeader>
         <DialogTitle>{{
           (props.isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({
-            label: config.label
+            label: entityLabel
           })
         }}</DialogTitle>
       </DialogHeader>
@@ -188,37 +127,13 @@ const config = computed(() => ENTITY_CONFIG.value[props.entityType])
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>{{ config.label }}</FieldLabel>
+              <FieldLabel>{{ entityLabel }}</FieldLabel>
               <FieldContent>
-                <GameSelect
-                  v-if="props.entityType === 'game'"
+                <component
+                  :is="selectSpec.component()"
                   v-model="formData.entityId"
                   :exclude-ids="excludeIds"
-                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
-                />
-                <AnimeSelect
-                  v-else-if="props.entityType === 'anime'"
-                  v-model="formData.entityId"
-                  :exclude-ids="excludeIds"
-                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
-                />
-                <CharacterSelect
-                  v-else-if="props.entityType === 'character'"
-                  v-model="formData.entityId"
-                  :exclude-ids="excludeIds"
-                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
-                />
-                <PersonSelect
-                  v-else-if="props.entityType === 'person'"
-                  v-model="formData.entityId"
-                  :exclude-ids="excludeIds"
-                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
-                />
-                <CompanySelect
-                  v-else-if="props.entityType === 'company'"
-                  v-model="formData.entityId"
-                  :exclude-ids="excludeIds"
-                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
+                  :placeholder="m.library.select.selectPlaceholder({ label: entityLabel })"
                 />
               </FieldContent>
             </Field>

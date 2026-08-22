@@ -30,7 +30,7 @@ import { useI18n } from '@renderer/composables'
 const { m } = useI18n()
 
 interface Props {
-  companyId: string
+  entityId: string
 }
 
 const props = defineProps<Props>()
@@ -38,7 +38,7 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 const { company, isLoading, error, spoilersRevealed } = useCompanyDialogProvider(
-  () => props.companyId
+  () => props.entityId
 )
 const state = useRenderState(isLoading, error, company)
 
@@ -46,7 +46,7 @@ const spoilerConfirmOpen = ref(false)
 
 useDbChanges(({ operation, table, id }) => {
   if (operation !== 'deleted') return
-  if (table === 'companies' && id === props.companyId) {
+  if (table === 'companies' && id === props.entityId) {
     open.value = false
   }
 })

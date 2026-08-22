@@ -8,7 +8,7 @@ import { ref, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { db } from '@renderer/core/db'
+import { db, ENTITY_TABLES } from '@renderer/core/db'
 import type { ExternalSite } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
 import {
@@ -35,7 +35,7 @@ import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { ENTITY_TABLES, type TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import EntityExternalSiteItemFormDialog from './external-site-item-form-dialog.vue'
 
 const { m } = useI18n()
@@ -43,7 +43,7 @@ const { m } = useI18n()
 const log = createLogger('Library')
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
 }
 
@@ -51,7 +51,7 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const table = computed(() => ENTITY_TABLES[props.entityType])
+const table = computed(() => ENTITY_TABLES[props.entityType].table)
 
 // Form state
 const sites = ref<ExternalSite[]>([])

@@ -26,7 +26,7 @@ import {
   type AnimeStatus,
   type GameStatus
 } from '@shared/db'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 
 /*
  * Media-specific dialog components load lazily: the entity domain must not
@@ -97,7 +97,7 @@ export interface MenuSpec {
   extraDialogs: MenuExtraDialog[]
 }
 
-export const MENU_SPECS: Record<TableEntityType, MenuSpec> = {
+export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
   game: {
     entityTable: 'games',
     collections: {

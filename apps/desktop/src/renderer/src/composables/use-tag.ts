@@ -22,14 +22,17 @@ import {
 } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { eq, asc, count, and } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import {
+  TAG_LINKS,
+  countTaggedEntities,
+  queryEntityRow,
+  queryTaggedEntities
+} from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { usePreferencesStore } from '@renderer/stores'
-import type { Tag, Game, Anime, Character, Person, Company } from '@shared/db/schema'
-import * as schema from '@shared/db/schema'
-import type { ContentEntityType } from '@shared/common'
+import type { Tag } from '@shared/db/schema'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 import { createEmptyContentEntityCounts } from './content-entities'
 import type { ContentEntityData, ContentEntityCounts } from './content-entities'
 import { useDbChanges } from './use-db-changes'
@@ -72,21 +75,6 @@ export const TagKey: InjectionKey<TagContext> = Symbol('tag')
 // Helper Functions
 // =============================================================================
 
-function getLinkTableName(type: ContentEntityType): string {
-  switch (type) {
-    case 'game':
-      return 'gameTagLinks'
-    case 'anime':
-      return 'animeTagLinks'
-    case 'character':
-      return 'characterTagLinks'
-    case 'person':
-      return 'personTagLinks'
-    case 'company':
-      return 'companyTagLinks'
-  }
-}
-
 function getDefaultEntityType(counts: ContentEntityCounts): ContentEntityType {
   const entries = Object.entries(counts) as [ContentEntityType, number][]
   const sorted = entries.sort((a, b) => b[1] - a[1])
@@ -101,168 +89,21 @@ async function fetchTagWithCounts(
   tagId: string,
   showNsfw: boolean
 ): Promise<{ tag: Tag | null; counts: ContentEntityCounts }> {
-  const tagWhere = and(
-    eq(schema.tags.id, tagId),
-    showNsfw ? undefined : eq(schema.tags.isNsfw, false)
-  )
+  const counts = createEmptyContentEntityCounts()
 
-  const [
-    [tagData],
-    [gameCountRow],
-    [animeCountRow],
-    [characterCountRow],
-    [personCountRow],
-    [companyCountRow]
-  ] = await Promise.all([
-    db
-      .select()
-      .from(schema.tags)
-      .where(tagWhere as never)
-      .limit(1),
-    db
-      .select({ value: count() })
-      .from(schema.gameTagLinks)
-      .innerJoin(schema.games, eq(schema.gameTagLinks.gameId, schema.games.id))
-      .where(
-        and(
-          eq(schema.gameTagLinks.tagId, tagId),
-          showNsfw ? undefined : eq(schema.games.isNsfw, false)
-        )
-      ),
-    db
-      .select({ value: count() })
-      .from(schema.animeTagLinks)
-      .innerJoin(schema.animes, eq(schema.animeTagLinks.animeId, schema.animes.id))
-      .where(
-        and(
-          eq(schema.animeTagLinks.tagId, tagId),
-          showNsfw ? undefined : eq(schema.animes.isNsfw, false)
-        )
-      ),
-    db
-      .select({ value: count() })
-      .from(schema.characterTagLinks)
-      .innerJoin(schema.characters, eq(schema.characterTagLinks.characterId, schema.characters.id))
-      .where(
-        and(
-          eq(schema.characterTagLinks.tagId, tagId),
-          showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-        )
-      ),
-    db
-      .select({ value: count() })
-      .from(schema.personTagLinks)
-      .innerJoin(schema.persons, eq(schema.personTagLinks.personId, schema.persons.id))
-      .where(
-        and(
-          eq(schema.personTagLinks.tagId, tagId),
-          showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-        )
-      ),
-    db
-      .select({ value: count() })
-      .from(schema.companyTagLinks)
-      .innerJoin(schema.companies, eq(schema.companyTagLinks.companyId, schema.companies.id))
-      .where(
-        and(
-          eq(schema.companyTagLinks.tagId, tagId),
-          showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-        )
-      )
+  const [tag] = await Promise.all([
+    queryEntityRow('tag', tagId),
+    Promise.all(
+      CONTENT_ENTITY_TYPES.map(async (type) => {
+        counts[type] = await countTaggedEntities(type, tagId, showNsfw)
+      })
+    )
   ])
 
-  return {
-    tag: tagData ?? null,
-    counts: {
-      game: Number(gameCountRow?.value ?? 0),
-      anime: Number(animeCountRow?.value ?? 0),
-      character: Number(characterCountRow?.value ?? 0),
-      person: Number(personCountRow?.value ?? 0),
-      company: Number(companyCountRow?.value ?? 0)
-    }
-  }
-}
+  // A hidden tag reads as missing, so both surfaces fall through to not-found.
+  if (tag?.isNsfw && !showNsfw) return { tag: null, counts }
 
-async function fetchEntitiesByType(
-  tagId: string,
-  type: ContentEntityType,
-  showNsfw: boolean
-): Promise<ContentEntityData[]> {
-  switch (type) {
-    case 'game': {
-      const whereCondition = and(
-        eq(schema.gameTagLinks.tagId, tagId),
-        showNsfw ? undefined : eq(schema.games.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.gameTagLinks)
-        .innerJoin(schema.games, eq(schema.gameTagLinks.gameId, schema.games.id))
-        .where(whereCondition)
-        .orderBy(asc(schema.gameTagLinks.orderInTag))
-
-      return rows.map((row) => row.games) as Game[]
-    }
-    case 'anime': {
-      const whereCondition = and(
-        eq(schema.animeTagLinks.tagId, tagId),
-        showNsfw ? undefined : eq(schema.animes.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.animeTagLinks)
-        .innerJoin(schema.animes, eq(schema.animeTagLinks.animeId, schema.animes.id))
-        .where(whereCondition)
-        .orderBy(asc(schema.animeTagLinks.orderInTag))
-
-      return rows.map((row) => row.animes) as Anime[]
-    }
-    case 'character': {
-      const whereCondition = and(
-        eq(schema.characterTagLinks.tagId, tagId),
-        showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.characterTagLinks)
-        .innerJoin(
-          schema.characters,
-          eq(schema.characterTagLinks.characterId, schema.characters.id)
-        )
-        .where(whereCondition)
-        .orderBy(asc(schema.characterTagLinks.orderInTag))
-
-      return rows.map((row) => row.characters) as Character[]
-    }
-    case 'person': {
-      const whereCondition = and(
-        eq(schema.personTagLinks.tagId, tagId),
-        showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.personTagLinks)
-        .innerJoin(schema.persons, eq(schema.personTagLinks.personId, schema.persons.id))
-        .where(whereCondition)
-        .orderBy(asc(schema.personTagLinks.orderInTag))
-
-      return rows.map((row) => row.persons) as Person[]
-    }
-    case 'company': {
-      const whereCondition = and(
-        eq(schema.companyTagLinks.tagId, tagId),
-        showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.companyTagLinks)
-        .innerJoin(schema.companies, eq(schema.companyTagLinks.companyId, schema.companies.id))
-        .where(whereCondition)
-        .orderBy(asc(schema.companyTagLinks.orderInTag))
-
-      return rows.map((row) => row.companies) as Company[]
-    }
-  }
+  return { tag, counts }
 }
 
 async function fetchTagData(
@@ -274,7 +115,7 @@ async function fetchTagData(
   if (!tag) return null
 
   const entityType = selectedType ?? getDefaultEntityType(counts)
-  const entities = await fetchEntitiesByType(tagId, entityType, showNsfw)
+  const entities = await queryTaggedEntities(entityType, tagId, showNsfw)
 
   return { tag, counts, entityType, entities }
 }
@@ -336,23 +177,13 @@ function useTagDbSync(
   refetch: () => Promise<void>
 ): void {
   useDbChanges(({ operation, table, id: entityId }) => {
-    if (operation === 'updated') {
-      if (table === 'tags' && entityId === toValue(tagId)) {
-        refetch()
-      }
-      if (table === getLinkTableName(entityType.value)) {
-        refetch()
-      }
+    if (operation === 'updated' && table === 'tags' && entityId === toValue(tagId)) {
+      refetch()
+      return
     }
-    if (operation === 'inserted') {
-      if (table === getLinkTableName(entityType.value)) {
-        refetch()
-      }
-    }
-    if (operation === 'deleted') {
-      if (table === getLinkTableName(entityType.value)) {
-        refetch()
-      }
+    // Any write to the visible link table changes which entities the tag holds.
+    if (table === TAG_LINKS[entityType.value].tableName) {
+      refetch()
     }
   })
 }

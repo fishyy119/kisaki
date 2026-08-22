@@ -11,7 +11,7 @@
   ```vue
   <VirtualGrid :items="games" :scroll-parent="scrollContainerRef">
     <template #item="{ item }">
-      <GameCard :game="item as Game" />
+      <GameCard :game="item" />
     </template>
   </VirtualGrid>
   ```

@@ -1,14 +1,13 @@
+<!--
+  MergeSourcePicker
+  Picks the duplicate row to fold into the merge target. The entity's own select
+  comes from the shared select registry, so every entity type is pickable.
+-->
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { AllEntityType } from '@shared/common'
 import { useI18n } from '@renderer/composables'
-import GameSelect from '../../game/game-select.vue'
-import AnimeSelect from '../../anime/anime-select.vue'
-import PersonSelect from '../../person/person-select.vue'
-import CompanySelect from '../../company/company-select.vue'
-import CharacterSelect from '../../character/character-select.vue'
-import CollectionSelect from '../../collection/collection-select.vue'
-import TagSelect from '../../tag/tag-select.vue'
+import { ENTITY_SELECT_SPECS } from '../select-specs'
 
 interface Props {
   entityType: AllEntityType
@@ -23,77 +22,29 @@ const props = withDefaults(defineProps<Props>(), {
 const sourceId = defineModel<string>({ required: true })
 const { m } = useI18n()
 
+const spec = computed(() => ENTITY_SELECT_SPECS[props.entityType])
+
 const emptyText = computed(() =>
   m.value.merge.selectDuplicate({ label: m.value.library.entities[props.entityType] })
 )
 
 const excludeIds = computed(() => [props.targetId])
-const collectionSourceId = computed<string | null>({
-  get: () => sourceId.value || null,
-  set: (value) => {
-    sourceId.value = value ?? ''
-  }
-})
+
+/** A cleared collection select reports null; the dialog reads "" as unpicked. */
+function handleSelect(value: string | null): void {
+  sourceId.value = value ?? ''
+}
 </script>
 
 <template>
-  <GameSelect
-    v-if="props.entityType === 'game'"
-    v-model="sourceId"
+  <component
+    :is="spec.component()"
     class="w-full"
+    :model-value="sourceId"
     :empty-text="emptyText"
     :exclude-ids="excludeIds"
     :disabled="props.disabled"
-  />
-  <AnimeSelect
-    v-else-if="props.entityType === 'anime'"
-    v-model="sourceId"
-    class="w-full"
-    :empty-text="emptyText"
-    :exclude-ids="excludeIds"
-    :disabled="props.disabled"
-  />
-  <PersonSelect
-    v-else-if="props.entityType === 'person'"
-    v-model="sourceId"
-    class="w-full"
-    :empty-text="emptyText"
-    :exclude-ids="excludeIds"
-    :disabled="props.disabled"
-  />
-  <CompanySelect
-    v-else-if="props.entityType === 'company'"
-    v-model="sourceId"
-    class="w-full"
-    :empty-text="emptyText"
-    :exclude-ids="excludeIds"
-    :disabled="props.disabled"
-  />
-  <CharacterSelect
-    v-else-if="props.entityType === 'character'"
-    v-model="sourceId"
-    class="w-full"
-    :empty-text="emptyText"
-    :exclude-ids="excludeIds"
-    :disabled="props.disabled"
-  />
-  <CollectionSelect
-    v-else-if="props.entityType === 'collection'"
-    v-model="collectionSourceId"
-    class="w-full"
-    :empty-text="emptyText"
-    :exclude-ids="excludeIds"
-    :allow-none="false"
-    :allow-create="false"
-    :disabled="props.disabled"
-  />
-  <TagSelect
-    v-else
-    v-model="sourceId"
-    class="w-full"
-    :empty-text="emptyText"
-    :exclude-ids="excludeIds"
-    :allow-create="false"
-    :disabled="props.disabled"
+    v-bind="spec.pickerProps"
+    @update:model-value="handleSelect"
   />
 </template>

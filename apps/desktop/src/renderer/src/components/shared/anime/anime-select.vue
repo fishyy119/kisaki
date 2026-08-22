@@ -1,17 +1,11 @@
 <!--
   AnimeSelect
-  Anime select with built-in data fetching.
-  Supports both single and multiple selection modes.
-  Uses virtual scrolling for performance.
+  Anime picker with built-in data fetching, in single or multiple mode.
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { usePreferencesStore } from '@renderer/stores'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
-import { db } from '@renderer/core/db'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { useEntitySelectSource, useI18n } from '@renderer/composables'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 
 interface Props {
@@ -57,37 +51,7 @@ const modelValue = defineModel<string>({ default: '' })
 /** For multiple selection mode */
 const selectedIdsModel = defineModel<string[]>('selectedIds', { default: () => [] })
 
-const preferencesStore = usePreferencesStore()
-const { showNsfw } = storeToRefs(preferencesStore)
-
-const { data: allAnimes, refetch } = useAsyncData(
-  () =>
-    db.query.animes.findMany({
-      columns: { id: true, name: true, originalName: true, coverFile: true },
-      ...(showNsfw.value ? {} : { where: (a, { eq }) => eq(a.isNsfw, false) })
-    }),
-  { watch: [showNsfw] }
-)
-
-useDbChanges(({ table }) => {
-  if (table === 'animes') refetch()
-})
-
-const animeEntities = computed(() =>
-  (allAnimes.value ?? [])
-    .filter((anime) => !props.excludeIds.includes(anime.id))
-    .map((anime) => ({
-      id: anime.id,
-      name: anime.name,
-      subText: anime.originalName || undefined,
-      imageUrl: anime.coverFile
-        ? getAttachmentUrl('animes', anime.id, anime.coverFile, {
-            width: 100,
-            height: 100
-          })
-        : null
-    }))
-)
+const animeEntities = useEntitySelectSource('anime', () => props.excludeIds)
 
 // Handle both single and multiple selection modes
 const selectedIds = computed({

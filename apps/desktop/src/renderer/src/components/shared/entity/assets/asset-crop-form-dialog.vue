@@ -13,13 +13,13 @@ import {
   type CropConfirmPayload
 } from '@renderer/components/ui/image-cropper-dialog'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { ENTITY_ASSET_SPECS } from './asset-specs'
 
 const { m } = useI18n()
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
   slotType: string
   currentFileName: string

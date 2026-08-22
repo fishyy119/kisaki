@@ -5,7 +5,7 @@
  * NSFW visibility, filter + search composition, and ordering are owned here;
  * the row-type cast below is the module's one controlled unsafe point.
  */
-import { and, count, eq, inArray, type SQL } from 'drizzle-orm'
+import { and, count, eq, inArray, notInArray, type SQL } from 'drizzle-orm'
 
 import type { AllEntityType, SortDirection } from '@shared/common'
 import {
@@ -24,6 +24,8 @@ export interface EntityQueryOptions {
   sortField?: string
   sortDirection?: SortDirection
   limit?: number
+  /** Rows to leave out, such as entries already picked or already grouped. */
+  excludeIds?: readonly string[]
   includeNsfw: boolean
 }
 
@@ -37,6 +39,9 @@ function buildWhere(entityType: AllEntityType, options: EntityQueryOptions): SQL
   if (options.search) {
     const searchWhere = buildSearchCondition(getSearchQuerySpec(entityType), options.search)
     if (searchWhere) parts.push(searchWhere)
+  }
+  if (options.excludeIds && options.excludeIds.length > 0) {
+    parts.push(notInArray(ENTITY_TABLES[entityType].idColumn, [...options.excludeIds]))
   }
   if (!options.includeNsfw) {
     parts.push(eq(ENTITY_TABLES[entityType].isNsfwColumn, false))
@@ -68,6 +73,17 @@ export async function queryEntities<T extends AllEntityType>(
   if (options.limit !== undefined) query = query.limit(options.limit)
 
   return (await query) as EntityRowMap[T][]
+}
+
+/** Loads one entity row by id, or null when no row owns that id. */
+export async function queryEntityRow<T extends AllEntityType>(
+  entityType: T,
+  id: string
+): Promise<EntityRowMap[T] | null> {
+  const def = ENTITY_TABLES[entityType]
+
+  const rows = await db.select().from(def.table).where(eq(def.idColumn, id)).limit(1)
+  return (rows[0] as EntityRowMap[T] | undefined) ?? null
 }
 
 export async function countEntities(

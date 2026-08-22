@@ -1,17 +1,11 @@
 <!--
   GameSelect
-  Game select with built-in data fetching.
-  Supports both single and multiple selection modes.
-  Uses virtual scrolling for performance.
+  Game picker with built-in data fetching, in single or multiple mode.
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { usePreferencesStore } from '@renderer/stores'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
-import { db } from '@renderer/core/db'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { useEntitySelectSource, useI18n } from '@renderer/composables'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 
 interface Props {
@@ -57,37 +51,7 @@ const modelValue = defineModel<string>({ default: '' })
 /** For multiple selection mode */
 const selectedIdsModel = defineModel<string[]>('selectedIds', { default: () => [] })
 
-const preferencesStore = usePreferencesStore()
-const { showNsfw } = storeToRefs(preferencesStore)
-
-const { data: allGames, refetch } = useAsyncData(
-  () =>
-    db.query.games.findMany({
-      columns: { id: true, name: true, originalName: true, coverFile: true },
-      ...(showNsfw.value ? {} : { where: (g, { eq }) => eq(g.isNsfw, false) })
-    }),
-  { watch: [showNsfw] }
-)
-
-useDbChanges(({ table }) => {
-  if (table === 'games') refetch()
-})
-
-const gameEntities = computed(() =>
-  (allGames.value ?? [])
-    .filter((game) => !props.excludeIds.includes(game.id))
-    .map((game) => ({
-      id: game.id,
-      name: game.name,
-      subText: game.originalName || undefined,
-      imageUrl: game.coverFile
-        ? getAttachmentUrl('games', game.id, game.coverFile, {
-            width: 100,
-            height: 100
-          })
-        : null
-    }))
-)
+const gameEntities = useEntitySelectSource('game', () => props.excludeIds)
 
 // Handle both single and multiple selection modes
 const selectedIds = computed({

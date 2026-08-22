@@ -5,13 +5,12 @@
  */
 
 import { computed, ref, watch } from 'vue'
-import { eq, and } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
-import { db } from '@renderer/core/db'
+import { ENTITY_TABLES, queryEntities } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
-import { games, animes, characters, persons, companies } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import type { FilterState } from '@shared/filter'
 import { useDbChanges, type ContentEntityData } from '@renderer/composables'
 
 interface FavoritesData {
@@ -19,50 +18,21 @@ interface FavoritesData {
   entities: ContentEntityData[]
 }
 
+const FAVORITES_FILTER: FilterState = {
+  match: 'all',
+  conditions: [{ field: 'isFavorite', op: 'is', value: true }]
+}
+
 async function fetchFavorites(
   entityType: ContentEntityType,
   showNsfw: boolean
 ): Promise<FavoritesData> {
-  const fetchEntities = async (): Promise<ContentEntityData[]> => {
-    switch (entityType) {
-      case 'game':
-        return await db
-          .select()
-          .from(games)
-          .where(and(eq(games.isFavorite, true), showNsfw ? undefined : eq(games.isNsfw, false)))
-      case 'anime':
-        return await db
-          .select()
-          .from(animes)
-          .where(and(eq(animes.isFavorite, true), showNsfw ? undefined : eq(animes.isNsfw, false)))
-      case 'character':
-        return await db
-          .select()
-          .from(characters)
-          .where(
-            and(
-              eq(characters.isFavorite, true),
-              showNsfw ? undefined : eq(characters.isNsfw, false)
-            )
-          )
-      case 'person':
-        return await db
-          .select()
-          .from(persons)
-          .where(
-            and(eq(persons.isFavorite, true), showNsfw ? undefined : eq(persons.isNsfw, false))
-          )
-      case 'company':
-        return await db
-          .select()
-          .from(companies)
-          .where(
-            and(eq(companies.isFavorite, true), showNsfw ? undefined : eq(companies.isNsfw, false))
-          )
-    }
-  }
+  const entities = await queryEntities(entityType, {
+    filter: FAVORITES_FILTER,
+    includeNsfw: showNsfw
+  })
 
-  return { entityType, entities: await fetchEntities() }
+  return { entityType, entities }
 }
 
 // In-page tab selection lives beside the loader so the navigation-time fetch
@@ -90,9 +60,8 @@ export function useFavorites() {
     }
   })
 
-  const contentTables = ['games', 'animes', 'characters', 'persons', 'companies']
   useDbChanges(({ table }) => {
-    if (contentTables.includes(table)) refetch()
+    if (CONTENT_ENTITY_TYPES.some((type) => ENTITY_TABLES[type].tableName === table)) refetch()
   })
 
   return {

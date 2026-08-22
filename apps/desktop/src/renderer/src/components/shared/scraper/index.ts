@@ -2,7 +2,7 @@
 export { ScraperPresetFormDialog } from './forms'
 export { default as ScraperProfileSelect } from './scraper-profile-select.vue'
 export { default as ScraperProviderSelect } from './scraper-provider-select.vue'
-export { useSearchProviderSource, type SearchProviderMediaType } from './use-search-provider-source'
+export { useSearchProviderSource } from './use-search-provider-source'
 export {
   formatScraperProviderFallbackName,
   getScraperProviderDisplay,

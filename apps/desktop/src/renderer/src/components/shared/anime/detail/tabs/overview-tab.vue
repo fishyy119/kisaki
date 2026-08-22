@@ -11,23 +11,23 @@ import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
-import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
-import { CompanyDetailDialog } from '@renderer/components/shared/company'
+import { CharacterCard } from '@renderer/components/shared/character'
 import {
   MediaRelationsFormDialog,
   MediaRelationsSection,
   MediaDescriptionFormDialog
 } from '@renderer/components/shared/media'
-import { PersonDetailDialog } from '@renderer/components/shared/person'
-import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
+import { TagCard } from '@renderer/components/shared/tag'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { AnimeInfoFormDialog } from '../../forms'
 import {
+  EntityDetailDialog,
   EntityLinksFormDialog,
   EntityExternalSitesFormDialog,
   EntityRoleLinksSection,
   EntityTagsFormDialog,
+  type EntityDetailTarget,
   type RoleLinkItem
 } from '@renderer/components/shared/entity'
 import {
@@ -67,10 +67,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
   editDialogs.value[dialog] = true
 }
 
-const openCharacterId = ref<string | null>(null)
-const openPersonId = ref<string | null>(null)
-const openCompanyId = ref<string | null>(null)
-const openTagId = ref<string | null>(null)
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 const aliases = computed(() => anime.value?.aliases ?? [])
 const hasExternalSites = computed(
@@ -111,34 +108,6 @@ const personItems = computed<RoleLinkItem[]>(() =>
 const companyItems = computed<RoleLinkItem[]>(() =>
   companies.value.map((link) => ({ id: link.id, role: link.role, entity: link.company }))
 )
-
-const characterDialogOpen = computed({
-  get: () => openCharacterId.value !== null,
-  set: (value) => {
-    if (!value) openCharacterId.value = null
-  }
-})
-
-const personDialogOpen = computed({
-  get: () => openPersonId.value !== null,
-  set: (value) => {
-    if (!value) openPersonId.value = null
-  }
-})
-
-const companyDialogOpen = computed({
-  get: () => openCompanyId.value !== null,
-  set: (value) => {
-    if (!value) openCompanyId.value = null
-  }
-})
-
-const tagDialogOpen = computed({
-  get: () => openTagId.value !== null,
-  set: (value) => {
-    if (!value) openTagId.value = null
-  }
-})
 </script>
 
 <template>
@@ -170,7 +139,7 @@ const tagDialogOpen = computed({
               size="sm"
               align="left"
               :badge-label="item.roleLabel"
-              @click="openCharacterId = item.character.id"
+              @click="openEntity = { entityType: 'character', entityId: item.character.id }"
             />
           </template>
         </SectionScroll>
@@ -198,7 +167,7 @@ const tagDialogOpen = computed({
                 :tag="tagLink.tag"
                 variant="button"
                 button-size="xs"
-                @click="openTagId = tagLink.tag.id"
+                @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
               />
             </template>
           </div>
@@ -254,7 +223,7 @@ const tagDialogOpen = computed({
           :role-order="ANIME_PERSON_ROLE_VALUES"
           :role-labels="PERSON_ROLE_LABELS"
           @edit="openEditDialog('persons')"
-          @open="openPersonId = $event"
+          @open="openEntity = { entityType: 'person', entityId: $event }"
           @view-all="emit('navigate', 'persons')"
         />
 
@@ -266,7 +235,7 @@ const tagDialogOpen = computed({
           :role-order="ANIME_COMPANY_ROLE_VALUES"
           :role-labels="COMPANY_ROLE_LABELS"
           @edit="openEditDialog('companies')"
-          @open="openCompanyId = $event"
+          @open="openEntity = { entityType: 'company', entityId: $event }"
           @view-all="emit('navigate', 'companies')"
         />
 
@@ -346,25 +315,6 @@ const tagDialogOpen = computed({
       :entity-id="anime.id"
     />
 
-    <CharacterDetailDialog
-      v-if="openCharacterId"
-      v-model:open="characterDialogOpen"
-      :character-id="openCharacterId"
-    />
-    <PersonDetailDialog
-      v-if="openPersonId"
-      v-model:open="personDialogOpen"
-      :person-id="openPersonId"
-    />
-    <CompanyDetailDialog
-      v-if="openCompanyId"
-      v-model:open="companyDialogOpen"
-      :company-id="openCompanyId"
-    />
-    <TagDetailDialog
-      v-if="openTagId"
-      v-model:open="tagDialogOpen"
-      :tag-id="openTagId"
-    />
+    <EntityDetailDialog v-model:target="openEntity" />
   </template>
 </template>

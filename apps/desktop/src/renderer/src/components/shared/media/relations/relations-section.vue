@@ -8,9 +8,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { SectionScroll } from '@renderer/components/ui/section'
-import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { EntityCard } from '@renderer/components/shared/entity'
-import { GameDetailDialog } from '@renderer/components/shared/game'
+import {
+  EntityCard,
+  EntityDetailDialog,
+  type EntityDetailTarget
+} from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { MediaRelationEntry, MediaRelationTarget } from '@renderer/core/db/media-relations'
 
@@ -29,22 +31,14 @@ const { m } = useI18n()
 
 const RELATION_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.mediaRelation)
 
-/** The entry whose detail dialog is open, keyed by media type as well as id. */
-const openTarget = ref<{ mediaType: MediaRelationTarget['mediaType']; id: string } | null>(null)
-
-const dialogOpen = computed({
-  get: () => openTarget.value !== null,
-  set: (value) => {
-    if (!value) openTarget.value = null
-  }
-})
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 function getTypeLabel(entry: MediaRelationEntry): string {
   return RELATION_TYPE_LABELS.value[entry.type] || entry.type
 }
 
 function openDetail(target: MediaRelationTarget): void {
-  openTarget.value = { mediaType: target.mediaType, id: target.entity.id }
+  openEntity.value = { entityType: target.mediaType, entityId: target.entity.id }
 }
 </script>
 
@@ -69,16 +63,5 @@ function openDetail(target: MediaRelationTarget): void {
     </template>
   </SectionScroll>
 
-  <template v-if="openTarget">
-    <GameDetailDialog
-      v-if="openTarget.mediaType === 'game'"
-      v-model:open="dialogOpen"
-      :game-id="openTarget.id"
-    />
-    <AnimeDetailDialog
-      v-else
-      v-model:open="dialogOpen"
-      :anime-id="openTarget.id"
-    />
-  </template>
+  <EntityDetailDialog v-model:target="openEntity" />
 </template>

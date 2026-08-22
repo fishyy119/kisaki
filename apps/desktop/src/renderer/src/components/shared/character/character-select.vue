@@ -1,17 +1,12 @@
 <!--
   CharacterSelect
-  Character select component with built-in data fetching.
-  Supports both single and multiple selection modes.
-  Uses virtual scrolling for performance.
+  Character picker with built-in data fetching, in single or multiple mode.
 -->
 <script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { usePreferencesStore } from '@renderer/stores'
+import { useEntitySelectSource, useI18n } from '@renderer/composables'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { db } from '@renderer/core/db'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 
 interface Props {
   /** Multiple selection mode */
@@ -20,21 +15,20 @@ interface Props {
   placeholder?: string
   /** Text when nothing selected */
   emptyText?: string
+  /** Class name for trigger button */
+  class?: HTMLAttributes['class']
   /** Whether the select is disabled */
   disabled?: boolean
   /** Character IDs to exclude from the list */
   excludeIds?: string[]
   /** Reflect the current selection in the trigger (see VirtualizedCombobox) */
   showSelectedLabel?: boolean
-  /** Custom class name */
-  class?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  multiple: false,
   placeholder: undefined,
   emptyText: undefined,
-  disabled: false,
+  multiple: false,
   excludeIds: () => [],
   showSelectedLabel: true
 })
@@ -52,42 +46,12 @@ const emptyTextValue = computed(
     m.value.library.select.selectPlaceholder({ label: m.value.library.entities.character })
 )
 
-/** Currently selected character ID (single mode) */
+/** For single selection mode */
 const modelValue = defineModel<string>({ default: '' })
-/** Currently selected character IDs (multiple mode) */
+/** For multiple selection mode */
 const selectedIdsModel = defineModel<string[]>('selectedIds', { default: () => [] })
 
-const preferencesStore = usePreferencesStore()
-const { showNsfw } = storeToRefs(preferencesStore)
-
-const { data: allCharacters, refetch } = useAsyncData(
-  () =>
-    db.query.characters.findMany({
-      columns: { id: true, name: true, originalName: true, photoFile: true },
-      ...(showNsfw.value ? {} : { where: (c, { eq }) => eq(c.isNsfw, false) })
-    }),
-  { watch: [showNsfw] }
-)
-
-useDbChanges(({ table }) => {
-  if (table === 'characters') refetch()
-})
-
-const characterEntities = computed(() =>
-  (allCharacters.value || [])
-    .filter((char) => !props.excludeIds.includes(char.id))
-    .map((char) => ({
-      id: char.id,
-      name: char.name,
-      subText: char.originalName || undefined,
-      imageUrl: char.photoFile
-        ? getAttachmentUrl('characters', char.id, char.photoFile, {
-            width: 100,
-            height: 100
-          })
-        : null
-    }))
-)
+const characterEntities = useEntitySelectSource('character', () => props.excludeIds)
 
 // Handle both single and multiple selection modes
 const selectedIds = computed({
@@ -113,9 +77,9 @@ const selectedIds = computed({
     :entities="characterEntities"
     :placeholder="placeholderText"
     :empty-text="emptyTextValue"
-    :multiple="multiple"
+    :multiple="props.multiple"
     :class="props.class"
-    :disabled="disabled"
+    :disabled="props.disabled"
     :show-selected-label="props.showSelectedLabel"
   />
 </template>

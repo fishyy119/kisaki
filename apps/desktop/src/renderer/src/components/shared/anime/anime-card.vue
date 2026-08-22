@@ -9,7 +9,7 @@
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 import { useAnimeActivityStore } from '@renderer/stores'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ButtonVariants } from '@renderer/components/ui/button'
 import {
@@ -56,9 +56,7 @@ const animeActivityStore = useAnimeActivityStore()
 const isWatching = computed(() => animeActivityStore.isAnimeWatching(props.anime.id))
 
 const imageUrl = computed(() =>
-  props.anime.coverFile
-    ? getAttachmentUrl('animes', props.anime.id, props.anime.coverFile, { width: 300, height: 400 })
-    : null
+  getEntityImageUrl('anime', props.anime, 'cover', { width: 300, height: 400 })
 )
 </script>
 

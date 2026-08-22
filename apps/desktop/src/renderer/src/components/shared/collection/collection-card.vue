@@ -9,7 +9,7 @@
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ButtonVariants } from '@renderer/components/ui/button'
 import {
@@ -51,12 +51,7 @@ const emit = defineEmits<{
 }>()
 
 const imageUrl = computed(() =>
-  props.collection.coverFile
-    ? getAttachmentUrl('collections', props.collection.id, props.collection.coverFile, {
-        width: 300,
-        height: 300
-      })
-    : null
+  getEntityImageUrl('collection', props.collection, 'cover', { width: 300, height: 300 })
 )
 </script>
 

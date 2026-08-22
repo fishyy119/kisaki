@@ -8,12 +8,10 @@ import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
-import { CharacterDetailDialog } from '@renderer/components/shared/character'
-import { CompanyDetailDialog } from '@renderer/components/shared/company'
-import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import EntityCard from '../card'
+import { EntityDetailDialog, type EntityDetailTarget } from '../detail'
 import { EntityLinksFormDialog, type LinkViewKey } from '../links'
 import { groupRoleLinks, type RoleLinkEntityType, type RoleLinkItem } from './grouping'
 
@@ -39,16 +37,9 @@ const EMPTY_TEXT_KEYS = {
 } as const satisfies Record<RoleLinkEntityType, string>
 
 const editDialogOpen = ref(false)
-const openEntityId = ref<string | null>(null)
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 const grouped = computed(() => groupRoleLinks(props.items))
-
-const detailDialogOpen = computed({
-  get: () => openEntityId.value !== null,
-  set: (value) => {
-    if (!value) openEntityId.value = null
-  }
-})
 </script>
 
 <template>
@@ -111,7 +102,7 @@ const detailDialogOpen = computed({
               :subtitle="item.subtitle"
               align="left"
               size="sm"
-              @click="openEntityId = item.entity!.id"
+              @click="openEntity = { entityType: props.entityType, entityId: item.entity!.id }"
             />
           </div>
         </div>
@@ -128,19 +119,5 @@ const detailDialogOpen = computed({
   />
 
   <!-- Detail Dialog -->
-  <CharacterDetailDialog
-    v-if="props.entityType === 'character' && openEntityId"
-    v-model:open="detailDialogOpen"
-    :character-id="openEntityId"
-  />
-  <PersonDetailDialog
-    v-else-if="props.entityType === 'person' && openEntityId"
-    v-model:open="detailDialogOpen"
-    :person-id="openEntityId"
-  />
-  <CompanyDetailDialog
-    v-else-if="props.entityType === 'company' && openEntityId"
-    v-model:open="detailDialogOpen"
-    :company-id="openEntityId"
-  />
+  <EntityDetailDialog v-model:target="openEntity" />
 </template>

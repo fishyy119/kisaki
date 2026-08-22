@@ -24,7 +24,7 @@ import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { MediaType } from '@shared/common'
 import { CAST_SPECS, type CastRow } from './cast-specs'
@@ -99,7 +99,7 @@ function toItem(row: CastRow): CastItem {
 
 function characterImageUrl(item: CastItem): string | null {
   return item.characterImage
-    ? getAttachmentUrl('characters', item.characterId, item.characterImage, {
+    ? getEntityAttachmentUrl('character', item.characterId, item.characterImage, {
         width: 80,
         height: 80
       })

@@ -24,16 +24,11 @@ import { Button } from '@renderer/components/ui/button'
 import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { CoverImage } from '@renderer/components/ui/cover-image'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import {
-  LINK_TARGET_META,
-  LINK_VIEW_SPECS,
-  type LinkViewKey,
-  type LinkViewSpec
-} from './link-specs'
+import { LINK_VIEW_SPECS, type LinkViewKey, type LinkViewSpec } from './link-specs'
 import LinkItemFormDialog from './link-item-form-dialog.vue'
 
 const { m } = useI18n()
@@ -50,7 +45,6 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 const spec = computed<LinkViewSpec>(() => LINK_VIEW_SPECS[props.view])
-const targetMeta = computed(() => LINK_TARGET_META[spec.value.targetType])
 const targetLabel = computed(() => m.value.library.entities[spec.value.targetType])
 const roleLabels = computed(() => spec.value.roleLabels(m.value))
 
@@ -132,7 +126,7 @@ function withSpoiler(links: LinkItem[]) {
     link,
     spoiler: getSpoilerDisplay(link.targetName, link.note, link.isSpoiler, spoilersRevealed.value),
     imageUrl: link.targetImage
-      ? getAttachmentUrl(targetMeta.value.attachmentTable, link.targetId, link.targetImage, {
+      ? getEntityAttachmentUrl(spec.value.targetType, link.targetId, link.targetImage, {
           width: 100,
           height: 100
         })

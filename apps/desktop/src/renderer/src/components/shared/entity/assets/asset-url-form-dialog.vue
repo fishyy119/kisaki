@@ -26,13 +26,13 @@ import {
 } from '@renderer/components/ui/field'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { ENTITY_ASSET_SPECS } from './asset-specs'
 
 const { m } = useI18n()
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
   slotType: string
 }

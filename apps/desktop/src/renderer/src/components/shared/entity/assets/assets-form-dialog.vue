@@ -23,7 +23,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { ENTITY_ASSET_SPECS } from './asset-specs'
 import AssetSearchFormDialog from './asset-search-form-dialog.vue'
 import AssetCropFormDialog from './asset-crop-form-dialog.vue'
@@ -32,7 +32,7 @@ import AssetUrlFormDialog from './asset-url-form-dialog.vue'
 const { m } = useI18n()
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityId: string
 }
 

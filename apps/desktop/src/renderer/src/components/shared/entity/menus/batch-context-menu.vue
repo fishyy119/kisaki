@@ -10,13 +10,13 @@ import {
   ContextMenuTrigger,
   ContextMenuContent
 } from '@renderer/components/ui/context-menu'
-import type { TableEntityType } from '../entity-tables'
+import type { ContentEntityType } from '@shared/common'
 import { EntityBatchDeleteFormDialog } from '../delete'
 import { EntityBatchMetadataUpdateFormDialog } from '../metadata'
 import EntityBatchMenuItems from './batch-menu-items.vue'
 
 interface Props {
-  entityType: TableEntityType
+  entityType: ContentEntityType
   entityIds: string[]
 }
 

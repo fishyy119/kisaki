@@ -37,7 +37,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { animes, type AnimeStatus } from '@shared/db'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { formatAnimeStatus, getAnimeStatusVariant, getEntityIcon } from '@renderer/utils/format'
 
 const log = createLogger('Anime')
@@ -75,9 +75,7 @@ const { anime, error, spoilersRevealed } = useAnimeRouteProvider()
 const spoilerConfirmOpen = ref(false)
 
 useAmbientLight(() =>
-  anime.value?.coverFile
-    ? getAttachmentUrl('animes', anime.value.id, anime.value.coverFile, { width: 100, height: 100 })
-    : null
+  anime.value ? getEntityImageUrl('anime', anime.value, 'cover', { width: 100, height: 100 }) : null
 )
 
 // =============================================================================

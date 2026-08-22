@@ -25,7 +25,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { persons } from '@shared/db'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
@@ -49,11 +49,8 @@ const { person, error, spoilersRevealed } = usePersonRouteProvider()
 const spoilerConfirmOpen = ref(false)
 
 useAmbientLight(() =>
-  person.value?.photoFile
-    ? getAttachmentUrl('persons', person.value.id, person.value.photoFile, {
-        width: 100,
-        height: 100
-      })
+  person.value
+    ? getEntityImageUrl('person', person.value, 'cover', { width: 100, height: 100 })
     : null
 )
 

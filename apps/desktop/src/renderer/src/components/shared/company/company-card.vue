@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ButtonVariants } from '@renderer/components/ui/button'
 import {
@@ -52,12 +52,7 @@ const emit = defineEmits<{
 }>()
 
 const imageUrl = computed(() =>
-  props.company.logoFile
-    ? getAttachmentUrl('companies', props.company.id, props.company.logoFile, {
-        width: 300,
-        height: 300
-      })
-    : null
+  getEntityImageUrl('company', props.company, 'cover', { width: 300, height: 300 })
 )
 </script>
 

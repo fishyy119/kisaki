@@ -27,13 +27,8 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
-import {
-  LINK_TARGET_FETCHERS,
-  LINK_TARGET_META,
-  LINK_VIEW_SPECS,
-  type LinkViewKey,
-  type LinkViewSpec
-} from './link-specs'
+import { ENTITY_SELECT_SPECS } from '../select-specs'
+import { fetchLinkTarget, LINK_VIEW_SPECS, type LinkViewKey, type LinkViewSpec } from './link-specs'
 
 const { m } = useI18n()
 
@@ -63,7 +58,7 @@ const emit = defineEmits<{
 }>()
 
 const spec = computed<LinkViewSpec>(() => LINK_VIEW_SPECS[props.view])
-const targetMeta = computed(() => LINK_TARGET_META[spec.value.targetType])
+const targetSelect = computed(() => ENTITY_SELECT_SPECS[spec.value.targetType])
 const targetLabel = computed(() => m.value.library.entities[spec.value.targetType])
 
 const roleOptions = computed(() => {
@@ -119,7 +114,7 @@ watch(
       formData.value.targetImage = null
       return
     }
-    const target = await LINK_TARGET_FETCHERS[spec.value.targetType](targetId)
+    const target = await fetchLinkTarget(spec.value.targetType, targetId)
     if (target) {
       formData.value.targetName = target.name
       formData.value.targetImage = target.image
@@ -166,7 +161,7 @@ function handleCancel() {
               <FieldLabel>{{ targetLabel }}</FieldLabel>
               <FieldContent>
                 <component
-                  :is="targetMeta.select"
+                  :is="targetSelect.component()"
                   v-model="formData.targetId"
                   :exclude-ids="selectExcludeIds"
                   :placeholder="m.library.select.selectPlaceholder({ label: targetLabel })"

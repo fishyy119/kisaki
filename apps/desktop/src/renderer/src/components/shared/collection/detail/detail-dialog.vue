@@ -7,11 +7,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { GameDetailDialog } from '@renderer/components/shared/game'
-import { AnimeDetailDialog } from '@renderer/components/shared/anime'
-import { CharacterDetailDialog } from '@renderer/components/shared/character'
-import { PersonDetailDialog } from '@renderer/components/shared/person'
-import { CompanyDetailDialog } from '@renderer/components/shared/company'
+import { EntityDetailDialog, type EntityDetailTarget } from '@renderer/components/shared/entity'
 import {
   Dialog,
   DialogContent,
@@ -34,7 +30,7 @@ import { useI18n } from '@renderer/composables'
 const { m } = useI18n()
 
 interface Props {
-  collectionId: string
+  entityId: string
 }
 
 const props = defineProps<Props>()
@@ -42,12 +38,12 @@ const open = defineModel<boolean>('open', { required: true })
 
 // Establish provider
 const { collection, entityType, entityCounts, setEntityType, isLoading, error } =
-  useCollectionDialogProvider(() => props.collectionId)
+  useCollectionDialogProvider(() => props.entityId)
 const state = useRenderState(isLoading, error, collection)
 
 useDbChanges(({ operation, table, id }) => {
   if (operation !== 'deleted') return
-  if (table === 'collections' && id === props.collectionId) {
+  if (table === 'collections' && id === props.entityId) {
     open.value = false
   }
 })
@@ -60,69 +56,10 @@ const dialogBodyRef = ref<InstanceType<typeof DialogBody>>()
 
 type EntityClickPayload = { type: ContentEntityType; id: string }
 
-const openGameId = ref<string | null>(null)
-const openAnimeId = ref<string | null>(null)
-const openCharacterId = ref<string | null>(null)
-const openPersonId = ref<string | null>(null)
-const openCompanyId = ref<string | null>(null)
-
-const gameDialogOpen = computed({
-  get: () => openGameId.value !== null,
-  set: (value) => {
-    if (!value) openGameId.value = null
-  }
-})
-const animeDialogOpen = computed({
-  get: () => openAnimeId.value !== null,
-  set: (value) => {
-    if (!value) openAnimeId.value = null
-  }
-})
-const characterDialogOpen = computed({
-  get: () => openCharacterId.value !== null,
-  set: (value) => {
-    if (!value) openCharacterId.value = null
-  }
-})
-const personDialogOpen = computed({
-  get: () => openPersonId.value !== null,
-  set: (value) => {
-    if (!value) openPersonId.value = null
-  }
-})
-const companyDialogOpen = computed({
-  get: () => openCompanyId.value !== null,
-  set: (value) => {
-    if (!value) openCompanyId.value = null
-  }
-})
+const openEntity = ref<EntityDetailTarget | null>(null)
 
 function handleEntityClick(payload: EntityClickPayload) {
-  openGameId.value = null
-  openAnimeId.value = null
-  openCharacterId.value = null
-  openPersonId.value = null
-  openCompanyId.value = null
-
-  switch (payload.type) {
-    case 'game':
-      openGameId.value = payload.id
-      return
-    case 'anime':
-      openAnimeId.value = payload.id
-      return
-    case 'character':
-      openCharacterId.value = payload.id
-      return
-    case 'person':
-      openPersonId.value = payload.id
-      return
-    case 'company':
-      openCompanyId.value = payload.id
-      return
-    default:
-      payload.type satisfies never
-  }
+  openEntity.value = { entityType: payload.type, entityId: payload.id }
 }
 
 const editEntitiesOpenComputed = computed({
@@ -220,33 +157,9 @@ const entityTypeModel = computed({
   <CollectionEntitiesFormDialog
     v-if="editEntitiesOpen"
     v-model:open="editEntitiesOpenComputed"
-    :collection-id="props.collectionId"
+    :collection-id="props.entityId"
   />
 
-  <!-- Entity Dialogs -->
-  <GameDetailDialog
-    v-if="openGameId"
-    v-model:open="gameDialogOpen"
-    :game-id="openGameId"
-  />
-  <AnimeDetailDialog
-    v-if="openAnimeId"
-    v-model:open="animeDialogOpen"
-    :anime-id="openAnimeId"
-  />
-  <CharacterDetailDialog
-    v-if="openCharacterId"
-    v-model:open="characterDialogOpen"
-    :character-id="openCharacterId"
-  />
-  <PersonDetailDialog
-    v-if="openPersonId"
-    v-model:open="personDialogOpen"
-    :person-id="openPersonId"
-  />
-  <CompanyDetailDialog
-    v-if="openCompanyId"
-    v-model:open="companyDialogOpen"
-    :company-id="openCompanyId"
-  />
+  <!-- Detail dialog of the clicked entity -->
+  <EntityDetailDialog v-model:target="openEntity" />
 </template>

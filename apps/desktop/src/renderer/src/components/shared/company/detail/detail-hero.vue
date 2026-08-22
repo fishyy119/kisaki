@@ -10,7 +10,7 @@ import { Button } from '@renderer/components/ui/button'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { useCompany } from '@renderer/composables'
 import { CompanyBasicFormDialog } from '../forms'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 
@@ -25,14 +25,7 @@ const isEditOpen = ref(false)
     <div class="flex gap-4 mb-4 group">
       <!-- Logo -->
       <CoverImage
-        :src="
-          company.logoFile
-            ? getAttachmentUrl('companies', company.id, company.logoFile, {
-                width: 200,
-                height: 200
-              })
-            : null
-        "
+        :src="getEntityImageUrl('company', company, 'cover', { width: 200, height: 200 })"
         :alt="company.name"
         :icon="getEntityIcon('company')"
         class="w-24 aspect-square rounded-lg shrink-0 border shadow-raised"

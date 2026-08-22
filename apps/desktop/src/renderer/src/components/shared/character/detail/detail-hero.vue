@@ -12,7 +12,7 @@ import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { useCharacter } from '@renderer/composables/use-character'
-import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { dbScoreToDisplay, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
@@ -36,11 +36,8 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
 }
 
 const photoUrl = computed(() =>
-  character.value?.photoFile
-    ? getAttachmentUrl('characters', character.value.id, character.value.photoFile, {
-        width: 300,
-        height: 400
-      })
+  character.value
+    ? getEntityImageUrl('character', character.value, 'cover', { width: 300, height: 400 })
     : null
 )
 </script>
