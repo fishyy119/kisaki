@@ -4,6 +4,7 @@ import {
   isExtensionIdentifier,
   validateExtensionIdentifier
 } from '@kisaki3/extension-api'
+import { isInsideOrEqualPath } from '@main/utils/fs'
 
 export function requireSafeExtensionId(value: unknown, label = 'extensionId'): string {
   if (isExtensionIdentifier(value)) {
@@ -45,11 +46,4 @@ export function assertInsideAnyRoot(
   }
 
   throw createValidationError(`${label} must stay within an allowed extension directory.`)
-}
-
-export function isInsideOrEqualPath(rootDir: string, candidatePath: string): boolean {
-  const root = path.resolve(rootDir)
-  const candidate = path.resolve(candidatePath)
-  const relative = path.relative(root, candidate)
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
 }

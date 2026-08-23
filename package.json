@@ -5,7 +5,7 @@
   "engines": {
     "node": ">=24.0.0"
   },
-  "description": "Kisaki Multimedia Library Manager - Monorepo",
+  "description": "Kisaki ACGN Library Manager - Monorepo",
   "scripts": {
     "dev": "pnpm --filter kisaki dev",
     "build": "pnpm --filter kisaki build",

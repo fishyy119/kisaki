@@ -115,13 +115,28 @@ useIpc('library:entity-merged', (_e, event) => {
 
 SQLite triggers append changes to a transactional outbox that is drained after commit, producing
 `RawDbChange` records (row snapshots stay in the main process). The `DbChangeFeed`
-(`services/db/feed/`) debounces and groups them, then fans out to three outlets:
+(`services/db/feed/`) debounces and groups them, then fans out to four outlets:
 
 1. **`db:changed` IPC push** - batched `DbChangeSummary[]` (`{ operation, table, id, occurredAt }`,
    no row snapshots) for renderer query invalidation, chunked so bulk writes stay deliverable.
-2. **`library.changed` module hook** - entity-grouped change summaries with facet-level diffs,
+2. **`db.changed` module hook** - the same batches on `DbService.hooks`, for main-process modules
+   that must react to rows the renderer writes. Main-internal: it is not bound to the extension
+   hooks point, because extensions get the entity-grouped `library.changed` instead.
+3. **`library.changed` module hook** - entity-grouped change summaries with facet-level diffs,
    dispatched on `DbService.hooks` for main-process subscribers and the extension hooks point.
-3. **Settings projection** - `settings` table changes dispatch `settingsChanged` on `DbService.hooks`.
+4. **Settings projection** - `settings` table changes dispatch `settingsChanged` on `DbService.hooks`.
+
+### Renderer Writes And Main-Process Reactions
+
+The renderer writes configuration rows (scanners, scraper profiles, collections, settings, and
+entity edits) directly through `db:execute`; there is no CRUD channel per table. Two rules keep that
+honest:
+
+- A write whose only effect is stored state may go through the renderer's Drizzle proxy.
+- A write that must cause main-process behaviour is never assumed to be observed: either the
+  renderer calls the owning service over IPC, or the owning service subscribes to `db.changed` and
+  reconciles from the row. `ScannerWatchCoordinator` and `AnimeAutoSync` take the second route,
+  which is why turning on a scanner's watch in a dialog remounts its watcher.
 
 Renderer components subscribe with a single handler and branch on `operation` / `table`:
 
@@ -215,8 +230,9 @@ must not cancel the run.
 - Renderer calls: `ipcManager.invoke(`, `ipcManager.send(`, `ipcManager.on(`
 - Vue subscription: `useIpc(`, `useIpcOnce(`, `useDbChanges(`
 - Hooks: `createNotifyHook`, `createWaterfallHook`, `createVetoHook`, `.hooks.`, `@main/hooks`
-- Db feed: `DbChangeFeed`, `DbChangeSummary`, `'db:changed'`
-- Common channels: `'db:execute'`, `'db:changed'`, `'notify:*'`, `'task-run:*'`, `'extension:*'`
+- Db feed: `DbChangeFeed`, `DbChangeSummary`, `'db:changed'`, `hooks.dbChanged`
+- Common channels: `'db:execute'`, `'db:changed'`, `'notify:*'`, `'task-run:*'`, `'extension:*'`,
+  `'media-files:*'`
 
 ## Procedures
 

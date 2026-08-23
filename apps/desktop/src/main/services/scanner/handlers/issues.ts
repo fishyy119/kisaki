@@ -14,7 +14,7 @@ import type {
   ScannerEntityErrorType,
   ScannerEntityWarning,
   ScannerEntityWarningType
-} from './types'
+} from '../run'
 
 /**
  * Failures worth reporting as an issue instead of aborting the whole run.

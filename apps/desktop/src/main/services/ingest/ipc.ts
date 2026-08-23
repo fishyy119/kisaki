@@ -1,5 +1,5 @@
 import type { IpcService } from '@main/services/ipc'
-import { wrapIpc, wrapIpcVoid } from '@main/services/ipc'
+import { wrapIpc } from '@main/services/ipc'
 import type { IngestService } from './service'
 
 export function registerIngestIpc(service: IngestService, ipc: IpcService): void {
@@ -17,18 +17,6 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
 
   ipc.handle('ingest:add-anime-from-scraper', async (_, profileId, lookup, options) =>
     wrapIpc(() => service.add.anime.startAddFromScraper(profileId, lookup, options))
-  )
-
-  ipc.handle('ingest:sync-anime-files', async (_, params) =>
-    wrapIpc(() => service.files.anime.sync(params))
-  )
-
-  ipc.handle('ingest:attach-anime-episode-file', async (_, params) =>
-    wrapIpcVoid(() => service.files.anime.attachFile(params))
-  )
-
-  ipc.handle('ingest:attach-anime-extra-file', async (_, params) =>
-    wrapIpcVoid(() => service.files.anime.attachExtra(params))
   )
 
   ipc.handle('ingest:add-person-from-scraper', async (_, profileId, lookup, options) =>

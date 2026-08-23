@@ -404,6 +404,7 @@ function formatSystemReason(reason: string): string {
     case 'maintenance':
     case 'update':
     case 'shutdown':
+    case 'watch':
       return messages.value.task.systemReasons[reason]
     default:
       return reason

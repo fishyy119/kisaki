@@ -115,7 +115,7 @@ const { isAttaching, attachFile, setPrimary, removeFile, saveNote } = useAnimeFi
   table: animeEpisodeFiles,
   ownerColumn: animeEpisodeFiles.episodeId,
   attach: (episodeId, path) =>
-    ipcManager.invoke('ingest:attach-anime-episode-file', { episodeId, path })
+    ipcManager.invoke('media-files:attach-anime-episode-file', { episodeId, path })
 })
 
 // =============================================================================

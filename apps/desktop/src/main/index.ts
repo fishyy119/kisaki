@@ -6,6 +6,7 @@ import { createLogger, configureLogger, initializeLogger } from './log'
 // Services
 import { container } from './container'
 import { DbService } from './services/db'
+import { FileWatchService } from './services/file-watch'
 import { IpcService, wrapIpc, wrapIpcVoid } from './services/ipc'
 import { WindowService } from './services/window'
 import { NativeService } from './services/native'
@@ -14,6 +15,7 @@ import { ScraperService } from './services/scraper'
 import { ProcessService } from './services/process'
 import { PlayerService } from './services/player'
 import { MediaInfoService } from './services/media-info'
+import { MediaFilesService } from './services/media-files'
 import { ActivityService } from './services/activity'
 import { IngestService } from './services/ingest'
 import { ScannerService } from './services/scanner'
@@ -36,7 +38,7 @@ import { bootstrapHooks, APP_SHUTDOWN_SETTLE_BUDGET_MS } from './bootstrap/hooks
 const log = createLogger('App')
 
 function printCliHelp(): void {
-  console.log('Kisaki - Multimedia Library Manager')
+  console.log('Kisaki - ACGN Library Manager')
   console.log('')
   console.log('Usage:')
   console.log('  kisaki [options]')
@@ -110,28 +112,38 @@ async function onAppReady(): Promise<void> {
     app.setAppUserModelId('me.kisaki')
   }
 
-  // Services (register first, then initialize via container.initAll())
+  // Services register first, then initialize in dependency order via
+  // container.initAll(); registration order itself does not matter, so they are
+  // grouped by layer to keep the architecture readable.
+
+  // Platform: Electron, OS, and transport adapters
   await container.register(new IpcService())
-  await container.register(new WindowService())
-  await container.register(new NotifyService())
   await container.register(new DbService())
-  await container.register(new NetworkService())
-  await container.register(new TaskRunService())
-  await container.register(new UpdaterService())
-  await container.register(new CommandService())
-  await container.register(new AutomationService())
+  await container.register(new WindowService())
   await container.register(new NativeService())
+  await container.register(new NotifyService())
+  await container.register(new NetworkService())
+  await container.register(new DeeplinkService())
+  await container.register(new UpdaterService())
   await container.register(new I18nService())
+
+  // Capability: no domain vocabulary, no library rows
+  await container.register(new TaskRunService())
+  await container.register(new FileWatchService())
   await container.register(new MediaInfoService())
+  await container.register(new ProcessService())
+  await container.register(new PlayerService())
+
+  // Domain: library ownership, grows per media type
   await container.register(new ScraperService())
   await container.register(new IngestService())
   await container.register(new ScannerService())
-  await container.register(new AttachmentService())
-  await container.register(new ProcessService())
-  await container.register(new PlayerService())
+  await container.register(new MediaFilesService())
   await container.register(new ActivityService())
+  await container.register(new AttachmentService())
+  await container.register(new CommandService())
+  await container.register(new AutomationService())
   await container.register(new ExtensionService())
-  await container.register(new DeeplinkService())
 
   await container.initAll()
   log.info('All services initialized')
@@ -172,21 +184,6 @@ async function onAppReady(): Promise<void> {
   if (startupDeeplink) {
     deeplinkService.handleDeeplink(startupDeeplink).catch((error) => {
       log.error('Failed to handle startup deeplink.', error)
-    })
-  }
-
-  // Setup scanners after services are ready
-  const scannerService = container.get<ScannerService>('scanner')
-  const dbService = container.get<DbService>('db')
-
-  // Schedule all scanners for periodic scanning
-  await scannerService.scheduleAllScanners()
-
-  // Check if we should scan all scanners on app start
-  const settings = dbService.settings.get()
-  if (settings.scannerStartAtOpen) {
-    scannerService.startAllScanners({ type: 'system', reason: 'startup' }).catch((error) => {
-      log.error('Failed to start scanners on startup.', error)
     })
   }
 

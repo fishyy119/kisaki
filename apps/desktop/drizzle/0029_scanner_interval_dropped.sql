@@ -1,0 +1,1 @@
+ALTER TABLE `scanners` DROP COLUMN `scan_interval_minutes`;

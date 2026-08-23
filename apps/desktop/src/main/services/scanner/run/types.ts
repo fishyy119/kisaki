@@ -1,3 +1,11 @@
+/**
+ * Run vocabulary shared by the run engine and the media handlers that feed it.
+ *
+ * A handler reports one `ScannerEntityProcessResult` per discovered directory;
+ * the run state store turns those into the issue and existing lists the
+ * renderer shows.
+ */
+
 import type { TaskRunHandle } from '@main/services/task-run'
 import type { MediaType } from '@shared/common'
 import type { ScannerRunExisting, ScannerRunState } from '@shared/scanner'

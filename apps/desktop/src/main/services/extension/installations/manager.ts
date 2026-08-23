@@ -28,11 +28,8 @@ import {
   resolveExtensionUiRootPath,
   validateExtensionFileExists
 } from '../packages'
-import {
-  isInsideOrEqualPath,
-  requireSafeExtensionId,
-  resolveInsideRoot
-} from '../shared/path-confinement'
+import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
+import { isInsideOrEqualPath } from '@main/utils/fs'
 import { createExtensionRuntimeMetadata, type ExtensionInstalledEntry } from '../types'
 import { createExtensionInstallationsHooks } from './hooks'
 import { ExtensionInstallationStore } from './store'

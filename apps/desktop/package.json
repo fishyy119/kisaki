@@ -1,7 +1,7 @@
 {
   "name": "kisaki",
   "version": "0.0.6",
-  "description": "A multifunctional media management project",
+  "description": "An ACGN library manager",
   "type": "module",
   "main": "./out/main/index.js",
   "author": "ximu",

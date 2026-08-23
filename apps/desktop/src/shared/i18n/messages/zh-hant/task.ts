@@ -169,7 +169,8 @@ export const task = {
     startup: '啟動',
     maintenance: '維護',
     update: '更新',
-    shutdown: '結束'
+    shutdown: '結束',
+    watch: '檔案變更'
   },
 
   progressUnits: {

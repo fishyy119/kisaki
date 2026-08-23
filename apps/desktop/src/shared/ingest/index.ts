@@ -5,12 +5,6 @@
 export type { ExistingReason, IngestAddResult, IngestWarning, IngestWarningCode } from './common'
 export type { IngestUpdateResult } from './common'
 export type {
-  IngestAttachAnimeEpisodeFileParams,
-  IngestAttachAnimeExtraFileParams,
-  IngestSyncAnimeFilesParams,
-  IngestSyncAnimeFilesResult
-} from './files'
-export type {
   IngestAddCharacterFromScraperOptions,
   IngestAddCharacterFromScraperParams,
   IngestAddCharacterFromScraperResult,

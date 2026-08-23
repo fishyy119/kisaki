@@ -24,9 +24,6 @@ export const settings = sqliteTable(
       .notNull()
       .default('exit'),
     scannerIgnoredNames: scannerIgnoredNames('scanner_ignored_names').notNull().default([]),
-    scannerStartAtOpen: integer('scanner_start_at_open', { mode: 'boolean' })
-      .notNull()
-      .default(false),
     scannerParallelCount: scannerParallelCount('scanner_parallel_count')
       .notNull()
       .default(SCANNER_PARALLEL_COUNT_DEFAULT),

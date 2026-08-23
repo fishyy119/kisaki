@@ -8,6 +8,8 @@
 - `apps/desktop/src/main/services/*/service.ts` - Individual service implementations
 - `apps/desktop/src/main/services/task-run/` - Application-level long-running task run infrastructure
 - `apps/desktop/src/main/services/automation/` - Persistent automation rules, scheduling, and invocation history
+- `apps/desktop/src/main/services/file-watch/` - Debounced filesystem watch scopes shared by every watcher
+- `apps/desktop/src/main/services/media-files/` - Local media files of an entry and their row ownership
 
 ## ServiceContainer & DI Pattern
 
@@ -26,6 +28,29 @@ await container.initAll()
 await container.disposeAll()
 ```
 
+### Service Layers
+
+Services fall into three layers. The layer is a property of a service, not a folder: `services/` stays
+flat so a service id maps to exactly one directory, and the layering is enforced by `deps` plus
+`ScopedContainer`, not by location.
+
+**Red line**: a capability service declares no domain dependency. Its `deps` is empty or `['ipc']`.
+Domain services consume capabilities, never the reverse.
+
+| Layer      | Services                                                                                                      | Charter                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Platform   | `ipc`, `db`, `window`, `native`, `notify`, `network`, `deeplink`, `updater`, `i18n`                           | Wrap Electron, the OS, and transports; no library business rules  |
+| Capability | `task-run`, `file-watch`, `media-info`, `process`, `player`                                                   | Technical abilities with no domain vocabulary and no library rows |
+| Domain     | `scraper`, `ingest`, `scanner`, `media-files`, `activity`, `attachment`, `command`, `automation`, `extension` | Own library meaning and workflows; grow one media type at a time  |
+
+Three neighbours are easy to confuse, so their charters are stated once here:
+
+- `media-info` answers "what is this file": container and track facts, no database access.
+- `media-files` answers "which files does this entry have": the seam between user-owned media on
+  disk and the consumption-unit rows that play it, including row ownership (`isManual`) and
+  watch-driven reconcile.
+- `attachment` owns app-owned derived assets (covers, backdrops) whose bytes the app stores itself.
+
 ### Service Interface
 
 ```typescript
@@ -36,7 +61,7 @@ interface IService {
   dispose?(): Promise<void>
 }
 
-// For media-related services (adder, scanner, scraper, etc.)
+// For media-related services (scanner, scraper, activity, etc.)
 interface IMediaService extends IService {
   // Additional media-specific methods
 }
@@ -347,13 +372,13 @@ change in the library. Two contracts hold the seam together:
 
 **Optional files by service type:**
 
-| File/Directory | Used By                                                 | Purpose                                   |
-| -------------- | ------------------------------------------------------- | ----------------------------------------- |
-| `handlers/`    | activity, adder, attachment, deeplink, scanner, scraper | IMediaService handlers or route handlers  |
-| `types.ts`     | db, deeplink, extension, process                        | Service-specific type definitions         |
-| `ipc.ts`       | Any service with IPC channels                           | IPC registration using `wrapIpc` helpers  |
-| `router.ts`    | deeplink                                                | URL route definitions (deeplink-specific) |
-| `locales/`     | i18n                                                    | Translation resources (i18n-specific)     |
+| File/Directory | Used By                                          | Purpose                                   |
+| -------------- | ------------------------------------------------ | ----------------------------------------- |
+| `handlers/`    | activity, attachment, deeplink, scanner, scraper | IMediaService handlers or route handlers  |
+| `types.ts`     | db, deeplink, extension, process                 | Service-specific type definitions         |
+| `ipc.ts`       | Any service with IPC channels                    | IPC registration using `wrapIpc` helpers  |
+| `router.ts`    | deeplink                                         | URL route definitions (deeplink-specific) |
+| `locales/`     | i18n                                             | Translation resources (i18n-specific)     |
 
 **Complex services** may have additional domain-specific files:
 

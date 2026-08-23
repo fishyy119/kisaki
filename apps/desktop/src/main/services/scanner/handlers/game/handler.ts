@@ -13,7 +13,7 @@ import {
   type ScannerAddOptions,
   type ScannerAddOutcome,
   type ScannerEntityMatch
-} from '../common'
+} from '../media-handler'
 
 export class GameScannerHandler extends MediaScannerHandler {
   constructor(

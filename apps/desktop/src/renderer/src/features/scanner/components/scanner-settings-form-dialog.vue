@@ -32,7 +32,6 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Badge } from '@renderer/components/ui/badge'
-import { Switch } from '@renderer/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
 import {
   Field,
@@ -60,7 +59,6 @@ const isSaving = ref(false)
 interface FormData {
   ignoredNames: string[]
   ingestMode: ScannerIngestMode
-  startAtOpen: boolean
   parallelCount: number
   newIgnoredName: string
 }
@@ -89,7 +87,6 @@ function createDefaultFormData(): FormData {
   return {
     ignoredNames: [],
     ingestMode: 'prefer-scraper',
-    startAtOpen: false,
     parallelCount: SCANNER_PARALLEL_COUNT_DEFAULT,
     newIgnoredName: ''
   }
@@ -98,13 +95,11 @@ function createDefaultFormData(): FormData {
 function createFormDataFromSettings(data: {
   ignoredNames: string[]
   ingestMode: ScannerIngestMode
-  startAtOpen: boolean
   parallelCount: number
 }): FormData {
   return {
     ignoredNames: [...data.ignoredNames],
     ingestMode: data.ingestMode,
-    startAtOpen: data.startAtOpen,
     parallelCount: data.parallelCount,
     newIgnoredName: ''
   }
@@ -134,7 +129,6 @@ const { data, isLoading, error, refetch } = useAsyncData(
     return {
       ignoredNames: [...result.scannerIgnoredNames],
       ingestMode: result.scannerIngestMode,
-      startAtOpen: result.scannerStartAtOpen,
       parallelCount: result.scannerParallelCount
     }
   },
@@ -189,7 +183,6 @@ async function handleSubmit() {
       .set({
         scannerIgnoredNames: formData.value.ignoredNames,
         scannerIngestMode: formData.value.ingestMode,
-        scannerStartAtOpen: formData.value.startAtOpen,
         scannerParallelCount: formData.value.parallelCount
       })
       .where(eq(settings.id, 0))
@@ -244,14 +237,6 @@ async function handleSubmit() {
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
-              <Field orientation="horizontal">
-                <FieldLabel>{{ m.scanner.settings.startAtOpen }}</FieldLabel>
-                <FieldDescription>{{ m.scanner.settings.startAtOpenDescription }}</FieldDescription>
-                <FieldContent>
-                  <Switch v-model="formData.startAtOpen" />
-                </FieldContent>
-              </Field>
-
               <Field orientation="horizontal">
                 <FieldLabel>{{ m.scanner.settings.ingestMode }}</FieldLabel>
                 <FieldDescription>{{ m.scanner.settings.ingestModeDescription }}</FieldDescription>

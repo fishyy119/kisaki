@@ -34,12 +34,12 @@ import {
   type NewAnimeExtraFile
 } from '@shared/db'
 import type {
-  IngestAttachAnimeEpisodeFileParams,
-  IngestAttachAnimeExtraFileParams,
-  IngestSyncAnimeFilesParams,
-  IngestSyncAnimeFilesResult
-} from '@shared/ingest'
-import type { MediaFileInfo } from '@shared/media-info'
+  AnimeEpisodeFileAttachParams,
+  AnimeExtraFileAttachParams,
+  AnimeFileSyncParams,
+  AnimeFileSyncResult
+} from '@shared/media-files'
+import type { MediaAudioTrack, MediaFileInfo, MediaSubtitleTrack } from '@shared/media-info'
 import { and, eq, inArray } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import {
@@ -50,15 +50,15 @@ import {
   type AnimeExtraCandidate
 } from './recognition'
 
-const log = createLogger('Ingest')
+const log = createLogger('MediaFiles')
 
 /** Depth cap that covers `Anime/Season/Disc` layouts without walking archives. */
-const MAX_WALK_DEPTH = 4
+export const MAX_WALK_DEPTH = 4
 
 /** The one episode a film entry owns; providers list the film as episode 1. */
 const FILM_EPISODE_NUMBER = 1
 
-export interface AnimeFileSyncParams extends IngestSyncAnimeFilesParams {
+export interface AnimeFileSyncOptions extends AnimeFileSyncParams {
   signal?: AbortSignal
 }
 
@@ -72,16 +72,28 @@ interface FileStat {
   mtimeMs: number
 }
 
+/** Column values a file row carries from one probe pass. */
+interface ProbedFileValues {
+  fileSize: number | null
+  fileMtime: Date | null
+  container: string | null
+  videoCodec: string | null
+  bitDepth: number | null
+  width: number | null
+  height: number | null
+  durationMs: number | null
+  audioTracks: MediaAudioTrack[]
+  subtitleTracks: MediaSubtitleTrack[]
+}
+
 interface ProbedEpisodeFile {
   candidate: AnimeEpisodeCandidate
-  stat: FileStat
-  info: MediaFileInfo | null
+  values: ProbedFileValues
 }
 
 interface ProbedExtraFile {
   candidate: AnimeExtraCandidate
-  stat: FileStat
-  info: MediaFileInfo | null
+  values: ProbedFileValues
 }
 
 /** Sort key that keeps specials after regular episodes and numbers ascending. */
@@ -148,7 +160,7 @@ function claimFilmEpisodeCandidates(candidates: AnimeEpisodeCandidate[]): void {
 }
 
 /** File-row column values derived from one probe pass. */
-function toProbedFileValues(stat: FileStat, info: MediaFileInfo | null) {
+function toProbedFileValues(stat: FileStat, info: MediaFileInfo | null): ProbedFileValues {
   return {
     fileSize: stat.size,
     fileMtime: new Date(stat.mtimeMs),
@@ -163,11 +175,41 @@ function toProbedFileValues(stat: FileStat, info: MediaFileInfo | null) {
   }
 }
 
+/** Whether stored values already describe the file as it is on disk now. */
+function isProbeCurrent(stored: ProbedFileValues, stat: FileStat): boolean {
+  return stored.fileSize === stat.size && stored.fileMtime?.getTime() === stat.mtimeMs
+}
+
 export class AnimeFileSyncHandler {
+  /**
+   * One pass per entry at a time.
+   *
+   * A manual sync, a scan finishing, and a watched download can all ask for the
+   * same entry at once; overlapping passes would each see a pre-write state and
+   * duplicate rows. Passes for different entries still run in parallel.
+   */
+  private readonly passes = new Map<string, Promise<AnimeFileSyncResult>>()
+
   constructor(
     private readonly dbService: DbService,
     private readonly mediaInfo: MediaInfoService
   ) {}
+
+  async sync(params: AnimeFileSyncOptions): Promise<AnimeFileSyncResult> {
+    const previous = this.passes.get(params.animeId)
+    const pass = (previous ? previous.catch(() => undefined) : Promise.resolve()).then(() =>
+      this.runSync(params)
+    )
+
+    this.passes.set(params.animeId, pass)
+    try {
+      return await pass
+    } finally {
+      if (this.passes.get(params.animeId) === pass) {
+        this.passes.delete(params.animeId)
+      }
+    }
+  }
 
   /**
    * Walk the anime directory and write what it finds.
@@ -175,7 +217,7 @@ export class AnimeFileSyncHandler {
    * Probing runs outside the transaction because ffprobe is slow and the write
    * must stay a single synchronous better-sqlite3 unit.
    */
-  async sync(params: AnimeFileSyncParams): Promise<IngestSyncAnimeFilesResult> {
+  private async runSync(params: AnimeFileSyncOptions): Promise<AnimeFileSyncResult> {
     const { animeId, signal } = params
     const animeRow = this.readAnimeSyncConfig(animeId)
     const dirPath = params.dirPath ?? animeRow?.animeDirPath
@@ -204,20 +246,24 @@ export class AnimeFileSyncHandler {
     }
     walked.episodes.sort(compareEpisodes)
 
+    const storedProbes = this.readStoredProbes(animeId)
+
     const probedEpisodes: ProbedEpisodeFile[] = []
     for (const candidate of walked.episodes) {
       signal?.throwIfAborted()
-      const stat = await this.readStat(candidate.path)
-      if (!stat) continue
-      probedEpisodes.push({ candidate, stat, info: await this.mediaInfo.probe(candidate.path) })
+      const values = await this.probeFile(candidate.path, storedProbes)
+      if (values) {
+        probedEpisodes.push({ candidate, values })
+      }
     }
 
     const probedExtras: ProbedExtraFile[] = []
     for (const candidate of walked.extras) {
       signal?.throwIfAborted()
-      const stat = await this.readStat(candidate.path)
-      if (!stat) continue
-      probedExtras.push({ candidate, stat, info: await this.mediaInfo.probe(candidate.path) })
+      const values = await this.probeFile(candidate.path, storedProbes)
+      if (values) {
+        probedExtras.push({ candidate, values })
+      }
     }
 
     return this.dbService.client.transaction((tx) => {
@@ -271,7 +317,7 @@ export class AnimeFileSyncHandler {
    * Probing runs before the write because ffprobe is slow; the row is marked
    * manual so sync passes leave it alone from now on.
    */
-  async attachFile(params: IngestAttachAnimeEpisodeFileParams): Promise<void> {
+  async attachFile(params: AnimeEpisodeFileAttachParams): Promise<void> {
     const { episodeId, path: filePath } = params
 
     const stat = await this.readStat(filePath)
@@ -327,7 +373,7 @@ export class AnimeFileSyncHandler {
    * otherwise a new user-owned extra is created, with filename recognition
    * filling name and type unless the caller supplied explicit values.
    */
-  async attachExtra(params: IngestAttachAnimeExtraFileParams): Promise<void> {
+  async attachExtra(params: AnimeExtraFileAttachParams): Promise<void> {
     const { animeId, path: filePath } = params
 
     const stat = await this.readStat(filePath)
@@ -462,10 +508,82 @@ export class AnimeFileSyncHandler {
       .all()
   }
 
+  /**
+   * Probe results already stored for this entry's files, keyed by path.
+   *
+   * Read before the probe pass so a file that has not changed can keep them.
+   */
+  private readStoredProbes(animeId: string): Map<string, ProbedFileValues> {
+    const episodeFiles = this.dbService.client
+      .select({
+        path: animeEpisodeFiles.path,
+        fileSize: animeEpisodeFiles.fileSize,
+        fileMtime: animeEpisodeFiles.fileMtime,
+        container: animeEpisodeFiles.container,
+        videoCodec: animeEpisodeFiles.videoCodec,
+        bitDepth: animeEpisodeFiles.bitDepth,
+        width: animeEpisodeFiles.width,
+        height: animeEpisodeFiles.height,
+        durationMs: animeEpisodeFiles.durationMs,
+        audioTracks: animeEpisodeFiles.audioTracks,
+        subtitleTracks: animeEpisodeFiles.subtitleTracks
+      })
+      .from(animeEpisodeFiles)
+      .innerJoin(animeEpisodes, eq(animeEpisodeFiles.episodeId, animeEpisodes.id))
+      .where(eq(animeEpisodes.animeId, animeId))
+      .all()
+
+    const extraFiles = this.dbService.client
+      .select({
+        path: animeExtraFiles.path,
+        fileSize: animeExtraFiles.fileSize,
+        fileMtime: animeExtraFiles.fileMtime,
+        container: animeExtraFiles.container,
+        videoCodec: animeExtraFiles.videoCodec,
+        bitDepth: animeExtraFiles.bitDepth,
+        width: animeExtraFiles.width,
+        height: animeExtraFiles.height,
+        durationMs: animeExtraFiles.durationMs,
+        audioTracks: animeExtraFiles.audioTracks,
+        subtitleTracks: animeExtraFiles.subtitleTracks
+      })
+      .from(animeExtraFiles)
+      .innerJoin(animeExtras, eq(animeExtraFiles.extraId, animeExtras.id))
+      .where(eq(animeExtras.animeId, animeId))
+      .all()
+
+    return new Map(
+      [...episodeFiles, ...extraFiles].map(({ path: filePath, ...values }) => [filePath, values])
+    )
+  }
+
+  /**
+   * Row values for one candidate file, or null when it is unreadable.
+   *
+   * ffprobe is skipped when the stored row already describes this exact file, so
+   * a re-sync only pays for what actually changed.
+   */
+  private async probeFile(
+    filePath: string,
+    storedProbes: Map<string, ProbedFileValues>
+  ): Promise<ProbedFileValues | null> {
+    const stat = await this.readStat(filePath)
+    if (!stat) return null
+
+    const stored = storedProbes.get(filePath)
+    if (stored && isProbeCurrent(stored, stat)) {
+      return stored
+    }
+
+    return toProbedFileValues(stat, await this.mediaInfo.probe(filePath))
+  }
+
   private async readStat(filePath: string): Promise<FileStat | null> {
     try {
       const stat = await fs.stat(filePath)
-      return { size: stat.size, mtimeMs: stat.mtimeMs }
+      // Truncated to whole milliseconds, the precision the row stores, so a
+      // stored value compares equal to the same unchanged file.
+      return { size: stat.size, mtimeMs: Math.trunc(stat.mtimeMs) }
     } catch (error) {
       log.warn('Failed to stat anime file:', error)
       return null
@@ -539,7 +657,7 @@ export class AnimeFileSyncHandler {
     const episodeIdByKey = new Map<string, string>()
     let nextOrder = existingEpisodes.length
 
-    for (const { candidate, info } of probed) {
+    for (const { candidate, values } of probed) {
       const key = episodeCandidateKey(candidate)
 
       if (episodeIdByKey.has(key)) continue
@@ -548,9 +666,9 @@ export class AnimeFileSyncHandler {
       if (match) {
         episodeIdByKey.set(key, match.id)
         // A scraped episode rarely carries a runtime; the file always does.
-        if (match.durationMs === null && info?.durationMs) {
+        if (match.durationMs === null && values.durationMs) {
           tx.update(animeEpisodes)
-            .set({ durationMs: info.durationMs })
+            .set({ durationMs: values.durationMs })
             .where(eq(animeEpisodes.id, match.id))
             .run()
         }
@@ -563,7 +681,7 @@ export class AnimeFileSyncHandler {
         type: candidate.type,
         episodeNumber: candidate.number ?? null,
         name: candidate.number === undefined ? candidate.name : null,
-        durationMs: info?.durationMs ?? null,
+        durationMs: values.durationMs,
         orderInAnime: nextOrder++
       }
 
@@ -624,11 +742,11 @@ export class AnimeFileSyncHandler {
         : (group.find(({ candidate }) => preferredPaths?.has(candidate.path))?.candidate.path ??
           group[0].candidate.path)
 
-      for (const { candidate, stat, info } of group) {
+      for (const { candidate, values: probedValues } of group) {
         const values = {
           episodeId,
           path: candidate.path,
-          ...toProbedFileValues(stat, info),
+          ...probedValues,
           isPrimary: candidate.path === primaryPath
         } satisfies Omit<NewAnimeEpisodeFile, 'id'>
 
@@ -729,14 +847,11 @@ export class AnimeFileSyncHandler {
     }
 
     let syncOrder = 0
-    for (const { candidate, stat, info } of probed) {
+    for (const { candidate, values } of probed) {
       const known = fileByPath.get(candidate.path)
 
       if (known) {
-        tx.update(animeExtraFiles)
-          .set(toProbedFileValues(stat, info))
-          .where(eq(animeExtraFiles.id, known.id))
-          .run()
+        tx.update(animeExtraFiles).set(values).where(eq(animeExtraFiles.id, known.id)).run()
 
         // Recognition may improve across runs, but user-owned extras keep
         // their name, type, and ordering.
@@ -768,7 +883,7 @@ export class AnimeFileSyncHandler {
       const fileValues = {
         extraId,
         path: candidate.path,
-        ...toProbedFileValues(stat, info),
+        ...values,
         isPrimary: true
       } satisfies Omit<NewAnimeExtraFile, 'id'>
       tx.insert(animeExtraFiles)

@@ -33,6 +33,8 @@ export const scanner = {
     scan: 'Scan',
     cancel: 'Cancel',
     cancelling: 'Cancelling',
+    watching: 'Watching for changes',
+    watchDisabled: 'Manual scans only',
     newCount: ({ count }: { count: number }) => `${count} new`,
     existingCount: ({ count }: { count: number }) => `${count} existing`,
     newCountTooltip: 'Games added to the database',
@@ -91,8 +93,6 @@ export const scanner = {
     title: 'Scanner settings',
     saved: 'Settings saved.',
     saveFailed: 'Save failed',
-    startAtOpen: 'Scan automatically at startup',
-    startAtOpenDescription: 'Run all scanners automatically when the app opens.',
     ingestMode: 'Import mode',
     ingestModeDescription: 'Controls how the scanner imports newly identified games.',
     ingestPreferScraper: 'Prefer scraper',
@@ -133,9 +133,9 @@ export const scanner = {
     scraperProfileHelp:
       'The scraper profile used to fetch metadata. The profile decides which fields come from which data sources.',
     targetCollection: 'Target collection',
-    scanInterval: 'Auto-scan interval',
-    scanIntervalDescription: 'Set 0 to disable automatic scans.',
-    minutes: 'minutes',
+    watchEnabled: 'Watch for changes',
+    watchEnabledDescription:
+      'Scan automatically when a new entity directory appears, and once at startup. Turn this off to scan only by hand.',
     nameExtractionRules: 'Name extraction rules',
     nameExtractionRulesHelp:
       'Regular expression rules applied in order to extract game names from folder names. Rules use the named capturing group (?<name>...) to extract the name.',

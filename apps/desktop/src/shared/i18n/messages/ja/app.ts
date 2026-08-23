@@ -16,7 +16,7 @@ export const app = {
   },
   about: {
     title: 'Kisaki について',
-    tagline1: 'Kisaki は多機能なメディアライブラリマネージャーです。',
+    tagline1: 'Kisaki は ACGN ライブラリマネージャーです。',
     tagline2: '一貫したインターフェースとデータモデルで、',
     tagline3: 'コレクションと思い出の記録・管理・構築・同期・展示を目指します。',
     authorLabel: '作者',

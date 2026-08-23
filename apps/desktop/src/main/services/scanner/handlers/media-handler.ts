@@ -2,9 +2,8 @@
  * Shared media scanner handler.
  *
  * Owns everything a scan does regardless of media type: run queueing and
- * controls, interval scheduling, directory discovery, per-entity guards, and
- * ingest-mode policy. A media handler only says how its entity is looked up,
- * added, and finished.
+ * controls, directory discovery, per-entity guards, and ingest-mode policy. A
+ * media handler only says how its entity is looked up, added, and finished.
  */
 
 import { promises as fs } from 'node:fs'
@@ -32,9 +31,15 @@ import type {
 } from '@shared/scanner'
 import type { TaskRunInitiator } from '@shared/task-run'
 import { assertNever } from '@shared/utils/exhaustive'
-import type { ScannerDiscovery } from '../../discovery'
-import type { ScannerHooks } from '../../hooks'
-import { ScannerRunCoordinator } from './coordinator'
+import type { ScannerDiscovery } from '../discovery'
+import type { ScannerHooks } from '../hooks'
+import {
+  ScannerRunCoordinator,
+  type ScannerEntityError,
+  type ScannerEntityProcessResult,
+  type ScannerEntityWarning,
+  type ScannerRunSession
+} from '../run'
 import {
   createError,
   createExisting,
@@ -45,8 +50,6 @@ import {
   isMissingMetadataScraperFailure,
   isRecoverableScraperFailure
 } from './issues'
-import type { ScannerRunSession } from './session'
-import type { ScannerEntityError, ScannerEntityProcessResult, ScannerEntityWarning } from './types'
 
 const log = createLogger('Scanner')
 
@@ -89,7 +92,6 @@ export abstract class MediaScannerHandler {
   protected readonly hooks: ScannerHooks
   protected readonly i18nService: I18nService
 
-  private readonly scheduledScanners = new Map<string, NodeJS.Timeout>()
   private readonly runs: ScannerRunCoordinator<Scanner>
 
   constructor(
@@ -195,88 +197,7 @@ export abstract class MediaScannerHandler {
     return starts
   }
 
-  // ---------------------------------------------------------------------------
-  // Scheduling
-  // ---------------------------------------------------------------------------
-
-  async scheduleScanner(scannerId: string): Promise<void> {
-    this.unscheduleScanner(scannerId)
-
-    const scanner = this.getScannerById(scannerId)
-    if (!scanner) {
-      log.error('Cannot schedule scanner: not found.', { scannerId })
-      return
-    }
-
-    if (scanner.type !== this.mediaType) {
-      log.warn('Scanner media type does not match handler, cannot schedule.', {
-        scannerName: scanner.name,
-        mediaType: this.mediaType
-      })
-      return
-    }
-
-    if (scanner.scanIntervalMinutes <= 0) {
-      log.info('Scanner scan interval disabled, not scheduling.', {
-        scannerName: scanner.name,
-        scannerScanIntervalMinutes: scanner.scanIntervalMinutes
-      })
-      return
-    }
-
-    log.info('Scheduling scanner.', {
-      scannerName: scanner.name,
-      scannerScanIntervalMinutes: scanner.scanIntervalMinutes
-    })
-
-    const intervalId = setInterval(
-      () => {
-        log.info('Running scheduled scan for scanner.', { scannerName: scanner.name })
-        void this.runScanner(scannerId, { type: 'system', reason: 'maintenance' }).catch(
-          (error) => {
-            log.error('Scheduled scan failed for scanner.', { scannerName: scanner.name, error })
-          }
-        )
-      },
-      scanner.scanIntervalMinutes * 60 * 1000
-    )
-
-    this.scheduledScanners.set(scannerId, intervalId)
-  }
-
-  unscheduleScanner(scannerId: string): void {
-    const intervalId = this.scheduledScanners.get(scannerId)
-    if (!intervalId) return
-
-    clearInterval(intervalId)
-    this.scheduledScanners.delete(scannerId)
-    log.info('Unscheduled scanner.', { scannerId })
-  }
-
-  async scheduleAllScanners(): Promise<void> {
-    log.info('Scheduling all scanners with intervals', { mediaType: this.mediaType })
-
-    for (const scanner of this.listMediaScanners()) {
-      await this.scheduleScanner(scanner.id)
-    }
-  }
-
-  unscheduleAllScanners(): void {
-    for (const scannerId of [...this.scheduledScanners.keys()]) {
-      this.unscheduleScanner(scannerId)
-    }
-  }
-
-  getScheduledScannerIds(): string[] {
-    return [...this.scheduledScanners.keys()]
-  }
-
-  isScannerScheduled(scannerId: string): boolean {
-    return this.scheduledScanners.has(scannerId)
-  }
-
   cleanup(): void {
-    this.unscheduleAllScanners()
     this.runs.cleanup()
   }
 

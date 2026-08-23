@@ -279,7 +279,33 @@ async function handleOpenPath() {
           />
         </Button>
         <div class="min-w-0">
-          <p class="text-sm font-medium truncate">{{ props.scanner.name }}</p>
+          <div class="flex items-center gap-1.5">
+            <p class="text-sm font-medium truncate">{{ props.scanner.name }}</p>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Icon
+                  :icon="
+                    props.scanner.watchEnabled
+                      ? 'icon-[mdi--radar]'
+                      : 'icon-[mdi--hand-back-right-outline]'
+                  "
+                  :class="
+                    cn(
+                      'size-3.5 shrink-0',
+                      props.scanner.watchEnabled ? 'text-primary' : 'text-muted-foreground'
+                    )
+                  "
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                {{
+                  props.scanner.watchEnabled
+                    ? m.scanner.item.watching
+                    : m.scanner.item.watchDisabled
+                }}
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p class="text-xs text-muted-foreground truncate">{{ props.scanner.path }}</p>
         </div>
       </div>

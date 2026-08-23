@@ -2,7 +2,7 @@ import type { I18nService } from '@main/services/i18n'
 import type { IpcService } from '@main/services/ipc'
 import type { TaskRunService } from '@main/services/task-run'
 import { isCancellation } from '@main/services/task-run'
-import type { ScannerHooks } from '../../hooks'
+import type { ScannerHooks } from '../hooks'
 import type {
   ScanCompletedData,
   ScannerRunFinishedStatus,

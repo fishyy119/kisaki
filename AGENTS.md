@@ -99,7 +99,8 @@ old internal shapes.
 
 ## Runtime And Logging
 
-- Use project log wrappers (`@main/log` and `@renderer/core/log`) in runtime code.
+- Use project log wrappers (`@main/log` and `@renderer/core/log`) in runtime code. Logger prefixes
+  are single-level stable domains such as `Db`, `Scanner`, `Watch`, `MediaFiles`, or `Extension`.
 - Never log secrets, auth headers, OAuth values, extension storage/secrets, full user content, full
   database rows, full HTTP bodies, unbounded arrays, private keys, or signing keys.
 - Catch errors only to add business context, recover, change the boundary message, or log once at the

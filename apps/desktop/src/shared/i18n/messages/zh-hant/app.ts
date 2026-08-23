@@ -16,7 +16,7 @@ export const app = {
   },
   about: {
     title: '關於 Kisaki',
-    tagline1: 'Kisaki 是一個多功能的媒體管理專案，',
+    tagline1: 'Kisaki 是一個 ACGN 庫管理器，',
     tagline2: '旨在提供一個統一的使用者介面和資料庫模型，',
     tagline3: '來記錄、管理、建立、同步、展示您的媒體館藏與回憶。',
     authorLabel: '作者',

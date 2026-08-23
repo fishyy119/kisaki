@@ -47,7 +47,8 @@ export const scanners = sqliteTable(
       onDelete: 'set null',
       onUpdate: 'cascade'
     }),
-    scanIntervalMinutes: integer('scan_interval_minutes').notNull().default(0),
+    /** Watch the scan path and scan when a new entity directory appears. */
+    watchEnabled: integer('watch_enabled', { mode: 'boolean' }).notNull().default(true),
     entityDepth: integer('entity_depth').notNull().default(0),
     nameExtractionRules: nameExtractionRules('name_extraction_rules').notNull().default([])
   },

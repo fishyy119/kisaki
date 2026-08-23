@@ -10,7 +10,7 @@ export type TaskRunFinalStatus = Extract<TaskRunStatus, 'completed' | 'failed' |
 
 export type TaskRunAutomationTrigger = 'manual' | 'startup' | 'cron'
 
-export type TaskRunSystemReason = 'startup' | 'maintenance' | 'update' | 'shutdown'
+export type TaskRunSystemReason = 'startup' | 'maintenance' | 'update' | 'shutdown' | 'watch'
 
 export type TaskRunInitiator =
   | {

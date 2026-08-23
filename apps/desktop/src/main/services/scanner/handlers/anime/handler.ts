@@ -8,23 +8,25 @@
 
 import { createLogger } from '@main/log'
 import type { IngestService } from '@main/services/ingest'
+import type { MediaFilesService } from '@main/services/media-files'
 import type { EntityEntry } from '@shared/scanner'
+import type { ScannerEntityWarning } from '../../run'
+import { createWarning } from '../issues'
 import {
-  createWarning,
   MediaScannerHandler,
   type MediaScannerHandlerDeps,
   type ScannerAddOptions,
   type ScannerAddOutcome,
-  type ScannerEntityMatch,
-  type ScannerEntityWarning
-} from '../common'
+  type ScannerEntityMatch
+} from '../media-handler'
 
 const log = createLogger('Scanner')
 
 export class AnimeScannerHandler extends MediaScannerHandler {
   constructor(
     deps: MediaScannerHandlerDeps,
-    private readonly ingestService: IngestService
+    private readonly ingestService: IngestService,
+    private readonly mediaFilesService: MediaFilesService
   ) {
     super('anime', deps)
   }
@@ -71,7 +73,7 @@ export class AnimeScannerHandler extends MediaScannerHandler {
     const reasons = this.i18nService.messages.scanner.run.reasons
 
     try {
-      const sync = await this.ingestService.files.anime.sync({
+      const sync = await this.mediaFilesService.anime.sync({
         animeId: entityId,
         dirPath: entity.path,
         signal

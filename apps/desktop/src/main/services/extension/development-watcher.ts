@@ -1,9 +1,15 @@
 import path from 'node:path'
-import { watch, type FSWatcher } from 'chokidar'
 import { createLogger } from '@main/log'
-import { isInsideOrEqualPath } from './shared/path-confinement'
+import type { FileWatchScope, FileWatchService } from '@main/services/file-watch'
+import { isInsideOrEqualPath } from '@main/utils/fs'
 
 const log = createLogger('Extension')
+
+/** Built output settles quickly, so a short batch window keeps reload prompt. */
+const CHANGE_DEBOUNCE_MS = 300
+
+/** Bundlers rewrite files in place; wait for the write to finish. */
+const WRITE_FINISH_MS = 250
 
 export interface ExtensionDevelopmentWatchTarget {
   extensionId: string
@@ -25,12 +31,14 @@ interface MatchedDevelopmentWatchTarget {
  * model of "compile on save, reload on demand".
  */
 export class ExtensionDevelopmentWatcher {
-  private readonly changeDebounceTimers = new Map<string, NodeJS.Timeout>()
-  private watcher: FSWatcher | null = null
+  private scope: FileWatchScope | null = null
   private targets: readonly ExtensionDevelopmentWatchTarget[] = []
   private targetSignature = ''
 
-  constructor(private readonly onChange: ExtensionDevelopmentChangeCallback) {}
+  constructor(
+    private readonly fileWatch: FileWatchService,
+    private readonly onChange: ExtensionDevelopmentChangeCallback
+  ) {}
 
   async updateTargets(targets: readonly ExtensionDevelopmentWatchTarget[]): Promise<void> {
     const normalizedTargets = normalizeTargets(targets)
@@ -53,35 +61,37 @@ export class ExtensionDevelopmentWatcher {
       return
     }
 
-    this.watcher = watch([...new Set(this.targets.flatMap((target) => target.watchPaths))], {
-      ignored: (filePath) => this.shouldIgnorePath(filePath),
-      ignoreInitial: true,
-      persistent: true,
+    this.scope = this.fileWatch.watch({
+      id: 'extension-development',
+      paths: [...new Set(this.targets.flatMap((target) => target.watchPaths))],
       depth: 8,
-      awaitWriteFinish: {
-        stabilityThreshold: 250,
-        pollInterval: 50
+      ignored: (filePath) => this.shouldIgnorePath(filePath),
+      debounceMs: CHANGE_DEBOUNCE_MS,
+      awaitWriteFinishMs: WRITE_FINISH_MS,
+      onEvents: (events) => {
+        // One reload flag per extension, whichever of its files changed.
+        const changedByExtension = new Map<string, string>()
+        for (const event of events) {
+          const match = findTargetForPath(this.targets, event.path)
+          if (!match) continue
+          changedByExtension.set(
+            match.target.extensionId,
+            describeChangedPath(match.watchPath, event.path)
+          )
+        }
+
+        for (const [extensionId, relativePath] of changedByExtension) {
+          this.reportChange(extensionId, relativePath)
+        }
       }
     })
-
-    this.watcher.on('add', (filePath) => this.handleFileEvent(filePath))
-    this.watcher.on('change', (filePath) => this.handleFileEvent(filePath))
-    this.watcher.on('unlink', (filePath) => this.handleFileEvent(filePath))
 
     log.info('Watching development extension(s).', { targetsLength: this.targets.length })
   }
 
   async stop(): Promise<void> {
-    if (this.watcher) {
-      await this.watcher.close()
-      this.watcher = null
-    }
-
-    for (const timer of this.changeDebounceTimers.values()) {
-      clearTimeout(timer)
-    }
-
-    this.changeDebounceTimers.clear()
+    await this.scope?.close()
+    this.scope = null
   }
 
   /**
@@ -93,49 +103,27 @@ export class ExtensionDevelopmentWatcher {
       return true
     }
 
-    const absolutePath = path.resolve(filePath)
-    const match = findTargetForPath(this.targets, absolutePath)
+    const match = findTargetForPath(this.targets, filePath)
     if (!match) {
       return false
     }
 
     return match.target.ignoredPaths.some((ignoredPath) =>
-      isInsideOrEqualPath(ignoredPath, absolutePath)
+      isInsideOrEqualPath(ignoredPath, filePath)
     )
   }
 
-  private handleFileEvent(filePath: string): void {
-    const absolutePath = path.resolve(filePath)
-    const match = findTargetForPath(this.targets, absolutePath)
-    if (!match) {
-      return
-    }
+  private reportChange(extensionId: string, relativePath: string): void {
+    log.info('Development extension changed on disk.', {
+      targetExtensionId: extensionId,
+      changedRelativePath: relativePath
+    })
 
-    this.scheduleChange(match.target, describeChangedPath(match.watchPath, absolutePath))
-  }
-
-  private scheduleChange(target: ExtensionDevelopmentWatchTarget, relativePath: string): void {
-    const existingTimer = this.changeDebounceTimers.get(target.extensionId)
-    if (existingTimer) {
-      clearTimeout(existingTimer)
-    }
-
-    const timer = setTimeout(() => {
-      this.changeDebounceTimers.delete(target.extensionId)
-
-      log.info('Development extension changed on disk.', {
-        targetExtensionId: target.extensionId,
-        changedRelativePath: relativePath
+    void Promise.resolve(this.onChange(extensionId)).catch((error) => {
+      log.error('Failed to flag development extension change.', error, {
+        targetExtensionId: extensionId
       })
-
-      void Promise.resolve(this.onChange(target.extensionId)).catch((error) => {
-        log.error('Failed to flag development extension change.', error, {
-          targetExtensionId: target.extensionId
-        })
-      })
-    }, 300)
-
-    this.changeDebounceTimers.set(target.extensionId, timer)
+    })
   }
 }
 

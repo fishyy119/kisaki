@@ -29,7 +29,6 @@ import {
   GameBatchHandler,
   PersonBatchHandler
 } from './batch'
-import { AnimeFileSyncHandler } from './files'
 import { registerIngestIpc } from './ipc'
 import { createIngestHooks } from './hooks'
 
@@ -66,18 +65,12 @@ type IngestBatchHandlers = IngestHandlersByContent<{
   character: CharacterBatchHandler
 }>
 
-/** Handlers that reconcile an entity's local media files with its rows. */
-interface IngestFileHandlers {
-  anime: AnimeFileSyncHandler
-}
-
 export class IngestService implements IContentService {
   readonly id = 'ingest'
   readonly deps = [
     'db',
     'i18n',
     'ipc',
-    'media-info',
     'scraper',
     'task-run'
   ] as const satisfies readonly ServiceName[]
@@ -86,7 +79,6 @@ export class IngestService implements IContentService {
   add!: IngestAddHandlers
   update!: IngestUpdateHandlers
   batch!: IngestBatchHandlers
-  files!: IngestFileHandlers
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const dbService = container.get('db')
@@ -214,10 +206,6 @@ export class IngestService implements IContentService {
         taskRunService,
         i18nService
       )
-    }
-
-    this.files = {
-      anime: new AnimeFileSyncHandler(dbService, container.get('media-info'))
     }
 
     registerIngestIpc(this, ipcService)

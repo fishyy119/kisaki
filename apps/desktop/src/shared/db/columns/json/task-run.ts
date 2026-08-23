@@ -61,7 +61,13 @@ const TASK_RUN_STATIC_OPERATIONS = new Set([
   'system.maintenance'
 ])
 const TASK_RUN_AUTOMATION_TRIGGER_VALUES = new Set(['manual', 'startup', 'cron'])
-const TASK_RUN_SYSTEM_REASON_VALUES = new Set(['startup', 'maintenance', 'update', 'shutdown'])
+const TASK_RUN_SYSTEM_REASON_VALUES = new Set([
+  'startup',
+  'maintenance',
+  'update',
+  'shutdown',
+  'watch'
+])
 const TASK_RUN_SUBJECT_TYPE_VALUES = new Set<TaskRunSubjectType>([
   'command',
   'automation',

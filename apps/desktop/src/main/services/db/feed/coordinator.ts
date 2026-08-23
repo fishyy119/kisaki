@@ -1,9 +1,10 @@
 /**
  * Db change feed.
  *
- * Consumes raw trigger changes and fans them out through three explicit
+ * Consumes raw trigger changes and fans them out through four explicit
  * outlets:
  * - batched `db:changed` IPC pushes for renderer cache invalidation,
+ * - the `db.changed` hook carrying the same batches to main-process modules,
  * - the debounced, entity-grouped `library.changed` hook,
  * - immediate `app.settings.changed` hook dispatches from settings rows.
  */
@@ -99,7 +100,9 @@ export class DbChangeFeed {
     this.flushTimer = null
 
     for (let start = 0; start < summaries.length; start += FEED_PUSH_CHUNK_SIZE) {
-      this.options.sendToRenderer(summaries.slice(start, start + FEED_PUSH_CHUNK_SIZE))
+      const chunk = summaries.slice(start, start + FEED_PUSH_CHUNK_SIZE)
+      this.options.sendToRenderer(chunk)
+      this.options.hooks.dbChanged.dispatch({ changes: chunk })
     }
 
     const changes: LibraryEntityChangeSummary[] = []

@@ -35,6 +35,8 @@ export const scanner = {
     scan: 'スキャン',
     cancel: 'キャンセル',
     cancelling: 'キャンセル中',
+    watching: '変更を監視中',
+    watchDisabled: '手動スキャンのみ',
     newCount: ({ count }: { count: number }) => `新規 ${count}`,
     existingCount: ({ count }: { count: number }) => `既存 ${count}`,
     newCountTooltip: 'データベースに追加されたゲーム数',
@@ -92,8 +94,6 @@ export const scanner = {
     title: 'スキャナー設定',
     saved: '設定を保存しました。',
     saveFailed: '保存に失敗しました',
-    startAtOpen: '起動時に自動スキャン',
-    startAtOpenDescription: 'アプリを開いたときにすべてのスキャナーを自動実行します。',
     ingestMode: '取り込みモード',
     ingestModeDescription: 'スキャナーが新しいゲームを検出した際の取り込み方法を制御します。',
     ingestPreferScraper: 'スクレイパー優先',
@@ -134,9 +134,9 @@ export const scanner = {
     scraperProfileHelp:
       'メタデータの取得に使うスクレイパープロファイルです。どのデータソースからどのフィールドを取得するかを決めます。',
     targetCollection: '対象コレクション',
-    scanInterval: '自動スキャン間隔',
-    scanIntervalDescription: '0 に設定すると自動スキャンを行いません。',
-    minutes: '分',
+    watchEnabled: '変更を監視',
+    watchEnabledDescription:
+      '新しいエンティティのフォルダーが現れたときに自動でスキャンし、起動時にも一度スキャンします。オフにすると手動スキャンのみになります。',
     nameExtractionRules: '名前抽出ルール',
     nameExtractionRulesHelp:
       '正規表現ルールを順番に適用し、フォルダー名からゲーム名を抽出します。ルールは名前付きキャプチャグループ (?<name>...) で名前を抽出します。',

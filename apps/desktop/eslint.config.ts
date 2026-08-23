@@ -87,7 +87,7 @@ export default defineConfig([
       // Parses CJK source data from the YMGal API; not UI copy.
       'src/main/services/scraper/handlers/game/providers/ymgal/format.ts',
       // Matches CJK tokens in release file names; not UI copy.
-      'src/main/services/ingest/files/recognition.ts'
+      'src/main/services/media-files/anime/recognition.ts'
     ],
     rules: {
       'no-restricted-syntax': ['error', ...noCjkLiteralRestrictions]

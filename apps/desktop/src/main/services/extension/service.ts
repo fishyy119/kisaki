@@ -63,6 +63,7 @@ export class ExtensionService implements IService {
     'automation',
     'task-run',
     'deeplink',
+    'file-watch',
     'i18n'
   ] as const satisfies readonly ServiceName[]
 
@@ -210,9 +211,12 @@ export class ExtensionService implements IService {
       onRuntimeStateChanged: (extensionId, state) =>
         this.emitRuntimeStateChanged(extensionId, state)
     })
-    this.developmentWatcher = new ExtensionDevelopmentWatcher((extensionId) => {
-      this.installations.markDevelopmentChanged(extensionId)
-    })
+    this.developmentWatcher = new ExtensionDevelopmentWatcher(
+      container.get('file-watch'),
+      (extensionId) => {
+        this.installations.markDevelopmentChanged(extensionId)
+      }
+    )
     this.installations = new ExtensionInstallationManager({
       layout,
       view: new ExtensionInstallationView(layout, installationStore),

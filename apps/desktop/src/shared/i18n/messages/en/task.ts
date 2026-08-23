@@ -169,7 +169,8 @@ export const task = {
     startup: 'Startup',
     maintenance: 'Maintenance',
     update: 'Update',
-    shutdown: 'Shutdown'
+    shutdown: 'Shutdown',
+    watch: 'File change'
   },
 
   progressUnits: {

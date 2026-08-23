@@ -1,9 +1,17 @@
 /**
- * Filesystem helpers complementing node:fs/promises.
+ * Filesystem and path helpers complementing node:fs/promises.
  */
 
 import { access, cp, mkdir, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
+
+/** Returns whether a candidate path is the root itself or lives under it. */
+export function isInsideOrEqualPath(rootDir: string, candidatePath: string): boolean {
+  const root = path.resolve(rootDir)
+  const candidate = path.resolve(candidatePath)
+  const relative = path.relative(root, candidate)
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+}
 
 /** Returns whether a filesystem path exists. */
 export async function pathExists(targetPath: string): Promise<boolean> {

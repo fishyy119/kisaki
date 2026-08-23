@@ -15,7 +15,7 @@ export const app = {
   },
   about: {
     title: 'About Kisaki',
-    tagline1: 'Kisaki is a multifunctional media library manager.',
+    tagline1: 'Kisaki is an ACGN library manager.',
     tagline2: 'It aims to provide one coherent interface and data model',
     tagline3:
       'for recording, managing, building, syncing, and showcasing your collections and memories.',

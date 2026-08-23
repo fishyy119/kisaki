@@ -21,7 +21,8 @@ import type {
   TaskRunPresentation,
   TaskRunProgressUpdate,
   TaskRunResult,
-  TaskRunSubject
+  TaskRunSubject,
+  TaskRunSystemReason
 } from '@shared/task-run'
 import { toInternalExtensionTaskRunOperation } from './mappers'
 
@@ -379,9 +380,7 @@ function normalizeAutomationTrigger(value: unknown): 'manual' | 'startup' | 'cro
   throw createValidationError('Task run automation initiator trigger is invalid.')
 }
 
-function normalizeSystemReason(
-  value: unknown
-): 'startup' | 'maintenance' | 'update' | 'shutdown' | undefined {
+function normalizeSystemReason(value: unknown): TaskRunSystemReason | undefined {
   if (value === undefined) {
     return undefined
   }
@@ -390,7 +389,8 @@ function normalizeSystemReason(
     value === 'startup' ||
     value === 'maintenance' ||
     value === 'update' ||
-    value === 'shutdown'
+    value === 'shutdown' ||
+    value === 'watch'
   ) {
     return value
   }

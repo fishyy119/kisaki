@@ -169,7 +169,8 @@ export const task = {
     startup: '启动',
     maintenance: '维护',
     update: '更新',
-    shutdown: '退出'
+    shutdown: '退出',
+    watch: '文件变更'
   },
 
   progressUnits: {

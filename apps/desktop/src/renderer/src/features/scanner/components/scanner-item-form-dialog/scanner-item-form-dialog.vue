@@ -29,12 +29,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import {
-  InputGroup,
-  InputGroupInput,
-  InputGroupAddon,
-  InputGroupText
-} from '@renderer/components/ui/input-group'
+import { Switch } from '@renderer/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -94,7 +89,7 @@ interface FormData {
   type: Scanner['type']
   scraperProfileId: string
   targetCollectionId: string | null
-  scanIntervalMinutes: number
+  watchEnabled: boolean
   entityDepth: number
   nameExtractionRules: NameExtractionRule[]
 }
@@ -105,7 +100,7 @@ const formData = ref<FormData>({
   type: 'game',
   scraperProfileId: '',
   targetCollectionId: null,
-  scanIntervalMinutes: 0,
+  watchEnabled: true,
   entityDepth: 0,
   nameExtractionRules: []
 })
@@ -147,7 +142,7 @@ watch(
         type: d.type,
         scraperProfileId: d.scraperProfileId,
         targetCollectionId: d.targetCollectionId,
-        scanIntervalMinutes: d.scanIntervalMinutes,
+        watchEnabled: d.watchEnabled,
         entityDepth: d.entityDepth,
         nameExtractionRules: d.nameExtractionRules ?? []
       }
@@ -160,7 +155,7 @@ watch(
         type: 'game',
         scraperProfileId: '',
         targetCollectionId: null,
-        scanIntervalMinutes: 0,
+        watchEnabled: true,
         entityDepth: 0,
         nameExtractionRules: []
       }
@@ -214,7 +209,7 @@ async function handleSubmit() {
           type: formData.value.type,
           scraperProfileId: formData.value.scraperProfileId,
           targetCollectionId: formData.value.targetCollectionId,
-          scanIntervalMinutes: formData.value.scanIntervalMinutes,
+          watchEnabled: formData.value.watchEnabled,
           entityDepth: formData.value.entityDepth,
           nameExtractionRules: formData.value.nameExtractionRules
         })
@@ -229,7 +224,7 @@ async function handleSubmit() {
           type: formData.value.type,
           scraperProfileId: formData.value.scraperProfileId,
           targetCollectionId: formData.value.targetCollectionId,
-          scanIntervalMinutes: formData.value.scanIntervalMinutes,
+          watchEnabled: formData.value.watchEnabled,
           entityDepth: formData.value.entityDepth,
           nameExtractionRules: formData.value.nameExtractionRules
         })
@@ -256,15 +251,6 @@ const entityDepthModel = computed({
   set: (value: string | number | undefined) => {
     const num = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10)
     formData.value.entityDepth = isNaN(num) ? 0 : Math.max(0, Math.min(5, num))
-  }
-})
-
-// Computed model for scan interval (parse string to number, clamp >= 0)
-const scanIntervalModel = computed({
-  get: () => formData.value.scanIntervalMinutes,
-  set: (value: string | number | undefined) => {
-    const num = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10)
-    formData.value.scanIntervalMinutes = isNaN(num) ? 0 : Math.max(0, num)
   }
 })
 
@@ -405,22 +391,12 @@ async function openLink(link: { href: string }): Promise<void> {
               </Field>
 
               <Field
-                for="interval"
-                :label="m.scanner.form.scanInterval"
-                :description="m.scanner.form.scanIntervalDescription"
+                orientation="horizontal"
+                :label="m.scanner.form.watchEnabled"
+                :description="m.scanner.form.watchEnabledDescription"
               >
                 <FieldContent>
-                  <InputGroup>
-                    <InputGroupInput
-                      id="interval"
-                      v-model="scanIntervalModel"
-                      type="number"
-                      :min="0"
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>{{ m.scanner.form.minutes }}</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
+                  <Switch v-model="formData.watchEnabled" />
                 </FieldContent>
               </Field>
 

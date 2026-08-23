@@ -18,6 +18,7 @@ export type ServiceStatus =
 
 // NOTE: These are type-only imports (no runtime dependency).
 import type { DbService } from '@main/services/db/service'
+import type { FileWatchService } from '@main/services/file-watch/service'
 import type { IpcService } from '@main/services/ipc/service'
 import type { WindowService } from '@main/services/window/service'
 import type { NativeService } from '@main/services/native/service'
@@ -27,6 +28,7 @@ import type { IngestService } from '@main/services/ingest/service'
 import type { ScannerService } from '@main/services/scanner/service'
 import type { ProcessService } from '@main/services/process/service'
 import type { PlayerService } from '@main/services/player/service'
+import type { MediaFilesService } from '@main/services/media-files/service'
 import type { MediaInfoService } from '@main/services/media-info/service'
 import type { ActivityService } from '@main/services/activity/service'
 import type { AttachmentService } from '@main/services/attachment/service'
@@ -42,29 +44,40 @@ import type { TaskRunService } from '@main/services/task-run/service'
 /**
  * Service Registry - Centralized type mapping for all core services.
  * Used by ServiceContainer.get() for type-safe service retrieval.
+ *
+ * Grouped by layer. The layer is a property of a service, not a location: it is
+ * enforced by `deps`, which is why capability services declare no domain
+ * dependency. See `.agents/skills/kisaki/references/architecture.md`.
  */
 export interface ServiceRegistry {
-  db: DbService
+  // Platform: Electron, OS, and transport adapters
   ipc: IpcService
-  network: NetworkService
+  db: DbService
   window: WindowService
   native: NativeService
+  notify: NotifyService
+  network: NetworkService
+  deeplink: DeeplinkService
+  updater: UpdaterService
   i18n: I18nService
+
+  // Capability: no domain vocabulary, no library rows
+  'task-run': TaskRunService
+  'file-watch': FileWatchService
+  'media-info': MediaInfoService
+  process: ProcessService
+  player: PlayerService
+
+  // Domain: library ownership, grows per media type
   scraper: ScraperService
   ingest: IngestService
   scanner: ScannerService
-  process: ProcessService
-  player: PlayerService
-  'media-info': MediaInfoService
+  'media-files': MediaFilesService
   activity: ActivityService
   attachment: AttachmentService
-  extension: ExtensionService
-  notify: NotifyService
-  deeplink: DeeplinkService
-  updater: UpdaterService
-  'task-run': TaskRunService
   command: CommandService
   automation: AutomationService
+  extension: ExtensionService
 }
 
 /**

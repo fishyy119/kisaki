@@ -56,11 +56,11 @@ import type {
   IngestAddPersonFromScraperOptions
 } from './ingest/add'
 import type {
-  IngestAttachAnimeEpisodeFileParams,
-  IngestAttachAnimeExtraFileParams,
-  IngestSyncAnimeFilesParams,
-  IngestSyncAnimeFilesResult
-} from './ingest/files'
+  AnimeEpisodeFileAttachParams,
+  AnimeExtraFileAttachParams,
+  AnimeFileSyncParams,
+  AnimeFileSyncResult
+} from './media-files'
 import type {
   AnimeBatchUpdateRequest,
   AnimeUpdateRequest,
@@ -348,11 +348,6 @@ export interface IpcMainHandlers {
     lookup: AnimeScraperLookup,
     options?: IngestAddAnimeFromScraperOptions
   ) => IpcResult<TaskRunStartResult>
-  'ingest:sync-anime-files': (
-    params: IngestSyncAnimeFilesParams
-  ) => IpcResult<IngestSyncAnimeFilesResult>
-  'ingest:attach-anime-episode-file': (params: IngestAttachAnimeEpisodeFileParams) => IpcVoidResult
-  'ingest:attach-anime-extra-file': (params: IngestAttachAnimeExtraFileParams) => IpcVoidResult
   'ingest:add-person-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
@@ -601,6 +596,11 @@ export interface IpcMainHandlers {
     entityDepth: number,
     rules: NameExtractionRule[]
   ) => IpcResult<ExtractionTestResult[]>
+
+  // Media files
+  'media-files:sync-anime': (params: AnimeFileSyncParams) => IpcResult<AnimeFileSyncResult>
+  'media-files:attach-anime-episode-file': (params: AnimeEpisodeFileAttachParams) => IpcVoidResult
+  'media-files:attach-anime-extra-file': (params: AnimeExtraFileAttachParams) => IpcVoidResult
 
   // Deeplink
   'deeplink:handle': (url: string) => IpcResult<DeeplinkResult>
