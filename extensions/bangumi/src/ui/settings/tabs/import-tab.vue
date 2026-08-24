@@ -8,13 +8,13 @@ import {
   FieldContent,
   FieldGroup,
   Icon,
-  Input
+  Input,
+  SettingsSection
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
 import { m } from '../i18n'
 import { useScopeSelection } from '../scope'
 import MediaScopeSelect from '../components/media-scope-select.vue'
-import SettingsSection from '../components/settings-section.vue'
 import ImportCollectionsDialog from '../flows/import-collections-dialog.vue'
 import ImportIndexDialog from '../flows/import-index-dialog.vue'
 

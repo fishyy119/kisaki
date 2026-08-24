@@ -20,6 +20,16 @@
   --kisaki-radius: 6px;
   --kisaki-pane-alpha: 72%;
 
+  /* Elevation tiers: raised is a pure cast shadow, overlay and modal bundle
+   * the slab rim light (inset top highlight + shaded bottom edge). */
+  --kisaki-shadow-raised: 0 1px 2px 0 rgb(15 23 42 / 0.08), 0 3px 10px -2px rgb(15 23 42 / 0.1);
+  --kisaki-shadow-overlay:
+    inset 0 1px 0 rgb(255 255 255 / 0.5), inset 0 -1px 0 rgb(15 23 42 / 0.05),
+    0 1px 2px 0 rgb(15 23 42 / 0.1), 0 10px 24px -6px rgb(15 23 42 / 0.16);
+  --kisaki-shadow-modal:
+    inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -1px 0 rgb(15 23 42 / 0.06),
+    0 2px 4px 0 rgb(15 23 42 / 0.1), 0 28px 64px -16px rgb(15 23 42 / 0.24);
+
   --kisaki-background: #f8fafc;
   --kisaki-foreground: #0f172a;
   --kisaki-surface: #f1f5f9;
@@ -52,6 +62,14 @@
 
 [data-kisaki-theme='dark'] {
   --kisaki-pane-alpha: 75%;
+
+  --kisaki-shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.35), 0 4px 12px -2px rgb(0 0 0 / 0.4);
+  --kisaki-shadow-overlay:
+    inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 -1px 0 rgb(0 0 0 / 0.35),
+    0 1px 2px 0 rgb(0 0 0 / 0.45), 0 10px 24px -6px rgb(0 0 0 / 0.5);
+  --kisaki-shadow-modal:
+    inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 -1px 0 rgb(0 0 0 / 0.4),
+    0 2px 4px 0 rgb(0 0 0 / 0.5), 0 28px 64px -16px rgb(0 0 0 / 0.65);
 
   --kisaki-background: #1e293b;
   --kisaki-foreground: #e2e8f0;

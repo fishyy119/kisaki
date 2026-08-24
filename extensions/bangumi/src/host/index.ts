@@ -14,9 +14,12 @@ import { JobRunner } from './jobs/runner'
 import { AnimeLocalMediaAdapter, createAnimeMediaDescriptor } from './media/anime/adapter'
 import { BangumiAnimeProvider } from './media/anime/scraper/provider'
 import { createBookMediaDescriptor } from './media/book/scope'
+import { BangumiCharacterProvider } from './media/character/provider'
+import { BangumiCompanyProvider } from './media/company/provider'
 import { GameLocalMediaAdapter, createGameMediaDescriptor } from './media/game/adapter'
 import { BangumiGameProvider } from './media/game/scraper/provider'
 import { createMusicMediaDescriptor } from './media/music/scope'
+import { BangumiPersonProvider } from './media/person/provider'
 import { MediaRegistry } from './media/registry'
 import { registerBangumiSettingsUi, type BangumiSettingsUiHandle } from './settings'
 import { BangumiExtensionError } from './utils/errors'
@@ -148,6 +151,17 @@ export default defineExtension({
     )
     context.subscriptions.add(
       context.contributions.scraperProviders.anime.register(new BangumiAnimeProvider(client))
+    )
+    context.subscriptions.add(
+      context.contributions.scraperProviders.person.register(new BangumiPersonProvider(client))
+    )
+    context.subscriptions.add(
+      context.contributions.scraperProviders.character.register(
+        new BangumiCharacterProvider(client)
+      )
+    )
+    context.subscriptions.add(
+      context.contributions.scraperProviders.company.register(new BangumiCompanyProvider(client))
     )
     for (const registration of registerBangumiJobCommands({
       commands: context.contributions.commands,

@@ -7,8 +7,11 @@
 - `apps/desktop/src/renderer/src/components/ui/button.vue` - Button variants
 - `apps/desktop/src/renderer/src/components/ui/input.vue` - Input component
 - `apps/desktop/src/renderer/src/components/ui/form.vue` - Form wrapper
-- `apps/desktop/src/renderer/src/components/ui/field/` - Field layout components
+- `apps/desktop/src/renderer/src/components/ui/field/` - Field layout components; `FieldGroup`
+  owns the app-wide form texture
 - `apps/desktop/src/renderer/src/components/ui/dialog/` - Dialog components
+- `@kisaki3/extension-ui-vue` `SettingsSection` - Multi-section settings recipe; the app has
+  no surface of that type yet, so it has no counterpart component
 - `apps/desktop/src/renderer/src/components/ui/icon.vue` - Icon component
 - `apps/desktop/src/renderer/src/components/shared/game/game-forms/game-characters-form-dialog/` - ListForm pattern reference
 
@@ -19,15 +22,46 @@
 - High information density, restrained interface
 - Neutral colors as base, blue as accent/focus color
 - Structure expressed through background layers, not card stacking
-- Dense settings and workflow surfaces should prefer divider-based grids or row lists
-  over repeated cards: use borders, aligned columns, and compact row rhythm to make
-  related controls scannable.
+- One form texture: a form is a plain stack of fields (`FieldGroup`), each a label above
+  its full-width control, bound by proximity. Every form in the app reads the same way,
+  from a one-field rename dialog to the settings dialog.
+- Frames and dividers are a grouping device, so they are spent only where there are
+  groups to tell apart: a multi-section settings surface. They do not belong to forms -
+  around a single field a frame states a grouping that does not exist.
+- Row lists and divider-based grids, not repeated cards: use borders, aligned columns,
+  and compact row rhythm to make related controls scannable.
 - Lightbox base: the app shell is a backlit panel of three layers (`ambient-light.vue`) -
   light (soft gradient lamp, the only dynamic layer), diffuser (grain sheet texturing
   the lamp), and glass (translucent base panes). Floating layers (popover/dialog) are
   opaque slabs with no alpha, blur, or light
 - Shadows come in exactly three semantic tiers (raised/overlay/modal); borders stay subtle
 - Short animations (100-150ms) for popovers
+
+## Surface Types
+
+Layout is unified per surface type, not per owner. The system keeps a finite
+vocabulary of surface types, each with exactly one canonical recipe; implementers
+(app pages and extension webviews alike) classify the surface they are building
+and apply that recipe. Do not design layouts per page, and do not copy the layout
+of the nearest existing screen when it is a different surface type. When a new
+surface type genuinely has no recipe, define the recipe once (document it here,
+add shared components where needed), then build the surface; whichever side meets
+the need first proposes, but the recipe belongs to the system and both sides use it.
+
+| Surface type           | Test                                                                                      | Recipe                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Form                   | Fields to fill and submit, whatever the dialog's size                                     | Plain `FieldGroup`, no frame                        |
+| Multi-section settings | Several titled groups of settings living on one resident surface                          | `SettingsSection` per group with the `rows` surface |
+| Data row list          | Entity rows with inline actions                                                           | `border` + `divide-y` rows                          |
+| Section navigation     | Up to 3 sections: top horizontal `TabsList`. 5+ sections in a large dialog: left tab rail | Threshold-based, never owner-based                  |
+| Detail page content    | Content-first sections                                                                    | `Section` with de-emphasized xs heading             |
+| Report surface         | Data-dense read-only bands                                                                | Full-bleed bands + `divide-y` (see Report surfaces) |
+
+The line between a form and a multi-section settings surface is the presence of
+several groups, not the owner and not the surface's size. A dialog holding one flat
+set of settings (the app settings dialog) is a form. Extension settings webviews carry
+three to six titled groups each and are multi-section settings surfaces; the app has no
+instance of that type today and adopts the same recipe when it grows one.
 
 ## Semantic Tokens
 
@@ -300,6 +334,45 @@ Standard dialog form structure:
   </DialogFooter>
 </Form>
 ```
+
+`FieldGroup` is the form texture and has no variants: a plain `gap-5` column, no
+frame and no dividers. It holds for a single field as much as for twenty, so
+every form in the app reads the same. Notes:
+
+- Fields carry their own label; wrap them in a `FieldGroup` even when there is
+  only one, so form markup is uniform.
+- A lone `Field` outside a group is for labelled content regions that frame
+  themselves (e.g. the updater's changelog viewer), not for inputs.
+- Use `orientation="horizontal"` when the value is compact enough to sit beside
+  its label (switches, selects); the default vertical field gives the control
+  the full width, which free-text inputs need.
+
+### Multi-Section Settings (SettingsSection)
+
+For a resident surface carrying several titled groups of settings - today the
+extension settings webviews:
+
+```vue
+<div class="space-y-4">
+  <SettingsSection :title="t" :description="d" surface="rows">
+    <FieldGroup>
+      <Field orientation="horizontal">...</Field>
+    </FieldGroup>
+  </SettingsSection>
+</div>
+```
+
+- `SettingsSection` owns the heading: `text-sm font-medium` title, optional xs
+  muted description, and an `#actions` slot at the heading's right edge.
+- `surface="rows"` restyles the section's `FieldGroup` into one bordered
+  `rounded-md` column of `divide-y` rows (`px-3 py-2.5`). That frame is what
+  keeps one group distinct from the next; it is the reason the recipe exists and
+  the reason a plain form does not use it.
+- Plain sections (no `surface`) carry content that frames itself: data lists,
+  action button rows, documentation blocks.
+- The component lives in `@kisaki3/extension-ui-vue`. When the app grows a
+  surface of this type, mirror it into `components/ui/` rather than inventing a
+  second recipe.
 
 ### ListForm with Sub-Form Pattern
 

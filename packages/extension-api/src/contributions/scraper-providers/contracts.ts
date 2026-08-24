@@ -479,6 +479,16 @@ export type CharacterScraperSession = BaseScraperSession<
   CharacterSessionResultMap
 >
 
+/**
+ * Static declaration every scraper provider carries.
+ *
+ * `capabilities` is the single source of truth for what the provider answers:
+ * a provider implements `search` if and only if it declares the `search`
+ * capability. A provider without it can still fill slots — it is reached
+ * through `knownIds` in the lookup rather than by name — which is the normal
+ * shape for sources whose satellite entities (persons, companies, characters)
+ * are only addressable by id.
+ */
 export interface BaseScraperProvider<TSlot extends ScraperSlot = ScraperSlot> {
   /** Unique within the media-specific registrar used to register this provider. */
   readonly id: string
@@ -488,31 +498,31 @@ export interface BaseScraperProvider<TSlot extends ScraperSlot = ScraperSlot> {
 }
 
 export interface GameScraperProvider extends BaseScraperProvider<GameScraperSlot> {
-  search(query: string, ctx: ScraperProviderContext): Promise<readonly GameSearchResult[]>
+  search?(query: string, ctx: ScraperProviderContext): Promise<readonly GameSearchResult[]>
   resolve(lookup: GameScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<GameScraperSession>
 }
 
 export interface AnimeScraperProvider extends BaseScraperProvider<AnimeScraperSlot> {
-  search(query: string, ctx: ScraperProviderContext): Promise<readonly AnimeSearchResult[]>
+  search?(query: string, ctx: ScraperProviderContext): Promise<readonly AnimeSearchResult[]>
   resolve(lookup: AnimeScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<AnimeScraperSession>
 }
 
 export interface PersonScraperProvider extends BaseScraperProvider<PersonScraperSlot> {
-  search(query: string, ctx: ScraperProviderContext): Promise<readonly PersonSearchResult[]>
+  search?(query: string, ctx: ScraperProviderContext): Promise<readonly PersonSearchResult[]>
   resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<PersonScraperSession>
 }
 
 export interface CompanyScraperProvider extends BaseScraperProvider<CompanyScraperSlot> {
-  search(query: string, ctx: ScraperProviderContext): Promise<readonly CompanySearchResult[]>
+  search?(query: string, ctx: ScraperProviderContext): Promise<readonly CompanySearchResult[]>
   resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<CompanyScraperSession>
 }
 
 export interface CharacterScraperProvider extends BaseScraperProvider<CharacterScraperSlot> {
-  search(query: string, ctx: ScraperProviderContext): Promise<readonly CharacterSearchResult[]>
+  search?(query: string, ctx: ScraperProviderContext): Promise<readonly CharacterSearchResult[]>
   resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
   openSession(
     target: IdResolvedTarget,

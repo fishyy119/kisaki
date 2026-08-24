@@ -1,6 +1,8 @@
 <!--
 Bangumi Settings App is the webview root: tab navigation, preference draft
-lifecycle, and host refresh handling. Immediate actions live in tab components.
+lifecycle, and host refresh handling. Immediate actions live in tab components,
+and their successful results are reported by the host through the app's own
+notifications.
 -->
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -51,10 +53,8 @@ const savedForm = ref<BangumiSettingsFormState | null>(null)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
-const savedNotice = ref(false)
 
 let stopRefreshListener: (() => void) | null = null
-let savedNoticeTimer: ReturnType<typeof setTimeout> | null = null
 
 const isDirty = computed(
   () => savedForm.value !== null && !settingsFormsEqual(settingsForm, savedForm.value)
@@ -69,9 +69,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopRefreshListener?.()
-  if (savedNoticeTimer) {
-    clearTimeout(savedNoticeTimer)
-  }
 })
 
 async function reload(options: { keepDraft: boolean }): Promise<void> {
@@ -97,7 +94,6 @@ async function save(): Promise<void> {
   try {
     await host.saveSettings(snapshotSettingsForm())
     await reload({ keepDraft: false })
-    showSavedNotice()
   } catch (cause) {
     error.value = toErrorMessage(cause)
   } finally {
@@ -111,16 +107,6 @@ function discardDraft(): void {
   }
 
   applySettingsForm(savedForm.value)
-}
-
-function showSavedNotice(): void {
-  savedNotice.value = true
-  if (savedNoticeTimer) {
-    clearTimeout(savedNoticeTimer)
-  }
-  savedNoticeTimer = setTimeout(() => {
-    savedNotice.value = false
-  }, 2000)
 }
 
 function reportError(message: string): void {
@@ -143,6 +129,8 @@ function navigate(tab: SettingsTabId): void {
       orientation="vertical"
       class="h-full min-h-0 flex-row gap-0"
     >
+      <!-- Six sections: the multi-section large-dialog threshold, so navigation
+           uses the left rail recipe rather than a top tab strip. -->
       <aside class="flex w-40 shrink-0 flex-col border-r border-border p-2">
         <TabsList class="h-auto w-full flex-col items-stretch">
           <TabsTrigger
@@ -167,13 +155,6 @@ function navigate(tab: SettingsTabId): void {
             variant="destructive"
           >
             {{ error }}
-          </Alert>
-
-          <Alert
-            v-if="savedNotice"
-            variant="success"
-          >
-            {{ m.ui.saved }}
           </Alert>
 
           <TabsContent

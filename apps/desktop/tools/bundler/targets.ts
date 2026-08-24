@@ -12,14 +12,7 @@ export type BundlerMode = 'development' | 'production'
  * Build-time env constants statically injected into the main bundle.
  * Keep in sync with the ImportMetaEnv declaration in apps/desktop/env.d.ts.
  */
-const buildEnvKeys = [
-  'VITE_YMGAL_API_CLIENT_ID',
-  'VITE_YMGAL_API_CLIENT_SECRET',
-  'VITE_IGDB_API_CLIENT_ID',
-  'VITE_IGDB_API_CLIENT_SECRET',
-  'VITE_VNDB_API_TOKEN',
-  'VITE_KISAKI_CHANGELOG_BASE_URL'
-] as const
+const buildEnvKeys = ['VITE_KISAKI_CHANGELOG_BASE_URL'] as const
 
 /** Workspace packages bundled into the main output instead of resolved from node_modules. */
 const bundledWorkspacePackages = new Set(['@kisaki3/extension-api', '@kisaki3/extension-registry'])

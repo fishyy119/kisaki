@@ -1,11 +1,11 @@
 /**
  * mpv command line construction.
  *
- * Kisaki owns resume positions and track memory, so playback state that mpv
- * would otherwise persist on its own is disabled here and passed explicitly.
- * Presentation stays user-owned: the app-owned config dir is loaded instead
- * of the system-wide one, and command line options only claim the keys the
- * session machinery depends on.
+ * Kisaki owns resume positions, so playback state that mpv would otherwise
+ * persist on its own is disabled here and passed explicitly. Presentation
+ * stays user-owned: the app-owned config dir is loaded instead of the
+ * system-wide one, and command line options only claim the keys the session
+ * machinery depends on, since they always override that config.
  */
 
 import { tmpdir } from 'node:os'
@@ -44,16 +44,6 @@ export function buildMpvArguments(
 
   if (target.startPositionMs && target.startPositionMs > 0) {
     args.push(`--start=${(target.startPositionMs / 1000).toFixed(3)}`)
-  }
-
-  const audioLanguages = target.trackPreference?.audioLanguages
-  if (audioLanguages?.length) {
-    args.push(`--alang=${audioLanguages.join(',')}`)
-  }
-
-  const subtitleLanguages = target.trackPreference?.subtitleLanguages
-  if (subtitleLanguages?.length) {
-    args.push(`--slang=${subtitleLanguages.join(',')}`)
   }
 
   args.push('--', target.path)

@@ -1,5 +1,6 @@
 export {
   createProviderHttpError,
+  createSearchUnsupportedError,
   ScrapeFailure,
   type ProviderHttpFailure,
   type ScrapeFailureReason

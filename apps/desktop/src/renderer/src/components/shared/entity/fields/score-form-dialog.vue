@@ -19,7 +19,7 @@ import {
 import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
+import { Field, FieldGroup, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
@@ -128,30 +128,32 @@ function handleClear() {
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
-            <Field>
-              <FieldLabel>{{ m.library.fields.myScore }}</FieldLabel>
-              <FieldContent>
-                <div class="flex items-center gap-2">
-                  <Input
-                    v-model="scoreModel"
-                    inputmode="decimal"
-                    placeholder="0.0 - 10.0"
-                    class="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    :disabled="score === ''"
-                    @click="handleClear"
-                  >
-                    {{ m.common.clear }}
-                  </Button>
-                </div>
-                <p class="text-xs text-muted-foreground mt-1.5">
-                  {{ m.library.forms.scoreRangeHint }}
-                </p>
-              </FieldContent>
-            </Field>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>{{ m.library.fields.myScore }}</FieldLabel>
+                <FieldContent>
+                  <div class="flex items-center gap-2">
+                    <Input
+                      v-model="scoreModel"
+                      inputmode="decimal"
+                      placeholder="0.0 - 10.0"
+                      class="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      :disabled="score === ''"
+                      @click="handleClear"
+                    >
+                      {{ m.common.clear }}
+                    </Button>
+                  </div>
+                  <p class="text-xs text-muted-foreground mt-1.5">
+                    {{ m.library.forms.scoreRangeHint }}
+                  </p>
+                </FieldContent>
+              </Field>
+            </FieldGroup>
           </DialogBody>
           <DialogFooter>
             <Button

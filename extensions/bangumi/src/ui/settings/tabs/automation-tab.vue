@@ -1,7 +1,7 @@
 <!-- Automation Tab creates recommended app-owned automations for Bangumi commands. -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Badge, Button, Icon, Spinner } from '@kisaki3/extension-ui-vue'
+import { Badge, Button, Icon, SettingsSection, Spinner } from '@kisaki3/extension-ui-vue'
 import type { BangumiAutomationKind, BangumiSettingsOverview } from '../../../shared/settings'
 import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
@@ -11,7 +11,6 @@ import {
   getAutomationLabel,
   getAutomationStatusLabel
 } from '../labels'
-import SettingsSection from '../components/settings-section.vue'
 
 interface Props {
   overview: BangumiSettingsOverview

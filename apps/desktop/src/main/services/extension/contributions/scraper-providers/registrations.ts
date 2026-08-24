@@ -22,28 +22,38 @@ export function createProviderAdapter(
   registration: ScraperRegistration,
   domain: ScraperDomain
 ): unknown {
+  // The scraper registry treats a present `search` method as the implementation
+  // side of the declared capability, so the adapter must omit it entirely for a
+  // provider that only resolves by id.
+  const capabilities: readonly string[] = registration.provider.capabilities
+  const search = capabilities.includes('search')
+    ? {
+        async search(query: string, ctx: ScraperProviderContext) {
+          const response = await requestScraperHost<{ results: readonly unknown[] }>(
+            options,
+            domain,
+            'search',
+            {
+              runtimeHandle: registration.owner.runtimeHandle,
+              mediaType: domain.mediaType,
+              providerId: registration.provider.id,
+              query,
+              locale: ctx.locale
+            },
+            { signal: ctx.signal }
+          )
+
+          return response.results
+        }
+      }
+    : {}
+
   return {
     id: registration.registryProviderId,
     name: registration.provider.name,
     externalIdSource: registration.provider.externalIdSource,
     capabilities: [...registration.provider.capabilities],
-    async search(query: string, ctx: ScraperProviderContext) {
-      const response = await requestScraperHost<{ results: readonly unknown[] }>(
-        options,
-        domain,
-        'search',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          mediaType: domain.mediaType,
-          providerId: registration.provider.id,
-          query,
-          locale: ctx.locale
-        },
-        { signal: ctx.signal }
-      )
-
-      return response.results
-    },
+    ...search,
     async resolve(lookup: ScraperLookup, ctx: ScraperProviderContext) {
       const response = await requestScraperHost<{ target: unknown }>(
         options,

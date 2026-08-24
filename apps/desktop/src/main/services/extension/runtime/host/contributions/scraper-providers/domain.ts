@@ -25,7 +25,8 @@ export interface ScraperProviderLike<
   readonly name: string
   readonly externalIdSource: string
   readonly capabilities: readonly unknown[]
-  search(
+  /** Present if and only if `capabilities` declares `search`. */
+  search?(
     query: ScraperProviderSearchRequest['query'],
     ctx: ScraperProviderContext
   ): Promise<readonly unknown[]>

@@ -80,13 +80,15 @@ export function buildSingleProviderExecutionPlan<TSlot extends string>(options: 
       }
 }
 
+/**
+ * Slot execution never searches: it resolves a target and opens a session, so
+ * the slot capability alone decides whether a provider can serve the slot.
+ */
 function isUsableSlotProvider(
   provider: RegisteredScraperProvider | undefined,
   slot: ScraperSlot
 ): boolean {
-  return Boolean(
-    provider && provider.capabilities.includes('search') && provider.capabilities.includes(slot)
-  )
+  return Boolean(provider?.capabilities.includes(slot))
 }
 
 function compareProviderEntries(

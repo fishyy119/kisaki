@@ -1,9 +1,10 @@
 <!--
 TMDB Settings App is the webview root: it loads the overview, owns the
-preference draft lifecycle, and surfaces notices raised by the sections.
+preference draft lifecycle, and surfaces load and action errors. Successful
+results are reported by the host through the app's own notifications.
 -->
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Alert, Button, Spinner, WebviewDialogShell } from '@kisaki3/extension-ui-vue'
 import {
   matchesHttpUrlFormat,
@@ -18,16 +19,11 @@ import EndpointsSection from './sections/endpoints-section.vue'
 import EpisodeGroupsSection from './sections/episode-groups-section.vue'
 import PreferencesSection from './sections/preferences-section.vue'
 
-const NOTICE_TIMEOUT_MS = 2000
-
 const overview = ref<TmdbSettingsOverview | null>(null)
 const savedForm = ref<TmdbSettingsFormState | null>(null)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
-const notice = ref<string | null>(null)
-
-let noticeTimer: ReturnType<typeof setTimeout> | null = null
 
 const isDirty = computed(
   () => savedForm.value !== null && !settingsFormsEqual(settingsForm, savedForm.value)
@@ -40,12 +36,6 @@ const isValid = computed(
 
 onMounted(() => {
   void reload({ keepDraft: false })
-})
-
-onUnmounted(() => {
-  if (noticeTimer) {
-    clearTimeout(noticeTimer)
-  }
 })
 
 async function reload(options: { keepDraft: boolean }): Promise<void> {
@@ -71,7 +61,6 @@ async function save(): Promise<void> {
   try {
     await host.saveSettings(snapshotSettingsForm())
     await reload({ keepDraft: false })
-    showNotice(m.value.ui.saved)
   } catch (cause) {
     error.value = toErrorMessage(cause)
   } finally {
@@ -83,17 +72,6 @@ function discardDraft(): void {
   if (savedForm.value) {
     applySettingsForm(savedForm.value)
   }
-}
-
-function showNotice(message: string): void {
-  notice.value = message
-  error.value = null
-  if (noticeTimer) {
-    clearTimeout(noticeTimer)
-  }
-  noticeTimer = setTimeout(() => {
-    notice.value = null
-  }, NOTICE_TIMEOUT_MS)
 }
 
 function reportError(message: string): void {
@@ -114,18 +92,10 @@ function reportError(message: string): void {
         {{ error }}
       </Alert>
 
-      <Alert
-        v-if="notice"
-        variant="success"
-      >
-        {{ notice }}
-      </Alert>
-
       <CredentialsSection
         :credential="overview.credential"
         @refresh="() => void reload({ keepDraft: isDirty })"
         @error="reportError"
-        @notice="showNotice"
       />
 
       <EndpointsSection />
@@ -133,7 +103,6 @@ function reportError(message: string): void {
       <PreferencesSection
         @refresh="() => void reload({ keepDraft: false })"
         @error="reportError"
-        @notice="showNotice"
       />
 
       <EpisodeGroupsSection />

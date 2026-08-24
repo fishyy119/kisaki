@@ -37,7 +37,8 @@ export interface CharacterScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, ctx: ScraperProviderContext): Promise<CharacterSearchResult[]>
+  /** Present if and only if `capabilities` declares `search`. */
+  search?(query: string, ctx: ScraperProviderContext): Promise<CharacterSearchResult[]>
   resolve(
     lookup: ScraperLookup,
     ctx: ScraperProviderContext

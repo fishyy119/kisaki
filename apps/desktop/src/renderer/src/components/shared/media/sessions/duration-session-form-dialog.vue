@@ -15,7 +15,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
+import { Field, FieldGroup, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import type { MediaType } from '@shared/common'
@@ -123,7 +123,7 @@ function handleCancel() {
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
-          <div class="space-y-4">
+          <FieldGroup>
             <Field>
               <FieldLabel>{{ labels.startTime }}</FieldLabel>
               <FieldContent>
@@ -144,7 +144,7 @@ function handleCancel() {
                 />
               </FieldContent>
             </Field>
-          </div>
+          </FieldGroup>
         </DialogBody>
         <DialogFooter>
           <Button

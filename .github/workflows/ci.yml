@@ -17,10 +17,6 @@ env:
   NODE_VERSION: '24'
   # pnpm 11.11.0 deadlocks resolving electron-builder peers: https://github.com/pnpm/pnpm/issues/12921
   PNPM_VERSION: '11.10.0'
-  VITE_YMGAL_API_CLIENT_ID: ${{ secrets.VITE_YMGAL_API_CLIENT_ID }}
-  VITE_YMGAL_API_CLIENT_SECRET: ${{ secrets.VITE_YMGAL_API_CLIENT_SECRET }}
-  VITE_IGDB_API_CLIENT_ID: ${{ secrets.VITE_IGDB_API_CLIENT_ID }}
-  VITE_IGDB_API_CLIENT_SECRET: ${{ secrets.VITE_IGDB_API_CLIENT_SECRET }}
 
 jobs:
   # =============================================================================

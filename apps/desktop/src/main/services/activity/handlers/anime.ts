@@ -182,14 +182,9 @@ export class AnimeActivityHandler {
       return { status: 'failed', reason: 'fileNotFound' }
     }
 
-    const { playerAudioLanguages, playerSubtitleLanguages } = this.db.settings.get()
     const started = await this.player.sessions.start({
       path: file.path,
-      title: `${row.animeName} · ${row.extra.name}`,
-      trackPreference: {
-        audioLanguages: playerAudioLanguages,
-        subtitleLanguages: playerSubtitleLanguages
-      }
+      title: `${row.animeName} · ${row.extra.name}`
     })
 
     if (started.status === 'failed') {
@@ -414,16 +409,10 @@ export class AnimeActivityHandler {
     episode: AnimeEpisode,
     file: AnimeEpisodeFile
   ): PlaybackTarget {
-    const { playerAudioLanguages, playerSubtitleLanguages } = this.db.settings.get()
-
     return {
       path: file.path,
       title: formatEpisodeTitle(anime, episode),
-      ...(episode.resumePositionMs === null ? {} : { startPositionMs: episode.resumePositionMs }),
-      trackPreference: {
-        audioLanguages: playerAudioLanguages,
-        subtitleLanguages: playerSubtitleLanguages
-      }
+      ...(episode.resumePositionMs === null ? {} : { startPositionMs: episode.resumePositionMs })
     }
   }
 

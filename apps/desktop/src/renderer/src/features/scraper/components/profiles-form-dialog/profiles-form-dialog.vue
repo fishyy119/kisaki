@@ -345,6 +345,14 @@ function withProviderDisplay(list: ScraperProfile[]) {
                     <span class="truncate">{{
                       m.scraper.profiles.searchProviderValue({ label: providerDisplay.label })
                     }}</span>
+                    <!-- Two extensions can cover the same source, so the owner
+                         is what tells otherwise identical providers apart. -->
+                    <span
+                      v-if="providerDisplay.ownerName"
+                      class="shrink-0"
+                    >
+                      {{ providerDisplay.ownerName }}
+                    </span>
                     <Badge
                       v-if="providerDisplay.statusLabel"
                       variant="warning"

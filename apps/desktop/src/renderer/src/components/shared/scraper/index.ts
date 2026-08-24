@@ -6,6 +6,7 @@ export { useSearchProviderSource } from './use-search-provider-source'
 export {
   formatScraperProviderFallbackName,
   getScraperProviderDisplay,
+  resolveScraperProviderOwnerName,
   type ScraperProviderAvailability,
   type ScraperProviderDisplay,
   type ScraperProviderInfo,

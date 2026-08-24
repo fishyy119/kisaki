@@ -74,6 +74,7 @@ export const ja = {
     apiUnavailable: 'Bangumi API は一時的に利用できません。',
     networkFailed: 'Bangumi API のネットワークリクエストに失敗しました。',
     accountResponseInvalid: 'Bangumi アカウントの応答を認識できませんでした。',
+    idInvalid: ({ value }) => `「${value}」は有効な Bangumi ID ではありません。`,
 
     operationCancelled: '操作はキャンセルされました。',
     jobCancelled: 'Bangumi ジョブはキャンセルされました。',
@@ -306,14 +307,14 @@ export const ja = {
   settings: {
     commandLabel: '設定',
     commandDescription: 'Bangumi 連携設定を開きます。',
-    webviewTitle: 'Bangumi 連携'
+    webviewTitle: 'Bangumi'
   },
 
   ui: {
     loading: 'Bangumi 設定を読み込んでいます…',
     unavailable: 'Bangumi 設定は利用できません',
-    saved: 'Bangumi 設定を保存しました。',
-    unsavedChanges: '設定に未保存の変更があります',
+    saved: '設定を保存しました。',
+    unsavedChanges: '未保存の変更',
     discardChanges: '変更を破棄',
     savePreferences: '設定を保存',
     actionFailed: '操作に失敗しました。もう一度お試しください。',

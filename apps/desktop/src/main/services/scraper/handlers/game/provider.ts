@@ -43,7 +43,8 @@ export interface GameScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, ctx: ScraperProviderContext): Promise<GameSearchResult[]>
+  /** Present if and only if `capabilities` declares `search`. */
+  search?(query: string, ctx: ScraperProviderContext): Promise<GameSearchResult[]>
   resolve(
     lookup: GameScraperLookup,
     ctx: ScraperProviderContext

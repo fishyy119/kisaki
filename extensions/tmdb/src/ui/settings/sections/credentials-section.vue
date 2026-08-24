@@ -9,12 +9,12 @@ import {
   FieldGroup,
   Icon,
   Input,
+  SettingsSection,
   Spinner
 } from '@kisaki3/extension-ui-vue'
 import { TMDB_API_SETTINGS_URL, type TmdbCredentialState } from '../../../shared/settings'
 import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
-import SettingsSection from '../components/settings-section.vue'
 
 interface Props {
   credential: TmdbCredentialState
@@ -25,7 +25,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   refresh: []
   error: [message: string]
-  notice: [message: string]
 }>()
 
 const keyInput = ref('')
@@ -37,14 +36,14 @@ const modeLabel = computed(() =>
     : m.value.ui.credentials.modeApiKey
 )
 
-async function runAction(action: string, run: () => Promise<string>): Promise<void> {
+async function runAction(action: string, run: () => Promise<void>): Promise<void> {
   if (busyAction.value) {
     return
   }
 
   busyAction.value = action
   try {
-    emit('notice', await run())
+    await run()
     emit('refresh')
   } catch (error) {
     emit('error', toErrorMessage(error))
@@ -57,22 +56,17 @@ function saveKey(): void {
   void runAction('save', async () => {
     await host.saveApiKey(keyInput.value)
     keyInput.value = ''
-    return m.value.ui.credentials.saveSucceeded
   })
 }
 
 function clearKey(): void {
   void runAction('clear', async () => {
     await host.clearApiKey()
-    return m.value.ui.credentials.clearSucceeded
   })
 }
 
 function testConnection(): void {
-  void runAction('test', async () => {
-    await host.testConnection()
-    return m.value.ui.credentials.testSucceeded
-  })
+  void runAction('test', () => host.testConnection())
 }
 
 function openApiSettings(): void {

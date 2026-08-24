@@ -496,9 +496,16 @@ export class HostScraperProviderContributionPoint {
       request.runtimeHandle,
       request.providerId
     )
+    const search = provider.search
+    if (!search) {
+      throw new Error(
+        `${domain.label} scraper provider "${request.providerId}" does not support search.`
+      )
+    }
+
     const results = await this.options.runInExtensionContext(
       runtime,
-      () => provider.search(request.query, { locale: request.locale, signal }),
+      () => search.call(provider, request.query, { locale: request.locale, signal }),
       signal
     )
     this.assertValidProviderOutput(
@@ -511,7 +518,7 @@ export class HostScraperProviderContributionPoint {
 
     return {
       mediaType: domain.mediaType,
-      results: results as Awaited<ReturnType<TProvider['search']>>
+      results
     } as unknown as Extract<ScraperProviderSearchResponse, { mediaType: TMediaType }>
   }
 

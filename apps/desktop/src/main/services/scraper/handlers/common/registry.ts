@@ -74,16 +74,27 @@ export function assertProviderContract<TProvider extends RegisteredScraperProvid
     declared.add(capability)
   }
 
-  if (!declared.has('search')) {
-    throw new Error(`Provider '${provider.id}' must declare 'search' capability`)
-  }
-
-  for (const methodName of ['search', 'resolve', 'openSession']) {
+  for (const methodName of ['resolve', 'openSession']) {
     if (!hasMethod(provider, methodName)) {
       throw new Error(
         `Provider '${provider.id}' must implement '${methodName}' for the session-based runtime`
       )
     }
+  }
+
+  // Search is optional: a provider reached only through known external ids
+  // fills slots without ever answering a name query. The declaration and the
+  // implementation must still agree, so neither side can drift unnoticed.
+  if (declared.has('search') && !hasMethod(provider, 'search')) {
+    throw new Error(
+      `Provider '${provider.id}' declares 'search' capability but does not implement it`
+    )
+  }
+
+  if (!declared.has('search') && hasMethod(provider, 'search')) {
+    throw new Error(
+      `Provider '${provider.id}' implements 'search' but does not declare the capability`
+    )
   }
 }
 

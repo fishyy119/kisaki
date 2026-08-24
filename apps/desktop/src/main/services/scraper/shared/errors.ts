@@ -27,6 +27,20 @@ export class ScrapeFailure extends Error {
   }
 }
 
+/**
+ * Raised when a profile names a search provider that only resolves by id.
+ *
+ * Providers declare `search` as a capability, so a profile can point at one
+ * that never answers name queries. That is a configuration problem the user
+ * must see rather than an empty result list.
+ */
+export function createSearchUnsupportedError(providerId: string): ScrapeFailure {
+  return new ScrapeFailure(
+    'provider-unavailable',
+    `Provider does not support search: ${providerId}`
+  )
+}
+
 export interface ProviderHttpFailure {
   status: number
   statusText: string

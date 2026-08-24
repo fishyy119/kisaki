@@ -77,6 +77,7 @@ export const en = {
     apiUnavailable: 'The Bangumi API is temporarily unavailable.',
     networkFailed: 'The Bangumi API network request failed.',
     accountResponseInvalid: 'The Bangumi account response could not be recognized.',
+    idInvalid: ({ value }: { value: string }) => `"${value}" is not a Bangumi id.`,
 
     operationCancelled: 'The operation was cancelled.',
     jobCancelled: 'The Bangumi job was cancelled.',
@@ -303,14 +304,14 @@ export const en = {
   settings: {
     commandLabel: 'Settings',
     commandDescription: 'Open the Bangumi integration settings.',
-    webviewTitle: 'Bangumi integration'
+    webviewTitle: 'Bangumi'
   },
 
   ui: {
     loading: 'Loading Bangumi settings...',
     unavailable: 'Bangumi settings are unavailable',
-    saved: 'Bangumi settings saved.',
-    unsavedChanges: 'Preferences have unsaved changes',
+    saved: 'Preferences saved.',
+    unsavedChanges: 'Unsaved changes',
     discardChanges: 'Discard changes',
     savePreferences: 'Save preferences',
     actionFailed: 'The operation failed. Try again.',

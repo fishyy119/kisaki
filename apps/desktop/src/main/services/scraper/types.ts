@@ -2,13 +2,8 @@
  * Shared runtime types for the main-process scraper pipeline.
  */
 
-import type { NetworkService } from '@main/services/network'
-import type { Logger } from '@main/log'
-import type { PartialDate } from '@shared/db'
 import type { ContentLocale } from '@shared/i18n'
-import type { ScrapedEntityIdentity, ScraperLookup, ScraperSessionResult } from '@shared/scraper'
-
-type ScraperLogger = Logger
+import type { ScrapedEntityIdentity, ScraperSessionResult } from '@shared/scraper'
 
 /**
  * Invocation-scoped parameters every provider call receives.
@@ -67,57 +62,6 @@ export interface BaseScraperSession<
    * Release invocation-scoped resources when the host finishes the session.
    */
   dispose?(): Promise<void>
-}
-
-/**
- * Lookup helpers shared across built-in and extension providers.
- */
-export interface ScraperProviderLookupHelpers {
-  findKnownId(lookup: ScraperLookup, externalIdSource: string): string | undefined
-}
-
-/**
- * Date helpers shared across built-in and extension providers.
- */
-export interface ScraperProviderDateHelpers {
-  parsePartialDate(input: string | null | undefined): PartialDate | undefined
-}
-
-/**
- * Text normalization helpers shared across built-in and extension providers.
- */
-export interface ScraperProviderTextHelpers {
-  normalizeDescription(value: string | null | undefined): string | undefined
-}
-
-/**
- * Resolved-target helpers shared across built-in scraper providers.
- */
-export interface ScraperProviderTargetHelpers {
-  createResolvedTarget(
-    id: string,
-    resolveName?: string,
-    identity?: ScrapedEntityIdentity
-  ): IdResolvedTarget
-}
-
-/**
- * Stable helper contract available to scraper providers.
- */
-export interface ScraperProviderHelpers {
-  lookup: ScraperProviderLookupHelpers
-  date: ScraperProviderDateHelpers
-  text: ScraperProviderTextHelpers
-  target: ScraperProviderTargetHelpers
-}
-
-/**
- * Stable runtime dependencies that scraper providers may depend on.
- */
-export interface ScraperProviderDeps {
-  network: NetworkService
-  log: ScraperLogger
-  helper: ScraperProviderHelpers
 }
 
 /**

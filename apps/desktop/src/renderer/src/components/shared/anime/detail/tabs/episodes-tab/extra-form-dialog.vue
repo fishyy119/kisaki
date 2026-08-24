@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
-import { Field, FieldContent, FieldLabel } from '@renderer/components/ui/field'
+import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { Input } from '@renderer/components/ui/input'
 import {
@@ -151,56 +151,58 @@ async function saveEdit(): Promise<void> {
         </DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="space-y-4">
-          <Field v-if="!isEditing">
-            <FieldLabel>{{ m.anime.files.title }}</FieldLabel>
-            <FieldContent>
-              <div class="flex items-center gap-2">
-                <Input
-                  :model-value="filePath"
-                  readonly
-                  class="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  @click="handlePickFile"
-                >
-                  {{ m.common.browse }}
-                </Button>
-              </div>
-            </FieldContent>
-          </Field>
-
-          <Field>
-            <FieldLabel>{{ m.anime.extras.nameLabel }}</FieldLabel>
-            <FieldContent>
-              <Input
-                v-model="name"
-                :placeholder="isEditing ? undefined : m.anime.extras.autoDetect"
-              />
-            </FieldContent>
-          </Field>
-
-          <Field>
-            <FieldLabel>{{ m.anime.extras.typeLabel }}</FieldLabel>
-            <FieldContent>
-              <Select v-model="type">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in typeOptions"
-                    :key="option.value"
-                    :value="option.value"
+        <DialogBody>
+          <FieldGroup>
+            <Field v-if="!isEditing">
+              <FieldLabel>{{ m.anime.files.title }}</FieldLabel>
+              <FieldContent>
+                <div class="flex items-center gap-2">
+                  <Input
+                    :model-value="filePath"
+                    readonly
+                    class="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    @click="handlePickFile"
                   >
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </FieldContent>
-          </Field>
+                    {{ m.common.browse }}
+                  </Button>
+                </div>
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>{{ m.anime.extras.nameLabel }}</FieldLabel>
+              <FieldContent>
+                <Input
+                  v-model="name"
+                  :placeholder="isEditing ? undefined : m.anime.extras.autoDetect"
+                />
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>{{ m.anime.extras.typeLabel }}</FieldLabel>
+              <FieldContent>
+                <Select v-model="type">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="option in typeOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+          </FieldGroup>
         </DialogBody>
         <DialogFooter>
           <Button

@@ -26,7 +26,7 @@ export const en = {
 
   settings: {
     webviewTitle: 'TMDB',
-    commandLabel: 'TMDB settings',
+    commandLabel: 'Settings',
     commandDescription: 'Configure the TMDB API key, endpoints, and scraping preferences.'
   },
 

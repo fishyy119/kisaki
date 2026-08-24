@@ -33,6 +33,8 @@ export type {
   WebviewAppearance,
   WebviewBootstrapPayload,
   WebviewClient,
+  WebviewShadowMap,
+  WebviewShadowTierName,
   WebviewSurfaceKind,
   WebviewTheme,
   WebviewThemeTokenMap,
@@ -123,7 +125,9 @@ function isWebviewTheme(value: unknown): value is WebviewTheme {
     typeof value.radius === 'string' &&
     typeof value.paneAlpha === 'string' &&
     isRecord(value.tokens) &&
-    Object.values(value.tokens).every((token) => typeof token === 'string')
+    Object.values(value.tokens).every((token) => typeof token === 'string') &&
+    isRecord(value.shadows) &&
+    Object.values(value.shadows).every((shadow) => typeof shadow === 'string')
   )
 }
 
@@ -161,9 +165,10 @@ function toThemeCssVariableName(tokenName: string): string {
 
 /**
  * Mirrors the active app theme onto the document: semantic tokens become
- * `--kisaki-*` CSS variables, the radius lands on `--kisaki-radius`, the pane
- * alpha lands on `--kisaki-pane-alpha`, and the mode lands on
- * `data-kisaki-theme` plus the standard `color-scheme`.
+ * `--kisaki-*` CSS variables, elevation shadows become `--kisaki-shadow-*`,
+ * the radius lands on `--kisaki-radius`, the pane alpha lands on
+ * `--kisaki-pane-alpha`, and the mode lands on `data-kisaki-theme` plus the
+ * standard `color-scheme`.
  *
  * The `color-scheme` mirror is a hard invariant for page transparency: the
  * app keeps its own document color-scheme in sync with the resolved theme,
@@ -175,6 +180,10 @@ function applyThemeToDocument(theme: WebviewTheme): void {
   const root = document.documentElement
   for (const [tokenName, tokenValue] of Object.entries(theme.tokens)) {
     root.style.setProperty(toThemeCssVariableName(tokenName), tokenValue)
+  }
+
+  for (const [tier, shadow] of Object.entries(theme.shadows)) {
+    root.style.setProperty(`--kisaki-shadow-${tier}`, shadow)
   }
 
   root.style.setProperty('--kisaki-radius', theme.radius)

@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
-import { Field, FieldContent, FieldLabel } from '@renderer/components/ui/field'
+import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { Icon } from '@renderer/components/ui/icon'
 import { Input } from '@renderer/components/ui/input'
@@ -252,12 +252,14 @@ function fileFacts(file: FileRecord): string {
         </DialogHeader>
         <Form @submit="handleNoteSubmit">
           <DialogBody>
-            <Field>
-              <FieldLabel>{{ m.anime.files.noteLabel }}</FieldLabel>
-              <FieldContent>
-                <Input v-model="noteDraft" />
-              </FieldContent>
-            </Field>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>{{ m.anime.files.noteLabel }}</FieldLabel>
+                <FieldContent>
+                  <Input v-model="noteDraft" />
+                </FieldContent>
+              </Field>
+            </FieldGroup>
           </DialogBody>
           <DialogFooter>
             <Button

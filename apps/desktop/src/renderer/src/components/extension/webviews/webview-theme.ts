@@ -1,6 +1,9 @@
 import {
+  WEBVIEW_SHADOW_TIER_NAMES,
   WEBVIEW_THEME_TOKEN_NAMES,
   type WebviewAppearance,
+  type WebviewShadowMap,
+  type WebviewShadowTierName,
   type WebviewTheme,
   type WebviewThemeTokenMap,
   type WebviewThemeTokenName,
@@ -43,6 +46,12 @@ const TOKEN_CSS_VARS: Record<WebviewThemeTokenName, string> = {
   ring: '--ring'
 }
 
+const SHADOW_CSS_VARS: Record<WebviewShadowTierName, string> = {
+  raised: '--shadow-raised',
+  overlay: '--shadow-overlay',
+  modal: '--shadow-modal'
+}
+
 const DEFAULT_RADIUS = '6px'
 
 const TYPOGRAPHY_DEFAULTS = {
@@ -72,9 +81,15 @@ function readWebviewTheme(styles: CSSStyleDeclaration, mode: 'light' | 'dark'): 
     tokens[tokenName] = styles.getPropertyValue(TOKEN_CSS_VARS[tokenName]).trim()
   }
 
+  const shadows = {} as WebviewShadowMap
+  for (const tier of WEBVIEW_SHADOW_TIER_NAMES) {
+    shadows[tier] = styles.getPropertyValue(SHADOW_CSS_VARS[tier]).trim()
+  }
+
   return {
     mode,
     tokens,
+    shadows,
     radius: styles.getPropertyValue('--radius').trim() || DEFAULT_RADIUS,
     // The lightbox glass alpha; the opaque fallback keeps documents readable
     // if a theme ever drops the token.

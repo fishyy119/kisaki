@@ -80,6 +80,7 @@ export const zhHans = {
     apiUnavailable: 'Bangumi API 暂时不可用。',
     networkFailed: 'Bangumi API 网络请求失败。',
     accountResponseInvalid: '无法识别 Bangumi 账号响应。',
+    idInvalid: ({ value }) => `“${value}”不是有效的 Bangumi ID。`,
 
     operationCancelled: '操作已取消。',
     jobCancelled: 'Bangumi 任务已取消。',
@@ -297,14 +298,14 @@ export const zhHans = {
   settings: {
     commandLabel: '设置',
     commandDescription: '打开 Bangumi 集成设置。',
-    webviewTitle: 'Bangumi 集成'
+    webviewTitle: 'Bangumi'
   },
 
   ui: {
     loading: '正在加载 Bangumi 设置…',
     unavailable: 'Bangumi 设置不可用',
-    saved: 'Bangumi 设置已保存。',
-    unsavedChanges: '偏好设置有未保存更改',
+    saved: '偏好已保存。',
+    unsavedChanges: '有未保存的更改',
     discardChanges: '放弃更改',
     savePreferences: '保存偏好',
     actionFailed: '操作失败，请重试。',

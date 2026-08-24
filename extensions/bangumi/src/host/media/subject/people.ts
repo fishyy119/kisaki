@@ -10,20 +10,15 @@ import type {
   BangumiPersonDetail,
   BangumiRelatedPerson
 } from '../../api/types'
-import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 import { omitUndefined } from '../../utils/object'
-import { dedupeExternalIds } from '../format/dedupe'
-import { toPartialDateFromParts } from '../format/dates'
 import {
-  extractAliasesFromInfobox,
-  extractExternalIdsFromSites,
-  extractExternalSitesFromInfobox
-} from '../format/infobox'
+  buildCompanyFacts,
+  buildPersonFacts,
+  toCompanyMetadata,
+  toPersonMetadata
+} from '../satellites'
 import { extractImageUrls } from '../format/images'
-import { resolveLocalizedEntityName } from '../format/names'
-import { composeBangumiRoleNote, mapBangumiCareersToTags, mapBangumiGender } from '../format/roles'
-import { normalizeDescription } from '../format/text'
-import { buildBangumiPersonUrl, dedupeExternalSites, dedupeUrls } from '../format/urls'
+import { composeBangumiRoleNote } from '../format/roles'
 
 /** Person credit of a subject, before a media scope assigns its role union. */
 export type SubjectPersonFact<TRole extends string> = ScrapedPersonMetadata & {
@@ -122,42 +117,12 @@ function mapSubjectPerson<TRole extends string>(
   mapRole: (relation: string | undefined, careers: BangumiPersonCareer[]) => TRole,
   locale: ContentLocale | undefined
 ): SubjectPersonFact<TRole> {
-  const { name, originalName } = resolveLocalizedEntityName(
-    detail?.name || relatedPerson.name,
-    detail?.infobox,
-    locale
-  )
-
-  const externalSites = dedupeExternalSites([
-    { label: 'Bangumi', url: buildBangumiPersonUrl(relatedPerson.id) },
-    ...extractExternalSitesFromInfobox(detail?.infobox)
-  ])
-
-  const externalIds = dedupeExternalIds([
-    { source: BANGUMI_SOURCE_ID, id: String(relatedPerson.id) },
-    ...extractExternalIdsFromSites(externalSites)
-  ])
-
-  const photos = dedupeUrls(extractImageUrls(detail?.images || relatedPerson.images))
-  const careers = detail?.career ?? relatedPerson.career
-  const tags = mapBangumiCareersToTags(careers)
-  const aliases = extractAliasesFromInfobox(detail?.infobox, [name, originalName])
+  const facts = buildPersonFacts(relatedPerson.id, detail, relatedPerson, locale)
 
   return {
-    ...omitUndefined({
-      name,
-      originalName,
-      aliases: aliases.length > 0 ? aliases : undefined,
-      description: normalizeDescription(detail?.summary),
-      externalSites,
-      identity: { externalIds },
-      photos: photos.length > 0 ? photos : undefined,
-      tags: tags.length > 0 ? tags : undefined,
-      gender: mapBangumiGender(detail?.gender),
-      birthDate: toPartialDateFromParts(detail?.birth_year, detail?.birth_mon, detail?.birth_day),
-      note: composeBangumiRoleNote(relatedPerson.relation, relatedPerson.eps)
-    }),
-    role: mapRole(relatedPerson.relation, careers)
+    ...toPersonMetadata(facts),
+    ...omitUndefined({ note: composeBangumiRoleNote(relatedPerson.relation, relatedPerson.eps) }),
+    role: mapRole(relatedPerson.relation, detail?.career ?? relatedPerson.career)
   }
 }
 
@@ -167,36 +132,11 @@ function mapSubjectCompany<TRole extends string>(
   mapRole: (relation: string | undefined) => TRole,
   locale: ContentLocale | undefined
 ): SubjectCompanyFact<TRole> {
-  const { name, originalName } = resolveLocalizedEntityName(
-    detail?.name || relatedCompany.name,
-    detail?.infobox,
-    locale
-  )
-
-  const externalSites = dedupeExternalSites([
-    { label: 'Bangumi', url: buildBangumiPersonUrl(relatedCompany.id) },
-    ...extractExternalSitesFromInfobox(detail?.infobox)
-  ])
-
-  const externalIds = dedupeExternalIds([
-    { source: BANGUMI_SOURCE_ID, id: String(relatedCompany.id) },
-    ...extractExternalIdsFromSites(externalSites)
-  ])
-
-  const logos = dedupeUrls(extractImageUrls(detail?.images || relatedCompany.images))
-  const tags = mapBangumiCareersToTags(detail?.career ?? relatedCompany.career)
+  const facts = buildCompanyFacts(relatedCompany.id, detail, relatedCompany, locale)
 
   return {
-    ...omitUndefined({
-      name,
-      originalName,
-      description: normalizeDescription(detail?.summary),
-      externalSites,
-      identity: { externalIds },
-      logos: logos.length > 0 ? logos : undefined,
-      tags: tags.length > 0 ? tags : undefined,
-      note: composeBangumiRoleNote(relatedCompany.relation, relatedCompany.eps)
-    }),
+    ...toCompanyMetadata(facts),
+    ...omitUndefined({ note: composeBangumiRoleNote(relatedCompany.relation, relatedCompany.eps) }),
     role: mapRole(relatedCompany.relation)
   }
 }

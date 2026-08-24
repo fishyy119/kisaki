@@ -3,8 +3,8 @@ Episode Groups Section documents the opt-in path to an alternate ordering,
 which is reachable only by pasting a reference into the anime searcher.
 -->
 <script setup lang="ts">
+import { SettingsSection } from '@kisaki3/extension-ui-vue'
 import { m } from '../i18n'
-import SettingsSection from '../components/settings-section.vue'
 
 /** Grammar samples, not copy: the same shapes in every locale. */
 const SEARCH_INPUTS = [

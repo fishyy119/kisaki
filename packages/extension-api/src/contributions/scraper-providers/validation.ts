@@ -220,10 +220,7 @@ function validateScraperProviderShape(
       trim: true,
       valueMessage: 'externalIdSource must be a non-empty string.'
     }),
-    ...validateRequiredFunction(value.search, '$.search').map((issue) => ({
-      ...issue,
-      message: 'search must be a function.'
-    })),
+    ...validateOptionalFunctionField(value.search, '$.search', 'search must be a function.'),
     ...validateRequiredFunction(value.resolve, '$.resolve').map((issue) => ({
       ...issue,
       message: 'resolve must be a function.'
@@ -264,10 +261,21 @@ function validateScraperProviderShape(
       seen.add(capability)
     }
 
-    if (!seen.has('search')) {
+    // Capabilities are the single source of truth, so the declaration and the
+    // implementation must agree in both directions: a declared search must be
+    // callable, and an implemented search the host can never reach is a bug in
+    // the provider rather than a silently ignored method.
+    if (seen.has('search') && typeof value.search !== 'function') {
+      issues.push({
+        path: '$.search',
+        message: 'Providers declaring the search capability must implement search.'
+      })
+    }
+
+    if (!seen.has('search') && typeof value.search === 'function') {
       issues.push({
         path: '$.capabilities',
-        message: 'Provider capabilities must include search.'
+        message: 'Providers implementing search must declare the search capability.'
       })
     }
   }

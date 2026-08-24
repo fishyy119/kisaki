@@ -16,17 +16,16 @@ import {
   FieldGroup,
   Icon,
   Input,
+  SettingsSection,
   Switch
 } from '@kisaki3/extension-ui-vue'
 import { settingsForm } from '../form'
 import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
-import SettingsSection from '../components/settings-section.vue'
 
 const emit = defineEmits<{
   refresh: []
   error: [message: string]
-  notice: [message: string]
 }>()
 
 const resetOpen = ref(false)
@@ -41,7 +40,6 @@ async function confirmReset(): Promise<void> {
   try {
     await host.resetSettings()
     resetOpen.value = false
-    emit('notice', m.value.ui.preferences.resetSucceeded)
     emit('refresh')
   } catch (error) {
     emit('error', toErrorMessage(error))

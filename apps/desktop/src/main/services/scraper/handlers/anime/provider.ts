@@ -43,7 +43,8 @@ export interface AnimeScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, ctx: ScraperProviderContext): Promise<AnimeSearchResult[]>
+  /** Present if and only if `capabilities` declares `search`. */
+  search?(query: string, ctx: ScraperProviderContext): Promise<AnimeSearchResult[]>
   resolve(
     lookup: AnimeScraperLookup,
     ctx: ScraperProviderContext

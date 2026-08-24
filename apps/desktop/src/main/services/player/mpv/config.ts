@@ -19,13 +19,14 @@ const CONFIG_DIR_NAME = 'mpv'
 
 const CONFIG_TEMPLATE = `# mpv configuration for playback started by Kisaki.
 #
-# Everything mpv supports works here: video output and shader options, user
-# scripts in scripts/, key bindings in input.conf, fonts in fonts/. This
-# directory is fully isolated from any system-wide mpv configuration.
+# Everything mpv supports works here: track language preferences (alang,
+# slang), video output and shader options, user scripts in scripts/, key
+# bindings in input.conf, fonts in fonts/. This directory is fully isolated
+# from any system-wide mpv configuration.
 #
 # Kisaki passes a few options on the command line, which always override this
 # file: input-ipc-server, idle, keep-open, save-position-on-quit,
-# write-filename-in-watch-later-config, sub-auto, start, alang, slang.
+# write-filename-in-watch-later-config, sub-auto, start.
 #
 # Resume positions and watched state are tracked by Kisaki itself, so
 # watch-later style options have no effect on what the library records.

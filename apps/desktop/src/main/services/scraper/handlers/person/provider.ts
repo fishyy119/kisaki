@@ -32,7 +32,8 @@ export interface PersonScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, ctx: ScraperProviderContext): Promise<PersonSearchResult[]>
+  /** Present if and only if `capabilities` declares `search`. */
+  search?(query: string, ctx: ScraperProviderContext): Promise<PersonSearchResult[]>
   resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<PersonResolvedTarget | null>
   openSession(
     target: PersonResolvedTarget,

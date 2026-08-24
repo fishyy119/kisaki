@@ -1,7 +1,7 @@
 /**
  * Shared media playback contracts.
  *
- * Domain-agnostic: a playback target is a file plus decoding preferences, and
+ * Domain-agnostic: a playback target is a file plus session placement, and
  * every expected outcome travels as data so callers never inspect error text.
  * These reasons are technical, so the business layer that started the playback
  * maps them onto its own user-facing outcome before anything is rendered.
@@ -16,14 +16,6 @@ export type PlaybackEndReason = 'completed' | 'stopped' | 'closed' | 'error'
 export type PlaybackStartFailureReason =
   'engineNotFound' | 'fileNotFound' | 'engineStartFailed' | 'engineNotResponding'
 
-/** Track selection preference applied when a session loads. */
-export interface PlaybackTrackPreference {
-  /** Preferred audio language tags, most preferred first. */
-  audioLanguages?: readonly string[]
-  /** Preferred subtitle language tags, most preferred first. */
-  subtitleLanguages?: readonly string[]
-}
-
 export interface PlaybackTarget {
   /** Absolute path of the media file to play. */
   path: string
@@ -31,7 +23,6 @@ export interface PlaybackTarget {
   title?: string
   /** Resume position in milliseconds. */
   startPositionMs?: number
-  trackPreference?: PlaybackTrackPreference
 }
 
 /** Live position report for an active session. */

@@ -59,8 +59,10 @@ export class ScannerWatchCoordinator {
   /**
    * Mounts every watch-enabled scanner and scans each once.
    *
-   * Runs after the app is ready rather than at service init, so scans appear in
-   * a task center the renderer is already listening to.
+   * Runs after the app is ready rather than at service init, for two reasons:
+   * scans appear in a task center the renderer is already listening to, and
+   * every scraper provider is contributed by an extension, so a scan started
+   * during init would find an empty registry and match nothing.
    */
   start(): void {
     this.untaps.push(

@@ -1,12 +1,11 @@
 <!-- Overview Tab summarizes integration health and routes users to focused tabs. -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Badge, Button, Icon, type BadgeVariants } from '@kisaki3/extension-ui-vue'
+import { Badge, Button, Icon, SettingsSection, type BadgeVariants } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
 import { settingsForm } from '../form'
 import { m } from '../i18n'
 import { AUTOMATION_STATUS_VARIANTS, getAutomationLabel, getAutomationStatusLabel } from '../labels'
-import SettingsSection from '../components/settings-section.vue'
 
 type SettingsTabId = 'account' | 'sync' | 'import' | 'automation' | 'maintenance'
 

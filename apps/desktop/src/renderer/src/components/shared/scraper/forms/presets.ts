@@ -17,6 +17,9 @@ import { messages } from '@renderer/core/i18n'
 
 const BANGUMI_PROVIDER_ID = createExtensionScraperProviderId('builtin.bangumi', 'bangumi')
 const TMDB_PROVIDER_ID = createExtensionScraperProviderId('builtin.tmdb', 'tmdb')
+const YMGAL_PROVIDER_ID = createExtensionScraperProviderId('builtin.ymgal', 'ymgal')
+const VNDB_PROVIDER_ID = createExtensionScraperProviderId('builtin.vndb', 'vndb')
+const IGDB_PROVIDER_ID = createExtensionScraperProviderId('builtin.igdb', 'igdb')
 
 // =============================================================================
 // Preset Types
@@ -43,46 +46,67 @@ type ScraperPresetDefinition = Omit<ScraperPreset, 'name' | 'description'> & {
   copy: (m: typeof messages.value) => { name: string; description: string }
 }
 
-/** Visual Novel preset using VNDB as the sole data source */
+/**
+ * Visual novel preset pairing VNDB with YMGal and Bangumi.
+ *
+ * VNDB searches and owns the entry: its catalogue is the most complete for
+ * visual novels and it is the only one of the three that states VN-to-VN
+ * relations. YMGal leads on the facts a Chinese-language library wants —
+ * localized titles, staff, and the developer — and Bangumi fills the rest.
+ */
 const VISUAL_NOVEL_CN: ScraperPresetDefinition = {
   id: 'visual-novel-cn',
   copy: (m) => m.scraper.presets.visualNovel,
   mediaType: 'game',
   defaultLocale: 'zh-Hans',
-  searchProviderId: 'vndb',
+  searchProviderId: VNDB_PROVIDER_ID,
   slotConfigs: {
-    info: createSlotConfig('info', ['ymgal', 'vndb'], { strategy: 'enrich' }),
-    tags: createSlotConfig('tags', ['vndb'], { strategy: 'enrich' }),
-    characters: createSlotConfig('characters', ['ymgal', 'vndb', BANGUMI_PROVIDER_ID], {
+    info: createSlotConfig('info', [YMGAL_PROVIDER_ID, VNDB_PROVIDER_ID], { strategy: 'enrich' }),
+    tags: createSlotConfig('tags', [VNDB_PROVIDER_ID], { strategy: 'enrich' }),
+    characters: createSlotConfig(
+      'characters',
+      [YMGAL_PROVIDER_ID, VNDB_PROVIDER_ID, BANGUMI_PROVIDER_ID],
+      { strategy: 'enrich' }
+    ),
+    persons: createSlotConfig('persons', [
+      YMGAL_PROVIDER_ID,
+      VNDB_PROVIDER_ID,
+      BANGUMI_PROVIDER_ID
+    ]),
+    companies: createSlotConfig('companies', [
+      YMGAL_PROVIDER_ID,
+      VNDB_PROVIDER_ID,
+      BANGUMI_PROVIDER_ID
+    ]),
+    relatedEntries: createSlotConfig('relatedEntries', [VNDB_PROVIDER_ID, BANGUMI_PROVIDER_ID], {
       strategy: 'enrich'
     }),
-    persons: createSlotConfig('persons', ['ymgal', 'vndb', BANGUMI_PROVIDER_ID]),
-    companies: createSlotConfig('companies', ['ymgal', 'vndb', BANGUMI_PROVIDER_ID]),
-    relatedEntries: createSlotConfig('relatedEntries', ['vndb', BANGUMI_PROVIDER_ID], {
-      strategy: 'enrich'
-    }),
-    covers: createSlotConfig('covers', ['vndb', 'ymgal', BANGUMI_PROVIDER_ID]),
-    backdrops: createSlotConfig('backdrops', ['vndb']),
+    covers: createSlotConfig('covers', [VNDB_PROVIDER_ID, YMGAL_PROVIDER_ID, BANGUMI_PROVIDER_ID]),
+    backdrops: createSlotConfig('backdrops', [VNDB_PROVIDER_ID]),
     logos: createEmptySlotConfig('logos'),
     icons: createEmptySlotConfig('icons')
   }
 }
 
+/**
+ * Video game preset on IGDB, the broadest catalogue for non-visual-novel
+ * games. IGDB states no staff credits, so the persons slot stays empty.
+ */
 const VIDEO_GAME: ScraperPresetDefinition = {
   id: 'video-game',
   copy: (m) => m.scraper.presets.videoGame,
   mediaType: 'game',
   defaultLocale: 'en',
-  searchProviderId: 'igdb',
+  searchProviderId: IGDB_PROVIDER_ID,
   slotConfigs: {
-    info: createSlotConfig('info', ['igdb'], { strategy: 'enrich' }),
-    tags: createSlotConfig('tags', ['igdb'], { strategy: 'enrich' }),
-    characters: createSlotConfig('characters', ['igdb'], { strategy: 'enrich' }),
-    persons: createSlotConfig('persons', ['igdb']),
-    companies: createSlotConfig('companies', ['igdb']),
+    info: createSlotConfig('info', [IGDB_PROVIDER_ID], { strategy: 'enrich' }),
+    tags: createSlotConfig('tags', [IGDB_PROVIDER_ID], { strategy: 'enrich' }),
+    characters: createSlotConfig('characters', [IGDB_PROVIDER_ID], { strategy: 'enrich' }),
+    persons: createEmptySlotConfig('persons'),
+    companies: createSlotConfig('companies', [IGDB_PROVIDER_ID]),
     relatedEntries: createEmptySlotConfig('relatedEntries'),
-    covers: createSlotConfig('covers', ['igdb']),
-    backdrops: createSlotConfig('backdrops', ['igdb']),
+    covers: createSlotConfig('covers', [IGDB_PROVIDER_ID]),
+    backdrops: createSlotConfig('backdrops', [IGDB_PROVIDER_ID]),
     logos: createEmptySlotConfig('logos'),
     icons: createEmptySlotConfig('icons')
   }

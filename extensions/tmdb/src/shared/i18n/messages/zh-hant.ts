@@ -21,7 +21,7 @@ export const zhHant: TmdbMessages = {
 
   settings: {
     webviewTitle: 'TMDB',
-    commandLabel: 'TMDB 設定',
+    commandLabel: '設定',
     commandDescription: '設定 TMDB API Key、介面位址與刮削偏好。'
   },
 

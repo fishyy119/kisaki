@@ -8,12 +8,12 @@ import {
   FieldContent,
   FieldGroup,
   Icon,
+  SettingsSection,
   Spinner
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
 import { m, uiLocale } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
-import SettingsSection from '../components/settings-section.vue'
 
 interface Props {
   overview: BangumiSettingsOverview

@@ -92,6 +92,22 @@ export type WebviewThemeTokenName = (typeof WEBVIEW_THEME_TOKEN_NAMES)[number]
 export type WebviewThemeTokenMap = Record<WebviewThemeTokenName, string>
 
 /**
+ * The app's three elevation tiers, mirrored so webview documents cast the same
+ * depth as native surfaces.
+ *
+ * Tiers are elevation treatments, not sizes: `raised` is a pure cast shadow for
+ * small elements and transparent cards, while `overlay` and `modal` bundle the
+ * slab rim light (inset top highlight plus shaded bottom edge) and therefore
+ * belong on opaque slabs only. The app disables Tailwind's size scale for the
+ * same reason, and `@kisaki3/extension-sdk/tailwind.css` does so in documents.
+ */
+export const WEBVIEW_SHADOW_TIER_NAMES = ['raised', 'overlay', 'modal'] as const
+
+export type WebviewShadowTierName = (typeof WEBVIEW_SHADOW_TIER_NAMES)[number]
+
+export type WebviewShadowMap = Record<WebviewShadowTierName, string>
+
+/**
  * Resolved theme state pushed into webview documents. The webview client
  * mirrors `tokens` as `--kisaki-<token>` CSS variables and `radius` as
  * `--kisaki-radius` on the document root.
@@ -99,6 +115,10 @@ export type WebviewThemeTokenMap = Record<WebviewThemeTokenName, string>
 export interface WebviewTheme {
   mode: WebviewThemeMode
   tokens: WebviewThemeTokenMap
+  /**
+   * Resolved elevation shadows, mirrored as `--kisaki-shadow-<tier>`.
+   */
+  shadows: WebviewShadowMap
   /**
    * Resolved base corner radius, e.g. `6px`.
    */

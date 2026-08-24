@@ -67,6 +67,17 @@
   --color-warning: var(--kisaki-warning);
   --color-warning-foreground: var(--kisaki-warning-foreground);
 
+  /* Elevation shadows: exactly three semantic tiers, mirroring the app. The
+   * Tailwind size scale is disabled on purpose (shadow-sm/md/lg have no
+   * effect; shadow-none stays as a reset) because tiers are elevation
+   * treatments rather than sizes: raised is a pure cast shadow for small
+   * elements and transparent cards, while overlay and modal bundle the slab
+   * rim light and belong on opaque slabs (bg-popover / bg-dialog) only. */
+  --shadow-*: initial;
+  --shadow-raised: var(--kisaki-shadow-raised);
+  --shadow-overlay: var(--kisaki-shadow-overlay);
+  --shadow-modal: var(--kisaki-shadow-modal);
+
   /* Border radius scale derived from the app base radius */
   --radius-sm: calc(var(--kisaki-radius, 6px) - 4px);
   --radius-md: calc(var(--kisaki-radius, 6px) - 2px);

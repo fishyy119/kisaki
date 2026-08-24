@@ -32,7 +32,8 @@ export interface CompanyScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, ctx: ScraperProviderContext): Promise<CompanySearchResult[]>
+  /** Present if and only if `capabilities` declares `search`. */
+  search?(query: string, ctx: ScraperProviderContext): Promise<CompanySearchResult[]>
   resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<CompanyResolvedTarget | null>
   openSession(
     target: CompanyResolvedTarget,

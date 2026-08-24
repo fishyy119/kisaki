@@ -12,6 +12,7 @@ import { BangumiApiError, normalizeBangumiApiError, readRetryAfterMs } from './e
 import { BangumiRateLimiter, delay, normalizeRateLimitConfig } from './limiter'
 import { normalizePageQuery, toPage, type Page, type PageQuery } from './pagination'
 import type {
+  BangumiCharacter,
   BangumiCharacterDetail,
   BangumiCharacterPerson,
   BangumiCollectionPatch,
@@ -27,6 +28,7 @@ import type {
   BangumiIndexSubjectsQuery,
   BangumiMe,
   BangumiPaged,
+  BangumiPerson,
   BangumiRelatedCharacter,
   BangumiRelatedPerson,
   BangumiSearchSubjectPayload,
@@ -202,6 +204,51 @@ export class BangumiClient {
       auth: 'optional',
       signal: options.signal
     })
+  }
+
+  /**
+   * Search characters by name.
+   *
+   * The endpoint answers with the same character rows the subject endpoints
+   * return, so a searched character and a credited one are the same entity.
+   */
+  async searchCharacters(
+    keyword: string,
+    page: PageQuery = {},
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<Page<BangumiCharacter>> {
+    return this.searchEntities<BangumiCharacter>('/v0/search/characters', keyword, page, options)
+  }
+
+  /**
+   * Search persons by name.
+   *
+   * Bangumi files companies as persons of type 2 and 3, so this answers for
+   * both the person and company providers; each filters by the type it means.
+   */
+  async searchPersons(
+    keyword: string,
+    page: PageQuery = {},
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<Page<BangumiPerson>> {
+    return this.searchEntities<BangumiPerson>('/v0/search/persons', keyword, page, options)
+  }
+
+  private async searchEntities<T>(
+    pathname: string,
+    keyword: string,
+    page: PageQuery,
+    options: Pick<RequestOptions, 'signal'>
+  ): Promise<Page<T>> {
+    const query = normalizePageQuery(page)
+    const response = await this.request<BangumiPaged<T>>('POST', pathname, {
+      query,
+      body: { keyword },
+      auth: 'optional',
+      signal: options.signal
+    })
+
+    return toPage(response, query)
   }
 
   async getCharacterById(

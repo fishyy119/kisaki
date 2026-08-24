@@ -8,7 +8,8 @@ import {
   FieldError,
   FieldGroup,
   Icon,
-  Input
+  Input,
+  SettingsSection
 } from '@kisaki3/extension-ui-vue'
 import {
   matchesHttpUrlFormat,
@@ -17,7 +18,6 @@ import {
 } from '../../../shared/settings'
 import { settingsForm } from '../form'
 import { m } from '../i18n'
-import SettingsSection from '../components/settings-section.vue'
 
 const isOfficial = computed(
   () =>

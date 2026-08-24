@@ -6,7 +6,6 @@ import {
   scannerIgnoredNames,
   scannerIngestMode,
   scannerParallelCount,
-  stringArrayJson,
   uiLocale
 } from '../../columns'
 import {
@@ -28,9 +27,6 @@ export const settings = sqliteTable(
       .notNull()
       .default(SCANNER_PARALLEL_COUNT_DEFAULT),
     scannerIngestMode: scannerIngestMode('scanner_ingest_mode').notNull().default('prefer-scraper'),
-    /** Preferred audio track languages, most preferred first; empty keeps the file's default. */
-    playerAudioLanguages: stringArrayJson('player_audio_languages').notNull().default([]),
-    playerSubtitleLanguages: stringArrayJson('player_subtitle_languages').notNull().default([]),
     updaterAutoCheck: integer('updater_auto_check', { mode: 'boolean' }).notNull().default(true),
     updaterAllowPrerelease: integer('updater_allow_prerelease', { mode: 'boolean' })
       .notNull()

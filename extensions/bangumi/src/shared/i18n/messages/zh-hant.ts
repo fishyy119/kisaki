@@ -80,6 +80,7 @@ export const zhHant = {
     apiUnavailable: 'Bangumi API 暫時無法使用。',
     networkFailed: 'Bangumi API 網路請求失敗。',
     accountResponseInvalid: '無法識別 Bangumi 帳號回應。',
+    idInvalid: ({ value }) => `「${value}」不是有效的 Bangumi ID。`,
 
     operationCancelled: '操作已取消。',
     jobCancelled: 'Bangumi 任務已取消。',
@@ -298,14 +299,14 @@ export const zhHant = {
   settings: {
     commandLabel: '設定',
     commandDescription: '開啟 Bangumi 整合設定。',
-    webviewTitle: 'Bangumi 整合'
+    webviewTitle: 'Bangumi'
   },
 
   ui: {
     loading: '正在載入 Bangumi 設定…',
     unavailable: 'Bangumi 設定無法使用',
-    saved: 'Bangumi 設定已儲存。',
-    unsavedChanges: '偏好設定有未儲存變更',
+    saved: '偏好已儲存。',
+    unsavedChanges: '有未儲存的變更',
     discardChanges: '放棄變更',
     savePreferences: '儲存偏好',
     actionFailed: '操作失敗，請重試。',

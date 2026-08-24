@@ -19,7 +19,7 @@ import {
 import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
+import { Field, FieldGroup, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
@@ -104,18 +104,22 @@ async function handleSubmit() {
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
-            <Field>
-              <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
-              <FieldContent>
-                <Input
-                  v-model="name"
-                  :placeholder="
-                    m.library.forms.namePlaceholder({ label: m.library.entities[props.entityType] })
-                  "
-                  required
-                />
-              </FieldContent>
-            </Field>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    v-model="name"
+                    :placeholder="
+                      m.library.forms.namePlaceholder({
+                        label: m.library.entities[props.entityType]
+                      })
+                    "
+                    required
+                  />
+                </FieldContent>
+              </Field>
+            </FieldGroup>
           </DialogBody>
           <DialogFooter>
             <Button

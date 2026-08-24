@@ -16,12 +16,12 @@ import {
   FieldGroup,
   Icon,
   Input,
+  SettingsSection,
   Switch
 } from '@kisaki3/extension-ui-vue'
 import { settingsForm } from '../form'
 import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
-import SettingsSection from '../components/settings-section.vue'
 
 const emit = defineEmits<{
   refresh: []

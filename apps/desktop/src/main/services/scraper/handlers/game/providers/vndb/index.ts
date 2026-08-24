@@ -1,1 +1,0 @@
-export { VNDBProvider } from './scraper'

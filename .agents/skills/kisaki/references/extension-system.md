@@ -25,7 +25,8 @@
 
 ### SDK & Tooling
 
-- `extensions/` - Built-in extension projects bundled with the desktop app
+- `extensions/` - Built-in extension projects bundled with the desktop app:
+  `bangumi`, `tmdb`, `ymgal`, `vndb`, `igdb`, `phash-match`
 - `packages/extension-api/` - Public contracts, DTOs, schema, and RPC protocol
 - `packages/extension-registry/` - Distributed registry manifest, artifact, validation, digest, and signing helper contracts
 - `packages/extension-sdk/` - Author-facing `defineExtension`, `kisaki`, and context bridge
@@ -149,7 +150,11 @@ Extensions use a single `manifest.json` with an `entry` field and implement `act
 
 - `entityMenus` - Structured entity menu items and callbacks
 - `settingsPanels` - Controlled settings panels and callback results
-- `scraperProviders` - Provider registrations adapted into `ScraperService`
+- `scraperProviders` - Provider registrations adapted into `ScraperService`. Every scraper source
+  is an extension: `ScraperService` owns the registries, profile catalogue, and execution pipeline
+  and registers no provider of its own, so a profile scrapes exactly what the enabled extensions
+  offer. Source credentials therefore belong to the owning extension's settings, never to
+  build-time env values.
 - `deeplinkRoutes` - Namespaced extension deeplink handlers
 - `commands` - Extension-owned command handlers registered into the app command service
 - `themes` - Semantic token theme contributions
@@ -255,6 +260,32 @@ Extension failures must never destabilize the app. The main-side point applies p
   point ids, stores handlers by registration id, mirrors registrations to main, answers `invoke`,
   and consumes `notify`.
 
+## Scraper Providers Contribution Point
+
+`capabilities` is the single source of truth for what a provider answers, and `search` is optional
+within it. Slot execution only calls `resolve` and `openSession`, so a provider that cannot answer
+name queries still fills slots; it is reached through `knownIds` in the lookup, which is how
+satellite entities normally arrive (an entry scrape writes the ids of the persons, companies, and
+characters it credits). YMGal's satellite providers are the reference case: its public API searches
+games only.
+
+Rules:
+
+- Declaration and implementation must agree in both directions: declaring `search` without
+  implementing it, or implementing it without declaring it, fails validation on both the public
+  (`packages/extension-api/src/contributions/scraper-providers/validation.ts`) and app
+  (`handlers/common/registry.ts`) side. The main-side adapter omits the method entirely for a
+  provider that does not declare the capability.
+- A profile whose `searchProviderId` names a provider without `search` fails with a
+  `ScrapeFailure('provider-unavailable', ...)`; renderer search-source pickers already filter on
+  `requiredCapabilities: ['search']`, and slot pickers filter on the slot alone.
+- Providers pace their own requests. The app's network service performs one exchange with timeout
+  and retry and owns no rate-limit registry; an extension knows its source's published limits.
+- Startup ordering is guaranteed by the bootstrap sequence rather than a separate signal:
+  `ExtensionService.init()` awaits host startup, activation, and the contribution flush, and
+  `bootstrapHooks.appReady` fires only after `container.initAll()`. Work needing the full provider
+  set at startup (the scanner's first scan) taps `appReady`.
+
 ## TaskRun Capability
 
 Long-running extension command handlers must use scoped `kisaki.taskRuns`; they must not use command
@@ -309,6 +340,37 @@ or TaskRun snapshots.
 - Avoid exposing protocol terms such as `Manifest` or `Release` in normal UI labels. If a digest is useful in details/diagnostics, label it as `清单摘要` or `版本摘要`.
 - `卸载` means removing extension code while preserving settings, cache, and secrets. Use `清除数据` only for deleting local extension data.
 - Repository pages can show health details such as last success, last error, manifest digest, ETag, and Last-Modified, but must not imply a repository is trusted. Trust belongs to an extension signer fingerprint.
+
+### Webview UI Discipline
+
+A webview document should be indistinguishable from a native surface. The host mirrors the resolved
+appearance — semantic tokens, the three elevation shadow tiers, radius, fonts, and base metrics —
+onto `--kisaki-*`, and `@kisaki3/extension-sdk/tailwind.css` maps them onto Tailwind tokens while
+disabling the default shadow size scale exactly as the app does.
+
+Consistency is layered, and each layer has a different owner:
+
+- **Tokens and appearance**: absolute; the bridge and SDK CSS enforce them.
+- **Component recipes** (button, input, dialog slab, tabs): single source. The kit mirrors
+  `apps/desktop/src/renderer/src/components/ui/*`; when the app changes a recipe the kit follows,
+  and extensions never fork controls locally.
+- **Layout**: unified per surface type, not per owner. The design system keeps one canonical recipe
+  per surface type (see the Surface Types table in [ui-system.md](ui-system.md)); a webview
+  classifies the surface it is building and applies that recipe. Settings webviews carry several
+  titled groups, so they are multi-section settings surfaces: `SettingsSection` per group with
+  `surface="rows"`, self-framing content placed directly in a plain section, and a left tab rail
+  once a large dialog reaches five or more sections. A webview's own form dialogs are forms, so
+  they use a plain `FieldGroup` exactly as the app does. Do not copy the layout of an app screen
+  that is a different surface type, and do not invent a new layout when a recipe exists. A
+  genuinely new surface type gets its recipe defined in the design system first — the recipe
+  belongs to the system, and the app adopts it for its own surfaces of that type.
+- **Interaction idioms**: report action results through `kisaki.notify` from the host so they
+  surface in the app's own toaster; keep only load and validation errors inline, matching the
+  app's dialog error state; settings dialogs use the draft + dirty-footer pattern.
+
+Built-in extensions are bound by all four layers. Third-party ones are sandboxed and cannot be
+forced, but the bridge and the kit make the native result the default, and the layout and idiom
+rules are the documented recommendation.
 
 ## Adding Extension Surface Area
 

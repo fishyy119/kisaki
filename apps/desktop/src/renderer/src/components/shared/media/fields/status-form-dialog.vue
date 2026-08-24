@@ -21,7 +21,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
-import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
+import { Field, FieldGroup, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import {
   Select,
@@ -130,25 +130,27 @@ async function handleSubmit() {
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
-            <Field>
-              <FieldLabel>{{ labels.label }}</FieldLabel>
-              <FieldContent>
-                <Select v-model="status">
-                  <SelectTrigger>
-                    <SelectValue :placeholder="labels.selectStatus" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="option in options"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </FieldContent>
-            </Field>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>{{ labels.label }}</FieldLabel>
+                <FieldContent>
+                  <Select v-model="status">
+                    <SelectTrigger>
+                      <SelectValue :placeholder="labels.selectStatus" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="option in options"
+                        :key="option.value"
+                        :value="option.value"
+                      >
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
+            </FieldGroup>
           </DialogBody>
           <DialogFooter>
             <Button

@@ -1,4 +1,9 @@
-<!-- FieldGroup component -->
+<!--
+FieldGroup stacks a form's fields in one column at the app's form rhythm: a
+label above its full-width control, bound by proximity. Framing and dividers
+belong to the multi-section settings recipe, not to forms; this group stays
+plain so every form in the app reads the same.
+-->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@renderer/utils/cn'
@@ -13,12 +18,7 @@ const props = defineProps<Props>()
 <template>
   <div
     data-slot="field-group"
-    :class="
-      cn(
-        'group/field-group @container/field-group flex w-full flex-col gap-5 data-[slot=checkbox-group]:gap-3 [&>[data-slot=field-group]]:gap-4',
-        props.class
-      )
-    "
+    :class="cn('group/field-group @container/field-group flex w-full flex-col gap-5', props.class)"
   >
     <slot />
   </div>

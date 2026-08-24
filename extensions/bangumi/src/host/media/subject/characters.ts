@@ -2,8 +2,7 @@ import {
   isCancellationError,
   type ContentLocale,
   type ScrapedCharacterMetadata,
-  type ScrapedCharacterPersonFact,
-  type ScrapedTag
+  type ScrapedCharacterPersonFact
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../api/client'
 import type {
@@ -14,21 +13,15 @@ import type {
 } from '../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 import { omitUndefined } from '../../utils/object'
-import { dedupeTags } from '../format/dedupe'
-import { toPartialDateFromParts } from '../format/dates'
+import { BANGUMI_LABEL, buildCharacterFacts, toCharacterMetadata } from '../satellites'
 import { extractImageUrls } from '../format/images'
-import { extractAliasesFromInfobox } from '../format/infobox'
-import { extractCharacterMeasurementsFromInfobox } from '../format/measurements'
-import { resolveLocalizedEntityName } from '../format/names'
 import {
-  mapBangumiBloodType,
   mapBangumiCareersToTags,
   mapBangumiCharacterRole,
-  mapBangumiGender,
   type BangumiCharacterRole
 } from '../format/roles'
 import { normalizeDescription } from '../format/text'
-import { buildBangumiCharacterUrl, buildBangumiPersonUrl, dedupeUrls } from '../format/urls'
+import { buildBangumiPersonUrl, dedupeUrls } from '../format/urls'
 
 /** Character credit of a subject; game and anime share the role union. */
 export type SubjectCharacterFact = ScrapedCharacterMetadata & {
@@ -146,40 +139,11 @@ function mapSubjectCharacter({
   characterPersons: BangumiCharacterPerson[] | undefined
   locale: ContentLocale | undefined
 }): SubjectCharacterFact {
-  const { name, originalName } = resolveLocalizedEntityName(
-    detail?.name || relatedCharacter.name,
-    detail?.infobox,
-    locale
-  )
-
-  const characterTypeTag = mapCharacterTypeTag(detail?.type ?? relatedCharacter.type)
-  const tags: ScrapedTag[] = []
-  if (characterTypeTag) {
-    tags.push({ name: characterTypeTag, note: 'Character Type' })
-  }
-
-  const measurements = extractCharacterMeasurementsFromInfobox(detail?.infobox)
+  const facts = buildCharacterFacts(relatedCharacter.id, detail, relatedCharacter, locale)
   const persons = buildCharacterPersons(subjectId, subjectType, relatedCharacter, characterPersons)
-  const photos = dedupeUrls(extractImageUrls(detail?.images || relatedCharacter.images))
-  const aliases = extractAliasesFromInfobox(detail?.infobox, [name, originalName])
 
   return omitUndefined({
-    name,
-    originalName,
-    aliases: aliases.length > 0 ? aliases : undefined,
-    description: normalizeDescription(detail?.summary || relatedCharacter.summary),
-    externalSites: [{ label: 'Bangumi', url: buildBangumiCharacterUrl(relatedCharacter.id) }],
-    identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(relatedCharacter.id) }] },
-    photos: photos.length > 0 ? photos : undefined,
-    gender: mapBangumiGender(detail?.gender),
-    birthDate: toPartialDateFromParts(detail?.birth_year, detail?.birth_mon, detail?.birth_day),
-    bloodType: mapBangumiBloodType(detail?.blood_type),
-    height: measurements.height,
-    weight: measurements.weight,
-    bust: measurements.bust,
-    waist: measurements.waist,
-    hips: measurements.hips,
-    tags: tags.length > 0 ? dedupeTags(tags) : undefined,
+    ...toCharacterMetadata(facts),
     role: mapBangumiCharacterRole(relatedCharacter.relation),
     persons: persons.length > 0 ? persons : undefined
   })
@@ -199,7 +163,7 @@ function buildCharacterPersons(
         name: actor.name,
         originalName: actor.name,
         description: normalizeDescription(actor.short_summary),
-        externalSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(actor.id) }],
+        externalSites: [{ label: BANGUMI_LABEL, url: buildBangumiPersonUrl(actor.id) }],
         identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(actor.id) }] },
         photos: dedupeUrls(extractImageUrls(actor.images)),
         tags: mapBangumiCareersToTags(actor.career),
@@ -217,7 +181,7 @@ function buildCharacterPersons(
       omitUndefined({
         name: personRef.name,
         originalName: personRef.name,
-        externalSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(personRef.id) }],
+        externalSites: [{ label: BANGUMI_LABEL, url: buildBangumiPersonUrl(personRef.id) }],
         identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(personRef.id) }] },
         photos: dedupeUrls(extractImageUrls(personRef.images)),
         role: 'actor',
@@ -227,17 +191,4 @@ function buildCharacterPersons(
   }
 
   return persons
-}
-
-function mapCharacterTypeTag(characterType: number): string | undefined {
-  switch (characterType) {
-    case 2:
-      return 'Mechanic'
-    case 3:
-      return 'Ship'
-    case 4:
-      return 'Organization'
-    default:
-      return undefined
-  }
 }

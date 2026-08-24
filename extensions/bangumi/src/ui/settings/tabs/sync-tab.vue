@@ -9,6 +9,7 @@ import {
   FieldGroup,
   Icon,
   Label,
+  SettingsSection,
   Spinner,
   Switch
 } from '@kisaki3/extension-ui-vue'
@@ -18,7 +19,6 @@ import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
 import { useScopeSelection } from '../scope'
 import MediaScopeSelect from '../components/media-scope-select.vue'
-import SettingsSection from '../components/settings-section.vue'
 import FullSyncDialog from '../flows/full-sync-dialog.vue'
 
 interface Props {

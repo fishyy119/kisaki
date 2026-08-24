@@ -19,7 +19,11 @@ import { cn } from '@renderer/utils/cn'
 import { cva } from 'class-variance-authority'
 import type { ScraperCapability } from '@shared/scraper'
 import type { ContentEntityType } from '@shared/common'
-import { getScraperProviderDisplay, type ScraperProviderInfo } from './provider-display'
+import {
+  getScraperProviderDisplay,
+  resolveScraperProviderOwnerName,
+  type ScraperProviderInfo
+} from './provider-display'
 
 interface Props {
   /** Which entity type this provider list is for (default: game) */
@@ -231,8 +235,13 @@ watch(model, (providerId) => {
         :key="provider.id"
         :value="provider.id"
       >
-        <div class="flex items-center gap-2">
-          <span>{{ provider.name }}</span>
+        <div class="flex min-w-0 items-center gap-1.5">
+          <span class="truncate">{{ provider.name }}</span>
+          <!-- Two extensions can cover the same source, so the owner is what
+               tells otherwise identical entries apart. -->
+          <span class="shrink-0 text-xs text-muted-foreground">
+            {{ resolveScraperProviderOwnerName(provider.id) }}
+          </span>
         </div>
       </SelectItem>
     </SelectContent>

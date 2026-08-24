@@ -6,6 +6,7 @@ import {
 } from '../jobs/args'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../jobs/commands'
 import { assertBangumiCommandIdle } from '../jobs/status'
+import { m } from '../i18n'
 import type {
   BangumiAutomationKind,
   BangumiSettingsFormState,
@@ -37,6 +38,7 @@ export function createBangumiSettingsHostFunctions(
     async saveSettings(form: BangumiSettingsFormState): Promise<void> {
       const current = await runtime.settingsStore.get()
       await runtime.settingsStore.set(applyFormState(current, form))
+      await notifySettingsSaved(runtime)
     },
 
     async openExternal(url: string): Promise<void> {
@@ -135,6 +137,7 @@ export function createBangumiSettingsHostFunctions(
 
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
+      await notifySettingsSaved(runtime)
     }
   }
 }
@@ -142,4 +145,19 @@ export function createBangumiSettingsHostFunctions(
 async function startCommandJob(commandId: BangumiCommandId, args: JsonObject): Promise<void> {
   await assertBangumiCommandIdle(commandId)
   await kisaki.commands.invoke({ commandId, args })
+}
+
+/**
+ * Preference writes are reported through the app's own notification surface,
+ * so an extension action reads exactly like a native one. A failed
+ * notification is cosmetic and must not fail the write that already succeeded.
+ */
+async function notifySettingsSaved(runtime: BangumiSettingsRuntime): Promise<void> {
+  try {
+    await kisaki.notify.success(m().ui.saved)
+  } catch (error) {
+    runtime.logger.warn('Bangumi notification failed.', {
+      message: error instanceof Error ? error.message : String(error)
+    })
+  }
 }

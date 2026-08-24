@@ -23,7 +23,7 @@ export const ja: TmdbMessages = {
 
   settings: {
     webviewTitle: 'TMDB',
-    commandLabel: 'TMDB 設定',
+    commandLabel: '設定',
     commandDescription: 'TMDB の API キー、エンドポイント、スクレイピング設定を構成します。'
   },
 

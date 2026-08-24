@@ -22,7 +22,12 @@ import type {
   ScrapedAnimeBundle
 } from '@shared/scraper'
 import type { I18nService } from '@main/services/i18n'
-import { ensureProviderExternalId, ensureProviderIdentity, ScrapeFailure } from '../../shared'
+import {
+  createSearchUnsupportedError,
+  ensureProviderExternalId,
+  ensureProviderIdentity,
+  ScrapeFailure
+} from '../../shared'
 import { executeScraperPlan } from '../common/executor'
 import { resolveContentLocale } from '../common/locale'
 import {
@@ -92,6 +97,10 @@ export class AnimeScraperHandler {
   ): Promise<AnimeSearchResult[]> {
     const profile = this.loadProfile(profileId)
     const provider = this.requireProvider(profile.searchProviderId)
+    if (!provider.search) {
+      throw createSearchUnsupportedError(profile.searchProviderId)
+    }
+
     const results = await provider.search(query, {
       locale: resolveContentLocale(undefined, profile, this.i18n.locale),
       signal: options.signal
