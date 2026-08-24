@@ -25,11 +25,10 @@ export const ingest = {
     addedTitle: ({ entity }: { entity: IngestEntity }) => `${NOUNS[entity]}を追加しました`,
     existsTitle: ({ entity }: { entity: IngestEntity }) => `${NOUNS[entity]}は既に存在します`,
     addedSummary: ({ entity }: { entity: IngestEntity }) =>
-      `${NOUNS[entity]}をライブラリに追加しました。`,
-    existsSummary: ({ entity }: { entity: IngestEntity }) =>
-      `既存の${NOUNS[entity]}と一致しました。`,
+      `${NOUNS[entity]}をライブラリに追加しました`,
+    existsSummary: ({ entity }: { entity: IngestEntity }) => `既存の${NOUNS[entity]}と一致しました`,
     cancelledSummary: ({ entity }: { entity: IngestEntity }) =>
-      `${NOUNS[entity]}の追加はキャンセルされました。`
+      `${NOUNS[entity]}の追加はキャンセルされました`
   },
 
   update: {
@@ -45,9 +44,9 @@ export const ingest = {
     completedTitle: ({ entity }: { entity: IngestEntity }) =>
       `${NOUNS[entity]}のメタデータを更新しました`,
     completedSummary: ({ entity }: { entity: IngestEntity }) =>
-      `${NOUNS[entity]}のメタデータをライブラリに書き込みました。`,
+      `${NOUNS[entity]}のメタデータをライブラリに書き込みました`,
     cancelledSummary: ({ entity }: { entity: IngestEntity }) =>
-      `${NOUNS[entity]}のメタデータ更新はキャンセルされました。`
+      `${NOUNS[entity]}のメタデータ更新はキャンセルされました`
   },
 
   batch: {
@@ -56,7 +55,7 @@ export const ingest = {
       `${count} 件の${NOUNS[entity]}`,
     preparingList: ({ entity }: { entity: IngestEntity }) =>
       `${NOUNS[entity]}リストを準備しています`,
-    noSearchResults: '検索結果がありません。',
+    noSearchResults: '検索結果がありません',
     completedTitle: ({ entity }: { entity: IngestEntity }) =>
       `${NOUNS[entity]}のメタデータ一括更新が完了しました`,
     completedWithFailuresTitle: ({ entity }: { entity: IngestEntity }) =>
@@ -69,7 +68,7 @@ export const ingest = {
       succeeded: number
       failed: number
       skipped: number
-    }) => `成功 ${succeeded}、失敗 ${failed}、スキップ ${skipped}。`,
+    }) => `成功 ${succeeded}、失敗 ${failed}、スキップ ${skipped}`,
     cancelledSummary: ({
       succeeded,
       failed,

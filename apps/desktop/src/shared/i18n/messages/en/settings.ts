@@ -8,7 +8,7 @@ export const settings = {
   closeActionTray: 'Minimize to tray',
   updaterAutoCheckLabel: 'Check for updates automatically',
   updaterAllowPrereleaseLabel: 'Receive preview updates',
-  loadFailed: 'Failed to load settings.',
+  loadFailed: 'Failed to load settings',
   language: {
     followSystem: 'Follow system',
     uiLanguageLabel: 'Interface language'

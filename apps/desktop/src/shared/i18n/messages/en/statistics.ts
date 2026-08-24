@@ -25,7 +25,7 @@ export const statistics = {
     downVsPrevious: ({ label, duration }: { label: string; duration: string }) =>
       `Down ${duration} vs ${label}`,
     other: 'Other',
-    noActivityRecords: 'No activity yet.',
+    noActivityRecords: 'No activity yet',
     mostPlayed: 'Top title',
 
     sessions: 'Sessions',

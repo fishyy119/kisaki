@@ -19,6 +19,7 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 
 // =============================================================================
@@ -119,12 +120,12 @@ function handleCancel() {
         <DialogTitle>{{ m.scanner.rules.presetsTitle }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[60vh] overflow-auto">
-        <p
+        <StateView
           v-if="availablePresets.length === 0"
-          class="text-sm text-muted-foreground text-center py-8"
-        >
-          {{ m.scanner.rules.presetsAllAdded }}
-        </p>
+          state="empty"
+          :description="m.scanner.rules.presetsAllAdded"
+          class="py-8"
+        />
         <div
           v-else
           class="space-y-1"

@@ -8,8 +8,7 @@
 
 import { computed, inject, provide, watch, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { Icon } from '@renderer/components/ui/icon'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualList } from '@renderer/components/ui/virtual'
 import { useRenderState } from '@renderer/composables'
 import { useDefaultFromStore } from '@renderer/stores'
@@ -129,12 +128,12 @@ const currentConfig = computed(() => ({
 
 <template>
   <!-- Loading state -->
-  <div
+  <StateView
     v-if="state === 'loading'"
-    class="flex items-center justify-center py-8"
-  >
-    <Spinner class="size-5" />
-  </div>
+    state="loading"
+    size="sm"
+    class="py-8"
+  />
 
   <!-- Success state -->
   <template v-else-if="state === 'success'">
@@ -164,31 +163,25 @@ const currentConfig = computed(() => ({
         </template>
       </VirtualList>
       <!-- Empty filter results -->
-      <div
+      <StateView
         v-else
-        class="flex flex-col items-center justify-center py-10 text-center"
-      >
-        <Icon
-          icon="icon-[mdi--filter-off-outline]"
-          class="size-6 text-muted-foreground/40 mb-1.5"
-        />
-        <p class="text-xs text-muted-foreground/60">{{ m.library.explorer.noMatch }}</p>
-      </div>
+        state="empty"
+        size="sm"
+        icon="icon-[mdi--filter-off-outline]"
+        :description="m.library.explorer.noMatch"
+        class="py-10"
+      />
     </div>
 
     <!-- Empty state -->
-    <div
+    <StateView
       v-else-if="!hasData"
-      class="flex flex-col items-center justify-center py-10 text-center"
-    >
-      <Icon
-        :icon="currentConfig.icon"
-        class="size-6 text-muted-foreground/40 mb-1.5"
-      />
-      <p class="text-xs text-muted-foreground/60">
-        {{ m.library.explorer.emptyList({ label: currentConfig.label }) }}
-      </p>
-    </div>
+      state="empty"
+      size="sm"
+      :icon="currentConfig.icon"
+      :description="m.library.explorer.emptyList({ label: currentConfig.label })"
+      class="py-10"
+    />
 
     <!-- Normal grouped view -->
     <div

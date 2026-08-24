@@ -34,9 +34,9 @@ export const task = {
     pauseFailed: 'タスクを一時停止できませんでした',
     resumeFailed: 'タスクを再開できませんでした',
     cancelFailed: 'タスクをキャンセルできませんでした',
-    cannotPauseNow: '現在このタスクは一時停止できません。',
-    cannotResumeNow: '現在このタスクは再開できません。',
-    cannotCancel: 'タスクは終了済みか、キャンセルできません。'
+    cannotPauseNow: '現在このタスクは一時停止できません',
+    cannotResumeNow: '現在このタスクは再開できません',
+    cannotCancel: 'タスクは終了済みか、キャンセルできません'
   },
 
   row: {
@@ -193,7 +193,7 @@ export const task = {
     cancelling: 'キャンセルしています…',
     pausing: '一時停止しています…',
     paused: '一時停止中',
-    cancelUnavailable: 'タスクは終了済みか、キャンセルできません。',
+    cancelUnavailable: 'タスクは終了済みか、キャンセルできません',
     finalCompleted: ({ title }: { title: string }) => `${title}が完了しました`,
     finalCancelled: ({ title }: { title: string }) => `${title}をキャンセルしました`,
     finalFailed: ({ title }: { title: string }) => `${title}が失敗しました`

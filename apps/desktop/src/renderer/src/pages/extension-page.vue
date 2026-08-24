@@ -12,6 +12,7 @@ navigation binding.
 import { computed, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { ExtensionWebviewFrame } from '@renderer/components/extension/webviews'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   closeWebview,
   findExtensionPageSession,
@@ -76,11 +77,11 @@ function closeCurrentSession(): void {
       :key="session.webviewId"
       :session="session"
     />
-    <div
+    <StateView
       v-else
-      class="flex items-center justify-center h-full bg-background text-sm text-muted-foreground"
-    >
-      {{ m.extension.webviewPageClosed }}
-    </div>
+      state="empty"
+      :description="m.extension.webviewPageClosed"
+      class="h-full bg-background"
+    />
   </div>
 </template>

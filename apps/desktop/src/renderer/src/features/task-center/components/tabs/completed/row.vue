@@ -56,7 +56,7 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
               <TooltipTrigger as-child>
                 <button
                   type="button"
-                  class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-[11px] leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
+                  class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-xs leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
                   :aria-label="m.task.row.warningCount({ count: warnings.length })"
                 >
                   <Icon
@@ -103,7 +103,7 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
         {{ resultText }}
       </div>
       <div
-        class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-4 text-muted-foreground"
+        class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs leading-4 text-muted-foreground"
       >
         <span>
           <span>{{ m.task.row.duration }}</span>

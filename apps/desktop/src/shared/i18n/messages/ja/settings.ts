@@ -9,7 +9,7 @@ export const settings = {
   closeActionTray: 'トレイに最小化',
   updaterAutoCheckLabel: '更新を自動的に確認',
   updaterAllowPrereleaseLabel: 'プレビュー版の更新を受け取る',
-  loadFailed: '設定の読み込みに失敗しました。',
+  loadFailed: '設定の読み込みに失敗しました',
   language: {
     followSystem: 'システムに従う',
     uiLanguageLabel: '表示言語'

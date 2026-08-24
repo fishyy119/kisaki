@@ -14,6 +14,7 @@ import { useVirtualizer } from '@tanstack/vue-virtual'
 import { Popover, PopoverTrigger, PopoverContent } from '@renderer/components/ui/popover'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
+import { StateView } from '@renderer/components/ui/state-view'
 import { cn } from '@renderer/utils/cn'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { VirtualizedComboboxEntity } from './types'
@@ -299,7 +300,7 @@ function handleMouseMove() {
           )
         "
       >
-        <span :class="cn('truncate', !displayText && 'text-muted-foreground text-xs')">
+        <span :class="cn('truncate', !displayText && 'text-muted-foreground')">
           {{ displayText || emptyTextDisplay }}
         </span>
         <Icon
@@ -327,7 +328,7 @@ function handleMouseMove() {
           ref="inputRef"
           :value="search"
           :placeholder="placeholderText"
-          class="placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+          class="placeholder:text-muted-foreground flex h-full w-full bg-transparent text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
           @input="handleSearch(($event.target as HTMLInputElement).value)"
         />
       </div>
@@ -341,12 +342,13 @@ function handleMouseMove() {
         @mousemove="handleMouseMove"
       >
         <!-- Empty state (only when no entities and no create option) -->
-        <div
+        <StateView
           v-if="filteredEntities.length === 0"
-          class="py-6 text-center text-sm text-muted-foreground"
-        >
-          {{ m.ui.combobox.noMatches }}
-        </div>
+          state="empty"
+          size="sm"
+          :description="m.ui.combobox.noMatches"
+          class="py-6"
+        />
 
         <!-- Virtual list -->
         <div

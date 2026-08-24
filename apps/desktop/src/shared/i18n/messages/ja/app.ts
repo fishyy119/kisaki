@@ -4,7 +4,7 @@ export const app = {
   quit: 'Kisaki を終了',
   notFound: {
     title: 'ページが見つかりません',
-    description: 'アクセスしたページは存在しません。',
+    description: 'アクセスしたページは存在しません',
     backToLibrary: 'ライブラリに戻る'
   },
   error: {

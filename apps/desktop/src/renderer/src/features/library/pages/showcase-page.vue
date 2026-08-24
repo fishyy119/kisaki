@@ -11,13 +11,10 @@ import { ref, computed, provide } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
+import { StateView } from '@renderer/components/ui/state-view'
 import { useShowcaseSections } from '../composables'
 import { useI18n } from '@renderer/composables/use-i18n'
-import {
-  LibraryShowcaseSection,
-  LibraryShowcaseEmpty,
-  LibraryShowcaseSectionsFormDialog
-} from '../components/showcase'
+import { LibraryShowcaseSection, LibraryShowcaseSectionsFormDialog } from '../components/showcase'
 
 const { m } = useI18n()
 
@@ -64,10 +61,24 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
       ref="scrollContainerRef"
       class="flex-1 overflow-auto bg-background"
     >
-      <LibraryShowcaseEmpty
+      <StateView
         v-if="visibleSections.length === 0"
-        @add-section="isManagerOpen = true"
-      />
+        state="empty"
+        icon="icon-[mdi--view-dashboard-outline]"
+        :title="m.library.showcase.emptyTitle"
+        :description="m.library.showcase.emptyDescription"
+        class="h-full p-8"
+      >
+        <template #actions>
+          <Button @click="isManagerOpen = true">
+            <Icon
+              icon="icon-[mdi--plus]"
+              class="size-4"
+            />
+            {{ m.library.showcase.addFirstSection }}
+          </Button>
+        </template>
+      </StateView>
       <div
         v-else
         class="p-4 space-y-4"

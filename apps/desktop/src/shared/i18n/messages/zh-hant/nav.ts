@@ -18,7 +18,7 @@ export const nav = {
   nsfw: {
     enableTitle: '顯示 NSFW 內容？',
     disableTitle: '隱藏 NSFW 內容？',
-    enableDescription: '開啟後將顯示被標記為 NSFW 的內容。',
-    disableDescription: '關閉後將隱藏被標記為 NSFW 的內容。'
+    enableDescription: '開啟後將顯示被標記為 NSFW 的內容',
+    disableDescription: '關閉後將隱藏被標記為 NSFW 的內容'
   }
 } satisfies Messages['nav']

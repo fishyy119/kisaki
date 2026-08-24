@@ -15,7 +15,7 @@ export const game = {
   lastActiveDialog: {
     title: '最終プレイ時刻を編集',
     label: '最終プレイ時刻',
-    emptyHint: '空欄の場合は未プレイとして扱われます。'
+    emptyHint: '空欄の場合は未プレイとして扱われます'
   },
 
   duration: {
@@ -26,7 +26,7 @@ export const game = {
     untrackedLabel: '未記録のプレイ時間',
     hoursUnit: '時間',
     minutesUnit: '分',
-    untrackedHint: 'ゲームセッションに記録されていないプレイ時間（例：取り込んだ履歴データ）。',
+    untrackedHint: 'ゲームセッションに記録されていないプレイ時間（例：取り込んだ履歴データ）',
     sessionsHeader: ({ count }: { count: number }) => `セッション記録（${count}）`,
     emptySessions: 'セッション記録はまだありません。下のボタンから追加できます',
     addRecord: '記録を追加',
@@ -50,7 +50,7 @@ export const game = {
     tabSave: 'セーブ',
     saved: '起動設定を保存しました',
     gameDirLabel: 'ゲームフォルダー',
-    gameDirHint: '自動推定と、コマンドモードの作業ディレクトリに使われます。',
+    gameDirHint: '自動推定と、コマンドモードの作業ディレクトリに使われます',
     launchModeLabel: '起動モード',
     modeFile: 'ファイル',
     modeFileHint: '実行ファイルを直接実行します',
@@ -78,9 +78,9 @@ export const game = {
     autoDerivePlaceholder: '空欄で自動推定',
     willUse: ({ path }: { path: string }) => `使用予定：${path}`,
     savePathLabel: 'セーブパス',
-    savePathHint: '自動バックアップに使うセーブフォルダー。',
+    savePathHint: '自動バックアップに使うセーブフォルダー',
     maxBackupsLabel: '最大バックアップ数',
-    maxBackupsHint: 'この数を超えると最も古いバックアップが自動削除されます。'
+    maxBackupsHint: 'この数を超えると最も古いバックアップが自動削除されます'
   },
 
   saves: {
@@ -92,9 +92,9 @@ export const game = {
     deleteBackupFailed: 'バックアップを削除できません',
     backupInfoUpdated: 'バックアップ情報を更新しました',
     noSavePathTitle: 'セーブパスが設定されていません',
-    noSavePathHint: 'バックアップ機能を使うには、ゲーム設定でセーブフォルダーを設定してください。',
+    noSavePathHint: 'バックアップ機能を使うには、ゲーム設定でセーブフォルダーを設定してください',
     emptyBackupsTitle: 'セーブバックアップはまだありません',
-    emptyBackupsHint: 'バックアップを作成して進行状況を保護しましょう。',
+    emptyBackupsHint: 'バックアップを作成して進行状況を保護しましょう',
     createBackup: 'バックアップを作成',
     backupCount: ({ current, max }: { current: number; max: number }) =>
       `${current} / ${max} 件のバックアップ`,
@@ -109,7 +109,7 @@ export const game = {
     editBackupTitle: 'バックアップを編集',
     notePlaceholder: '例：第 3 章クリア時のセーブ',
     lockLabel: 'バックアップをロック',
-    lockHint: 'ロック中のバックアップは自動削除されません。'
+    lockHint: 'ロック中のバックアップは自動削除されません'
   },
 
   activity: {
@@ -119,7 +119,7 @@ export const game = {
     distribution: '時間帯分布',
     recentSessions: '最近のセッション',
     emptyTitle: 'プレイ記録はまだありません',
-    emptyHint: 'ゲームを起動すると、プレイ時間が自動的にここへ記録されます。',
+    emptyHint: 'ゲームを起動すると、プレイ時間が自動的にここへ記録されます',
     totalDuration: 'プレイ時間',
     sessionCount: 'プレイ回数',
     sessionCountValue: ({ count }: { count: number }) => `${count} 回`,

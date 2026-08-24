@@ -8,10 +8,10 @@
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Section } from '@renderer/components/ui/section'
+import { StateView } from '@renderer/components/ui/state-view'
 import type { MediaType } from '@shared/common'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { MediaSessionRow } from '../media-tables'
-import MediaActivityEmpty from './activity-empty.vue'
 import MediaActivityStats from './activity-stats.vue'
 import MediaActivityHeatmap from './activity-heatmap.vue'
 import MediaActivityTrend from './activity-trend.vue'
@@ -36,9 +36,13 @@ const recentSessions = computed(() => props.sessions.slice(0, RECENT_SESSION_LIM
 
 <template>
   <!-- Empty -->
-  <MediaActivityEmpty
+  <StateView
     v-if="props.sessions.length === 0"
-    :media-type="props.mediaType"
+    state="empty"
+    icon="icon-[mdi--report-timeline-variant]"
+    :title="labels.emptyTitle"
+    :description="labels.emptyHint"
+    class="py-12"
   />
 
   <!-- Content -->

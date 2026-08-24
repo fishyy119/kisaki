@@ -3,8 +3,8 @@ export const task = {
   center: 'Task center',
   tabActive: 'Active',
   tabCompleted: 'Completed',
-  noActiveTasks: 'No active tasks.',
-  noCompletedRecords: 'No completed records.',
+  noActiveTasks: 'No active tasks',
+  noCompletedRecords: 'No completed records',
 
   table: {
     task: 'Task',
@@ -32,9 +32,9 @@ export const task = {
     pauseFailed: 'Could not pause the task',
     resumeFailed: 'Could not resume the task',
     cancelFailed: 'Could not cancel the task',
-    cannotPauseNow: 'The task cannot be paused right now.',
-    cannotResumeNow: 'The task cannot be resumed right now.',
-    cannotCancel: 'The task has finished or cannot be cancelled.'
+    cannotPauseNow: 'The task cannot be paused right now',
+    cannotResumeNow: 'The task cannot be resumed right now',
+    cannotCancel: 'The task has finished or cannot be cancelled'
   },
 
   row: {
@@ -80,7 +80,7 @@ export const task = {
     description: 'Description',
     result: 'Result',
     output: 'Output',
-    noResultSummary: 'No result summary.'
+    noResultSummary: 'No result summary'
   },
 
   categories: {
@@ -193,7 +193,7 @@ export const task = {
     cancelling: 'Cancelling…',
     pausing: 'Pausing…',
     paused: 'Paused',
-    cancelUnavailable: 'The task has finished or cannot be cancelled.',
+    cancelUnavailable: 'The task has finished or cannot be cancelled',
     finalCompleted: ({ title }: { title: string }) => `${title} completed`,
     finalCancelled: ({ title }: { title: string }) => `${title} cancelled`,
     finalFailed: ({ title }: { title: string }) => `${title} failed`

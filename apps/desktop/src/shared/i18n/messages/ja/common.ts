@@ -53,20 +53,20 @@ export const common = {
   required: '必須',
 
   // Feedback
-  saved: '保存しました。',
-  deleted: '削除しました。',
-  copied: 'コピーしました。',
-  saveFailed: '保存に失敗しました。',
-  deleteFailed: '削除に失敗しました。',
-  copyFailed: 'コピーに失敗しました。',
-  loadFailed: '読み込みに失敗しました。',
-  operationFailed: '操作に失敗しました。',
+  saved: '保存しました',
+  deleted: '削除しました',
+  copied: 'コピーしました',
+  saveFailed: '保存に失敗しました',
+  deleteFailed: '削除に失敗しました',
+  copyFailed: 'コピーに失敗しました',
+  loadFailed: '読み込みに失敗しました',
+  operationFailed: '操作に失敗しました',
 
   // Placeholders and empty values
   emptyValue: '—',
   searchPlaceholder: '検索',
-  noResults: '該当する結果はありません。',
-  noData: 'データはありません。',
+  noResults: '該当する結果はありません',
+  noData: 'データはありません',
 
   // Counts
   itemCount: ({ count }) => `${count} 件`,

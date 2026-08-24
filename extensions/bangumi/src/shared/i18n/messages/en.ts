@@ -53,58 +53,58 @@ export const en = {
   },
 
   errors: {
-    authRequired: 'Sign in to your Bangumi account first.',
+    authRequired: 'Sign in to your Bangumi account first',
     authSessionInvalid: 'The Bangumi session is no longer valid. Sign in again.',
     tokenRefreshFailed: 'The Bangumi credentials could not be refreshed. Sign in again.',
     refreshTokenMissing: 'No Bangumi refresh token exists. Sign in again.',
-    tokenSaveFailed: 'The Bangumi credentials could not be saved.',
+    tokenSaveFailed: 'The Bangumi credentials could not be saved',
 
-    loginNotReady: 'Bangumi sign-in is not ready yet.',
-    loginCallbackMissingParams: 'The Bangumi sign-in callback is missing required parameters.',
+    loginNotReady: 'Bangumi sign-in is not ready yet',
+    loginCallbackMissingParams: 'The Bangumi sign-in callback is missing required parameters',
     loginSessionExpired: 'The Bangumi sign-in session has expired. Sign in again.',
     loginCallbackInvalid: 'The Bangumi sign-in callback failed validation. Sign in again.',
-    noPendingLogin: 'No Bangumi sign-in is waiting to be completed.',
+    noPendingLogin: 'No Bangumi sign-in is waiting to be completed',
 
-    relayUnreachable: 'Could not reach the Kisaki OAuth relay.',
+    relayUnreachable: 'Could not reach the Kisaki OAuth relay',
     relayUnavailable: 'The Kisaki OAuth relay is temporarily unavailable. Try again later.',
-    relayAvailable: 'The OAuth relay is available.',
-    relayInvalidSession: 'The OAuth relay returned an unrecognized sign-in session.',
-    relayNoToken: 'The OAuth relay did not return access credentials.',
+    relayAvailable: 'The OAuth relay is available',
+    relayInvalidSession: 'The OAuth relay returned an unrecognized sign-in session',
+    relayNoToken: 'The OAuth relay did not return access credentials',
 
-    apiNotFound: 'The Bangumi entry does not exist.',
+    apiNotFound: 'The Bangumi entry does not exist',
     apiRateLimited: 'Too many Bangumi API requests. Try again later.',
-    apiRejected: 'The Bangumi API rejected the request.',
-    apiUnavailable: 'The Bangumi API is temporarily unavailable.',
-    networkFailed: 'The Bangumi API network request failed.',
-    accountResponseInvalid: 'The Bangumi account response could not be recognized.',
-    idInvalid: ({ value }: { value: string }) => `"${value}" is not a Bangumi id.`,
+    apiRejected: 'The Bangumi API rejected the request',
+    apiUnavailable: 'The Bangumi API is temporarily unavailable',
+    networkFailed: 'The Bangumi API network request failed',
+    accountResponseInvalid: 'The Bangumi account response could not be recognized',
+    idInvalid: ({ value }: { value: string }) => `"${value}" is not a Bangumi id`,
 
-    operationCancelled: 'The operation was cancelled.',
-    jobCancelled: 'The Bangumi job was cancelled.',
-    jobFailed: 'The Bangumi job failed.',
+    operationCancelled: 'The operation was cancelled',
+    jobCancelled: 'The Bangumi job was cancelled',
+    jobFailed: 'The Bangumi job failed',
     jobAlreadyRunning: 'This Bangumi job is already running. Wait for it to finish or cancel it.',
 
-    invalidMediaScope: 'Select a valid Bangumi media type.',
-    mediaScopeNotRegistered: 'The Bangumi media type is not registered.',
+    invalidMediaScope: 'Select a valid Bangumi media type',
+    mediaScopeNotRegistered: 'The Bangumi media type is not registered',
     localWriteUnsupported: ({ scope }: { scope: Scope }) =>
-      `${en.media.scopes[scope]} do not support writing to the local library yet.`,
+      `${en.media.scopes[scope]} do not support writing to the local library yet`,
     localWriteUnsupportedGeneric:
-      'This media type does not support writing to the local library yet.',
+      'This media type does not support writing to the local library yet',
 
-    localMediaStatusUnknown: 'Could not recognize the local entry status.',
-    localMediaMissing: 'The local entry does not exist.',
-    localItemMissing: 'The local entry does not exist.',
-    importedItemMissing: 'The imported local entry does not exist.',
-    targetCollectionMissing: 'The selected target collection does not exist.',
-    selectTargetCollection: 'Select a target collection.',
-    indexTitleEmpty: 'The Bangumi index title is empty; a collection cannot be created.',
-    indexInputRequired: 'Enter a Bangumi index ID or link.',
+    localMediaStatusUnknown: 'Could not recognize the local entry status',
+    localMediaMissing: 'The local entry does not exist',
+    localItemMissing: 'The local entry does not exist',
+    importedItemMissing: 'The imported local entry does not exist',
+    targetCollectionMissing: 'The selected target collection does not exist',
+    selectTargetCollection: 'Select a target collection',
+    indexTitleEmpty: 'The Bangumi index title is empty; a collection cannot be created',
+    indexInputRequired: 'Enter a Bangumi index ID or link',
     indexInputInvalid:
-      'The Bangumi index must be a numeric ID, or a link like https://bgm.tv/index/<id> or https://bangumi.tv/index/<id>.',
-    indexSubjectMissingId: 'The Bangumi index entry is missing a valid subject ID.',
-    collectionMissingSubjectId: 'The Bangumi collection is missing a valid subject ID.',
-    profileRequired: 'Select the scraper profile used to create local entries.',
-    profileNotFound: 'The selected scraper profile does not exist.'
+      'The Bangumi index must be a numeric ID, or a link like https://bgm.tv/index/<id> or https://bangumi.tv/index/<id>',
+    indexSubjectMissingId: 'The Bangumi index entry is missing a valid subject ID',
+    collectionMissingSubjectId: 'The Bangumi collection is missing a valid subject ID',
+    profileRequired: 'Select the scraper profile used to create local entries',
+    profileNotFound: 'The selected scraper profile does not exist'
   },
 
   oauth: {
@@ -117,7 +117,7 @@ export const en = {
 
   notifications: {
     autoSyncFailedTitle: 'Bangumi auto sync failed',
-    autoSyncFailedFallback: 'Bangumi auto sync failed.'
+    autoSyncFailedFallback: 'Bangumi auto sync failed'
   },
 
   commands: {
@@ -144,49 +144,49 @@ export const en = {
   },
 
   jobs: {
-    completed: 'The Bangumi job completed.',
-    cancelled: 'The Bangumi job was cancelled.',
+    completed: 'The Bangumi job completed',
+    cancelled: 'The Bangumi job was cancelled',
 
     auth: {
-      refreshingToken: 'Refreshing Bangumi credentials...',
-      verifyingAccount: 'Verifying the Bangumi account...',
+      refreshingToken: 'Refreshing Bangumi credentials..',
+      verifyingAccount: 'Verifying the Bangumi account..',
       accountValid: ({ nickname }: { nickname: string }) => `Bangumi account is valid: ${nickname}`,
       accountRefreshed: ({ nickname }: { nickname: string }) =>
         `Bangumi account summary updated: ${nickname}`
     },
 
     sync: {
-      loadingQueue: 'Reading the Bangumi change queue...',
-      syncingQueue: 'Syncing the Bangumi change queue...',
+      loadingQueue: 'Reading the Bangumi change queue..',
+      syncingQueue: 'Syncing the Bangumi change queue..',
       queueUnsupported: ({ scope }: { scope: Scope }) =>
-        `${en.media.scopes[scope]} do not support local change sync yet.`,
+        `${en.media.scopes[scope]} do not support local change sync yet`,
       queueCompleted: ({ count }: { count: number }) =>
-        `Change queue sync completed: ${count} ${count === 1 ? 'entry' : 'entries'} synced.`,
+        `Change queue sync completed: ${count} ${count === 1 ? 'entry' : 'entries'} synced`,
       fullUnsupported: ({ scope }: { scope: Scope }) =>
-        `${en.media.scopes[scope]} do not support local full sync yet.`,
+        `${en.media.scopes[scope]} do not support local full sync yet`,
       fullCompleted: ({ count, scope }: { count: number; scope: Scope }) =>
-        `Full sync completed: ${countOf(scope, count)} synced.`,
+        `Full sync completed: ${countOf(scope, count)} synced`,
       previewCompleted: ({ count, scope }: { count: number; scope: Scope }) =>
-        `Full sync preview completed: ${countOf(scope, count)} can be synced.`,
-      scanningItems: ({ scope }: { scope: Scope }) => `Scanning ${PLURALS[scope]}...`,
-      collectingItems: ({ scope }: { scope: Scope }) => `Calculating ${PLURALS[scope]} to sync...`,
-      previewingItems: 'Previewing the Bangumi full sync...',
-      applyingItems: 'Syncing Bangumi full sync entries...'
+        `Full sync preview completed: ${countOf(scope, count)} can be synced`,
+      scanningItems: ({ scope }: { scope: Scope }) => `Scanning ${PLURALS[scope]}..`,
+      collectingItems: ({ scope }: { scope: Scope }) => `Calculating ${PLURALS[scope]} to sync..`,
+      previewingItems: 'Previewing the Bangumi full sync..',
+      applyingItems: 'Syncing Bangumi full sync entries..'
     },
 
     import: {
-      validating: 'Checking Bangumi import parameters...',
-      validatingIndex: 'Checking Bangumi index import parameters...',
+      validating: 'Checking Bangumi import parameters..',
+      validatingIndex: 'Checking Bangumi index import parameters..',
       readingCollections: ({ scope, type }: { scope: Scope; type: CollectionType }) =>
-        `Reading Bangumi "${en.media.collections[scope][type]}" collections...`,
-      readingIndex: 'Reading Bangumi index entries...',
-      matchingLocal: ({ scope }: { scope: Scope }) => `Matching ${PLURALS[scope]}...`,
-      collectingPlan: ({ scope }: { scope: Scope }) => `Calculating ${PLURALS[scope]} to import...`,
-      preparing: ({ scope }: { scope: Scope }) => `Preparing to import ${PLURALS[scope]}...`,
-      creatingLocal: ({ scope }: { scope: Scope }) => `Adding ${PLURALS[scope]}...`,
-      patchingLocal: ({ scope }: { scope: Scope }) => `Updating ${PLURALS[scope]}...`,
+        `Reading Bangumi "${en.media.collections[scope][type]}" collections..`,
+      readingIndex: 'Reading Bangumi index entries..',
+      matchingLocal: ({ scope }: { scope: Scope }) => `Matching ${PLURALS[scope]}..`,
+      collectingPlan: ({ scope }: { scope: Scope }) => `Calculating ${PLURALS[scope]} to import..`,
+      preparing: ({ scope }: { scope: Scope }) => `Preparing to import ${PLURALS[scope]}..`,
+      creatingLocal: ({ scope }: { scope: Scope }) => `Adding ${PLURALS[scope]}..`,
+      patchingLocal: ({ scope }: { scope: Scope }) => `Updating ${PLURALS[scope]}..`,
       writeUnsupported: ({ scope }: { scope: Scope }) =>
-        `${en.media.scopes[scope]} do not support writing to the local library yet.`,
+        `${en.media.scopes[scope]} do not support writing to the local library yet`,
       collectionsCompleted: ({
         added,
         updated,
@@ -196,7 +196,7 @@ export const en = {
         updated: number
         scope: Scope
       }) =>
-        `Collection import completed: ${countOf(scope, added)} added, ${updated} existing updated.`,
+        `Collection import completed: ${countOf(scope, added)} added, ${updated} existing updated`,
       collectionsPreviewCompleted: ({
         toImport,
         toPatch,
@@ -206,7 +206,7 @@ export const en = {
         toPatch: number
         scope: Scope
       }) =>
-        `Collection import preview completed: ${countOf(scope, toImport)} will be imported, ${toPatch} existing will be updated.`,
+        `Collection import preview completed: ${countOf(scope, toImport)} will be imported, ${toPatch} existing will be updated`,
       indexCompleted: ({
         added,
         updated,
@@ -215,7 +215,7 @@ export const en = {
         added: number
         updated: number
         scope: Scope
-      }) => `Index import completed: ${countOf(scope, added)} added, ${updated} existing updated.`,
+      }) => `Index import completed: ${countOf(scope, added)} added, ${updated} existing updated`,
       indexPreviewCompleted: ({
         toImport,
         toPatch,
@@ -225,15 +225,15 @@ export const en = {
         toPatch: number
         scope: Scope
       }) =>
-        `Index import preview completed: ${countOf(scope, toImport)} will be imported, ${toPatch} existing will be updated.`,
-      buildingCollectionsPreview: 'Generating the collection import preview...',
-      buildingIndexPreview: 'Generating the index import preview...',
-      buildingRemoteCollectionsPreview: 'Generating the remote collection preview...',
-      buildingRemoteIndexPreview: 'Generating the remote index preview...',
+        `Index import preview completed: ${countOf(scope, toImport)} will be imported, ${toPatch} existing will be updated`,
+      buildingCollectionsPreview: 'Generating the collection import preview..',
+      buildingIndexPreview: 'Generating the index import preview..',
+      buildingRemoteCollectionsPreview: 'Generating the remote collection preview..',
+      buildingRemoteIndexPreview: 'Generating the remote index preview..',
       remoteCollectionsPreviewCompleted: ({ scope }: { scope: Scope }) =>
-        `${en.media.scopes[scope]} remote collection preview completed.`,
+        `${en.media.scopes[scope]} remote collection preview completed`,
       remoteIndexPreviewCompleted: ({ scope }: { scope: Scope }) =>
-        `${en.media.scopes[scope]} index remote preview completed.`
+        `${en.media.scopes[scope]} index remote preview completed`
     },
 
     preview: {
@@ -290,9 +290,9 @@ export const en = {
       'sync-full-daily': 'Daily full sync'
     },
     descriptions: {
-      'auth-refresh': 'Refreshes and verifies the Bangumi credentials when the app starts.',
-      'sync-changed': 'Syncs local changes accumulated during the previous session after startup.',
-      'sync-full-daily': 'Runs a full library sync once a day in the early morning.'
+      'auth-refresh': 'Refreshes and verifies the Bangumi credentials when the app starts',
+      'sync-changed': 'Syncs local changes accumulated during the previous session after startup',
+      'sync-full-daily': 'Runs a full library sync once a day in the early morning'
     },
     status: {
       missing: 'Not created',
@@ -303,14 +303,14 @@ export const en = {
 
   settings: {
     commandLabel: 'Settings',
-    commandDescription: 'Open the Bangumi integration settings.',
+    commandDescription: 'Open the Bangumi integration settings',
     webviewTitle: 'Bangumi'
   },
 
   ui: {
-    loading: 'Loading Bangumi settings...',
+    loading: 'Loading Bangumi settings..',
     unavailable: 'Bangumi settings are unavailable',
-    saved: 'Preferences saved.',
+    saved: 'Preferences saved',
     unsavedChanges: 'Unsaved changes',
     discardChanges: 'Discard changes',
     savePreferences: 'Save preferences',
@@ -387,7 +387,7 @@ export const en = {
     sync: {
       preferencesTitle: 'Auto sync preferences',
       autoSync: 'Auto sync',
-      autoSyncDescription: 'Watches local entry creation and user-state field changes.',
+      autoSyncDescription: 'Watches local entry creation and user-state field changes',
       syncItems: 'Sync items',
       itemCreate: 'Create collections',
       itemStatus: 'Entry status',
@@ -395,7 +395,7 @@ export const en = {
       itemEpisodes: 'Episode watch state',
       clearRemoteScore: 'Allow clearing remote ratings',
       clearRemoteScoreDescription:
-        'Also clears the Bangumi rating when the local rating is cleared.',
+        'Also clears the Bangumi rating when the local rating is cleared',
       manualTitle: 'Manual sync',
       manualDescription:
         'Sync the change queue now, or configure a one-off full sync. Progress and cancellation are handled by the task center.',
@@ -408,45 +408,45 @@ export const en = {
         'No scraper profile is configured for this media type. Imports can still be previewed, but a usable profile is required before writing locally.',
       sourceTitle: 'Import sources',
       sourceDescription:
-        'Imports are one-off tasks; options apply to this run only and are not saved to Bangumi preferences.',
+        'Imports are one-off tasks; options apply to this run only and are not saved to Bangumi preferences',
       myCollections: 'My collections',
       myCollectionsDescription:
-        'Import the current Bangumi user collections of the selected media type by collection type.',
+        'Import the current Bangumi user collections of the selected media type by collection type',
       bangumiIndex: 'Bangumi index',
-      bangumiIndexDescription: 'Enter an index ID or link, then configure the import.',
-      indexPlaceholder: 'Index ID or https://bgm.tv/index/...',
+      bangumiIndexDescription: 'Enter an index ID or link, then configure the import',
+      indexPlaceholder: 'Index ID or https://bgm.tv/index/..',
       configureImport: 'Configure import'
     },
 
     automation: {
       title: 'Recommended automations',
       description:
-        'Only recommended Bangumi templates are created here; enabling, triggers, and history are managed on the main app automation page.',
+        'Only recommended Bangumi templates are created here; enabling, triggers, and history are managed on the main app automation page',
       create: 'Create'
     },
 
     maintenance: {
       networkTitle: 'Network and client',
-      networkDescription: 'These preferences affect subsequent Bangumi API requests once saved.',
+      networkDescription: 'These preferences affect subsequent Bangumi API requests once saved',
       loginTimeout: 'Sign-in timeout',
       minutes: 'minutes',
       rateLimit: 'API rate limit',
-      rateLimitDescription: 'Requests / time window.',
+      rateLimitDescription: 'Requests / time window',
       seconds: 'seconds',
       apiTimeout: 'API timeout',
       retryCount: 'Retry count',
       retryUnit: 'retries',
       debounce: 'Auto sync debounce',
       notifyErrors: 'Sync error notifications',
-      notifyErrorsDescription: 'Sends a main app notification when a sync job fails.',
+      notifyErrorsDescription: 'Sends a main app notification when a sync job fails',
       actionsTitle: 'Maintenance actions',
-      actionsDescription: 'These actions take effect immediately and cannot be undone.',
+      actionsDescription: 'These actions take effect immediately and cannot be undone',
       clearSyncState: 'Clear sync state',
       clearSyncStateDescription:
-        'Clears sync fingerprints and the change queue; the next sync re-compares all entries.',
+        'Clears sync fingerprints and the change queue; the next sync re-compares all entries',
       resetSettings: 'Restore default settings',
       resetSettingsDescription:
-        'Resets Bangumi preferences to their defaults without signing out or deleting automations.',
+        'Resets Bangumi preferences to their defaults without signing out or deleting automations',
       confirmAction: 'Confirm'
     },
 
@@ -458,12 +458,12 @@ export const en = {
       itemEpisodes: 'Episode watch state',
       updateExisting: 'Update existing collections',
       updateExistingDescription:
-        'When off, Bangumi collections are only created for entries missing remotely.',
+        'When off, Bangumi collections are only created for entries missing remotely',
       clearRemoteScore: 'Allow clearing remote ratings',
       batchSize: 'Batch size',
       run: 'Run sync',
       previewTitle: 'Full sync preview',
-      previewDescription: 'Confirm the changes about to be synced to Bangumi.'
+      previewDescription: 'Confirm the changes about to be synced to Bangumi'
     },
 
     importCollections: {
@@ -480,7 +480,7 @@ export const en = {
       collectionPlaceholder: 'Select a collection',
       start: 'Start import',
       previewTitle: 'My collections import preview',
-      previewDescription: 'Confirm the entries that will be created, updated, or skipped.'
+      previewDescription: 'Confirm the entries that will be created, updated, or skipped'
     },
 
     importIndex: {
@@ -497,7 +497,7 @@ export const en = {
       patchExisting: 'Update existing entries',
       start: 'Start import',
       previewTitle: 'Index import preview',
-      previewDescription: 'Confirm the entries that will be created, updated, or skipped.'
+      previewDescription: 'Confirm the entries that will be created, updated, or skipped'
     },
 
     previewDialog: {

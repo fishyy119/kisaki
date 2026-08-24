@@ -235,42 +235,42 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
                   <Badge
                     v-if="isLatestStableRelease(release)"
                     variant="success"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     {{ m.extension.discover.latestBadge }}
                   </Badge>
                   <Badge
                     v-if="release.releaseKind === 'preview'"
                     variant="secondary"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     {{ m.extension.discover.previewBadge }}
                   </Badge>
                   <Badge
                     v-if="release.yanked"
                     variant="destructive"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     {{ m.extension.discover.yankedBadge }}
                   </Badge>
                   <Badge
                     v-if="!release.compatible"
                     variant="warning"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     {{ m.extension.discover.apiIncompatibleBadge }}
                   </Badge>
                   <Badge
                     v-if="!release.artifact"
                     variant="warning"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     {{ m.extension.discover.noArtifactBadge }}
                   </Badge>
                   <Badge
                     v-else-if="!release.artifact.signature"
                     variant="warning"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     {{ m.extension.discover.unsignedBadge }}
                   </Badge>

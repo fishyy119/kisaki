@@ -5,7 +5,7 @@ export const ui = {
     errorTitle: '読み込み失敗'
   },
   combobox: {
-    noMatches: '一致する項目がありません。',
+    noMatches: '一致する項目がありません',
     create: ({ name }: { name: string }) => `「${name}」を作成`
   },
   imagePicker: {
@@ -52,8 +52,8 @@ export const ui = {
     yearPlaceholder: '年',
     monthPlaceholder: '月',
     dayPlaceholder: '日',
-    invalidInteger: '日付には整数のみ入力できます。',
-    yearDayWithoutMonth: '年と日を入力した場合は、月も入力してください。'
+    invalidInteger: '日付には整数のみ入力できます',
+    yearDayWithoutMonth: '年と日を入力した場合は、月も入力してください'
   },
   rankingList: {
     expandTitle: 'ランキング',
@@ -84,12 +84,12 @@ export const ui = {
     deleteNamedDescription: ({ name, label }: { name: string; label: string }) =>
       `「${name}」を削除しますか？この操作は取り消せず、${label}のデータは完全に削除されます。`,
     deleteDescription: ({ label }: { label: string }) =>
-      `この操作は取り消せず、${label}のデータは完全に削除されます。`,
+      `この操作は取り消せず、${label}のデータは完全に削除されます`,
     removing: '取り除いています…',
     deleting: '削除しています…'
   },
   spoiler: {
     title: 'ネタバレを表示しますか？',
-    description: '有効にすると、ネタバレとしてマークされたコンテンツが直ちに表示されます。'
+    description: '有効にすると、ネタバレとしてマークされたコンテンツが直ちに表示されます'
   }
 } satisfies Messages['ui']

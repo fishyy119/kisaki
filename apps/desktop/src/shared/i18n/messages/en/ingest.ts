@@ -36,11 +36,10 @@ export const ingest = {
     existsTitle: ({ entity }: { entity: IngestEntity }) =>
       `${capitalize(NOUNS[entity])} already exists`,
     addedSummary: ({ entity }: { entity: IngestEntity }) =>
-      `The ${NOUNS[entity]} was added to the library.`,
-    existsSummary: ({ entity }: { entity: IngestEntity }) =>
-      `Matched an existing ${NOUNS[entity]}.`,
+      `The ${NOUNS[entity]} was added to the library`,
+    existsSummary: ({ entity }: { entity: IngestEntity }) => `Matched an existing ${NOUNS[entity]}`,
     cancelledSummary: ({ entity }: { entity: IngestEntity }) =>
-      `Adding the ${NOUNS[entity]} was cancelled.`
+      `Adding the ${NOUNS[entity]} was cancelled`
   },
 
   update: {
@@ -54,9 +53,9 @@ export const ingest = {
     completedTitle: ({ entity }: { entity: IngestEntity }) =>
       `${capitalize(NOUNS[entity])} metadata updated`,
     completedSummary: ({ entity }: { entity: IngestEntity }) =>
-      `The ${NOUNS[entity]} metadata was written to the library.`,
+      `The ${NOUNS[entity]} metadata was written to the library`,
     cancelledSummary: ({ entity }: { entity: IngestEntity }) =>
-      `Updating ${NOUNS[entity]} metadata was cancelled.`
+      `Updating ${NOUNS[entity]} metadata was cancelled`
   },
 
   batch: {
@@ -64,7 +63,7 @@ export const ingest = {
     subjectCount: ({ entity, count }: { entity: IngestEntity; count: number }) =>
       `${count} ${count === 1 ? NOUNS[entity] : PLURALS[entity]}`,
     preparingList: ({ entity }: { entity: IngestEntity }) => `Preparing the ${NOUNS[entity]} list`,
-    noSearchResults: 'No search results.',
+    noSearchResults: 'No search results',
     completedTitle: ({ entity }: { entity: IngestEntity }) =>
       `Batch ${NOUNS[entity]} metadata update completed`,
     completedWithFailuresTitle: ({ entity }: { entity: IngestEntity }) =>
@@ -77,7 +76,7 @@ export const ingest = {
       succeeded: number
       failed: number
       skipped: number
-    }) => `Succeeded ${succeeded}, failed ${failed}, skipped ${skipped}.`,
+    }) => `Succeeded ${succeeded}, failed ${failed}, skipped ${skipped}`,
     cancelledSummary: ({
       succeeded,
       failed,

@@ -54,7 +54,7 @@ const filterModel = computed({
       <Badge
         v-if="activeCount > 0"
         variant="secondary"
-        class="absolute -top-1 -right-1 size-4 p-0 flex items-center justify-center text-[9px]"
+        class="absolute -top-1 -right-1 size-4 p-0 flex items-center justify-center"
       >
         {{ activeCount }}
       </Badge>

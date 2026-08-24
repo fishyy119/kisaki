@@ -56,68 +56,68 @@ export const zhHans = {
   },
 
   errors: {
-    authRequired: '请先登录 Bangumi 账号。',
-    authSessionInvalid: 'Bangumi 会话已失效，请重新登录。',
-    tokenRefreshFailed: 'Bangumi 凭据刷新失败，请重新登录。',
-    refreshTokenMissing: '不存在 Bangumi 刷新令牌，请重新登录。',
-    tokenSaveFailed: 'Bangumi 凭据保存失败。',
+    authRequired: '请先登录 Bangumi 账号',
+    authSessionInvalid: 'Bangumi 会话已失效，请重新登录',
+    tokenRefreshFailed: 'Bangumi 凭据刷新失败，请重新登录',
+    refreshTokenMissing: '不存在 Bangumi 刷新令牌，请重新登录',
+    tokenSaveFailed: 'Bangumi 凭据保存失败',
 
-    loginNotReady: 'Bangumi 登录尚未就绪。',
-    loginCallbackMissingParams: 'Bangumi 登录回调缺少必要参数。',
-    loginSessionExpired: 'Bangumi 登录会话已过期，请重新登录。',
-    loginCallbackInvalid: 'Bangumi 登录回调校验失败，请重新登录。',
-    noPendingLogin: '没有等待完成的 Bangumi 登录。',
+    loginNotReady: 'Bangumi 登录尚未就绪',
+    loginCallbackMissingParams: 'Bangumi 登录回调缺少必要参数',
+    loginSessionExpired: 'Bangumi 登录会话已过期，请重新登录',
+    loginCallbackInvalid: 'Bangumi 登录回调校验失败，请重新登录',
+    noPendingLogin: '没有等待完成的 Bangumi 登录',
 
-    relayUnreachable: '无法连接 Kisaki OAuth 中继。',
-    relayUnavailable: 'Kisaki OAuth 中继暂时不可用，请稍后再试。',
-    relayAvailable: 'OAuth 中继可用。',
-    relayInvalidSession: 'OAuth 中继返回了无法识别的登录会话。',
-    relayNoToken: 'OAuth 中继未返回访问凭据。',
+    relayUnreachable: '无法连接 Kisaki OAuth 中继',
+    relayUnavailable: 'Kisaki OAuth 中继暂时不可用，请稍后再试',
+    relayAvailable: 'OAuth 中继可用',
+    relayInvalidSession: 'OAuth 中继返回了无法识别的登录会话',
+    relayNoToken: 'OAuth 中继未返回访问凭据',
 
-    apiNotFound: 'Bangumi 条目不存在。',
-    apiRateLimited: 'Bangumi API 请求过于频繁，请稍后再试。',
-    apiRejected: 'Bangumi API 拒绝了本次请求。',
-    apiUnavailable: 'Bangumi API 暂时不可用。',
-    networkFailed: 'Bangumi API 网络请求失败。',
-    accountResponseInvalid: '无法识别 Bangumi 账号响应。',
-    idInvalid: ({ value }) => `“${value}”不是有效的 Bangumi ID。`,
+    apiNotFound: 'Bangumi 条目不存在',
+    apiRateLimited: 'Bangumi API 请求过于频繁，请稍后再试',
+    apiRejected: 'Bangumi API 拒绝了本次请求',
+    apiUnavailable: 'Bangumi API 暂时不可用',
+    networkFailed: 'Bangumi API 网络请求失败',
+    accountResponseInvalid: '无法识别 Bangumi 账号响应',
+    idInvalid: ({ value }) => `“${value}”不是有效的 Bangumi ID`,
 
-    operationCancelled: '操作已取消。',
-    jobCancelled: 'Bangumi 任务已取消。',
-    jobFailed: 'Bangumi 任务失败。',
-    jobAlreadyRunning: '该 Bangumi 任务正在运行，请等待完成或先取消。',
+    operationCancelled: '操作已取消',
+    jobCancelled: 'Bangumi 任务已取消',
+    jobFailed: 'Bangumi 任务失败',
+    jobAlreadyRunning: '该 Bangumi 任务正在运行，请等待完成或先取消',
 
-    invalidMediaScope: '请选择有效的 Bangumi 媒体类型。',
-    mediaScopeNotRegistered: '该 Bangumi 媒体类型未注册。',
-    localWriteUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持写入本地库。`,
-    localWriteUnsupportedGeneric: '该媒体类型暂不支持写入本地库。',
+    invalidMediaScope: '请选择有效的 Bangumi 媒体类型',
+    mediaScopeNotRegistered: '该 Bangumi 媒体类型未注册',
+    localWriteUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持写入本地库`,
+    localWriteUnsupportedGeneric: '该媒体类型暂不支持写入本地库',
 
-    localMediaStatusUnknown: '无法识别本地条目状态。',
-    localMediaMissing: '本地条目不存在。',
-    localItemMissing: '本地条目不存在。',
-    importedItemMissing: '已导入的本地条目不存在。',
-    targetCollectionMissing: '所选目标合集不存在。',
-    selectTargetCollection: '请选择目标合集。',
-    indexTitleEmpty: 'Bangumi 目录标题为空，无法创建合集。',
-    indexInputRequired: '请输入 Bangumi 目录 ID 或链接。',
+    localMediaStatusUnknown: '无法识别本地条目状态',
+    localMediaMissing: '本地条目不存在',
+    localItemMissing: '本地条目不存在',
+    importedItemMissing: '已导入的本地条目不存在',
+    targetCollectionMissing: '所选目标合集不存在',
+    selectTargetCollection: '请选择目标合集',
+    indexTitleEmpty: 'Bangumi 目录标题为空，无法创建合集',
+    indexInputRequired: '请输入 Bangumi 目录 ID 或链接',
     indexInputInvalid:
-      'Bangumi 目录需要是数字 ID，或形如 https://bgm.tv/index/<id>、https://bangumi.tv/index/<id> 的链接。',
-    indexSubjectMissingId: 'Bangumi 目录条目缺少有效的条目 ID。',
-    collectionMissingSubjectId: 'Bangumi 收藏缺少有效的条目 ID。',
-    profileRequired: '请选择用于创建本地条目的刮削配置。',
-    profileNotFound: '所选刮削配置不存在。'
+      'Bangumi 目录需要是数字 ID，或形如 https://bgm.tv/index/<id>、https://bangumi.tv/index/<id> 的链接',
+    indexSubjectMissingId: 'Bangumi 目录条目缺少有效的条目 ID',
+    collectionMissingSubjectId: 'Bangumi 收藏缺少有效的条目 ID',
+    profileRequired: '请选择用于创建本地条目的刮削配置',
+    profileNotFound: '所选刮削配置不存在'
   },
 
   oauth: {
     loginSucceededTitle: 'Bangumi 登录成功',
     loginFailedTitle: 'Bangumi 登录失败',
     loginCompleted: ({ nickname }: { nickname: string }) => `Bangumi 已登录：${nickname}`,
-    callbackFailed: 'Bangumi 登录回调失败，请返回设置页面重试。'
+    callbackFailed: 'Bangumi 登录回调失败，请返回设置页面重试'
   },
 
   notifications: {
     autoSyncFailedTitle: 'Bangumi 自动同步失败',
-    autoSyncFailedFallback: 'Bangumi 自动同步失败。'
+    autoSyncFailedFallback: 'Bangumi 自动同步失败'
   },
 
   commands: {
@@ -144,8 +144,8 @@ export const zhHans = {
   },
 
   jobs: {
-    completed: 'Bangumi 任务已完成。',
-    cancelled: 'Bangumi 任务已取消。',
+    completed: 'Bangumi 任务已完成',
+    cancelled: 'Bangumi 任务已取消',
 
     auth: {
       refreshingToken: '正在刷新 Bangumi 凭据…',
@@ -158,14 +158,13 @@ export const zhHans = {
     sync: {
       loadingQueue: '正在读取 Bangumi 变更队列…',
       syncingQueue: '正在同步 Bangumi 变更队列…',
-      queueUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持本地变更同步。`,
-      queueCompleted: ({ count }: { count: number }) =>
-        `变更队列同步完成：已同步 ${count} 个条目。`,
-      fullUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持本地全量同步。`,
+      queueUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持本地变更同步`,
+      queueCompleted: ({ count }: { count: number }) => `变更队列同步完成：已同步 ${count} 个条目`,
+      fullUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持本地全量同步`,
       fullCompleted: ({ count, scope }: { count: number; scope: Scope }) =>
-        `全量同步完成：已同步 ${countOf(scope, count)}。`,
+        `全量同步完成：已同步 ${countOf(scope, count)}`,
       previewCompleted: ({ count, scope }: { count: number; scope: Scope }) =>
-        `全量同步预览完成：可同步 ${countOf(scope, count)}。`,
+        `全量同步预览完成：可同步 ${countOf(scope, count)}`,
       scanningItems: ({ scope }: { scope: Scope }) => `正在扫描${NOUNS[scope]}…`,
       collectingItems: ({ scope }: { scope: Scope }) => `正在计算待同步的${NOUNS[scope]}…`,
       previewingItems: '正在预览 Bangumi 全量同步…',
@@ -183,7 +182,7 @@ export const zhHans = {
       preparing: ({ scope }: { scope: Scope }) => `正在准备导入${NOUNS[scope]}…`,
       creatingLocal: ({ scope }: { scope: Scope }) => `正在添加${NOUNS[scope]}…`,
       patchingLocal: ({ scope }: { scope: Scope }) => `正在更新${NOUNS[scope]}…`,
-      writeUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持写入本地库。`,
+      writeUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持写入本地库`,
       collectionsCompleted: ({
         added,
         updated,
@@ -192,7 +191,7 @@ export const zhHans = {
         added: number
         updated: number
         scope: Scope
-      }) => `收藏导入完成：新增 ${countOf(scope, added)}，更新已有 ${updated} 个。`,
+      }) => `收藏导入完成：新增 ${countOf(scope, added)}，更新已有 ${updated} 个`,
       collectionsPreviewCompleted: ({
         toImport,
         toPatch,
@@ -201,7 +200,7 @@ export const zhHans = {
         toImport: number
         toPatch: number
         scope: Scope
-      }) => `收藏导入预览完成：将导入 ${countOf(scope, toImport)}，将更新已有 ${toPatch} 个。`,
+      }) => `收藏导入预览完成：将导入 ${countOf(scope, toImport)}，将更新已有 ${toPatch} 个`,
       indexCompleted: ({
         added,
         updated,
@@ -210,7 +209,7 @@ export const zhHans = {
         added: number
         updated: number
         scope: Scope
-      }) => `目录导入完成：新增 ${countOf(scope, added)}，更新已有 ${updated} 个。`,
+      }) => `目录导入完成：新增 ${countOf(scope, added)}，更新已有 ${updated} 个`,
       indexPreviewCompleted: ({
         toImport,
         toPatch,
@@ -219,15 +218,15 @@ export const zhHans = {
         toImport: number
         toPatch: number
         scope: Scope
-      }) => `目录导入预览完成：将导入 ${countOf(scope, toImport)}，将更新已有 ${toPatch} 个。`,
+      }) => `目录导入预览完成：将导入 ${countOf(scope, toImport)}，将更新已有 ${toPatch} 个`,
       buildingCollectionsPreview: '正在生成收藏导入预览…',
       buildingIndexPreview: '正在生成目录导入预览…',
       buildingRemoteCollectionsPreview: '正在生成远端收藏预览…',
       buildingRemoteIndexPreview: '正在生成远端目录预览…',
       remoteCollectionsPreviewCompleted: ({ scope }: { scope: Scope }) =>
-        `${SCOPES[scope]}远端收藏预览完成。`,
+        `${SCOPES[scope]}远端收藏预览完成`,
       remoteIndexPreviewCompleted: ({ scope }: { scope: Scope }) =>
-        `${SCOPES[scope]}目录远端预览完成。`
+        `${SCOPES[scope]}目录远端预览完成`
     },
 
     preview: {
@@ -284,9 +283,9 @@ export const zhHans = {
       'sync-full-daily': '每日全量同步'
     },
     descriptions: {
-      'auth-refresh': '应用启动时刷新并验证 Bangumi 凭据。',
-      'sync-changed': '应用启动后同步上次运行期积累的本地变更。',
-      'sync-full-daily': '每天凌晨执行一次媒体库全量同步。'
+      'auth-refresh': '应用启动时刷新并验证 Bangumi 凭据',
+      'sync-changed': '应用启动后同步上次运行期积累的本地变更',
+      'sync-full-daily': '每天凌晨执行一次媒体库全量同步'
     },
     status: {
       missing: '未创建',
@@ -297,18 +296,18 @@ export const zhHans = {
 
   settings: {
     commandLabel: '设置',
-    commandDescription: '打开 Bangumi 集成设置。',
+    commandDescription: '打开 Bangumi 集成设置',
     webviewTitle: 'Bangumi'
   },
 
   ui: {
     loading: '正在加载 Bangumi 设置…',
     unavailable: 'Bangumi 设置不可用',
-    saved: '偏好已保存。',
+    saved: '偏好已保存',
     unsavedChanges: '有未保存的更改',
     discardChanges: '放弃更改',
     savePreferences: '保存偏好',
-    actionFailed: '操作失败，请重试。',
+    actionFailed: '操作失败，请重试',
     mediaScope: '媒体类型',
     mediaScopePlaceholder: '选择媒体类型',
 
@@ -379,14 +378,14 @@ export const zhHans = {
     sync: {
       preferencesTitle: '自动同步偏好',
       autoSync: '自动同步',
-      autoSyncDescription: '监听本地条目创建和用户态字段变更。',
+      autoSyncDescription: '监听本地条目创建和用户态字段变更',
       syncItems: '同步项',
       itemCreate: '创建收藏',
       itemStatus: '条目状态',
       itemScore: '评分',
       itemEpisodes: '单集观看状态',
       clearRemoteScore: '允许删除远端评分',
-      clearRemoteScoreDescription: '本地评分清空时同时清除 Bangumi 评分。',
+      clearRemoteScoreDescription: '本地评分清空时同时清除 Bangumi 评分',
       manualTitle: '手动同步',
       manualDescription: '立即同步变更队列，或配置一次全量同步。进度和取消由任务中心处理。',
       syncChangedNow: '立即同步变更',
@@ -394,44 +393,43 @@ export const zhHans = {
     },
 
     import: {
-      noProfilesWarning:
-        '当前媒体类型尚未配置刮削配置，导入仍可预览，但执行本地写入前需要可用配置。',
+      noProfilesWarning: '当前媒体类型尚未配置刮削配置，导入仍可预览，但执行本地写入前需要可用配置',
       sourceTitle: '导入来源',
-      sourceDescription: '导入是一次性任务；选项只用于本次运行，不写入 Bangumi 偏好。',
+      sourceDescription: '导入是一次性任务；选项只用于本次运行，不写入 Bangumi 偏好',
       myCollections: '我的收藏',
-      myCollectionsDescription: '按收藏类型导入当前 Bangumi 用户所选媒体类型的收藏。',
+      myCollectionsDescription: '按收藏类型导入当前 Bangumi 用户所选媒体类型的收藏',
       bangumiIndex: 'Bangumi 目录',
-      bangumiIndexDescription: '输入目录 ID 或链接后配置导入。',
-      indexPlaceholder: '目录 ID 或 https://bgm.tv/index/...',
+      bangumiIndexDescription: '输入目录 ID 或链接后配置导入',
+      indexPlaceholder: '目录 ID 或 https://bgm.tv/index/..',
       configureImport: '配置导入'
     },
 
     automation: {
       title: '推荐自动化',
-      description: '这里只创建 Bangumi 推荐模板；启停、触发条件和历史由主应用自动化页面负责。',
+      description: '这里只创建 Bangumi 推荐模板；启停、触发条件和历史由主应用自动化页面负责',
       create: '创建'
     },
 
     maintenance: {
       networkTitle: '网络与客户端',
-      networkDescription: '这些偏好保存后影响后续 Bangumi API 请求。',
+      networkDescription: '这些偏好保存后影响后续 Bangumi API 请求',
       loginTimeout: '登录超时',
       minutes: '分钟',
       rateLimit: 'API 速率限制',
-      rateLimitDescription: '请求数 / 时间窗口。',
+      rateLimitDescription: '请求数 / 时间窗口',
       seconds: '秒',
       apiTimeout: 'API 超时',
       retryCount: '重试次数',
       retryUnit: '次',
       debounce: '自动同步防抖',
       notifyErrors: '同步错误通知',
-      notifyErrorsDescription: '同步任务失败时发送主应用通知。',
+      notifyErrorsDescription: '同步任务失败时发送主应用通知',
       actionsTitle: '维护操作',
-      actionsDescription: '这些操作立即生效且不可撤销。',
+      actionsDescription: '这些操作立即生效且不可撤销',
       clearSyncState: '清除同步状态',
-      clearSyncStateDescription: '将清空同步指纹与变更队列，下次同步会重新比对全部条目。',
+      clearSyncStateDescription: '将清空同步指纹与变更队列，下次同步会重新比对全部条目',
       resetSettings: '恢复默认设置',
-      resetSettingsDescription: '将把 Bangumi 偏好设置重置为默认值，不会退出账号或删除自动化。',
+      resetSettingsDescription: '将把 Bangumi 偏好设置重置为默认值，不会退出账号或删除自动化',
       confirmAction: '确认执行'
     },
 
@@ -442,12 +440,12 @@ export const zhHans = {
       itemScore: '评分',
       itemEpisodes: '单集观看状态',
       updateExisting: '更新已有收藏',
-      updateExistingDescription: '关闭时只为远端缺失的条目创建 Bangumi 收藏。',
+      updateExistingDescription: '关闭时只为远端缺失的条目创建 Bangumi 收藏',
       clearRemoteScore: '允许删除远端评分',
       batchSize: '批次大小',
       run: '执行同步',
       previewTitle: '全量同步预览',
-      previewDescription: '确认即将同步到 Bangumi 的变更。'
+      previewDescription: '确认即将同步到 Bangumi 的变更'
     },
 
     importCollections: {
@@ -464,7 +462,7 @@ export const zhHans = {
       collectionPlaceholder: '选择合集',
       start: '开始导入',
       previewTitle: '导入我的收藏预览',
-      previewDescription: '确认将创建、更新或跳过的条目。'
+      previewDescription: '确认将创建、更新或跳过的条目'
     },
 
     importIndex: {
@@ -481,7 +479,7 @@ export const zhHans = {
       patchExisting: '更新已有条目',
       start: '开始导入',
       previewTitle: '导入目录预览',
-      previewDescription: '确认将创建、更新或跳过的条目。'
+      previewDescription: '确认将创建、更新或跳过的条目'
     },
 
     previewDialog: {

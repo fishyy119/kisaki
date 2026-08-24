@@ -40,7 +40,7 @@ const SIZE_CLASSES = {
   md: {
     spinner: 'size-8',
     icon: 'mb-3 size-12',
-    title: 'text-lg',
+    title: 'text-base',
     description: 'text-sm',
     actions: 'mt-4'
   },
@@ -106,7 +106,7 @@ const displayDescription = computed(() => {
       </p>
       <p
         v-if="displayDescription"
-        :class="cn('mt-1 text-muted-foreground', sizeClasses.description)"
+        :class="cn(displayTitle && 'mt-1', 'text-muted-foreground', sizeClasses.description)"
       >
         {{ displayDescription }}
       </p>

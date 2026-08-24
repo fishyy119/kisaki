@@ -6,7 +6,7 @@ export const scanner = {
   cancelAll: 'Cancel all',
   settingsTooltip: 'Scanner settings',
   emptyTitle: 'No scanners yet',
-  emptyDescription: 'Add a scanner to automatically discover and import your media files.',
+  emptyDescription: 'Add a scanner to automatically discover and import your media files',
 
   table: {
     name: 'Name',
@@ -62,7 +62,7 @@ export const scanner = {
       count === 1 ? '1 issue in total' : `${count} issues in total`,
     searchPlaceholder: 'Search names, paths, reasons…',
     allTypes: 'All types',
-    noMatch: 'No matching issues.',
+    noMatch: 'No matching issues',
     table: {
       name: 'Name',
       type: 'Type',
@@ -74,8 +74,8 @@ export const scanner = {
     openPath: 'Open path',
     addToExclusion: 'Add to scan exclusion list',
     fixAndRescrape: 'Fix and rescrape',
-    alreadyExcluded: 'Already in the exclusion list.',
-    addedToExclusion: 'Added to the scan exclusion list.',
+    alreadyExcluded: 'Already in the exclusion list',
+    addedToExclusion: 'Added to the scan exclusion list',
     excludeFailed: 'Could not add to the exclusion list'
   },
 
@@ -83,7 +83,7 @@ export const scanner = {
     title: 'Fix scan result',
     updateExisting: 'Update the existing entry',
     readd: 'Re-add the entry',
-    started: 'Rescraping started.',
+    started: 'Rescraping started',
     startFailed: 'Could not start the fix',
     unknownError: 'Unknown error',
     rescrape: 'Rescrape'
@@ -91,33 +91,33 @@ export const scanner = {
 
   settings: {
     title: 'Scanner settings',
-    saved: 'Settings saved.',
+    saved: 'Settings saved',
     saveFailed: 'Save failed',
     ingestMode: 'Import mode',
-    ingestModeDescription: 'Controls how the scanner imports newly identified games.',
+    ingestModeDescription: 'Controls how the scanner imports newly identified games',
     ingestPreferScraper: 'Prefer scraper',
     ingestPreferScraperDescription:
-      'Import via the scraper first; fall back to direct import on failure.',
+      'Import via the scraper first; fall back to direct import on failure',
     ingestRequireScraper: 'Require scraper',
     ingestRequireScraperDescription:
-      'Import only via the scraper; record a failure when scraping fails.',
+      'Import only via the scraper; record a failure when scraping fails',
     ingestDirectOnly: 'Direct import only',
-    ingestDirectOnlyDescription: 'Skip the scraper and create games from the identified results.',
+    ingestDirectOnlyDescription: 'Skip the scraper and create games from the identified results',
     parallelCount: 'Parallel processing',
     parallelCountDescription:
-      'Number of entries one scanner processes at a time; 1 means serial processing.',
+      'Number of entries one scanner processes at a time; 1 means serial processing',
     ignoredNames: 'Ignored names',
-    ignoredNamesDescription: 'The scanner skips these extracted entity names.',
+    ignoredNamesDescription: 'The scanner skips these extracted entity names',
     ignoredNamePlaceholder: 'Enter a name to ignore…',
-    noIgnoredNames: 'No ignored names yet.'
+    noIgnoredNames: 'No ignored names yet'
   },
 
   form: {
     createTitle: 'Create scanner',
     editTitle: 'Edit scanner',
-    requiredFields: 'Fill in the required fields.',
-    updated: 'Scanner updated.',
-    created: 'Scanner created.',
+    requiredFields: 'Fill in the required fields',
+    updated: 'Scanner updated',
+    created: 'Scanner created',
     updateFailed: 'Update failed. Try again.',
     createFailed: 'Create failed. Try again.',
     openLinkFailed: 'Could not open the link',
@@ -152,8 +152,8 @@ export const scanner = {
     rules: 'Rules',
     entities: 'Entities',
     matched: 'Matched',
-    noEntitiesFound: 'No entities found at the specified depth.',
-    allExcluded: 'All entities are excluded.',
+    noEntitiesFound: 'No entities found at the specified depth',
+    allExcluded: 'All entities are excluded',
     entityName: 'Entity name',
     extractedName: 'Extracted name',
     rule: 'Rule',
@@ -172,9 +172,9 @@ export const scanner = {
     descriptionPlaceholder: 'e.g. Remove bracket prefixes',
     pattern: 'Regular expression',
     patternHintBefore: 'Use the named capturing group',
-    patternHintAfter: 'to specify the name to extract.',
+    patternHintAfter: 'to specify the name to extract',
     presetsTitle: 'Choose preset rules',
-    presetsAllAdded: 'All preset rules have been added.',
+    presetsAllAdded: 'All preset rules have been added',
     addWithCount: ({ count }: { count: number }) => `Add (${count})`,
     presets: {
       bracketPrefix: { name: 'Bracket prefix [xxx]', description: 'Remove a leading [xxx]' },
@@ -238,7 +238,7 @@ export const scanner = {
       externalIdLinked:
         'The external ID is already linked to an existing entry. This path was not added.',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
-        `${count} video file(s) had no readable episode number and were added as unnumbered episodes.`,
+        `${count} video file(s) had no readable episode number and were added as unnumbered episodes`,
       fileSyncFailed:
         'The entry was added but its video files could not be synced. See the log for details.'
     }

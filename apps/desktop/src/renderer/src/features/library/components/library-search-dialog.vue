@@ -18,6 +18,7 @@ import {
 import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useLibrarySearch, type LibrarySearchResult } from '../composables'
@@ -289,7 +290,7 @@ watch(
           class="size-4 shrink-0"
         />
         <kbd
-          class="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground cursor-pointer"
+          class="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground cursor-pointer"
           @click="closeDialog"
         >
           ESC
@@ -322,11 +323,13 @@ watch(
 
           <!-- Column content -->
           <div class="overflow-auto py-1 h-[50vh]">
-            <template v-if="getColumnItems(config).length === 0">
-              <div class="px-2 py-4 text-xs text-muted-foreground text-center">
-                {{ debouncedQuery ? config.emptyText : m.library.search.typeToSearch }}
-              </div>
-            </template>
+            <StateView
+              v-if="getColumnItems(config).length === 0"
+              state="empty"
+              size="sm"
+              :description="debouncedQuery ? config.emptyText : m.library.search.typeToSearch"
+              class="px-2 py-4"
+            />
             <template v-else>
               <div class="space-y-0.5">
                 <Button
@@ -373,11 +376,11 @@ watch(
       >
         <div class="flex items-center gap-4">
           <span class="flex items-center gap-1">
-            <kbd class="px-1 py-0.5 bg-muted rounded text-[10px]">↑↓</kbd>
+            <kbd class="px-1 py-0.5 bg-muted rounded">↑↓</kbd>
             {{ m.library.search.navigate }}
           </span>
           <span class="flex items-center gap-1">
-            <kbd class="px-1 py-0.5 bg-muted rounded text-[10px]">Enter</kbd>
+            <kbd class="px-1 py-0.5 bg-muted rounded">Enter</kbd>
             {{ m.library.search.select }}
           </span>
         </div>

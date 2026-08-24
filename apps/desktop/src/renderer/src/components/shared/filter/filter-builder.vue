@@ -8,6 +8,7 @@
 import type { FilterCondition, FilterState } from '@shared/filter'
 import { removeCondition, updateCondition } from '@shared/filter'
 import { useI18n } from '@renderer/composables'
+import { StateView } from '@renderer/components/ui/state-view'
 import ConditionEditor from './condition-editor.vue'
 import type { FilterUiSpec } from './specs/types'
 
@@ -30,12 +31,13 @@ function handleRemove(index: number) {
 
 <template>
   <div class="flex flex-col gap-2">
-    <p
+    <StateView
       v-if="model.conditions.length === 0"
-      class="py-3 text-center text-xs text-muted-foreground"
-    >
-      {{ m.filter.noConditions }}
-    </p>
+      state="empty"
+      size="sm"
+      :description="m.filter.noConditions"
+      class="py-3"
+    />
     <ConditionEditor
       v-for="(condition, index) in model.conditions"
       :key="index"

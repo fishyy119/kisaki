@@ -23,27 +23,27 @@ export const automation = {
   },
 
   feedback: {
-    notTriggered: '自動化はトリガーされませんでした。',
-    runCompleted: '自動化の実行が完了しました。',
+    notTriggered: '自動化はトリガーされませんでした',
+    runCompleted: '自動化の実行が完了しました',
     runFailed: '自動化の実行に失敗しました',
     runError: '自動化を実行できませんでした',
-    stopRequested: '自動化の再試行停止をリクエストしました。',
-    notRunning: '自動化は実行中ではありません。',
+    stopRequested: '自動化の再試行停止をリクエストしました',
+    notRunning: '自動化は実行中ではありません',
     stopFailed: '自動化を停止できませんでした',
-    enabled: '自動化を有効にしました。',
-    disabled: '自動化を無効にしました。',
+    enabled: '自動化を有効にしました',
+    disabled: '自動化を無効にしました',
     updateFailed: '自動化を更新できませんでした',
-    deleted: '自動化を削除しました。',
+    deleted: '自動化を削除しました',
     deleteFailed: '自動化を削除できませんでした',
-    updated: '自動化を更新しました。',
-    added: '自動化を追加しました。',
+    updated: '自動化を更新しました',
+    added: '自動化を追加しました',
     saveFailed: '自動化を保存できませんでした',
-    selectCommand: 'コマンドを選択してください。'
+    selectCommand: 'コマンドを選択してください'
   },
 
   page: {
-    emptyDescription: '自動化はまだありません。',
-    noMatchDescription: '一致する自動化がありません。',
+    emptyDescription: '自動化はまだありません',
+    noMatchDescription: '一致する自動化がありません',
     table: {
       name: '名前',
       command: 'コマンド',
@@ -91,7 +91,7 @@ export const automation = {
   form: {
     addTitle: '自動化を追加',
     editTitle: '自動化を編集',
-    commandUnavailable: 'コマンドは現在利用できません。',
+    commandUnavailable: 'コマンドは現在利用できません',
     name: '名前',
     namePlaceholder: '自動化の名前',
     command: 'コマンド',
@@ -111,14 +111,14 @@ export const automation = {
     cronPlaceholder: 'Cron 式。空欄の場合は無効',
     timezone: 'タイムゾーン',
     timezonePlaceholder: 'システムのタイムゾーン',
-    paramsMustBeObject: 'パラメーターは JSON オブジェクトである必要があります。',
-    cronRequired: 'Cron 式を入力してください。',
+    paramsMustBeObject: 'パラメーターは JSON オブジェクトである必要があります',
+    cronRequired: 'Cron 式を入力してください',
     retryCountLabel: '再試行回数',
     retryDelaySecondsLabel: '再試行の間隔（秒）',
-    mustBePositive: ({ label }: { label: string }) => `${label}は 0 より大きい値にしてください。`,
+    mustBePositive: ({ label }: { label: string }) => `${label}は 0 より大きい値にしてください`,
     mustBeNonNegativeInteger: ({ label }: { label: string }) =>
-      `${label}は 0 以上の整数にしてください。`,
-    invalidTimezone: 'タイムゾーンが無効です。'
+      `${label}は 0 以上の整数にしてください`,
+    invalidTimezone: 'タイムゾーンが無効です'
   },
 
   details: {
@@ -137,7 +137,7 @@ export const automation = {
     params: 'パラメーター',
     history: '実行履歴',
     historyCount: ({ count }: { count: number }) => `${count} 件`,
-    noHistory: '実行履歴はまだありません。',
+    noHistory: '実行履歴はまだありません',
     historyRun: '実行',
     historyTrigger: 'トリガー',
     historyStartedAt: '開始日時',
@@ -152,12 +152,12 @@ export const automation = {
     duration: '所要時間',
     error: 'エラー',
     result: '結果',
-    noError: 'エラーはありません。'
+    noError: 'エラーはありません'
   },
 
   combobox: {
     searchPlaceholder: 'コマンドを検索…',
     selectPlaceholder: 'コマンドを選択…',
-    unavailable: 'コマンドは現在利用できません。'
+    unavailable: 'コマンドは現在利用できません'
   }
 } satisfies Messages['automation']

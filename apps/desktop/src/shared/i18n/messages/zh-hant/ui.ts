@@ -5,7 +5,7 @@ export const ui = {
     errorTitle: '載入失敗'
   },
   combobox: {
-    noMatches: '找不到符合項目。',
+    noMatches: '找不到符合項目',
     create: ({ name }: { name: string }) => `建立「${name}」`
   },
   imagePicker: {
@@ -52,8 +52,8 @@ export const ui = {
     yearPlaceholder: '年',
     monthPlaceholder: '月',
     dayPlaceholder: '日',
-    invalidInteger: '日期只能填寫整數。',
-    yearDayWithoutMonth: '填寫了年份和日期時，必須同時填寫月份。'
+    invalidInteger: '日期只能填寫整數',
+    yearDayWithoutMonth: '填寫了年份和日期時，必須同時填寫月份'
   },
   rankingList: {
     expandTitle: '排行',
@@ -83,13 +83,12 @@ export const ui = {
     removeDescription: ({ label }: { label: string }) => `確定要移除此${label}嗎？`,
     deleteNamedDescription: ({ name, label }: { name: string; label: string }) =>
       `確定要刪除「${name}」嗎？此操作無法復原，${label}資料將被永久刪除。`,
-    deleteDescription: ({ label }: { label: string }) =>
-      `此操作無法復原，${label}資料將被永久刪除。`,
+    deleteDescription: ({ label }: { label: string }) => `此操作無法復原，${label}資料將被永久刪除`,
     removing: '移除中…',
     deleting: '刪除中…'
   },
   spoiler: {
     title: '顯示劇透？',
-    description: '開啟後將立即顯示被標記為劇透的內容。'
+    description: '開啟後將立即顯示被標記為劇透的內容'
   }
 } satisfies Messages['ui']

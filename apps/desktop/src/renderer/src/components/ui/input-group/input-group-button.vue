@@ -5,7 +5,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils/cn'
 
-const inputGroupButtonVariants = cva('text-sm shadow-none flex gap-2 items-center', {
+const inputGroupButtonVariants = cva('text-xs shadow-none flex gap-2 items-center', {
   variants: {
     size: {
       xs: "h-5 gap-1 px-1.5 rounded-md [&>svg:not([class*='size-'])]:size-3.5 has-[>svg]:px-1.5",

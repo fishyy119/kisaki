@@ -15,7 +15,7 @@ export const game = {
   lastActiveDialog: {
     title: '編輯最近執行時間',
     label: '最近執行時間',
-    emptyHint: '留空表示從未執行過。'
+    emptyHint: '留空表示從未執行過'
   },
 
   duration: {
@@ -26,7 +26,7 @@ export const game = {
     untrackedLabel: '未記錄的遊玩時間',
     hoursUnit: '小時',
     minutesUnit: '分鐘',
-    untrackedHint: '遊戲工作階段未記錄的遊玩時間（如匯入的歷史資料）。',
+    untrackedHint: '遊戲工作階段未記錄的遊玩時間（如匯入的歷史資料）',
     sessionsHeader: ({ count }: { count: number }) => `工作階段記錄（${count}）`,
     emptySessions: '暫無工作階段記錄，點擊下方按鈕新增',
     addRecord: '新增記錄',
@@ -50,7 +50,7 @@ export const game = {
     tabSave: '存檔',
     saved: '啟動設定已儲存',
     gameDirLabel: '遊戲目錄',
-    gameDirHint: '用於自動推導和命令模式下的工作目錄。',
+    gameDirHint: '用於自動推導和命令模式下的工作目錄',
     launchModeLabel: '啟動模式',
     modeFile: '檔案',
     modeFileHint: '直接執行可執行檔',
@@ -78,9 +78,9 @@ export const game = {
     autoDerivePlaceholder: '留空自動推導',
     willUse: ({ path }: { path: string }) => `將使用：${path}`,
     savePathLabel: '存檔路徑',
-    savePathHint: '用於自動備份的存檔目錄。',
+    savePathHint: '用於自動備份的存檔目錄',
     maxBackupsLabel: '最大備份數',
-    maxBackupsHint: '超過此數量時自動刪除最舊的備份。'
+    maxBackupsHint: '超過此數量時自動刪除最舊的備份'
   },
 
   saves: {
@@ -92,9 +92,9 @@ export const game = {
     deleteBackupFailed: '刪除備份失敗',
     backupInfoUpdated: '備份資訊已更新',
     noSavePathTitle: '未設定存檔路徑',
-    noSavePathHint: '請在遊戲設定中設定存檔目錄後再使用備份功能。',
+    noSavePathHint: '請在遊戲設定中設定存檔目錄後再使用備份功能',
     emptyBackupsTitle: '暫無存檔備份',
-    emptyBackupsHint: '建立備份以保護你的遊戲進度。',
+    emptyBackupsHint: '建立備份以保護你的遊戲進度',
     createBackup: '建立備份',
     backupCount: ({ current, max }: { current: number; max: number }) =>
       `${current} / ${max} 個備份`,
@@ -108,7 +108,7 @@ export const game = {
     editBackupTitle: '編輯備份',
     notePlaceholder: '例如：第三章通關存檔',
     lockLabel: '鎖定備份',
-    lockHint: '鎖定後不會被自動清理。'
+    lockHint: '鎖定後不會被自動清理'
   },
 
   activity: {
@@ -118,7 +118,7 @@ export const game = {
     distribution: '時段分布',
     recentSessions: '最近會話',
     emptyTitle: '暫無遊玩活動',
-    emptyHint: '啟動遊戲後，遊玩時間將自動記錄在這裡。',
+    emptyHint: '啟動遊戲後，遊玩時間將自動記錄在這裡',
     totalDuration: '遊玩時長',
     sessionCount: '遊玩次數',
     sessionCountValue: ({ count }: { count: number }) => `${count} 次`,

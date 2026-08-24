@@ -22,27 +22,27 @@ export const automation = {
   },
 
   feedback: {
-    notTriggered: '自動化未觸發。',
-    runCompleted: '自動化呼叫已完成。',
+    notTriggered: '自動化未觸發',
+    runCompleted: '自動化呼叫已完成',
     runFailed: '自動化呼叫失敗',
     runError: '執行自動化失敗',
-    stopRequested: '已要求停止自動化重試。',
-    notRunning: '自動化未在執行。',
+    stopRequested: '已要求停止自動化重試',
+    notRunning: '自動化未在執行',
     stopFailed: '停止自動化失敗',
-    enabled: '自動化已啟用。',
-    disabled: '自動化已停用。',
+    enabled: '自動化已啟用',
+    disabled: '自動化已停用',
     updateFailed: '更新自動化失敗',
-    deleted: '自動化已刪除。',
+    deleted: '自動化已刪除',
     deleteFailed: '刪除自動化失敗',
-    updated: '自動化已更新。',
-    added: '自動化已新增。',
+    updated: '自動化已更新',
+    added: '自動化已新增',
     saveFailed: '儲存自動化失敗',
-    selectCommand: '請選擇命令。'
+    selectCommand: '請選擇命令'
   },
 
   page: {
-    emptyDescription: '暫無自動化。',
-    noMatchDescription: '沒有符合的自動化。',
+    emptyDescription: '暫無自動化',
+    noMatchDescription: '沒有符合的自動化',
     table: {
       name: '名稱',
       command: '命令',
@@ -89,7 +89,7 @@ export const automation = {
   form: {
     addTitle: '新增自動化',
     editTitle: '編輯自動化',
-    commandUnavailable: '命令目前無法使用。',
+    commandUnavailable: '命令目前無法使用',
     name: '名稱',
     namePlaceholder: '自動化名稱',
     command: '命令',
@@ -109,13 +109,13 @@ export const automation = {
     cronPlaceholder: 'Cron 運算式，留空則不啟用',
     timezone: '時區',
     timezonePlaceholder: '系統時區',
-    paramsMustBeObject: '參數必須是 JSON 物件。',
-    cronRequired: 'Cron 運算式不能為空。',
+    paramsMustBeObject: '參數必須是 JSON 物件',
+    cronRequired: 'Cron 運算式不能為空',
     retryCountLabel: '重試次數',
     retryDelaySecondsLabel: '重試延遲秒數',
-    mustBePositive: ({ label }: { label: string }) => `${label}必須大於 0。`,
-    mustBeNonNegativeInteger: ({ label }: { label: string }) => `${label}必須是大於等於 0 的整數。`,
-    invalidTimezone: '時區無效。'
+    mustBePositive: ({ label }: { label: string }) => `${label}必須大於 0`,
+    mustBeNonNegativeInteger: ({ label }: { label: string }) => `${label}必須是大於等於 0 的整數`,
+    invalidTimezone: '時區無效'
   },
 
   details: {
@@ -134,7 +134,7 @@ export const automation = {
     params: '參數',
     history: '呼叫歷史',
     historyCount: ({ count }: { count: number }) => `${count} 筆`,
-    noHistory: '暫無呼叫歷史。',
+    noHistory: '暫無呼叫歷史',
     historyRun: '執行',
     historyTrigger: '觸發',
     historyStartedAt: '開始時間',
@@ -149,12 +149,12 @@ export const automation = {
     duration: '耗時',
     error: '錯誤',
     result: '結果',
-    noError: '無錯誤。'
+    noError: '無錯誤'
   },
 
   combobox: {
     searchPlaceholder: '搜尋命令…',
     selectPlaceholder: '選擇命令…',
-    unavailable: '命令目前無法使用。'
+    unavailable: '命令目前無法使用'
   }
 } satisfies Messages['automation']

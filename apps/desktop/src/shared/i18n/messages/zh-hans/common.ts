@@ -53,20 +53,20 @@ export const common = {
   required: '必填',
 
   // Feedback
-  saved: '已保存。',
-  deleted: '已删除。',
-  copied: '已复制。',
-  saveFailed: '保存失败。',
-  deleteFailed: '删除失败。',
-  copyFailed: '复制失败。',
-  loadFailed: '加载失败。',
-  operationFailed: '操作失败。',
+  saved: '已保存',
+  deleted: '已删除',
+  copied: '已复制',
+  saveFailed: '保存失败',
+  deleteFailed: '删除失败',
+  copyFailed: '复制失败',
+  loadFailed: '加载失败',
+  operationFailed: '操作失败',
 
   // Placeholders and empty values
   emptyValue: '—',
   searchPlaceholder: '搜索',
-  noResults: '没有匹配的结果。',
-  noData: '暂无数据。',
+  noResults: '没有匹配的结果',
+  noData: '暂无数据',
 
   // Counts
   itemCount: ({ count }) => `${count} 项`,

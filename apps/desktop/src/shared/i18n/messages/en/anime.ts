@@ -12,7 +12,7 @@ export const anime = {
   episodes: {
     title: 'Episodes',
     emptyTitle: 'No episodes yet',
-    emptyHint: 'Scan the anime folder or scrape metadata to build the episode list.',
+    emptyHint: 'Scan the anime folder or scrape metadata to build the episode list',
     unnamed: ({ number }: { number: string }) => `Episode ${number}`,
     entityLabel: 'Episode',
     watched: 'Watched',
@@ -21,7 +21,7 @@ export const anime = {
     resumeAt: ({ position }: { position: string }) => `Resume at ${position}`,
     markWatched: 'Mark as watched',
     markUnwatched: 'Mark as unwatched',
-    watchedUpdated: 'Watch state updated.',
+    watchedUpdated: 'Watch state updated',
     progress: ({ watched, total }: { watched: number; total: number }) =>
       `${watched} / ${total} watched`,
     playCount: 'Play count',
@@ -33,31 +33,31 @@ export const anime = {
       title: 'Mark remaining episodes as watched?',
       pendingCount: ({ count }: { count: number }) =>
         count === 1
-          ? '1 episode is not marked as watched.'
-          : `${count} episodes are not marked as watched.`,
+          ? '1 episode is not marked as watched'
+          : `${count} episodes are not marked as watched`,
       pendingByType: {
         regular: ({ count }: { count: number }) =>
           count === 1 ? '1 regular episode' : `${count} regular episodes`,
         special: ({ count }: { count: number }) => (count === 1 ? '1 special' : `${count} specials`)
       },
-      hint: 'Marking records the watch state only, without a playback time.',
+      hint: 'Marking records the watch state only, without a playback time',
       markAll: 'Mark all',
       markRegularOnly: 'Episodes only',
       skip: 'Skip',
       marked: ({ count }: { count: number }) =>
-        count === 1 ? '1 episode marked as watched.' : `${count} episodes marked as watched.`
+        count === 1 ? '1 episode marked as watched' : `${count} episodes marked as watched`
     },
 
     addEpisode: 'Add episode',
     editEpisode: 'Edit episode',
     deleteEpisode: 'Delete episode',
-    episodeDeleted: 'Episode deleted.',
+    episodeDeleted: 'Episode deleted',
     numberLabel: 'Number',
     numberPlaceholder: 'Optional',
     typeLabel: 'Type',
     durationMinutes: 'Duration (minutes)',
-    numberInvalid: 'The episode number must be positive.',
-    durationInvalid: 'The duration must be positive.',
+    numberInvalid: 'The episode number must be positive',
+    durationInvalid: 'The duration must be positive',
 
     syncFiles: 'Sync files',
     syncCompleted: ({
@@ -68,18 +68,18 @@ export const anime = {
       episodes: number
       files: number
       extras: number
-    }) => `Synced ${episodes} episodes, ${files} files, and ${extras} extras.`,
-    syncFailed: 'File sync failed.',
+    }) => `Synced ${episodes} episodes, ${files} files, and ${extras} extras`,
+    syncFailed: 'File sync failed',
     syncUnrecognized: ({ count }: { count: number }) =>
       count === 1
-        ? '1 file has no readable episode number.'
-        : `${count} files have no readable episode number.`
+        ? '1 file has no readable episode number'
+        : `${count} files have no readable episode number`
   },
 
   extras: {
     title: 'Extras',
     emptyTitle: 'No extras yet',
-    emptyHint: 'Trailers and creditless openings found in the folder show up here.',
+    emptyHint: 'Trailers and creditless openings found in the folder show up here',
     entityLabel: 'Extra',
     addExtra: 'Add extra',
     extraAttached: 'Extra added',
@@ -99,7 +99,7 @@ export const anime = {
     title: 'Files',
     playFile: 'Play this file',
     missingFile: 'No file',
-    noFiles: 'No files yet.',
+    noFiles: 'No files yet',
     fileCount: ({ count }: { count: number }) => (count === 1 ? '1 file' : `${count} files`),
     primary: 'Primary',
     resolution: 'Resolution',
@@ -111,31 +111,31 @@ export const anime = {
     subtitleTrackCount: ({ count }: { count: number }) =>
       count === 1 ? '1 subtitle track' : `${count} subtitle tracks`,
     openFolder: 'Open containing folder',
-    openFolderFailed: 'Could not open the containing folder.',
+    openFolderFailed: 'Could not open the containing folder',
     setPrimary: 'Set as primary',
-    primaryUpdated: 'Primary file updated.',
+    primaryUpdated: 'Primary file updated',
     removeFile: 'Remove file record',
-    fileRemoved: 'File record removed.',
+    fileRemoved: 'File record removed',
     recordEntityLabel: 'file record',
     addFile: 'Add file',
-    fileAttached: 'File attached.',
-    attachFailed: 'Could not attach the file.',
+    fileAttached: 'File attached',
+    attachFailed: 'Could not attach the file',
     manualBadge: 'Manual',
     noteLabel: 'Note',
     editNote: 'Edit note',
-    noteSaved: 'Note saved.'
+    noteSaved: 'Note saved'
   },
 
   player: {
     pause: 'Pause',
     resume: 'Resume',
-    pauseFailed: 'Could not pause playback.',
-    resumeFailed: 'Could not resume playback.'
+    pauseFailed: 'Could not pause playback',
+    resumeFailed: 'Could not resume playback'
   },
 
   detail: {
     openAnimeDir: 'Open anime folder',
-    animeDirNotSet: 'The anime folder is not set.',
+    animeDirNotSet: 'The anime folder is not set',
     watchStatus: 'Watch status'
   },
 
@@ -147,8 +147,8 @@ export const anime = {
     animeDirHint:
       'File sync scans this folder to match episode files; leave it empty for fully manual file management. Saving a change re-syncs files.',
     offsetLabel: 'File number offset',
-    offsetHint: 'File number − offset = metadata episode number; aligns absolutely numbered files.',
-    offsetInvalid: 'The offset must be an integer.'
+    offsetHint: 'File number − offset = metadata episode number; aligns absolutely numbered files',
+    offsetInvalid: 'The offset must be an integer'
   },
 
   statusDialog: {
@@ -160,7 +160,7 @@ export const anime = {
   lastActiveDialog: {
     title: 'Edit last watched time',
     label: 'Last watched time',
-    emptyHint: 'Leave empty for never watched.'
+    emptyHint: 'Leave empty for never watched'
   },
 
   duration: {
@@ -171,16 +171,16 @@ export const anime = {
     untrackedLabel: 'Untracked watch time',
     hoursUnit: 'hours',
     minutesUnit: 'minutes',
-    untrackedHint: 'Watch time not covered by sessions (such as imported history).',
+    untrackedHint: 'Watch time not covered by sessions (such as imported history)',
     sessionsHeader: ({ count }: { count: number }) => `Sessions (${count})`,
     emptySessions: 'No session records yet. Add one below.',
     addRecord: 'Add record',
     editRecord: 'Edit record',
     startTime: 'Start time',
     endTime: 'End time',
-    startEndRequired: 'Fill in both start and end times.',
-    endAfterStart: 'The end time must be after the start time.',
-    overlap: 'The time range overlaps an existing record.',
+    startEndRequired: 'Fill in both start and end times',
+    endAfterStart: 'The end time must be after the start time',
+    overlap: 'The time range overlaps an existing record',
     recordAdded: 'Record added',
     recordUpdated: 'Record updated',
     recordDeleted: 'Record deleted',
@@ -189,7 +189,7 @@ export const anime = {
 
   activity: {
     emptyTitle: 'No watch activity yet',
-    emptyHint: 'Watch time is recorded here automatically once you start an episode.',
+    emptyHint: 'Watch time is recorded here automatically once you start an episode',
     statsOverview: 'Stats overview',
     heatmap: 'Activity heatmap',
     trend: 'Watch trend',

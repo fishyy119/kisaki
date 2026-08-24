@@ -186,12 +186,12 @@ async function handleSave() {
           <DialogTitle>{{ m.library.fields.cast }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
-          <p
+          <StateView
             v-if="items.length === 0"
-            class="text-sm text-muted-foreground text-center py-8"
-          >
-            {{ m.library.forms.castEmptyHint }}
-          </p>
+            state="empty"
+            :description="m.library.forms.castEmptyHint"
+            class="py-8"
+          />
           <div
             v-else
             class="space-y-1"

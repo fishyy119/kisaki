@@ -12,7 +12,7 @@ const RELEASE_ACTIONS: Record<ReleaseActionKind, string> = {
 /** Extension platform surfaces: manager pages, panels, dialogs, and webviews. */
 export const extension = {
   title: '擴充功能',
-  webviewPageClosed: '該擴充功能頁面已關閉。',
+  webviewPageClosed: '該擴充功能頁面已關閉',
 
   categories: {
     scraper: '中繼資料',
@@ -40,7 +40,7 @@ export const extension = {
 
   host: {
     reloading: '正在重載擴充功能處理程序',
-    reloaded: '擴充功能處理程序已重載。',
+    reloaded: '擴充功能處理程序已重載',
     reloadFailed: '重載擴充功能處理程序失敗',
     codeUpdatedTitle: '擴充功能程式碼已更新',
     pendingChanges: ({ subject }: { subject: string }) => `${subject}有未套用的修改`,
@@ -67,15 +67,15 @@ export const extension = {
     actionTitle: ({ action }: { action: string }) => `${action}擴充功能`,
     prepareTitle: '準備擴充功能版本',
     importLocalTitle: '匯入本機擴充功能',
-    repositoryDescription: '檢查版本、儲存庫來源和簽章後繼續。',
-    localDescription: '選擇本機 .kisx 檔案並確認。',
+    repositoryDescription: '檢查版本、儲存庫來源和簽章後繼續',
+    localDescription: '選擇本機 .kisx 檔案並確認',
     confirmAction: ({ action }: { action: string }) => `確認${action}`,
     selectFile: '選擇檔案',
     planFailed: '無法建立版本計畫',
     filePickerTitle: '選擇擴充功能檔案',
     filePickerFilterName: '擴充功能套件',
-    cancelled: '操作已取消。',
-    applied: ({ action }: { action: string }) => `擴充功能${action}成功。`,
+    cancelled: '操作已取消',
+    applied: ({ action }: { action: string }) => `擴充功能${action}成功`,
     applyFailed: '操作失敗',
     signerTrusted: '簽章已信任',
     signerUntrusted: '簽章未信任',
@@ -97,7 +97,7 @@ export const extension = {
     enableAfterApply: '套用後啟用',
     updatePolicy: '更新策略',
     trustSigner: '信任此擴充功能的簽章指紋',
-    pickLocalHint: '選擇本機擴充功能套件檔案（.kisx）。'
+    pickLocalHint: '選擇本機擴充功能套件檔案（.kisx）'
   },
 
   policy: {
@@ -120,10 +120,10 @@ export const extension = {
       action: ReleaseActionKind
       name: string
       version: string
-    }) => `已${RELEASE_ACTIONS[action]} ${name} v${version}。`,
+    }) => `已${RELEASE_ACTIONS[action]} ${name} v${version}`,
     cancelledSummary: ({ action }: { action: ReleaseActionKind }) =>
-      `擴充功能${RELEASE_ACTIONS[action]}已取消。`,
-    localCancelledSummary: '擴充功能套件套用已取消。',
+      `擴充功能${RELEASE_ACTIONS[action]}已取消`,
+    localCancelledSummary: '擴充功能套件套用已取消',
     phases: {
       waitLock: '等待擴充功能套件寫入鎖',
       prepare: '準備擴充功能安裝套件',
@@ -137,21 +137,21 @@ export const extension = {
     refreshOneTitle: ({ name }: { name: string }) => `重新整理儲存庫 ${name}`,
     refreshAllTitle: '重新整理全部擴充功能儲存庫',
     allSubjectLabel: '全部擴充功能儲存庫',
-    cancelledSummary: '擴充功能儲存庫重新整理已取消。',
+    cancelledSummary: '擴充功能儲存庫重新整理已取消',
     preparing: '準備重新整理擴充功能儲存庫',
     noneEnabled: '沒有啟用的擴充功能儲存庫',
     refreshingOne: ({ name }: { name: string }) => `正在重新整理 ${name}`,
     refreshedOne: ({ name }: { name: string }) => `已重新整理 ${name}`,
     oneFailedTitle: '儲存庫重新整理失敗',
-    oneFailedSummary: ({ name }: { name: string }) => `${name} 重新整理失敗。`,
+    oneFailedSummary: ({ name }: { name: string }) => `${name} 重新整理失敗`,
     oneNotModifiedTitle: '儲存庫未變更',
     oneCompletedTitle: '儲存庫重新整理完成',
-    oneNotModifiedSummary: ({ name }: { name: string }) => `${name} 已是最新。`,
-    oneRefreshedSummary: ({ name }: { name: string }) => `${name} 已重新整理。`,
+    oneNotModifiedSummary: ({ name }: { name: string }) => `${name} 已是最新`,
+    oneRefreshedSummary: ({ name }: { name: string }) => `${name} 已重新整理`,
     allFailedTitle: '擴充功能儲存庫重新整理失敗',
     allPartialTitle: '部分擴充功能儲存庫重新整理失敗',
     allCompletedTitle: '擴充功能儲存庫重新整理完成',
-    noneEnabledSummary: '沒有啟用的擴充功能儲存庫。',
+    noneEnabledSummary: '沒有啟用的擴充功能儲存庫',
     allSummary: ({
       processed,
       total,
@@ -165,14 +165,14 @@ export const extension = {
       notModified: number
       failed: number
     }) =>
-      `已處理 ${processed}/${total} 個儲存庫，成功 ${succeeded}，未變更 ${notModified}，失敗 ${failed}。`
+      `已處理 ${processed}/${total} 個儲存庫，成功 ${succeeded}，未變更 ${notModified}，失敗 ${failed}`
   },
 
   updatePolicyDialog: {
     title: '更新設定',
     policyLabel: '更新策略',
     receivePrerelease: '接收預覽版更新',
-    saved: '更新設定已儲存。',
+    saved: '更新設定已儲存',
     saveFailed: '儲存更新設定失敗'
   },
 
@@ -181,16 +181,16 @@ export const extension = {
     purgeData: '同時清除擴充功能資料',
     confirmPurge: '解除安裝並清除',
     confirm: '解除安裝',
-    uninstalledPurged: '擴充功能已解除安裝並清除資料。',
-    uninstalled: '擴充功能已解除安裝。',
+    uninstalledPurged: '擴充功能已解除安裝並清除資料',
+    uninstalled: '擴充功能已解除安裝',
     purgeFailed: '擴充功能已解除安裝，清除資料失敗',
     failed: '解除安裝失敗'
   },
 
   discover: {
     emptyTitle: '未找到擴充功能',
-    emptyCategoryDescription: '該分類下暫無可用擴充功能。',
-    emptyDescription: '暫無可用擴充功能。',
+    emptyCategoryDescription: '該分類下暫無可用擴充功能',
+    emptyDescription: '暫無可用擴充功能',
     loadMore: '載入更多',
     sortRelevance: '相關',
     sortName: '名稱',
@@ -207,7 +207,7 @@ export const extension = {
     unknownAuthor: '未知作者',
     sourceCount: ({ count }: { count: number }) => `${count} 個來源`,
     noVersion: '無版本',
-    noDescription: '無描述。',
+    noDescription: '無描述',
     homepage: '首頁',
     details: '詳細資訊',
     installed: '已安裝',
@@ -249,12 +249,12 @@ export const extension = {
     descending: '降冪',
     updatesAvailable: '發現可用更新',
     updatesAvailableCount: ({ count }: { count: number }) => `${count} 個擴充功能可以更新`,
-    noUpdates: '暫無可用更新。',
+    noUpdates: '暫無可用更新',
     checkUpdatesFailed: '檢查更新失敗',
     emptyTitle: '暫無已安裝的擴充功能',
-    emptyDescription: '從「探索」頁面安裝擴充功能。',
+    emptyDescription: '從「探索」頁面安裝擴充功能',
     noMatchTitle: '沒有符合的擴充功能',
-    noMatchDescription: '嘗試調整篩選條件。',
+    noMatchDescription: '嘗試調整篩選條件',
 
     unknownVersion: '未知版本',
     statusReady: '正常',
@@ -264,17 +264,17 @@ export const extension = {
     runtimeRunning: '執行中',
     runtimeFailed: '載入失敗',
     runtimeStopped: '未執行',
-    builtinManaged: '內建擴充功能由 Kisaki 管理。',
+    builtinManaged: '內建擴充功能由 Kisaki 管理',
     enableFailed: '無法啟用擴充功能',
-    packageNotRunnable: '擴充功能套件目前無法執行。',
-    enabledFeedback: '擴充功能已啟用。',
-    disabledFeedback: '擴充功能已停用。',
+    packageNotRunnable: '擴充功能套件目前無法執行',
+    enabledFeedback: '擴充功能已啟用',
+    disabledFeedback: '擴充功能已停用',
     operationFailed: '操作失敗',
     extensionOperationFailed: '擴充功能操作失敗',
     builtinBadge: '內建',
     updateBadge: '更新',
     unknownAuthor: '未知',
-    noDescription: '無描述。',
+    noDescription: '無描述',
     enableWithApp: '隨應用程式啟用',
     enabledState: '啟用',
     disabledState: '停用',
@@ -337,16 +337,16 @@ export const extension = {
     healthError: '異常',
     healthNeverRefreshed: '未重新整理',
     healthOk: '正常',
-    added: '儲存庫已新增。',
+    added: '儲存庫已新增',
     addFailed: '新增儲存庫失敗',
-    officialAdded: '官方儲存庫已新增。',
+    officialAdded: '官方儲存庫已新增',
     officialAddFailed: '新增官方儲存庫失敗',
-    refreshAllStarted: '已開始重新整理擴充功能儲存庫。',
+    refreshAllStarted: '已開始重新整理擴充功能儲存庫',
     refreshFailed: '重新整理儲存庫失敗',
-    refreshStarted: '已開始重新整理儲存庫。',
-    enabledFeedback: '儲存庫已啟用。',
-    disabledFeedback: '儲存庫已停用。',
-    deleted: '儲存庫已刪除。',
+    refreshStarted: '已開始重新整理儲存庫',
+    enabledFeedback: '儲存庫已啟用',
+    disabledFeedback: '儲存庫已停用',
+    deleted: '儲存庫已刪除',
     operationFailed: '儲存庫操作失敗',
     panelTitle: '擴充功能儲存庫',
     panelSummary: ({ count }: { count: number }) => `${count} 個儲存庫，依優先順序彙整探索目錄`,
@@ -397,7 +397,7 @@ export const extension = {
   signer: {
     none: '無',
     localConfirmation: '本機確認',
-    revoked: '簽章信任已撤銷。',
+    revoked: '簽章信任已撤銷',
     revokeFailed: '撤銷簽章信任失敗',
     panelTitle: '簽章信任',
     panelSummary: ({ count }: { count: number }) => `${count} 個擴充功能層級簽章指紋`,

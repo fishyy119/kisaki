@@ -295,18 +295,18 @@ export const library = {
     columnReleaseDate: '発売日',
     startHint: ({ label }: { label: string }) => `${label}名を入力して検索を開始`,
     noMatchTitle: '一致する結果がありません',
-    noMatchDescription: '別のキーワードをお試しください。',
+    noMatchDescription: '別のキーワードをお試しください',
     resultCount: ({ count }: { count: number }) => `全 ${count} 件`,
     selectedOne: '1 件選択中',
     idLabel: ({ label }: { label: string }) => `${label} ID`,
-    idDescription: '検索結果から選択するか、ID を直接入力します。',
+    idDescription: '検索結果から選択するか、ID を直接入力します',
     idPlaceholder: '上から選択するか直接入力…'
   },
 
   detail: {
     notFoundTitle: ({ label }: { label: string }) => `${label}が見つかりません`,
     notFoundDescription: ({ label }: { label: string }) =>
-      `この${label}は削除された可能性があります。`,
+      `この${label}は削除された可能性があります`,
     tabs: {
       overview: '概要',
       characters: 'キャラクター',
@@ -364,10 +364,9 @@ export const library = {
     collectionEmptyTitle: ({ label }: { label: string }) =>
       `このコレクションに${label}はまだありません`,
     collectionEmptyDescription: ({ label }: { label: string }) =>
-      `スキャナーで${label}をこのコレクションに追加します。`,
+      `スキャナーで${label}をこのコレクションに追加します`,
     tagEmptyTitle: ({ label }: { label: string }) => `このタグの${label}はまだありません`,
-    tagEmptyDescription: ({ label }: { label: string }) =>
-      `このタグを使う${label}はまだありません。`
+    tagEmptyDescription: ({ label }: { label: string }) => `このタグを使う${label}はまだありません`
   },
 
   notes: {
@@ -377,7 +376,7 @@ export const library = {
     noteDeleted: 'ノートを削除しました',
     reorderFailed: '並べ替えに失敗しました',
     emptyTitle: 'ノートはまだありません',
-    emptyHint: '感想やスクリーンショットを記録しましょう。',
+    emptyHint: '感想やスクリーンショットを記録しましょう',
     notFound: 'ノートが見つかりません',
     titleLabel: 'タイトル',
     titlePlaceholder: 'タイトルを入力',
@@ -424,7 +423,7 @@ export const library = {
     castCharacterLabel: 'キャラクター',
     castPersonLabel: '声優',
     castEmptyHint: '声優陣がまだありません。下のボタンから追加してください。',
-    castDuplicate: 'このキャラクターと声優は、この作品ですでに紐づいています。',
+    castDuplicate: 'このキャラクターと声優は、この作品ですでに紐づいています',
 
     notePlaceholder: '任意のメモ…',
     aliasesPlaceholder: '別名をカンマ区切りで入力',
@@ -442,24 +441,24 @@ export const library = {
     selectGender: '性別を選択',
     selectBloodType: '血液型を選択',
     agePlaceholder: '歳',
-    birthDateInvalidInteger: '誕生日には整数のみ入力できます。',
-    deathDateInvalidInteger: '命日には整数のみ入力できます。',
-    birthDateInvalidFormat: '誕生日の形式が正しくありません。',
-    deathDateInvalidFormat: '命日の形式が正しくありません。',
-    foundedDateInvalidFormat: '設立日の形式が正しくありません。',
-    releaseDateInvalidFormat: '発売日の形式が正しくありません。',
-    foundedDateYearDayWithoutMonth: '設立日に年と日を入力する場合は、月も入力してください。',
-    releaseDateYearDayWithoutMonth: '発売日に年と日を入力する場合は、月も入力してください。',
+    birthDateInvalidInteger: '誕生日には整数のみ入力できます',
+    deathDateInvalidInteger: '命日には整数のみ入力できます',
+    birthDateInvalidFormat: '誕生日の形式が正しくありません',
+    deathDateInvalidFormat: '命日の形式が正しくありません',
+    foundedDateInvalidFormat: '設立日の形式が正しくありません',
+    releaseDateInvalidFormat: '発売日の形式が正しくありません',
+    foundedDateYearDayWithoutMonth: '設立日に年と日を入力する場合は、月も入力してください',
+    releaseDateYearDayWithoutMonth: '発売日に年と日を入力する場合は、月も入力してください',
     totalEpisodesPlaceholder: '空欄可',
-    totalEpisodesInvalid: '総話数は 0 以上の整数で入力してください。',
-    totalSeasonsInvalid: 'シーズン数は 0 以上の整数で入力してください。',
-    endDateInvalidFormat: '放送終了日の形式が正しくありません。',
-    endDateYearDayWithoutMonth: '放送終了日に年と日を入力する場合は、月も入力してください。',
+    totalEpisodesInvalid: '総話数は 0 以上の整数で入力してください',
+    totalSeasonsInvalid: 'シーズン数は 0 以上の整数で入力してください',
+    endDateInvalidFormat: '放送終了日の形式が正しくありません',
+    endDateYearDayWithoutMonth: '放送終了日に年と日を入力する場合は、月も入力してください',
     runtimeMinutesPlaceholder: '分',
-    runtimeInvalid: '上映時間は正の分数で入力してください。',
+    runtimeInvalid: '上映時間は正の分数で入力してください',
 
-    scoreRangeHint: 'スコアは 0〜10 で、小数第 1 位まで入力できます（例：8.5）。',
-    scoreOutOfRange: 'スコアは 0〜10 の範囲で入力してください。',
+    scoreRangeHint: 'スコアは 0〜10 で、小数第 1 位まで入力できます（例：8.5）',
+    scoreOutOfRange: 'スコアは 0〜10 の範囲で入力してください',
 
     markdownSupported: 'Markdown 対応',
     descriptionPlaceholder: ({ label }: { label: string }) =>
@@ -493,7 +492,7 @@ export const library = {
     emptyTagsHint: 'タグはまだありません。下のボタンから追加できます',
     tagNamePlaceholder: 'タグ名',
     tagDescriptionPlaceholder: 'タグの説明（任意、Markdown 対応）',
-    tagNsfwHint: 'このタグをアダルトコンテンツとしてマークします。',
+    tagNsfwHint: 'このタグをアダルトコンテンツとしてマークします',
 
     mediaUpdated: 'メディアを更新しました',
     mediaDeleted: 'メディアを削除しました',
@@ -511,30 +510,29 @@ export const library = {
       photo: '写真'
     },
     mediaDescriptions: {
-      gameCover: 'カードやリストに表示されるゲームカバー画像。',
-      gameBackdrop: '詳細ページの背景画像。',
-      gameLogo: 'ゲームタイトルのロゴ。',
-      gameIcon: '小さいサイズのアイコン。',
-      animeCover: 'カードやリストに表示されるアニメカバー画像。',
-      animeBackdrop: '詳細ページの背景画像。',
-      animeLogo: 'アニメタイトルのロゴ。',
-      characterPhoto: 'カードや詳細に表示されるキャラクター写真。',
-      personPhoto: 'カードや詳細に表示される人物写真。',
-      companyLogo: 'カードや詳細に表示される会社ロゴ。'
+      gameCover: 'カードやリストに表示されるゲームカバー画像',
+      gameBackdrop: '詳細ページの背景画像',
+      gameLogo: 'ゲームタイトルのロゴ',
+      gameIcon: '小さいサイズのアイコン',
+      animeCover: 'カードやリストに表示されるアニメカバー画像',
+      animeBackdrop: '詳細ページの背景画像',
+      animeLogo: 'アニメタイトルのロゴ',
+      characterPhoto: 'カードや詳細に表示されるキャラクター写真',
+      personPhoto: 'カードや詳細に表示される人物写真',
+      companyLogo: 'カードや詳細に表示される会社ロゴ'
     },
     importMediaFromUrlTitle: ({ label }: { label: string }) => `URL から${label}を読み込み`,
     importMediaFromUrlDescription: ({ label }: { label: string }) =>
-      `画像 URL を入力して${label}を読み込みます。`,
+      `画像 URL を入力して${label}を読み込みます`,
     imageUrlLabel: '画像 URL',
     imageUrlInvalid: '有効な URL を入力してください',
-    imageFormatsHint: 'JPG、PNG、WebP などの一般的な画像形式に対応しています。',
+    imageFormatsHint: 'JPG、PNG、WebP などの一般的な画像形式に対応しています',
     previewLabel: 'プレビュー：',
     previewLoadFailed: 'プレビューを読み込めません',
     importing: '読み込み中…',
     searchMediaTitle: ({ label }: { label: string }) => `${label}を検索`,
     searchKeywordPlaceholder: '検索キーワードを入力…',
-    searchStartHint: '検索を押して開始します。',
-    searchFailedHint: '検索に失敗しました',
+    searchStartHint: '検索を押して開始します',
     searchNoImages: '該当する画像が見つかりません',
     confirmSelection: '選択を確定',
     cropMediaTitle: ({ label }: { label: string }) => `${label}をトリミング`,
@@ -552,23 +550,23 @@ export const library = {
     scalarStrategyPlaceholder: '単一値の戦略を選択…',
     scalarStrategyIfMissing: '欠落時のみ書き込み',
     scalarStrategyOverwrite: '既存値を上書き',
-    scalarStrategyIfMissingHint: '現在の値が欠落している場合のみ新しい値を書き込みます。',
-    scalarStrategyOverwriteHint: '利用可能な新しい値があれば現在の値を上書きします。',
+    scalarStrategyIfMissingHint: '現在の値が欠落している場合のみ新しい値を書き込みます',
+    scalarStrategyOverwriteHint: '利用可能な新しい値があれば現在の値を上書きします',
     collectionStrategyLabel: 'コレクションの戦略',
     collectionStrategyPlaceholder: 'コレクションの戦略を選択…',
     collectionStrategyMerge: 'マージして追加',
     collectionStrategyReplace: '全体を置き換え',
-    collectionStrategyMergeHint: '既存の内容を保持し、新しい項目を追加します。',
+    collectionStrategyMergeHint: '既存の内容を保持し、新しい項目を追加します',
     collectionStrategyReplaceHint:
       '現在の内容を新しい内容で置き換えます。取得元が空と明示したコレクションは削除されます。',
     useExternalIdsLabel: '現在の外部 ID で対象を特定する',
     useExternalIdsHint:
-      '現在の項目が誤った対象に対応している可能性がある場合は有効にしないでください。',
-    personStandaloneHint: '「人物」は独立した項目として個別に選択して更新できます。',
+      '現在の項目が誤った対象に対応している可能性がある場合は有効にしないでください',
+    personStandaloneHint: '「人物」は独立した項目として個別に選択して更新できます',
     batchSilentSearchHint:
-      '「原名」に基づいてサイレント検索を実行し、最初の結果を既定で採用して、単体の更新フローを再利用します。',
+      '「原名」に基づいてサイレント検索を実行し、最初の結果を既定で採用して、単体の更新フローを再利用します',
     rendererSearchHint:
-      '検索フローは引き続き renderer 側で実行され、送信時に更新リクエストを 1 回だけ送ります。',
+      '検索フローは引き続き renderer 側で実行され、送信時に更新リクエストを 1 回だけ送ります',
     updating: '更新中…',
     update: '更新',
     startUpdateFailed: '更新を開始できません',
@@ -589,11 +587,11 @@ export const library = {
     collectionDescriptionPlaceholder: '説明を追加（任意、Markdown 対応）',
     collectionTypeLabel: '種類',
     collectionTypeHint:
-      '静的コレクションは手動で内容を追加し、動的コレクションはフィルター条件に基づいて自動更新されます。',
+      '静的コレクションは手動で内容を追加し、動的コレクションはフィルター条件に基づいて自動更新されます',
     staticCollection: '静的コレクション',
     dynamicCollection: '動的コレクション',
     nsfwLabel: 'アダルトコンテンツ',
-    collectionNsfwHint: 'このコレクションをアダルトコンテンツとしてマークします。',
+    collectionNsfwHint: 'このコレクションをアダルトコンテンツとしてマークします',
     collectionUpdated: 'コレクションを更新しました',
     collectionCreated: 'コレクションを作成しました',
     collectionCreatedWithEntities: ({ label }: { label: string }) =>
@@ -615,7 +613,7 @@ export const library = {
     sortAsc: '昇順',
     sortDesc: '降順',
     dynamicConfigHint:
-      '有効化されているがフィルター条件が未設定の種類は、その種類のすべての項目を含みます。',
+      '有効化されているがフィルター条件が未設定の種類は、その種類のすべての項目を含みます',
     filterConfigUpdated: 'フィルター設定を更新しました',
 
     gameLabel: 'ゲーム',
@@ -653,11 +651,11 @@ export const library = {
     collectionsTitle: 'コレクション',
     newCollection: '新規コレクション',
     collectionsEmptyTitle: 'コレクションはまだありません',
-    collectionsEmptyDescription: 'コレクションを作成してライブラリを整理しましょう。',
+    collectionsEmptyDescription: 'コレクションを作成してライブラリを整理しましょう',
     favoritesTitle: 'お気に入り',
-    favoritesEmpty: ({ label }: { label: string }) => `お気に入りの${label}はまだありません。`,
+    favoritesEmpty: ({ label }: { label: string }) => `お気に入りの${label}はまだありません`,
     uncategorizedTitle: ({ label }: { label: string }) => `未分類の${label}`,
-    uncategorizedEmpty: ({ label }: { label: string }) => `すべての${label}が分類済みです。`,
+    uncategorizedEmpty: ({ label }: { label: string }) => `すべての${label}が分類済みです`,
     dynamicCollection: 'ダイナミックコレクション',
     playStatus: 'プレイ状況'
   },
@@ -670,8 +668,8 @@ export const library = {
     overrideCollectionSort: 'コレクション内の並び順を上書き',
     searchPlaceholder: '検索…',
     filteredResults: 'フィルター結果',
-    noMatch: '一致する結果がありません。',
-    emptyList: ({ label }: { label: string }) => `${label}はまだありません。`,
+    noMatch: '一致する結果がありません',
+    emptyList: ({ label }: { label: string }) => `${label}はまだありません`,
     uncategorized: '未分類'
   },
 
@@ -679,8 +677,8 @@ export const library = {
     title: 'ライブラリ検索',
     description: 'ゲーム、キャラクター、人物、会社を検索',
     placeholder: 'ゲーム、キャラクター、人物、会社を検索…',
-    typeToSearch: 'キーワードを入力して検索します。',
-    emptyResult: ({ label }: { label: string }) => `${label}の結果はありません。`,
+    typeToSearch: 'キーワードを入力して検索します',
+    emptyResult: ({ label }: { label: string }) => `${label}の結果はありません`,
     navigate: '移動',
     select: '選択',
     totalResults: ({ count }: { count: number }) => `全 ${count} 件の結果`
@@ -691,7 +689,7 @@ export const library = {
     emptyDescription:
       'セクションを追加してゲーム、キャラクター、人物、会社を展示しましょう。各セクションには独自のフィルターとレイアウトを設定できます。',
     addFirstSection: '最初のセクションを追加',
-    sectionEmpty: ({ label }: { label: string }) => `${label}はまだありません。`,
+    sectionEmpty: ({ label }: { label: string }) => `${label}はまだありません`,
     layoutHorizontal: '横スクロール',
     layoutGrid: 'グリッド',
 
@@ -704,14 +702,14 @@ export const library = {
       addSection: 'セクションを追加',
       selectPresets: 'プリセットを選択',
       sectionEntityLabel: 'セクション',
-      saved: '保存しました。',
+      saved: '保存しました',
       saveFailed: '保存に失敗しました。もう一度お試しください。'
     },
 
     form: {
       addTitle: 'セクションを追加',
       editTitle: 'セクションを編集',
-      titleRequired: 'セクションのタイトルを入力してください。',
+      titleRequired: 'セクションのタイトルを入力してください',
       title: 'タイトル',
       titlePlaceholder: 'セクションのタイトルを入力…',
       entityType: 'エンティティの種類',
@@ -737,7 +735,7 @@ export const library = {
 
     presetsDialog: {
       title: 'プリセットセクションを選択',
-      empty: '利用できるプリセットはありません。',
+      empty: '利用できるプリセットはありません',
       addWithCount: ({ count }: { count: number }) => `追加 (${count})`
     },
 

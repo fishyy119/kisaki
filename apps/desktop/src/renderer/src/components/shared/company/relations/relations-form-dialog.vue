@@ -299,12 +299,14 @@ const deleteDialogOpen = computed({
           <DialogTitle>{{ m.library.forms.editCompanyRelations }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
-          <div
+          <StateView
             v-if="items.length === 0"
-            class="text-sm text-muted-foreground text-center py-8"
-          >
-            {{ m.library.forms.emptyListHint({ label: m.library.fields.companyRelations }) }}
-          </div>
+            state="empty"
+            :description="
+              m.library.forms.emptyListHint({ label: m.library.fields.companyRelations })
+            "
+            class="py-8"
+          />
           <div
             v-else
             class="space-y-2"

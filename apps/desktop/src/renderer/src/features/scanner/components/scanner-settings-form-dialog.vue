@@ -318,7 +318,7 @@ async function handleSubmit() {
                       v-for="name in formData.ignoredNames"
                       :key="name"
                       variant="secondary"
-                      class="gap-1 text-xs pr-0.5"
+                      class="pr-0.5"
                       :title="name"
                     >
                       <span class="truncate max-w-[150px]">{{ name }}</span>

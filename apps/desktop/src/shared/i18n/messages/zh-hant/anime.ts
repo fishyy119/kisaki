@@ -10,7 +10,7 @@ export const anime = {
   episodes: {
     title: '劇集',
     emptyTitle: '尚無劇集',
-    emptyHint: '掃描動漫資料夾或抓取中繼資料後，劇集會出現在這裡。',
+    emptyHint: '掃描動漫資料夾或抓取中繼資料後，劇集會出現在這裡',
     unnamed: ({ number }: { number: string }) => `第 ${number} 話`,
     entityLabel: '劇集',
     watched: '已看',
@@ -19,7 +19,7 @@ export const anime = {
     resumeAt: ({ position }: { position: string }) => `從 ${position} 繼續`,
     markWatched: '標記為已看',
     markUnwatched: '標記為未看',
-    watchedUpdated: '觀看狀態已更新。',
+    watchedUpdated: '觀看狀態已更新',
     progress: ({ watched, total }: { watched: number; total: number }) =>
       `已看 ${watched} / ${total}`,
     playCount: '播放次數',
@@ -29,28 +29,28 @@ export const anime = {
 
     catchUp: {
       title: '將剩餘劇集標記為已看？',
-      pendingCount: ({ count }: { count: number }) => `還有 ${count} 集未標記為已看。`,
+      pendingCount: ({ count }: { count: number }) => `還有 ${count} 集未標記為已看`,
       pendingByType: {
         regular: ({ count }: { count: number }) => `正片 ${count} 集`,
         special: ({ count }: { count: number }) => `特別篇 ${count} 集`
       },
-      hint: '標記只記錄觀看狀態，不會寫入觀看時間。',
+      hint: '標記只記錄觀看狀態，不會寫入觀看時間',
       markAll: '全部標記',
       markRegularOnly: '僅正片',
       skip: '跳過',
-      marked: ({ count }: { count: number }) => `已將 ${count} 集標記為已看。`
+      marked: ({ count }: { count: number }) => `已將 ${count} 集標記為已看`
     },
 
     addEpisode: '新增劇集',
     editEpisode: '編輯劇集',
     deleteEpisode: '刪除劇集',
-    episodeDeleted: '劇集已刪除。',
+    episodeDeleted: '劇集已刪除',
     numberLabel: '集數',
     numberPlaceholder: '可留空',
     typeLabel: '類型',
     durationMinutes: '時長（分鐘）',
-    numberInvalid: '集數必須為正數。',
-    durationInvalid: '時長必須為正數。',
+    numberInvalid: '集數必須為正數',
+    durationInvalid: '時長必須為正數',
 
     syncFiles: '同步檔案',
     syncCompleted: ({
@@ -61,15 +61,15 @@ export const anime = {
       episodes: number
       files: number
       extras: number
-    }) => `已同步 ${episodes} 個劇集、${files} 個檔案、${extras} 個特典。`,
-    syncFailed: '檔案同步失敗。',
-    syncUnrecognized: ({ count }: { count: number }) => `${count} 個檔案無法識別集數。`
+    }) => `已同步 ${episodes} 個劇集、${files} 個檔案、${extras} 個特典`,
+    syncFailed: '檔案同步失敗',
+    syncUnrecognized: ({ count }: { count: number }) => `${count} 個檔案無法識別集數`
   },
 
   extras: {
     title: '特典',
     emptyTitle: '尚無特典',
-    emptyHint: '資料夾中的預告片、無字 OP/ED 會出現在這裡。',
+    emptyHint: '資料夾中的預告片、無字 OP/ED 會出現在這裡',
     entityLabel: '特典',
     addExtra: '新增特典',
     extraAttached: '特典已新增',
@@ -89,7 +89,7 @@ export const anime = {
     title: '檔案',
     playFile: '播放此檔案',
     missingFile: '缺少檔案',
-    noFiles: '暫無檔案。',
+    noFiles: '暫無檔案',
     fileCount: ({ count }: { count: number }) => `${count} 個檔案`,
     primary: '首選',
     resolution: '解析度',
@@ -99,31 +99,31 @@ export const anime = {
     audioTrackCount: ({ count }: { count: number }) => `${count} 音軌`,
     subtitleTrackCount: ({ count }: { count: number }) => `${count} 字幕軌`,
     openFolder: '開啟所在資料夾',
-    openFolderFailed: '無法開啟所在資料夾。',
+    openFolderFailed: '無法開啟所在資料夾',
     setPrimary: '設為首選',
-    primaryUpdated: '首選檔案已更新。',
+    primaryUpdated: '首選檔案已更新',
     removeFile: '移除檔案記錄',
-    fileRemoved: '檔案記錄已移除。',
+    fileRemoved: '檔案記錄已移除',
     recordEntityLabel: '檔案記錄',
     addFile: '新增檔案',
-    fileAttached: '檔案已新增。',
-    attachFailed: '新增檔案失敗。',
+    fileAttached: '檔案已新增',
+    attachFailed: '新增檔案失敗',
     manualBadge: '手動',
     noteLabel: '備註',
     editNote: '編輯備註',
-    noteSaved: '備註已儲存。'
+    noteSaved: '備註已儲存'
   },
 
   player: {
     pause: '暫停',
     resume: '繼續播放',
-    pauseFailed: '無法暫停播放。',
-    resumeFailed: '無法繼續播放。'
+    pauseFailed: '無法暫停播放',
+    resumeFailed: '無法繼續播放'
   },
 
   detail: {
     openAnimeDir: '開啟動漫資料夾',
-    animeDirNotSet: '尚未設定動漫資料夾。',
+    animeDirNotSet: '尚未設定動漫資料夾',
     watchStatus: '觀看狀態'
   },
 
@@ -135,8 +135,8 @@ export const anime = {
     animeDirHint:
       '同步會掃描此資料夾來匹配劇集檔案；留空則完全手動管理檔案。儲存修改後會自動重新同步。',
     offsetLabel: '檔案集數偏移',
-    offsetHint: '檔案集數 − 偏移 = 中繼資料集數，用於對齊絕對集數命名的檔案。',
-    offsetInvalid: '偏移必須為整數。'
+    offsetHint: '檔案集數 − 偏移 = 中繼資料集數，用於對齊絕對集數命名的檔案',
+    offsetInvalid: '偏移必須為整數'
   },
 
   statusDialog: {
@@ -148,7 +148,7 @@ export const anime = {
   lastActiveDialog: {
     title: '編輯最近觀看時間',
     label: '最近觀看時間',
-    emptyHint: '留空表示從未觀看過。'
+    emptyHint: '留空表示從未觀看過'
   },
 
   duration: {
@@ -159,7 +159,7 @@ export const anime = {
     untrackedLabel: '未記錄的觀看時間',
     hoursUnit: '小時',
     minutesUnit: '分鐘',
-    untrackedHint: '觀看工作階段未記錄的觀看時間（如匯入的歷史資料）。',
+    untrackedHint: '觀看工作階段未記錄的觀看時間（如匯入的歷史資料）',
     sessionsHeader: ({ count }: { count: number }) => `工作階段記錄（${count}）`,
     emptySessions: '尚無工作階段記錄，點擊下方按鈕新增',
     addRecord: '新增記錄',
@@ -177,7 +177,7 @@ export const anime = {
 
   activity: {
     emptyTitle: '尚無觀看記錄',
-    emptyHint: '開始播放劇集後，觀看時長會自動記錄在這裡。',
+    emptyHint: '開始播放劇集後，觀看時長會自動記錄在這裡',
     statsOverview: '統計概覽',
     heatmap: '活動熱力圖',
     trend: '觀看趨勢',

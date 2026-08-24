@@ -125,7 +125,7 @@ const entityTypeModel = computed({
                 {{ m.library.entities[type] }}
                 <span
                   v-if="entityCounts[type] > 0"
-                  class="ml-1 text-[10px] text-muted-foreground"
+                  class="ml-1 text-muted-foreground"
                 >
                   ({{ entityCounts[type] }})
                 </span>

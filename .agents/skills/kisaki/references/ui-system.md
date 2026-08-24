@@ -232,20 +232,58 @@ frames; full-page reports never frame.
 
 ## Size & Typography
 
-### Base Typography
+### The rem Scale
 
-- Font size: `14px` (text-sm)
-- Line height: `1.5`
-- Font weight: `450`
-- Secondary text: `text-xs` (12px)
+The root font size is `14px` (`--text-base-size` on `:root`, applied to `html`), so
+the whole Tailwind rem scale renders at 87.5%. Effective pixels:
 
-### Control Heights
+| Utility     | Nominal | Effective |
+| ----------- | ------- | --------- |
+| `text-base` | 16px    | 14px      |
+| `text-sm`   | 14px    | 12.25px   |
+| `text-xs`   | 12px    | 10.5px    |
+| `text-lg`   | 18px    | 15.75px   |
+| `text-2xl`  | 24px    | 21px      |
 
-- Button/Input default: `h-7`
-- Small: `h-6`
-- Compact (icon buttons): `h-5`
-- Titlebar: `h-9`
-- Sidebar buttons: `size-10`
+Never reason in nominal values, and never write an arbitrary size
+(`text-[11px]`): pixels bypass the scale and, because the scale is compressed,
+they land between steps and read as noise. `--text-base-size` is the single
+lever a future interface-scale setting turns, so everything must stay in rem.
+Base line height is `1.5` and base weight `450`.
+
+### Type Roles
+
+Size follows the role of the text, not the component that happens to own it.
+Three roles carry all body copy:
+
+| Role       | Utility     | What it covers                                                                          |
+| ---------- | ----------- | --------------------------------------------------------------------------------------- |
+| Page title | `text-base` | `PageHeaderTitle` only - one per screen                                                 |
+| Content    | `text-sm`   | Control values, options, buttons, menu items, dialog titles, list titles, body copy     |
+| Meta       | `text-xs`   | Field/dialog descriptions, subtitles, badges, shortcuts, group labels, tabs, table text |
+
+Above the roles sit display sizes for figures that are read as data, not as
+prose: `text-lg` for stat values, `text-2xl` for the report hero figure (the
+app-wide ceiling; `text-3xl` is never used). A number is a figure only when it
+is the point of its cell - counts inside a label stay at the label's size.
+
+### Control Sizes
+
+A control's height and font size are one decision, made by the component:
+
+| Size      | Height | Font      |
+| --------- | ------ | --------- |
+| `default` | `h-7`  | `text-sm` |
+| `sm`      | `h-6`  | `text-xs` |
+| `xs`      | `h-5`  | `text-xs` |
+| `lg`      | `h-8`  | `text-sm` |
+
+Call sites pick a size and never set a control's font: a control that needs to
+look smaller than its neighbours is on the wrong step, not missing a class.
+Tables are the one surface that sizes its contents: `Table` declares `text-xs`
+once on the `<table>` and rows, heads, cells, and captions inherit it.
+
+Other fixed heights: titlebar `h-9`, sidebar buttons `size-10`.
 
 ### Spacing
 
@@ -312,6 +350,38 @@ See `buttonVariants` in `components/ui/button.vue`:
 - No visual overlay/scrim: separation comes from shadow-modal + the elevation ladder
 - 100-150ms fade/zoom animation
 - Structure: `DialogHeader` → `DialogBody` → `DialogFooter`
+
+### Empty / Loading / Error (StateView)
+
+`StateView` is the only block-level placeholder in the app. Every region that can
+render nothing goes through it - loading spinner, empty, not-found, and error all
+come from the same component, so a placeholder never gets hand-built out of a
+centered div, an icon, and a muted paragraph:
+
+```vue
+<StateView
+  v-if="items.length === 0"
+  state="empty"
+  icon="icon-[mdi--puzzle-outline]"
+  :title="m.x.emptyTitle"
+  :description="m.x.emptyHint"
+  class="py-8"
+>
+  <template #actions><Button>…</Button></template>
+</StateView>
+```
+
+- The caller owns only the region's box (`py-8`, `h-40`, `h-full`, a frame); the
+  component owns icon opacity, type sizes, and spacing.
+- `size` defaults to `md`; use `sm` inside compact panes (popover lists, table
+  `state` slots, sidebar lists, chart cells).
+- Title is optional. A one-line placeholder passes `description` alone.
+- The `error` state has a fixed presentation (alert icon + the app's error title +
+  the error message); pass `:error` and do not invent a per-surface error title.
+- Inline busy indicators (inside a button, a row, a toolbar) keep using `Spinner`
+  directly - `StateView` is for regions, not for widgets.
+- Inline placeholders inside a detail-page section are a different device:
+  `Section` / `SectionScroll` render `emptyText` as an italic xs line.
 
 ### Form
 

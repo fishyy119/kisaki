@@ -4,12 +4,11 @@ export const adder = {
   addScanner: 'Add scanner',
 
   addFailed: ({ label }: { label: string }) => `Could not add the ${label.toLowerCase()}`,
-  addCancelled: ({ label }: { label: string }) =>
-    `Adding the ${label.toLowerCase()} was cancelled.`,
+  addCancelled: ({ label }: { label: string }) => `Adding the ${label.toLowerCase()} was cancelled`,
   missingEntityId: ({ label }: { label: string }) =>
-    `The task result is missing the ${label.toLowerCase()} ID.`,
+    `The task result is missing the ${label.toLowerCase()} ID`,
 
-  autofillHint: 'Click a search result to fill in the ID.',
+  autofillHint: 'Click a search result to fill in the ID',
   adding: 'Adding…',
   submit: 'Identify and add',
 

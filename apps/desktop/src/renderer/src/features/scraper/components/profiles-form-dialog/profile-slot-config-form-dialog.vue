@@ -44,6 +44,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Switch } from '@renderer/components/ui/switch'
 import { ContentLocaleSelect } from '@renderer/components/ui/locale-select'
 import {
@@ -298,12 +299,12 @@ function handleSubmit() {
               <FieldDescription>{{ m.scraper.profiles.providersHint }}</FieldDescription>
               <FieldContent>
                 <div class="space-y-1.5">
-                  <p
+                  <StateView
                     v-if="formData.providers.length === 0"
-                    class="rounded-lg border bg-muted/30 py-4 text-center text-sm text-muted-foreground"
-                  >
-                    {{ m.scraper.profiles.noProviders }}
-                  </p>
+                    state="empty"
+                    :description="m.scraper.profiles.noProviders"
+                    class="rounded-lg border bg-muted/30 py-4"
+                  />
                   <div
                     v-for="row in providerRows"
                     :key="row.entry.providerId"
@@ -325,7 +326,7 @@ function handleSubmit() {
                         <Badge
                           v-if="row.display.statusLabel"
                           variant="warning"
-                          class="shrink-0 px-1 py-0 text-[10px]"
+                          class="shrink-0 px-1 py-0"
                         >
                           {{ row.display.statusLabel }}
                         </Badge>

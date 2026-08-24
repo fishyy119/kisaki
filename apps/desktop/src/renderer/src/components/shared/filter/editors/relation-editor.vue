@@ -63,7 +63,7 @@ function handleRemove(idToRemove: string) {
         v-for="item in selectedEntities"
         :key="item.id"
         variant="secondary"
-        class="text-xs flex items-center gap-1"
+        class="flex"
       >
         <span class="truncate max-w-32">{{ item.name }}</span>
         <Button

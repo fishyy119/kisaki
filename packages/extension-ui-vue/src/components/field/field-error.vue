@@ -35,7 +35,7 @@ const hasContent = computed(() => slots.default || uniqueErrors.value.length > 0
     v-if="hasContent"
     role="alert"
     data-slot="field-error"
-    :class="cn('text-destructive text-sm font-normal', props.class)"
+    :class="cn('text-destructive text-xs font-normal', props.class)"
   >
     <slot>
       <!-- Single error -->

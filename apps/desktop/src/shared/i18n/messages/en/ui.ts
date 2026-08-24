@@ -4,7 +4,7 @@ export const ui = {
     errorTitle: 'Load failed'
   },
   combobox: {
-    noMatches: 'No matches.',
+    noMatches: 'No matches',
     create: ({ name }: { name: string }) => `Create "${name}"`
   },
   imagePicker: {
@@ -51,8 +51,8 @@ export const ui = {
     yearPlaceholder: 'YYYY',
     monthPlaceholder: 'MM',
     dayPlaceholder: 'DD',
-    invalidInteger: 'Date fields accept whole numbers only.',
-    yearDayWithoutMonth: 'Month is required when both year and day are set.'
+    invalidInteger: 'Date fields accept whole numbers only',
+    yearDayWithoutMonth: 'Month is required when both year and day are set'
   },
   rankingList: {
     expandTitle: 'Ranking',
@@ -83,12 +83,12 @@ export const ui = {
     deleteNamedDescription: ({ name, label }: { name: string; label: string }) =>
       `Delete "${name}"? This cannot be undone; the ${label} data will be permanently deleted.`,
     deleteDescription: ({ label }: { label: string }) =>
-      `This cannot be undone; the ${label} data will be permanently deleted.`,
+      `This cannot be undone; the ${label} data will be permanently deleted`,
     removing: 'Removing…',
     deleting: 'Deleting…'
   },
   spoiler: {
     title: 'Show spoilers?',
-    description: 'Content marked as spoilers will be shown immediately.'
+    description: 'Content marked as spoilers will be shown immediately'
   }
 }

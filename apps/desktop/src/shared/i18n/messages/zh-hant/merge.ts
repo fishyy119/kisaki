@@ -7,7 +7,7 @@ export const merge = {
   confirmTitle: ({ source, target }: { source: string; target: string }) =>
     `將「${source}」合併到「${target}」`,
   confirmDescription: ({ source }: { source: string }) =>
-    `「${source}」會被刪除；外部 ID、關係、標籤、合集、活動記錄和附件會遷移到保留實體，目標既有資訊保持不變。`,
+    `「${source}」會被刪除；外部 ID、關係、標籤、合集、活動記錄和附件會遷移到保留實體，目標既有資訊保持不變`,
   action: '合併',
   merged: ({ name }: { name: string }) => `已合併到「${name}」`,
   fallbackTargetName: '目標實體',

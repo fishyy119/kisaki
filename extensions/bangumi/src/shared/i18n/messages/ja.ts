@@ -48,61 +48,61 @@ export const ja = {
   },
 
   errors: {
-    authRequired: '先に Bangumi アカウントにサインインしてください。',
+    authRequired: '先に Bangumi アカウントにサインインしてください',
     authSessionInvalid: 'Bangumi セッションが無効になりました。再度サインインしてください。',
     tokenRefreshFailed: 'Bangumi 資格情報を更新できませんでした。再度サインインしてください。',
     refreshTokenMissing: 'Bangumi リフレッシュトークンが存在しません。再度サインインしてください。',
-    tokenSaveFailed: 'Bangumi 資格情報を保存できませんでした。',
+    tokenSaveFailed: 'Bangumi 資格情報を保存できませんでした',
 
-    loginNotReady: 'Bangumi サインインはまだ準備できていません。',
-    loginCallbackMissingParams: 'Bangumi サインインのコールバックに必要なパラメータがありません。',
+    loginNotReady: 'Bangumi サインインはまだ準備できていません',
+    loginCallbackMissingParams: 'Bangumi サインインのコールバックに必要なパラメータがありません',
     loginSessionExpired:
       'Bangumi サインインセッションの有効期限が切れました。再度サインインしてください。',
     loginCallbackInvalid:
       'Bangumi サインインのコールバック検証に失敗しました。再度サインインしてください。',
-    noPendingLogin: '完了待ちの Bangumi サインインはありません。',
+    noPendingLogin: '完了待ちの Bangumi サインインはありません',
 
-    relayUnreachable: 'Kisaki OAuth リレーに接続できませんでした。',
+    relayUnreachable: 'Kisaki OAuth リレーに接続できませんでした',
     relayUnavailable: 'Kisaki OAuth リレーは一時的に利用できません。後でもう一度お試しください。',
-    relayAvailable: 'OAuth リレーは利用可能です。',
-    relayInvalidSession: 'OAuth リレーが認識できないサインインセッションを返しました。',
-    relayNoToken: 'OAuth リレーがアクセス資格情報を返しませんでした。',
+    relayAvailable: 'OAuth リレーは利用可能です',
+    relayInvalidSession: 'OAuth リレーが認識できないサインインセッションを返しました',
+    relayNoToken: 'OAuth リレーがアクセス資格情報を返しませんでした',
 
-    apiNotFound: 'Bangumi エントリが存在しません。',
+    apiNotFound: 'Bangumi エントリが存在しません',
     apiRateLimited: 'Bangumi API リクエストが多すぎます。後でもう一度お試しください。',
-    apiRejected: 'Bangumi API がリクエストを拒否しました。',
-    apiUnavailable: 'Bangumi API は一時的に利用できません。',
-    networkFailed: 'Bangumi API のネットワークリクエストに失敗しました。',
-    accountResponseInvalid: 'Bangumi アカウントの応答を認識できませんでした。',
-    idInvalid: ({ value }) => `「${value}」は有効な Bangumi ID ではありません。`,
+    apiRejected: 'Bangumi API がリクエストを拒否しました',
+    apiUnavailable: 'Bangumi API は一時的に利用できません',
+    networkFailed: 'Bangumi API のネットワークリクエストに失敗しました',
+    accountResponseInvalid: 'Bangumi アカウントの応答を認識できませんでした',
+    idInvalid: ({ value }) => `「${value}」は有効な Bangumi ID ではありません`,
 
-    operationCancelled: '操作はキャンセルされました。',
-    jobCancelled: 'Bangumi ジョブはキャンセルされました。',
-    jobFailed: 'Bangumi ジョブが失敗しました。',
+    operationCancelled: '操作はキャンセルされました',
+    jobCancelled: 'Bangumi ジョブはキャンセルされました',
+    jobFailed: 'Bangumi ジョブが失敗しました',
     jobAlreadyRunning:
       'この Bangumi ジョブは既に実行中です。完了を待つか、先にキャンセルしてください。',
 
-    invalidMediaScope: '有効な Bangumi メディア種別を選択してください。',
-    mediaScopeNotRegistered: 'この Bangumi メディア種別は登録されていません。',
+    invalidMediaScope: '有効な Bangumi メディア種別を選択してください',
+    mediaScopeNotRegistered: 'この Bangumi メディア種別は登録されていません',
     localWriteUnsupported: ({ scope }: { scope: Scope }) =>
-      `${SCOPES[scope]}はまだローカルライブラリへの書き込みに対応していません。`,
+      `${SCOPES[scope]}はまだローカルライブラリへの書き込みに対応していません`,
     localWriteUnsupportedGeneric:
-      'このメディア種別はまだローカルライブラリへの書き込みに対応していません。',
+      'このメディア種別はまだローカルライブラリへの書き込みに対応していません',
 
-    localMediaStatusUnknown: 'ローカル項目のステータスを認識できませんでした。',
-    localMediaMissing: 'ローカル項目が存在しません。',
-    localItemMissing: 'ローカルエントリが存在しません。',
-    importedItemMissing: 'インポート済みのローカルエントリが存在しません。',
-    targetCollectionMissing: '選択したターゲットコレクションが存在しません。',
-    selectTargetCollection: 'ターゲットコレクションを選択してください。',
-    indexTitleEmpty: 'Bangumi インデックスのタイトルが空のため、コレクションを作成できません。',
-    indexInputRequired: 'Bangumi インデックスの ID またはリンクを入力してください。',
+    localMediaStatusUnknown: 'ローカル項目のステータスを認識できませんでした',
+    localMediaMissing: 'ローカル項目が存在しません',
+    localItemMissing: 'ローカルエントリが存在しません',
+    importedItemMissing: 'インポート済みのローカルエントリが存在しません',
+    targetCollectionMissing: '選択したターゲットコレクションが存在しません',
+    selectTargetCollection: 'ターゲットコレクションを選択してください',
+    indexTitleEmpty: 'Bangumi インデックスのタイトルが空のため、コレクションを作成できません',
+    indexInputRequired: 'Bangumi インデックスの ID またはリンクを入力してください',
     indexInputInvalid:
-      'Bangumi インデックスは数値 ID、または https://bgm.tv/index/<id> や https://bangumi.tv/index/<id> のようなリンクである必要があります。',
-    indexSubjectMissingId: 'Bangumi インデックスのエントリに有効な作品 ID がありません。',
-    collectionMissingSubjectId: 'Bangumi コレクションに有効な作品 ID がありません。',
-    profileRequired: 'ローカル項目の作成に使うスクレイパープロファイルを選択してください。',
-    profileNotFound: '選択したスクレイパープロファイルが存在しません。'
+      'Bangumi インデックスは数値 ID、または https://bgm.tv/index/<id> や https://bangumi.tv/index/<id> のようなリンクである必要があります',
+    indexSubjectMissingId: 'Bangumi インデックスのエントリに有効な作品 ID がありません',
+    collectionMissingSubjectId: 'Bangumi コレクションに有効な作品 ID がありません',
+    profileRequired: 'ローカル項目の作成に使うスクレイパープロファイルを選択してください',
+    profileNotFound: '選択したスクレイパープロファイルが存在しません'
   },
 
   oauth: {
@@ -116,7 +116,7 @@ export const ja = {
 
   notifications: {
     autoSyncFailedTitle: 'Bangumi 自動同期に失敗',
-    autoSyncFailedFallback: 'Bangumi 自動同期に失敗しました。'
+    autoSyncFailedFallback: 'Bangumi 自動同期に失敗しました'
   },
 
   commands: {
@@ -143,8 +143,8 @@ export const ja = {
   },
 
   jobs: {
-    completed: 'Bangumi ジョブが完了しました。',
-    cancelled: 'Bangumi ジョブはキャンセルされました。',
+    completed: 'Bangumi ジョブが完了しました',
+    cancelled: 'Bangumi ジョブはキャンセルされました',
 
     auth: {
       refreshingToken: 'Bangumi 資格情報を更新しています…',
@@ -159,15 +159,15 @@ export const ja = {
       loadingQueue: 'Bangumi 変更キューを読み込んでいます…',
       syncingQueue: 'Bangumi 変更キューを同期しています…',
       queueUnsupported: ({ scope }: { scope: Scope }) =>
-        `${SCOPES[scope]}はまだローカル変更の同期に対応していません。`,
+        `${SCOPES[scope]}はまだローカル変更の同期に対応していません`,
       queueCompleted: ({ count }: { count: number }) =>
-        `変更キューの同期が完了しました：${count} 件のエントリを同期しました。`,
+        `変更キューの同期が完了しました：${count} 件のエントリを同期しました`,
       fullUnsupported: ({ scope }: { scope: Scope }) =>
-        `${SCOPES[scope]}はまだローカルフル同期に対応していません。`,
+        `${SCOPES[scope]}はまだローカルフル同期に対応していません`,
       fullCompleted: ({ count, scope }: { count: number; scope: Scope }) =>
-        `フル同期が完了しました：${countOf(scope, count)}を同期しました。`,
+        `フル同期が完了しました：${countOf(scope, count)}を同期しました`,
       previewCompleted: ({ count, scope }: { count: number; scope: Scope }) =>
-        `フル同期プレビューが完了しました：${countOf(scope, count)}を同期できます。`,
+        `フル同期プレビューが完了しました：${countOf(scope, count)}を同期できます`,
       scanningItems: ({ scope }: { scope: Scope }) => `${NOUNS[scope]}をスキャンしています…`,
       collectingItems: ({ scope }: { scope: Scope }) =>
         `同期対象の${NOUNS[scope]}を計算しています…`,
@@ -188,7 +188,7 @@ export const ja = {
       creatingLocal: ({ scope }: { scope: Scope }) => `${NOUNS[scope]}を追加しています…`,
       patchingLocal: ({ scope }: { scope: Scope }) => `${NOUNS[scope]}を更新しています…`,
       writeUnsupported: ({ scope }: { scope: Scope }) =>
-        `${SCOPES[scope]}はまだローカルライブラリへの書き込みに対応していません。`,
+        `${SCOPES[scope]}はまだローカルライブラリへの書き込みに対応していません`,
       collectionsCompleted: ({
         added,
         updated,
@@ -198,7 +198,7 @@ export const ja = {
         updated: number
         scope: Scope
       }) =>
-        `コレクションのインポートが完了しました：${countOf(scope, added)}を追加、既存 ${updated} 件を更新しました。`,
+        `コレクションのインポートが完了しました：${countOf(scope, added)}を追加、既存 ${updated} 件を更新しました`,
       collectionsPreviewCompleted: ({
         toImport,
         toPatch,
@@ -208,7 +208,7 @@ export const ja = {
         toPatch: number
         scope: Scope
       }) =>
-        `コレクションのインポートプレビューが完了しました：${countOf(scope, toImport)}をインポートし、既存 ${toPatch} 件を更新します。`,
+        `コレクションのインポートプレビューが完了しました：${countOf(scope, toImport)}をインポートし、既存 ${toPatch} 件を更新します`,
       indexCompleted: ({
         added,
         updated,
@@ -218,7 +218,7 @@ export const ja = {
         updated: number
         scope: Scope
       }) =>
-        `インデックスのインポートが完了しました：${countOf(scope, added)}を追加、既存 ${updated} 件を更新しました。`,
+        `インデックスのインポートが完了しました：${countOf(scope, added)}を追加、既存 ${updated} 件を更新しました`,
       indexPreviewCompleted: ({
         toImport,
         toPatch,
@@ -228,15 +228,15 @@ export const ja = {
         toPatch: number
         scope: Scope
       }) =>
-        `インデックスのインポートプレビューが完了しました：${countOf(scope, toImport)}をインポートし、既存 ${toPatch} 件を更新します。`,
+        `インデックスのインポートプレビューが完了しました：${countOf(scope, toImport)}をインポートし、既存 ${toPatch} 件を更新します`,
       buildingCollectionsPreview: 'コレクションインポートのプレビューを生成しています…',
       buildingIndexPreview: 'インデックスインポートのプレビューを生成しています…',
       buildingRemoteCollectionsPreview: 'リモートコレクションのプレビューを生成しています…',
       buildingRemoteIndexPreview: 'リモートインデックスのプレビューを生成しています…',
       remoteCollectionsPreviewCompleted: ({ scope }: { scope: Scope }) =>
-        `${SCOPES[scope]}のリモートコレクションプレビューが完了しました。`,
+        `${SCOPES[scope]}のリモートコレクションプレビューが完了しました`,
       remoteIndexPreviewCompleted: ({ scope }: { scope: Scope }) =>
-        `${SCOPES[scope]}インデックスのリモートプレビューが完了しました。`
+        `${SCOPES[scope]}インデックスのリモートプレビューが完了しました`
     },
 
     preview: {
@@ -293,9 +293,9 @@ export const ja = {
       'sync-full-daily': '毎日のフル同期'
     },
     descriptions: {
-      'auth-refresh': 'アプリ起動時に Bangumi 資格情報を更新して検証します。',
-      'sync-changed': '起動後に前回のセッション中に蓄積されたローカル変更を同期します。',
-      'sync-full-daily': '毎日早朝に一度ライブラリのフル同期を実行します。'
+      'auth-refresh': 'アプリ起動時に Bangumi 資格情報を更新して検証します',
+      'sync-changed': '起動後に前回のセッション中に蓄積されたローカル変更を同期します',
+      'sync-full-daily': '毎日早朝に一度ライブラリのフル同期を実行します'
     },
     status: {
       missing: '未作成',
@@ -306,14 +306,14 @@ export const ja = {
 
   settings: {
     commandLabel: '設定',
-    commandDescription: 'Bangumi 連携設定を開きます。',
+    commandDescription: 'Bangumi 連携設定を開きます',
     webviewTitle: 'Bangumi'
   },
 
   ui: {
     loading: 'Bangumi 設定を読み込んでいます…',
     unavailable: 'Bangumi 設定は利用できません',
-    saved: '設定を保存しました。',
+    saved: '設定を保存しました',
     unsavedChanges: '未保存の変更',
     discardChanges: '変更を破棄',
     savePreferences: '設定を保存',
@@ -389,14 +389,14 @@ export const ja = {
     sync: {
       preferencesTitle: '自動同期設定',
       autoSync: '自動同期',
-      autoSyncDescription: 'ローカル項目の作成とユーザー状態フィールドの変更を監視します。',
+      autoSyncDescription: 'ローカル項目の作成とユーザー状態フィールドの変更を監視します',
       syncItems: '同期項目',
       itemCreate: 'コレクション作成',
       itemStatus: '項目ステータス',
       itemScore: '評価',
       itemEpisodes: 'エピソード視聴状態',
       clearRemoteScore: 'リモート評価の削除を許可',
-      clearRemoteScoreDescription: 'ローカル評価をクリアしたとき Bangumi の評価も削除します。',
+      clearRemoteScoreDescription: 'ローカル評価をクリアしたとき Bangumi の評価も削除します',
       manualTitle: '手動同期',
       manualDescription:
         '変更キューを今すぐ同期するか、一回限りのフル同期を設定します。進行状況とキャンセルはタスクセンターで処理されます。',
@@ -412,10 +412,10 @@ export const ja = {
         'インポートは一回限りのタスクです。オプションは今回の実行のみに適用され、Bangumi 設定には保存されません。',
       myCollections: '自分のコレクション',
       myCollectionsDescription:
-        '現在の Bangumi ユーザーの選択したメディア種別のコレクションを種別ごとにインポートします。',
+        '現在の Bangumi ユーザーの選択したメディア種別のコレクションを種別ごとにインポートします',
       bangumiIndex: 'Bangumi インデックス',
-      bangumiIndexDescription: 'インデックスの ID またはリンクを入力してインポートを設定します。',
-      indexPlaceholder: 'インデックス ID または https://bgm.tv/index/...',
+      bangumiIndexDescription: 'インデックスの ID またはリンクを入力してインポートを設定します',
+      indexPlaceholder: 'インデックス ID または https://bgm.tv/index/..',
       configureImport: 'インポートを設定'
     },
 
@@ -428,20 +428,20 @@ export const ja = {
 
     maintenance: {
       networkTitle: 'ネットワークとクライアント',
-      networkDescription: 'これらの設定は保存後、以降の Bangumi API リクエストに影響します。',
+      networkDescription: 'これらの設定は保存後、以降の Bangumi API リクエストに影響します',
       loginTimeout: 'サインインタイムアウト',
       minutes: '分',
       rateLimit: 'API レート制限',
-      rateLimitDescription: 'リクエスト数 / 時間ウィンドウ。',
+      rateLimitDescription: 'リクエスト数 / 時間ウィンドウ',
       seconds: '秒',
       apiTimeout: 'API タイムアウト',
       retryCount: 'リトライ回数',
       retryUnit: '回',
       debounce: '自動同期デバウンス',
       notifyErrors: '同期エラー通知',
-      notifyErrorsDescription: '同期ジョブが失敗したときメインアプリの通知を送信します。',
+      notifyErrorsDescription: '同期ジョブが失敗したときメインアプリの通知を送信します',
       actionsTitle: 'メンテナンス操作',
-      actionsDescription: 'これらの操作は即座に反映され、取り消せません。',
+      actionsDescription: 'これらの操作は即座に反映され、取り消せません',
       clearSyncState: '同期状態をクリア',
       clearSyncStateDescription:
         '同期フィンガープリントと変更キューをクリアします。次回の同期で全エントリを再比較します。',
@@ -459,12 +459,12 @@ export const ja = {
       itemEpisodes: 'エピソード視聴状態',
       updateExisting: '既存コレクションを更新',
       updateExistingDescription:
-        'オフの場合、リモートに存在しないエントリの Bangumi コレクションのみ作成します。',
+        'オフの場合、リモートに存在しないエントリの Bangumi コレクションのみ作成します',
       clearRemoteScore: 'リモート評価の削除を許可',
       batchSize: 'バッチサイズ',
       run: '同期を実行',
       previewTitle: 'フル同期プレビュー',
-      previewDescription: 'Bangumi に同期される変更を確認します。'
+      previewDescription: 'Bangumi に同期される変更を確認します'
     },
 
     importCollections: {
@@ -481,7 +481,7 @@ export const ja = {
       collectionPlaceholder: 'コレクションを選択',
       start: 'インポートを開始',
       previewTitle: '自分のコレクションのインポートプレビュー',
-      previewDescription: '作成・更新・スキップされるエントリを確認します。'
+      previewDescription: '作成・更新・スキップされるエントリを確認します'
     },
 
     importIndex: {
@@ -498,7 +498,7 @@ export const ja = {
       patchExisting: '既存エントリを更新',
       start: 'インポートを開始',
       previewTitle: 'インデックスのインポートプレビュー',
-      previewDescription: '作成・更新・スキップされるエントリを確認します。'
+      previewDescription: '作成・更新・スキップされるエントリを確認します'
     },
 
     previewDialog: {

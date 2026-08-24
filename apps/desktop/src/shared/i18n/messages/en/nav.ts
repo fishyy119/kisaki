@@ -17,7 +17,7 @@ export const nav = {
   nsfw: {
     enableTitle: 'Show NSFW content?',
     disableTitle: 'Hide NSFW content?',
-    enableDescription: 'Content marked as NSFW will be shown.',
-    disableDescription: 'Content marked as NSFW will be hidden.'
+    enableDescription: 'Content marked as NSFW will be shown',
+    disableDescription: 'Content marked as NSFW will be hidden'
   }
 }

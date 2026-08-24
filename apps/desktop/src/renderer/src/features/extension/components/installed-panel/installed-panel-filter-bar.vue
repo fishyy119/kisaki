@@ -157,7 +157,6 @@ function handleToggleSortDirection() {
         </InputGroupAddon>
         <InputGroupInput
           v-model="searchQueryModel"
-          class="text-xs"
           :placeholder="m.extension.installed.searchPlaceholder"
         />
         <InputGroupAddon

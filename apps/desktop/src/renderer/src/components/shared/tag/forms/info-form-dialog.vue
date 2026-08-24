@@ -30,7 +30,7 @@ import {
   FieldDescription
 } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -127,11 +127,11 @@ async function handleSubmit() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-xl">
       <!-- Loading state -->
-      <DialogBody
-        v-if="isLoading || !tag"
-        class="flex items-center justify-center py-8"
-      >
-        <Spinner class="size-8" />
+      <DialogBody v-if="isLoading || !tag">
+        <StateView
+          state="loading"
+          class="py-8"
+        />
       </DialogBody>
 
       <!-- Form content -->

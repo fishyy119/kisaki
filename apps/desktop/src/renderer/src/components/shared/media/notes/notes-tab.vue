@@ -8,6 +8,7 @@
 import { computed, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
@@ -154,14 +155,15 @@ async function reorder(noteId: string, direction: -1 | 1) {
 
 <template>
   <!-- Empty state -->
-  <template v-if="!hasNotes">
-    <div class="flex flex-col items-center justify-center py-12 text-center">
-      <Icon
-        icon="icon-[mdi--note-text-outline]"
-        class="size-12 text-muted-foreground/30 mb-3"
-      />
-      <p class="text-sm text-muted-foreground">{{ m.library.notes.emptyTitle }}</p>
-      <p class="text-xs text-muted-foreground/70 mt-1 mb-4">{{ m.library.notes.emptyHint }}</p>
+  <StateView
+    v-if="!hasNotes"
+    state="empty"
+    icon="icon-[mdi--note-text-outline]"
+    :title="m.library.notes.emptyTitle"
+    :description="m.library.notes.emptyHint"
+    class="py-12"
+  >
+    <template #actions>
       <Button @click="openCreateDialog">
         <Icon
           icon="icon-[mdi--plus]"
@@ -169,8 +171,8 @@ async function reorder(noteId: string, direction: -1 | 1) {
         />
         {{ m.library.notes.newNote }}
       </Button>
-    </div>
-  </template>
+    </template>
+  </StateView>
 
   <!-- Notes list -->
   <template v-else>

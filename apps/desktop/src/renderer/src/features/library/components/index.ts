@@ -20,5 +20,4 @@ export {
 } from './explorer'
 
 // Showcase
-export { LibraryShowcaseSection, LibraryShowcaseEmpty } from './showcase'
-export { LibraryShowcaseSectionsFormDialog } from './showcase'
+export { LibraryShowcaseSection, LibraryShowcaseSectionsFormDialog } from './showcase'

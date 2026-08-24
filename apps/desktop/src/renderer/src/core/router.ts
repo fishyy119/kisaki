@@ -4,7 +4,6 @@
  * Hash history for Electron compatibility
  */
 
-import { h } from 'vue'
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 import { useDefaultFromStore } from '@renderer/stores'
 import { isContentEntityType } from '@shared/common'
@@ -39,18 +38,6 @@ import {
   extensionSignersData
 } from '@renderer/features/extension'
 import { statisticsData } from '@renderer/features/statistics'
-
-// Placeholder component for routes during development
-const PlaceholderPage = {
-  name: 'PlaceholderPage',
-  render() {
-    return h(
-      'div',
-      { class: 'flex items-center justify-center h-full text-muted-foreground' },
-      'Page under construction'
-    )
-  }
-}
 
 // Route definitions
 const routes: RouteRecordRaw[] = [
@@ -225,12 +212,6 @@ const routes: RouteRecordRaw[] = [
     name: 'extension-page',
     component: () => import('@renderer/pages/extension-page.vue'),
     props: true
-  },
-  // Updater
-  {
-    path: '/updater',
-    name: 'updater',
-    component: PlaceholderPage
   },
   // Catch-all 404
   {

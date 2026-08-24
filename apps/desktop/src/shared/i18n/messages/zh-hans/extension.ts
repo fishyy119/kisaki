@@ -12,7 +12,7 @@ const RELEASE_ACTIONS: Record<ReleaseActionKind, string> = {
 /** Extension platform surfaces: manager pages, panels, dialogs, and webviews. */
 export const extension = {
   title: '扩展',
-  webviewPageClosed: '该扩展页面已关闭。',
+  webviewPageClosed: '该扩展页面已关闭',
 
   categories: {
     scraper: '元数据',
@@ -40,7 +40,7 @@ export const extension = {
 
   host: {
     reloading: '正在重载扩展进程',
-    reloaded: '扩展进程已重载。',
+    reloaded: '扩展进程已重载',
     reloadFailed: '重载扩展进程失败',
     codeUpdatedTitle: '扩展代码已更新',
     pendingChanges: ({ subject }: { subject: string }) => `${subject}有未应用的修改`,
@@ -67,15 +67,15 @@ export const extension = {
     actionTitle: ({ action }: { action: string }) => `${action}扩展`,
     prepareTitle: '准备扩展版本',
     importLocalTitle: '导入本地扩展',
-    repositoryDescription: '检查版本、仓库来源和签名后继续。',
-    localDescription: '选择本地 .kisx 文件并确认。',
+    repositoryDescription: '检查版本、仓库来源和签名后继续',
+    localDescription: '选择本地 .kisx 文件并确认',
     confirmAction: ({ action }: { action: string }) => `确认${action}`,
     selectFile: '选择文件',
     planFailed: '无法创建版本计划',
     filePickerTitle: '选择扩展文件',
     filePickerFilterName: '扩展包',
-    cancelled: '操作已取消。',
-    applied: ({ action }: { action: string }) => `扩展${action}成功。`,
+    cancelled: '操作已取消',
+    applied: ({ action }: { action: string }) => `扩展${action}成功`,
     applyFailed: '操作失败',
     signerTrusted: '签名已信任',
     signerUntrusted: '签名未信任',
@@ -97,7 +97,7 @@ export const extension = {
     enableAfterApply: '应用后启用',
     updatePolicy: '更新策略',
     trustSigner: '信任此扩展的签名指纹',
-    pickLocalHint: '选择本地扩展包文件（.kisx）。'
+    pickLocalHint: '选择本地扩展包文件（.kisx）'
   },
 
   policy: {
@@ -120,10 +120,10 @@ export const extension = {
       action: ReleaseActionKind
       name: string
       version: string
-    }) => `已${RELEASE_ACTIONS[action]} ${name} v${version}。`,
+    }) => `已${RELEASE_ACTIONS[action]} ${name} v${version}`,
     cancelledSummary: ({ action }: { action: ReleaseActionKind }) =>
-      `扩展${RELEASE_ACTIONS[action]}已取消。`,
-    localCancelledSummary: '扩展包应用已取消。',
+      `扩展${RELEASE_ACTIONS[action]}已取消`,
+    localCancelledSummary: '扩展包应用已取消',
     phases: {
       waitLock: '等待扩展包写入锁',
       prepare: '准备扩展安装包',
@@ -137,21 +137,21 @@ export const extension = {
     refreshOneTitle: ({ name }: { name: string }) => `刷新仓库 ${name}`,
     refreshAllTitle: '刷新全部扩展仓库',
     allSubjectLabel: '全部扩展仓库',
-    cancelledSummary: '扩展仓库刷新已取消。',
+    cancelledSummary: '扩展仓库刷新已取消',
     preparing: '准备刷新扩展仓库',
     noneEnabled: '没有启用的扩展仓库',
     refreshingOne: ({ name }: { name: string }) => `正在刷新 ${name}`,
     refreshedOne: ({ name }: { name: string }) => `已刷新 ${name}`,
     oneFailedTitle: '仓库刷新失败',
-    oneFailedSummary: ({ name }: { name: string }) => `${name} 刷新失败。`,
+    oneFailedSummary: ({ name }: { name: string }) => `${name} 刷新失败`,
     oneNotModifiedTitle: '仓库未变化',
     oneCompletedTitle: '仓库刷新完成',
-    oneNotModifiedSummary: ({ name }: { name: string }) => `${name} 已是最新。`,
-    oneRefreshedSummary: ({ name }: { name: string }) => `${name} 已刷新。`,
+    oneNotModifiedSummary: ({ name }: { name: string }) => `${name} 已是最新`,
+    oneRefreshedSummary: ({ name }: { name: string }) => `${name} 已刷新`,
     allFailedTitle: '扩展仓库刷新失败',
     allPartialTitle: '部分扩展仓库刷新失败',
     allCompletedTitle: '扩展仓库刷新完成',
-    noneEnabledSummary: '没有启用的扩展仓库。',
+    noneEnabledSummary: '没有启用的扩展仓库',
     allSummary: ({
       processed,
       total,
@@ -165,14 +165,14 @@ export const extension = {
       notModified: number
       failed: number
     }) =>
-      `已处理 ${processed}/${total} 个仓库，成功 ${succeeded}，未变化 ${notModified}，失败 ${failed}。`
+      `已处理 ${processed}/${total} 个仓库，成功 ${succeeded}，未变化 ${notModified}，失败 ${failed}`
   },
 
   updatePolicyDialog: {
     title: '更新配置',
     policyLabel: '更新策略',
     receivePrerelease: '接收预览版更新',
-    saved: '更新配置已保存。',
+    saved: '更新配置已保存',
     saveFailed: '保存更新配置失败'
   },
 
@@ -181,16 +181,16 @@ export const extension = {
     purgeData: '同时清除扩展数据',
     confirmPurge: '卸载并清除',
     confirm: '卸载',
-    uninstalledPurged: '扩展已卸载并清除数据。',
-    uninstalled: '扩展已卸载。',
+    uninstalledPurged: '扩展已卸载并清除数据',
+    uninstalled: '扩展已卸载',
     purgeFailed: '扩展已卸载，清除数据失败',
     failed: '卸载失败'
   },
 
   discover: {
     emptyTitle: '未找到扩展',
-    emptyCategoryDescription: '该分类下暂无可用扩展。',
-    emptyDescription: '暂无可用扩展。',
+    emptyCategoryDescription: '该分类下暂无可用扩展',
+    emptyDescription: '暂无可用扩展',
     loadMore: '加载更多',
     sortRelevance: '相关',
     sortName: '名称',
@@ -207,7 +207,7 @@ export const extension = {
     unknownAuthor: '未知作者',
     sourceCount: ({ count }: { count: number }) => `${count} 个来源`,
     noVersion: '无版本',
-    noDescription: '无描述。',
+    noDescription: '无描述',
     homepage: '主页',
     details: '详情',
     installed: '已安装',
@@ -249,12 +249,12 @@ export const extension = {
     descending: '降序',
     updatesAvailable: '发现可用更新',
     updatesAvailableCount: ({ count }: { count: number }) => `${count} 个扩展可以更新`,
-    noUpdates: '暂无可用更新。',
+    noUpdates: '暂无可用更新',
     checkUpdatesFailed: '检查更新失败',
     emptyTitle: '暂无已安装的扩展',
-    emptyDescription: '从「发现」页面安装扩展。',
+    emptyDescription: '从「发现」页面安装扩展',
     noMatchTitle: '没有匹配的扩展',
-    noMatchDescription: '尝试调整筛选条件。',
+    noMatchDescription: '尝试调整筛选条件',
 
     unknownVersion: '未知版本',
     statusReady: '正常',
@@ -264,17 +264,17 @@ export const extension = {
     runtimeRunning: '运行中',
     runtimeFailed: '加载失败',
     runtimeStopped: '未运行',
-    builtinManaged: '内置扩展由 Kisaki 管理。',
+    builtinManaged: '内置扩展由 Kisaki 管理',
     enableFailed: '无法启用扩展',
-    packageNotRunnable: '扩展包当前不可运行。',
-    enabledFeedback: '扩展已启用。',
-    disabledFeedback: '扩展已禁用。',
+    packageNotRunnable: '扩展包当前不可运行',
+    enabledFeedback: '扩展已启用',
+    disabledFeedback: '扩展已禁用',
     operationFailed: '操作失败',
     extensionOperationFailed: '扩展操作失败',
     builtinBadge: '内置',
     updateBadge: '更新',
     unknownAuthor: '未知',
-    noDescription: '无描述。',
+    noDescription: '无描述',
     enableWithApp: '随应用启用',
     enabledState: '启用',
     disabledState: '禁用',
@@ -337,16 +337,16 @@ export const extension = {
     healthError: '异常',
     healthNeverRefreshed: '未刷新',
     healthOk: '正常',
-    added: '仓库已添加。',
+    added: '仓库已添加',
     addFailed: '添加仓库失败',
-    officialAdded: '官方仓库已添加。',
+    officialAdded: '官方仓库已添加',
     officialAddFailed: '添加官方仓库失败',
-    refreshAllStarted: '已开始刷新扩展仓库。',
+    refreshAllStarted: '已开始刷新扩展仓库',
     refreshFailed: '刷新仓库失败',
-    refreshStarted: '已开始刷新仓库。',
-    enabledFeedback: '仓库已启用。',
-    disabledFeedback: '仓库已禁用。',
-    deleted: '仓库已删除。',
+    refreshStarted: '已开始刷新仓库',
+    enabledFeedback: '仓库已启用',
+    disabledFeedback: '仓库已禁用',
+    deleted: '仓库已删除',
     operationFailed: '仓库操作失败',
     panelTitle: '扩展仓库',
     panelSummary: ({ count }: { count: number }) => `${count} 个仓库，按优先级聚合发现目录`,
@@ -396,7 +396,7 @@ export const extension = {
   signer: {
     none: '无',
     localConfirmation: '本地确认',
-    revoked: '签名信任已撤销。',
+    revoked: '签名信任已撤销',
     revokeFailed: '撤销签名信任失败',
     panelTitle: '签名信任',
     panelSummary: ({ count }: { count: number }) => `${count} 个扩展级签名指纹`,

@@ -17,6 +17,7 @@ import {
 } from '@renderer/utils/statistics'
 import { RankingList, type RankingListItem } from '@renderer/components/ui/ranking-list'
 import { Section } from '@renderer/components/ui/section'
+import { StateView } from '@renderer/components/ui/state-view'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
@@ -97,11 +98,12 @@ const items = computed<RankingListItem[]>(() =>
       :columns="props.columns"
       :expand-title="m.statistics.ranking.mediaTitle"
     />
-    <div
+    <StateView
       v-else
-      class="flex h-24 items-center justify-center text-sm text-muted-foreground"
-    >
-      {{ m.common.noData }}
-    </div>
+      state="empty"
+      size="sm"
+      :description="m.common.noData"
+      class="h-24"
+    />
   </Section>
 </template>

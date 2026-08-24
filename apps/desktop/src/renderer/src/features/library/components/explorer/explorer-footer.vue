@@ -24,7 +24,7 @@ const countText = computed(() =>
 
 <template>
   <div
-    class="shrink-0 flex items-center h-8 px-3 border-t text-[11px] tabular-nums text-muted-foreground/60"
+    class="shrink-0 flex items-center h-8 px-3 border-t text-xs tabular-nums text-muted-foreground/60"
   >
     {{ countText }}
   </div>

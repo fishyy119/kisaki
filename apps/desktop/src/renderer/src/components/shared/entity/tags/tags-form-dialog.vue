@@ -245,12 +245,12 @@ function handleRevealSpoilersConfirm() {
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
-            <p
+            <StateView
               v-if="items.length === 0"
-              class="text-sm text-muted-foreground text-center py-8"
-            >
-              {{ m.library.forms.emptyTagsHint }}
-            </p>
+              state="empty"
+              :description="m.library.forms.emptyTagsHint"
+              class="py-8"
+            />
             <ListItem
               v-for="({ item, spoiler }, index) in displayItems"
               v-else

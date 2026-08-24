@@ -17,7 +17,7 @@ export const game = {
   lastActiveDialog: {
     title: 'Edit last played time',
     label: 'Last played time',
-    emptyHint: 'Leave empty if the game has never been played.'
+    emptyHint: 'Leave empty if the game has never been played'
   },
 
   duration: {
@@ -28,19 +28,19 @@ export const game = {
     untrackedLabel: 'Untracked play time',
     hoursUnit: 'Hours',
     minutesUnit: 'Minutes',
-    untrackedHint: 'Play time not recorded by game sessions (for example imported history).',
+    untrackedHint: 'Play time not recorded by game sessions (for example imported history)',
     sessionsHeader: ({ count }: { count: number }) => `Sessions (${count})`,
     emptySessions: 'No sessions yet. Use the button below to add one.',
     addRecord: 'Add record',
     editRecord: 'Edit record',
     startTime: 'Start time',
     endTime: 'End time',
-    startEndRequired: 'Fill in both the start and end times.',
-    endAfterStart: 'The end time must be after the start time.',
+    startEndRequired: 'Fill in both the start and end times',
+    endAfterStart: 'The end time must be after the start time',
     overlap: 'The time range overlaps an existing record. Adjust the times.',
-    recordAdded: 'Record added.',
-    recordUpdated: 'Record updated.',
-    recordDeleted: 'Record deleted.',
+    recordAdded: 'Record added',
+    recordUpdated: 'Record updated',
+    recordDeleted: 'Record deleted',
     deleteRecordTitle: 'Delete record?',
     deleteRecordDescription:
       'This removes the session record permanently. This action cannot be undone.'
@@ -51,9 +51,9 @@ export const game = {
     tabLaunch: 'Launch',
     tabMonitor: 'Monitor',
     tabSave: 'Saves',
-    saved: 'Launch settings saved.',
+    saved: 'Launch settings saved',
     gameDirLabel: 'Game folder',
-    gameDirHint: 'Used for auto-derivation and as the working directory in command mode.',
+    gameDirHint: 'Used for auto-derivation and as the working directory in command mode',
     launchModeLabel: 'Launch mode',
     modeFile: 'File',
     modeFileHint: 'Run the executable directly',
@@ -81,23 +81,23 @@ export const game = {
     autoDerivePlaceholder: 'Leave empty to derive automatically',
     willUse: ({ path }: { path: string }) => `Will use: ${path}`,
     savePathLabel: 'Save folder',
-    savePathHint: 'Save folder used for automatic backups.',
+    savePathHint: 'Save folder used for automatic backups',
     maxBackupsLabel: 'Max backups',
-    maxBackupsHint: 'The oldest backup is removed automatically past this limit.'
+    maxBackupsHint: 'The oldest backup is removed automatically past this limit'
   },
 
   saves: {
-    backupCreated: 'Backup created.',
+    backupCreated: 'Backup created',
     createBackupFailed: 'Could not create the backup',
-    restored: 'Save restored.',
+    restored: 'Save restored',
     restoreFailed: 'Could not restore the save',
-    backupDeleted: 'Backup deleted.',
-    deleteBackupFailed: 'Could not delete the backup.',
-    backupInfoUpdated: 'Backup info updated.',
+    backupDeleted: 'Backup deleted',
+    deleteBackupFailed: 'Could not delete the backup',
+    backupInfoUpdated: 'Backup info updated',
     noSavePathTitle: 'Save folder is not set',
-    noSavePathHint: 'Configure the save folder in the game settings to use backups.',
+    noSavePathHint: 'Configure the save folder in the game settings to use backups',
     emptyBackupsTitle: 'No save backups yet',
-    emptyBackupsHint: 'Create a backup to protect your progress.',
+    emptyBackupsHint: 'Create a backup to protect your progress',
     createBackup: 'Create backup',
     backupCount: ({ current, max }: { current: number; max: number }) =>
       `${current} / ${max} backups`,
@@ -112,7 +112,7 @@ export const game = {
     editBackupTitle: 'Edit backup',
     notePlaceholder: 'For example: chapter 3 clear save',
     lockLabel: 'Lock backup',
-    lockHint: 'Locked backups are never cleaned up automatically.'
+    lockHint: 'Locked backups are never cleaned up automatically'
   },
 
   activity: {
@@ -122,7 +122,7 @@ export const game = {
     distribution: 'Time distribution',
     recentSessions: 'Recent sessions',
     emptyTitle: 'No play activity yet',
-    emptyHint: 'Play time is recorded here automatically once you launch the game.',
+    emptyHint: 'Play time is recorded here automatically once you launch the game',
     totalDuration: 'Play time',
     sessionCount: 'Play count',
     sessionCountValue: ({ count }: { count: number }) =>

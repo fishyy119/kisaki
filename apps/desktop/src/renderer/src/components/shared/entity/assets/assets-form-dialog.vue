@@ -194,18 +194,12 @@ function handleClose() {
                 :alt="selectedSlot.label(m)"
                 class="size-full object-contain"
               />
-              <div
+              <StateView
                 v-else
-                class="flex flex-col items-center gap-2 text-muted-foreground"
-              >
-                <Icon
-                  icon="icon-[mdi--image-off-outline]"
-                  class="size-12"
-                />
-                <span class="text-sm">{{
-                  m.library.forms.emptyMedia({ label: selectedSlot.label(m) })
-                }}</span>
-              </div>
+                state="empty"
+                icon="icon-[mdi--image-off-outline]"
+                :description="m.library.forms.emptyMedia({ label: selectedSlot.label(m) })"
+              />
             </div>
 
             <!-- Description -->

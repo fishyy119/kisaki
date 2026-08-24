@@ -79,7 +79,7 @@ const navItems = computed<PageHeaderNavItem[]>(() => [
       <Button
         variant="outline"
         size="sm"
-        class="relative text-xs gap-1.5"
+        class="relative"
         :disabled="props.reloadingExtensionHost"
         :tooltip="reloadButtonTitle"
         @click="emit('reloadExtensionHost')"
@@ -99,7 +99,6 @@ const navItems = computed<PageHeaderNavItem[]>(() => [
       <Button
         variant="default"
         size="sm"
-        class="text-xs gap-1.5"
         @click="emit('openReleaseDialog')"
       >
         <Icon

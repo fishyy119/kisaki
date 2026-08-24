@@ -190,7 +190,7 @@ void handleAddPresets
           <Badge
             v-if="showMediaType"
             variant="outline"
-            class="text-[10px] px-1 py-0"
+            class="px-1 py-0"
           >
             {{ m.library.entities[profile.mediaType] || profile.mediaType }}
           </Badge>

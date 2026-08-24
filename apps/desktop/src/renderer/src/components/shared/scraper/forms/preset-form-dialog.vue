@@ -22,6 +22,7 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 
 interface Props {
@@ -137,12 +138,12 @@ function handleCancel() {
         </DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[60vh] overflow-auto">
-        <p
+        <StateView
           v-if="filteredPresets.length === 0"
-          class="text-sm text-muted-foreground text-center py-8"
-        >
-          {{ m.scraper.presetDialog.empty }}
-        </p>
+          state="empty"
+          :description="m.scraper.presetDialog.empty"
+          class="py-8"
+        />
         <div
           v-else
           class="space-y-4"

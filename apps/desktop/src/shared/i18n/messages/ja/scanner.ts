@@ -8,7 +8,7 @@ export const scanner = {
   cancelAll: 'すべてキャンセル',
   settingsTooltip: 'スキャナー設定',
   emptyTitle: 'スキャナーはまだありません',
-  emptyDescription: 'スキャナーを追加すると、メディアファイルを自動で検出して取り込めます。',
+  emptyDescription: 'スキャナーを追加すると、メディアファイルを自動で検出して取り込めます',
 
   table: {
     name: '名前',
@@ -63,7 +63,7 @@ export const scanner = {
     totalCount: ({ count }: { count: number }) => `全 ${count} 件`,
     searchPlaceholder: '名前、パス、原因を検索…',
     allTypes: 'すべての種類',
-    noMatch: '一致する問題がありません。',
+    noMatch: '一致する問題がありません',
     table: {
       name: '名前',
       type: '種類',
@@ -75,8 +75,8 @@ export const scanner = {
     openPath: 'パスを開く',
     addToExclusion: 'スキャン除外リストに追加',
     fixAndRescrape: '修正して再スクレイプ',
-    alreadyExcluded: '既に除外リストにあります。',
-    addedToExclusion: 'スキャン除外リストに追加しました。',
+    alreadyExcluded: '既に除外リストにあります',
+    addedToExclusion: 'スキャン除外リストに追加しました',
     excludeFailed: '除外リストに追加できませんでした'
   },
 
@@ -84,7 +84,7 @@ export const scanner = {
     title: 'スキャン結果を修正',
     updateExisting: '既存のエントリを更新',
     readd: 'エントリを再追加',
-    started: '再スクレイプを開始しました。',
+    started: '再スクレイプを開始しました',
     startFailed: '修正を開始できませんでした',
     unknownError: '不明なエラー',
     rescrape: '再スクレイプ'
@@ -92,33 +92,33 @@ export const scanner = {
 
   settings: {
     title: 'スキャナー設定',
-    saved: '設定を保存しました。',
+    saved: '設定を保存しました',
     saveFailed: '保存に失敗しました',
     ingestMode: '取り込みモード',
-    ingestModeDescription: 'スキャナーが新しいゲームを検出した際の取り込み方法を制御します。',
+    ingestModeDescription: 'スキャナーが新しいゲームを検出した際の取り込み方法を制御します',
     ingestPreferScraper: 'スクレイパー優先',
     ingestPreferScraperDescription:
-      'まずスクレイパーで取り込み、失敗した場合は直接取り込みにフォールバックします。',
+      'まずスクレイパーで取り込み、失敗した場合は直接取り込みにフォールバックします',
     ingestRequireScraper: 'スクレイパー必須',
     ingestRequireScraperDescription:
-      'スクレイパー経由でのみ取り込み、スクレイプに失敗した場合は失敗として記録します。',
+      'スクレイパー経由でのみ取り込み、スクレイプに失敗した場合は失敗として記録します',
     ingestDirectOnly: '直接取り込みのみ',
-    ingestDirectOnlyDescription: 'スクレイパーを使わず、認識結果からそのままゲームを作成します。',
+    ingestDirectOnlyDescription: 'スクレイパーを使わず、認識結果からそのままゲームを作成します',
     parallelCount: '並列処理数',
     parallelCountDescription:
       '1 つのスキャナーが同時に処理するエントリ数。1 は逐次処理を意味します。',
     ignoredNames: '無視する名前',
-    ignoredNamesDescription: 'スキャナーは抽出後のこれらのエンティティ名をスキップします。',
+    ignoredNamesDescription: 'スキャナーは抽出後のこれらのエンティティ名をスキップします',
     ignoredNamePlaceholder: '無視する名前を入力…',
-    noIgnoredNames: '無視する名前はまだありません。'
+    noIgnoredNames: '無視する名前はまだありません'
   },
 
   form: {
     createTitle: 'スキャナーを作成',
     editTitle: 'スキャナーを編集',
-    requiredFields: '必須項目を入力してください。',
-    updated: 'スキャナーを更新しました。',
-    created: 'スキャナーを作成しました。',
+    requiredFields: '必須項目を入力してください',
+    updated: 'スキャナーを更新しました',
+    created: 'スキャナーを作成しました',
     updateFailed: '更新に失敗しました。もう一度お試しください。',
     createFailed: '作成に失敗しました。もう一度お試しください。',
     openLinkFailed: 'リンクを開けませんでした',
@@ -153,8 +153,8 @@ export const scanner = {
     rules: 'ルール',
     entities: 'エンティティ',
     matched: '一致',
-    noEntitiesFound: '指定した階層でエンティティが見つかりませんでした。',
-    allExcluded: 'すべてのエンティティが除外されています。',
+    noEntitiesFound: '指定した階層でエンティティが見つかりませんでした',
+    allExcluded: 'すべてのエンティティが除外されています',
     entityName: 'エンティティ名',
     extractedName: '抽出後の名前',
     rule: 'ルール',
@@ -173,9 +173,9 @@ export const scanner = {
     descriptionPlaceholder: '例：角括弧のプレフィックスを削除',
     pattern: '正規表現',
     patternHintBefore: '名前付きキャプチャグループ',
-    patternHintAfter: 'で抽出する名前を指定します。',
+    patternHintAfter: 'で抽出する名前を指定します',
     presetsTitle: 'プリセットルールを選択',
-    presetsAllAdded: 'すべてのプリセットルールが追加済みです。',
+    presetsAllAdded: 'すべてのプリセットルールが追加済みです',
     addWithCount: ({ count }: { count: number }) => `追加 (${count})`,
     presets: {
       bracketPrefix: { name: '角括弧プレフィックス [xxx]', description: '先頭の [xxx] を削除' },
@@ -225,23 +225,23 @@ export const scanner = {
       `${status}：処理 ${processed}/${total}、追加 ${added}、既存 ${existing}、失敗 ${failed}、問題 ${issues}`,
     reasons: {
       scrapeUnavailableRequired:
-        'スクレイプ設定が利用できず、このモードではスクレイプが必須のため追加しませんでした。',
+        'スクレイプ設定が利用できず、このモードではスクレイプが必須のため追加しませんでした',
       noMetadataRequired:
-        '利用できるメタデータが見つからず、このモードではスクレイプが必須のため追加しませんでした。',
+        '利用できるメタデータが見つからず、このモードではスクレイプが必須のため追加しませんでした',
       scrapeFailedRequired:
-        'スクレイプに失敗し、このモードではスクレイプが必須のため追加しませんでした。',
+        'スクレイプに失敗し、このモードではスクレイプが必須のため追加しませんでした',
       scrapeUnavailableFallback:
-        'スクレイプ設定が利用できないため、フォルダー名でそのまま追加しました。',
+        'スクレイプ設定が利用できないため、フォルダー名でそのまま追加しました',
       noMetadataFallback:
-        '利用できるメタデータが見つからないため、フォルダー名でそのまま追加しました。',
-      scrapeFailedFallback: 'スクレイプに失敗したため、フォルダー名でそのまま追加しました。',
+        '利用できるメタデータが見つからないため、フォルダー名でそのまま追加しました',
+      scrapeFailedFallback: 'スクレイプに失敗したため、フォルダー名でそのまま追加しました',
       pathInaccessible: ({ message }: { message: string }) =>
         `パスにアクセスできないため追加しませんでした：${message}`,
-      notScannableDirectory: 'パスはスキャン可能なディレクトリではないため追加しませんでした。',
+      notScannableDirectory: 'パスはスキャン可能なディレクトリではないため追加しませんでした',
       externalIdLinked:
-        '外部 ID が既存の項目に関連付けられているため、このパスは追加しませんでした。',
+        '外部 ID が既存の項目に関連付けられているため、このパスは追加しませんでした',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
-        `${count} 件の動画ファイルは話数を判別できないため、番号なしのエピソードとして追加しました。`,
+        `${count} 件の動画ファイルは話数を判別できないため、番号なしのエピソードとして追加しました`,
       fileSyncFailed:
         '項目は追加しましたが、動画ファイルの同期に失敗しました。詳細はログを参照してください。'
     }

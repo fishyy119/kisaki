@@ -10,6 +10,7 @@ import { useGame } from '@renderer/composables/use-game'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -141,30 +142,25 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
 <template>
   <template v-if="game">
     <!-- No save path configured -->
-    <template v-if="!hasSavePath">
-      <div class="flex flex-col items-center justify-center py-12 text-center">
-        <Icon
-          icon="icon-[mdi--folder-search-outline]"
-          class="size-12 text-muted-foreground/30 mb-3"
-        />
-        <p class="text-sm text-muted-foreground">{{ m.game.saves.noSavePathTitle }}</p>
-        <p class="text-xs text-muted-foreground/70 mt-1">
-          {{ m.game.saves.noSavePathHint }}
-        </p>
-      </div>
-    </template>
+    <StateView
+      v-if="!hasSavePath"
+      state="empty"
+      icon="icon-[mdi--folder-search-outline]"
+      :title="m.game.saves.noSavePathTitle"
+      :description="m.game.saves.noSavePathHint"
+      class="py-12"
+    />
 
     <!-- Empty state -->
-    <template v-else-if="!backups.length">
-      <div class="flex flex-col items-center justify-center py-12 text-center">
-        <Icon
-          icon="icon-[mdi--content-save-outline]"
-          class="size-12 text-muted-foreground/30 mb-3"
-        />
-        <p class="text-sm text-muted-foreground">{{ m.game.saves.emptyBackupsTitle }}</p>
-        <p class="text-xs text-muted-foreground/70 mt-1 mb-4">
-          {{ m.game.saves.emptyBackupsHint }}
-        </p>
+    <StateView
+      v-else-if="!backups.length"
+      state="empty"
+      icon="icon-[mdi--content-save-outline]"
+      :title="m.game.saves.emptyBackupsTitle"
+      :description="m.game.saves.emptyBackupsHint"
+      class="py-12"
+    >
+      <template #actions>
         <Button
           :disabled="isCreating"
           @click="handleCreate"
@@ -181,8 +177,8 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
           />
           {{ m.game.saves.createBackup }}
         </Button>
-      </div>
-    </template>
+      </template>
+    </StateView>
 
     <!-- Backup list -->
     <template v-else>

@@ -271,11 +271,12 @@ function handleClose() {
 
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
-            <template v-if="items.length === 0">
-              <p class="text-sm text-muted-foreground text-center py-8">
-                {{ m.library.showcase.manage.empty }}
-              </p>
-            </template>
+            <StateView
+              v-if="items.length === 0"
+              state="empty"
+              :description="m.library.showcase.manage.empty"
+              class="py-8"
+            />
             <template v-else>
               <ListItem
                 v-for="(item, index) in items"

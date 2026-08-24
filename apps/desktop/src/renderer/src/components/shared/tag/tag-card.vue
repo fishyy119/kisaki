@@ -96,7 +96,7 @@ const emit = defineEmits<{
       <Badge
         v-if="props.badgeLabel"
         variant="secondary"
-        class="ml-1 text-[10px] px-1 py-0"
+        class="ml-1 px-1 py-0"
       >
         {{ props.badgeLabel }}
       </Badge>

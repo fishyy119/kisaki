@@ -8,7 +8,7 @@ export const scanner = {
   cancelAll: '取消全部',
   settingsTooltip: '扫描器设置',
   emptyTitle: '暂无扫描器',
-  emptyDescription: '添加扫描器来自动发现并导入你的媒体文件。',
+  emptyDescription: '添加扫描器来自动发现并导入你的媒体文件',
 
   table: {
     name: '名称',
@@ -63,7 +63,7 @@ export const scanner = {
     totalCount: ({ count }: { count: number }) => `共 ${count} 项`,
     searchPlaceholder: '搜索名称、路径、原因…',
     allTypes: '全部类型',
-    noMatch: '没有匹配的问题。',
+    noMatch: '没有匹配的问题',
     table: {
       name: '名称',
       type: '类型',
@@ -75,8 +75,8 @@ export const scanner = {
     openPath: '打开路径',
     addToExclusion: '加入扫描排除列表',
     fixAndRescrape: '修正并重新刮削',
-    alreadyExcluded: '已在排除列表中。',
-    addedToExclusion: '已加入扫描排除列表。',
+    alreadyExcluded: '已在排除列表中',
+    addedToExclusion: '已加入扫描排除列表',
     excludeFailed: '加入排除列表失败'
   },
 
@@ -84,7 +84,7 @@ export const scanner = {
     title: '修正扫描结果',
     updateExisting: '更新现有条目',
     readd: '重新添加条目',
-    started: '已开始重新刮削。',
+    started: '已开始重新刮削',
     startFailed: '启动修正失败',
     unknownError: '未知错误',
     rescrape: '重新刮削'
@@ -92,32 +92,32 @@ export const scanner = {
 
   settings: {
     title: '扫描器设置',
-    saved: '设置已保存。',
+    saved: '设置已保存',
     saveFailed: '保存失败',
     ingestMode: '入库模式',
-    ingestModeDescription: '控制扫描器识别到新游戏后的导入策略。',
+    ingestModeDescription: '控制扫描器识别到新游戏后的导入策略',
     ingestPreferScraper: '优先刮削',
-    ingestPreferScraperDescription: '优先使用刮削导入，失败时回退到直接入库。',
+    ingestPreferScraperDescription: '优先使用刮削导入，失败时回退到直接入库',
     ingestRequireScraper: '必须刮削',
-    ingestRequireScraperDescription: '必须通过刮削导入，刮削失败时直接记为失败。',
+    ingestRequireScraperDescription: '必须通过刮削导入，刮削失败时直接记为失败',
     ingestDirectOnly: '仅直接入库',
-    ingestDirectOnlyDescription: '跳过刮削，直接按识别结果创建游戏。',
+    ingestDirectOnlyDescription: '跳过刮削，直接按识别结果创建游戏',
     parallelCount: '并行处理数',
-    parallelCountDescription: '控制单个扫描器同时处理的条目数，1 表示串行处理。',
+    parallelCountDescription: '控制单个扫描器同时处理的条目数，1 表示串行处理',
     ignoredNames: '忽略名称列表',
-    ignoredNamesDescription: '扫描器会跳过这些提取后的实体名称。',
+    ignoredNamesDescription: '扫描器会跳过这些提取后的实体名称',
     ignoredNamePlaceholder: '输入要忽略的名称…',
-    noIgnoredNames: '暂无忽略名称。'
+    noIgnoredNames: '暂无忽略名称'
   },
 
   form: {
     createTitle: '创建扫描器',
     editTitle: '编辑扫描器',
-    requiredFields: '请填写必填字段。',
-    updated: '扫描器已更新。',
-    created: '扫描器已创建。',
-    updateFailed: '更新失败，请重试。',
-    createFailed: '创建失败，请重试。',
+    requiredFields: '请填写必填字段',
+    updated: '扫描器已更新',
+    created: '扫描器已创建',
+    updateFailed: '更新失败，请重试',
+    createFailed: '创建失败，请重试',
     openLinkFailed: '打开链接失败',
     name: '名称',
     namePlaceholder: '例如：我的游戏库',
@@ -148,8 +148,8 @@ export const scanner = {
     rules: '规则',
     entities: '实体',
     matched: '匹配',
-    noEntitiesFound: '在指定层级未找到实体。',
-    allExcluded: '所有实体已被排除。',
+    noEntitiesFound: '在指定层级未找到实体',
+    allExcluded: '所有实体已被排除',
     entityName: '实体名称',
     extractedName: '提取后名称',
     rule: '规则',
@@ -158,7 +158,7 @@ export const scanner = {
 
   rules: {
     title: '名称提取规则',
-    empty: '暂无规则，点击下方按钮添加。',
+    empty: '暂无规则，点击下方按钮添加',
     unnamedRule: '（未命名规则）',
     addRule: '添加规则',
     selectPresets: '选择预设',
@@ -168,9 +168,9 @@ export const scanner = {
     descriptionPlaceholder: '例如：移除方括号前缀',
     pattern: '正则表达式',
     patternHintBefore: '使用命名捕获组',
-    patternHintAfter: '来指定要提取的名称。',
+    patternHintAfter: '来指定要提取的名称',
     presetsTitle: '选择预设规则',
-    presetsAllAdded: '所有预设规则已添加。',
+    presetsAllAdded: '所有预设规则已添加',
     addWithCount: ({ count }: { count: number }) => `添加 (${count})`,
     presets: {
       bracketPrefix: { name: '方括号前缀 [xxx]', description: '移除开头的 [xxx]' },
@@ -213,18 +213,18 @@ export const scanner = {
     }) =>
       `${status}：处理 ${processed}/${total}，新增 ${added}，已存在 ${existing}，失败 ${failed}，问题 ${issues}`,
     reasons: {
-      scrapeUnavailableRequired: '刮削配置不可用，当前模式要求刮削，未添加。',
-      noMetadataRequired: '未找到可用元数据，当前模式要求刮削，未添加。',
-      scrapeFailedRequired: '刮削失败且当前模式要求刮削，未添加。',
-      scrapeUnavailableFallback: '刮削配置不可用，已使用目录名直接添加。',
-      noMetadataFallback: '未找到可用元数据，已使用目录名直接添加。',
-      scrapeFailedFallback: '刮削失败，已使用目录名直接添加。',
+      scrapeUnavailableRequired: '刮削配置不可用，当前模式要求刮削，未添加',
+      noMetadataRequired: '未找到可用元数据，当前模式要求刮削，未添加',
+      scrapeFailedRequired: '刮削失败且当前模式要求刮削，未添加',
+      scrapeUnavailableFallback: '刮削配置不可用，已使用目录名直接添加',
+      noMetadataFallback: '未找到可用元数据，已使用目录名直接添加',
+      scrapeFailedFallback: '刮削失败，已使用目录名直接添加',
       pathInaccessible: ({ message }: { message: string }) => `路径不可访问，未添加：${message}`,
-      notScannableDirectory: '路径不是可扫描目录，未添加。',
-      externalIdLinked: '外部 ID 已关联到现有条目，当前路径未添加。',
+      notScannableDirectory: '路径不是可扫描目录，未添加',
+      externalIdLinked: '外部 ID 已关联到现有条目，当前路径未添加',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
-        `${count} 个视频文件无法识别话数，已作为未编号剧集添加。`,
-      fileSyncFailed: '条目已添加，但视频文件同步失败，详见日志。'
+        `${count} 个视频文件无法识别话数，已作为未编号剧集添加`,
+      fileSyncFailed: '条目已添加，但视频文件同步失败，详见日志'
     }
   }
 } satisfies Messages['scanner']

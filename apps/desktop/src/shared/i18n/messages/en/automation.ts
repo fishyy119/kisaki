@@ -24,27 +24,27 @@ export const automation = {
   },
 
   feedback: {
-    notTriggered: 'The automation was not triggered.',
-    runCompleted: 'Automation run completed.',
+    notTriggered: 'The automation was not triggered',
+    runCompleted: 'Automation run completed',
     runFailed: 'Automation run failed',
     runError: 'Could not run the automation',
-    stopRequested: 'Requested to stop the automation retries.',
-    notRunning: 'The automation is not running.',
+    stopRequested: 'Requested to stop the automation retries',
+    notRunning: 'The automation is not running',
     stopFailed: 'Could not stop the automation',
-    enabled: 'Automation enabled.',
-    disabled: 'Automation disabled.',
+    enabled: 'Automation enabled',
+    disabled: 'Automation disabled',
     updateFailed: 'Could not update the automation',
-    deleted: 'Automation deleted.',
+    deleted: 'Automation deleted',
     deleteFailed: 'Could not delete the automation',
-    updated: 'Automation updated.',
-    added: 'Automation added.',
+    updated: 'Automation updated',
+    added: 'Automation added',
     saveFailed: 'Could not save the automation',
-    selectCommand: 'Select a command.'
+    selectCommand: 'Select a command'
   },
 
   page: {
-    emptyDescription: 'No automations yet.',
-    noMatchDescription: 'No matching automations.',
+    emptyDescription: 'No automations yet',
+    noMatchDescription: 'No matching automations',
     table: {
       name: 'Name',
       command: 'Command',
@@ -91,7 +91,7 @@ export const automation = {
   form: {
     addTitle: 'Add automation',
     editTitle: 'Edit automation',
-    commandUnavailable: 'The command is currently unavailable.',
+    commandUnavailable: 'The command is currently unavailable',
     name: 'Name',
     namePlaceholder: 'Automation name',
     command: 'Command',
@@ -111,14 +111,14 @@ export const automation = {
     cronPlaceholder: 'Cron expression; leave empty to disable',
     timezone: 'Time zone',
     timezonePlaceholder: 'System time zone',
-    paramsMustBeObject: 'Parameters must be a JSON object.',
-    cronRequired: 'The cron expression cannot be empty.',
+    paramsMustBeObject: 'Parameters must be a JSON object',
+    cronRequired: 'The cron expression cannot be empty',
     retryCountLabel: 'Retry count',
     retryDelaySecondsLabel: 'Retry delay seconds',
-    mustBePositive: ({ label }: { label: string }) => `${label} must be greater than 0.`,
+    mustBePositive: ({ label }: { label: string }) => `${label} must be greater than 0`,
     mustBeNonNegativeInteger: ({ label }: { label: string }) =>
-      `${label} must be an integer of 0 or more.`,
-    invalidTimezone: 'The time zone is invalid.'
+      `${label} must be an integer of 0 or more`,
+    invalidTimezone: 'The time zone is invalid'
   },
 
   details: {
@@ -137,7 +137,7 @@ export const automation = {
     params: 'Parameters',
     history: 'Run history',
     historyCount: ({ count }: { count: number }) => (count === 1 ? '1 record' : `${count} records`),
-    noHistory: 'No run history.',
+    noHistory: 'No run history',
     historyRun: 'Run',
     historyTrigger: 'Trigger',
     historyStartedAt: 'Started',
@@ -152,12 +152,12 @@ export const automation = {
     duration: 'Duration',
     error: 'Error',
     result: 'Result',
-    noError: 'No error.'
+    noError: 'No error'
   },
 
   combobox: {
     searchPlaceholder: 'Search commands…',
     selectPlaceholder: 'Select a command…',
-    unavailable: 'The command is currently unavailable.'
+    unavailable: 'The command is currently unavailable'
   }
 }

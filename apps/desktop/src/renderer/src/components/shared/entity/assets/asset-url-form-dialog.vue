@@ -17,6 +17,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   Field,
   FieldLabel,
@@ -148,16 +149,14 @@ function handleClose() {
               )
             "
           >
-            <div
+            <StateView
               v-if="previewError"
-              class="flex flex-col items-center gap-1 text-muted-foreground p-4"
-            >
-              <Icon
-                icon="icon-[mdi--image-off-outline]"
-                class="size-8"
-              />
-              <span class="text-xs">{{ m.library.forms.previewLoadFailed }}</span>
-            </div>
+              state="empty"
+              size="sm"
+              icon="icon-[mdi--image-off-outline]"
+              :description="m.library.forms.previewLoadFailed"
+              class="p-4"
+            />
             <img
               v-else
               :src="formData.url"

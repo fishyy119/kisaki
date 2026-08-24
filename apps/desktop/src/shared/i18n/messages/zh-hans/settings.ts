@@ -9,7 +9,7 @@ export const settings = {
   closeActionTray: '最小化到托盘',
   updaterAutoCheckLabel: '自动检查更新',
   updaterAllowPrereleaseLabel: '接收预览版更新',
-  loadFailed: '设置加载失败。',
+  loadFailed: '设置加载失败',
   language: {
     followSystem: '跟随系统',
     uiLanguageLabel: '界面语言'

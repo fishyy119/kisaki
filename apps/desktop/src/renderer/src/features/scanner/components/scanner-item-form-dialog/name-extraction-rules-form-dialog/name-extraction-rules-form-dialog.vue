@@ -14,6 +14,7 @@ import { nanoid } from 'nanoid'
 import type { NameExtractionRule } from '@shared/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   Dialog,
   DialogContent,
@@ -163,12 +164,12 @@ function handleSave() {
         <DialogTitle>{{ m.scanner.rules.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[60vh] overflow-auto">
-        <p
+        <StateView
           v-if="localRules.length === 0"
-          class="text-sm text-muted-foreground text-center py-8"
-        >
-          {{ m.scanner.rules.empty }}
-        </p>
+          state="empty"
+          :description="m.scanner.rules.empty"
+          class="py-8"
+        />
         <div
           v-else
           class="space-y-1"

@@ -34,9 +34,9 @@ export const task = {
     pauseFailed: '暂停任务失败',
     resumeFailed: '继续任务失败',
     cancelFailed: '取消任务失败',
-    cannotPauseNow: '任务暂时不能暂停。',
-    cannotResumeNow: '任务暂时不能继续。',
-    cannotCancel: '任务已结束或不可取消。'
+    cannotPauseNow: '任务暂时不能暂停',
+    cannotResumeNow: '任务暂时不能继续',
+    cannotCancel: '任务已结束或不可取消'
   },
 
   row: {
@@ -193,7 +193,7 @@ export const task = {
     cancelling: '正在取消…',
     pausing: '正在暂停…',
     paused: '已暂停',
-    cancelUnavailable: '任务已结束或不可取消。',
+    cancelUnavailable: '任务已结束或不可取消',
     finalCompleted: ({ title }: { title: string }) => `${title}已完成`,
     finalCancelled: ({ title }: { title: string }) => `${title}已取消`,
     finalFailed: ({ title }: { title: string }) => `${title}失败`

@@ -24,7 +24,7 @@ const RELEASE_ACTION_PAST: Record<ReleaseActionKind, string> = {
 /** Extension platform surfaces: manager pages, panels, dialogs, and webviews. */
 export const extension = {
   title: 'Extensions',
-  webviewPageClosed: 'This extension page has been closed.',
+  webviewPageClosed: 'This extension page has been closed',
 
   categories: {
     scraper: 'Metadata',
@@ -44,7 +44,7 @@ export const extension = {
 
   header: {
     reloadPending: ({ count }: { count: number }) =>
-      `Extension code updated (${count}); reload the host process to apply.`,
+      `Extension code updated (${count}); reload the host process to apply`,
     reloadHost: 'Reload the extension host process',
     reloadProcess: 'Reload process',
     install: 'Install extension'
@@ -52,7 +52,7 @@ export const extension = {
 
   host: {
     reloading: 'Reloading the extension host…',
-    reloaded: 'Extension host reloaded.',
+    reloaded: 'Extension host reloaded',
     reloadFailed: 'Could not reload the extension host',
     codeUpdatedTitle: 'Extension code updated',
     pendingChanges: ({ subject }: { subject: string }) => `${subject} has unapplied changes`,
@@ -79,15 +79,15 @@ export const extension = {
     actionTitle: ({ action }: { action: string }) => `${action} extension`,
     prepareTitle: 'Prepare extension release',
     importLocalTitle: 'Import local extension',
-    repositoryDescription: 'Review the version, repository source, and signature to continue.',
-    localDescription: 'Pick a local .kisx file and confirm.',
+    repositoryDescription: 'Review the version, repository source, and signature to continue',
+    localDescription: 'Pick a local .kisx file and confirm',
     confirmAction: ({ action }: { action: string }) => `Confirm ${action.toLowerCase()}`,
     selectFile: 'Select file',
     planFailed: 'Could not create the release plan',
     filePickerTitle: 'Select extension file',
     filePickerFilterName: 'Extension package',
-    cancelled: 'The operation was cancelled.',
-    applied: ({ action }: { action: string }) => `Extension ${action.toLowerCase()} succeeded.`,
+    cancelled: 'The operation was cancelled',
+    applied: ({ action }: { action: string }) => `Extension ${action.toLowerCase()} succeeded`,
     applyFailed: 'Operation failed',
     signerTrusted: 'Signature trusted',
     signerUntrusted: 'Signature not trusted',
@@ -109,7 +109,7 @@ export const extension = {
     enableAfterApply: 'Enable after applying',
     updatePolicy: 'Update policy',
     trustSigner: 'Trust this extension signature fingerprint',
-    pickLocalHint: 'Pick a local extension package (.kisx).'
+    pickLocalHint: 'Pick a local extension package (.kisx)'
   },
 
   policy: {
@@ -132,10 +132,10 @@ export const extension = {
       action: ReleaseActionKind
       name: string
       version: string
-    }) => `${RELEASE_ACTION_PAST[action]} ${name} v${version}.`,
+    }) => `${RELEASE_ACTION_PAST[action]} ${name} v${version}`,
     cancelledSummary: ({ action }: { action: ReleaseActionKind }) =>
-      `The extension ${RELEASE_ACTION_NOUNS[action]} was cancelled.`,
-    localCancelledSummary: 'Applying the extension package was cancelled.',
+      `The extension ${RELEASE_ACTION_NOUNS[action]} was cancelled`,
+    localCancelledSummary: 'Applying the extension package was cancelled',
     phases: {
       waitLock: 'Waiting for the extension package write lock',
       prepare: 'Preparing the extension package',
@@ -149,21 +149,21 @@ export const extension = {
     refreshOneTitle: ({ name }: { name: string }) => `Refresh repository ${name}`,
     refreshAllTitle: 'Refresh all extension repositories',
     allSubjectLabel: 'All extension repositories',
-    cancelledSummary: 'The extension repository refresh was cancelled.',
+    cancelledSummary: 'The extension repository refresh was cancelled',
     preparing: 'Preparing to refresh extension repositories',
     noneEnabled: 'No enabled extension repositories',
     refreshingOne: ({ name }: { name: string }) => `Refreshing ${name}`,
     refreshedOne: ({ name }: { name: string }) => `Refreshed ${name}`,
     oneFailedTitle: 'Repository refresh failed',
-    oneFailedSummary: ({ name }: { name: string }) => `${name} could not be refreshed.`,
+    oneFailedSummary: ({ name }: { name: string }) => `${name} could not be refreshed`,
     oneNotModifiedTitle: 'Repository unchanged',
     oneCompletedTitle: 'Repository refresh completed',
-    oneNotModifiedSummary: ({ name }: { name: string }) => `${name} is already up to date.`,
-    oneRefreshedSummary: ({ name }: { name: string }) => `${name} has been refreshed.`,
+    oneNotModifiedSummary: ({ name }: { name: string }) => `${name} is already up to date`,
+    oneRefreshedSummary: ({ name }: { name: string }) => `${name} has been refreshed`,
     allFailedTitle: 'Extension repository refresh failed',
     allPartialTitle: 'Some extension repositories failed to refresh',
     allCompletedTitle: 'Extension repository refresh completed',
-    noneEnabledSummary: 'There are no enabled extension repositories.',
+    noneEnabledSummary: 'There are no enabled extension repositories',
     allSummary: ({
       processed,
       total,
@@ -177,14 +177,14 @@ export const extension = {
       notModified: number
       failed: number
     }) =>
-      `Processed ${processed}/${total} repositories: succeeded ${succeeded}, unchanged ${notModified}, failed ${failed}.`
+      `Processed ${processed}/${total} repositories: succeeded ${succeeded}, unchanged ${notModified}, failed ${failed}`
   },
 
   updatePolicyDialog: {
     title: 'Update settings',
     policyLabel: 'Update policy',
     receivePrerelease: 'Receive preview updates',
-    saved: 'Update settings saved.',
+    saved: 'Update settings saved',
     saveFailed: 'Could not save the update settings'
   },
 
@@ -193,16 +193,16 @@ export const extension = {
     purgeData: 'Also delete extension data',
     confirmPurge: 'Uninstall and delete',
     confirm: 'Uninstall',
-    uninstalledPurged: 'Extension uninstalled and its data deleted.',
-    uninstalled: 'Extension uninstalled.',
+    uninstalledPurged: 'Extension uninstalled and its data deleted',
+    uninstalled: 'Extension uninstalled',
     purgeFailed: 'Extension uninstalled, but deleting its data failed',
     failed: 'Uninstall failed'
   },
 
   discover: {
     emptyTitle: 'No extensions found',
-    emptyCategoryDescription: 'No extensions available in this category.',
-    emptyDescription: 'No extensions available.',
+    emptyCategoryDescription: 'No extensions available in this category',
+    emptyDescription: 'No extensions available',
     loadMore: 'Load more',
     sortRelevance: 'Relevance',
     sortName: 'Name',
@@ -219,7 +219,7 @@ export const extension = {
     unknownAuthor: 'Unknown author',
     sourceCount: ({ count }: { count: number }) => (count === 1 ? '1 source' : `${count} sources`),
     noVersion: 'No versions',
-    noDescription: 'No description.',
+    noDescription: 'No description',
     homepage: 'Homepage',
     details: 'Details',
     installed: 'Installed',
@@ -263,12 +263,12 @@ export const extension = {
     updatesAvailable: 'Updates available',
     updatesAvailableCount: ({ count }: { count: number }) =>
       count === 1 ? '1 extension can be updated' : `${count} extensions can be updated`,
-    noUpdates: 'No updates available.',
+    noUpdates: 'No updates available',
     checkUpdatesFailed: 'Could not check for updates',
     emptyTitle: 'No installed extensions',
-    emptyDescription: 'Install extensions from the Discover page.',
+    emptyDescription: 'Install extensions from the Discover page',
     noMatchTitle: 'No matching extensions',
-    noMatchDescription: 'Try adjusting the filters.',
+    noMatchDescription: 'Try adjusting the filters',
 
     unknownVersion: 'Unknown version',
     statusReady: 'Healthy',
@@ -278,17 +278,17 @@ export const extension = {
     runtimeRunning: 'Running',
     runtimeFailed: 'Load failed',
     runtimeStopped: 'Not running',
-    builtinManaged: 'Built-in extensions are managed by Kisaki.',
+    builtinManaged: 'Built-in extensions are managed by Kisaki',
     enableFailed: 'Could not enable the extension',
-    packageNotRunnable: 'The extension package cannot run right now.',
-    enabledFeedback: 'Extension enabled.',
-    disabledFeedback: 'Extension disabled.',
+    packageNotRunnable: 'The extension package cannot run right now',
+    enabledFeedback: 'Extension enabled',
+    disabledFeedback: 'Extension disabled',
     operationFailed: 'Operation failed',
     extensionOperationFailed: 'Extension operation failed',
     builtinBadge: 'Built-in',
     updateBadge: 'Update',
     unknownAuthor: 'Unknown',
-    noDescription: 'No description.',
+    noDescription: 'No description',
     enableWithApp: 'Enable with the app',
     enabledState: 'Enabled',
     disabledState: 'Disabled',
@@ -351,16 +351,16 @@ export const extension = {
     healthError: 'Error',
     healthNeverRefreshed: 'Never refreshed',
     healthOk: 'Healthy',
-    added: 'Repository added.',
+    added: 'Repository added',
     addFailed: 'Could not add the repository',
-    officialAdded: 'Official repository added.',
+    officialAdded: 'Official repository added',
     officialAddFailed: 'Could not add the official repository',
-    refreshAllStarted: 'Started refreshing extension repositories.',
+    refreshAllStarted: 'Started refreshing extension repositories',
     refreshFailed: 'Could not refresh the repository',
-    refreshStarted: 'Started refreshing the repository.',
-    enabledFeedback: 'Repository enabled.',
-    disabledFeedback: 'Repository disabled.',
-    deleted: 'Repository deleted.',
+    refreshStarted: 'Started refreshing the repository',
+    enabledFeedback: 'Repository enabled',
+    disabledFeedback: 'Repository disabled',
+    deleted: 'Repository deleted',
     operationFailed: 'Repository operation failed',
     panelTitle: 'Extension repositories',
     panelSummary: ({ count }: { count: number }) =>
@@ -414,7 +414,7 @@ export const extension = {
   signer: {
     none: 'None',
     localConfirmation: 'Local confirmation',
-    revoked: 'Signature trust revoked.',
+    revoked: 'Signature trust revoked',
     revokeFailed: 'Could not revoke the signature trust',
     panelTitle: 'Signature trust',
     panelSummary: ({ count }: { count: number }) =>

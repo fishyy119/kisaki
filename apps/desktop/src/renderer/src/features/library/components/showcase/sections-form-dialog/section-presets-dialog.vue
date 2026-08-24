@@ -19,6 +19,7 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 
 const { m } = useI18n()
@@ -111,11 +112,12 @@ function handleCancel() {
         <DialogTitle>{{ m.library.showcase.presetsDialog.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[60vh] overflow-auto">
-        <template v-if="Object.keys(presetsByEntityType).length === 0">
-          <p class="text-sm text-muted-foreground text-center py-8">
-            {{ m.library.showcase.presetsDialog.empty }}
-          </p>
-        </template>
+        <StateView
+          v-if="Object.keys(presetsByEntityType).length === 0"
+          state="empty"
+          :description="m.library.showcase.presetsDialog.empty"
+          class="py-8"
+        />
         <template v-else>
           <div class="space-y-4">
             <div

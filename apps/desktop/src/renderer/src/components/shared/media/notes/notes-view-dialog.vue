@@ -72,9 +72,13 @@ useDbChanges(({ operation, table, id }) => {
         <DialogHeader>
           <DialogTitle>{{ m.library.notes.title }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="text-sm text-muted-foreground py-10 text-center">{{
-          m.library.notes.notFound
-        }}</DialogBody>
+        <DialogBody>
+          <StateView
+            state="not-found"
+            :description="m.library.notes.notFound"
+            class="py-10"
+          />
+        </DialogBody>
         <DialogFooter>
           <Button
             variant="outline"

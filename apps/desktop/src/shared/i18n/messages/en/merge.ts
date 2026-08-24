@@ -8,9 +8,9 @@ export const merge = {
   confirmDescription: ({ source }: { source: string }) =>
     `"${source}" will be deleted. External IDs, relations, tags, collections, activity records, and attachments move to the kept entity; existing data on the target stays unchanged.`,
   action: 'Merge',
-  merged: ({ name }: { name: string }) => `Merged into "${name}".`,
+  merged: ({ name }: { name: string }) => `Merged into "${name}"`,
   fallbackTargetName: 'the target entity',
-  failed: 'Merge failed.',
+  failed: 'Merge failed',
   staticCollection: 'Static collection',
   dynamicCollection: 'Dynamic collection'
 }

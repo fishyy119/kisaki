@@ -230,7 +230,7 @@ async function handleCopyProfileId() {
                   <Input
                     :model-value="props.profile?.id ?? ''"
                     readonly
-                    class="font-mono text-xs"
+                    class="font-mono"
                   />
                   <Button
                     type="button"

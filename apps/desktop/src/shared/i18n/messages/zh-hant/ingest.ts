@@ -21,9 +21,9 @@ export const ingest = {
     writing: ({ entity }: { entity: IngestEntity }) => `正在寫入${NOUNS[entity]}`,
     addedTitle: ({ entity }: { entity: IngestEntity }) => `${NOUNS[entity]}新增成功`,
     existsTitle: ({ entity }: { entity: IngestEntity }) => `${NOUNS[entity]}已存在`,
-    addedSummary: ({ entity }: { entity: IngestEntity }) => `${NOUNS[entity]}已寫入資料庫。`,
-    existsSummary: ({ entity }: { entity: IngestEntity }) => `已比對到現有${NOUNS[entity]}。`,
-    cancelledSummary: ({ entity }: { entity: IngestEntity }) => `新增${NOUNS[entity]}已取消。`
+    addedSummary: ({ entity }: { entity: IngestEntity }) => `${NOUNS[entity]}已寫入資料庫`,
+    existsSummary: ({ entity }: { entity: IngestEntity }) => `已比對到現有${NOUNS[entity]}`,
+    cancelledSummary: ({ entity }: { entity: IngestEntity }) => `新增${NOUNS[entity]}已取消`
   },
 
   update: {
@@ -34,9 +34,8 @@ export const ingest = {
     writing: ({ entity }: { entity: IngestEntity }) => `正在寫入${NOUNS[entity]}中繼資料`,
     completedTitle: ({ entity }: { entity: IngestEntity }) => `${NOUNS[entity]}中繼資料更新完成`,
     completedSummary: ({ entity }: { entity: IngestEntity }) =>
-      `${NOUNS[entity]}中繼資料已寫入資料庫。`,
-    cancelledSummary: ({ entity }: { entity: IngestEntity }) =>
-      `更新${NOUNS[entity]}中繼資料已取消。`
+      `${NOUNS[entity]}中繼資料已寫入資料庫`,
+    cancelledSummary: ({ entity }: { entity: IngestEntity }) => `更新${NOUNS[entity]}中繼資料已取消`
   },
 
   batch: {
@@ -44,7 +43,7 @@ export const ingest = {
     subjectCount: ({ entity, count }: { entity: IngestEntity; count: number }) =>
       `${count} 個${NOUNS[entity]}`,
     preparingList: ({ entity }: { entity: IngestEntity }) => `正在準備${NOUNS[entity]}清單`,
-    noSearchResults: '沒有搜尋結果。',
+    noSearchResults: '沒有搜尋結果',
     completedTitle: ({ entity }: { entity: IngestEntity }) =>
       `批次更新${NOUNS[entity]}中繼資料完成`,
     completedWithFailuresTitle: ({ entity }: { entity: IngestEntity }) =>
@@ -57,7 +56,7 @@ export const ingest = {
       succeeded: number
       failed: number
       skipped: number
-    }) => `成功 ${succeeded}，失敗 ${failed}，略過 ${skipped}。`,
+    }) => `成功 ${succeeded}，失敗 ${failed}，略過 ${skipped}`,
     cancelledSummary: ({
       succeeded,
       failed,

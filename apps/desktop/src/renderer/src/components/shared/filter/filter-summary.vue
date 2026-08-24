@@ -102,10 +102,7 @@ const entries = computed(() =>
     v-else-if="props.compact"
     class="flex items-center gap-1.5"
   >
-    <Badge
-      variant="secondary"
-      class="text-xs"
-    >
+    <Badge variant="secondary">
       {{ m.filter.activeCount({ count: activeCount }) }}
     </Badge>
     <Button
@@ -130,14 +127,12 @@ const entries = computed(() =>
       v-for="(entry, i) in entries"
       :key="i"
       variant="secondary"
-      class="text-xs"
     >
       {{ entry }}
     </Badge>
     <Button
       variant="ghost"
       size="sm"
-      class="h-6 text-xs px-2"
       @click="emit('clear')"
     >
       {{ m.common.clear }}

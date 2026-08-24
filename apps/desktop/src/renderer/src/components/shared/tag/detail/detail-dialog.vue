@@ -101,7 +101,7 @@ const entityTypeModel = computed({
             <Badge
               v-if="tag.isNsfw"
               variant="destructive"
-              class="text-[10px] px-1.5 py-0"
+              class="px-1.5 py-0"
             >
               NSFW
             </Badge>

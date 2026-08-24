@@ -5,7 +5,7 @@ export const ui = {
     errorTitle: '加载失败'
   },
   combobox: {
-    noMatches: '未找到匹配项。',
+    noMatches: '未找到匹配项',
     create: ({ name }: { name: string }) => `创建“${name}”`
   },
   imagePicker: {
@@ -52,8 +52,8 @@ export const ui = {
     yearPlaceholder: '年',
     monthPlaceholder: '月',
     dayPlaceholder: '日',
-    invalidInteger: '日期只能填写整数。',
-    yearDayWithoutMonth: '填写了年份和日期时，必须同时填写月份。'
+    invalidInteger: '日期只能填写整数',
+    yearDayWithoutMonth: '填写了年份和日期时，必须同时填写月份'
   },
   rankingList: {
     expandTitle: '排行',
@@ -83,13 +83,12 @@ export const ui = {
     removeDescription: ({ label }: { label: string }) => `确定要移除此${label}吗？`,
     deleteNamedDescription: ({ name, label }: { name: string; label: string }) =>
       `确定要删除「${name}」吗？此操作无法撤销，${label}数据将被永久删除。`,
-    deleteDescription: ({ label }: { label: string }) =>
-      `此操作无法撤销，${label}数据将被永久删除。`,
+    deleteDescription: ({ label }: { label: string }) => `此操作无法撤销，${label}数据将被永久删除`,
     removing: '移除中…',
     deleting: '删除中…'
   },
   spoiler: {
     title: '显示剧透？',
-    description: '开启后将立即显示被标记为剧透的内容。'
+    description: '开启后将立即显示被标记为剧透的内容'
   }
 } satisfies Messages['ui']

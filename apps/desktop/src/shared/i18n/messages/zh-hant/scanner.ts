@@ -8,7 +8,7 @@ export const scanner = {
   cancelAll: '取消全部',
   settingsTooltip: '掃描器設定',
   emptyTitle: '暫無掃描器',
-  emptyDescription: '新增掃描器來自動探索並匯入你的媒體檔案。',
+  emptyDescription: '新增掃描器來自動探索並匯入你的媒體檔案',
 
   table: {
     name: '名稱',
@@ -63,7 +63,7 @@ export const scanner = {
     totalCount: ({ count }: { count: number }) => `共 ${count} 項`,
     searchPlaceholder: '搜尋名稱、路徑、原因…',
     allTypes: '全部類型',
-    noMatch: '沒有符合的問題。',
+    noMatch: '沒有符合的問題',
     table: {
       name: '名稱',
       type: '類型',
@@ -75,8 +75,8 @@ export const scanner = {
     openPath: '開啟路徑',
     addToExclusion: '加入掃描排除清單',
     fixAndRescrape: '修正並重新刮削',
-    alreadyExcluded: '已在排除清單中。',
-    addedToExclusion: '已加入掃描排除清單。',
+    alreadyExcluded: '已在排除清單中',
+    addedToExclusion: '已加入掃描排除清單',
     excludeFailed: '加入排除清單失敗'
   },
 
@@ -84,7 +84,7 @@ export const scanner = {
     title: '修正掃描結果',
     updateExisting: '更新現有條目',
     readd: '重新新增條目',
-    started: '已開始重新刮削。',
+    started: '已開始重新刮削',
     startFailed: '啟動修正失敗',
     unknownError: '未知錯誤',
     rescrape: '重新刮削'
@@ -92,32 +92,32 @@ export const scanner = {
 
   settings: {
     title: '掃描器設定',
-    saved: '設定已儲存。',
+    saved: '設定已儲存',
     saveFailed: '儲存失敗',
     ingestMode: '入庫模式',
-    ingestModeDescription: '控制掃描器辨識到新遊戲後的匯入策略。',
+    ingestModeDescription: '控制掃描器辨識到新遊戲後的匯入策略',
     ingestPreferScraper: '優先刮削',
-    ingestPreferScraperDescription: '優先使用刮削匯入，失敗時回退到直接入庫。',
+    ingestPreferScraperDescription: '優先使用刮削匯入，失敗時回退到直接入庫',
     ingestRequireScraper: '必須刮削',
-    ingestRequireScraperDescription: '必須透過刮削匯入，刮削失敗時直接記為失敗。',
+    ingestRequireScraperDescription: '必須透過刮削匯入，刮削失敗時直接記為失敗',
     ingestDirectOnly: '僅直接入庫',
-    ingestDirectOnlyDescription: '跳過刮削，直接依辨識結果建立遊戲。',
+    ingestDirectOnlyDescription: '跳過刮削，直接依辨識結果建立遊戲',
     parallelCount: '並行處理數',
-    parallelCountDescription: '控制單一掃描器同時處理的項目數，1 表示序列處理。',
+    parallelCountDescription: '控制單一掃描器同時處理的項目數，1 表示序列處理',
     ignoredNames: '忽略名稱清單',
-    ignoredNamesDescription: '掃描器會跳過這些提取後的實體名稱。',
+    ignoredNamesDescription: '掃描器會跳過這些提取後的實體名稱',
     ignoredNamePlaceholder: '輸入要忽略的名稱…',
-    noIgnoredNames: '暫無忽略名稱。'
+    noIgnoredNames: '暫無忽略名稱'
   },
 
   form: {
     createTitle: '建立掃描器',
     editTitle: '編輯掃描器',
-    requiredFields: '請填寫必填欄位。',
-    updated: '掃描器已更新。',
-    created: '掃描器已建立。',
-    updateFailed: '更新失敗，請重試。',
-    createFailed: '建立失敗，請重試。',
+    requiredFields: '請填寫必填欄位',
+    updated: '掃描器已更新',
+    created: '掃描器已建立',
+    updateFailed: '更新失敗，請重試',
+    createFailed: '建立失敗，請重試',
     openLinkFailed: '開啟連結失敗',
     name: '名稱',
     namePlaceholder: '例如：我的遊戲庫',
@@ -149,8 +149,8 @@ export const scanner = {
     rules: '規則',
     entities: '實體',
     matched: '符合',
-    noEntitiesFound: '在指定層級未找到實體。',
-    allExcluded: '所有實體已被排除。',
+    noEntitiesFound: '在指定層級未找到實體',
+    allExcluded: '所有實體已被排除',
     entityName: '實體名稱',
     extractedName: '提取後名稱',
     rule: '規則',
@@ -159,7 +159,7 @@ export const scanner = {
 
   rules: {
     title: '名稱提取規則',
-    empty: '暫無規則，點選下方按鈕新增。',
+    empty: '暫無規則，點選下方按鈕新增',
     unnamedRule: '（未命名規則）',
     addRule: '新增規則',
     selectPresets: '選擇預設',
@@ -169,9 +169,9 @@ export const scanner = {
     descriptionPlaceholder: '例如：移除方括號前綴',
     pattern: '正規表示式',
     patternHintBefore: '使用具名擷取群組',
-    patternHintAfter: '來指定要提取的名稱。',
+    patternHintAfter: '來指定要提取的名稱',
     presetsTitle: '選擇預設規則',
-    presetsAllAdded: '所有預設規則已新增。',
+    presetsAllAdded: '所有預設規則已新增',
     addWithCount: ({ count }: { count: number }) => `新增 (${count})`,
     presets: {
       bracketPrefix: { name: '方括號前綴 [xxx]', description: '移除開頭的 [xxx]' },
@@ -214,18 +214,18 @@ export const scanner = {
     }) =>
       `${status}：處理 ${processed}/${total}，新增 ${added}，已存在 ${existing}，失敗 ${failed}，問題 ${issues}`,
     reasons: {
-      scrapeUnavailableRequired: '刮削設定不可用，目前模式要求刮削，未新增。',
-      noMetadataRequired: '未找到可用中繼資料，目前模式要求刮削，未新增。',
-      scrapeFailedRequired: '刮削失敗且目前模式要求刮削，未新增。',
-      scrapeUnavailableFallback: '刮削設定不可用，已使用目錄名直接新增。',
-      noMetadataFallback: '未找到可用中繼資料，已使用目錄名直接新增。',
-      scrapeFailedFallback: '刮削失敗，已使用目錄名直接新增。',
+      scrapeUnavailableRequired: '刮削設定不可用，目前模式要求刮削，未新增',
+      noMetadataRequired: '未找到可用中繼資料，目前模式要求刮削，未新增',
+      scrapeFailedRequired: '刮削失敗且目前模式要求刮削，未新增',
+      scrapeUnavailableFallback: '刮削設定不可用，已使用目錄名直接新增',
+      noMetadataFallback: '未找到可用中繼資料，已使用目錄名直接新增',
+      scrapeFailedFallback: '刮削失敗，已使用目錄名直接新增',
       pathInaccessible: ({ message }: { message: string }) => `路徑無法存取，未新增：${message}`,
-      notScannableDirectory: '路徑不是可掃描目錄，未新增。',
-      externalIdLinked: '外部 ID 已關聯到現有項目，目前路徑未新增。',
+      notScannableDirectory: '路徑不是可掃描目錄，未新增',
+      externalIdLinked: '外部 ID 已關聯到現有項目，目前路徑未新增',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
-        `${count} 個影片檔案無法辨識集數，已作為未編號劇集新增。`,
-      fileSyncFailed: '項目已新增，但影片檔案同步失敗，詳見日誌。'
+        `${count} 個影片檔案無法辨識集數，已作為未編號劇集新增`,
+      fileSyncFailed: '項目已新增，但影片檔案同步失敗，詳見日誌'
     }
   }
 } satisfies Messages['scanner']

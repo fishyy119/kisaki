@@ -218,7 +218,7 @@ watch(model, (providerId) => {
           <Badge
             v-if="selectedFallbackProvider.statusLabel"
             variant="warning"
-            class="shrink-0 px-1 py-0 text-[10px]"
+            class="shrink-0 px-1 py-0"
           >
             {{ selectedFallbackProvider.statusLabel }}
           </Badge>

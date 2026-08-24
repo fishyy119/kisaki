@@ -3,12 +3,12 @@ export const app = {
   quit: 'Quit Kisaki',
   notFound: {
     title: 'Page not found',
-    description: 'The page you requested does not exist.',
+    description: 'The page you requested does not exist',
     backToLibrary: 'Back to library'
   },
   error: {
     title: 'Application error',
-    description: 'Sorry, the app ran into an error.',
+    description: 'Sorry, the app ran into an error',
     messageLabel: 'Error message',
     stackLabel: 'Stack trace',
     reload: 'Reload app'

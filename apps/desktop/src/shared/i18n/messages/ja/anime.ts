@@ -10,7 +10,7 @@ export const anime = {
   episodes: {
     title: 'エピソード',
     emptyTitle: 'エピソードがありません',
-    emptyHint: 'フォルダーをスキャンするかメタデータを取得すると、ここに表示されます。',
+    emptyHint: 'フォルダーをスキャンするかメタデータを取得すると、ここに表示されます',
     unnamed: ({ number }: { number: string }) => `第${number}話`,
     entityLabel: 'エピソード',
     watched: '視聴済み',
@@ -19,7 +19,7 @@ export const anime = {
     resumeAt: ({ position }: { position: string }) => `${position} から再開`,
     markWatched: '視聴済みにする',
     markUnwatched: '未視聴にする',
-    watchedUpdated: '視聴状態を更新しました。',
+    watchedUpdated: '視聴状態を更新しました',
     progress: ({ watched, total }: { watched: number; total: number }) =>
       `${watched} / ${total} 視聴済み`,
     playCount: '再生回数',
@@ -29,28 +29,28 @@ export const anime = {
 
     catchUp: {
       title: '残りのエピソードを視聴済みにしますか？',
-      pendingCount: ({ count }: { count: number }) => `${count} 話が視聴済みになっていません。`,
+      pendingCount: ({ count }: { count: number }) => `${count} 話が視聴済みになっていません`,
       pendingByType: {
         regular: ({ count }: { count: number }) => `本編 ${count} 話`,
         special: ({ count }: { count: number }) => `スペシャル ${count} 話`
       },
-      hint: '視聴状態のみを記録し、視聴日時は書き込みません。',
+      hint: '視聴状態のみを記録し、視聴日時は書き込みません',
       markAll: 'すべて視聴済みにする',
       markRegularOnly: '本編のみ',
       skip: 'スキップ',
-      marked: ({ count }: { count: number }) => `${count} 話を視聴済みにしました。`
+      marked: ({ count }: { count: number }) => `${count} 話を視聴済みにしました`
     },
 
     addEpisode: 'エピソードを追加',
     editEpisode: 'エピソードを編集',
     deleteEpisode: 'エピソードを削除',
-    episodeDeleted: 'エピソードを削除しました。',
+    episodeDeleted: 'エピソードを削除しました',
     numberLabel: '話数',
     numberPlaceholder: '空欄可',
     typeLabel: '種類',
     durationMinutes: '長さ（分）',
-    numberInvalid: '話数は正の数で入力してください。',
-    durationInvalid: '長さは正の数で入力してください。',
+    numberInvalid: '話数は正の数で入力してください',
+    durationInvalid: '長さは正の数で入力してください',
 
     syncFiles: 'ファイルを同期',
     syncCompleted: ({
@@ -61,16 +61,16 @@ export const anime = {
       episodes: number
       files: number
       extras: number
-    }) => `${episodes} エピソード、${files} ファイル、${extras} 特典を同期しました。`,
-    syncFailed: 'ファイルの同期に失敗しました。',
+    }) => `${episodes} エピソード、${files} ファイル、${extras} 特典を同期しました`,
+    syncFailed: 'ファイルの同期に失敗しました',
     syncUnrecognized: ({ count }: { count: number }) =>
-      `${count} 個のファイルは話数を読み取れませんでした。`
+      `${count} 個のファイルは話数を読み取れませんでした`
   },
 
   extras: {
     title: '特典',
     emptyTitle: '特典がありません',
-    emptyHint: 'フォルダー内の予告編やノンクレジット OP/ED がここに表示されます。',
+    emptyHint: 'フォルダー内の予告編やノンクレジット OP/ED がここに表示されます',
     entityLabel: '特典',
     addExtra: '特典を追加',
     extraAttached: '特典を追加しました',
@@ -90,7 +90,7 @@ export const anime = {
     title: 'ファイル',
     playFile: 'このファイルを再生',
     missingFile: 'ファイルなし',
-    noFiles: 'ファイルはまだありません。',
+    noFiles: 'ファイルはまだありません',
     fileCount: ({ count }: { count: number }) => `${count} ファイル`,
     primary: '優先',
     resolution: '解像度',
@@ -100,31 +100,31 @@ export const anime = {
     audioTrackCount: ({ count }: { count: number }) => `音声 ${count}`,
     subtitleTrackCount: ({ count }: { count: number }) => `字幕 ${count}`,
     openFolder: '格納フォルダーを開く',
-    openFolderFailed: '格納フォルダーを開けませんでした。',
+    openFolderFailed: '格納フォルダーを開けませんでした',
     setPrimary: '優先に設定',
-    primaryUpdated: '優先ファイルを更新しました。',
+    primaryUpdated: '優先ファイルを更新しました',
     removeFile: 'ファイル記録を削除',
-    fileRemoved: 'ファイル記録を削除しました。',
+    fileRemoved: 'ファイル記録を削除しました',
     recordEntityLabel: 'ファイル記録',
     addFile: 'ファイルを追加',
-    fileAttached: 'ファイルを追加しました。',
-    attachFailed: 'ファイルを追加できませんでした。',
+    fileAttached: 'ファイルを追加しました',
+    attachFailed: 'ファイルを追加できませんでした',
     manualBadge: '手動',
     noteLabel: 'メモ',
     editNote: 'メモを編集',
-    noteSaved: 'メモを保存しました。'
+    noteSaved: 'メモを保存しました'
   },
 
   player: {
     pause: '一時停止',
     resume: '再開',
-    pauseFailed: '再生を一時停止できませんでした。',
-    resumeFailed: '再生を再開できませんでした。'
+    pauseFailed: '再生を一時停止できませんでした',
+    resumeFailed: '再生を再開できませんでした'
   },
 
   detail: {
     openAnimeDir: 'アニメフォルダーを開く',
-    animeDirNotSet: 'アニメフォルダーが設定されていません。',
+    animeDirNotSet: 'アニメフォルダーが設定されていません',
     watchStatus: '視聴ステータス'
   },
 
@@ -137,7 +137,7 @@ export const anime = {
       '同期はこのフォルダーをスキャンしてエピソードファイルを照合します。空欄の場合は完全に手動で管理します。変更を保存すると再同期します。',
     offsetLabel: 'ファイル話数オフセット',
     offsetHint: 'ファイル話数 − オフセット = メタデータ話数。通し番号のファイルを揃えます。',
-    offsetInvalid: 'オフセットは整数で入力してください。'
+    offsetInvalid: 'オフセットは整数で入力してください'
   },
 
   statusDialog: {
@@ -149,7 +149,7 @@ export const anime = {
   lastActiveDialog: {
     title: '最終視聴日時を編集',
     label: '最終視聴日時',
-    emptyHint: '空欄の場合は未視聴扱いになります。'
+    emptyHint: '空欄の場合は未視聴扱いになります'
   },
 
   duration: {
@@ -160,7 +160,7 @@ export const anime = {
     untrackedLabel: '未記録の視聴時間',
     hoursUnit: '時間',
     minutesUnit: '分',
-    untrackedHint: 'セッションに記録されていない視聴時間（インポートした履歴など）。',
+    untrackedHint: 'セッションに記録されていない視聴時間（インポートした履歴など）',
     sessionsHeader: ({ count }: { count: number }) => `セッション記録（${count}）`,
     emptySessions: 'セッション記録がありません。下のボタンから追加できます',
     addRecord: '記録を追加',
@@ -178,7 +178,7 @@ export const anime = {
 
   activity: {
     emptyTitle: '視聴記録がありません',
-    emptyHint: 'エピソードを再生すると、視聴時間が自動で記録されます。',
+    emptyHint: 'エピソードを再生すると、視聴時間が自動で記録されます',
     statsOverview: '統計概要',
     heatmap: 'アクティビティヒートマップ',
     trend: '視聴推移',

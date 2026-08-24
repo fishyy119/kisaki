@@ -157,7 +157,7 @@ const dateRangeValue = computed({
   <div class="flex flex-col gap-2 rounded-md border border-border bg-muted/20 p-2">
     <div class="flex items-center gap-1.5">
       <Select v-model="fieldKey">
-        <SelectTrigger class="h-7 flex-1 text-xs">
+        <SelectTrigger class="flex-1">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -176,7 +176,7 @@ const dateRangeValue = computed({
         v-if="field?.kind === 'boolean'"
         v-model="booleanValue"
       >
-        <SelectTrigger class="h-7 w-32 shrink-0 text-xs">
+        <SelectTrigger class="w-32 shrink-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -189,7 +189,7 @@ const dateRangeValue = computed({
         v-else-if="showOpSelect"
         v-model="opValue"
       >
-        <SelectTrigger class="h-7 w-32 shrink-0 text-xs">
+        <SelectTrigger class="w-32 shrink-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

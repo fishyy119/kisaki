@@ -6,10 +6,10 @@ export const adder = {
   addScanner: 'スキャナーを追加',
 
   addFailed: ({ label }: { label: string }) => `${label}を追加できませんでした`,
-  addCancelled: ({ label }: { label: string }) => `${label}の追加をキャンセルしました。`,
-  missingEntityId: ({ label }: { label: string }) => `タスク結果に${label} ID がありません。`,
+  addCancelled: ({ label }: { label: string }) => `${label}の追加をキャンセルしました`,
+  missingEntityId: ({ label }: { label: string }) => `タスク結果に${label} ID がありません`,
 
-  autofillHint: '検索結果をクリックすると ID が自動入力されます。',
+  autofillHint: '検索結果をクリックすると ID が自動入力されます',
   adding: '追加中…',
   submit: '照合して追加',
 

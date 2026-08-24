@@ -101,13 +101,13 @@ const alignStyle = computed(() => alignStyles[props.align])
         <Badge
           v-if="props.subtitle"
           variant="secondary"
-          class="mt-1 max-w-full px-1.5 py-0 text-[10px] font-normal"
+          class="mt-1 max-w-full px-1.5 py-0 font-normal"
         >
           <span class="min-w-0 truncate">{{ props.subtitle }}</span>
         </Badge>
         <Badge
           variant="secondary"
-          class="mt-1 text-[10px] px-1.5 py-0"
+          class="mt-1 px-1.5 py-0"
         >
           {{ props.badgeLabel }}
         </Badge>
@@ -132,7 +132,7 @@ const alignStyle = computed(() => alignStyles[props.align])
       <Badge
         v-if="props.subtitle"
         variant="secondary"
-        class="mt-1 max-w-full px-1.5 py-0 text-[10px] font-normal"
+        class="mt-1 max-w-full px-1.5 py-0 font-normal"
       >
         <span class="min-w-0 truncate">{{ props.subtitle }}</span>
       </Badge>

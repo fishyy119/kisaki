@@ -304,8 +304,6 @@ const sortDirectionModels = createModelsByEntityType(createSortDirectionModel)
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                class="h-7 text-xs"
                 @click="openFilterDialog(type)"
               >
                 <Icon
@@ -326,7 +324,7 @@ const sortDirectionModels = createModelsByEntityType(createSortDirectionModel)
               <!-- Sort controls -->
               <span class="text-xs text-muted-foreground">{{ m.library.forms.sortLabel }}</span>
               <Select v-model="sortFieldModels[type].value">
-                <SelectTrigger class="w-20 h-7 text-xs">
+                <SelectTrigger class="w-20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -340,7 +338,7 @@ const sortDirectionModels = createModelsByEntityType(createSortDirectionModel)
                 </SelectContent>
               </Select>
               <Select v-model="sortDirectionModels[type].value">
-                <SelectTrigger class="w-16 h-7 text-xs">
+                <SelectTrigger class="w-16">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

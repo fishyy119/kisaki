@@ -93,7 +93,7 @@ onUnmounted(() => {
 
     <div
       v-if="metrics.length"
-      class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-4 text-muted-foreground"
+      class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs leading-4 text-muted-foreground"
     >
       <span
         v-for="item in metrics"

@@ -38,7 +38,7 @@ const props = defineProps<{
     >
       <table
         data-slot="table"
-        :class="cn('w-full table-fixed caption-bottom text-sm', props.class)"
+        :class="cn('w-full table-fixed caption-bottom text-xs', props.class)"
       >
         <colgroup>
           <col
@@ -55,7 +55,7 @@ const props = defineProps<{
       <slot name="state" />
       <table
         data-slot="table"
-        :class="cn('w-full table-fixed caption-bottom text-sm', props.class)"
+        :class="cn('w-full table-fixed caption-bottom text-xs', props.class)"
       >
         <colgroup>
           <col
@@ -74,7 +74,7 @@ const props = defineProps<{
     >
       <table
         data-slot="table"
-        :class="cn('w-full table-fixed caption-bottom text-sm', props.class)"
+        :class="cn('w-full table-fixed caption-bottom text-xs', props.class)"
       >
         <colgroup>
           <col
@@ -95,7 +95,7 @@ const props = defineProps<{
   >
     <table
       data-slot="table"
-      :class="cn('w-full caption-bottom text-sm', props.class)"
+      :class="cn('w-full caption-bottom text-xs', props.class)"
     >
       <slot name="header" />
       <slot />

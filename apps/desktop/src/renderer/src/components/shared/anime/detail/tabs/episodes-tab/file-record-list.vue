@@ -28,6 +28,7 @@ import {
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { Icon } from '@renderer/components/ui/icon'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Input } from '@renderer/components/ui/input'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { formatBytes } from '@renderer/utils/format'
@@ -128,12 +129,12 @@ function fileFacts(file: FileRecord): string {
       </Button>
     </div>
 
-    <p
+    <StateView
       v-if="props.files.length === 0"
-      class="text-sm text-muted-foreground py-3 text-center"
-    >
-      {{ props.emptyText }}
-    </p>
+      state="empty"
+      :description="props.emptyText"
+      class="py-3"
+    />
     <div
       v-else
       class="space-y-2"

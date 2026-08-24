@@ -18,7 +18,7 @@ export const nav = {
   nsfw: {
     enableTitle: 'NSFW コンテンツを表示しますか？',
     disableTitle: 'NSFW コンテンツを隠しますか？',
-    enableDescription: '有効にすると、NSFW としてマークされたコンテンツが表示されます。',
-    disableDescription: '無効にすると、NSFW としてマークされたコンテンツが非表示になります。'
+    enableDescription: '有効にすると、NSFW としてマークされたコンテンツが表示されます',
+    disableDescription: '無効にすると、NSFW としてマークされたコンテンツが非表示になります'
   }
 } satisfies Messages['nav']

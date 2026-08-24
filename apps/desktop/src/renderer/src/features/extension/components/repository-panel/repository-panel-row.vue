@@ -53,7 +53,7 @@ const { m } = useI18n()
         <Badge
           v-if="shouldShowRepositoryHealthBadge(props.repository)"
           :variant="getRepositoryHealthVariant(props.repository)"
-          class="h-5 text-[10px]"
+          class="h-5"
         >
           {{ getRepositoryHealthLabel(props.repository) }}
         </Badge>

@@ -513,7 +513,7 @@ function parseOptionalTimezone(value: string): string | undefined {
               <FieldContent>
                 <Textarea
                   v-model="formData.argsText"
-                  class="min-h-40 font-mono text-xs leading-relaxed"
+                  class="min-h-40 font-mono leading-relaxed"
                   :rows="10"
                 />
               </FieldContent>

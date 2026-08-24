@@ -38,7 +38,7 @@ const searchModel = computed({
     <Input
       v-model="searchModel"
       :placeholder="m.library.explorer.searchPlaceholder"
-      class="pl-8 h-7 text-xs bg-muted/50"
+      class="pl-8 bg-muted/50"
     />
     <Button
       v-if="search"

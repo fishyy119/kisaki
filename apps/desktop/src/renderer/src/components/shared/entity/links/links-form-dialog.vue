@@ -310,12 +310,12 @@ function handleRevealSpoilersConfirm() {
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-4">
-            <p
+            <StateView
               v-if="items.length === 0"
-              class="text-sm text-muted-foreground text-center py-8"
-            >
-              {{ m.library.forms.emptyListHint({ label: targetLabel }) }}
-            </p>
+              state="empty"
+              :description="m.library.forms.emptyListHint({ label: targetLabel })"
+              class="py-8"
+            />
             <template v-else>
               <template
                 v-for="role in spec.roleOrder"

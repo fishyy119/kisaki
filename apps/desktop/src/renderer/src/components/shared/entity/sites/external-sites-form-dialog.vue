@@ -177,12 +177,14 @@ function handleCancel() {
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
-            <p
+            <StateView
               v-if="sites.length === 0"
-              class="text-sm text-muted-foreground text-center py-8"
-            >
-              {{ m.library.forms.emptyListHint({ label: m.library.forms.linkLabels.link }) }}
-            </p>
+              state="empty"
+              :description="
+                m.library.forms.emptyListHint({ label: m.library.forms.linkLabels.link })
+              "
+              class="py-8"
+            />
             <ListItem
               v-for="(site, index) in sites"
               v-else

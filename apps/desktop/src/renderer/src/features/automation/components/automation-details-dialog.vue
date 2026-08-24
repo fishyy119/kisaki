@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Badge } from '@renderer/components/ui/badge'
 import {
   Dialog,
@@ -212,16 +213,13 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             </span>
           </div>
 
-          <div
+          <StateView
             v-if="props.automation.history.length === 0"
-            class="flex h-28 flex-col items-center justify-center rounded-md border border-dashed border-border text-muted-foreground"
-          >
-            <Icon
-              icon="icon-[mdi--history]"
-              class="mb-2 size-8 opacity-40"
-            />
-            <div class="text-sm">{{ m.automation.details.noHistory }}</div>
-          </div>
+            state="empty"
+            icon="icon-[mdi--history]"
+            :description="m.automation.details.noHistory"
+            class="h-28 rounded-md border border-dashed border-border"
+          />
 
           <div
             v-else

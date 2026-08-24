@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import type { TaskRun } from '@shared/task-run'
-import { Icon } from '@renderer/components/ui/icon'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   Dialog,
   DialogBody,
@@ -250,12 +250,13 @@ async function handleCancel(run: TaskRun): Promise<void> {
               </div>
 
               <div class="min-h-0 flex-1">
-                <div
+                <StateView
                   v-if="filteredActiveRuns.length === 0"
-                  class="flex h-full min-h-48 items-center justify-center text-sm text-muted-foreground"
-                >
-                  {{ m.task.noActiveTasks }}
-                </div>
+                  state="empty"
+                  icon="icon-[mdi--playlist-play]"
+                  :description="m.task.noActiveTasks"
+                  class="h-full min-h-48"
+                />
                 <Table
                   v-else
                   fixed-header
@@ -315,16 +316,13 @@ async function handleCancel(run: TaskRun): Promise<void> {
               </div>
 
               <div class="min-h-0 flex-1">
-                <div
+                <StateView
                   v-if="filteredCompletedRuns.length === 0"
-                  class="flex h-full min-h-48 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
-                >
-                  <Icon
-                    icon="icon-[mdi--archive-outline]"
-                    class="size-8 opacity-40"
-                  />
-                  <span>{{ m.task.noCompletedRecords }}</span>
-                </div>
+                  state="empty"
+                  icon="icon-[mdi--archive-outline]"
+                  :description="m.task.noCompletedRecords"
+                  class="h-full min-h-48"
+                />
                 <Table
                   v-else
                   fixed-header

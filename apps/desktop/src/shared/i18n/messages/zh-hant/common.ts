@@ -53,20 +53,20 @@ export const common = {
   required: '必填',
 
   // Feedback
-  saved: '已儲存。',
-  deleted: '已刪除。',
-  copied: '已複製。',
-  saveFailed: '儲存失敗。',
-  deleteFailed: '刪除失敗。',
-  copyFailed: '複製失敗。',
-  loadFailed: '載入失敗。',
-  operationFailed: '操作失敗。',
+  saved: '已儲存',
+  deleted: '已刪除',
+  copied: '已複製',
+  saveFailed: '儲存失敗',
+  deleteFailed: '刪除失敗',
+  copyFailed: '複製失敗',
+  loadFailed: '載入失敗',
+  operationFailed: '操作失敗',
 
   // Placeholders and empty values
   emptyValue: '—',
   searchPlaceholder: '搜尋',
-  noResults: '沒有符合的結果。',
-  noData: '暫無資料。',
+  noResults: '沒有符合的結果',
+  noData: '暫無資料',
 
   // Counts
   itemCount: ({ count }) => `${count} 項`,

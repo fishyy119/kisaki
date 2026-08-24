@@ -304,7 +304,7 @@ const entityIdModel = computed({
             <TableRow>
               <TableCell
                 :colspan="spec.columns.length"
-                class="h-6 py-0 text-[10px] text-muted-foreground"
+                class="h-6 py-0 text-muted-foreground"
               >
                 {{ m.library.searcher.resultCount({ count: searchResults.length }) }}
                 <template v-if="selectedResultId"> · {{ m.library.searcher.selectedOne }}</template>
@@ -325,7 +325,7 @@ const entityIdModel = computed({
           v-model="entityIdModel"
           :placeholder="m.library.searcher.idPlaceholder"
           :disabled="!selectedProfileId || props.isSubmitting"
-          class="font-mono text-xs"
+          class="font-mono"
         />
       </FieldContent>
     </Field>

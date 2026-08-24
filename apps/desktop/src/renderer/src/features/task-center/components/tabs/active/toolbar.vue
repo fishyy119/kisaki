@@ -59,7 +59,6 @@ function clearSearch(): void {
         </InputGroupAddon>
         <InputGroupInput
           v-model="search"
-          class="text-xs"
           :placeholder="m.task.toolbar.searchActivePlaceholder"
         />
         <InputGroupAddon

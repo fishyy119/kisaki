@@ -19,7 +19,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { ScraperProviderSelect } from '@renderer/components/shared/scraper'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { ContentEntityType } from '@shared/common'
@@ -139,9 +139,10 @@ watch(selectedProviderId, () => {
       <!-- Loading state -->
       <template v-if="isLoading || !entry">
         <DialogBody>
-          <div class="flex items-center justify-center py-8">
-            <Spinner class="size-8" />
-          </div>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -186,43 +187,31 @@ watch(selectedProviderId, () => {
 
           <!-- Image grid -->
           <div class="overflow-auto max-h-[60vh]">
-            <div
+            <StateView
               v-if="!hasSearched"
-              class="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground"
-            >
-              <Icon
-                icon="icon-[mdi--image-plus-outline]"
-                class="size-10"
-              />
-              <p class="text-sm">{{ m.library.forms.searchStartHint }}</p>
-            </div>
-            <div
+              state="empty"
+              icon="icon-[mdi--image-plus-outline]"
+              :description="m.library.forms.searchStartHint"
+              class="py-12"
+            />
+            <StateView
               v-else-if="isLoadingImages"
-              class="flex items-center justify-center py-8"
-            >
-              <Spinner class="size-8" />
-            </div>
-            <div
+              state="loading"
+              class="py-12"
+            />
+            <StateView
               v-else-if="imagesError"
-              class="flex flex-col items-center justify-center gap-2 py-12 text-destructive"
-            >
-              <Icon
-                icon="icon-[mdi--alert-circle-outline]"
-                class="size-10"
-              />
-              <p class="text-sm">{{ m.library.forms.searchFailedHint }}</p>
-              <p class="text-xs text-muted-foreground">{{ imagesError.message }}</p>
-            </div>
-            <div
+              state="error"
+              :error="imagesError"
+              class="py-12"
+            />
+            <StateView
               v-else-if="images.length === 0"
-              class="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground"
-            >
-              <Icon
-                icon="icon-[mdi--image-off-outline]"
-                class="size-10"
-              />
-              <p class="text-sm">{{ m.library.forms.searchNoImages }}</p>
-            </div>
+              state="empty"
+              icon="icon-[mdi--image-off-outline]"
+              :description="m.library.forms.searchNoImages"
+              class="py-12"
+            />
             <div
               v-else
               :class="cn('grid gap-3', slot.searchGridClass)"

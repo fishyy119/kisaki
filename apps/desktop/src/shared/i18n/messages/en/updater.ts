@@ -8,10 +8,10 @@ export const updater = {
     title: 'App update',
     checking: 'Checking for updates…',
     downloading: 'Downloading the update…',
-    idleHint: 'Press "Check for updates" to start.',
+    idleHint: 'Press "Check for updates" to start',
     newVersionAvailable: 'New version available',
     downloaded: 'Update downloaded',
-    upToDate: 'You are on the latest version.',
+    upToDate: 'You are on the latest version',
     failed: 'Update failed',
     failedWithReason: ({ message }: { message: string }) => `Update failed: ${message}`,
     releasedAt: ({ date }: { date: string }) => `Released ${date}`,
@@ -24,8 +24,8 @@ export const updater = {
     changelogLoading: 'Loading the changelog…',
     changelogError: ({ message }: { message: string }) =>
       `Could not load the changelog: ${message}`,
-    changelogEmpty: 'No changelog for this language yet.',
-    changelogPlaceholder: 'The changelog appears here once an update is found.',
+    changelogEmpty: 'No changelog for this language yet',
+    changelogPlaceholder: 'The changelog appears here once an update is found',
     checkUpdates: 'Check for updates',
     startDownload: 'Download',
     installAndRestart: 'Update and restart'
@@ -37,13 +37,13 @@ export const updater = {
     checkingPhase: 'Checking for app updates',
     downloadingPhase: 'Downloading the app update',
     foundTitle: 'New version found',
-    foundSummary: ({ version }: { version: string }) => `App update v${version} is available.`,
+    foundSummary: ({ version }: { version: string }) => `App update v${version} is available`,
     upToDateTitle: 'Already up to date',
-    upToDateSummary: 'No app updates were found.',
-    checkCancelledSummary: 'The app update check was cancelled.',
+    upToDateSummary: 'No app updates were found',
+    checkCancelledSummary: 'The app update check was cancelled',
     downloadedTitle: 'App update downloaded',
-    downloadedSummary: ({ version }: { version: string }) => `Downloaded app update v${version}.`,
-    downloadedSummaryNoVersion: 'The app update has been downloaded.',
-    downloadCancelledSummary: 'The app update download was cancelled.'
+    downloadedSummary: ({ version }: { version: string }) => `Downloaded app update v${version}`,
+    downloadedSummaryNoVersion: 'The app update has been downloaded',
+    downloadCancelledSummary: 'The app update download was cancelled'
   }
 }

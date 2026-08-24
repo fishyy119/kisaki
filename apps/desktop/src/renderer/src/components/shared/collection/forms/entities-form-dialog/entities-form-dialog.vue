@@ -290,7 +290,7 @@ const entityTypeModel = computed({
               {{ ENTITY_CONFIG[type].label }}
               <span
                 v-if="entityCounts[type] > 0"
-                class="text-[10px] text-muted-foreground"
+                class="text-muted-foreground"
               >
                 ({{ entityCounts[type] }})
               </span>
@@ -299,12 +299,12 @@ const entityTypeModel = computed({
 
           <!-- Entity list -->
           <div class="space-y-1">
-            <div
+            <StateView
               v-if="!hasAnyItems"
-              class="text-sm text-muted-foreground text-center py-8"
-            >
-              {{ m.library.forms.emptyListHint({ label: config.label }) }}
-            </div>
+              state="empty"
+              :description="m.library.forms.emptyListHint({ label: config.label })"
+              class="py-8"
+            />
             <ListItem
               v-for="(link, index) in currentTypeLinks"
               :key="link.id"

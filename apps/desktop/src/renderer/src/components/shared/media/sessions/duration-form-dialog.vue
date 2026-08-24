@@ -290,12 +290,12 @@ const minutesModel = computed({
               {{ labels.sessionsHeader({ count: sessions.length }) }}
             </div>
             <div class="px-4 py-3 space-y-1 overflow-auto max-h-[40vh]">
-              <p
+              <StateView
                 v-if="sessions.length === 0"
-                class="text-sm text-muted-foreground text-center py-6"
-              >
-                {{ labels.emptySessions }}
-              </p>
+                state="empty"
+                :description="labels.emptySessions"
+                class="py-6"
+              />
               <ListItem
                 v-for="session in sessions"
                 v-else

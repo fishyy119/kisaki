@@ -64,7 +64,7 @@ const canCancel = computed(
               <TooltipTrigger as-child>
                 <button
                   type="button"
-                  class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-[11px] leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
+                  class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-xs leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
                   :aria-label="m.task.row.warningCount({ count: warnings.length })"
                 >
                   <Icon

@@ -204,35 +204,35 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
       <h3 class="text-sm font-medium truncate flex-1">{{ displayName }}</h3>
       <Badge
         variant="outline"
-        class="text-[10px] px-1.5 py-0 h-4 text-muted-foreground font-mono"
+        class="px-1.5 py-0 h-4 text-muted-foreground font-mono"
       >
         {{ versionLabel }}
       </Badge>
       <Badge
         v-if="isBuiltin"
         variant="secondary"
-        class="text-[10px] px-1.5 py-0 h-4"
+        class="px-1.5 py-0 h-4"
       >
         {{ m.extension.installed.builtinBadge }}
       </Badge>
       <Badge
         v-if="props.updateInfo"
         variant="default"
-        class="text-[10px] px-1.5 py-0 h-4"
+        class="px-1.5 py-0 h-4"
       >
         {{ m.extension.installed.updateBadge }}
       </Badge>
       <Badge
         v-if="statusLabel"
         variant="secondary"
-        class="text-[10px] px-1.5 py-0 h-4"
+        class="px-1.5 py-0 h-4"
       >
         {{ statusLabel }}
       </Badge>
       <Badge
         v-if="runtimeLabel && !props.extension.runtimeError"
         :variant="runtimeBadgeVariant"
-        class="text-[10px] px-1.5 py-0 h-4"
+        class="px-1.5 py-0 h-4"
       >
         {{ runtimeLabel }}
       </Badge>
@@ -240,7 +240,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
         <TooltipTrigger as-child>
           <Badge
             :variant="runtimeBadgeVariant"
-            class="text-[10px] px-1.5 py-0 h-4"
+            class="px-1.5 py-0 h-4"
           >
             {{ runtimeLabel }}
           </Badge>

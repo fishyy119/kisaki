@@ -82,7 +82,7 @@ function handleInstall() {
       <h3 class="text-sm font-medium truncate flex-1">{{ displayName }}</h3>
       <Badge
         variant="outline"
-        class="text-[10px] px-1.5 py-0 h-4 text-muted-foreground font-mono"
+        class="px-1.5 py-0 h-4 text-muted-foreground font-mono"
       >
         <template v-if="latestRelease">v{{ latestRelease.version }}</template>
         <template v-else>{{ m.extension.discover.noVersion }}</template>

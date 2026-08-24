@@ -55,20 +55,20 @@ export const common = {
   required: 'Required',
 
   // Feedback
-  saved: 'Saved.',
-  deleted: 'Deleted.',
-  copied: 'Copied.',
-  saveFailed: 'Save failed.',
-  deleteFailed: 'Delete failed.',
-  copyFailed: 'Copy failed.',
-  loadFailed: 'Load failed.',
-  operationFailed: 'Operation failed.',
+  saved: 'Saved',
+  deleted: 'Deleted',
+  copied: 'Copied',
+  saveFailed: 'Save failed',
+  deleteFailed: 'Delete failed',
+  copyFailed: 'Copy failed',
+  loadFailed: 'Load failed',
+  operationFailed: 'Operation failed',
 
   // Placeholders and empty values
   emptyValue: '—',
   searchPlaceholder: 'Search',
-  noResults: 'No results.',
-  noData: 'No data.',
+  noResults: 'No results',
+  noData: 'No data',
 
   // Counts
   itemCount: ({ count }: { count: number }) => (count === 1 ? '1 item' : `${count} items`),

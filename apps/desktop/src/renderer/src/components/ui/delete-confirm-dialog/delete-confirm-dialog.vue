@@ -11,7 +11,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel
 } from '@renderer/components/ui/alert-dialog'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
@@ -94,12 +94,11 @@ async function handleConfirm() {
   <AlertDialog v-model:open="open">
     <AlertDialogContent>
       <!-- Loading state -->
-      <div
+      <StateView
         v-if="props.loading"
-        class="flex items-center justify-center py-8"
-      >
-        <Spinner class="size-8" />
-      </div>
+        state="loading"
+        class="py-8"
+      />
 
       <!-- Normal content -->
       <template v-else>

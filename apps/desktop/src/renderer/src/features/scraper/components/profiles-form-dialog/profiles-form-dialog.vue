@@ -31,7 +31,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { getEntityIcon } from '@renderer/utils/format'
@@ -304,22 +304,22 @@ function withProviderDisplay(list: ScraperProfile[]) {
       </DialogHeader>
 
       <!-- Loading state -->
-      <DialogBody
-        v-if="isLoading || !data"
-        class="flex items-center justify-center py-8"
-      >
-        <Spinner class="size-8" />
+      <DialogBody v-if="isLoading || !data">
+        <StateView
+          state="loading"
+          class="py-8"
+        />
       </DialogBody>
 
       <!-- Content -->
       <template v-else>
         <DialogBody class="max-h-[60vh] overflow-auto">
-          <p
+          <StateView
             v-if="profiles.length === 0"
-            class="text-sm text-muted-foreground text-center py-8"
-          >
-            {{ m.scraper.profiles.emptyProfiles }}
-          </p>
+            state="empty"
+            :description="m.scraper.profiles.emptyProfiles"
+            class="py-8"
+          />
           <div
             v-else
             class="space-y-4"
@@ -356,7 +356,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
                     <Badge
                       v-if="providerDisplay.statusLabel"
                       variant="warning"
-                      class="shrink-0 px-1 py-0 text-[10px]"
+                      class="shrink-0 px-1 py-0"
                     >
                       {{ providerDisplay.statusLabel }}
                     </Badge>

@@ -127,7 +127,7 @@ async function handleSubmit() {
         />
       </DialogBody>
       <DialogFooter>
-        <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground mr-auto">
+        <div class="flex items-center gap-1.5 text-xs text-muted-foreground mr-auto">
           <Icon
             icon="icon-[mdi--lightbulb-outline]"
             class="size-3.5"

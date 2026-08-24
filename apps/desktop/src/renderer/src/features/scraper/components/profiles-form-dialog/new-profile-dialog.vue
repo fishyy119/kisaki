@@ -23,6 +23,7 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { getEntityIcon } from '@renderer/utils/format'
 
 interface Props {
@@ -146,12 +147,12 @@ function handleClose() {
                 <div class="text-xs text-muted-foreground font-mono">{{ provider.id }}</div>
               </div>
             </button>
-            <p
+            <StateView
               v-if="searchProviders.length === 0"
-              class="text-sm text-muted-foreground text-center py-4"
-            >
-              {{ m.scraper.profiles.noProvidersAvailable }}
-            </p>
+              state="empty"
+              :description="m.scraper.profiles.noProvidersAvailable"
+              class="py-4"
+            />
           </div>
         </template>
       </DialogBody>

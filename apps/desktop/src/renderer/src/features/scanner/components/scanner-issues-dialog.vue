@@ -12,6 +12,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { usePreferencesStore, useScannerStore } from '@renderer/stores'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Badge } from '@renderer/components/ui/badge'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
@@ -271,7 +272,6 @@ useDbChanges(({ operation, table }) => {
             </InputGroupAddon>
             <InputGroupInput
               v-model="searchQuery"
-              class="text-xs"
               :placeholder="m.scanner.issues.searchPlaceholder"
             />
             <InputGroupAddon
@@ -311,12 +311,12 @@ useDbChanges(({ operation, table }) => {
           </Select>
         </div>
 
-        <div
+        <StateView
           v-if="filteredIssueRows.length === 0"
-          class="flex h-40 items-center justify-center rounded-md border border-border text-sm text-muted-foreground"
-        >
-          {{ m.scanner.issues.noMatch }}
-        </div>
+          state="empty"
+          :description="m.scanner.issues.noMatch"
+          class="h-40 rounded-md border border-border"
+        />
 
         <div
           v-else
@@ -355,7 +355,7 @@ useDbChanges(({ operation, table }) => {
                       <div class="truncate font-medium">{{ row.issue.extractedName }}</div>
                       <div
                         v-if="!props.scannerId"
-                        class="truncate text-[11px] text-muted-foreground"
+                        class="truncate text-muted-foreground"
                       >
                         {{ row.scannerName }}
                       </div>

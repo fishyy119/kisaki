@@ -59,7 +59,7 @@ function openExternalLink(url: string): void {
         </Badge>
         <a
           :href="group.link.href"
-          class="ml-auto shrink-0 rounded-sm text-[11px] text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          class="ml-auto shrink-0 rounded-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
           @click.prevent="openExternalLink(group.link.href)"
         >
           {{ group.link.label }}

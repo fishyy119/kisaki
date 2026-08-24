@@ -260,26 +260,26 @@ export const library = {
   },
 
   feedback: {
-    addedToCollection: 'Added to collection.',
-    addFailed: 'Add failed.',
-    removedFromCollection: 'Removed from collection.',
-    removeFailed: 'Remove failed.',
-    statusUpdated: 'Status updated.',
-    updateFailed: 'Update failed.',
-    createFailed: 'Create failed.',
-    favoriteAdded: 'Added to favorites.',
-    favoriteRemoved: 'Removed from favorites.',
-    nsfwMarked: 'Marked as NSFW.',
-    nsfwCleared: 'NSFW mark removed.',
+    addedToCollection: 'Added to collection',
+    addFailed: 'Add failed',
+    removedFromCollection: 'Removed from collection',
+    removeFailed: 'Remove failed',
+    statusUpdated: 'Status updated',
+    updateFailed: 'Update failed',
+    createFailed: 'Create failed',
+    favoriteAdded: 'Added to favorites',
+    favoriteRemoved: 'Removed from favorites',
+    nsfwMarked: 'Marked as NSFW',
+    nsfwCleared: 'NSFW mark removed',
     saveFailedRetry: 'Save failed. Try again.',
     deleteFailedWithReason: ({ message }: { message: string }) => `Delete failed: ${message}`,
     searchFailed: 'Search failed',
     unknownError: 'Unknown error',
-    gameDirNotSet: 'Game folder is not set.',
-    openGameDirFailed: 'Could not open the game folder.',
-    pickFileFailed: 'Could not pick a file.',
+    gameDirNotSet: 'Game folder is not set',
+    openGameDirFailed: 'Could not open the game folder',
+    pickFileFailed: 'Could not pick a file',
     deletedSummary: ({ items }: { items: string[] }) =>
-      items.length > 0 ? `Deleted ${items.join(', ')}.` : 'Deleted.',
+      items.length > 0 ? `Deleted ${items.join(', ')}` : 'Deleted',
     nameAndMore: ({ name, count }: { name: string; count: number }) =>
       `${name} and ${count - 1} more`
   },
@@ -302,18 +302,18 @@ export const library = {
     startHint: ({ label }: { label: string }) =>
       `Enter a ${label.toLowerCase()} name to start searching`,
     noMatchTitle: 'No matches',
-    noMatchDescription: 'Try different keywords.',
+    noMatchDescription: 'Try different keywords',
     resultCount: ({ count }: { count: number }) => (count === 1 ? '1 result' : `${count} results`),
     selectedOne: '1 selected',
     idLabel: ({ label }: { label: string }) => `${label} ID`,
-    idDescription: 'Pick from the results or enter an ID directly.',
+    idDescription: 'Pick from the results or enter an ID directly',
     idPlaceholder: 'Pick above or enter directly…'
   },
 
   detail: {
     notFoundTitle: ({ label }: { label: string }) => `${label} not found`,
     notFoundDescription: ({ label }: { label: string }) =>
-      `This ${label.toLowerCase()} may have been deleted.`,
+      `This ${label.toLowerCase()} may have been deleted`,
     tabs: {
       overview: 'Overview',
       characters: 'Characters',
@@ -348,21 +348,21 @@ export const library = {
       crew: 'Crew'
     },
     empty: {
-      description: 'No description yet.',
-      tags: 'No tags yet.',
-      externalSites: 'No external links yet.',
-      relatedWorks: 'No related works yet.',
-      relatedPersons: 'No related people yet.',
-      relatedCharacters: 'No related characters yet.',
-      relatedEntries: 'No related entries yet.',
-      characters: 'No characters yet.',
-      persons: 'No people yet.',
-      companies: 'No companies yet.',
-      cast: 'No cast yet.',
-      crew: 'No crew yet.',
-      voiceCredits: 'No voice credits yet.',
-      companyRelations: 'No company relations yet.',
-      physique: 'No physique recorded yet.'
+      description: 'No description yet',
+      tags: 'No tags yet',
+      externalSites: 'No external links yet',
+      relatedWorks: 'No related works yet',
+      relatedPersons: 'No related people yet',
+      relatedCharacters: 'No related characters yet',
+      relatedEntries: 'No related entries yet',
+      characters: 'No characters yet',
+      persons: 'No people yet',
+      companies: 'No companies yet',
+      cast: 'No cast yet',
+      crew: 'No crew yet',
+      voiceCredits: 'No voice credits yet',
+      companyRelations: 'No company relations yet',
+      physique: 'No physique recorded yet'
     },
     manage: 'Manage',
     viewAll: ({ count }: { count: number }) => `View all (${count})`,
@@ -371,21 +371,21 @@ export const library = {
     collectionEmptyTitle: ({ label }: { label: string }) =>
       `No ${label.toLowerCase()}s in this collection`,
     collectionEmptyDescription: ({ label }: { label: string }) =>
-      `Add ${label.toLowerCase()}s to this collection with the scanner.`,
+      `Add ${label.toLowerCase()}s to this collection with the scanner`,
     tagEmptyTitle: ({ label }: { label: string }) => `No ${label.toLowerCase()}s with this tag`,
     tagEmptyDescription: ({ label }: { label: string }) =>
-      `No ${label.toLowerCase()} uses this tag yet.`
+      `No ${label.toLowerCase()} uses this tag yet`
   },
 
   notes: {
     title: 'Notes',
     newNote: 'New note',
     editNote: 'Edit note',
-    noteDeleted: 'Note deleted.',
-    reorderFailed: 'Reorder failed.',
+    noteDeleted: 'Note deleted',
+    reorderFailed: 'Reorder failed',
     emptyTitle: 'No notes yet',
-    emptyHint: 'Capture thoughts and screenshots.',
-    notFound: 'Note not found.',
+    emptyHint: 'Capture thoughts and screenshots',
+    notFound: 'Note not found',
     titleLabel: 'Title',
     titlePlaceholder: 'Enter a title',
     contentLabel: 'Content',
@@ -434,7 +434,7 @@ export const library = {
     castCharacterLabel: 'Character',
     castPersonLabel: 'Voice actor',
     castEmptyHint: 'No voice cast yet. Use the button below to add one.',
-    castDuplicate: 'That character and voice actor are already paired here.',
+    castDuplicate: 'That character and voice actor are already paired here',
 
     // Shared field bits
     notePlaceholder: 'Optional note…',
@@ -445,7 +445,7 @@ export const library = {
     hideSpoilers: 'Hide spoilers',
     emptyListHint: ({ label }: { label: string }) =>
       `No ${label.toLowerCase()}s yet. Use the button below to add one.`,
-    selectEntityRequired: ({ label }: { label: string }) => `Select a ${label.toLowerCase()}.`,
+    selectEntityRequired: ({ label }: { label: string }) => `Select a ${label.toLowerCase()}`,
 
     // Basic info form
     namePlaceholder: ({ label }: { label: string }) => `${label} name`,
@@ -454,25 +454,25 @@ export const library = {
     selectGender: 'Select gender',
     selectBloodType: 'Select blood type',
     agePlaceholder: 'Years',
-    birthDateInvalidInteger: 'Birth date accepts numbers only.',
-    deathDateInvalidInteger: 'Death date accepts numbers only.',
-    birthDateInvalidFormat: 'Birth date format is invalid.',
-    deathDateInvalidFormat: 'Death date format is invalid.',
-    foundedDateInvalidFormat: 'Founded date format is invalid.',
-    releaseDateInvalidFormat: 'Release date format is invalid.',
-    foundedDateYearDayWithoutMonth: 'Founded date needs a month when both year and day are set.',
-    releaseDateYearDayWithoutMonth: 'Release date needs a month when both year and day are set.',
+    birthDateInvalidInteger: 'Birth date accepts numbers only',
+    deathDateInvalidInteger: 'Death date accepts numbers only',
+    birthDateInvalidFormat: 'Birth date format is invalid',
+    deathDateInvalidFormat: 'Death date format is invalid',
+    foundedDateInvalidFormat: 'Founded date format is invalid',
+    releaseDateInvalidFormat: 'Release date format is invalid',
+    foundedDateYearDayWithoutMonth: 'Founded date needs a month when both year and day are set',
+    releaseDateYearDayWithoutMonth: 'Release date needs a month when both year and day are set',
     totalEpisodesPlaceholder: 'Optional',
-    totalEpisodesInvalid: 'Total episodes must be a non-negative integer.',
-    totalSeasonsInvalid: 'Total seasons must be a non-negative integer.',
-    endDateInvalidFormat: 'Last aired date format is invalid.',
-    endDateYearDayWithoutMonth: 'Last aired date needs a month when both year and day are set.',
+    totalEpisodesInvalid: 'Total episodes must be a non-negative integer',
+    totalSeasonsInvalid: 'Total seasons must be a non-negative integer',
+    endDateInvalidFormat: 'Last aired date format is invalid',
+    endDateYearDayWithoutMonth: 'Last aired date needs a month when both year and day are set',
     runtimeMinutesPlaceholder: 'Minutes',
-    runtimeInvalid: 'Runtime must be a positive number of minutes.',
+    runtimeInvalid: 'Runtime must be a positive number of minutes',
 
     // Score form
-    scoreRangeHint: 'Score is 0–10 with one decimal place (for example 8.5).',
-    scoreOutOfRange: 'Score must be between 0 and 10.',
+    scoreRangeHint: 'Score is 0–10 with one decimal place (for example 8.5)',
+    scoreOutOfRange: 'Score must be between 0 and 10',
 
     // Description form
     markdownSupported: 'Supports Markdown',
@@ -485,7 +485,7 @@ export const library = {
     siteNameLabel: 'Name',
     siteNamePlaceholder: 'For example: Official site, VNDB…',
     siteUrlLabel: 'URL',
-    requiredFieldsMissing: 'Fill in the required fields.',
+    requiredFieldsMissing: 'Fill in the required fields',
     deleteLinkConfirmTitle: 'Delete link?',
     deleteLinkConfirmDescription:
       'This removes the link permanently. This action cannot be undone.',
@@ -497,7 +497,7 @@ export const library = {
     externalIdSourcePlaceholder: 'For example: vndb, steam, bangumi',
     externalIdValueLabel: 'External ID',
     externalIdValuePlaceholder: 'For example: v12345',
-    externalIdSourceAndIdRequired: 'Fill in both the source and the ID.',
+    externalIdSourceAndIdRequired: 'Fill in both the source and the ID',
     externalIdEmptyValues: 'Some external IDs are empty. Check the entries and retry.',
     externalIdDuplicates: 'Duplicate external IDs found. Check the entries and retry.',
     externalIdSaveFailed:
@@ -507,15 +507,15 @@ export const library = {
     // Tags form
     addTag: 'Add tag',
     editTagLink: 'Edit tag',
-    selectTagRequired: 'Select a tag.',
+    selectTagRequired: 'Select a tag',
     emptyTagsHint: 'No tags yet. Use the button below to add one.',
     tagNamePlaceholder: 'Tag name',
     tagDescriptionPlaceholder: 'Tag description (optional, supports Markdown)',
-    tagNsfwHint: 'Mark this tag as adult content.',
+    tagNsfwHint: 'Mark this tag as adult content',
 
     // Media dialog
-    mediaUpdated: 'Media updated.',
-    mediaDeleted: 'Media deleted.',
+    mediaUpdated: 'Media updated',
+    mediaDeleted: 'Media deleted',
     importFromFile: 'Import from file',
     importFromUrl: 'Import from URL',
     searchImages: 'Search images',
@@ -530,31 +530,30 @@ export const library = {
       photo: 'Photo'
     },
     mediaDescriptions: {
-      gameCover: 'Game cover art shown on cards and lists.',
-      gameBackdrop: 'Backdrop image for the detail page.',
-      gameLogo: 'Game title logo.',
-      gameIcon: 'Small icon.',
-      animeCover: 'Anime cover art shown on cards and lists.',
-      animeBackdrop: 'Backdrop image for the detail page.',
-      animeLogo: 'Anime title logo.',
-      characterPhoto: 'Character photo shown on cards and detail pages.',
-      personPhoto: 'Person photo shown on cards and detail pages.',
-      companyLogo: 'Company logo shown on cards and detail pages.'
+      gameCover: 'Game cover art shown on cards and lists',
+      gameBackdrop: 'Backdrop image for the detail page',
+      gameLogo: 'Game title logo',
+      gameIcon: 'Small icon',
+      animeCover: 'Anime cover art shown on cards and lists',
+      animeBackdrop: 'Backdrop image for the detail page',
+      animeLogo: 'Anime title logo',
+      characterPhoto: 'Character photo shown on cards and detail pages',
+      personPhoto: 'Person photo shown on cards and detail pages',
+      companyLogo: 'Company logo shown on cards and detail pages'
     },
     importMediaFromUrlTitle: ({ label }: { label: string }) =>
       `Import ${label.toLowerCase()} from URL`,
     importMediaFromUrlDescription: ({ label }: { label: string }) =>
-      `Enter an image URL to import the ${label.toLowerCase()}.`,
+      `Enter an image URL to import the ${label.toLowerCase()}`,
     imageUrlLabel: 'Image URL',
-    imageUrlInvalid: 'Enter a valid URL.',
-    imageFormatsHint: 'Supports common image formats such as JPG, PNG, and WebP.',
+    imageUrlInvalid: 'Enter a valid URL',
+    imageFormatsHint: 'Supports common image formats such as JPG, PNG, and WebP',
     previewLabel: 'Preview:',
     previewLoadFailed: 'Could not load the preview',
     importing: 'Importing…',
     searchMediaTitle: ({ label }: { label: string }) => `Search ${label.toLowerCase()}`,
     searchKeywordPlaceholder: 'Enter search keywords…',
-    searchStartHint: 'Press Search to start.',
-    searchFailedHint: 'Search failed',
+    searchStartHint: 'Press Search to start',
     searchNoImages: 'No matching images found',
     confirmSelection: 'Use selection',
     cropMediaTitle: ({ label }: { label: string }) => `Crop ${label.toLowerCase()}`,
@@ -573,22 +572,22 @@ export const library = {
     scalarStrategyPlaceholder: 'Select single-value strategy…',
     scalarStrategyIfMissing: 'Write only when missing',
     scalarStrategyOverwrite: 'Overwrite existing values',
-    scalarStrategyIfMissingHint: 'Writes the new value only when the current value is missing.',
-    scalarStrategyOverwriteHint: 'Overwrites the current value when a new value is available.',
+    scalarStrategyIfMissingHint: 'Writes the new value only when the current value is missing',
+    scalarStrategyOverwriteHint: 'Overwrites the current value when a new value is available',
     collectionStrategyLabel: 'Collection strategy',
     collectionStrategyPlaceholder: 'Select collection strategy…',
     collectionStrategyMerge: 'Merge and append',
     collectionStrategyReplace: 'Replace entirely',
-    collectionStrategyMergeHint: 'Keeps existing content and appends new items.',
+    collectionStrategyMergeHint: 'Keeps existing content and appends new items',
     collectionStrategyReplaceHint:
       'Replaces the current content with the new content. Collections the source reports as empty are cleared.',
     useExternalIdsLabel: 'Use current external IDs to locate the entry',
-    useExternalIdsHint: 'Do not enable this if the current entry may match the wrong target.',
-    personStandaloneHint: '"Person" can be selected and updated as a standalone field.',
+    useExternalIdsHint: 'Do not enable this if the current entry may match the wrong target',
+    personStandaloneHint: '"Person" can be selected and updated as a standalone field',
     batchSilentSearchHint:
-      'Runs a silent search based on the original name, takes the first result, and reuses the single-entity update flow.',
+      'Runs a silent search based on the original name, takes the first result, and reuses the single-entity update flow',
     rendererSearchHint:
-      'The search flow still runs in the renderer; submitting sends a single update request.',
+      'The search flow still runs in the renderer; submitting sends a single update request',
     updating: 'Updating…',
     update: 'Update',
     startUpdateFailed: 'Could not start the update',
@@ -612,15 +611,15 @@ export const library = {
     collectionDescriptionPlaceholder: 'Add a description (optional, supports Markdown)',
     collectionTypeLabel: 'Type',
     collectionTypeHint:
-      'Static collections hold manually added items; dynamic collections update automatically from filters.',
+      'Static collections hold manually added items; dynamic collections update automatically from filters',
     staticCollection: 'Static collection',
     dynamicCollection: 'Dynamic collection',
     nsfwLabel: 'Adult content',
-    collectionNsfwHint: 'Mark this collection as adult content.',
-    collectionUpdated: 'Collection updated.',
-    collectionCreated: 'Collection created.',
+    collectionNsfwHint: 'Mark this collection as adult content',
+    collectionUpdated: 'Collection updated',
+    collectionCreated: 'Collection created',
     collectionCreatedWithEntities: ({ label }: { label: string }) =>
-      `Collection created and ${label.toLowerCase()}s added.`,
+      `Collection created and ${label.toLowerCase()}s added`,
     itemEntityLabel: 'Item',
     convertToStaticTitle: 'Convert to static collection',
     convertToStaticDescriptionWithCount: ({ count }: { count: number }) =>
@@ -629,8 +628,8 @@ export const library = {
       'This converts the dynamic collection into a static one. After conversion the contents no longer update automatically.',
     converting: 'Converting…',
     confirmConvert: 'Convert',
-    convertedToStatic: 'Converted to a static collection.',
-    convertFailed: 'Conversion failed.',
+    convertedToStatic: 'Converted to a static collection',
+    convertFailed: 'Conversion failed',
     dynamicConfigTitle: 'Dynamic filter settings',
     enabledTypesCount: ({ count }: { count: number }) =>
       `${count} ${count === 1 ? 'type' : 'types'} enabled`,
@@ -638,8 +637,8 @@ export const library = {
     sortLabel: 'Sort:',
     sortAsc: 'Ascending',
     sortDesc: 'Descending',
-    dynamicConfigHint: 'Enabled types without filter conditions include every item of that type.',
-    filterConfigUpdated: 'Filter settings updated.',
+    dynamicConfigHint: 'Enabled types without filter conditions include every item of that type',
+    filterConfigUpdated: 'Filter settings updated',
 
     // Link relation labels
     gameLabel: 'Game',
@@ -678,12 +677,12 @@ export const library = {
     collectionsTitle: 'Collections',
     newCollection: 'New collection',
     collectionsEmptyTitle: 'No collections yet',
-    collectionsEmptyDescription: 'Create collections to organize your library.',
+    collectionsEmptyDescription: 'Create collections to organize your library',
     favoritesTitle: 'Favorites',
-    favoritesEmpty: ({ label }: { label: string }) => `No favorite ${label.toLowerCase()}s yet.`,
+    favoritesEmpty: ({ label }: { label: string }) => `No favorite ${label.toLowerCase()}s yet`,
     uncategorizedTitle: ({ label }: { label: string }) => `Uncategorized ${label.toLowerCase()}s`,
     uncategorizedEmpty: ({ label }: { label: string }) =>
-      `All ${label.toLowerCase()}s are categorized.`,
+      `All ${label.toLowerCase()}s are categorized`,
     dynamicCollection: 'Dynamic collection',
     playStatus: 'Play status'
   },
@@ -696,8 +695,8 @@ export const library = {
     overrideCollectionSort: 'Override collection sort',
     searchPlaceholder: 'Search…',
     filteredResults: 'Filtered results',
-    noMatch: 'No matches.',
-    emptyList: ({ label }: { label: string }) => `No ${label.toLowerCase()}s yet.`,
+    noMatch: 'No matches',
+    emptyList: ({ label }: { label: string }) => `No ${label.toLowerCase()}s yet`,
     uncategorized: 'Uncategorized'
   },
 
@@ -705,8 +704,8 @@ export const library = {
     title: 'Library search',
     description: 'Search games, characters, people, and companies',
     placeholder: 'Search games, characters, people, companies…',
-    typeToSearch: 'Type keywords to search.',
-    emptyResult: ({ label }: { label: string }) => `No ${label.toLowerCase()} results.`,
+    typeToSearch: 'Type keywords to search',
+    emptyResult: ({ label }: { label: string }) => `No ${label.toLowerCase()} results`,
     navigate: 'Navigate',
     select: 'Select',
     totalResults: ({ count }: { count: number }) =>
@@ -718,7 +717,7 @@ export const library = {
     emptyDescription:
       'Add sections to display your games, characters, people, or companies. Each section has its own filters and layout.',
     addFirstSection: 'Add the first section',
-    sectionEmpty: ({ label }: { label: string }) => `No ${label.toLowerCase()}s yet.`,
+    sectionEmpty: ({ label }: { label: string }) => `No ${label.toLowerCase()}s yet`,
     layoutHorizontal: 'Horizontal scroll',
     layoutGrid: 'Grid',
 
@@ -731,14 +730,14 @@ export const library = {
       addSection: 'Add section',
       selectPresets: 'Choose presets',
       sectionEntityLabel: 'Section',
-      saved: 'Saved.',
+      saved: 'Saved',
       saveFailed: 'Save failed. Try again.'
     },
 
     form: {
       addTitle: 'Add section',
       editTitle: 'Edit section',
-      titleRequired: 'Enter a section title.',
+      titleRequired: 'Enter a section title',
       title: 'Title',
       titlePlaceholder: 'Enter a section title…',
       entityType: 'Entity type',
@@ -765,7 +764,7 @@ export const library = {
 
     presetsDialog: {
       title: 'Choose preset sections',
-      empty: 'No presets available.',
+      empty: 'No presets available',
       addWithCount: ({ count }: { count: number }) => `Add (${count})`
     },
 

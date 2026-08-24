@@ -27,6 +27,7 @@ import {
 } from '@renderer/components/ui/select'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { useTaskRunStore } from '@renderer/stores'
@@ -351,12 +352,11 @@ function formatBytes(value: number | undefined): string {
       </DialogHeader>
 
       <DialogBody class="space-y-4">
-        <div
+        <StateView
           v-if="loadingPlan"
-          class="flex items-center justify-center h-40"
-        >
-          <Spinner class="size-6" />
-        </div>
+          state="loading"
+          class="h-40"
+        />
 
         <template v-else-if="plan">
           <section class="space-y-3">
@@ -372,19 +372,19 @@ function formatBytes(value: number | undefined): string {
                   </div>
                   <Badge
                     variant="secondary"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     v{{ plan.package.targetVersion }}
                   </Badge>
                   <Badge
                     variant="outline"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     {{ releaseActionLabel(plan.action) }}
                   </Badge>
                   <Badge
                     :variant="signerVariant(plan.signer.status)"
-                    class="text-[10px] h-5"
+                    class="h-5"
                   >
                     {{ signerLabel(plan.signer.status) }}
                   </Badge>
@@ -527,29 +527,27 @@ function formatBytes(value: number | undefined): string {
           </FieldGroup>
         </template>
 
-        <div
+        <StateView
           v-else
-          class="text-center py-8 border border-dashed border-border rounded-md"
+          state="empty"
+          icon="icon-[mdi--folder-zip-outline]"
+          :description="m.extension.release.pickLocalHint"
+          class="py-8 border border-dashed border-border rounded-md"
         >
-          <Icon
-            icon="icon-[mdi--folder-zip-outline]"
-            class="size-12 text-muted-foreground/50 mx-auto mb-3"
-          />
-          <p class="text-sm text-muted-foreground mb-4">
-            {{ m.extension.release.pickLocalHint }}
-          </p>
-          <Button
-            variant="outline"
-            :disabled="loadingPlan"
-            @click="handleSelectLocalFile"
-          >
-            <Icon
-              icon="icon-[mdi--folder-open-outline]"
-              class="size-4"
-            />
-            {{ m.extension.release.selectFile }}
-          </Button>
-        </div>
+          <template #actions>
+            <Button
+              variant="outline"
+              :disabled="loadingPlan"
+              @click="handleSelectLocalFile"
+            >
+              <Icon
+                icon="icon-[mdi--folder-open-outline]"
+                class="size-4"
+              />
+              {{ m.extension.release.selectFile }}
+            </Button>
+          </template>
+        </StateView>
       </DialogBody>
 
       <DialogFooter>
