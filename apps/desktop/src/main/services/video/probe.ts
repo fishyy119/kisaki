@@ -1,15 +1,15 @@
 /**
- * Video container facts.
+ * Playable container facts.
  *
- * The ffprobe side of the media-info service: spawns the bundled binary and
- * remembers successful probes per (size, mtime) so library re-syncs only pay
- * for files that changed. Failures are never stored, letting a transient error
- * retry on the next call.
+ * The probing half of the video service: it answers what a file is before the
+ * playback half is asked to play it. Successful probes are remembered per
+ * (size, mtime) so library re-syncs only pay for files that changed; failures
+ * are never stored, letting a transient error retry on the next call.
  */
 
 import { statSync, type Stats } from 'node:fs'
-import type { MediaFileInfo } from '@shared/media-info'
-import { probeMediaFile } from './probe'
+import type { VideoFileInfo } from '@shared/video'
+import { probeVideoFile } from './ffprobe'
 
 /** Bounds cache memory for long sessions that probe large libraries. */
 const PROBE_CACHE_MAX_ENTRIES = 2048
@@ -17,14 +17,14 @@ const PROBE_CACHE_MAX_ENTRIES = 2048
 interface CachedProbe {
   size: number
   mtimeMs: number
-  info: MediaFileInfo
+  info: VideoFileInfo
 }
 
-export class VideoInfoReader {
+export class VideoProbe {
   private readonly probeCache = new Map<string, CachedProbe>()
 
   /** Reads container and track facts, or null when the file cannot be probed. */
-  async probe(path: string): Promise<MediaFileInfo | null> {
+  async read(path: string): Promise<VideoFileInfo | null> {
     let stat: Stats
     try {
       stat = statSync(path)
@@ -37,7 +37,7 @@ export class VideoInfoReader {
       return cached.info
     }
 
-    const info = await probeMediaFile(path)
+    const info = await probeVideoFile(path)
     if (info) {
       this.rememberProbe(path, stat, info)
     }
@@ -45,7 +45,7 @@ export class VideoInfoReader {
     return info
   }
 
-  private rememberProbe(path: string, stat: Stats, info: MediaFileInfo): void {
+  private rememberProbe(path: string, stat: Stats, info: VideoFileInfo): void {
     // Delete before set so a refreshed entry counts as the newest insertion.
     this.probeCache.delete(path)
     this.probeCache.set(path, { size: stat.size, mtimeMs: stat.mtimeMs, info })

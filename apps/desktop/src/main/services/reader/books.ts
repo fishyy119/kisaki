@@ -1,11 +1,12 @@
 /**
  * Reading-container facts and page access.
  *
- * The reading-container probing engine of the media-info service: in-process
- * parsing (zip, rar, image directories, PDF) with the same cache discipline as
- * the ffprobe side — successful probes are remembered per (size, mtime) so
- * library re-syncs only pay for files that changed, and failures are never
- * remembered so a locked or half-copied file is retried.
+ * The reading engines cannot touch the disk, so this is what stands behind
+ * them: in-process container parsing (zip, rar, image directories, PDF) that
+ * answers how many pages a file has and hands out one page at a time.
+ * Successful probes are remembered per (size, mtime) so library re-syncs only
+ * pay for files that changed, and failures are never remembered so a locked or
+ * half-copied file is retried.
  *
  * Page entry lists are cached on the same key: serving pages would otherwise
  * resolve the same ordered list once per page turn.
@@ -14,7 +15,7 @@
 import { promises as fs, type Stats } from 'node:fs'
 import path from 'node:path'
 import { createLogger } from '@main/log'
-import type { PagedContainer, PagedContainerInfo, DocumentContainer } from '@shared/media-info'
+import type { PagedContainer, PagedContainerInfo } from '@shared/book'
 import {
   countPdfPages,
   listDirectoryPages,
@@ -27,20 +28,10 @@ import {
   resolvePagedContainer
 } from './containers'
 
-const log = createLogger('MediaInfo')
+const log = createLogger('Reader')
 
 /** Bounds cache memory for long sessions that probe large libraries. */
 const PROBE_CACHE_MAX_ENTRIES = 2048
-
-const DOCUMENT_CONTAINER_BY_EXTENSION: Record<string, DocumentContainer> = {
-  '.epub': 'epub',
-  '.mobi': 'mobi',
-  '.azw3': 'azw3',
-  '.azw': 'azw3',
-  '.fb2': 'fb2',
-  '.txt': 'txt',
-  '.pdf': 'pdf'
-}
 
 interface FileRevision {
   size: number
@@ -62,14 +53,9 @@ export interface BookPageContent {
   mimeType: string
 }
 
-export class BookInfoReader {
+export class BookContainerReader {
   private readonly probeCache = new Map<string, CachedContainerProbe>()
   private readonly entriesCache = new Map<string, CachedPageEntries>()
-
-  /** Document container of one file, or null when the extension is unsupported. */
-  resolveDocumentContainer(filePath: string): DocumentContainer | null {
-    return DOCUMENT_CONTAINER_BY_EXTENSION[path.extname(filePath).toLowerCase()] ?? null
-  }
 
   /**
    * Reads facts of one paged container, or null when the path is unreadable

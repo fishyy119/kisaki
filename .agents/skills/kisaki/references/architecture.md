@@ -10,6 +10,8 @@
 - `apps/desktop/src/main/services/automation/` - Persistent automation rules, scheduling, and invocation history
 - `apps/desktop/src/main/services/file-watch/` - Debounced filesystem watch scopes shared by every watcher
 - `apps/desktop/src/main/services/media-files/` - Local media files of an entry and their row ownership
+- `apps/desktop/src/main/services/video/` - Playback sessions and container probing for the video vertical
+- `apps/desktop/src/main/services/reader/` - Reader windows, book container access, and the `book://` transport
 
 ## ServiceContainer & DI Pattern
 
@@ -34,18 +36,39 @@ Services fall into three layers. The layer is a property of a service, not a fol
 flat so a service id maps to exactly one directory, and the layering is enforced by `deps` plus
 `ScopedContainer`, not by location.
 
-**Red line**: a capability service declares no domain dependency. Its `deps` is empty or `['ipc']`.
+**Red line**: a capability service owns no domain vocabulary and reads no library rows. It never
+depends on a domain service, and it never interprets what a row means; platform deps such as `ipc`
+or `db` are allowed where the capability genuinely needs them (`task-run` persists its own history).
 Domain services consume capabilities, never the reverse.
 
 | Layer      | Services                                                                                                      | Charter                                                           |
 | ---------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Platform   | `ipc`, `db`, `window`, `native`, `notify`, `network`, `deeplink`, `updater`, `i18n`                           | Wrap Electron, the OS, and transports; no library business rules  |
-| Capability | `task-run`, `file-watch`, `media-info`, `process`, `player`                                                   | Technical abilities with no domain vocabulary and no library rows |
+| Capability | `task-run`, `file-watch`, `process`, `video`, `reader`                                                        | Technical abilities with no domain vocabulary and no library rows |
 | Domain     | `scraper`, `ingest`, `scanner`, `media-files`, `activity`, `attachment`, `command`, `automation`, `extension` | Own library meaning and workflows; grow one media type at a time  |
 
-Three neighbours are easy to confuse, so their charters are stated once here:
+### Consumption Engines
 
-- `media-info` answers "what is this file": container and track facts, no database access.
+One capability service hosts the engine of each consumption vertical, so a media type's technical
+layer is never split across two services:
+
+| Vertical      | Engine service | Owns                                                            |
+| ------------- | -------------- | --------------------------------------------------------------- |
+| game          | `process`      | Process launch and run/foreground detection                     |
+| anime         | `video`        | `video.sessions` (mpv playback) and `video.probe` (ffprobe facts) |
+| comic / novel | `reader`       | Reader windows, `reader.books` container access, `book://`      |
+| music / audio | (planned)      | `audio`, same shape                                             |
+
+Probing sits with the engine that consumes the file: asking whether a container is playable or
+pageable is the same question as asking whether that engine can open it.
+
+`reader` is a capability despite carrying library ids in its contracts. Those ids pass through
+untouched: an activity handler prepares the bootstrap, the reader window runs an engine against it
+and reports position facts back, and media-files registers the resolver that turns a unit file-row
+id into a path. The reader never reads a library table itself.
+
+Two neighbours are easy to confuse, so their charters are stated once here:
+
 - `media-files` answers "which files does this entry have": the seam between user-owned media on
   disk and the consumption-unit rows that play it, including row ownership (`isManual`) and
   watch-driven reconcile.

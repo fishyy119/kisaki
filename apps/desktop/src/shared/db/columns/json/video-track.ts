@@ -1,5 +1,5 @@
 /**
- * Track summary columns for media files.
+ * Track summary columns for playable files.
  *
  * Values originate from an external prober, so reads are total and degrade
  * malformed content to an empty track list; writes are strict and round-trip
@@ -8,7 +8,7 @@
 
 import { customType } from 'drizzle-orm/sqlite-core'
 
-import type { MediaAudioTrack, MediaSubtitleTrack } from '../../../media-info'
+import type { AudioTrack, SubtitleTrack } from '../../../video'
 import { matchesPlainObject, requireCanonicalJsonValue, stringifyJsonStorageValue } from './utils'
 
 function parseTrackIndex(value: unknown): number | null {
@@ -23,7 +23,7 @@ function parseBoolean(value: unknown): boolean {
   return value === true
 }
 
-function parseAudioTrack(value: unknown): MediaAudioTrack | null {
+function parseAudioTrack(value: unknown): AudioTrack | null {
   if (!matchesPlainObject(value)) return null
 
   const index = parseTrackIndex(value.index)
@@ -41,7 +41,7 @@ function parseAudioTrack(value: unknown): MediaAudioTrack | null {
   }
 }
 
-function parseSubtitleTrack(value: unknown): MediaSubtitleTrack | null {
+function parseSubtitleTrack(value: unknown): SubtitleTrack | null {
   if (!matchesPlainObject(value)) return null
 
   const index = parseTrackIndex(value.index)
@@ -104,9 +104,9 @@ function createTrackListType<T>(typeName: string, parseTrack: (item: unknown) =>
   })
 }
 
-export const audioTracks = createTrackListType<MediaAudioTrack>('audioTracks', parseAudioTrack)
+export const audioTracks = createTrackListType<AudioTrack>('audioTracks', parseAudioTrack)
 
-export const subtitleTracks = createTrackListType<MediaSubtitleTrack>(
+export const subtitleTracks = createTrackListType<SubtitleTrack>(
   'subtitleTracks',
   parseSubtitleTrack
 )

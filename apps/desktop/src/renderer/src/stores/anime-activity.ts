@@ -3,7 +3,7 @@
  *
  * Tracks which anime entries are currently being watched and which extras are
  * playing, synced from the main process activity service, plus the live
- * playback state of their player sessions. Used by watch buttons, episode
+ * playback state of their playback sessions. Used by watch buttons, episode
  * rows, and extra rows to show live progress without polling the database.
  */
 
@@ -11,20 +11,20 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
-import type { PlaybackStatus } from '@shared/player'
+import type { PlaybackStatus } from '@shared/video'
 
 const log = createLogger('Activity')
 
 export interface AnimeWatchingStatus {
   episodeId: string
-  /** Player session id, correlating this watch with `player:*` pushes. */
+  /** Playback session id, correlating this watch with `video:*` pushes. */
   sessionId: string
   startedAt: number
 }
 
 export interface AnimeExtraPlayingStatus {
   animeId: string
-  /** Player session id, correlating this playback with `player:*` pushes. */
+  /** Playback session id, correlating this playback with `video:*` pushes. */
   sessionId: string
   startedAt: number
 }
@@ -199,7 +199,7 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
       stopPlayingExtra(state.extraId)
     })
 
-    ipcManager.on('player:session-changed', (_, state) => {
+    ipcManager.on('video:session-changed', (_, state) => {
       if (!isKnownSession(state.sessionId)) return
       if (state.status === 'ended') {
         removePlayback(state.sessionId)
@@ -212,7 +212,7 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
       })
     })
 
-    ipcManager.on('player:session-progress', (_, progress) => {
+    ipcManager.on('video:session-progress', (_, progress) => {
       if (!isKnownSession(progress.sessionId)) return
       // Progress can land before the first status push; a moving position
       // means the engine is playing.
@@ -241,7 +241,7 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
 
       // Seed live session state so status and position render right away
       // after a renderer reload, instead of waiting for the next push.
-      const sessionsResult = await ipcManager.invoke('player:list-sessions')
+      const sessionsResult = await ipcManager.invoke('video:list-sessions')
       if (sessionsResult.success && sessionsResult.data) {
         for (const session of sessionsResult.data) {
           if (session.status === 'ended' || !isKnownSession(session.sessionId)) continue

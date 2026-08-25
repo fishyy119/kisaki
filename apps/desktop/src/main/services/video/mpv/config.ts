@@ -13,7 +13,7 @@ import { join } from 'node:path'
 import { app } from 'electron'
 import { createLogger } from '@main/log'
 
-const log = createLogger('Player')
+const log = createLogger('Video')
 
 const CONFIG_DIR_NAME = 'mpv'
 

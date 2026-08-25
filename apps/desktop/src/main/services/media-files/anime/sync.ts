@@ -16,8 +16,15 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 import { createLogger } from '@main/log'
+import {
+  isProbeCurrent,
+  readFileStat,
+  readPrimaryElection,
+  SyncPassQueue,
+  type FileStat
+} from '../reconcile'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
-import type { MediaInfoService } from '@main/services/media-info'
+import type { VideoProbe } from '@main/services/video'
 import {
   animeEpisodeFiles,
   animeEpisodes,
@@ -39,7 +46,8 @@ import type {
   AnimeFileSyncParams,
   AnimeFileSyncResult
 } from '@shared/media-files'
-import type { MediaAudioTrack, MediaFileInfo, MediaSubtitleTrack } from '@shared/media-info'
+import { animeUnitIdentityKey } from '@shared/metadata'
+import type { AudioTrack, SubtitleTrack, VideoFileInfo } from '@shared/video'
 import { and, eq, inArray } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import {
@@ -67,11 +75,6 @@ interface WalkedFiles {
   extras: AnimeExtraCandidate[]
 }
 
-interface FileStat {
-  size: number
-  mtimeMs: number
-}
-
 /** Column values a file row carries from one probe pass. */
 interface ProbedFileValues {
   fileSize: number | null
@@ -82,8 +85,8 @@ interface ProbedFileValues {
   width: number | null
   height: number | null
   durationMs: number | null
-  audioTracks: MediaAudioTrack[]
-  subtitleTracks: MediaSubtitleTrack[]
+  audioTracks: AudioTrack[]
+  subtitleTracks: SubtitleTrack[]
 }
 
 interface ProbedEpisodeFile {
@@ -121,7 +124,7 @@ function compareEpisodes(a: AnimeEpisodeCandidate, b: AnimeEpisodeCandidate): nu
 function episodeCandidateKey(candidate: AnimeEpisodeCandidate): string {
   return candidate.number === undefined
     ? `file:${candidate.path}`
-    : `${candidate.type}:${candidate.number}`
+    : animeUnitIdentityKey({ type: candidate.type, episodeNumber: candidate.number })
 }
 
 /**
@@ -160,7 +163,7 @@ function claimFilmEpisodeCandidates(candidates: AnimeEpisodeCandidate[]): void {
 }
 
 /** File-row column values derived from one probe pass. */
-function toProbedFileValues(stat: FileStat, info: MediaFileInfo | null): ProbedFileValues {
+function toProbedFileValues(stat: FileStat, info: VideoFileInfo | null): ProbedFileValues {
   return {
     fileSize: stat.size,
     fileMtime: new Date(stat.mtimeMs),
@@ -175,40 +178,16 @@ function toProbedFileValues(stat: FileStat, info: MediaFileInfo | null): ProbedF
   }
 }
 
-/** Whether stored values already describe the file as it is on disk now. */
-function isProbeCurrent(stored: ProbedFileValues, stat: FileStat): boolean {
-  return stored.fileSize === stat.size && stored.fileMtime?.getTime() === stat.mtimeMs
-}
-
 export class AnimeFileSyncHandler {
-  /**
-   * One pass per entry at a time.
-   *
-   * A manual sync, a scan finishing, and a watched download can all ask for the
-   * same entry at once; overlapping passes would each see a pre-write state and
-   * duplicate rows. Passes for different entries still run in parallel.
-   */
-  private readonly passes = new Map<string, Promise<AnimeFileSyncResult>>()
+  private readonly passes = new SyncPassQueue<AnimeFileSyncResult>()
 
   constructor(
     private readonly dbService: DbService,
-    private readonly mediaInfo: MediaInfoService
+    private readonly probe: VideoProbe
   ) {}
 
   async sync(params: AnimeFileSyncOptions): Promise<AnimeFileSyncResult> {
-    const previous = this.passes.get(params.animeId)
-    const pass = (previous ? previous.catch(() => undefined) : Promise.resolve()).then(() =>
-      this.runSync(params)
-    )
-
-    this.passes.set(params.animeId, pass)
-    try {
-      return await pass
-    } finally {
-      if (this.passes.get(params.animeId) === pass) {
-        this.passes.delete(params.animeId)
-      }
-    }
+    return this.passes.run(params.animeId, () => this.runSync(params))
   }
 
   /**
@@ -320,11 +299,11 @@ export class AnimeFileSyncHandler {
   async attachFile(params: AnimeEpisodeFileAttachParams): Promise<void> {
     const { episodeId, path: filePath } = params
 
-    const stat = await this.readStat(filePath)
+    const stat = await readFileStat(filePath)
     if (!stat) {
       throw new Error(`Episode file is not readable: ${filePath}`)
     }
-    const info = await this.mediaInfo.video.probe(filePath)
+    const info = await this.probe.read(filePath)
 
     this.dbService.client.transaction((tx) => {
       const [episode] = tx
@@ -376,11 +355,11 @@ export class AnimeFileSyncHandler {
   async attachExtra(params: AnimeExtraFileAttachParams): Promise<void> {
     const { animeId, path: filePath } = params
 
-    const stat = await this.readStat(filePath)
+    const stat = await readFileStat(filePath)
     if (!stat) {
       throw new Error(`Extra file is not readable: ${filePath}`)
     }
-    const info = await this.mediaInfo.video.probe(filePath)
+    const info = await this.probe.read(filePath)
     const classified = classifyReleaseFile(filePath, true)
     const recognized = classified.kind === 'extra' ? classified.extra : undefined
 
@@ -567,7 +546,7 @@ export class AnimeFileSyncHandler {
     filePath: string,
     storedProbes: Map<string, ProbedFileValues>
   ): Promise<ProbedFileValues | null> {
-    const stat = await this.readStat(filePath)
+    const stat = await readFileStat(filePath)
     if (!stat) return null
 
     const stored = storedProbes.get(filePath)
@@ -575,19 +554,7 @@ export class AnimeFileSyncHandler {
       return stored
     }
 
-    return toProbedFileValues(stat, await this.mediaInfo.video.probe(filePath))
-  }
-
-  private async readStat(filePath: string): Promise<FileStat | null> {
-    try {
-      const stat = await fs.stat(filePath)
-      // Truncated to whole milliseconds, the precision the row stores, so a
-      // stored value compares equal to the same unchanged file.
-      return { size: stat.size, mtimeMs: Math.trunc(stat.mtimeMs) }
-    } catch (error) {
-      log.warn('Failed to stat anime file:', error)
-      return null
-    }
+    return toProbedFileValues(stat, await this.probe.read(filePath))
   }
 
   private async walk(dirPath: string, signal?: AbortSignal): Promise<WalkedFiles> {
@@ -642,7 +609,10 @@ export class AnimeFileSyncHandler {
     const existingByKey = new Map<string, AnimeEpisode>()
     for (const episode of existingEpisodes) {
       if (episode.episodeNumber !== null) {
-        existingByKey.set(`${episode.type}:${episode.episodeNumber}`, episode)
+        existingByKey.set(
+          animeUnitIdentityKey({ type: episode.type, episodeNumber: episode.episodeNumber }),
+          episode
+        )
       }
     }
     // Unnumbered rows exist only because of their files, so any of their file
@@ -699,17 +669,7 @@ export class AnimeFileSyncHandler {
     existingFiles: AnimeEpisodeFile[]
   ): number {
     const knownIdByPath = new Map(existingFiles.map((file) => [file.path, file.id]))
-    const primaryPathsByEpisodeId = new Map<string, Set<string>>()
-    for (const file of existingFiles) {
-      if (!file.isPrimary) continue
-      const paths = primaryPathsByEpisodeId.get(file.episodeId) ?? new Set<string>()
-      paths.add(file.path)
-      primaryPathsByEpisodeId.set(file.episodeId, paths)
-    }
-    // A user-pinned manual primary keeps the slot; sync rows then never claim it.
-    const manualPrimaryEpisodeIds = new Set(
-      existingFiles.filter((file) => file.isManual && file.isPrimary).map((file) => file.episodeId)
-    )
+    const primaries = readPrimaryElection(existingFiles, (file) => file.episodeId)
 
     const probedByEpisodeId = new Map<string, ProbedEpisodeFile[]>()
     for (const item of probed) {
@@ -733,14 +693,10 @@ export class AnimeFileSyncHandler {
     }
 
     for (const [episodeId, group] of probedByEpisodeId) {
-      // A stored primary preference survives as long as its file does; a new
-      // primary is elected only when no preferred file remains on disk and no
-      // manual row already holds the slot.
-      const preferredPaths = primaryPathsByEpisodeId.get(episodeId)
-      const primaryPath = manualPrimaryEpisodeIds.has(episodeId)
-        ? null
-        : (group.find(({ candidate }) => preferredPaths?.has(candidate.path))?.candidate.path ??
-          group[0].candidate.path)
+      const primaryPath = primaries.elect(
+        episodeId,
+        group.map(({ candidate }) => candidate.path)
+      )
 
       for (const { candidate, values: probedValues } of group) {
         const values = {

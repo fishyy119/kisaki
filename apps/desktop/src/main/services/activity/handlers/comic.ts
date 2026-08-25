@@ -24,7 +24,7 @@ import {
   type ComicChapterFile
 } from '@shared/db'
 import type { ComicReadResult, ComicReadingState } from '@shared/activity'
-import { parsePagedContainer } from '@shared/media-info'
+import { parsePagedContainer } from '@shared/book'
 import type {
   ReaderComicBootstrap,
   ReaderComicProgressReport,

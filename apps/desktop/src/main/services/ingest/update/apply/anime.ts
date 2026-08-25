@@ -18,7 +18,7 @@ import {
   type NewAnime
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
-import type { AnimeEpisodeInfo } from '@shared/metadata'
+import { animeUnitIdentityKey, type AnimeEpisodeInfo } from '@shared/metadata'
 import type {
   AnimeEpisodeUpdatePlan,
   AnimeLinkKind,
@@ -155,7 +155,7 @@ function reconcileAnimeEpisodes(
   const rowsByNumberKey = new Map<string, AnimeEpisode[]>()
   for (const row of existing) {
     if (claimedRowIds.has(row.id) || row.episodeNumber === null) continue
-    const key = `${row.type}:${row.episodeNumber}`
+    const key = animeUnitIdentityKey({ type: row.type, episodeNumber: row.episodeNumber })
     const queue = rowsByNumberKey.get(key) ?? []
     queue.push(row)
     rowsByNumberKey.set(key, queue)
@@ -163,7 +163,9 @@ function reconcileAnimeEpisodes(
 
   const inserts: Array<{ episode: AnimeEpisodeInfo; order: number }> = []
   for (const { episode, order } of numberPass) {
-    const row = rowsByNumberKey.get(`${episode.type}:${episode.number}`)?.shift()
+    const row = rowsByNumberKey
+      .get(animeUnitIdentityKey({ type: episode.type, episodeNumber: episode.number }))
+      ?.shift()
     if (row) {
       claimedRowIds.add(row.id)
       matches.push({ row, episode, order })

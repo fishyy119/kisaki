@@ -3,8 +3,8 @@
  *
  * Business owner of media consumption: which entity is being consumed right
  * now, how a consumption action starts and stops, and what a finished session
- * records. Technical mechanics live in the `process` and `player` services;
- * each media type keeps its own explicit handler here.
+ * records. Technical mechanics live in the `process`, `video`, and `reader`
+ * services; each media type keeps its own explicit handler here.
  */
 
 import { createLogger } from '@main/log'
@@ -27,7 +27,7 @@ export class ActivityService implements IMediaService {
     'ipc',
     'native',
     'process',
-    'player',
+    'video',
     'reader',
     'attachment'
   ] as const satisfies readonly ServiceName[]
@@ -54,7 +54,7 @@ export class ActivityService implements IMediaService {
       this.hooks
     )
 
-    this.anime = new AnimeActivityHandler(db, container.get('player'), ipc, this.hooks)
+    this.anime = new AnimeActivityHandler(db, container.get('video'), ipc, this.hooks)
     this.comic = new ComicActivityHandler(db, reader, i18n, ipc, this.hooks)
     this.novel = new NovelActivityHandler(db, reader, i18n, ipc, this.hooks)
 

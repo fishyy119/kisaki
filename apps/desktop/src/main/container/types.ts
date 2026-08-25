@@ -27,9 +27,8 @@ import type { ScraperService } from '@main/services/scraper/service'
 import type { IngestService } from '@main/services/ingest/service'
 import type { ScannerService } from '@main/services/scanner/service'
 import type { ProcessService } from '@main/services/process/service'
-import type { PlayerService } from '@main/services/player/service'
+import type { VideoService } from '@main/services/video/service'
 import type { MediaFilesService } from '@main/services/media-files/service'
-import type { MediaInfoService } from '@main/services/media-info/service'
 import type { ReaderService } from '@main/services/reader/service'
 import type { ActivityService } from '@main/services/activity/service'
 import type { AttachmentService } from '@main/services/attachment/service'
@@ -65,16 +64,15 @@ export interface ServiceRegistry {
   // Capability: no domain vocabulary, no library rows
   'task-run': TaskRunService
   'file-watch': FileWatchService
-  'media-info': MediaInfoService
   process: ProcessService
-  player: PlayerService
+  video: VideoService
+  reader: ReaderService
 
   // Domain: library ownership, grows per media type
   scraper: ScraperService
   ingest: IngestService
   scanner: ScannerService
   'media-files': MediaFilesService
-  reader: ReaderService
   activity: ActivityService
   attachment: AttachmentService
   command: CommandService

@@ -6,6 +6,9 @@
  * both in step as the directory changes. Metadata written from provider facts
  * belongs to ingest; this service never scrapes.
  *
+ * Owning those rows also makes it the only place that can turn a unit file-row
+ * id into a path, so it registers the `book://` transport's resolver.
+ *
  * The domain grows one media type at a time, because recognition, probing, and
  * consumption shape differ per type. Anime, comic, and novel are the shipped
  * handlers.
@@ -13,65 +16,58 @@
 
 import { bootstrapHooks } from '@main/bootstrap/hooks'
 import { createLogger } from '@main/log'
-import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { ContentEntityType } from '@shared/common'
-import { AnimeAutoSync, AnimeFileSyncHandler } from './anime'
-import { ComicAutoSync, ComicFileSyncHandler } from './comic'
-import { NovelAutoSync, NovelFileSyncHandler } from './novel'
+import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { MediaType } from '@shared/common'
+import { animeAutoSyncSpec, AnimeFileSyncHandler } from './anime'
+import { AutoSyncCoordinator } from './auto-sync'
+import { comicAutoSyncSpec, ComicFileSyncHandler } from './comic'
+import { novelAutoSyncSpec, NovelFileSyncHandler } from './novel'
 import { registerMediaFilesIpc } from './ipc'
 
 const log = createLogger('MediaFiles')
 
-export class MediaFilesService implements IContentService {
+export class MediaFilesService implements IMediaService {
   readonly id = 'media-files'
   readonly deps = [
     'db',
     'file-watch',
     'ipc',
-    'media-info'
+    'reader',
+    'video'
   ] as const satisfies readonly ServiceName[]
 
   anime!: AnimeFileSyncHandler
   comic!: ComicFileSyncHandler
   novel!: NovelFileSyncHandler
 
-  private animeAutoSync!: AnimeAutoSync
-  private comicAutoSync!: ComicAutoSync
-  private novelAutoSync!: NovelAutoSync
+  private autoSyncs: AutoSyncCoordinator[] = []
   private untapAppReady!: () => void
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const dbService = container.get('db')
     const fileWatch = container.get('file-watch')
-    const mediaInfo = container.get('media-info')
+    const reader = container.get('reader')
 
-    this.anime = new AnimeFileSyncHandler(dbService, mediaInfo)
-    this.comic = new ComicFileSyncHandler(dbService, mediaInfo)
-    this.novel = new NovelFileSyncHandler(dbService, mediaInfo)
-    this.animeAutoSync = new AnimeAutoSync({
-      dbService,
-      fileWatch,
-      dbHooks: dbService.hooks,
-      sync: this.anime
-    })
-    this.comicAutoSync = new ComicAutoSync({
-      dbService,
-      fileWatch,
-      dbHooks: dbService.hooks,
-      sync: this.comic
-    })
-    this.novelAutoSync = new NovelAutoSync({
-      dbService,
-      fileWatch,
-      dbHooks: dbService.hooks,
-      sync: this.novel
-    })
+    this.anime = new AnimeFileSyncHandler(dbService, container.get('video').probe)
+    this.comic = new ComicFileSyncHandler(dbService, reader.books)
+    this.novel = new NovelFileSyncHandler(dbService)
+
+    this.autoSyncs = [
+      animeAutoSyncSpec(dbService, this.anime),
+      comicAutoSyncSpec(dbService, this.comic),
+      novelAutoSyncSpec(dbService, this.novel)
+    ].map((spec) => new AutoSyncCoordinator({ fileWatch, dbHooks: dbService.hooks, spec }))
+
+    reader.setUnitFileResolver((kind, fileId) =>
+      kind === 'comic' ? this.comic.findFilePath(fileId) : this.novel.findFilePath(fileId)
+    )
+
     // Mounting also reconciles every watched directory, so it waits for the app
     // to be ready instead of competing with startup for disk.
     this.untapAppReady = bootstrapHooks.appReady.tap(() => {
-      this.animeAutoSync.start()
-      this.comicAutoSync.start()
-      this.novelAutoSync.start()
+      for (const autoSync of this.autoSyncs) {
+        autoSync.start()
+      }
     })
 
     registerMediaFilesIpc(this, container.get('ipc'))
@@ -80,13 +76,11 @@ export class MediaFilesService implements IContentService {
 
   async dispose(): Promise<void> {
     this.untapAppReady()
-    await this.animeAutoSync.dispose()
-    await this.comicAutoSync.dispose()
-    await this.novelAutoSync.dispose()
+    await Promise.all(this.autoSyncs.map((autoSync) => autoSync.dispose()))
     log.info('Disposed')
   }
 
-  getSupportedContent(): ContentEntityType[] {
+  getSupportedMedia(): MediaType[] {
     return ['anime', 'comic', 'novel']
   }
 }

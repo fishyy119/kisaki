@@ -24,7 +24,7 @@ import {
   type NovelVolumeFile
 } from '@shared/db'
 import type { NovelReadResult, NovelReadingState } from '@shared/activity'
-import { parseDocumentContainer } from '@shared/media-info'
+import { parseDocumentContainer } from '@shared/book'
 import type {
   ReaderNovelBootstrap,
   ReaderNovelProgressReport,

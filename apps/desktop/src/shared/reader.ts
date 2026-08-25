@@ -9,7 +9,7 @@
  */
 
 import type { ComicReadingDirection } from './db/contracts/enums'
-import type { PagedContainer, DocumentContainer } from './media-info'
+import type { PagedContainer, DocumentContainer } from './book'
 
 export interface ReaderComicUnit {
   id: string

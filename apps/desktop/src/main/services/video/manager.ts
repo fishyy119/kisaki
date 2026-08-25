@@ -2,7 +2,7 @@
  * Playback Session Manager
  *
  * Owns the live playback sessions: spawning the engine, wiring its session to
- * the player hooks, and exposing transport control by session id. Progress is
+ * the video hooks, and exposing transport control by session id. Progress is
  * throttled here because mpv reports `time-pos` several times per second while
  * subscribers only need a coarse position.
  */
@@ -17,14 +17,14 @@ import type {
   PlaybackStartResult,
   PlaybackTarget,
   PlaybackStartFailureReason
-} from '@shared/player'
-import type { PlayerHooks } from './hooks'
+} from '@shared/video'
+import type { VideoHooks } from './hooks'
 import { buildIpcSocketPath, buildMpvArguments } from './mpv/arguments'
 import { ensureMpvConfigDir } from './mpv/config'
 import { MpvIpcClient } from './mpv/ipc-client'
 import { PlaybackSession } from './session'
 
-const log = createLogger('Player')
+const log = createLogger('Video')
 
 const IPC_CONNECT_TIMEOUT_MS = 8000
 const PROGRESS_INTERVAL_MS = 1000
@@ -33,7 +33,7 @@ export class PlaybackSessionManager {
   private readonly sessions = new Map<string, PlaybackSession>()
   private readonly lastProgressAt = new Map<string, number>()
 
-  constructor(private readonly hooks: PlayerHooks) {}
+  constructor(private readonly hooks: VideoHooks) {}
 
   /** True when a playback engine is available on this installation. */
   isEngineAvailable(): boolean {

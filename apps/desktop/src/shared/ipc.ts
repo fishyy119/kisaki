@@ -184,7 +184,7 @@ import type {
   NovelReadingState,
   NovelReadResult
 } from './activity'
-import type { PlaybackEndReport, PlaybackProgress, PlaybackSessionState } from './player'
+import type { PlaybackEndReport, PlaybackProgress, PlaybackSessionState } from './video'
 import type {
   ReaderBootstrap,
   ReaderComicProgressReport,
@@ -586,12 +586,12 @@ export interface IpcMainHandlers {
   'reader:unit-opened': (report: ReaderUnitOpenedReport) => IpcVoidResult
   'reader:close': () => IpcVoidResult
 
-  // Player
-  'player:list-sessions': () => IpcResult<PlaybackSessionState[]>
-  'player:pause': (sessionId: string) => IpcVoidResult
-  'player:resume': (sessionId: string) => IpcVoidResult
-  'player:seek': (sessionId: string, positionMs: number) => IpcVoidResult
-  'player:stop': (sessionId: string) => IpcVoidResult
+  // Video playback
+  'video:list-sessions': () => IpcResult<PlaybackSessionState[]>
+  'video:pause': (sessionId: string) => IpcVoidResult
+  'video:resume': (sessionId: string) => IpcVoidResult
+  'video:seek': (sessionId: string, positionMs: number) => IpcVoidResult
+  'video:stop': (sessionId: string) => IpcVoidResult
 
   // Native dialogs
   'native:open-dialog': (options?: OpenDialogOptions) => IpcResult<OpenDialogReturnValue>
@@ -740,10 +740,10 @@ export interface IpcRendererEvents {
   'activity:comic-stopped': [state: ComicReadingState]
   'activity:novel-started': [state: NovelReadingState]
   'activity:novel-stopped': [state: NovelReadingState]
-  'player:session-started': [state: PlaybackSessionState]
-  'player:session-changed': [state: PlaybackSessionState]
-  'player:session-progress': [progress: PlaybackProgress]
-  'player:session-ended': [report: PlaybackEndReport]
+  'video:session-started': [state: PlaybackSessionState]
+  'video:session-changed': [state: PlaybackSessionState]
+  'video:session-progress': [progress: PlaybackProgress]
+  'video:session-ended': [report: PlaybackEndReport]
   'scanner:run-state-changed': [state: ScannerRunState]
 
   // Reader window push: a read request for an entry already open re-aims the

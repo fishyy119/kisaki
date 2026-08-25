@@ -1,7 +1,7 @@
 /**
  * Transport controls for one live player session.
  *
- * Wraps the `player:*` pause/resume channels with pending state, paused
+ * Wraps the `video:*` pause/resume channels with pending state, paused
  * derivation, and failure notifications, so every playback row shares one
  * control path instead of hand-rolling IPC calls.
  */
@@ -10,10 +10,10 @@ import { computed, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type R
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
-import type { PlaybackStatus } from '@shared/player'
+import type { PlaybackStatus } from '@shared/video'
 import { useI18n } from './use-i18n'
 
-const log = createLogger('Player')
+const log = createLogger('Video')
 
 export interface PlayerControls {
   isPaused: ComputedRef<boolean>
@@ -38,8 +38,8 @@ export function usePlayerControls(options: {
     isPending.value = true
     try {
       const result = resume
-        ? await ipcManager.invoke('player:resume', sessionId)
-        : await ipcManager.invoke('player:pause', sessionId)
+        ? await ipcManager.invoke('video:resume', sessionId)
+        : await ipcManager.invoke('video:pause', sessionId)
       if (!result.success) {
         notifyFailure(resume, result.error)
       }

@@ -16,7 +16,7 @@ import path from 'node:path'
 
 import { createLogger } from '@main/log'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
-import type { MediaInfoService } from '@main/services/media-info'
+import { readFileStat, readPrimaryElection, SyncPassQueue, type FileStat } from '../reconcile'
 import {
   novelSessions,
   novelVolumeFiles,
@@ -27,6 +27,7 @@ import {
   type NovelVolume,
   type NovelVolumeFile
 } from '@shared/db'
+import { resolveDocumentContainer } from '@shared/book'
 import type {
   NovelFileSyncParams,
   NovelFileSyncResult,
@@ -44,11 +45,6 @@ export const MAX_NOVEL_WALK_DEPTH = 2
 
 export interface NovelFileSyncOptions extends NovelFileSyncParams {
   signal?: AbortSignal
-}
-
-interface FileStat {
-  size: number
-  mtimeMs: number
 }
 
 interface StattedVolumeFile {
@@ -79,31 +75,12 @@ function volumeCandidateKey(candidate: NovelVolumeCandidate): string {
 }
 
 export class NovelFileSyncHandler {
-  /**
-   * One pass per entry at a time; overlapping passes would each see a
-   * pre-write state and duplicate rows. Different entries run in parallel.
-   */
-  private readonly passes = new Map<string, Promise<NovelFileSyncResult>>()
+  private readonly passes = new SyncPassQueue<NovelFileSyncResult>()
 
-  constructor(
-    private readonly dbService: DbService,
-    private readonly mediaInfo: MediaInfoService
-  ) {}
+  constructor(private readonly dbService: DbService) {}
 
   async sync(params: NovelFileSyncOptions): Promise<NovelFileSyncResult> {
-    const previous = this.passes.get(params.novelId)
-    const pass = (previous ? previous.catch(() => undefined) : Promise.resolve()).then(() =>
-      this.runSync(params)
-    )
-
-    this.passes.set(params.novelId, pass)
-    try {
-      return await pass
-    } finally {
-      if (this.passes.get(params.novelId) === pass) {
-        this.passes.delete(params.novelId)
-      }
-    }
+    return this.passes.run(params.novelId, () => this.runSync(params))
   }
 
   private async runSync(params: NovelFileSyncOptions): Promise<NovelFileSyncResult> {
@@ -125,13 +102,9 @@ export class NovelFileSyncHandler {
     const statted: StattedVolumeFile[] = []
     for (const candidate of walkable) {
       signal?.throwIfAborted()
-      const stat = await this.readStat(candidate.path)
+      const stat = await readFileStat(candidate.path)
       if (!stat) continue
-      statted.push({
-        candidate,
-        stat,
-        container: this.mediaInfo.book.resolveDocumentContainer(candidate.path)
-      })
+      statted.push({ candidate, stat, container: resolveDocumentContainer(candidate.path) })
     }
 
     return this.dbService.client.transaction((tx) => {
@@ -167,11 +140,11 @@ export class NovelFileSyncHandler {
   async attachFile(params: NovelVolumeFileAttachParams): Promise<void> {
     const { volumeId, path: filePath } = params
 
-    const stat = await this.readStat(filePath)
+    const stat = await readFileStat(filePath)
     if (!stat) {
       throw new Error(`Novel volume file is not readable: ${filePath}`)
     }
-    const container = this.mediaInfo.book.resolveDocumentContainer(filePath)
+    const container = resolveDocumentContainer(filePath)
     if (!container) {
       throw new Error(`Novel volume file is not a supported book container: ${filePath}`)
     }
@@ -210,6 +183,16 @@ export class NovelFileSyncHandler {
     })
   }
 
+  /** Stored path of one volume file row, or null when no row claims that id. */
+  findFilePath(fileId: string): string | null {
+    const row = this.dbService.client
+      .select({ path: novelVolumeFiles.path })
+      .from(novelVolumeFiles)
+      .where(eq(novelVolumeFiles.id, fileId))
+      .get()
+    return row?.path ?? null
+  }
+
   /** Throws when the path is already claimed by any volume file row. */
   private requirePathUnclaimed(tx: DbContext, filePath: string): void {
     const [claimed] = (tx as DbQueryContext)
@@ -241,17 +224,6 @@ export class NovelFileSyncHandler {
       .innerJoin(novelVolumes, eq(novelVolumeFiles.volumeId, novelVolumes.id))
       .where(and(eq(novelVolumes.novelId, novelId), eq(novelVolumeFiles.isManual, true)))
       .all()
-  }
-
-  private async readStat(filePath: string): Promise<FileStat | null> {
-    try {
-      const stat = await fs.stat(filePath)
-      // Truncated to whole milliseconds, the precision the row stores.
-      return { size: stat.size, mtimeMs: Math.trunc(stat.mtimeMs) }
-    } catch (error) {
-      log.warn('Failed to stat novel file:', error)
-      return null
-    }
   }
 
   private async walk(dirPath: string, signal?: AbortSignal): Promise<NovelVolumeCandidate[]> {
@@ -347,17 +319,7 @@ export class NovelFileSyncHandler {
     existingFiles: NovelVolumeFile[]
   ): number {
     const knownIdByPath = new Map(existingFiles.map((file) => [file.path, file.id]))
-    const primaryPathsByVolumeId = new Map<string, Set<string>>()
-    for (const file of existingFiles) {
-      if (!file.isPrimary) continue
-      const paths = primaryPathsByVolumeId.get(file.volumeId) ?? new Set<string>()
-      paths.add(file.path)
-      primaryPathsByVolumeId.set(file.volumeId, paths)
-    }
-    // A user-pinned manual primary keeps the slot; sync rows then never claim it.
-    const manualPrimaryVolumeIds = new Set(
-      existingFiles.filter((file) => file.isManual && file.isPrimary).map((file) => file.volumeId)
-    )
+    const primaries = readPrimaryElection(existingFiles, (file) => file.volumeId)
 
     const stattedByVolumeId = new Map<string, StattedVolumeFile[]>()
     for (const item of statted) {
@@ -381,14 +343,10 @@ export class NovelFileSyncHandler {
     }
 
     for (const [volumeId, group] of stattedByVolumeId) {
-      // A stored primary preference survives as long as its file does; a new
-      // primary is elected only when no preferred file remains on disk and no
-      // manual row already holds the slot.
-      const preferredPaths = primaryPathsByVolumeId.get(volumeId)
-      const primaryPath = manualPrimaryVolumeIds.has(volumeId)
-        ? null
-        : (group.find(({ candidate }) => preferredPaths?.has(candidate.path))?.candidate.path ??
-          group[0].candidate.path)
+      const primaryPath = primaries.elect(
+        volumeId,
+        group.map(({ candidate }) => candidate.path)
+      )
 
       for (const { candidate, stat, container } of group) {
         const values = {

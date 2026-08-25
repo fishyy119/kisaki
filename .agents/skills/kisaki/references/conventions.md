@@ -313,7 +313,7 @@ inherited from whichever media type shipped first.
 - Remaining planned types decide their grain when they land, by the same question.
 
 Grain differences stay contained. Below the entry, mechanics are isomorphic (watch state, resume
-position, sessions, file probing, player integration), and above it the entity seam is unchanged, so
+position, sessions, file probing, engine integration), and above it the entity seam is unchanged, so
 adding a type still costs +1 table, +1 query spec, +1 UI spec, +1 registry entry.
 
 Do not resolve a grain mismatch by letting grain vary per row, by adding a franchise entity no
@@ -412,6 +412,11 @@ Distinguish the two growth axes:
   place in a shared mechanism the same way. Four samples is still not a licence to generalize a
   surface only one type needs — the reader's page engine is shared by comic and novel because both
   page through images, while their unit lists and catch-up flows stay mirrored per type.
+- What three samples proved invariant is extracted, not forked. `media-files` keeps one
+  `AutoSyncCoordinator` driven by a per-type `AutoSyncSpec` (directory query, file predicate, watch
+  depth, sync call) and one `reconcile.ts` of pass mechanics (pass serialization, file revision,
+  probe freshness, primary election). What a unit is, how candidates claim rows, and when a row may
+  be deleted stay in each type's own sync coordinator, because those are domain meaning.
 
 Keep registries per consumer (merge config, feed projection, delete config, query spec). Each
 consumer declares only the schema facts it needs. Do not merge them into one grand all-consumer

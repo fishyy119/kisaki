@@ -26,6 +26,7 @@ import {
 } from '@shared/db'
 import type { AllEntityType, MediaType } from '@shared/common'
 import {
+  animeUnitIdentityKey,
   comicUnitIdentityKey,
   isNumberedComicUnit,
   isNumberedNovelVolume,
@@ -125,8 +126,11 @@ function readAnimeEpisodes(db: DbContext, animeId: string): AnimeEpisode[] {
   return db.select().from(animeEpisodes).where(eq(animeEpisodes.animeId, animeId)).all()
 }
 
+/** Identity key of a stored episode; null for unnumbered rows, which never collide. */
 function animeEpisodeNumberKey(episode: AnimeEpisode): string | null {
-  return episode.episodeNumber === null ? null : `${episode.type}\0${episode.episodeNumber}`
+  return episode.episodeNumber === null
+    ? null
+    : animeUnitIdentityKey({ type: episode.type, episodeNumber: episode.episodeNumber })
 }
 
 /** Maps each source episode id to the target episode id it aligns with. */
@@ -138,9 +142,8 @@ function buildEpisodeAlignmentIndex(
   const byExternalId = new Map<string, string>()
   const byNumber = new Map<string, string>()
   for (const episode of targetEpisodes) {
-    if (episode.episodeNumber !== null) {
-      byNumber.set(`${episode.type}\0${episode.episodeNumber}`, episode.id)
-    }
+    const numberKey = animeEpisodeNumberKey(episode)
+    if (numberKey) byNumber.set(numberKey, episode.id)
   }
   for (const row of readEpisodeExternalIds(db, targetEpisodes)) {
     byExternalId.set(`${row.source}\0${row.externalId}`, row.episodeId)
@@ -159,10 +162,8 @@ function buildEpisodeAlignmentIndex(
     const identityMatch = (sourceExternalIds.get(episode.id) ?? [])
       .map((row) => byExternalId.get(`${row.source}\0${row.externalId}`))
       .find((id) => id && !claimed.has(id))
-    const numberMatch =
-      episode.episodeNumber === null
-        ? undefined
-        : byNumber.get(`${episode.type}\0${episode.episodeNumber}`)
+    const numberKey = animeEpisodeNumberKey(episode)
+    const numberMatch = numberKey === null ? undefined : byNumber.get(numberKey)
     const alignedId =
       identityMatch ?? (numberMatch && !claimed.has(numberMatch) ? numberMatch : undefined)
     if (alignedId) {

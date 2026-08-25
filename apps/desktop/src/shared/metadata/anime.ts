@@ -53,3 +53,23 @@ export interface AnimeEpisodeInfo {
   durationMs?: number
   externalIds?: ExternalId[]
 }
+
+/** Numbering an anime episode is identified by, whether stated or stored. */
+export interface AnimeUnitNumbering {
+  type: AnimeEpisodeType
+  episodeNumber: number
+}
+
+/**
+ * Identity of one numbered episode within its anime.
+ *
+ * The single source of truth for episode identity: ingest, file sync, and
+ * entity merge must all agree. The type is part of the key because specials
+ * carry their own sequence, so special 1 and episode 1 are different
+ * installments. Unnumbered episodes have no identity of their own — what
+ * proves them differs per consumer (a file path, or nothing at all) — so they
+ * are keyed by their consumer and never reach this function.
+ */
+export function animeUnitIdentityKey(unit: AnimeUnitNumbering): string {
+  return `${unit.type}:${unit.episodeNumber}`
+}

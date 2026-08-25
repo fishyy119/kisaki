@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { Progress } from '@renderer/components/ui/progress'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
-import type { PlaybackStatus } from '@shared/player'
+import type { PlaybackStatus } from '@shared/video'
 
 interface Props {
   /** A session is gone once it ends, so `ended` never reaches this line. */

@@ -13,8 +13,7 @@ import { NativeService } from './services/native'
 import { I18nService } from './services/i18n'
 import { ScraperService } from './services/scraper'
 import { ProcessService } from './services/process'
-import { PlayerService } from './services/player'
-import { MediaInfoService } from './services/media-info'
+import { VideoService } from './services/video'
 import { MediaFilesService } from './services/media-files'
 import { ReaderService } from './services/reader'
 import { ActivityService } from './services/activity'
@@ -131,16 +130,15 @@ async function onAppReady(): Promise<void> {
   // Capability: no domain vocabulary, no library rows
   await container.register(new TaskRunService())
   await container.register(new FileWatchService())
-  await container.register(new MediaInfoService())
   await container.register(new ProcessService())
-  await container.register(new PlayerService())
+  await container.register(new VideoService())
+  await container.register(new ReaderService())
 
   // Domain: library ownership, grows per media type
   await container.register(new ScraperService())
   await container.register(new IngestService())
   await container.register(new ScannerService())
   await container.register(new MediaFilesService())
-  await container.register(new ReaderService())
   await container.register(new ActivityService())
   await container.register(new AttachmentService())
   await container.register(new CommandService())

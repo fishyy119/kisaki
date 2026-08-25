@@ -15,10 +15,10 @@ import type {
   PlaybackSessionState,
   PlaybackStatus,
   PlaybackTarget
-} from '@shared/player'
+} from '@shared/video'
 import { MpvIpcClient, type MpvEvent } from './mpv/ipc-client'
 
-const log = createLogger('Player')
+const log = createLogger('Video')
 
 /** Observed property ids; mpv echoes these back on every property change. */
 const PROPERTY_TIME_POS = 1

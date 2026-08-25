@@ -17,7 +17,8 @@ import path from 'node:path'
 
 import { createLogger } from '@main/log'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
-import type { MediaInfoService } from '@main/services/media-info'
+import type { BookContainerReader } from '@main/services/reader'
+import { isProbeCurrent, readFileStat, readPrimaryElection, SyncPassQueue } from '../reconcile'
 import {
   comicChapterFiles,
   comicChapters,
@@ -54,11 +55,6 @@ export const MAX_COMIC_WALK_DEPTH = 2
 
 export interface ComicFileSyncOptions extends ComicFileSyncParams {
   signal?: AbortSignal
-}
-
-interface FileStat {
-  size: number
-  mtimeMs: number
 }
 
 /** Column values a unit file row carries from one probe pass. */
@@ -121,37 +117,16 @@ function claimUnitAcrossVolumeKnowledge(
   return matches.length === 1 ? matches[0] : undefined
 }
 
-/** Whether stored values already describe the file as it is on disk now. */
-function isProbeCurrent(stored: ProbedUnitValues, stat: FileStat): boolean {
-  return stored.fileSize === stat.size && stored.fileMtime?.getTime() === stat.mtimeMs
-}
-
 export class ComicFileSyncHandler {
-  /**
-   * One pass per entry at a time; overlapping passes would each see a
-   * pre-write state and duplicate rows. Different entries run in parallel.
-   */
-  private readonly passes = new Map<string, Promise<ComicFileSyncResult>>()
+  private readonly passes = new SyncPassQueue<ComicFileSyncResult>()
 
   constructor(
     private readonly dbService: DbService,
-    private readonly mediaInfo: MediaInfoService
+    private readonly books: BookContainerReader
   ) {}
 
   async sync(params: ComicFileSyncOptions): Promise<ComicFileSyncResult> {
-    const previous = this.passes.get(params.comicId)
-    const pass = (previous ? previous.catch(() => undefined) : Promise.resolve()).then(() =>
-      this.runSync(params)
-    )
-
-    this.passes.set(params.comicId, pass)
-    try {
-      return await pass
-    } finally {
-      if (this.passes.get(params.comicId) === pass) {
-        this.passes.delete(params.comicId)
-      }
-    }
+    return this.passes.run(params.comicId, () => this.runSync(params))
   }
 
   /**
@@ -225,11 +200,11 @@ export class ComicFileSyncHandler {
   async attachFile(params: ComicChapterFileAttachParams): Promise<void> {
     const { chapterId, path: filePath } = params
 
-    const info = await this.mediaInfo.book.probePagedContainer(filePath)
+    const info = await this.books.probePagedContainer(filePath)
     if (!info) {
       throw new Error(`Comic unit file is not readable: ${filePath}`)
     }
-    const stat = await this.readStat(filePath)
+    const stat = await readFileStat(filePath)
 
     this.dbService.client.transaction((tx) => {
       const [chapter] = tx
@@ -264,6 +239,16 @@ export class ComicFileSyncHandler {
         })
         .run()
     })
+  }
+
+  /** Stored path of one unit file row, or null when no row claims that id. */
+  findFilePath(fileId: string): string | null {
+    const row = this.dbService.client
+      .select({ path: comicChapterFiles.path })
+      .from(comicChapterFiles)
+      .where(eq(comicChapterFiles.id, fileId))
+      .get()
+    return row?.path ?? null
   }
 
   /** Throws when the path is already claimed by any unit file row. */
@@ -325,7 +310,7 @@ export class ComicFileSyncHandler {
     filePath: string,
     storedProbes: Map<string, ProbedUnitValues>
   ): Promise<ProbedUnitValues | null> {
-    const stat = await this.readStat(filePath)
+    const stat = await readFileStat(filePath)
     if (!stat) return null
 
     const stored = storedProbes.get(filePath)
@@ -333,7 +318,7 @@ export class ComicFileSyncHandler {
       return stored
     }
 
-    const info = await this.mediaInfo.book.probePagedContainer(filePath)
+    const info = await this.books.probePagedContainer(filePath)
     if (!info) return null
 
     return {
@@ -341,17 +326,6 @@ export class ComicFileSyncHandler {
       fileMtime: new Date(stat.mtimeMs),
       container: info.container,
       pageCount: info.pageCount
-    }
-  }
-
-  private async readStat(filePath: string): Promise<FileStat | null> {
-    try {
-      const stat = await fs.stat(filePath)
-      // Truncated to whole milliseconds, the precision the row stores.
-      return { size: stat.size, mtimeMs: Math.trunc(stat.mtimeMs) }
-    } catch (error) {
-      log.warn('Failed to stat comic file:', error)
-      return null
     }
   }
 
@@ -497,17 +471,7 @@ export class ComicFileSyncHandler {
     existingFiles: ComicChapterFile[]
   ): number {
     const knownIdByPath = new Map(existingFiles.map((file) => [file.path, file.id]))
-    const primaryPathsByUnitId = new Map<string, Set<string>>()
-    for (const file of existingFiles) {
-      if (!file.isPrimary) continue
-      const paths = primaryPathsByUnitId.get(file.chapterId) ?? new Set<string>()
-      paths.add(file.path)
-      primaryPathsByUnitId.set(file.chapterId, paths)
-    }
-    // A user-pinned manual primary keeps the slot; sync rows then never claim it.
-    const manualPrimaryUnitIds = new Set(
-      existingFiles.filter((file) => file.isManual && file.isPrimary).map((file) => file.chapterId)
-    )
+    const primaries = readPrimaryElection(existingFiles, (file) => file.chapterId)
 
     const probedByUnitId = new Map<string, ProbedUnitFile[]>()
     for (const item of probed) {
@@ -531,14 +495,10 @@ export class ComicFileSyncHandler {
     }
 
     for (const [unitId, group] of probedByUnitId) {
-      // A stored primary preference survives as long as its file does; a new
-      // primary is elected only when no preferred file remains on disk and no
-      // manual row already holds the slot.
-      const preferredPaths = primaryPathsByUnitId.get(unitId)
-      const primaryPath = manualPrimaryUnitIds.has(unitId)
-        ? null
-        : (group.find(({ candidate }) => preferredPaths?.has(candidate.path))?.candidate.path ??
-          group[0].candidate.path)
+      const primaryPath = primaries.elect(
+        unitId,
+        group.map(({ candidate }) => candidate.path)
+      )
 
       for (const { candidate, values: probedValues } of group) {
         const values = {

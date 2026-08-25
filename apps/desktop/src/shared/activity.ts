@@ -89,7 +89,7 @@ export type AnimeExtraPlayResult =
 export interface AnimeWatchingState {
   animeId: string
   episodeId: string
-  /** Player session id, correlating this watch with `player:*` pushes. */
+  /** Playback session id, correlating this watch with `video:*` pushes. */
   sessionId: string
 }
 
@@ -97,7 +97,7 @@ export interface AnimeWatchingState {
 export interface AnimeExtraPlayingState {
   animeId: string
   extraId: string
-  /** Player session id, correlating this playback with `player:*` pushes. */
+  /** Playback session id, correlating this playback with `video:*` pushes. */
   sessionId: string
 }
 

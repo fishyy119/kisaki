@@ -10,7 +10,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import StreamZip from 'node-stream-zip'
 import { createExtractorFromData } from 'node-unrar-js'
-import type { PagedContainer } from '@shared/media-info'
+import type { PagedContainer } from '@shared/book'
 
 const IMAGE_EXTENSIONS = new Set([
   '.jpg',

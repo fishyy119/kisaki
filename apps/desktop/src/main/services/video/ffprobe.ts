@@ -1,5 +1,5 @@
 /**
- * Media file probing.
+ * ffprobe binding.
  *
  * Reads container facts with ffprobe's JSON output. The probe output comes from
  * an arbitrary user file, so every field is read leniently and an unusable value
@@ -10,14 +10,9 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { resolveBundledBinary } from '@main/binaries'
 import { createLogger } from '@main/log'
-import type {
-  MediaAudioTrack,
-  MediaFileInfo,
-  MediaSubtitleTrack,
-  MediaVideoTrack
-} from '@shared/media-info'
+import type { AudioTrack, SubtitleTrack, VideoFileInfo, VideoTrack } from '@shared/video'
 
-const log = createLogger('MediaInfo')
+const log = createLogger('Video')
 
 const execFileAsync = promisify(execFile)
 
@@ -46,10 +41,10 @@ interface FfprobeOutput {
 }
 
 /**
- * Probes a media file, returning null when no probing engine is installed or
+ * Probes a playable file, returning null when no probing engine is installed or
  * the file cannot be read as media.
  */
-export async function probeMediaFile(path: string): Promise<MediaFileInfo | null> {
+export async function probeVideoFile(path: string): Promise<VideoFileInfo | null> {
   const enginePath = resolveBundledBinary('ffprobe')
   if (!enginePath) {
     log.warn('Cannot probe media file: no probing engine is available.')
@@ -94,7 +89,7 @@ function toDurationMs(duration: string | undefined): number | null {
   return Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds * 1000) : null
 }
 
-function toVideoTrack(stream: FfprobeStream | undefined): MediaVideoTrack | null {
+function toVideoTrack(stream: FfprobeStream | undefined): VideoTrack | null {
   if (!stream) {
     return null
   }
@@ -109,7 +104,7 @@ function toVideoTrack(stream: FfprobeStream | undefined): MediaVideoTrack | null
   }
 }
 
-function toAudioTrack(stream: FfprobeStream): MediaAudioTrack {
+function toAudioTrack(stream: FfprobeStream): AudioTrack {
   return {
     index: stream.index ?? 0,
     codec: stream.codec_name ?? null,
@@ -120,7 +115,7 @@ function toAudioTrack(stream: FfprobeStream): MediaAudioTrack {
   }
 }
 
-function toSubtitleTrack(stream: FfprobeStream): MediaSubtitleTrack {
+function toSubtitleTrack(stream: FfprobeStream): SubtitleTrack {
   return {
     index: stream.index ?? 0,
     codec: stream.codec_name ?? null,

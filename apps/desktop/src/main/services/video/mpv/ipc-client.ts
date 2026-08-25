@@ -11,7 +11,7 @@
 import { Socket } from 'node:net'
 import { createLogger } from '@main/log'
 
-const log = createLogger('Player')
+const log = createLogger('Video')
 
 const CONNECT_RETRY_INTERVAL_MS = 100
 const COMMAND_TIMEOUT_MS = 5000

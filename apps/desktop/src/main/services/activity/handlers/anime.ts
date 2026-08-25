@@ -2,8 +2,8 @@
  * Anime Activity Handler
  *
  * Owns the anime watching workflow: picking the episode and file to play,
- * starting playback through the player service, and turning playback progress
- * into watch state. The player supplies position facts; every domain decision
+ * starting playback through the video service, and turning playback progress
+ * into watch state. The engine supplies position facts; every domain decision
  * and database write lives here.
  */
 
@@ -13,7 +13,7 @@ import { and, asc, eq, sql } from 'drizzle-orm'
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
-import type { PlayerService } from '@main/services/player'
+import type { VideoService } from '@main/services/video'
 import {
   animeEpisodeFiles,
   animeEpisodes,
@@ -34,7 +34,7 @@ import type {
   AnimeWatchingState,
   AnimeWatchResult
 } from '@shared/activity'
-import type { PlaybackTarget } from '@shared/player'
+import type { PlaybackTarget } from '@shared/video'
 import type { ActivityHooks } from '../hooks'
 import { RESUME_WRITE_INTERVAL_MS, isWatchedPosition, toResumePosition } from './progress'
 
@@ -53,18 +53,18 @@ interface PlayingExtraSession {
 }
 
 export class AnimeActivityHandler {
-  /** Playback sessions started by this handler, keyed by player session id. */
+  /** Playback sessions started by this handler, keyed by playback session id. */
   private readonly watching = new Map<string, WatchingSession>()
-  /** Untracked-for-history extra sessions, keyed by player session id. */
+  /** Untracked-for-history extra sessions, keyed by playback session id. */
   private readonly playingExtras = new Map<string, PlayingExtraSession>()
 
   constructor(
     private readonly db: DbService,
-    private readonly player: PlayerService,
+    private readonly video: VideoService,
     private readonly ipc: IpcService,
     private readonly hooks: ActivityHooks
   ) {
-    this.tapPlayerHooks()
+    this.tapVideoHooks()
   }
 
   /**
@@ -102,7 +102,7 @@ export class AnimeActivityHandler {
       return { status: 'failed', reason: 'fileNotFound' }
     }
 
-    const started = await this.player.sessions.start(this.toPlaybackTarget(anime, episode, file))
+    const started = await this.video.sessions.start(this.toPlaybackTarget(anime, episode, file))
     if (started.status === 'failed') {
       log.warn('Anime playback failed to start.', {
         animeId,
@@ -129,7 +129,7 @@ export class AnimeActivityHandler {
       .where(eq(animes.id, animeId))
       .run()
     // Starting playback is the only status transition playback infers, guarded so
-    // a user edit during player startup is never clobbered. Completion stays a
+    // a user edit during engine startup is never clobbered. Completion stays a
     // user declaration: "every episode watched" would rest on metadata being
     // fully scraped, which never holds while a show is still airing.
     this.db.client
@@ -182,7 +182,7 @@ export class AnimeActivityHandler {
       return { status: 'failed', reason: 'fileNotFound' }
     }
 
-    const started = await this.player.sessions.start({
+    const started = await this.video.sessions.start({
       path: file.path,
       title: `${row.animeName} · ${row.extra.name}`
     })
@@ -217,7 +217,7 @@ export class AnimeActivityHandler {
     }
 
     try {
-      await this.player.sessions.stop(sessionId)
+      await this.video.sessions.stop(sessionId)
       return { status: 'stopped' }
     } catch (error) {
       log.error('Failed to stop extra playback.', error, { extraId })
@@ -234,7 +234,7 @@ export class AnimeActivityHandler {
     }
 
     try {
-      await this.player.sessions.stop(sessionId)
+      await this.video.sessions.stop(sessionId)
       return { status: 'stopped' }
     } catch (error) {
       log.error('Failed to stop anime playback.', error, { animeId })
@@ -242,7 +242,7 @@ export class AnimeActivityHandler {
     }
   }
 
-  /** Player session id currently playing this anime, if any. */
+  /** Playback session id currently playing this anime, if any. */
   findSessionId(animeId: string): string | null {
     for (const [sessionId, session] of this.watching) {
       if (session.animeId === animeId) return sessionId
@@ -250,7 +250,7 @@ export class AnimeActivityHandler {
     return null
   }
 
-  /** Player session id currently playing this extra, if any. */
+  /** Playback session id currently playing this extra, if any. */
   findExtraSessionId(extraId: string): string | null {
     for (const [sessionId, session] of this.playingExtras) {
       if (session.extraId === extraId) return sessionId
@@ -280,7 +280,7 @@ export class AnimeActivityHandler {
     // stop() resolves only after the session's end report ran, so the final
     // watch session is recorded before the tracking map is cleared.
     for (const sessionId of [...this.watching.keys(), ...this.playingExtras.keys()]) {
-      await this.player.sessions.stop(sessionId).catch((error) => {
+      await this.video.sessions.stop(sessionId).catch((error) => {
         log.warn('Failed to stop playback session during dispose.', error, { sessionId })
       })
     }
@@ -292,8 +292,8 @@ export class AnimeActivityHandler {
    * Translates playback facts into watch state. Progress only maintains the
    * resume point; watched state is decided once, when the session ends.
    */
-  private tapPlayerHooks(): void {
-    this.player.hooks.progress.tap((progress) => {
+  private tapVideoHooks(): void {
+    this.video.hooks.progress.tap((progress) => {
       const session = this.watching.get(progress.sessionId)
       if (!session) return
 
@@ -304,7 +304,7 @@ export class AnimeActivityHandler {
       this.writeResumePosition(session.episodeId, progress.positionMs, progress.durationMs)
     })
 
-    this.player.hooks.sessionEnded.tap((report) => {
+    this.video.hooks.sessionEnded.tap((report) => {
       const session = this.watching.get(report.sessionId)
       if (session) {
         this.watching.delete(report.sessionId)
@@ -466,7 +466,7 @@ export class AnimeActivityHandler {
 }
 
 /**
- * Player window title for one playing episode.
+ * Playback window title for one playing episode.
  *
  * A film is its entry, so its single episode adds nothing but repetition; a
  * series names the episode being watched within it.

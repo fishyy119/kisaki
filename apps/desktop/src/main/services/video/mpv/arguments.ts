@@ -11,7 +11,7 @@
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { isWindows } from '@main/env'
-import type { PlaybackTarget } from '@shared/player'
+import type { PlaybackTarget } from '@shared/video'
 
 /** Returns the platform-specific address mpv should expose its JSON IPC on. */
 export function buildIpcSocketPath(sessionId: string): string {
