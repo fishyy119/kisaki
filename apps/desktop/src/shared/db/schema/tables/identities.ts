@@ -3,7 +3,9 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import { baseColumns, identityKeyText } from '../../columns'
 import { animeEpisodes } from './anime'
-import { animes, characters, companies, games, persons } from './content'
+import { comicChapters } from './comic'
+import { novelVolumes } from './novel'
+import { animes, characters, comics, companies, games, novels, persons } from './content'
 
 export const gameExternalIds = sqliteTable(
   'game_external_ids',
@@ -65,6 +67,90 @@ export const animeEpisodeExternalIds = sqliteTable(
   ]
 )
 
+export const comicExternalIds = sqliteTable(
+  'comic_external_ids',
+  {
+    ...baseColumns,
+    comicId: text('comic_id')
+      .notNull()
+      .references(() => comics.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInComic: integer('order_in_comic').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.comicId, t.source, t.externalId),
+    unique('unique_comic_external_id').on(t.source, t.externalId),
+    index('idx_comic_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
+/**
+ * Per-unit identity.
+ *
+ * Kept from the first scrape so re-scrapes realign existing rows by id instead
+ * of by number, which sources revise.
+ */
+export const comicChapterExternalIds = sqliteTable(
+  'comic_chapter_external_ids',
+  {
+    ...baseColumns,
+    chapterId: text('chapter_id')
+      .notNull()
+      .references(() => comicChapters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInChapter: integer('order_in_chapter').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.chapterId, t.source, t.externalId),
+    unique('unique_comic_chapter_external_id').on(t.source, t.externalId),
+    index('idx_comic_chapter_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
+export const novelExternalIds = sqliteTable(
+  'novel_external_ids',
+  {
+    ...baseColumns,
+    novelId: text('novel_id')
+      .notNull()
+      .references(() => novels.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInNovel: integer('order_in_novel').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.novelId, t.source, t.externalId),
+    unique('unique_novel_external_id').on(t.source, t.externalId),
+    index('idx_novel_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
+/**
+ * Per-volume identity.
+ *
+ * Kept from the first scrape so re-scrapes realign existing rows by id instead
+ * of by number, which sources revise.
+ */
+export const novelVolumeExternalIds = sqliteTable(
+  'novel_volume_external_ids',
+  {
+    ...baseColumns,
+    volumeId: text('volume_id')
+      .notNull()
+      .references(() => novelVolumes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    source: identityKeyText('source').notNull(),
+    externalId: identityKeyText('external_id').notNull(),
+    orderInVolume: integer('order_in_volume').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.volumeId, t.source, t.externalId),
+    unique('unique_novel_volume_external_id').on(t.source, t.externalId),
+    index('idx_novel_volume_external_ids_lookup').on(t.source, t.externalId)
+  ]
+)
+
 export const personExternalIds = sqliteTable(
   'person_external_ids',
   {
@@ -123,6 +209,14 @@ export type GameExternalId = InferSelectModel<typeof gameExternalIds>
 export type NewGameExternalId = InferInsertModel<typeof gameExternalIds>
 export type AnimeExternalId = InferSelectModel<typeof animeExternalIds>
 export type NewAnimeExternalId = InferInsertModel<typeof animeExternalIds>
+export type ComicExternalId = InferSelectModel<typeof comicExternalIds>
+export type NewComicExternalId = InferInsertModel<typeof comicExternalIds>
+export type ComicChapterExternalId = InferSelectModel<typeof comicChapterExternalIds>
+export type NewComicChapterExternalId = InferInsertModel<typeof comicChapterExternalIds>
+export type NovelExternalId = InferSelectModel<typeof novelExternalIds>
+export type NewNovelExternalId = InferInsertModel<typeof novelExternalIds>
+export type NovelVolumeExternalId = InferSelectModel<typeof novelVolumeExternalIds>
+export type NewNovelVolumeExternalId = InferInsertModel<typeof novelVolumeExternalIds>
 export type AnimeEpisodeExternalId = InferSelectModel<typeof animeEpisodeExternalIds>
 export type NewAnimeEpisodeExternalId = InferInsertModel<typeof animeEpisodeExternalIds>
 export type PersonExternalId = InferSelectModel<typeof personExternalIds>

@@ -14,22 +14,28 @@ import {
   persons,
   companies,
   characters,
+  comics,
   games,
   animes,
+  novels,
   type Person,
   type Company,
   type Character,
+  type Comic,
   type Game,
-  type Anime
+  type Anime,
+  type Novel
 } from '@shared/db/schema'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { DbContext, DbQueryContext } from '../types'
 import {
   animeExternalIdLink,
   characterExternalIdLink,
+  comicExternalIdLink,
   companyExternalIdLink,
   findExternalIdOwners,
   gameExternalIdLink,
+  novelExternalIdLink,
   personExternalIdLink,
   type ExternalIdLinkTable
 } from './external-id'
@@ -119,6 +125,56 @@ export class DbEntityFinderHelper {
 
     return this.findByExternalIds<Anime>(
       { entityTable: animes, idColumn: animes.id, link: animeExternalIdLink },
+      params.externalIds,
+      ctx
+    )
+  }
+
+  findExistingComic(
+    params: { externalIds?: ExternalId[]; path?: string },
+    ctx?: DbContext
+  ): Comic | undefined {
+    const db = this.getDb(ctx)
+
+    // The library directory is the most specific identity a local comic has.
+    if (params.path) {
+      const [result] = db
+        .select()
+        .from(comics)
+        .where(eq(comics.comicDirPath, params.path))
+        .limit(1)
+        .all()
+
+      if (result) return result
+    }
+
+    return this.findByExternalIds<Comic>(
+      { entityTable: comics, idColumn: comics.id, link: comicExternalIdLink },
+      params.externalIds,
+      ctx
+    )
+  }
+
+  findExistingNovel(
+    params: { externalIds?: ExternalId[]; path?: string },
+    ctx?: DbContext
+  ): Novel | undefined {
+    const db = this.getDb(ctx)
+
+    // The library directory is the most specific identity a local novel has.
+    if (params.path) {
+      const [result] = db
+        .select()
+        .from(novels)
+        .where(eq(novels.novelDirPath, params.path))
+        .limit(1)
+        .all()
+
+      if (result) return result
+    }
+
+    return this.findByExternalIds<Novel>(
+      { entityTable: novels, idColumn: novels.id, link: novelExternalIdLink },
       params.externalIds,
       ctx
     )

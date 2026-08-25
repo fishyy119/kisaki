@@ -49,6 +49,38 @@ export type {
   GameUpdateSurface
 } from './game'
 export {
+  COMIC_UPDATE_CORE_SURFACES,
+  COMIC_UPDATE_MEDIA_SURFACES,
+  COMIC_UPDATE_RELATION_SURFACES,
+  COMIC_UPDATE_SURFACES,
+  COMIC_UPDATE_SURFACE_KEYS
+} from './comic'
+export type {
+  ComicBatchUpdateRequest,
+  ComicUpdateCoreSurface,
+  ComicUpdateMediaSurface,
+  ComicUpdateRelationSurface,
+  ComicUpdateRequest,
+  ComicUpdateSelection,
+  ComicUpdateSurface
+} from './comic'
+export {
+  NOVEL_UPDATE_CORE_SURFACES,
+  NOVEL_UPDATE_MEDIA_SURFACES,
+  NOVEL_UPDATE_RELATION_SURFACES,
+  NOVEL_UPDATE_SURFACES,
+  NOVEL_UPDATE_SURFACE_KEYS
+} from './novel'
+export type {
+  NovelBatchUpdateRequest,
+  NovelUpdateCoreSurface,
+  NovelUpdateMediaSurface,
+  NovelUpdateRelationSurface,
+  NovelUpdateRequest,
+  NovelUpdateSelection,
+  NovelUpdateSurface
+} from './novel'
+export {
   PERSON_UPDATE_CORE_SURFACES,
   PERSON_UPDATE_MEDIA_SURFACES,
   PERSON_UPDATE_RELATION_SURFACES,

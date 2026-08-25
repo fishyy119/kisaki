@@ -52,6 +52,16 @@ const FTS_TABLES: Record<FtsEntityType, FtsTableConfig> = {
     ftsTableName: 'animes_fts',
     columns: ['name', 'original_name', 'sort_name', 'aliases', 'description']
   },
+  comic: {
+    tableName: 'comics',
+    ftsTableName: 'comics_fts',
+    columns: ['name', 'original_name', 'sort_name', 'aliases', 'description']
+  },
+  novel: {
+    tableName: 'novels',
+    ftsTableName: 'novels_fts',
+    columns: ['name', 'original_name', 'sort_name', 'aliases', 'description']
+  },
   character: {
     tableName: 'characters',
     ftsTableName: 'characters_fts',

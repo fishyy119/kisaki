@@ -1,0 +1,8 @@
+export { default as NovelDetailActivityTab } from './activity-tab.vue'
+export { default as NovelDetailCharactersTab } from './characters-tab.vue'
+export { default as NovelDetailCompaniesTab } from './companies-tab.vue'
+export { default as NovelDetailNotesTab } from './notes-tab.vue'
+export { default as NovelDetailOverviewTab } from './overview-tab.vue'
+export { default as NovelDetailPersonsTab } from './persons-tab.vue'
+export { default as NovelDetailRelationsTab } from './relations-tab.vue'
+export { NovelDetailVolumesTab } from './volumes-tab'

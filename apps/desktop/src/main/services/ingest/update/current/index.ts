@@ -1,5 +1,7 @@
 export { loadAnimeCurrent } from './anime'
 export { loadCharacterCurrent } from './character'
+export { loadComicCurrent } from './comic'
 export { loadCompanyCurrent } from './company'
 export { loadGameCurrent } from './game'
+export { loadNovelCurrent } from './novel'
 export { loadPersonCurrent } from './person'

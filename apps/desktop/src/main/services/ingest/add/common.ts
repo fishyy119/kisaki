@@ -5,8 +5,10 @@ import type { DbService } from '@main/services/db'
 import {
   collectionAnimeLinks,
   collectionCharacterLinks,
+  collectionComicLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionNovelLinks,
   collectionPersonLinks
 } from '@shared/db'
 
@@ -93,6 +95,42 @@ export function addAnimeToCollection(
     .values({
       collectionId: targetCollectionId,
       animeId,
+      orderInCollection: 0
+    })
+    .onConflictDoNothing()
+    .run()
+}
+
+export function addComicToCollection(
+  dbService: DbService,
+  comicId: string,
+  targetCollectionId: string | undefined
+): void {
+  if (!targetCollectionId) return
+
+  dbService.client
+    .insert(collectionComicLinks)
+    .values({
+      collectionId: targetCollectionId,
+      comicId,
+      orderInCollection: 0
+    })
+    .onConflictDoNothing()
+    .run()
+}
+
+export function addNovelToCollection(
+  dbService: DbService,
+  novelId: string,
+  targetCollectionId: string | undefined
+): void {
+  if (!targetCollectionId) return
+
+  dbService.client
+    .insert(collectionNovelLinks)
+    .values({
+      collectionId: targetCollectionId,
+      novelId,
       orderInCollection: 0
     })
     .onConflictDoNothing()

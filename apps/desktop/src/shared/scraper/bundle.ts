@@ -4,19 +4,29 @@ import type {
   AnimeCompanyRole,
   AnimePersonRole,
   CharacterPersonRole,
+  ComicCharacterRole,
+  ComicCompanyRole,
+  ComicPersonRole,
   GameCharacterRole,
   GameCompanyRole,
   GamePersonRole,
-  MediaRelationType
+  MediaRelationType,
+  NovelCharacterRole,
+  NovelCompanyRole,
+  NovelPersonRole
 } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
 import type {
   AnimeEpisodeInfo,
+  ComicChapterInfo,
   CoreAnimeMetadata,
   CoreCharacterMetadata,
+  CoreComicMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
+  CoreNovelMetadata,
   CorePersonMetadata,
+  NovelVolumeInfo,
   Tag
 } from '@shared/metadata'
 
@@ -37,6 +47,10 @@ export type ScrapedGameInfo = Omit<CoreGameMetadata, 'externalIds' | 'tags'>
 
 export type ScrapedAnimeInfo = Omit<CoreAnimeMetadata, 'externalIds' | 'tags'>
 
+export type ScrapedComicInfo = Omit<CoreComicMetadata, 'externalIds' | 'tags'>
+
+export type ScrapedNovelInfo = Omit<CoreNovelMetadata, 'externalIds' | 'tags'>
+
 export type ScrapedPersonInfo = Omit<CorePersonMetadata, 'externalIds' | 'tags'>
 
 export type ScrapedCompanyInfo = Omit<CoreCompanyMetadata, 'externalIds' | 'tags'>
@@ -48,6 +62,14 @@ export interface ScrapedGameCore extends ScrapedGameInfo {
 }
 
 export interface ScrapedAnimeCore extends ScrapedAnimeInfo {
+  tags?: Tag[]
+}
+
+export interface ScrapedComicCore extends ScrapedComicInfo {
+  tags?: Tag[]
+}
+
+export interface ScrapedNovelCore extends ScrapedNovelInfo {
   tags?: Tag[]
 }
 
@@ -197,6 +219,88 @@ export interface ScrapedAnimeMetadata extends ScrapedAnimeCore, ScrapedIdentityC
 }
 
 /**
+ * Scraped comic-person relation fact.
+ */
+export interface ScrapedComicPersonFact extends ScrapedPersonMetadata {
+  role: ComicPersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped comic-character relation fact.
+ */
+export interface ScrapedComicCharacterFact extends ScrapedCharacterMetadata {
+  role: ComicCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped comic-company relation fact.
+ */
+export interface ScrapedComicCompanyFact extends ScrapedCompanyMetadata {
+  role: ComicCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped comic metadata with relation/media facts.
+ */
+export interface ScrapedComicMetadata extends ScrapedComicCore, ScrapedIdentityCarrier {
+  chapters?: ComicChapterInfo[]
+  persons?: ScrapedComicPersonFact[]
+  characters?: ScrapedComicCharacterFact[]
+  companies?: ScrapedComicCompanyFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
+  covers?: string[]
+  backdrops?: string[]
+  logos?: string[]
+}
+
+/**
+ * Scraped novel-person relation fact.
+ */
+export interface ScrapedNovelPersonFact extends ScrapedPersonMetadata {
+  role: NovelPersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped novel-character relation fact.
+ */
+export interface ScrapedNovelCharacterFact extends ScrapedCharacterMetadata {
+  role: NovelCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped novel-company relation fact.
+ */
+export interface ScrapedNovelCompanyFact extends ScrapedCompanyMetadata {
+  role: NovelCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+/**
+ * Scraped novel metadata with relation/media facts.
+ */
+export interface ScrapedNovelMetadata extends ScrapedNovelCore, ScrapedIdentityCarrier {
+  volumes?: NovelVolumeInfo[]
+  persons?: ScrapedNovelPersonFact[]
+  characters?: ScrapedNovelCharacterFact[]
+  companies?: ScrapedNovelCompanyFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
+  covers?: string[]
+  backdrops?: string[]
+  logos?: string[]
+}
+
+/**
  * Relation facts a game scrape can state.
  *
  * An absent key means the scrape could not answer that relation; an empty array
@@ -237,6 +341,50 @@ export interface ScrapedAnimeBundle {
   /** Absent means unknown; an empty array means the source states no episodes. */
   episodes?: AnimeEpisodeInfo[]
   relationFacts?: ScrapedAnimeRelationFacts
+  mediaCandidates?: {
+    coverUrls?: string[]
+    backdropUrls?: string[]
+    logoUrls?: string[]
+  }
+}
+
+/** Relation facts a comic scrape can state; see `ScrapedGameRelationFacts`. */
+export interface ScrapedComicRelationFacts {
+  comicPerson?: ScrapedComicPersonFact[]
+  comicCompany?: ScrapedComicCompanyFact[]
+  comicCharacter?: ScrapedComicCharacterFact[]
+  characterPerson?: ScrapedCharacterPersonFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
+}
+
+export interface ScrapedComicBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedComicCore
+  /** Absent means unknown; an empty array means the source states no units. */
+  chapters?: ComicChapterInfo[]
+  relationFacts?: ScrapedComicRelationFacts
+  mediaCandidates?: {
+    coverUrls?: string[]
+    backdropUrls?: string[]
+    logoUrls?: string[]
+  }
+}
+
+/** Relation facts a novel scrape can state; see `ScrapedGameRelationFacts`. */
+export interface ScrapedNovelRelationFacts {
+  novelPerson?: ScrapedNovelPersonFact[]
+  novelCompany?: ScrapedNovelCompanyFact[]
+  novelCharacter?: ScrapedNovelCharacterFact[]
+  characterPerson?: ScrapedCharacterPersonFact[]
+  relatedEntries?: ScrapedRelatedEntryFact[]
+}
+
+export interface ScrapedNovelBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedNovelCore
+  /** Absent means unknown; an empty array means the source states no volumes. */
+  volumes?: NovelVolumeInfo[]
+  relationFacts?: ScrapedNovelRelationFacts
   mediaCandidates?: {
     coverUrls?: string[]
     backdropUrls?: string[]

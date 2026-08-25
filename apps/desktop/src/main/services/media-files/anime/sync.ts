@@ -324,7 +324,7 @@ export class AnimeFileSyncHandler {
     if (!stat) {
       throw new Error(`Episode file is not readable: ${filePath}`)
     }
-    const info = await this.mediaInfo.probe(filePath)
+    const info = await this.mediaInfo.video.probe(filePath)
 
     this.dbService.client.transaction((tx) => {
       const [episode] = tx
@@ -380,7 +380,7 @@ export class AnimeFileSyncHandler {
     if (!stat) {
       throw new Error(`Extra file is not readable: ${filePath}`)
     }
-    const info = await this.mediaInfo.probe(filePath)
+    const info = await this.mediaInfo.video.probe(filePath)
     const classified = classifyReleaseFile(filePath, true)
     const recognized = classified.kind === 'extra' ? classified.extra : undefined
 
@@ -575,7 +575,7 @@ export class AnimeFileSyncHandler {
       return stored
     }
 
-    return toProbedFileValues(stat, await this.mediaInfo.probe(filePath))
+    return toProbedFileValues(stat, await this.mediaInfo.video.probe(filePath))
   }
 
   private async readStat(filePath: string): Promise<FileStat | null> {

@@ -14,8 +14,12 @@ import type {
 import type {
   IngestAddAnimeFromScraperOptions,
   IngestAddAnimeFromScraperResult,
+  IngestAddComicFromScraperOptions,
+  IngestAddComicFromScraperResult,
   IngestAddGameFromScraperOptions,
   IngestAddGameFromScraperResult,
+  IngestAddNovelFromScraperOptions,
+  IngestAddNovelFromScraperResult,
   IngestGameUpdateFromScraperInput,
   IngestTaskRunStart,
   IngestUpdateResult
@@ -39,6 +43,14 @@ import type {
   LibraryCollectionCreateInput,
   LibraryCollectionPatch,
   LibraryCollectionQuery,
+  LibraryComic,
+  LibraryComicChapter,
+  LibraryComicChapterCreateInput,
+  LibraryComicChapterQuery,
+  LibraryComicChapterReadStatePatch,
+  LibraryComicCreateInput,
+  LibraryComicPatch,
+  LibraryComicQuery,
   LibraryCompany,
   LibraryCompanyCreateInput,
   LibraryCompanyPatch,
@@ -47,6 +59,14 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
+  LibraryNovel,
+  LibraryNovelCreateInput,
+  LibraryNovelPatch,
+  LibraryNovelQuery,
+  LibraryNovelVolume,
+  LibraryNovelVolumeCreateInput,
+  LibraryNovelVolumeQuery,
+  LibraryNovelVolumeReadStatePatch,
   LibraryGraphInput,
   LibraryGraphResult,
   LibraryLink,
@@ -86,7 +106,12 @@ import type {
   TaskRunSnapshot
 } from '../capabilities/task-runs'
 import type { WebviewOpenOptions } from '../capabilities/webviews'
-import type { AnimeScraperLookup, GameScraperLookup } from '../contributions/scraper-providers'
+import type {
+  AnimeScraperLookup,
+  ComicScraperLookup,
+  GameScraperLookup,
+  NovelScraperLookup
+} from '../contributions/scraper-providers'
 import type { JsonObject, JsonValue } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload, RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
@@ -157,6 +182,18 @@ export interface IngestAnimeAddFromScraperRequest extends ExtensionScopedRpcPara
   profileId: string
   lookup: AnimeScraperLookup
   options?: IngestAddAnimeFromScraperOptions
+}
+
+export interface IngestComicAddFromScraperRequest extends ExtensionScopedRpcParams {
+  profileId: string
+  lookup: ComicScraperLookup
+  options?: IngestAddComicFromScraperOptions
+}
+
+export interface IngestNovelAddFromScraperRequest extends ExtensionScopedRpcParams {
+  profileId: string
+  lookup: NovelScraperLookup
+  options?: IngestAddNovelFromScraperOptions
 }
 
 export interface LibraryGraphRpcRequest extends ExtensionScopedRpcParams {
@@ -364,6 +401,30 @@ export type HostToMainCapabilityRpcRequestMap = {
     ExtensionScopedRpcParams & { episodeId: string; patch: LibraryAnimeEpisodeWatchStatePatch },
     { episode: LibraryAnimeEpisode }
   >
+  'capabilities.library.comics.chapters.list': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { query: LibraryComicChapterQuery },
+    { items: readonly LibraryComicChapter[] }
+  >
+  'capabilities.library.comics.chapters.create': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { comicId: string; input: LibraryComicChapterCreateInput },
+    { chapter: LibraryComicChapter }
+  >
+  'capabilities.library.comics.chapters.patchReadState': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { chapterId: string; patch: LibraryComicChapterReadStatePatch },
+    { chapter: LibraryComicChapter }
+  >
+  'capabilities.library.novels.volumes.list': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { query: LibraryNovelVolumeQuery },
+    { items: readonly LibraryNovelVolume[] }
+  >
+  'capabilities.library.novels.volumes.create': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { novelId: string; input: LibraryNovelVolumeCreateInput },
+    { volume: LibraryNovelVolume }
+  >
+  'capabilities.library.novels.volumes.patchReadState': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { volumeId: string; patch: LibraryNovelVolumeReadStatePatch },
+    { volume: LibraryNovelVolume }
+  >
   'capabilities.library.attachments.list': RpcMethodDefinition<
     ExtensionScopedRpcParams & { entity: LibraryAttachment['entity'] },
     { items: readonly LibraryAttachment[] }
@@ -419,6 +480,22 @@ export type HostToMainCapabilityRpcRequestMap = {
   >
   'capabilities.ingest.anime.add.startFromScraper': RpcMethodDefinition<
     IngestAnimeAddFromScraperRequest,
+    { start: IngestTaskRunStart }
+  >
+  'capabilities.ingest.comic.add.fromScraper': RpcMethodDefinition<
+    IngestComicAddFromScraperRequest,
+    { result: IngestAddComicFromScraperResult }
+  >
+  'capabilities.ingest.comic.add.startFromScraper': RpcMethodDefinition<
+    IngestComicAddFromScraperRequest,
+    { start: IngestTaskRunStart }
+  >
+  'capabilities.ingest.novel.add.fromScraper': RpcMethodDefinition<
+    IngestNovelAddFromScraperRequest,
+    { result: IngestAddNovelFromScraperResult }
+  >
+  'capabilities.ingest.novel.add.startFromScraper': RpcMethodDefinition<
+    IngestNovelAddFromScraperRequest,
     { start: IngestTaskRunStart }
   >
   'capabilities.commands.list': RpcMethodDefinition<
@@ -517,6 +594,20 @@ export type HostToMainCapabilityRpcRequestMap = {
     LibraryAnimeCreateInput,
     LibraryAnimePatch,
     LibraryAnimeQuery
+  > &
+  LibraryEntityRpcRequestMap<
+    'capabilities.library.comics',
+    LibraryComic,
+    LibraryComicCreateInput,
+    LibraryComicPatch,
+    LibraryComicQuery
+  > &
+  LibraryEntityRpcRequestMap<
+    'capabilities.library.novels',
+    LibraryNovel,
+    LibraryNovelCreateInput,
+    LibraryNovelPatch,
+    LibraryNovelQuery
   > &
   LibraryEntityRpcRequestMap<
     'capabilities.library.characters',

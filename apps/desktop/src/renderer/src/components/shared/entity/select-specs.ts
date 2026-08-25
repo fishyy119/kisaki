@@ -15,8 +15,10 @@ import type { Component } from 'vue'
 import { AnimeSelect } from '@renderer/components/shared/anime'
 import { CharacterSelect } from '@renderer/components/shared/character'
 import { CollectionSelect } from '@renderer/components/shared/collection'
+import { ComicSelect } from '@renderer/components/shared/comic'
 import { CompanySelect } from '@renderer/components/shared/company'
 import { GameSelect } from '@renderer/components/shared/game'
+import { NovelSelect } from '@renderer/components/shared/novel'
 import { PersonSelect } from '@renderer/components/shared/person'
 import { TagSelect } from '@renderer/components/shared/tag'
 import type { AllEntityType } from '@shared/common'
@@ -33,6 +35,8 @@ export interface EntitySelectSpec {
 export const ENTITY_SELECT_SPECS: Record<AllEntityType, EntitySelectSpec> = {
   game: { component: () => GameSelect },
   anime: { component: () => AnimeSelect },
+  comic: { component: () => ComicSelect },
+  novel: { component: () => NovelSelect },
   character: { component: () => CharacterSelect },
   person: { component: () => PersonSelect },
   company: { component: () => CompanySelect },

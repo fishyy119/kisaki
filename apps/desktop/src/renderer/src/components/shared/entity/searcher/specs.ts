@@ -15,9 +15,13 @@ import type {
   AnimeScraperLookup,
   AnimeSearchResult,
   CharacterSearchResult,
+  ComicScraperLookup,
+  ComicSearchResult,
   CompanySearchResult,
   GameScraperLookup,
   GameSearchResult,
+  NovelScraperLookup,
+  NovelSearchResult,
   PersonSearchResult,
   ScraperLookup
 } from '@shared/scraper'
@@ -26,6 +30,8 @@ import type {
 export interface SearchResultMap {
   game: GameSearchResult
   anime: AnimeSearchResult
+  comic: ComicSearchResult
+  novel: NovelSearchResult
   character: CharacterSearchResult
   person: PersonSearchResult
   company: CompanySearchResult
@@ -35,6 +41,8 @@ export interface SearchResultMap {
 export interface ScraperLookupMap {
   game: GameScraperLookup
   anime: AnimeScraperLookup
+  comic: ComicScraperLookup
+  novel: NovelScraperLookup
   character: ScraperLookup
   person: ScraperLookup
   company: ScraperLookup
@@ -111,6 +119,56 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
         header: (m) => m.library.fields.format,
         cell: (result, m) =>
           result.format ? m.library.animeFormat[result.format] : m.common.emptyValue
+      },
+      {
+        width: '7.5rem',
+        header: (m) => m.library.searcher.columnReleaseDate,
+        cell: (result, m, f) =>
+          result.releaseDate ? f.date(result.releaseDate) : m.common.emptyValue
+      }
+    ],
+    buildLookup: (base, result) => ({
+      ...base,
+      releaseDate: result?.releaseDate,
+      format: result?.format
+    })
+  },
+  comic: {
+    search: (profileId, query) => ipcManager.invoke('scraper:search-comic', profileId, query),
+    columns: [
+      nameColumn(),
+      originalNameColumn('25%'),
+      {
+        // A name search spans every entry of a work, so the kind of entry is
+        // what tells the serialization from the spin-off that shares its name.
+        width: '5rem',
+        header: (m) => m.library.fields.format,
+        cell: (result, m) =>
+          result.format ? m.library.comicFormat[result.format] : m.common.emptyValue
+      },
+      {
+        width: '7.5rem',
+        header: (m) => m.library.searcher.columnReleaseDate,
+        cell: (result, m, f) =>
+          result.releaseDate ? f.date(result.releaseDate) : m.common.emptyValue
+      }
+    ],
+    buildLookup: (base, result) => ({
+      ...base,
+      releaseDate: result?.releaseDate,
+      format: result?.format
+    })
+  },
+  novel: {
+    search: (profileId, query) => ipcManager.invoke('scraper:search-novel', profileId, query),
+    columns: [
+      nameColumn(),
+      originalNameColumn('25%'),
+      {
+        width: '5rem',
+        header: (m) => m.library.fields.format,
+        cell: (result, m) =>
+          result.format ? m.library.novelFormat[result.format] : m.common.emptyValue
       },
       {
         width: '7.5rem',

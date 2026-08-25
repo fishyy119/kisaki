@@ -30,7 +30,7 @@
  * are out of scope because their sources issue cast credits rather than
  * characters.
  */
-export type MediaType = 'game' | 'anime'
+export type MediaType = 'game' | 'anime' | 'comic' | 'novel'
 
 /**
  * Metadata entity types - Entities associated with media
@@ -82,7 +82,17 @@ export type AllEntityType = ContentEntityType | OrganizerType
 // Type Constants (for iteration and validation)
 // =============================================================================
 
-export const MEDIA_TYPES: readonly MediaType[] = ['game', 'anime']
+export const MEDIA_TYPES: readonly MediaType[] = ['game', 'anime', 'comic', 'novel']
+
+/**
+ * Media types that carry voice credits.
+ *
+ * A cast row is "this person voices this character in this entry"; print
+ * media has no audio track, so comics and novels never own cast tables.
+ */
+export type CastMediaType = 'game' | 'anime'
+
+export const CAST_MEDIA_TYPES: readonly CastMediaType[] = ['game', 'anime']
 
 export const METADATA_TYPES: readonly MetadataType[] = ['character', 'person', 'company']
 

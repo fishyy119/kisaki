@@ -71,3 +71,51 @@ export function getAnimeFormatOptions(): { value: string; label: string }[] {
     { value: 'other', label: format.other }
   ]
 }
+
+/** Localized comic read status options for the current UI locale. */
+export function getComicStatusOptions(): { value: string; label: string }[] {
+  const status = messages.value.library.comicStatus
+  return [
+    { value: 'planned', label: status.planned },
+    { value: 'reading', label: status.reading },
+    { value: 'completed', label: status.completed },
+    { value: 'onHold', label: status.onHold },
+    { value: 'dropped', label: status.dropped }
+  ]
+}
+
+/** Localized comic format options for the current UI locale. */
+export function getComicFormatOptions(): { value: string; label: string }[] {
+  const format = messages.value.library.comicFormat
+  return [
+    { value: 'manga', label: format.manga },
+    { value: 'manhua', label: format.manhua },
+    { value: 'manhwa', label: format.manhwa },
+    { value: 'webtoon', label: format.webtoon },
+    { value: 'doujinshi', label: format.doujinshi },
+    { value: 'other', label: format.other }
+  ]
+}
+
+/** Localized novel read status options for the current UI locale. */
+export function getNovelStatusOptions(): { value: string; label: string }[] {
+  const status = messages.value.library.novelStatus
+  return [
+    { value: 'planned', label: status.planned },
+    { value: 'reading', label: status.reading },
+    { value: 'completed', label: status.completed },
+    { value: 'onHold', label: status.onHold },
+    { value: 'dropped', label: status.dropped }
+  ]
+}
+
+/** Localized novel format options for the current UI locale. */
+export function getNovelFormatOptions(): { value: string; label: string }[] {
+  const format = messages.value.library.novelFormat
+  return [
+    { value: 'lightNovel', label: format.lightNovel },
+    { value: 'webNovel', label: format.webNovel },
+    { value: 'general', label: format.general },
+    { value: 'other', label: format.other }
+  ]
+}

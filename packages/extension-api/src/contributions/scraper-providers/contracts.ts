@@ -7,16 +7,32 @@ import type {
   LibraryAnimePersonRole,
   LibraryBloodType,
   LibraryCharacterPersonRole,
+  LibraryComicCharacterRole,
+  LibraryComicCompanyRole,
+  LibraryComicFormat,
+  LibraryComicPersonRole,
   LibraryCupSize,
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
   LibraryGender,
-  LibraryMediaRelationType
+  LibraryMediaRelationType,
+  LibraryNovelCharacterRole,
+  LibraryNovelCompanyRole,
+  LibraryNovelFormat,
+  LibraryNovelPersonRole
 } from '../../shared/library'
 import type { LibraryMediaType } from '../../capabilities/library/graph'
 
-export const SCRAPER_MEDIA_TYPES = ['game', 'anime', 'person', 'company', 'character'] as const
+export const SCRAPER_MEDIA_TYPES = [
+  'game',
+  'anime',
+  'comic',
+  'novel',
+  'person',
+  'company',
+  'character'
+] as const
 
 export type ScraperMediaType = (typeof SCRAPER_MEDIA_TYPES)[number]
 
@@ -50,6 +66,36 @@ export const ANIME_SCRAPER_SLOTS = [
 
 export type AnimeScraperSlot = (typeof ANIME_SCRAPER_SLOTS)[number]
 
+export const COMIC_SCRAPER_SLOTS = [
+  'info',
+  'tags',
+  'chapters',
+  'characters',
+  'persons',
+  'companies',
+  'relatedEntries',
+  'covers',
+  'backdrops',
+  'logos'
+] as const
+
+export type ComicScraperSlot = (typeof COMIC_SCRAPER_SLOTS)[number]
+
+export const NOVEL_SCRAPER_SLOTS = [
+  'info',
+  'tags',
+  'volumes',
+  'characters',
+  'persons',
+  'companies',
+  'relatedEntries',
+  'covers',
+  'backdrops',
+  'logos'
+] as const
+
+export type NovelScraperSlot = (typeof NOVEL_SCRAPER_SLOTS)[number]
+
 export const PERSON_SCRAPER_SLOTS = ['info', 'tags', 'photos'] as const
 
 export type PersonScraperSlot = (typeof PERSON_SCRAPER_SLOTS)[number]
@@ -63,7 +109,13 @@ export const CHARACTER_SCRAPER_SLOTS = ['info', 'tags', 'persons', 'photos'] as 
 export type CharacterScraperSlot = (typeof CHARACTER_SCRAPER_SLOTS)[number]
 
 export type ScraperSlot =
-  GameScraperSlot | AnimeScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
+  | GameScraperSlot
+  | AnimeScraperSlot
+  | ComicScraperSlot
+  | NovelScraperSlot
+  | PersonScraperSlot
+  | CompanyScraperSlot
+  | CharacterScraperSlot
 
 export type ScraperCapability<TSlot extends ScraperSlot = ScraperSlot> = 'search' | TSlot
 
@@ -98,6 +150,16 @@ export interface MediaScraperLookup extends ScraperLookup {
 /** Lookup for an anime entry, adding its release format to the media facts. */
 export interface AnimeScraperLookup extends MediaScraperLookup {
   format?: LibraryAnimeFormat
+}
+
+/** Lookup for a comic entry, adding its release format to the media facts. */
+export interface ComicScraperLookup extends MediaScraperLookup {
+  format?: LibraryComicFormat
+}
+
+/** Lookup for a novel entry, adding its release format to the media facts. */
+export interface NovelScraperLookup extends MediaScraperLookup {
+  format?: LibraryNovelFormat
 }
 
 /** Lookup for a game entry; game entries state no facts beyond the media ones. */
@@ -158,6 +220,67 @@ export interface ScrapedAnimeInfo {
   /** Episode count declared by the source; episode rows stay authoritative. */
   totalEpisodes?: number
   externalSites?: readonly ExternalSite[]
+}
+
+export interface ScrapedComicInfo {
+  name: string
+  originalName?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: readonly string[]
+  releaseDate?: PartialDate
+  description?: string
+  format?: LibraryComicFormat
+  /** Volume count declared by the source; unit rows stay authoritative. */
+  totalVolumes?: number
+  /** Chapter count declared by the source; unit rows stay authoritative. */
+  totalChapters?: number
+  externalSites?: readonly ExternalSite[]
+}
+
+/**
+ * One readable unit of a comic entry, at either grain: a collected volume
+ * carries `volumeNumber`, a serialized chapter carries `chapterNumber` (plus
+ * its volume when known).
+ *
+ * `externalIds` carries per-unit identity so re-scrapes realign existing rows
+ * by id rather than by number, which sources revise.
+ */
+export interface ScrapedComicChapter {
+  volumeNumber?: number
+  chapterNumber?: number
+  name?: string
+  originalName?: string
+  releaseDate?: PartialDate
+  description?: string
+  externalIds?: readonly ExternalId[]
+}
+
+export interface ScrapedNovelInfo {
+  name: string
+  originalName?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: readonly string[]
+  releaseDate?: PartialDate
+  description?: string
+  format?: LibraryNovelFormat
+  /** Volume count declared by the source; volume rows stay authoritative. */
+  totalVolumes?: number
+  externalSites?: readonly ExternalSite[]
+}
+
+/**
+ * One volume of a novel entry.
+ *
+ * `externalIds` carries per-volume identity so re-scrapes realign existing
+ * rows by id rather than by number, which sources revise.
+ */
+export interface ScrapedNovelVolume {
+  volumeNumber?: number
+  name?: string
+  originalName?: string
+  releaseDate?: PartialDate
+  description?: string
+  externalIds?: readonly ExternalId[]
 }
 
 /**
@@ -302,6 +425,42 @@ export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
   note?: string
 }
 
+export interface ScrapedComicPersonFact extends ScrapedPersonMetadata {
+  role: LibraryComicPersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedComicCompanyFact extends ScrapedCompanyMetadata {
+  role: LibraryComicCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedComicCharacterFact extends ScrapedCharacterMetadata {
+  role: LibraryComicCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedNovelPersonFact extends ScrapedPersonMetadata {
+  role: LibraryNovelPersonRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedNovelCompanyFact extends ScrapedCompanyMetadata {
+  role: LibraryNovelCompanyRole
+  isSpoiler?: boolean
+  note?: string
+}
+
+export interface ScrapedNovelCharacterFact extends ScrapedCharacterMetadata {
+  role: LibraryNovelCharacterRole
+  isSpoiler?: boolean
+  note?: string
+}
+
 export interface ScrapedGameBundle {
   identity: ScrapedEntityIdentity
   core?: ScrapedGameInfo
@@ -324,6 +483,34 @@ export interface ScrapedAnimeBundle {
   persons?: readonly ScrapedAnimePersonFact[]
   companies?: readonly ScrapedAnimeCompanyFact[]
   characters?: readonly ScrapedAnimeCharacterFact[]
+  relatedEntries?: readonly ScrapedRelatedEntryFact[]
+  covers?: readonly string[]
+  backdrops?: readonly string[]
+  logos?: readonly string[]
+}
+
+export interface ScrapedComicBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedComicInfo
+  tags?: readonly ScrapedTag[]
+  chapters?: readonly ScrapedComicChapter[]
+  persons?: readonly ScrapedComicPersonFact[]
+  companies?: readonly ScrapedComicCompanyFact[]
+  characters?: readonly ScrapedComicCharacterFact[]
+  relatedEntries?: readonly ScrapedRelatedEntryFact[]
+  covers?: readonly string[]
+  backdrops?: readonly string[]
+  logos?: readonly string[]
+}
+
+export interface ScrapedNovelBundle {
+  identity: ScrapedEntityIdentity
+  core?: ScrapedNovelInfo
+  tags?: readonly ScrapedTag[]
+  volumes?: readonly ScrapedNovelVolume[]
+  persons?: readonly ScrapedNovelPersonFact[]
+  companies?: readonly ScrapedNovelCompanyFact[]
+  characters?: readonly ScrapedNovelCharacterFact[]
   relatedEntries?: readonly ScrapedRelatedEntryFact[]
   covers?: readonly string[]
   backdrops?: readonly string[]
@@ -396,6 +583,24 @@ export interface AnimeSearchResult {
   externalIds: readonly ExternalId[]
 }
 
+export interface ComicSearchResult {
+  id: string
+  name: string
+  originalName?: string
+  releaseDate?: PartialDate
+  format?: LibraryComicFormat
+  externalIds: readonly ExternalId[]
+}
+
+export interface NovelSearchResult {
+  id: string
+  name: string
+  originalName?: string
+  releaseDate?: PartialDate
+  format?: LibraryNovelFormat
+  externalIds: readonly ExternalId[]
+}
+
 export interface PersonSearchResult {
   id: string
   name: string
@@ -447,6 +652,32 @@ export interface AnimeSessionResultMap {
   logos: string[]
 }
 
+export interface ComicSessionResultMap {
+  info: ScrapedComicInfo
+  tags: ScrapedTag[]
+  chapters: ScrapedComicChapter[]
+  characters: ScrapedComicCharacterFact[]
+  persons: ScrapedComicPersonFact[]
+  companies: ScrapedComicCompanyFact[]
+  relatedEntries: ScrapedRelatedEntryFact[]
+  covers: string[]
+  backdrops: string[]
+  logos: string[]
+}
+
+export interface NovelSessionResultMap {
+  info: ScrapedNovelInfo
+  tags: ScrapedTag[]
+  volumes: ScrapedNovelVolume[]
+  characters: ScrapedNovelCharacterFact[]
+  persons: ScrapedNovelPersonFact[]
+  companies: ScrapedNovelCompanyFact[]
+  relatedEntries: ScrapedRelatedEntryFact[]
+  covers: string[]
+  backdrops: string[]
+  logos: string[]
+}
+
 export interface PersonSessionResultMap {
   info: ScrapedPersonInfo
   tags: ScrapedTag[]
@@ -469,6 +700,10 @@ export interface CharacterSessionResultMap {
 export type GameScraperSession = BaseScraperSession<GameScraperSlot, GameSessionResultMap>
 
 export type AnimeScraperSession = BaseScraperSession<AnimeScraperSlot, AnimeSessionResultMap>
+
+export type ComicScraperSession = BaseScraperSession<ComicScraperSlot, ComicSessionResultMap>
+
+export type NovelScraperSession = BaseScraperSession<NovelScraperSlot, NovelSessionResultMap>
 
 export type PersonScraperSession = BaseScraperSession<PersonScraperSlot, PersonSessionResultMap>
 
@@ -509,6 +744,18 @@ export interface AnimeScraperProvider extends BaseScraperProvider<AnimeScraperSl
   openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<AnimeScraperSession>
 }
 
+export interface ComicScraperProvider extends BaseScraperProvider<ComicScraperSlot> {
+  search?(query: string, ctx: ScraperProviderContext): Promise<readonly ComicSearchResult[]>
+  resolve(lookup: ComicScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<ComicScraperSession>
+}
+
+export interface NovelScraperProvider extends BaseScraperProvider<NovelScraperSlot> {
+  search?(query: string, ctx: ScraperProviderContext): Promise<readonly NovelSearchResult[]>
+  resolve(lookup: NovelScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<NovelScraperSession>
+}
+
 export interface PersonScraperProvider extends BaseScraperProvider<PersonScraperSlot> {
   search?(query: string, ctx: ScraperProviderContext): Promise<readonly PersonSearchResult[]>
   resolve(lookup: ScraperLookup, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
@@ -539,6 +786,8 @@ export interface ScraperProviderRegistrationPoint<TProvider extends BaseScraperP
 export interface ScraperProviderRegistrar {
   readonly game: ScraperProviderRegistrationPoint<GameScraperProvider>
   readonly anime: ScraperProviderRegistrationPoint<AnimeScraperProvider>
+  readonly comic: ScraperProviderRegistrationPoint<ComicScraperProvider>
+  readonly novel: ScraperProviderRegistrationPoint<NovelScraperProvider>
   readonly person: ScraperProviderRegistrationPoint<PersonScraperProvider>
   readonly company: ScraperProviderRegistrationPoint<CompanyScraperProvider>
   readonly character: ScraperProviderRegistrationPoint<CharacterScraperProvider>

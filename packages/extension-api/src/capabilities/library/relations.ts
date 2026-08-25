@@ -34,8 +34,20 @@ export const LIBRARY_MEDIA_RELATION_TYPE_RULES: Record<
 > = {
   'game-game': SAME_TYPE_RELATION_TYPES,
   'anime-anime': SAME_TYPE_RELATION_TYPES,
+  'comic-comic': SAME_TYPE_RELATION_TYPES,
+  'novel-novel': SAME_TYPE_RELATION_TYPES,
   'game-anime': CROSS_TYPE_RELATION_TYPES,
-  'anime-game': CROSS_TYPE_RELATION_TYPES
+  'anime-game': CROSS_TYPE_RELATION_TYPES,
+  'game-comic': CROSS_TYPE_RELATION_TYPES,
+  'comic-game': CROSS_TYPE_RELATION_TYPES,
+  'game-novel': CROSS_TYPE_RELATION_TYPES,
+  'novel-game': CROSS_TYPE_RELATION_TYPES,
+  'anime-comic': CROSS_TYPE_RELATION_TYPES,
+  'comic-anime': CROSS_TYPE_RELATION_TYPES,
+  'anime-novel': CROSS_TYPE_RELATION_TYPES,
+  'novel-anime': CROSS_TYPE_RELATION_TYPES,
+  'comic-novel': CROSS_TYPE_RELATION_TYPES,
+  'novel-comic': CROSS_TYPE_RELATION_TYPES
 }
 
 /**

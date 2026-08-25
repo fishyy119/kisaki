@@ -13,6 +13,12 @@ import {
   assertValidLibraryCollectionCreateInput,
   assertValidLibraryCollectionPatch,
   assertValidLibraryCollectionQuery,
+  assertValidLibraryComicChapterCreateInput,
+  assertValidLibraryComicChapterQuery,
+  assertValidLibraryComicChapterReadStatePatch,
+  assertValidLibraryComicCreateInput,
+  assertValidLibraryComicPatch,
+  assertValidLibraryComicQuery,
   assertValidLibraryCompanyCreateInput,
   assertValidLibraryCompanyPatch,
   assertValidLibraryCompanyQuery,
@@ -23,6 +29,12 @@ import {
   assertValidLibraryPersonCreateInput,
   assertValidLibraryPersonPatch,
   assertValidLibraryPersonQuery,
+  assertValidLibraryNovelCreateInput,
+  assertValidLibraryNovelPatch,
+  assertValidLibraryNovelQuery,
+  assertValidLibraryNovelVolumeCreateInput,
+  assertValidLibraryNovelVolumeQuery,
+  assertValidLibraryNovelVolumeReadStatePatch,
   assertValidLibraryLinkCreateInput,
   assertValidLibraryLinkQuery,
   assertValidLibraryLinkSelector,
@@ -49,6 +61,10 @@ import {
   type LibraryCollectionCreateInput,
   type LibraryCollectionPatch,
   type LibraryCollectionQuery,
+  type LibraryComic,
+  type LibraryComicCreateInput,
+  type LibraryComicPatch,
+  type LibraryComicQuery,
   type LibraryCompany,
   type LibraryCompanyCreateInput,
   type LibraryCompanyPatch,
@@ -58,6 +74,10 @@ import {
   type LibraryGamePatch,
   type LibraryGameQuery,
   type LibraryGraphInput,
+  type LibraryNovel,
+  type LibraryNovelCreateInput,
+  type LibraryNovelPatch,
+  type LibraryNovelQuery,
   type LibraryPerson,
   type LibraryPersonCreateInput,
   type LibraryPersonPatch,
@@ -70,13 +90,18 @@ import {
 import type { DbService } from '@main/services/db'
 import type { ExtensionHostRpcClient } from '../../runtime'
 import { ExtensionLibraryAttachmentStore } from './attachments'
-import { ExtensionLibraryEntityStore, ExtensionLibraryEpisodeStore } from './entities'
+import {
+  ExtensionLibraryComicChapterStore,
+  ExtensionLibraryEntityStore,
+  ExtensionLibraryEpisodeStore,
+  ExtensionLibraryNovelVolumeStore
+} from './entities'
 import { ExtensionLibraryGraphManager } from './graph'
 import { ExtensionLibraryLinkStore } from './links'
 import { ExtensionLibraryMediaRelationStore } from './relations'
 
 type LibraryEntityNamespaceName =
-  'games' | 'animes' | 'characters' | 'persons' | 'companies' | 'collections' | 'tags'
+  'games' | 'animes' | 'comics' | 'novels' | 'characters' | 'persons' | 'companies' | 'collections' | 'tags'
 type LibraryEntityRpcMethod<
   TNamespace extends LibraryEntityNamespaceName,
   TAction extends 'get' | 'list' | 'create' | 'update' | 'remove'
@@ -115,6 +140,8 @@ export interface ExtensionLibraryCapabilityProviderOptions {
 export class ExtensionLibraryCapabilityProvider {
   readonly entities: ExtensionLibraryEntityStore
   readonly episodes: ExtensionLibraryEpisodeStore
+  readonly chapters: ExtensionLibraryComicChapterStore
+  readonly volumes: ExtensionLibraryNovelVolumeStore
   readonly links: ExtensionLibraryLinkStore
   readonly relations: ExtensionLibraryMediaRelationStore
   readonly attachments: ExtensionLibraryAttachmentStore
@@ -123,6 +150,8 @@ export class ExtensionLibraryCapabilityProvider {
   constructor(private readonly options: ExtensionLibraryCapabilityProviderOptions) {
     this.entities = new ExtensionLibraryEntityStore({ db: options.db })
     this.episodes = new ExtensionLibraryEpisodeStore({ db: options.db })
+    this.chapters = new ExtensionLibraryComicChapterStore({ db: options.db })
+    this.volumes = new ExtensionLibraryNovelVolumeStore({ db: options.db })
     this.links = new ExtensionLibraryLinkStore({ db: options.db })
     this.relations = new ExtensionLibraryMediaRelationStore({ db: options.db })
     this.attachments = new ExtensionLibraryAttachmentStore({
@@ -133,6 +162,8 @@ export class ExtensionLibraryCapabilityProvider {
       db: options.db,
       entities: this.entities,
       episodes: this.episodes,
+      chapters: this.chapters,
+      volumes: this.volumes,
       attachments: this.attachments,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
@@ -177,6 +208,60 @@ export class ExtensionLibraryCapabilityProvider {
           assertValidLibraryEntityId(episodeId, 'library.animes.episodes.patchWatchState id')
           assertValidLibraryAnimeEpisodeWatchStatePatch(patch)
           return { episode: this.episodes.patchWatchState(episodeId, patch) }
+        })
+    )
+
+    rpc.handleHostRequest(
+      'capabilities.library.comics.chapters.list',
+      async ({ runtimeHandle, query }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryComicChapterQuery(query)
+          return { items: this.chapters.list(query) }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.comics.chapters.create',
+      async ({ runtimeHandle, comicId, input }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryEntityId(comicId, 'library.comics.chapters.create comicId')
+          assertValidLibraryComicChapterCreateInput(input)
+          return { chapter: this.chapters.create(comicId, input) }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.comics.chapters.patchReadState',
+      async ({ runtimeHandle, chapterId, patch }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryEntityId(chapterId, 'library.comics.chapters.patchReadState id')
+          assertValidLibraryComicChapterReadStatePatch(patch)
+          return { chapter: this.chapters.patchReadState(chapterId, patch) }
+        })
+    )
+
+    rpc.handleHostRequest(
+      'capabilities.library.novels.volumes.list',
+      async ({ runtimeHandle, query }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryNovelVolumeQuery(query)
+          return { items: this.volumes.list(query) }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.novels.volumes.create',
+      async ({ runtimeHandle, novelId, input }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryEntityId(novelId, 'library.novels.volumes.create novelId')
+          assertValidLibraryNovelVolumeCreateInput(input)
+          return { volume: this.volumes.create(novelId, input) }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.novels.volumes.patchReadState',
+      async ({ runtimeHandle, volumeId, patch }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryEntityId(volumeId, 'library.novels.volumes.patchReadState id')
+          assertValidLibraryNovelVolumeReadStatePatch(patch)
+          return { volume: this.volumes.patchReadState(volumeId, patch) }
         })
     )
 
@@ -293,6 +378,20 @@ export class ExtensionLibraryCapabilityProvider {
       LibraryAnimeQuery
     >,
     LibraryEntityRpcDescriptor<
+      'comics',
+      LibraryComic,
+      LibraryComicCreateInput,
+      LibraryComicPatch,
+      LibraryComicQuery
+    >,
+    LibraryEntityRpcDescriptor<
+      'novels',
+      LibraryNovel,
+      LibraryNovelCreateInput,
+      LibraryNovelPatch,
+      LibraryNovelQuery
+    >,
+    LibraryEntityRpcDescriptor<
       'characters',
       LibraryCharacter,
       LibraryCharacterCreateInput,
@@ -352,6 +451,30 @@ export class ExtensionLibraryCapabilityProvider {
         assertQuery: assertValidLibraryAnimeQuery,
         assertCreate: assertValidLibraryAnimeCreateInput,
         assertPatch: assertValidLibraryAnimePatch
+      },
+      {
+        namespace: 'comics',
+        methods: createLibraryEntityRpcMethods('comics'),
+        get: (id) => this.entities.getComic(id),
+        list: (query) => this.entities.listComics(query),
+        create: (input) => this.entities.createComic(input),
+        update: (id, patch) => this.entities.updateComic(id, patch),
+        remove: (id) => this.entities.removeComic(id),
+        assertQuery: assertValidLibraryComicQuery,
+        assertCreate: assertValidLibraryComicCreateInput,
+        assertPatch: assertValidLibraryComicPatch
+      },
+      {
+        namespace: 'novels',
+        methods: createLibraryEntityRpcMethods('novels'),
+        get: (id) => this.entities.getNovel(id),
+        list: (query) => this.entities.listNovels(query),
+        create: (input) => this.entities.createNovel(input),
+        update: (id, patch) => this.entities.updateNovel(id, patch),
+        remove: (id) => this.entities.removeNovel(id),
+        assertQuery: assertValidLibraryNovelQuery,
+        assertCreate: assertValidLibraryNovelCreateInput,
+        assertPatch: assertValidLibraryNovelPatch
       },
       {
         namespace: 'characters',

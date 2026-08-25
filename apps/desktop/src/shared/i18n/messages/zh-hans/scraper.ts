@@ -66,6 +66,8 @@ export const scraper = {
       tags: '标签',
       seasons: '分季',
       episodes: '分集',
+      chapters: '单元',
+      volumes: '分卷',
       characters: '角色',
       persons: '人物',
       companies: '公司',

@@ -4,6 +4,8 @@ export const library = {
   entities: {
     game: '遊戲',
     anime: '動漫',
+    comic: '漫畫',
+    novel: '小說',
     character: '角色',
     person: '人物',
     company: '公司',
@@ -75,7 +77,19 @@ export const library = {
     lastWatchedAt: '最近觀看',
     relatedAnimes: '相關動漫',
     relatedEntries: '關聯條目',
-    relatedWorks: '相關作品'
+    relatedWorks: '相關作品',
+    relatedComics: '相關漫畫',
+    relatedNovels: '相關小說',
+    totalVolumes: '卷數',
+    totalChapters: '話數',
+    volumes: '卷',
+    chapters: '章節',
+    readingDirection: '閱讀方向',
+    read: '已讀',
+    readAt: '讀完時間',
+    readCount: '閱讀次數',
+    readDuration: '閱讀時長',
+    lastReadAt: '最後閱讀'
   },
 
   gameStatus: {
@@ -93,6 +107,22 @@ export const library = {
     completed: '已看完',
     onHold: '擱置',
     dropped: '棄番'
+  },
+
+  comicStatus: {
+    planned: '想讀',
+    reading: '在讀',
+    completed: '已讀完',
+    onHold: '擱置',
+    dropped: '棄坑'
+  },
+
+  novelStatus: {
+    planned: '想讀',
+    reading: '在讀',
+    completed: '已讀完',
+    onHold: '擱置',
+    dropped: '棄坑'
   },
 
   gender: {
@@ -164,6 +194,40 @@ export const library = {
       producer: '出品',
       distributor: '發行',
       other: '其他'
+    },
+    comicPerson: {
+      author: '作者',
+      originalCreator: '原作',
+      art: '作畫',
+      other: '其他'
+    },
+    comicCharacter: {
+      main: '主角',
+      supporting: '配角',
+      cameo: '客串',
+      other: '其他'
+    },
+    comicCompany: {
+      publisher: '出版社',
+      imprint: '文庫/雜誌',
+      other: '其他'
+    },
+    novelPerson: {
+      author: '作者',
+      illustrator: '插畫',
+      originalCreator: '原作',
+      other: '其他'
+    },
+    novelCharacter: {
+      main: '主角',
+      supporting: '配角',
+      cameo: '客串',
+      other: '其他'
+    },
+    novelCompany: {
+      publisher: '出版社',
+      imprint: '文庫',
+      other: '其他'
     }
   },
 
@@ -179,6 +243,28 @@ export const library = {
   animeEpisodeType: {
     regular: '正片',
     special: '特別篇'
+  },
+
+  comicFormat: {
+    manga: '日漫',
+    manhua: '國漫',
+    manhwa: '韓漫',
+    webtoon: '條漫',
+    doujinshi: '同人誌',
+    other: '其他'
+  },
+
+  novelFormat: {
+    lightNovel: '輕小說',
+    webNovel: '網路小說',
+    general: '一般小說',
+    other: '其他'
+  },
+
+  readingDirection: {
+    rtl: '從右到左',
+    ltr: '從左到右',
+    vertical: '縱向捲動'
   },
 
   mediaRelation: {
@@ -218,6 +304,8 @@ export const library = {
   counts: {
     game: ({ count }: { count: number }) => `${count} 款遊戲`,
     anime: ({ count }: { count: number }) => `${count} 部動漫`,
+    comic: ({ count }: { count: number }) => `${count} 部漫畫`,
+    novel: ({ count }: { count: number }) => `${count} 部小說`,
     character: ({ count }: { count: number }) => `${count} 個角色`,
     person: ({ count }: { count: number }) => `${count} 位人物`,
     company: ({ count }: { count: number }) => `${count} 家公司`,
@@ -404,16 +492,28 @@ export const library = {
     editAnimeCharacters: '編輯角色',
     editAnimePersons: '編輯製作人員',
     editAnimeCompanies: '編輯公司',
+    editComicCharacters: '編輯角色',
+    editComicPersons: '編輯創作者',
+    editComicCompanies: '編輯公司',
+    editNovelCharacters: '編輯角色',
+    editNovelPersons: '編輯創作者',
+    editNovelCompanies: '編輯公司',
     editGameCast: '編輯聲優陣容',
     editAnimeCast: '編輯聲優陣容',
     editCharacterGames: '編輯登場遊戲',
     editCharacterAnimes: '編輯出演動漫',
+    editCharacterComics: '編輯登場漫畫',
+    editCharacterNovels: '編輯登場小說',
     editCharacterPersons: '編輯相關人員',
     editPersonGames: '編輯參與遊戲',
     editPersonAnimes: '編輯參與動漫',
+    editPersonComics: '編輯參與漫畫',
+    editPersonNovels: '編輯參與小說',
     editPersonCharacters: '編輯配音角色',
     editCompanyGames: '編輯相關遊戲',
     editCompanyAnimes: '編輯相關動漫',
+    editCompanyComics: '編輯相關漫畫',
+    editCompanyNovels: '編輯相關小說',
     editCompanyRelations: '編輯公司關係',
     editCollectionEntities: '編輯合集內容',
 
@@ -447,6 +547,8 @@ export const library = {
     releaseDateYearDayWithoutMonth: '發行日期填寫了年份和日期時，必須同時填寫月份',
     totalEpisodesPlaceholder: '可留空',
     totalEpisodesInvalid: '總集數必須為非負整數',
+    totalVolumesInvalid: '總卷數必須為非負整數',
+    totalChaptersInvalid: '總話數必須為非負整數',
     totalSeasonsInvalid: '總季數必須為非負整數',
     endDateInvalidFormat: '完結日期格式不正確',
     endDateYearDayWithoutMonth: '完結日期填寫了年份和日期時，必須同時填寫月份',
@@ -511,6 +613,12 @@ export const library = {
       animeCover: '動漫封面圖，用於卡片和列表顯示',
       animeBackdrop: '詳情頁背景圖',
       animeLogo: '動漫標題標誌',
+      comicCover: '漫畫封面圖，用於卡片和列表顯示',
+      comicBackdrop: '詳情頁背景圖',
+      comicLogo: '漫畫標題標誌',
+      novelCover: '小說封面圖，用於卡片和列表顯示',
+      novelBackdrop: '詳情頁背景圖',
+      novelLogo: '小說標題標誌',
       characterPhoto: '角色照片，用於卡片和詳情顯示',
       personPhoto: '人物照片，用於卡片和詳情顯示',
       companyLogo: '公司標誌，用於卡片和詳情顯示'
@@ -619,6 +727,8 @@ export const library = {
     linkLabels: {
       game: '遊戲關聯',
       anime: '動漫關聯',
+      comic: '漫畫關聯',
+      novel: '小說關聯',
       character: '角色關聯',
       person: '人物關聯',
       company: '公司關聯',

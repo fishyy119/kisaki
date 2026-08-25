@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import type {
   LibraryGraphEdge,
+  LibraryGraphEpisodeNode,
   LibraryGraphNoteNode,
   LibraryGraphResultAction
 } from '@kisaki3/extension-api'
@@ -105,7 +106,7 @@ export function previewEpisodeEdge(
     return 'create'
   }
 
-  const existing = options.episodes.findMatch(mediaId, episodeEntry.node.input)
+  const existing = findExistingUnit(episodeEntry.node, mediaId, options)
   const action = existing ? 'update' : 'create'
   setOwnedNodeResult(draft, episodeEntry, action, existing?.id)
   if (existing) {
@@ -129,16 +130,52 @@ export function applyEpisodeEdge(
   }
 
   const mediaId = requireEntityId(state, edge.from.kind, edge.from.key)
-  const input = episodeEntry.node.input
-  const existing = options.episodes.findMatch(mediaId, input)
-  const episode = existing
-    ? options.episodes.update(existing.id, input)
-    : options.episodes.create(mediaId, input)
+  const existing = findExistingUnit(episodeEntry.node, mediaId, options)
+  const written = writeUnit(episodeEntry.node, mediaId, existing?.id, options)
   const action = existing ? 'update' : 'create'
 
-  setOwnedEntityId(state, 'episode', edge.to.key, episode.id)
-  setOwnedNodeResult(draft, episodeEntry, action, episode.id)
+  setOwnedEntityId(state, 'episode', edge.to.key, written.id)
+  setOwnedNodeResult(draft, episodeEntry, action, written.id)
   return action
+}
+
+/** Resolves an episode-kind node to its per-media-type unit row, if present. */
+function findExistingUnit(
+  node: LibraryGraphEpisodeNode,
+  mediaId: string,
+  options: ExecuteLibraryGraphOptions
+): { id: string } | null {
+  switch (node.mediaType) {
+    case 'anime':
+      return options.episodes.findMatch(mediaId, node.input)
+    case 'comic':
+      return options.chapters.findMatch(mediaId, node.input)
+    case 'novel':
+      return options.volumes.findMatch(mediaId, node.input)
+  }
+}
+
+/** Writes an episode-kind node through its per-media-type unit store. */
+function writeUnit(
+  node: LibraryGraphEpisodeNode,
+  mediaId: string,
+  existingId: string | undefined,
+  options: ExecuteLibraryGraphOptions
+): { id: string } {
+  switch (node.mediaType) {
+    case 'anime':
+      return existingId
+        ? options.episodes.update(existingId, node.input)
+        : options.episodes.create(mediaId, node.input)
+    case 'comic':
+      return existingId
+        ? options.chapters.update(existingId, node.input)
+        : options.chapters.create(mediaId, node.input)
+    case 'novel':
+      return existingId
+        ? options.volumes.update(existingId, node.input)
+        : options.volumes.create(mediaId, node.input)
+  }
 }
 
 export async function applyNoteEdge(

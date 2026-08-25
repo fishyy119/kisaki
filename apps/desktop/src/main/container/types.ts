@@ -30,6 +30,7 @@ import type { ProcessService } from '@main/services/process/service'
 import type { PlayerService } from '@main/services/player/service'
 import type { MediaFilesService } from '@main/services/media-files/service'
 import type { MediaInfoService } from '@main/services/media-info/service'
+import type { ReaderService } from '@main/services/reader/service'
 import type { ActivityService } from '@main/services/activity/service'
 import type { AttachmentService } from '@main/services/attachment/service'
 import type { ExtensionService } from '@main/services/extension/service'
@@ -73,6 +74,7 @@ export interface ServiceRegistry {
   ingest: IngestService
   scanner: ScannerService
   'media-files': MediaFilesService
+  reader: ReaderService
   activity: ActivityService
   attachment: AttachmentService
   command: CommandService

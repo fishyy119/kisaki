@@ -1,5 +1,7 @@
 export { applyAnimePlan } from './anime'
 export { applyCharacterPlan } from './character'
+export { applyComicPlan } from './comic'
 export { applyCompanyPlan } from './company'
 export { applyGamePlan } from './game'
+export { applyNovelPlan } from './novel'
 export { applyPersonPlan } from './person'

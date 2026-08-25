@@ -3,18 +3,28 @@ import type {
   AnimeCompanyRole,
   AnimePersonRole,
   CharacterPersonRole,
+  ComicCharacterRole,
+  ComicCompanyRole,
+  ComicPersonRole,
   GameCharacterRole,
   GameCompanyRole,
-  GamePersonRole
+  GamePersonRole,
+  NovelCharacterRole,
+  NovelCompanyRole,
+  NovelPersonRole
 } from '@shared/db'
 import type { ScrapedRelatedEntryFact } from '@shared/scraper'
 import type {
   AnimeEpisodeInfo,
+  ComicChapterInfo,
   CoreAnimeMetadata,
   CoreCharacterMetadata,
+  CoreComicMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
-  CorePersonMetadata
+  CoreNovelMetadata,
+  CorePersonMetadata,
+  NovelVolumeInfo
 } from '@shared/metadata'
 
 export interface IngestEntityNode<TCore> {
@@ -162,6 +172,114 @@ export interface IngestAnimeGraph {
   companies: IngestCompanyNode[]
   characters: IngestCharacterNode[]
   links: IngestAnimeGraphLinks
+  /** Media-relation facts pass through unresolved; persist resolves against the library. */
+  relatedEntries?: ScrapedRelatedEntryFact[]
+  media: {
+    coverUrl?: string
+    backdropUrl?: string
+    logoUrl?: string
+  }
+}
+
+export type IngestComicNode = IngestEntityNode<CoreComicMetadata>
+
+export interface IngestComicPersonLink extends IngestLinkBase {
+  comicIdentityKey: string
+  personIdentityKey: string
+  role: ComicPersonRole
+  orderInComic: number
+  orderInPerson: number
+}
+
+export interface IngestComicCompanyLink extends IngestLinkBase {
+  comicIdentityKey: string
+  companyIdentityKey: string
+  role: ComicCompanyRole
+  orderInComic: number
+  orderInCompany: number
+}
+
+export interface IngestComicCharacterLink extends IngestLinkBase {
+  comicIdentityKey: string
+  characterIdentityKey: string
+  role: ComicCharacterRole
+  orderInComic: number
+  orderInCharacter: number
+}
+
+/**
+ * Link rows a comic graph produces, keyed by the link table they populate.
+ * Print media carries no voice credits, so there is no cast table here.
+ */
+export interface IngestComicGraphLinks {
+  comicPerson: IngestComicPersonLink[]
+  comicCompany: IngestComicCompanyLink[]
+  comicCharacter: IngestComicCharacterLink[]
+  characterPerson: IngestCharacterPersonLink[]
+}
+
+export interface IngestComicGraph {
+  comic: IngestComicNode
+  /** Absent means the scrape could not answer units; an empty array means none exist. */
+  chapters?: ComicChapterInfo[]
+  persons: IngestPersonNode[]
+  companies: IngestCompanyNode[]
+  characters: IngestCharacterNode[]
+  links: IngestComicGraphLinks
+  /** Media-relation facts pass through unresolved; persist resolves against the library. */
+  relatedEntries?: ScrapedRelatedEntryFact[]
+  media: {
+    coverUrl?: string
+    backdropUrl?: string
+    logoUrl?: string
+  }
+}
+
+export type IngestNovelNode = IngestEntityNode<CoreNovelMetadata>
+
+export interface IngestNovelPersonLink extends IngestLinkBase {
+  novelIdentityKey: string
+  personIdentityKey: string
+  role: NovelPersonRole
+  orderInNovel: number
+  orderInPerson: number
+}
+
+export interface IngestNovelCompanyLink extends IngestLinkBase {
+  novelIdentityKey: string
+  companyIdentityKey: string
+  role: NovelCompanyRole
+  orderInNovel: number
+  orderInCompany: number
+}
+
+export interface IngestNovelCharacterLink extends IngestLinkBase {
+  novelIdentityKey: string
+  characterIdentityKey: string
+  role: NovelCharacterRole
+  orderInNovel: number
+  orderInCharacter: number
+}
+
+/**
+ * Link rows a novel graph produces, keyed by the link table they populate.
+ * Print media carries no voice credits, so there is no cast table here.
+ */
+export interface IngestNovelGraphLinks {
+  novelPerson: IngestNovelPersonLink[]
+  novelCompany: IngestNovelCompanyLink[]
+  novelCharacter: IngestNovelCharacterLink[]
+  characterPerson: IngestCharacterPersonLink[]
+}
+
+export interface IngestNovelGraph {
+  novel: IngestNovelNode
+  /** Absent means the scrape could not answer volumes; an empty array means none exist. */
+  volumes?: NovelVolumeInfo[]
+  persons: IngestPersonNode[]
+  companies: IngestCompanyNode[]
+  characters: IngestCharacterNode[]
+  links: IngestNovelGraphLinks
   /** Media-relation facts pass through unresolved; persist resolves against the library. */
   relatedEntries?: ScrapedRelatedEntryFact[]
   media: {

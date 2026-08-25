@@ -41,3 +41,43 @@ export interface AnimeExtraFileAttachParams {
   /** Explicit type; filename recognition guesses a new extra's type when omitted. */
   type?: AnimeExtraType
 }
+
+export interface ComicFileSyncParams {
+  comicId: string
+  /** Defaults to the comic's stored library directory. */
+  dirPath?: string
+}
+
+export interface ComicFileSyncResult {
+  chapterCount: number
+  fileCount: number
+  /** Files whose unit number could not be read from the file name. */
+  unrecognizedFiles: string[]
+}
+
+/** Attach one on-disk readable container to a comic unit as a user-owned file row. */
+export interface ComicChapterFileAttachParams {
+  chapterId: string
+  /** Absolute path; may live outside the comic's library directory. */
+  path: string
+}
+
+export interface NovelFileSyncParams {
+  novelId: string
+  /** Defaults to the novel's stored library directory. */
+  dirPath?: string
+}
+
+export interface NovelFileSyncResult {
+  volumeCount: number
+  fileCount: number
+  /** Files whose volume number could not be read from the file name. */
+  unrecognizedFiles: string[]
+}
+
+/** Attach one on-disk book file to a novel volume as a user-owned file row. */
+export interface NovelVolumeFileAttachParams {
+  volumeId: string
+  /** Absolute path; may live outside the novel's library directory. */
+  path: string
+}

@@ -1,6 +1,8 @@
 import type {
   AnimeScraperLookup,
+  ComicScraperLookup,
   GameScraperLookup,
+  NovelScraperLookup,
   ScraperLookup
 } from '../contributions/scraper-providers'
 
@@ -97,6 +99,30 @@ export interface IngestAddAnimeFromScraperResult {
   warnings?: readonly IngestWarning[]
 }
 
+export interface IngestAddComicFromScraperOptions {
+  comicDirPath?: string
+  targetCollectionId?: string
+}
+
+export interface IngestAddComicFromScraperResult {
+  comicId: string
+  isNew: boolean
+  existingReason?: IngestExistingReason
+  warnings?: readonly IngestWarning[]
+}
+
+export interface IngestAddNovelFromScraperOptions {
+  novelDirPath?: string
+  targetCollectionId?: string
+}
+
+export interface IngestAddNovelFromScraperResult {
+  novelId: string
+  isNew: boolean
+  existingReason?: IngestExistingReason
+  warnings?: readonly IngestWarning[]
+}
+
 export interface IngestUpdateResult {
   warnings?: readonly IngestWarning[]
 }
@@ -162,7 +188,53 @@ export interface IngestAnimeCapability {
   add: IngestAnimeAddCapability
 }
 
+export interface IngestComicAddCapability {
+  /** Runs the ingest inline and resolves with its result. */
+  fromScraper(
+    profileId: string,
+    lookup: ComicScraperLookup,
+    options?: IngestAddComicFromScraperOptions
+  ): Promise<IngestAddComicFromScraperResult>
+  /**
+   * Starts the ingest as a user-visible task run attributed to this extension
+   * and resolves as soon as the run exists.
+   */
+  startFromScraper(
+    profileId: string,
+    lookup: ComicScraperLookup,
+    options?: IngestAddComicFromScraperOptions
+  ): Promise<IngestTaskRunStart>
+}
+
+export interface IngestComicCapability {
+  add: IngestComicAddCapability
+}
+
+export interface IngestNovelAddCapability {
+  /** Runs the ingest inline and resolves with its result. */
+  fromScraper(
+    profileId: string,
+    lookup: NovelScraperLookup,
+    options?: IngestAddNovelFromScraperOptions
+  ): Promise<IngestAddNovelFromScraperResult>
+  /**
+   * Starts the ingest as a user-visible task run attributed to this extension
+   * and resolves as soon as the run exists.
+   */
+  startFromScraper(
+    profileId: string,
+    lookup: NovelScraperLookup,
+    options?: IngestAddNovelFromScraperOptions
+  ): Promise<IngestTaskRunStart>
+}
+
+export interface IngestNovelCapability {
+  add: IngestNovelAddCapability
+}
+
 export interface IngestCapability {
   game: IngestGameCapability
   anime: IngestAnimeCapability
+  comic: IngestComicCapability
+  novel: IngestNovelCapability
 }

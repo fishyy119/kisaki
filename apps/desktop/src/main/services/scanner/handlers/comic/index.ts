@@ -1,0 +1,1 @@
+export { ComicScannerHandler } from './handler'

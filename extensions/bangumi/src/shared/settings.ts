@@ -40,7 +40,7 @@ export type BangumiAutoSyncItem = 'create' | 'status' | 'score' | 'episodes'
 
 export type BangumiSyncDataItem = 'status' | 'score' | 'episodes'
 
-export type BangumiImportDataItem = 'status' | 'score' | 'tags'
+export type BangumiImportDataItem = 'status' | 'score' | 'tags' | 'unitProgress'
 
 export type BangumiAutomationKind = 'auth-refresh' | 'sync-changed' | 'sync-full-daily'
 

@@ -392,6 +392,21 @@ function createFullSyncPreviewChange(result: SyncItemResult): BangumiJobPreviewG
     })
   }
 
+  if (payload.vol_status !== undefined || payload.ept_status !== undefined) {
+    rows.push({
+      label: m().jobs.preview.unitProgress,
+      before: m().jobs.preview.unitProgressValue({
+        volumes: remote?.vol_status ?? 0,
+        chapters: remote?.ept_status ?? 0
+      }),
+      after: m().jobs.preview.unitProgressValue({
+        volumes: payload.vol_status ?? remote?.vol_status ?? 0,
+        chapters: payload.ept_status ?? remote?.ept_status ?? 0
+      }),
+      tone: remote ? 'info' : 'success'
+    })
+  }
+
   if (rows.length === 0) {
     return undefined
   }

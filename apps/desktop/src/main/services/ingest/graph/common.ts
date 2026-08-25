@@ -10,8 +10,10 @@ import {
 import type {
   CoreAnimeMetadata,
   CoreCharacterMetadata,
+  CoreComicMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
+  CoreNovelMetadata,
   CorePersonMetadata,
   Tag
 } from '@shared/metadata'
@@ -227,6 +229,43 @@ export function normalizeAnimeCore(raw: Partial<CoreAnimeMetadata>): CoreAnimeMe
     description: normalizeOptionalString(raw.description),
     format: raw.format,
     totalEpisodes: raw.totalEpisodes,
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
+    externalIds: mergeExternalIds(undefined, raw.externalIds),
+    tags: mergeTags(undefined, raw.tags)
+  }
+}
+
+export function normalizeComicCore(raw: Partial<CoreComicMetadata>): CoreComicMetadata | null {
+  const name = normalizeOptionalString(raw.name)
+  if (!name) return null
+
+  return {
+    name,
+    originalName: normalizeOptionalString(raw.originalName),
+    aliases: normalizeAliases(raw.aliases),
+    releaseDate: raw.releaseDate,
+    description: normalizeOptionalString(raw.description),
+    format: raw.format,
+    totalVolumes: raw.totalVolumes,
+    totalChapters: raw.totalChapters,
+    externalSites: mergeExternalSites(undefined, raw.externalSites),
+    externalIds: mergeExternalIds(undefined, raw.externalIds),
+    tags: mergeTags(undefined, raw.tags)
+  }
+}
+
+export function normalizeNovelCore(raw: Partial<CoreNovelMetadata>): CoreNovelMetadata | null {
+  const name = normalizeOptionalString(raw.name)
+  if (!name) return null
+
+  return {
+    name,
+    originalName: normalizeOptionalString(raw.originalName),
+    aliases: normalizeAliases(raw.aliases),
+    releaseDate: raw.releaseDate,
+    description: normalizeOptionalString(raw.description),
+    format: raw.format,
+    totalVolumes: raw.totalVolumes,
     externalSites: mergeExternalSites(undefined, raw.externalSites),
     externalIds: mergeExternalIds(undefined, raw.externalIds),
     tags: mergeTags(undefined, raw.tags)

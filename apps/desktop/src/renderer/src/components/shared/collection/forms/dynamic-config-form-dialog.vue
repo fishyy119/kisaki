@@ -63,6 +63,8 @@ interface EntityTypeConfig {
 const ENTITY_TYPE_CONFIG = computed<Record<ContentEntityType, EntityTypeConfig>>(() => ({
   game: { label: m.value.library.entities.game },
   anime: { label: m.value.library.entities.anime },
+  comic: { label: m.value.library.entities.comic },
+  novel: { label: m.value.library.entities.novel },
   character: { label: m.value.library.entities.character },
   person: { label: m.value.library.entities.person },
   company: { label: m.value.library.entities.company }

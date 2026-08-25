@@ -4,6 +4,8 @@ export const library = {
   entities: {
     game: 'ゲーム',
     anime: 'アニメ',
+    comic: 'マンガ',
+    novel: '小説',
     character: 'キャラクター',
     person: '人物',
     company: '会社',
@@ -75,7 +77,19 @@ export const library = {
     lastWatchedAt: '最終視聴',
     relatedAnimes: '関連アニメ',
     relatedEntries: '関連エントリー',
-    relatedWorks: '関連作品'
+    relatedWorks: '関連作品',
+    relatedComics: '関連マンガ',
+    relatedNovels: '関連小説',
+    totalVolumes: '巻数',
+    totalChapters: '話数',
+    volumes: '巻',
+    chapters: '章',
+    readingDirection: '読み方向',
+    read: '既読',
+    readAt: '読了日時',
+    readCount: '読了回数',
+    readDuration: '読書時間',
+    lastReadAt: '最終閲覧'
   },
 
   gameStatus: {
@@ -91,6 +105,22 @@ export const library = {
     planned: '見たい',
     watching: '視聴中',
     completed: '視聴済み',
+    onHold: '保留',
+    dropped: '中断'
+  },
+
+  comicStatus: {
+    planned: '読みたい',
+    reading: '読書中',
+    completed: '読了',
+    onHold: '保留',
+    dropped: '中断'
+  },
+
+  novelStatus: {
+    planned: '読みたい',
+    reading: '読書中',
+    completed: '読了',
     onHold: '保留',
     dropped: '中断'
   },
@@ -164,6 +194,40 @@ export const library = {
       producer: '製作',
       distributor: '配給',
       other: 'その他'
+    },
+    comicPerson: {
+      author: '作者',
+      originalCreator: '原作',
+      art: '作画',
+      other: 'その他'
+    },
+    comicCharacter: {
+      main: '主役',
+      supporting: '脇役',
+      cameo: 'カメオ',
+      other: 'その他'
+    },
+    comicCompany: {
+      publisher: '出版社',
+      imprint: 'レーベル/雑誌',
+      other: 'その他'
+    },
+    novelPerson: {
+      author: '作者',
+      illustrator: 'イラスト',
+      originalCreator: '原作',
+      other: 'その他'
+    },
+    novelCharacter: {
+      main: '主役',
+      supporting: '脇役',
+      cameo: 'カメオ',
+      other: 'その他'
+    },
+    novelCompany: {
+      publisher: '出版社',
+      imprint: 'レーベル',
+      other: 'その他'
     }
   },
 
@@ -179,6 +243,28 @@ export const library = {
   animeEpisodeType: {
     regular: '本編',
     special: 'スペシャル'
+  },
+
+  comicFormat: {
+    manga: 'マンガ',
+    manhua: '中国マンガ',
+    manhwa: '韓国マンガ',
+    webtoon: 'ウェブトゥーン',
+    doujinshi: '同人誌',
+    other: 'その他'
+  },
+
+  novelFormat: {
+    lightNovel: 'ライトノベル',
+    webNovel: 'ウェブ小説',
+    general: '一般小説',
+    other: 'その他'
+  },
+
+  readingDirection: {
+    rtl: '右から左',
+    ltr: '左から右',
+    vertical: '縦スクロール'
   },
 
   mediaRelation: {
@@ -218,6 +304,8 @@ export const library = {
   counts: {
     game: ({ count }: { count: number }) => `${count} 本のゲーム`,
     anime: ({ count }: { count: number }) => `${count} 本のアニメ`,
+    comic: ({ count }: { count: number }) => `${count} 作のマンガ`,
+    novel: ({ count }: { count: number }) => `${count} 作の小説`,
     character: ({ count }: { count: number }) => `${count} 体のキャラクター`,
     person: ({ count }: { count: number }) => `${count} 名の人物`,
     company: ({ count }: { count: number }) => `${count} 社`,
@@ -407,16 +495,28 @@ export const library = {
     editAnimeCharacters: 'キャラクターを編集',
     editAnimePersons: 'スタッフを編集',
     editAnimeCompanies: '会社を編集',
+    editComicCharacters: 'キャラクターを編集',
+    editComicPersons: '作者を編集',
+    editComicCompanies: '会社を編集',
+    editNovelCharacters: 'キャラクターを編集',
+    editNovelPersons: '作者を編集',
+    editNovelCompanies: '会社を編集',
     editGameCast: '声優陣を編集',
     editAnimeCast: '声優陣を編集',
     editCharacterGames: '登場ゲームを編集',
     editCharacterAnimes: '出演アニメを編集',
+    editCharacterComics: '登場マンガを編集',
+    editCharacterNovels: '登場小説を編集',
     editCharacterPersons: '関連スタッフを編集',
     editPersonGames: '参加ゲームを編集',
     editPersonAnimes: '参加アニメを編集',
+    editPersonComics: '参加マンガを編集',
+    editPersonNovels: '参加小説を編集',
     editPersonCharacters: '担当キャラクターを編集',
     editCompanyGames: '関連ゲームを編集',
     editCompanyAnimes: '関連アニメを編集',
+    editCompanyComics: '関連マンガを編集',
+    editCompanyNovels: '関連小説を編集',
     editCompanyRelations: '会社関係を編集',
     editCollectionEntities: 'コレクション内容を編集',
 
@@ -451,6 +551,8 @@ export const library = {
     releaseDateYearDayWithoutMonth: '発売日に年と日を入力する場合は、月も入力してください',
     totalEpisodesPlaceholder: '空欄可',
     totalEpisodesInvalid: '総話数は 0 以上の整数で入力してください',
+    totalVolumesInvalid: '総巻数は 0 以上の整数で入力してください',
+    totalChaptersInvalid: '総話数は 0 以上の整数で入力してください',
     totalSeasonsInvalid: 'シーズン数は 0 以上の整数で入力してください',
     endDateInvalidFormat: '放送終了日の形式が正しくありません',
     endDateYearDayWithoutMonth: '放送終了日に年と日を入力する場合は、月も入力してください',
@@ -517,6 +619,12 @@ export const library = {
       animeCover: 'カードやリストに表示されるアニメカバー画像',
       animeBackdrop: '詳細ページの背景画像',
       animeLogo: 'アニメタイトルのロゴ',
+      comicCover: 'カードやリストに表示されるマンガカバー画像',
+      comicBackdrop: '詳細ページの背景画像',
+      comicLogo: 'マンガタイトルのロゴ',
+      novelCover: 'カードやリストに表示される小説カバー画像',
+      novelBackdrop: '詳細ページの背景画像',
+      novelLogo: '小説タイトルのロゴ',
       characterPhoto: 'カードや詳細に表示されるキャラクター写真',
       personPhoto: 'カードや詳細に表示される人物写真',
       companyLogo: 'カードや詳細に表示される会社ロゴ'
@@ -634,6 +742,8 @@ export const library = {
     linkLabels: {
       game: 'ゲームの関連付け',
       anime: 'アニメの関連付け',
+      comic: 'マンガの関連付け',
+      novel: '小説の関連付け',
       character: 'キャラクターの関連付け',
       person: '人物の関連付け',
       company: '会社の関連付け',

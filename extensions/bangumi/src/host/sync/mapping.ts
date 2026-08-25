@@ -12,6 +12,8 @@ import { BANGUMI_WISH_COLLECTION_TYPE } from '../utils/constants'
 export interface SyncMappingOptions {
   playStatusEnabled: boolean
   scoreEnabled: boolean
+  /** Gates unit-progress counts the same way episode sync is gated. */
+  unitProgressEnabled: boolean
   clearRemoteScoreWhenEmpty: boolean
   statusToBangumi: BangumiStatusToBangumiMapping
 }
@@ -36,6 +38,7 @@ export function createSyncMappingOptions(
   return {
     playStatusEnabled: overrides.playStatusEnabled ?? settings.autoSync.playStatusEnabled,
     scoreEnabled: overrides.scoreEnabled ?? settings.autoSync.scoreEnabled,
+    unitProgressEnabled: settings.autoSync.episodeStatusEnabled,
     clearRemoteScoreWhenEmpty:
       overrides.clearRemoteScoreWhenEmpty ?? settings.autoSync.clearRemoteScoreWhenEmpty,
     statusToBangumi: settings.autoSync.statusToBangumi
@@ -43,7 +46,7 @@ export function createSyncMappingOptions(
 }
 
 export function createSyncPayloadPlan(
-  item: Pick<LocalMediaItem, 'scope' | 'status' | 'score'>,
+  item: Pick<LocalMediaItem, 'scope' | 'status' | 'score' | 'unitProgress'>,
   options: SyncMappingOptions
 ): SyncPayloadPlan {
   const payload: BangumiCollectionPatch = {}
@@ -61,12 +64,27 @@ export function createSyncPayloadPlan(
     payload.rate = mappedRate
   }
 
+  // Positive counts only: pushing zero would wipe remote progress the first
+  // time an entry syncs before its local units are marked.
+  if (options.unitProgressEnabled && item.unitProgress) {
+    if (isPositiveCount(item.unitProgress.volumes)) {
+      payload.vol_status = item.unitProgress.volumes
+    }
+    if (isPositiveCount(item.unitProgress.chapters)) {
+      payload.ept_status = item.unitProgress.chapters
+    }
+  }
+
   return {
     payload,
     ...(mappedType !== undefined ? { mappedType } : {}),
     ...(mappedRate !== undefined ? { mappedRate } : {}),
     skippedByMapping: Object.keys(payload).length === 0
   }
+}
+
+function isPositiveCount(value: number | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
 
 export function mapMediaStatusToBangumiType(
@@ -87,7 +105,9 @@ function readStatusTable(
   statusToBangumi: BangumiStatusToBangumiMapping,
   scope: BangumiMediaScope
 ): Partial<Record<string, BangumiStatusMappingValue>> | undefined {
-  return scope === 'game' || scope === 'anime' ? statusToBangumi[scope] : undefined
+  return scope === 'game' || scope === 'anime' || scope === 'book'
+    ? statusToBangumi[scope]
+    : undefined
 }
 
 export function mapMediaScoreToBangumiRate(
@@ -128,7 +148,9 @@ export function normalizeBangumiRemoteRate(value: unknown): number | undefined {
 
 export function syncPayloadMatchesRemote(
   payload: BangumiCollectionPatch,
-  remote: { type?: BangumiCollectionType; rate?: number } | undefined
+  remote:
+    { type?: BangumiCollectionType; rate?: number; vol_status?: number; ept_status?: number }
+    | undefined
 ): boolean {
   if (!remote) {
     return false
@@ -148,5 +170,19 @@ export function syncPayloadMatchesRemote(
     }
   }
 
+  if (payload.vol_status !== undefined && normalizeUnitCount(remote.vol_status) !== payload.vol_status) {
+    return false
+  }
+
+  if (payload.ept_status !== undefined && normalizeUnitCount(remote.ept_status) !== payload.ept_status) {
+    return false
+  }
+
   return true
+}
+
+function normalizeUnitCount(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.trunc(value)
+    : undefined
 }

@@ -4,7 +4,7 @@
  * Time-related formatting functions are in datetime.ts
  */
 
-import type { AnimeStatus, GameStatus, Gender } from '@shared/db'
+import type { AnimeStatus, ComicStatus, GameStatus, Gender, NovelStatus } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
 import { messages } from '@renderer/core/i18n'
 
@@ -58,6 +58,55 @@ export function formatAnimeStatus(status: AnimeStatus): string {
  */
 export function getAnimeStatusVariant(status: AnimeStatus): StatusVariant {
   return ANIME_STATUS_VARIANTS[status] ?? 'secondary'
+}
+
+const COMIC_STATUS_VARIANTS: Record<ComicStatus, StatusVariant> = {
+  planned: 'secondary',
+  reading: 'default',
+  completed: 'success',
+  onHold: 'warning',
+  dropped: 'destructive'
+}
+
+const NOVEL_STATUS_VARIANTS: Record<NovelStatus, StatusVariant> = {
+  planned: 'secondary',
+  reading: 'default',
+  completed: 'success',
+  onHold: 'warning',
+  dropped: 'destructive'
+}
+
+/**
+ * Format comic read status to a localized label
+ */
+export function formatComicStatus(status: ComicStatus): string {
+  return messages.value.library.comicStatus[status]
+}
+
+/**
+ * Map comic read status to badge variant for UI display
+ */
+export function getComicStatusVariant(status: ComicStatus): StatusVariant {
+  return COMIC_STATUS_VARIANTS[status] ?? 'secondary'
+}
+
+/**
+ * Format novel read status to a localized label
+ */
+export function formatNovelStatus(status: NovelStatus): string {
+  return messages.value.library.novelStatus[status]
+}
+
+/**
+ * Map novel read status to badge variant for UI display
+ */
+export function getNovelStatusVariant(status: NovelStatus): StatusVariant {
+  return NOVEL_STATUS_VARIANTS[status] ?? 'secondary'
+}
+
+/** Format a volume or chapter number, keeping one decimal only for half numbers. */
+export function formatUnitNumber(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
 
 /** Format an episode number, keeping one decimal only for half-numbered episodes. */
@@ -179,6 +228,8 @@ export function getSpoilerDisplay(
 const ENTITY_ICONS: Record<AllEntityType, string> = {
   game: 'icon-[mdi--gamepad-variant-outline]',
   anime: 'icon-[mdi--television-classic]',
+  comic: 'icon-[mdi--book-open-page-variant-outline]',
+  novel: 'icon-[mdi--book-open-variant]',
   character: 'icon-[mdi--ghost-outline]',
   person: 'icon-[mdi--account-circle-outline]',
   company: 'icon-[mdi--company]',

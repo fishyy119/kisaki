@@ -66,6 +66,8 @@ export const scraper = {
       tags: 'タグ',
       seasons: 'シーズン',
       episodes: 'エピソード',
+      chapters: 'ユニット',
+      volumes: '巻',
       characters: 'キャラクター',
       persons: '人物',
       companies: '会社',

@@ -3,6 +3,7 @@ import type {
   CardActionContribution,
   CardActionRegistration,
   CharacterScraperProvider,
+  ComicScraperProvider,
   CompanyScraperProvider,
   CommandContribution,
   CommandRegistration,
@@ -25,6 +26,7 @@ import type {
   HookTapOptions,
   JsonValue,
   KisakiApi,
+  NovelScraperProvider,
   PersonScraperProvider,
   ScraperMediaType,
   ScraperProviderRegistration,
@@ -40,11 +42,15 @@ export type ScraperProviderFor<TMediaType extends ScraperMediaType> = TMediaType
   ? GameScraperProvider
   : TMediaType extends 'anime'
     ? AnimeScraperProvider
-    : TMediaType extends 'person'
-      ? PersonScraperProvider
-      : TMediaType extends 'company'
-        ? CompanyScraperProvider
-        : CharacterScraperProvider
+    : TMediaType extends 'comic'
+      ? ComicScraperProvider
+      : TMediaType extends 'novel'
+        ? NovelScraperProvider
+        : TMediaType extends 'person'
+          ? PersonScraperProvider
+          : TMediaType extends 'company'
+            ? CompanyScraperProvider
+            : CharacterScraperProvider
 
 /**
  * Identifies the extension runtime currently allowed to call SDK APIs.

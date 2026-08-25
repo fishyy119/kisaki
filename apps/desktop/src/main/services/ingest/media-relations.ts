@@ -20,8 +20,10 @@ import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import type { ScrapedRelatedEntryFact } from '@shared/scraper'
 import {
   animeExternalIdLink,
+  comicExternalIdLink,
   findExternalIdOwners,
   gameExternalIdLink,
+  novelExternalIdLink,
   type DbContext,
   type ExternalIdLinkTable
 } from '@main/services/db'
@@ -30,7 +32,9 @@ import { normalizeOptionalString } from './update/shared/normalization'
 
 const EXTERNAL_ID_LINK_BY_MEDIA_TYPE: Record<MediaType, ExternalIdLinkTable> = {
   game: gameExternalIdLink,
-  anime: animeExternalIdLink
+  anime: animeExternalIdLink,
+  comic: comicExternalIdLink,
+  novel: novelExternalIdLink
 }
 
 interface ResolvedRelationRow {

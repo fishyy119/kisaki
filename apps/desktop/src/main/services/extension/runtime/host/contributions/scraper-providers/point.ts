@@ -7,12 +7,18 @@ import {
   type CharacterScraperProvider,
   type CharacterScraperSession,
   type CharacterScraperSlot,
+  type ComicScraperProvider,
+  type ComicScraperSession,
+  type ComicScraperSlot,
   type CompanyScraperProvider,
   type CompanyScraperSession,
   type CompanyScraperSlot,
   type GameScraperProvider,
   type GameScraperSession,
   type GameScraperSlot,
+  type NovelScraperProvider,
+  type NovelScraperSession,
+  type NovelScraperSlot,
   type PersonScraperProvider,
   type PersonScraperSession,
   type PersonScraperSlot,
@@ -33,12 +39,18 @@ import {
   validateCharacterScraperProviderShape,
   validateCharacterScraperSearchResults,
   validateCharacterScraperSessionResults,
+  validateComicScraperProviderShape,
+  validateComicScraperSearchResults,
+  validateComicScraperSessionResults,
   validateCompanyScraperProviderShape,
   validateCompanyScraperSearchResults,
   validateCompanyScraperSessionResults,
   validateGameScraperProviderShape,
   validateGameScraperSearchResults,
   validateGameScraperSessionResults,
+  validateNovelScraperProviderShape,
+  validateNovelScraperSearchResults,
+  validateNovelScraperSessionResults,
   validatePersonScraperProviderShape,
   validatePersonScraperSearchResults,
   validatePersonScraperSessionResults,
@@ -62,16 +74,22 @@ type ScraperProviderInput<TMediaType extends ScraperMediaType> = TMediaType exte
   ? GameScraperProvider
   : TMediaType extends 'anime'
     ? AnimeScraperProvider
-    : TMediaType extends 'person'
-      ? PersonScraperProvider
-      : TMediaType extends 'company'
-        ? CompanyScraperProvider
-        : CharacterScraperProvider
+    : TMediaType extends 'comic'
+      ? ComicScraperProvider
+      : TMediaType extends 'novel'
+        ? NovelScraperProvider
+        : TMediaType extends 'person'
+          ? PersonScraperProvider
+          : TMediaType extends 'company'
+            ? CompanyScraperProvider
+            : CharacterScraperProvider
 
 export class HostScraperProviderContributionPoint {
   private readonly options: HostContributionDomainOptions
   private readonly gameSessions = new Map<string, ScraperSessionRecord<GameScraperSession>>()
   private readonly animeSessions = new Map<string, ScraperSessionRecord<AnimeScraperSession>>()
+  private readonly comicSessions = new Map<string, ScraperSessionRecord<ComicScraperSession>>()
+  private readonly novelSessions = new Map<string, ScraperSessionRecord<NovelScraperSession>>()
   private readonly personSessions = new Map<string, ScraperSessionRecord<PersonScraperSession>>()
   private readonly companySessions = new Map<string, ScraperSessionRecord<CompanyScraperSession>>()
   private readonly characterSessions = new Map<
@@ -89,6 +107,18 @@ export class HostScraperProviderContributionPoint {
     AnimeScraperSlot,
     AnimeScraperSession,
     AnimeScraperProvider
+  >
+  private readonly comicDomain: ScraperDomain<
+    'comic',
+    ComicScraperSlot,
+    ComicScraperSession,
+    ComicScraperProvider
+  >
+  private readonly novelDomain: ScraperDomain<
+    'novel',
+    NovelScraperSlot,
+    NovelScraperSession,
+    NovelScraperProvider
   >
   private readonly personDomain: ScraperDomain<
     'person',
@@ -164,6 +194,60 @@ export class HostScraperProviderContributionPoint {
         this.options.registry.registerScraperProvider(scope.extensionId, 'anime', provider),
       unregister: (scope, providerId) =>
         this.options.registry.unregisterScraperProvider(scope.extensionId, 'anime', providerId)
+    }
+    this.comicDomain = {
+      mediaType: 'comic',
+      label: 'Comic',
+      rpc: HOST_TO_MAIN_SCRAPER_RPC,
+      slots: SCRAPER_PROVIDER_SLOTS.comic,
+      sessions: this.comicSessions,
+      getProviders: (runtime) => runtime.scraperProviders.comic,
+      validate: validateComicScraperProviderShape,
+      validateSearchResults: validateComicScraperSearchResults,
+      validateResolvedTarget: validateScraperResolvedTarget,
+      validateSession: validateScraperSessionShape,
+      validateSessionResults: validateComicScraperSessionResults,
+      toRegistration: (scope, provider) => ({
+        runtimeHandle: scope.runtimeHandle,
+        mediaType: 'comic',
+        provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.comic)
+      }),
+      toUnregistration: (scope, providerId) => ({
+        runtimeHandle: scope.runtimeHandle,
+        mediaType: 'comic',
+        providerId
+      }),
+      register: (scope, provider) =>
+        this.options.registry.registerScraperProvider(scope.extensionId, 'comic', provider),
+      unregister: (scope, providerId) =>
+        this.options.registry.unregisterScraperProvider(scope.extensionId, 'comic', providerId)
+    }
+    this.novelDomain = {
+      mediaType: 'novel',
+      label: 'Novel',
+      rpc: HOST_TO_MAIN_SCRAPER_RPC,
+      slots: SCRAPER_PROVIDER_SLOTS.novel,
+      sessions: this.novelSessions,
+      getProviders: (runtime) => runtime.scraperProviders.novel,
+      validate: validateNovelScraperProviderShape,
+      validateSearchResults: validateNovelScraperSearchResults,
+      validateResolvedTarget: validateScraperResolvedTarget,
+      validateSession: validateScraperSessionShape,
+      validateSessionResults: validateNovelScraperSessionResults,
+      toRegistration: (scope, provider) => ({
+        runtimeHandle: scope.runtimeHandle,
+        mediaType: 'novel',
+        provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.novel)
+      }),
+      toUnregistration: (scope, providerId) => ({
+        runtimeHandle: scope.runtimeHandle,
+        mediaType: 'novel',
+        providerId
+      }),
+      register: (scope, provider) =>
+        this.options.registry.registerScraperProvider(scope.extensionId, 'novel', provider),
+      unregister: (scope, providerId) =>
+        this.options.registry.unregisterScraperProvider(scope.extensionId, 'novel', providerId)
     }
     this.personDomain = {
       mediaType: 'person',
@@ -265,6 +349,16 @@ export class HostScraperProviderContributionPoint {
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
+    mediaType: 'comic',
+    provider: ComicScraperProvider
+  ): ScraperProviderRegistration
+  registerScraperProvider(
+    scope: HostContributionScope,
+    mediaType: 'novel',
+    provider: NovelScraperProvider
+  ): ScraperProviderRegistration
+  registerScraperProvider(
+    scope: HostContributionScope,
     mediaType: 'person',
     provider: PersonScraperProvider
   ): ScraperProviderRegistration
@@ -284,6 +378,8 @@ export class HostScraperProviderContributionPoint {
     provider:
       | GameScraperProvider
       | AnimeScraperProvider
+      | ComicScraperProvider
+      | NovelScraperProvider
       | PersonScraperProvider
       | CompanyScraperProvider
       | CharacterScraperProvider
@@ -293,6 +389,10 @@ export class HostScraperProviderContributionPoint {
         return this.registerProvider(scope, provider as GameScraperProvider, this.gameDomain)
       case 'anime':
         return this.registerProvider(scope, provider as AnimeScraperProvider, this.animeDomain)
+      case 'comic':
+        return this.registerProvider(scope, provider as ComicScraperProvider, this.comicDomain)
+      case 'novel':
+        return this.registerProvider(scope, provider as NovelScraperProvider, this.novelDomain)
       case 'person':
         return this.registerProvider(scope, provider as PersonScraperProvider, this.personDomain)
       case 'company':
@@ -315,6 +415,10 @@ export class HostScraperProviderContributionPoint {
         return this.searchProvider(this.gameDomain, request, signal)
       case 'anime':
         return this.searchProvider(this.animeDomain, request, signal)
+      case 'comic':
+        return this.searchProvider(this.comicDomain, request, signal)
+      case 'novel':
+        return this.searchProvider(this.novelDomain, request, signal)
       case 'person':
         return this.searchProvider(this.personDomain, request, signal)
       case 'company':
@@ -333,6 +437,10 @@ export class HostScraperProviderContributionPoint {
         return this.resolveProvider(this.gameDomain, request, signal)
       case 'anime':
         return this.resolveProvider(this.animeDomain, request, signal)
+      case 'comic':
+        return this.resolveProvider(this.comicDomain, request, signal)
+      case 'novel':
+        return this.resolveProvider(this.novelDomain, request, signal)
       case 'person':
         return this.resolveProvider(this.personDomain, request, signal)
       case 'company':
@@ -351,6 +459,10 @@ export class HostScraperProviderContributionPoint {
         return this.openProviderSession(this.gameDomain, request, signal)
       case 'anime':
         return this.openProviderSession(this.animeDomain, request, signal)
+      case 'comic':
+        return this.openProviderSession(this.comicDomain, request, signal)
+      case 'novel':
+        return this.openProviderSession(this.novelDomain, request, signal)
       case 'person':
         return this.openProviderSession(this.personDomain, request, signal)
       case 'company':
@@ -369,6 +481,10 @@ export class HostScraperProviderContributionPoint {
         return this.getProviderSession(this.gameDomain, request, signal)
       case 'anime':
         return this.getProviderSession(this.animeDomain, request, signal)
+      case 'comic':
+        return this.getProviderSession(this.comicDomain, request, signal)
+      case 'novel':
+        return this.getProviderSession(this.novelDomain, request, signal)
       case 'person':
         return this.getProviderSession(this.personDomain, request, signal)
       case 'company':
@@ -386,6 +502,12 @@ export class HostScraperProviderContributionPoint {
       case 'anime':
         await this.closeProviderSession(this.animeDomain, request)
         return
+      case 'comic':
+        await this.closeProviderSession(this.comicDomain, request)
+        return
+      case 'novel':
+        await this.closeProviderSession(this.novelDomain, request)
+        return
       case 'person':
         await this.closeProviderSession(this.personDomain, request)
         return
@@ -402,6 +524,8 @@ export class HostScraperProviderContributionPoint {
     await Promise.all([
       this.closeRuntimeSessions(this.gameSessions, runtimeHandle, 'Game'),
       this.closeRuntimeSessions(this.animeSessions, runtimeHandle, 'Anime'),
+      this.closeRuntimeSessions(this.comicSessions, runtimeHandle, 'Comic'),
+      this.closeRuntimeSessions(this.novelSessions, runtimeHandle, 'Novel'),
       this.closeRuntimeSessions(this.personSessions, runtimeHandle, 'Person'),
       this.closeRuntimeSessions(this.companySessions, runtimeHandle, 'Company'),
       this.closeRuntimeSessions(this.characterSessions, runtimeHandle, 'Character')
@@ -412,6 +536,8 @@ export class HostScraperProviderContributionPoint {
     await Promise.all([
       this.closeAllSessions(this.gameSessions, 'Game'),
       this.closeAllSessions(this.animeSessions, 'Anime'),
+      this.closeAllSessions(this.comicSessions, 'Comic'),
+      this.closeAllSessions(this.novelSessions, 'Novel'),
       this.closeAllSessions(this.personSessions, 'Person'),
       this.closeAllSessions(this.companySessions, 'Company'),
       this.closeAllSessions(this.characterSessions, 'Character')

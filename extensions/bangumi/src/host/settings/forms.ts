@@ -80,7 +80,8 @@ export function toImportCollectionsArgs(args: BangumiImportCollectionsFormArgs):
     fields: {
       status: args.dataItems.includes('status'),
       score: args.dataItems.includes('score'),
-      tags: args.dataItems.includes('tags')
+      tags: args.dataItems.includes('tags'),
+      unitProgress: args.dataItems.includes('unitProgress')
     },
     patchExisting: args.patchExisting,
     targetCollection: args.targetCollectionId

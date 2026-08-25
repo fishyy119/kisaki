@@ -4,9 +4,15 @@ import type {
   LibraryAnimeCompanyRole,
   LibraryAnimePersonRole,
   LibraryCharacterPersonRole,
+  LibraryComicCharacterRole,
+  LibraryComicCompanyRole,
+  LibraryComicPersonRole,
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
-  LibraryGamePersonRole
+  LibraryGamePersonRole,
+  LibraryNovelCharacterRole,
+  LibraryNovelCompanyRole,
+  LibraryNovelPersonRole
 } from '../../shared/library'
 
 /**
@@ -23,14 +29,24 @@ export const LIBRARY_LINK_KINDS = [
   'anime-person',
   'anime-company',
   'anime-character',
+  'comic-person',
+  'comic-company',
+  'comic-character',
+  'novel-person',
+  'novel-company',
+  'novel-character',
   'character-person',
   'game-tag',
   'anime-tag',
+  'comic-tag',
+  'novel-tag',
   'character-tag',
   'person-tag',
   'company-tag',
   'collection-game',
   'collection-anime',
+  'collection-comic',
+  'collection-novel',
   'collection-character',
   'collection-person',
   'collection-company'
@@ -71,6 +87,30 @@ export interface AnimeCharacterLinkMetadata extends LibrarySpoilerLinkMetadata {
   role: LibraryAnimeCharacterRole
 }
 
+export interface ComicPersonLinkMetadata extends LibrarySpoilerLinkMetadata {
+  role: LibraryComicPersonRole
+}
+
+export interface ComicCompanyLinkMetadata extends LibrarySpoilerLinkMetadata {
+  role: LibraryComicCompanyRole
+}
+
+export interface ComicCharacterLinkMetadata extends LibrarySpoilerLinkMetadata {
+  role: LibraryComicCharacterRole
+}
+
+export interface NovelPersonLinkMetadata extends LibrarySpoilerLinkMetadata {
+  role: LibraryNovelPersonRole
+}
+
+export interface NovelCompanyLinkMetadata extends LibrarySpoilerLinkMetadata {
+  role: LibraryNovelCompanyRole
+}
+
+export interface NovelCharacterLinkMetadata extends LibrarySpoilerLinkMetadata {
+  role: LibraryNovelCharacterRole
+}
+
 export interface CharacterPersonLinkMetadata extends LibrarySpoilerLinkMetadata {
   role: LibraryCharacterPersonRole
 }
@@ -86,14 +126,24 @@ export interface LibraryLinkMetadataMap {
   'anime-person': AnimePersonLinkMetadata
   'anime-company': AnimeCompanyLinkMetadata
   'anime-character': AnimeCharacterLinkMetadata
+  'comic-person': ComicPersonLinkMetadata
+  'comic-company': ComicCompanyLinkMetadata
+  'comic-character': ComicCharacterLinkMetadata
+  'novel-person': NovelPersonLinkMetadata
+  'novel-company': NovelCompanyLinkMetadata
+  'novel-character': NovelCharacterLinkMetadata
   'character-person': CharacterPersonLinkMetadata
   'game-tag': TagMembershipMetadata
   'anime-tag': TagMembershipMetadata
+  'comic-tag': TagMembershipMetadata
+  'novel-tag': TagMembershipMetadata
   'character-tag': TagMembershipMetadata
   'person-tag': TagMembershipMetadata
   'company-tag': TagMembershipMetadata
   'collection-game': CollectionMembershipMetadata
   'collection-anime': CollectionMembershipMetadata
+  'collection-comic': CollectionMembershipMetadata
+  'collection-novel': CollectionMembershipMetadata
   'collection-character': CollectionMembershipMetadata
   'collection-person': CollectionMembershipMetadata
   'collection-company': CollectionMembershipMetadata
@@ -106,14 +156,24 @@ export interface LibraryLinkEndpointMap {
   'anime-person': { from: 'anime'; to: 'person' }
   'anime-company': { from: 'anime'; to: 'company' }
   'anime-character': { from: 'anime'; to: 'character' }
+  'comic-person': { from: 'comic'; to: 'person' }
+  'comic-company': { from: 'comic'; to: 'company' }
+  'comic-character': { from: 'comic'; to: 'character' }
+  'novel-person': { from: 'novel'; to: 'person' }
+  'novel-company': { from: 'novel'; to: 'company' }
+  'novel-character': { from: 'novel'; to: 'character' }
   'character-person': { from: 'character'; to: 'person' }
   'game-tag': { from: 'game'; to: 'tag' }
   'anime-tag': { from: 'anime'; to: 'tag' }
+  'comic-tag': { from: 'comic'; to: 'tag' }
+  'novel-tag': { from: 'novel'; to: 'tag' }
   'character-tag': { from: 'character'; to: 'tag' }
   'person-tag': { from: 'person'; to: 'tag' }
   'company-tag': { from: 'company'; to: 'tag' }
   'collection-game': { from: 'collection'; to: 'game' }
   'collection-anime': { from: 'collection'; to: 'anime' }
+  'collection-comic': { from: 'collection'; to: 'comic' }
+  'collection-novel': { from: 'collection'; to: 'novel' }
   'collection-character': { from: 'collection'; to: 'character' }
   'collection-person': { from: 'collection'; to: 'person' }
   'collection-company': { from: 'collection'; to: 'company' }

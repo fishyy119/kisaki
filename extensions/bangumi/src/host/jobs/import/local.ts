@@ -6,7 +6,8 @@ import type {
   LocalCollectionTarget,
   LocalMediaAdapter,
   LocalMediaItem,
-  LocalMediaUserPatch
+  LocalMediaUserPatch,
+  LocalUnitProgress
 } from '../../media/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 import { BangumiExtensionError } from '../../utils/errors'
@@ -132,6 +133,10 @@ export async function applyCollectionLocalUpdatePlan({
     await executor.patchUserFields(scope, item.localId, plan.patch)
   }
 
+  if (plan.unitProgress) {
+    await executor.applyUnitProgress(scope, item.localId, plan.unitProgress)
+  }
+
   for (const tagName of plan.tagNames) {
     await executor.ensureTag(scope, item.localId, tagName)
   }
@@ -201,6 +206,19 @@ export async function buildCollectionLocalUpdatePlan({
     }
   }
 
+  const unitProgress =
+    fields.unitProgress && adapter.applyUnitProgress
+      ? planUnitProgressAdoption(item, collection)
+      : undefined
+  if (unitProgress) {
+    rows.push({
+      label: m().jobs.preview.unitProgress,
+      before: formatUnitProgress(item.unitProgress),
+      after: formatUnitProgress(mergeUnitProgress(item.unitProgress, unitProgress)),
+      tone: 'info'
+    })
+  }
+
   const hasTargetCollectionRelation = targetCollection
     ? ((await adapter.hasCollectionMembership?.(item.localId, targetCollection)) ?? false)
     : false
@@ -218,7 +236,49 @@ export async function buildCollectionLocalUpdatePlan({
     patch,
     tagNames,
     targetCollection: resolvedTargetCollection,
+    unitProgress,
     rows
+  })
+}
+
+/**
+ * Remote unit counts worth adopting: only the dimensions where Bangumi is
+ * ahead of the local read state, so imports never regress local progress.
+ */
+function planUnitProgressAdoption(
+  item: LocalMediaItem,
+  collection: BangumiUserCollection
+): LocalUnitProgress | undefined {
+  const remoteVolumes = normalizePositiveInteger(collection.vol_status)
+  const remoteChapters = normalizePositiveInteger(collection.ept_status)
+  const localVolumes = item.unitProgress?.volumes ?? 0
+  const localChapters = item.unitProgress?.chapters ?? 0
+
+  const progress: LocalUnitProgress = {}
+  if (remoteVolumes !== undefined && remoteVolumes > localVolumes) {
+    progress.volumes = remoteVolumes
+  }
+  if (remoteChapters !== undefined && remoteChapters > localChapters) {
+    progress.chapters = remoteChapters
+  }
+
+  return progress.volumes !== undefined || progress.chapters !== undefined ? progress : undefined
+}
+
+function mergeUnitProgress(
+  current: LocalUnitProgress | undefined,
+  adopted: LocalUnitProgress
+): LocalUnitProgress {
+  return {
+    volumes: adopted.volumes ?? current?.volumes ?? 0,
+    chapters: adopted.chapters ?? current?.chapters ?? 0
+  }
+}
+
+function formatUnitProgress(progress: LocalUnitProgress | undefined): string {
+  return m().jobs.preview.unitProgressValue({
+    volumes: progress?.volumes ?? 0,
+    chapters: progress?.chapters ?? 0
   })
 }
 
@@ -227,6 +287,7 @@ export function hasCollectionLocalChanges(plan: CollectionLocalUpdatePlan): bool
     Object.keys(plan.patch).length > 0 ||
     plan.tagNames.length > 0 ||
     plan.targetCollection !== undefined ||
+    plan.unitProgress !== undefined ||
     plan.rows.length > 0
   )
 }
@@ -277,6 +338,24 @@ export function formatLocalStatus(scope: BangumiMediaScope, value: string | unde
     }
   }
 
+  if (scope === 'book') {
+    const labels = m().jobs.bookStatus
+    switch (value) {
+      case 'planned':
+        return labels.planned
+      case 'reading':
+        return labels.reading
+      case 'completed':
+        return labels.completed
+      case 'onHold':
+        return labels.onHold
+      case 'dropped':
+        return labels.dropped
+      default:
+        return labels.unset
+    }
+  }
+
   const labels = m().jobs.gameStatus
   switch (value) {
     case 'notStarted':
@@ -312,12 +391,25 @@ const ANIME_STATUS_BY_COLLECTION_TYPE: Record<BangumiCollectionType, string> = {
   5: 'dropped'
 }
 
+const BOOK_STATUS_BY_COLLECTION_TYPE: Record<BangumiCollectionType, string> = {
+  1: 'planned',
+  2: 'completed',
+  3: 'reading',
+  4: 'onHold',
+  5: 'dropped'
+}
+
 export function mapCollectionTypeToLocalStatus(
   scope: BangumiMediaScope,
   type: BangumiCollectionType
 ): string {
-  const table = scope === 'anime' ? ANIME_STATUS_BY_COLLECTION_TYPE : GAME_STATUS_BY_COLLECTION_TYPE
-  return table[type]
+  if (scope === 'anime') {
+    return ANIME_STATUS_BY_COLLECTION_TYPE[type]
+  }
+  if (scope === 'book') {
+    return BOOK_STATUS_BY_COLLECTION_TYPE[type]
+  }
+  return GAME_STATUS_BY_COLLECTION_TYPE[type]
 }
 
 function normalizeBangumiRate(value: unknown): number | undefined {

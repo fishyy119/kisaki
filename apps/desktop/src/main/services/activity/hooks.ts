@@ -55,6 +55,28 @@ export interface AnimeWatchEndedPayload {
   watchTimeSeconds: number
 }
 
+export interface ComicReadStartedPayload {
+  comicId: string
+  chapterId: string
+}
+
+export interface ComicReadEndedPayload {
+  comicId: string
+  /** Total reading duration across the window's session, in seconds. */
+  readTimeSeconds: number
+}
+
+export interface NovelReadStartedPayload {
+  novelId: string
+  volumeId: string
+}
+
+export interface NovelReadEndedPayload {
+  novelId: string
+  /** Total reading duration across the window's session, in seconds. */
+  readTimeSeconds: number
+}
+
 export interface ActivityHooks {
   gameLaunching: WaterfallHook<GameLaunchConfig>
   gameSessionStarted: NotifyHook<GameSessionStartedPayload>
@@ -62,6 +84,10 @@ export interface ActivityHooks {
   gameSessionEnded: NotifyHook<GameSessionEndedPayload>
   animeWatchStarted: NotifyHook<AnimeWatchStartedPayload>
   animeWatchEnded: NotifyHook<AnimeWatchEndedPayload>
+  comicReadStarted: NotifyHook<ComicReadStartedPayload>
+  comicReadEnded: NotifyHook<ComicReadEndedPayload>
+  novelReadStarted: NotifyHook<NovelReadStartedPayload>
+  novelReadEnded: NotifyHook<NovelReadEndedPayload>
 }
 
 export function createActivityHooks(): ActivityHooks {
@@ -71,6 +97,10 @@ export function createActivityHooks(): ActivityHooks {
     gameSessionEnding: createWaterfallHook<GameSessionRecord>('play.game.session.ending'),
     gameSessionEnded: createNotifyHook<GameSessionEndedPayload>('play.game.session.ended'),
     animeWatchStarted: createNotifyHook<AnimeWatchStartedPayload>('play.anime.watch.started'),
-    animeWatchEnded: createNotifyHook<AnimeWatchEndedPayload>('play.anime.watch.ended')
+    animeWatchEnded: createNotifyHook<AnimeWatchEndedPayload>('play.anime.watch.ended'),
+    comicReadStarted: createNotifyHook<ComicReadStartedPayload>('play.comic.read.started'),
+    comicReadEnded: createNotifyHook<ComicReadEndedPayload>('play.comic.read.ended'),
+    novelReadStarted: createNotifyHook<NovelReadStartedPayload>('play.novel.read.started'),
+    novelReadEnded: createNotifyHook<NovelReadEndedPayload>('play.novel.read.ended')
   }
 }

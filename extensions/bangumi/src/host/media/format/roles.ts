@@ -3,9 +3,15 @@ import type {
   LibraryAnimeCompanyRole,
   LibraryAnimePersonRole,
   LibraryBloodType,
+  LibraryComicCharacterRole,
+  LibraryComicCompanyRole,
+  LibraryComicPersonRole,
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
+  LibraryNovelCharacterRole,
+  LibraryNovelCompanyRole,
+  LibraryNovelPersonRole,
   ScrapedTag
 } from '@kisaki3/extension-sdk'
 import type { BangumiBloodType, BangumiPersonCareer } from '../../api/types'
@@ -63,7 +69,10 @@ export function mapBangumiBloodType(
  * Character roles are identical across media in the library contract; the
  * intersection breaks loudly here if that ever stops being true.
  */
-export type BangumiCharacterRole = LibraryGameCharacterRole & LibraryAnimeCharacterRole
+export type BangumiCharacterRole = LibraryGameCharacterRole &
+  LibraryAnimeCharacterRole &
+  LibraryComicCharacterRole &
+  LibraryNovelCharacterRole
 
 export function mapBangumiCharacterRole(relation?: string): BangumiCharacterRole {
   const normalized = normalizeToken(relation)
@@ -455,6 +464,136 @@ export function mapBangumiAnimeCompanyRole(relation?: string): LibraryAnimeCompa
   }
 
   return 'other'
+}
+
+/**
+ * Comic staff credits.
+ *
+ * Bangumi credits book staff with wiki wording: 作者 covers the combined
+ * writer-artist credit, while split credits arrive as 原作 (story) plus
+ * 作画/插图 (art).
+ */
+export function mapBangumiComicPersonRole(
+  relation?: string,
+  careers: BangumiPersonCareer[] = []
+): LibraryComicPersonRole {
+  const normalized = normalizeToken(relation)
+
+  if (
+    normalized.includes('作画') ||
+    normalized.includes('作畫') ||
+    normalized.includes('插图') ||
+    normalized.includes('插圖') ||
+    normalized.includes('插画') ||
+    normalized.includes('插畫') ||
+    normalized.includes('illustrat') ||
+    normalized.includes('art')
+  ) {
+    return 'art'
+  }
+
+  if (normalized.includes('原作') || normalized.includes('原案')) {
+    return 'originalCreator'
+  }
+
+  if (
+    normalized.includes('作者') ||
+    normalized.includes('著者') ||
+    normalized.includes('author') ||
+    normalized.includes('脚本') ||
+    normalized.includes('剧本') ||
+    normalized.includes('劇本')
+  ) {
+    return 'author'
+  }
+
+  const normalizedCareers = new Set(careers.map((career) => normalizeToken(career)))
+  if (normalizedCareers.has('mangaka')) return 'author'
+  if (normalizedCareers.has('illustrator')) return 'art'
+  if (normalizedCareers.has('writer')) return 'author'
+
+  return 'other'
+}
+
+/** Novel staff credits: author first, then illustration, then provenance. */
+export function mapBangumiNovelPersonRole(
+  relation?: string,
+  careers: BangumiPersonCareer[] = []
+): LibraryNovelPersonRole {
+  const normalized = normalizeToken(relation)
+
+  if (
+    normalized.includes('插图') ||
+    normalized.includes('插圖') ||
+    normalized.includes('插画') ||
+    normalized.includes('插畫') ||
+    normalized.includes('作画') ||
+    normalized.includes('作畫') ||
+    normalized.includes('illustrat')
+  ) {
+    return 'illustrator'
+  }
+
+  if (normalized.includes('原作') || normalized.includes('原案')) {
+    return 'originalCreator'
+  }
+
+  if (
+    normalized.includes('作者') ||
+    normalized.includes('著者') ||
+    normalized.includes('author') ||
+    normalized.includes('脚本') ||
+    normalized.includes('剧本') ||
+    normalized.includes('劇本')
+  ) {
+    return 'author'
+  }
+
+  const normalizedCareers = new Set(careers.map((career) => normalizeToken(career)))
+  if (normalizedCareers.has('writer')) return 'author'
+  if (normalizedCareers.has('illustrator')) return 'illustrator'
+  if (normalizedCareers.has('mangaka')) return 'author'
+
+  return 'other'
+}
+
+/** Book company credits share one publisher/imprint vocabulary across comics and novels. */
+function mapBangumiBookCompanyRole(relation?: string): 'publisher' | 'imprint' | 'other' {
+  const normalized = normalizeToken(relation)
+  if (!normalized) return 'other'
+
+  if (
+    normalized.includes('文库') ||
+    normalized.includes('文庫') ||
+    normalized.includes('连载杂志') ||
+    normalized.includes('連載雜誌') ||
+    normalized.includes('杂志') ||
+    normalized.includes('雜誌') ||
+    normalized.includes('レーベル') ||
+    normalized.includes('imprint') ||
+    normalized.includes('label')
+  ) {
+    return 'imprint'
+  }
+
+  if (
+    normalized.includes('出版') ||
+    normalized.includes('发行') ||
+    normalized.includes('發行') ||
+    normalized.includes('publisher')
+  ) {
+    return 'publisher'
+  }
+
+  return 'other'
+}
+
+export function mapBangumiComicCompanyRole(relation?: string): LibraryComicCompanyRole {
+  return mapBangumiBookCompanyRole(relation)
+}
+
+export function mapBangumiNovelCompanyRole(relation?: string): LibraryNovelCompanyRole {
+  return mapBangumiBookCompanyRole(relation)
 }
 
 export function mapBangumiCareersToTags(careers: BangumiPersonCareer[] = []): ScrapedTag[] {

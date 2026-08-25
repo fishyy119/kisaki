@@ -1,7 +1,9 @@
 import {
   LIBRARY_ANIME_STATUSES,
+  LIBRARY_COMIC_STATUSES,
   LIBRARY_GAME_STATUSES,
   type LibraryAnimeStatus,
+  type LibraryComicStatus,
   type LibraryGameStatus
 } from '@kisaki3/extension-sdk'
 import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
@@ -10,10 +12,15 @@ import { BANGUMI_MEDIA_SCOPES, type BangumiMediaScope } from '../../shared/scope
 export type BangumiCollectionType = 1 | 2 | 3 | 4 | 5
 export type BangumiStatusMappingValue = BangumiCollectionType | 'skip'
 
-/** Local status to Bangumi collection type tables, one per status-bearing scope. */
+/**
+ * Local status to Bangumi collection type tables, one per status-bearing
+ * scope. Comics and novels share one reading-status vocabulary, so the book
+ * scope owns a single table for both.
+ */
 export interface BangumiStatusToBangumiMapping {
   game: Record<LibraryGameStatus, BangumiStatusMappingValue>
   anime: Record<LibraryAnimeStatus, BangumiStatusMappingValue>
+  book: Record<LibraryComicStatus, BangumiStatusMappingValue>
 }
 
 export interface BangumiSettingsV1 {
@@ -179,7 +186,8 @@ function normalizeStatusToBangumi(
 
   return {
     game: normalizeStatusTable(LIBRARY_GAME_STATUSES, asRecord(input?.game), defaults.game),
-    anime: normalizeStatusTable(LIBRARY_ANIME_STATUSES, asRecord(input?.anime), defaults.anime)
+    anime: normalizeStatusTable(LIBRARY_ANIME_STATUSES, asRecord(input?.anime), defaults.anime),
+    book: normalizeStatusTable(LIBRARY_COMIC_STATUSES, asRecord(input?.book), defaults.book)
   }
 }
 

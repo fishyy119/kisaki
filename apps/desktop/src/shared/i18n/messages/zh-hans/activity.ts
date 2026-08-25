@@ -13,6 +13,7 @@ export const activity = {
   stopRequestedTitle: '停止请求已发送',
   watchFailedTitle: '开始播放失败',
   watchStopFailedTitle: '停止播放失败',
+  readFailedTitle: '开始阅读失败',
 
   filePickerTitle: '选择启动文件',
   filePickerButton: '选择',
@@ -42,6 +43,15 @@ export const activity = {
     playerUnavailable: '视频播放器不可用',
     playerStartFailed: '启动视频播放器失败',
     notWatching: '当前没有正在播放的内容',
-    stopFailed: '停止视频播放器失败'
+    stopFailed: '停止视频播放器失败',
+    comicNotFound: '漫画不存在',
+    chapterNotFound: '单元不存在',
+    noReadableChapter: '还没有单元拥有可读取的文件',
+    noChapterFile: '该单元尚无可读取的文件',
+    novelNotFound: '小说不存在',
+    volumeNotFound: '卷不存在',
+    noReadableVolume: '还没有卷拥有可读取的文件',
+    noVolumeFile: '该卷尚无可读取的文件',
+    unsupportedContainer: '内置阅读器无法显示该文件格式'
   }
 } satisfies Messages['activity']

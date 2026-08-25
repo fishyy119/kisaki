@@ -10,10 +10,17 @@ import {
   characterTagLinks,
   collectionAnimeLinks,
   collectionCharacterLinks,
+  collectionComicLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionNovelLinks,
   collectionPersonLinks,
   collections,
+  comicCharacterLinks,
+  comicCompanyLinks,
+  comicPersonLinks,
+  comics,
+  comicTagLinks,
   companies,
   companyTagLinks,
   gameCastLinks,
@@ -22,6 +29,11 @@ import {
   gamePersonLinks,
   games,
   gameTagLinks,
+  novelCharacterLinks,
+  novelCompanyLinks,
+  novelPersonLinks,
+  novels,
+  novelTagLinks,
   persons,
   personTagLinks,
   tags
@@ -30,8 +42,10 @@ import type { AllEntityType } from '@shared/common'
 import {
   animeExternalIdLink,
   characterExternalIdLink,
+  comicExternalIdLink,
   companyExternalIdLink,
   gameExternalIdLink,
+  novelExternalIdLink,
   personExternalIdLink
 } from '../external-id'
 import type { EntityMergeConfig, ExternalIdMergeConfig, RelationMergeConfig } from './types'
@@ -46,6 +60,18 @@ const animeExternalIdConfig: ExternalIdMergeConfig = {
   link: animeExternalIdLink,
   entityIdField: 'animeId',
   orderField: 'orderInAnime'
+}
+
+const comicExternalIdConfig: ExternalIdMergeConfig = {
+  link: comicExternalIdLink,
+  entityIdField: 'comicId',
+  orderField: 'orderInComic'
+}
+
+const novelExternalIdConfig: ExternalIdMergeConfig = {
+  link: novelExternalIdLink,
+  entityIdField: 'novelId',
+  orderField: 'orderInNovel'
 }
 
 const personExternalIdConfig: ExternalIdMergeConfig = {
@@ -187,6 +213,108 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
       })
     ]
   },
+  comic: {
+    entityType: 'comic',
+    table: comics,
+    idColumn: comics.id,
+    externalIds: comicExternalIdConfig,
+    relations: [
+      relation({
+        table: comicPersonLinks,
+        mergeField: 'comicId',
+        mergeColumn: comicPersonLinks.comicId,
+        uniqueKeyFields: ['comicId', 'personId', 'role'],
+        orderField: 'orderInComic',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: comicCompanyLinks,
+        mergeField: 'comicId',
+        mergeColumn: comicCompanyLinks.comicId,
+        uniqueKeyFields: ['comicId', 'companyId', 'role'],
+        orderField: 'orderInComic',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: comicCharacterLinks,
+        mergeField: 'comicId',
+        mergeColumn: comicCharacterLinks.comicId,
+        uniqueKeyFields: ['comicId', 'characterId', 'role'],
+        orderField: 'orderInComic',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: comicTagLinks,
+        mergeField: 'comicId',
+        mergeColumn: comicTagLinks.comicId,
+        uniqueKeyFields: ['comicId', 'tagId'],
+        orderField: 'orderInComic',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: collectionComicLinks,
+        mergeField: 'comicId',
+        mergeColumn: collectionComicLinks.comicId,
+        uniqueKeyFields: ['collectionId', 'comicId'],
+        noteField: 'note'
+      })
+    ]
+  },
+  novel: {
+    entityType: 'novel',
+    table: novels,
+    idColumn: novels.id,
+    externalIds: novelExternalIdConfig,
+    relations: [
+      relation({
+        table: novelPersonLinks,
+        mergeField: 'novelId',
+        mergeColumn: novelPersonLinks.novelId,
+        uniqueKeyFields: ['novelId', 'personId', 'role'],
+        orderField: 'orderInNovel',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: novelCompanyLinks,
+        mergeField: 'novelId',
+        mergeColumn: novelCompanyLinks.novelId,
+        uniqueKeyFields: ['novelId', 'companyId', 'role'],
+        orderField: 'orderInNovel',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: novelCharacterLinks,
+        mergeField: 'novelId',
+        mergeColumn: novelCharacterLinks.novelId,
+        uniqueKeyFields: ['novelId', 'characterId', 'role'],
+        orderField: 'orderInNovel',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: novelTagLinks,
+        mergeField: 'novelId',
+        mergeColumn: novelTagLinks.novelId,
+        uniqueKeyFields: ['novelId', 'tagId'],
+        orderField: 'orderInNovel',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: collectionNovelLinks,
+        mergeField: 'novelId',
+        mergeColumn: collectionNovelLinks.novelId,
+        uniqueKeyFields: ['collectionId', 'novelId'],
+        noteField: 'note'
+      })
+    ]
+  },
   character: {
     entityType: 'character',
     table: characters,
@@ -207,6 +335,24 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         mergeField: 'characterId',
         mergeColumn: animeCharacterLinks.characterId,
         uniqueKeyFields: ['animeId', 'characterId', 'role'],
+        orderField: 'orderInCharacter',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: comicCharacterLinks,
+        mergeField: 'characterId',
+        mergeColumn: comicCharacterLinks.characterId,
+        uniqueKeyFields: ['comicId', 'characterId', 'role'],
+        orderField: 'orderInCharacter',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: novelCharacterLinks,
+        mergeField: 'characterId',
+        mergeColumn: novelCharacterLinks.characterId,
+        uniqueKeyFields: ['novelId', 'characterId', 'role'],
         orderField: 'orderInCharacter',
         spoilerField: 'isSpoiler',
         noteField: 'note'
@@ -277,6 +423,24 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         noteField: 'note'
       }),
       relation({
+        table: comicPersonLinks,
+        mergeField: 'personId',
+        mergeColumn: comicPersonLinks.personId,
+        uniqueKeyFields: ['comicId', 'personId', 'role'],
+        orderField: 'orderInPerson',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: novelPersonLinks,
+        mergeField: 'personId',
+        mergeColumn: novelPersonLinks.personId,
+        uniqueKeyFields: ['novelId', 'personId', 'role'],
+        orderField: 'orderInPerson',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
         table: gameCastLinks,
         mergeField: 'personId',
         mergeColumn: gameCastLinks.personId,
@@ -342,6 +506,24 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         noteField: 'note'
       }),
       relation({
+        table: comicCompanyLinks,
+        mergeField: 'companyId',
+        mergeColumn: comicCompanyLinks.companyId,
+        uniqueKeyFields: ['comicId', 'companyId', 'role'],
+        orderField: 'orderInCompany',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: novelCompanyLinks,
+        mergeField: 'companyId',
+        mergeColumn: novelCompanyLinks.companyId,
+        uniqueKeyFields: ['novelId', 'companyId', 'role'],
+        orderField: 'orderInCompany',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
         table: collectionCompanyLinks,
         mergeField: 'companyId',
         mergeColumn: collectionCompanyLinks.companyId,
@@ -377,6 +559,22 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         mergeField: 'collectionId',
         mergeColumn: collectionAnimeLinks.collectionId,
         uniqueKeyFields: ['collectionId', 'animeId'],
+        orderField: 'orderInCollection',
+        noteField: 'note'
+      }),
+      relation({
+        table: collectionComicLinks,
+        mergeField: 'collectionId',
+        mergeColumn: collectionComicLinks.collectionId,
+        uniqueKeyFields: ['collectionId', 'comicId'],
+        orderField: 'orderInCollection',
+        noteField: 'note'
+      }),
+      relation({
+        table: collectionNovelLinks,
+        mergeField: 'collectionId',
+        mergeColumn: collectionNovelLinks.collectionId,
+        uniqueKeyFields: ['collectionId', 'novelId'],
         orderField: 'orderInCollection',
         noteField: 'note'
       }),
@@ -425,6 +623,24 @@ export const ENTITY_MERGE_CONFIGS: Record<AllEntityType, EntityMergeConfig> = {
         mergeField: 'tagId',
         mergeColumn: animeTagLinks.tagId,
         uniqueKeyFields: ['animeId', 'tagId'],
+        orderField: 'orderInTag',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: comicTagLinks,
+        mergeField: 'tagId',
+        mergeColumn: comicTagLinks.tagId,
+        uniqueKeyFields: ['comicId', 'tagId'],
+        orderField: 'orderInTag',
+        spoilerField: 'isSpoiler',
+        noteField: 'note'
+      }),
+      relation({
+        table: novelTagLinks,
+        mergeField: 'tagId',
+        mergeColumn: novelTagLinks.tagId,
+        uniqueKeyFields: ['novelId', 'tagId'],
         orderField: 'orderInTag',
         spoilerField: 'isSpoiler',
         noteField: 'note'

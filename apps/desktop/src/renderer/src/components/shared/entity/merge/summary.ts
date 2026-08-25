@@ -15,6 +15,8 @@ import type { EntityMergeSummary } from './types'
 const SUB_TEXTS: { [T in AllEntityType]: (row: EntityRowMap[T]) => string } = {
   game: (row) => row.originalName || row.name,
   anime: (row) => row.originalName || row.name,
+  comic: (row) => row.originalName || row.name,
+  novel: (row) => row.originalName || row.name,
   character: (row) => row.originalName || row.name,
   person: (row) => row.originalName || row.name,
   company: (row) => row.originalName || row.name,

@@ -11,9 +11,15 @@ import {
   LIBRARY_ANIME_COMPANY_ROLES,
   LIBRARY_ANIME_PERSON_ROLES,
   LIBRARY_CHARACTER_PERSON_ROLES,
+  LIBRARY_COMIC_CHARACTER_ROLES,
+  LIBRARY_COMIC_COMPANY_ROLES,
+  LIBRARY_COMIC_PERSON_ROLES,
   LIBRARY_GAME_CHARACTER_ROLES,
   LIBRARY_GAME_COMPANY_ROLES,
-  LIBRARY_GAME_PERSON_ROLES
+  LIBRARY_GAME_PERSON_ROLES,
+  LIBRARY_NOVEL_CHARACTER_ROLES,
+  LIBRARY_NOVEL_COMPANY_ROLES,
+  LIBRARY_NOVEL_PERSON_ROLES
 } from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
@@ -37,6 +43,12 @@ const LINK_ENDPOINTS = {
   'anime-person': { from: 'anime', to: 'person', roleValues: LIBRARY_ANIME_PERSON_ROLES },
   'anime-company': { from: 'anime', to: 'company', roleValues: LIBRARY_ANIME_COMPANY_ROLES },
   'anime-character': { from: 'anime', to: 'character', roleValues: LIBRARY_ANIME_CHARACTER_ROLES },
+  'comic-person': { from: 'comic', to: 'person', roleValues: LIBRARY_COMIC_PERSON_ROLES },
+  'comic-company': { from: 'comic', to: 'company', roleValues: LIBRARY_COMIC_COMPANY_ROLES },
+  'comic-character': { from: 'comic', to: 'character', roleValues: LIBRARY_COMIC_CHARACTER_ROLES },
+  'novel-person': { from: 'novel', to: 'person', roleValues: LIBRARY_NOVEL_PERSON_ROLES },
+  'novel-company': { from: 'novel', to: 'company', roleValues: LIBRARY_NOVEL_COMPANY_ROLES },
+  'novel-character': { from: 'novel', to: 'character', roleValues: LIBRARY_NOVEL_CHARACTER_ROLES },
   'character-person': {
     from: 'character',
     to: 'person',
@@ -44,11 +56,15 @@ const LINK_ENDPOINTS = {
   },
   'game-tag': { from: 'game', to: 'tag', spoiler: true },
   'anime-tag': { from: 'anime', to: 'tag', spoiler: true },
+  'comic-tag': { from: 'comic', to: 'tag', spoiler: true },
+  'novel-tag': { from: 'novel', to: 'tag', spoiler: true },
   'character-tag': { from: 'character', to: 'tag', spoiler: true },
   'person-tag': { from: 'person', to: 'tag', spoiler: true },
   'company-tag': { from: 'company', to: 'tag', spoiler: true },
   'collection-game': { from: 'collection', to: 'game' },
   'collection-anime': { from: 'collection', to: 'anime' },
+  'collection-comic': { from: 'collection', to: 'comic' },
+  'collection-novel': { from: 'collection', to: 'novel' },
   'collection-character': { from: 'collection', to: 'character' },
   'collection-person': { from: 'collection', to: 'person' },
   'collection-company': { from: 'collection', to: 'company' }

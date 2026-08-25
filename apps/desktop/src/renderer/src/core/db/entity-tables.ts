@@ -20,15 +20,19 @@ import {
   animes,
   characters,
   collections,
+  comics,
   companies,
   games,
+  novels,
   persons,
   tags,
   type Anime,
   type Character,
   type Collection,
+  type Comic,
   type Company,
   type Game,
+  type Novel,
   type Person,
   type Tag
 } from '@shared/db'
@@ -37,6 +41,8 @@ import {
 export interface EntityRowMap {
   game: Game
   anime: Anime
+  comic: Comic
+  novel: Novel
   character: Character
   person: Person
   company: Company
@@ -66,6 +72,20 @@ export const ENTITY_TABLES = {
     idColumn: animes.id,
     nameColumn: animes.name,
     isNsfwColumn: animes.isNsfw
+  },
+  comic: {
+    table: comics,
+    tableName: getTableName(comics),
+    idColumn: comics.id,
+    nameColumn: comics.name,
+    isNsfwColumn: comics.isNsfw
+  },
+  novel: {
+    table: novels,
+    tableName: getTableName(novels),
+    idColumn: novels.id,
+    nameColumn: novels.name,
+    isNsfwColumn: novels.isNsfw
   },
   character: {
     table: characters,

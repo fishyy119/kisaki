@@ -6,7 +6,7 @@ import type {
   LibraryGraphResultAction,
   LibraryMediaType
 } from '@kisaki3/extension-api'
-import { animeEpisodes, animes, games } from '@shared/db'
+import { animeEpisodes, animes, comics, games, novels } from '@shared/db'
 import type { DbService } from '@main/services/db'
 import { persistEpisodeStill, persistSaveBackup, validateGraphFile } from '../attachments'
 import { createAttachmentPersistDiagnostic } from '../diagnostics'
@@ -293,6 +293,24 @@ function readMediaRow(
             },
             descriptionInlineFiles: row.descriptionInlineFiles ?? [],
             saveBackups: row.saveBackups ?? []
+          }
+        : undefined
+    }
+    case 'comic': {
+      const row = options.db.client.select().from(comics).where(eq(comics.id, mediaId)).get()
+      return row
+        ? {
+            files: { cover: row.coverFile, backdrop: row.backdropFile, logo: row.logoFile },
+            descriptionInlineFiles: row.descriptionInlineFiles ?? []
+          }
+        : undefined
+    }
+    case 'novel': {
+      const row = options.db.client.select().from(novels).where(eq(novels.id, mediaId)).get()
+      return row
+        ? {
+            files: { cover: row.coverFile, backdrop: row.backdropFile, logo: row.logoFile },
+            descriptionInlineFiles: row.descriptionInlineFiles ?? []
           }
         : undefined
     }

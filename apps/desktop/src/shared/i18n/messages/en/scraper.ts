@@ -66,6 +66,8 @@ export const scraper = {
       tags: 'Tags',
       seasons: 'Seasons',
       episodes: 'Episodes',
+      chapters: 'Units',
+      volumes: 'Volumes',
       characters: 'Characters',
       persons: 'People',
       companies: 'Companies',

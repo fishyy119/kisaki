@@ -359,6 +359,10 @@ function getEntityMenuRegistrationForPath(
       return runtime.entityMenus.game[scope]?.get(contributionId)
     case 'anime':
       return runtime.entityMenus.anime[scope]?.get(contributionId)
+    case 'comic':
+      return runtime.entityMenus.comic[scope]?.get(contributionId)
+    case 'novel':
+      return runtime.entityMenus.novel[scope]?.get(contributionId)
     case 'character':
       return scope === 'single'
         ? runtime.entityMenus.character.single.get(contributionId)
@@ -395,6 +399,24 @@ function resolveRegisteredMenuContribution(
         return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
       }
       if (registration.scope === 'batch' && input.domain === 'anime' && input.scope === 'batch') {
+        return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
+      }
+      break
+
+    case 'comic':
+      if (registration.scope === 'single' && input.domain === 'comic' && input.scope === 'single') {
+        return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
+      }
+      if (registration.scope === 'batch' && input.domain === 'comic' && input.scope === 'batch') {
+        return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
+      }
+      break
+
+    case 'novel':
+      if (registration.scope === 'single' && input.domain === 'novel' && input.scope === 'single') {
+        return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
+      }
+      if (registration.scope === 'batch' && input.domain === 'novel' && input.scope === 'batch') {
         return registration.contribution.resolve(input, createMenuNodeFactory<typeof input>())
       }
       break

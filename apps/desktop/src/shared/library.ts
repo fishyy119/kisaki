@@ -9,9 +9,14 @@ import type {
   AnimeFormat,
   AnimeStatus,
   BloodType,
+  ComicFormat,
+  ComicReadingDirection,
+  ComicStatus,
   CupSize,
   GameStatus,
-  Gender
+  Gender,
+  NovelFormat,
+  NovelStatus
 } from './db/contracts/enums'
 import type { DynamicCollectionConfig, PartialDate, ExternalSite } from './db/contracts/json'
 import type { MediaRelationType } from './db/contracts/media-relations'
@@ -19,7 +24,7 @@ import type { ExternalId } from './identity'
 import type { AllEntityType, MediaType } from './common'
 
 export type LibraryEntityTopic =
-  'game' | 'anime' | 'person' | 'company' | 'character' | 'collection' | 'tag'
+  'game' | 'anime' | 'comic' | 'novel' | 'person' | 'company' | 'character' | 'collection' | 'tag'
 
 export type LibraryChangeKind = 'created' | 'updated' | 'deleted'
 
@@ -41,6 +46,28 @@ export interface LibraryAnimeCoreSnapshot {
   totalEpisodes?: number | null
 }
 
+export interface LibraryComicCoreSnapshot {
+  name?: string
+  originalName?: string | null
+  aliases?: string[]
+  description?: string | null
+  releaseDate?: PartialDate | null
+  format?: ComicFormat
+  readingDirection?: ComicReadingDirection | null
+  totalVolumes?: number | null
+  totalChapters?: number | null
+}
+
+export interface LibraryNovelCoreSnapshot {
+  name?: string
+  originalName?: string | null
+  aliases?: string[]
+  description?: string | null
+  releaseDate?: PartialDate | null
+  format?: NovelFormat
+  totalVolumes?: number | null
+}
+
 export interface LibraryGameAssetSnapshot {
   coverFile?: string | null
   backdropFile?: string | null
@@ -49,6 +76,18 @@ export interface LibraryGameAssetSnapshot {
 }
 
 export interface LibraryAnimeAssetSnapshot {
+  coverFile?: string | null
+  backdropFile?: string | null
+  logoFile?: string | null
+}
+
+export interface LibraryComicAssetSnapshot {
+  coverFile?: string | null
+  backdropFile?: string | null
+  logoFile?: string | null
+}
+
+export interface LibraryNovelAssetSnapshot {
   coverFile?: string | null
   backdropFile?: string | null
   logoFile?: string | null
@@ -80,8 +119,8 @@ export interface LibraryMediaRelationsSnapshot {
 
 export type LibraryStatusChange = {
   facet: 'status'
-  before: { status: GameStatus | AnimeStatus }
-  after: { status: GameStatus | AnimeStatus }
+  before: { status: GameStatus | AnimeStatus | ComicStatus | NovelStatus }
+  after: { status: GameStatus | AnimeStatus | ComicStatus | NovelStatus }
   fields?: ['status']
 }
 
@@ -110,6 +149,18 @@ export type LibraryEpisodesChange = {
   before: { watchedEpisodeIds: string[] }
   after: { watchedEpisodeIds: string[] }
   fields?: ['watchedEpisodeIds']
+}
+
+/**
+ * Read-state transitions of an entry's readable units (comic chapters, novel
+ * volumes). Mirrors `LibraryEpisodesChange`: only the read set travels, resume
+ * positions churn during reading and stay out of the feed.
+ */
+export type LibraryUnitsChange = {
+  facet: 'units'
+  before: { readUnitIds: string[] }
+  after: { readUnitIds: string[] }
+  fields?: ['readUnitIds']
 }
 
 export interface LibraryPersonCoreSnapshot {
@@ -195,6 +246,8 @@ export interface LibraryCollectionAssetSnapshot {
 export interface LibraryCollectionMembershipSnapshot {
   gameIds?: string[]
   animeIds?: string[]
+  comicIds?: string[]
+  novelIds?: string[]
   personIds?: string[]
   companyIds?: string[]
   characterIds?: string[]
@@ -288,6 +341,32 @@ export type LibraryAnimeChange =
   | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
   | LibraryEpisodesChange
 
+export type LibraryComicChange =
+  | LibraryCoreChange<LibraryComicCoreSnapshot>
+  | LibraryStatusChange
+  | LibraryScoreChange
+  | LibraryIdentityChange
+  | LibraryActivityChange
+  | LibraryTagsChange
+  | LibraryCollectionsChange
+  | LibraryAssetChange<LibraryComicAssetSnapshot>
+  | LibraryLinksChange<LibraryMediaLinkSnapshot>
+  | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
+  | LibraryUnitsChange
+
+export type LibraryNovelChange =
+  | LibraryCoreChange<LibraryNovelCoreSnapshot>
+  | LibraryStatusChange
+  | LibraryScoreChange
+  | LibraryIdentityChange
+  | LibraryActivityChange
+  | LibraryTagsChange
+  | LibraryCollectionsChange
+  | LibraryAssetChange<LibraryNovelAssetSnapshot>
+  | LibraryLinksChange<LibraryMediaLinkSnapshot>
+  | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
+  | LibraryUnitsChange
+
 export type LibraryPersonChange =
   | LibraryCoreChange<LibraryPersonCoreSnapshot>
   | LibraryScoreChange
@@ -324,7 +403,12 @@ export type LibraryEntityChange =
   | LibraryCollectionChange
   | LibraryTagChange
 
-export type LibraryChange = LibraryGameChange | LibraryAnimeChange | LibraryEntityChange
+export type LibraryChange =
+  | LibraryGameChange
+  | LibraryAnimeChange
+  | LibraryComicChange
+  | LibraryNovelChange
+  | LibraryEntityChange
 
 /** One debounced, entity-grouped change carried by the `library.changed` hook. */
 export interface LibraryEntityChangeSummary {

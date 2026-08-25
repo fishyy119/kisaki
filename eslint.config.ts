@@ -88,7 +88,15 @@ export const noBareStringsOptions = {
 }
 
 export const baseConfig = defineConfig([
-  globalIgnores(['**/node_modules', '**/dist', '**/out', '**/dev', '**/templates/**']),
+  globalIgnores([
+    '**/node_modules',
+    '**/dist',
+    '**/out',
+    '**/dev',
+    '**/templates/**',
+    // Vendored third-party sources keep upstream style; see their READMEs.
+    '**/vendor/**'
+  ]),
 
   // JavaScript recommended rules
   js.configs.recommended,

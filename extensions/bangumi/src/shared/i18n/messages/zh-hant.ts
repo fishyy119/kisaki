@@ -241,6 +241,9 @@ export const zhHant = {
       score: '評分',
       tags: '標籤',
       collection: '合集',
+      unitProgress: '閱讀進度',
+      unitProgressValue: ({ volumes, chapters }: { volumes: number; chapters: number }) =>
+        `${volumes} 卷 / ${chapters} 話`,
       notCollected: '未收藏',
       notRated: '未評分',
       notInCollection: '未加入',
@@ -266,6 +269,15 @@ export const zhHant = {
       planned: '想看',
       watching: '在看',
       completed: '看過',
+      onHold: '擱置',
+      dropped: '拋棄',
+      unset: '未設定'
+    },
+
+    bookStatus: {
+      planned: '想讀',
+      reading: '在讀',
+      completed: '讀過',
       onHold: '擱置',
       dropped: '拋棄',
       unset: '未設定'
@@ -459,6 +471,7 @@ export const zhHant = {
       itemStatus: '項目狀態',
       itemScore: '評分',
       itemTags: '標籤',
+      itemUnitProgress: '閱讀進度',
       patchExisting: '更新既有條目',
       targetCollection: '加入合集',
       collectionPlaceholder: '選擇合集',

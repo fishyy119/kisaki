@@ -11,6 +11,8 @@ export interface BangumiImportWriteFields {
   status: boolean
   score: boolean
   tags: boolean
+  /** Adopt remote vol/ept counts as local unit read state; book scope only. */
+  unitProgress: boolean
 }
 
 export interface BangumiAuthRefreshArgs {
@@ -156,7 +158,8 @@ function normalizeImportWriteFields(value: unknown): BangumiImportWriteFields {
   return {
     status: readBoolean(record?.status, false),
     score: readBoolean(record?.score, false),
-    tags: readBoolean(record?.tags, false)
+    tags: readBoolean(record?.tags, false),
+    unitProgress: readBoolean(record?.unitProgress, false)
   }
 }
 

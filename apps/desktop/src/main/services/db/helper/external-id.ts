@@ -16,8 +16,12 @@ import {
   animeEpisodeExternalIds,
   animeExternalIds,
   characterExternalIds,
+  comicChapterExternalIds,
+  comicExternalIds,
   companyExternalIds,
   gameExternalIds,
+  novelExternalIds,
+  novelVolumeExternalIds,
   personExternalIds
 } from '@shared/db/schema'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
@@ -55,6 +59,38 @@ export const animeEpisodeExternalIdLink: ExternalIdLinkTable = {
   sourceColumn: animeEpisodeExternalIds.source,
   externalIdColumn: animeEpisodeExternalIds.externalId,
   ownerLabel: 'anime episode'
+}
+
+export const comicExternalIdLink: ExternalIdLinkTable = {
+  table: comicExternalIds,
+  entityIdColumn: comicExternalIds.comicId,
+  sourceColumn: comicExternalIds.source,
+  externalIdColumn: comicExternalIds.externalId,
+  ownerLabel: 'comic'
+}
+
+export const comicChapterExternalIdLink: ExternalIdLinkTable = {
+  table: comicChapterExternalIds,
+  entityIdColumn: comicChapterExternalIds.chapterId,
+  sourceColumn: comicChapterExternalIds.source,
+  externalIdColumn: comicChapterExternalIds.externalId,
+  ownerLabel: 'comic chapter'
+}
+
+export const novelExternalIdLink: ExternalIdLinkTable = {
+  table: novelExternalIds,
+  entityIdColumn: novelExternalIds.novelId,
+  sourceColumn: novelExternalIds.source,
+  externalIdColumn: novelExternalIds.externalId,
+  ownerLabel: 'novel'
+}
+
+export const novelVolumeExternalIdLink: ExternalIdLinkTable = {
+  table: novelVolumeExternalIds,
+  entityIdColumn: novelVolumeExternalIds.volumeId,
+  sourceColumn: novelVolumeExternalIds.source,
+  externalIdColumn: novelVolumeExternalIds.externalId,
+  ownerLabel: 'novel volume'
 }
 
 export const personExternalIdLink: ExternalIdLinkTable = {

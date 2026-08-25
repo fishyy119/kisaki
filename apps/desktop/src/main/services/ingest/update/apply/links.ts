@@ -21,10 +21,16 @@ import {
   animeCompanyLinks,
   animePersonLinks,
   characterPersonLinks,
+  comicCharacterLinks,
+  comicCompanyLinks,
+  comicPersonLinks,
   gameCastLinks,
   gameCharacterLinks,
   gameCompanyLinks,
-  gamePersonLinks
+  gamePersonLinks,
+  novelCharacterLinks,
+  novelCompanyLinks,
+  novelPersonLinks
 } from '@shared/db'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
@@ -103,6 +109,54 @@ const LINK_ROW_SPECS = {
     entityIdField: 'animeId',
     relatedIdField: 'characterId',
     orderInEntityField: 'orderInAnime',
+    orderInRelatedField: 'orderInCharacter'
+  },
+  comicPerson: {
+    table: comicPersonLinks,
+    entityIdColumn: comicPersonLinks.comicId,
+    entityIdField: 'comicId',
+    relatedIdField: 'personId',
+    orderInEntityField: 'orderInComic',
+    orderInRelatedField: 'orderInPerson'
+  },
+  comicCompany: {
+    table: comicCompanyLinks,
+    entityIdColumn: comicCompanyLinks.comicId,
+    entityIdField: 'comicId',
+    relatedIdField: 'companyId',
+    orderInEntityField: 'orderInComic',
+    orderInRelatedField: 'orderInCompany'
+  },
+  comicCharacter: {
+    table: comicCharacterLinks,
+    entityIdColumn: comicCharacterLinks.comicId,
+    entityIdField: 'comicId',
+    relatedIdField: 'characterId',
+    orderInEntityField: 'orderInComic',
+    orderInRelatedField: 'orderInCharacter'
+  },
+  novelPerson: {
+    table: novelPersonLinks,
+    entityIdColumn: novelPersonLinks.novelId,
+    entityIdField: 'novelId',
+    relatedIdField: 'personId',
+    orderInEntityField: 'orderInNovel',
+    orderInRelatedField: 'orderInPerson'
+  },
+  novelCompany: {
+    table: novelCompanyLinks,
+    entityIdColumn: novelCompanyLinks.novelId,
+    entityIdField: 'novelId',
+    relatedIdField: 'companyId',
+    orderInEntityField: 'orderInNovel',
+    orderInRelatedField: 'orderInCompany'
+  },
+  novelCharacter: {
+    table: novelCharacterLinks,
+    entityIdColumn: novelCharacterLinks.novelId,
+    entityIdField: 'novelId',
+    relatedIdField: 'characterId',
+    orderInEntityField: 'orderInNovel',
     orderInRelatedField: 'orderInCharacter'
   },
   characterPerson: {
@@ -487,10 +541,10 @@ export interface MediaGraphLinkInput<
 /**
  * Applies a media entry's scraped relation graph: resolves the satellite
  * nodes the planned link tables actually reference (creating missing ones)
- * and reconciles the person/company/character link tables, the entry's cast,
- * and the character-person rows reachable through them. Parameterized only by
- * link-table kinds and graph rows; identical mechanics for every playable
- * media type.
+ * and reconciles the person/company/character link tables, the entry's cast
+ * when the media type carries one, and the character-person rows reachable
+ * through them. Parameterized only by link-table kinds and graph rows; print
+ * media simply omits the `cast` input.
  */
 export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind>(params: {
   tx: DbContext
@@ -518,7 +572,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
     K,
     { characterIdentityKey: string; role: string; isSpoiler: boolean; note?: string | null }
   >
-  cast: {
+  cast?: {
     kind: C
     mode: IngestUpdatePolicy['collectionUpdate'] | undefined
     links: readonly { characterIdentityKey: string; personIdentityKey: string; note?: string }[]
@@ -550,7 +604,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
   if (characterPerson.mode) {
     for (const link of characterPerson.links) personIdentityKeys.add(link.personIdentityKey)
   }
-  if (cast.mode) {
+  if (cast?.mode) {
     for (const link of cast.links) personIdentityKeys.add(link.personIdentityKey)
   }
 
@@ -566,7 +620,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
   if (characterPerson.mode) {
     for (const link of characterPerson.links) characterIdentityKeys.add(link.characterIdentityKey)
   }
-  if (cast.mode) {
+  if (cast?.mode) {
     for (const link of cast.links) characterIdentityKeys.add(link.characterIdentityKey)
   }
 
@@ -639,7 +693,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
     })
   }
 
-  if (cast.mode) {
+  if (cast?.mode) {
     preservedLinkRows[cast.kind] = applyCastRows({
       tx,
       kind: cast.kind,

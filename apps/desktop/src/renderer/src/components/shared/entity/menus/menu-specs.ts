@@ -15,16 +15,24 @@ import type { Messages } from '@shared/i18n'
 import type { TableName } from '@shared/db/table-names'
 import {
   ANIME_STATUS_VALUES,
+  COMIC_STATUS_VALUES,
   GAME_STATUS_VALUES,
+  NOVEL_STATUS_VALUES,
   animes,
   collectionAnimeLinks,
   collectionCharacterLinks,
+  collectionComicLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionNovelLinks,
   collectionPersonLinks,
+  comics,
   games,
+  novels,
   type AnimeStatus,
-  type GameStatus
+  type ComicStatus,
+  type GameStatus,
+  type NovelStatus
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 
@@ -41,6 +49,12 @@ const AnimeFilesConfigFormDialog = defineAsyncComponent(() =>
 )
 const AnimeWatchCatchUpDialog = defineAsyncComponent(() =>
   import('@renderer/components/shared/anime').then((mod) => mod.AnimeWatchCatchUpDialog)
+)
+const ComicFilesConfigFormDialog = defineAsyncComponent(() =>
+  import('@renderer/components/shared/comic').then((mod) => mod.ComicFilesConfigFormDialog)
+)
+const NovelFilesConfigFormDialog = defineAsyncComponent(() =>
+  import('@renderer/components/shared/novel').then((mod) => mod.NovelFilesConfigFormDialog)
 )
 interface CollectionLinkStore {
   /** Link table name for db-change invalidation. */
@@ -269,6 +283,172 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
         label: (m) => m.anime.filesConfig.title,
         component: AnimeFilesConfigFormDialog,
         buildProps: (entityId) => ({ animeId: entityId })
+      }
+    ]
+  },
+  comic: {
+    entityTable: 'comics',
+    collections: {
+      table: 'collection_comic_links',
+      linkedCollectionIds: async (entityId) => {
+        const links = await db.query.collectionComicLinks.findMany({
+          where: eq(collectionComicLinks.comicId, entityId)
+        })
+        return new Set(links.map((link) => link.collectionId))
+      },
+      add: async (entityId, collectionId) => {
+        await db.insert(collectionComicLinks).values({ collectionId, comicId: entityId })
+      },
+      remove: async (entityId, collectionId) => {
+        await db
+          .delete(collectionComicLinks)
+          .where(
+            and(
+              eq(collectionComicLinks.comicId, entityId),
+              eq(collectionComicLinks.collectionId, collectionId)
+            )
+          )
+      },
+      linkedPairs: (entityIds) =>
+        db
+          .select({
+            collectionId: collectionComicLinks.collectionId,
+            entityId: collectionComicLinks.comicId
+          })
+          .from(collectionComicLinks)
+          .where(inArray(collectionComicLinks.comicId, entityIds)),
+      addMany: async (entityIds, collectionId) => {
+        await db
+          .insert(collectionComicLinks)
+          .values(entityIds.map((comicId) => ({ collectionId, comicId })))
+      },
+      removeMany: async (entityIds, collectionId) => {
+        await db
+          .delete(collectionComicLinks)
+          .where(
+            and(
+              eq(collectionComicLinks.collectionId, collectionId),
+              inArray(collectionComicLinks.comicId, entityIds)
+            )
+          )
+      }
+    },
+    status: {
+      label: (m) => m.comic.detail.readStatus,
+      options: (m) =>
+        COMIC_STATUS_VALUES.map((value) => ({ value, label: m.library.comicStatus[value] })),
+      read: async (entityId) => {
+        const rows = await db
+          .select({ status: comics.status })
+          .from(comics)
+          .where(eq(comics.id, entityId))
+          .limit(1)
+        return rows[0]?.status ?? null
+      },
+      write: async (entityId, status) => {
+        await db
+          .update(comics)
+          .set({ status: status as ComicStatus })
+          .where(eq(comics.id, entityId))
+      }
+    },
+    dir: {
+      label: (m) => m.comic.detail.openComicDir,
+      path: async (entityId) => {
+        const comic = await db.query.comics.findFirst({ where: eq(comics.id, entityId) })
+        return comic?.comicDirPath ?? null
+      }
+    },
+    extraDialogs: [
+      {
+        name: 'filesConfig',
+        icon: 'icon-[mdi--folder-cog-outline]',
+        label: (m) => m.comic.filesConfig.title,
+        component: ComicFilesConfigFormDialog,
+        buildProps: (entityId) => ({ comicId: entityId })
+      }
+    ]
+  },
+  novel: {
+    entityTable: 'novels',
+    collections: {
+      table: 'collection_novel_links',
+      linkedCollectionIds: async (entityId) => {
+        const links = await db.query.collectionNovelLinks.findMany({
+          where: eq(collectionNovelLinks.novelId, entityId)
+        })
+        return new Set(links.map((link) => link.collectionId))
+      },
+      add: async (entityId, collectionId) => {
+        await db.insert(collectionNovelLinks).values({ collectionId, novelId: entityId })
+      },
+      remove: async (entityId, collectionId) => {
+        await db
+          .delete(collectionNovelLinks)
+          .where(
+            and(
+              eq(collectionNovelLinks.novelId, entityId),
+              eq(collectionNovelLinks.collectionId, collectionId)
+            )
+          )
+      },
+      linkedPairs: (entityIds) =>
+        db
+          .select({
+            collectionId: collectionNovelLinks.collectionId,
+            entityId: collectionNovelLinks.novelId
+          })
+          .from(collectionNovelLinks)
+          .where(inArray(collectionNovelLinks.novelId, entityIds)),
+      addMany: async (entityIds, collectionId) => {
+        await db
+          .insert(collectionNovelLinks)
+          .values(entityIds.map((novelId) => ({ collectionId, novelId })))
+      },
+      removeMany: async (entityIds, collectionId) => {
+        await db
+          .delete(collectionNovelLinks)
+          .where(
+            and(
+              eq(collectionNovelLinks.collectionId, collectionId),
+              inArray(collectionNovelLinks.novelId, entityIds)
+            )
+          )
+      }
+    },
+    status: {
+      label: (m) => m.novel.detail.readStatus,
+      options: (m) =>
+        NOVEL_STATUS_VALUES.map((value) => ({ value, label: m.library.novelStatus[value] })),
+      read: async (entityId) => {
+        const rows = await db
+          .select({ status: novels.status })
+          .from(novels)
+          .where(eq(novels.id, entityId))
+          .limit(1)
+        return rows[0]?.status ?? null
+      },
+      write: async (entityId, status) => {
+        await db
+          .update(novels)
+          .set({ status: status as NovelStatus })
+          .where(eq(novels.id, entityId))
+      }
+    },
+    dir: {
+      label: (m) => m.novel.detail.openNovelDir,
+      path: async (entityId) => {
+        const novel = await db.query.novels.findFirst({ where: eq(novels.id, entityId) })
+        return novel?.novelDirPath ?? null
+      }
+    },
+    extraDialogs: [
+      {
+        name: 'filesConfig',
+        icon: 'icon-[mdi--folder-cog-outline]',
+        label: (m) => m.novel.filesConfig.title,
+        component: NovelFilesConfigFormDialog,
+        buildProps: (entityId) => ({ novelId: entityId })
       }
     ]
   },

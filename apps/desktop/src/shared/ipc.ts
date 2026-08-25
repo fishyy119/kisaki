@@ -27,6 +27,12 @@ import type {
   AnimeScraperLookup,
   AnimeSearchResult,
   AnimeScraperProviderInfo,
+  ComicScraperLookup,
+  ComicSearchResult,
+  ComicScraperProviderInfo,
+  NovelScraperLookup,
+  NovelSearchResult,
+  NovelScraperProviderInfo,
   PersonSearchResult,
   PersonScraperProviderInfo,
   CompanySearchResult,
@@ -35,8 +41,12 @@ import type {
   CharacterScraperProviderInfo,
   GameImageSlot,
   AnimeImageSlot,
+  ComicImageSlot,
+  NovelImageSlot,
   ScrapedGameBundle,
   ScrapedAnimeBundle,
+  ScrapedComicBundle,
+  ScrapedNovelBundle,
   ScraperProfileListQuery,
   ScraperProfileSummary,
   ScrapedPersonBundle,
@@ -48,28 +58,44 @@ import type {
   IngestAddAnimeDirectOptions,
   IngestAddAnimeDirectSeed,
   IngestAddAnimeFromScraperOptions,
+  IngestAddComicDirectOptions,
+  IngestAddComicDirectSeed,
+  IngestAddComicFromScraperOptions,
   IngestAddGameDirectOptions,
   IngestAddGameDirectSeed,
   IngestAddCharacterFromScraperOptions,
   IngestAddCompanyFromScraperOptions,
   IngestAddGameFromScraperOptions,
+  IngestAddNovelDirectOptions,
+  IngestAddNovelDirectSeed,
+  IngestAddNovelFromScraperOptions,
   IngestAddPersonFromScraperOptions
 } from './ingest/add'
 import type {
   AnimeEpisodeFileAttachParams,
   AnimeExtraFileAttachParams,
   AnimeFileSyncParams,
-  AnimeFileSyncResult
+  AnimeFileSyncResult,
+  ComicChapterFileAttachParams,
+  ComicFileSyncParams,
+  ComicFileSyncResult,
+  NovelFileSyncParams,
+  NovelFileSyncResult,
+  NovelVolumeFileAttachParams
 } from './media-files'
 import type {
   AnimeBatchUpdateRequest,
   AnimeUpdateRequest,
   CharacterBatchUpdateRequest,
   CharacterUpdateRequest,
+  ComicBatchUpdateRequest,
+  ComicUpdateRequest,
   CompanyBatchUpdateRequest,
   CompanyUpdateRequest,
   GameBatchUpdateRequest,
   GameUpdateRequest,
+  NovelBatchUpdateRequest,
+  NovelUpdateRequest,
   PersonBatchUpdateRequest,
   PersonUpdateRequest
 } from './ingest/update'
@@ -148,13 +174,23 @@ import type {
   AnimeStopResult,
   AnimeWatchingState,
   AnimeWatchResult,
+  ComicReadingState,
+  ComicReadResult,
   GameActivityEvent,
   GameLaunchResult,
   GameMonitorPathConfig,
   GameRunningStatus,
-  GameStopResult
+  GameStopResult,
+  NovelReadingState,
+  NovelReadResult
 } from './activity'
 import type { PlaybackEndReport, PlaybackProgress, PlaybackSessionState } from './player'
+import type {
+  ReaderBootstrap,
+  ReaderComicProgressReport,
+  ReaderNovelProgressReport,
+  ReaderUnitOpenedReport
+} from './reader'
 
 // =============================================================================
 // IPC Result Types
@@ -348,6 +384,24 @@ export interface IpcMainHandlers {
     lookup: AnimeScraperLookup,
     options?: IngestAddAnimeFromScraperOptions
   ) => IpcResult<TaskRunStartResult>
+  'ingest:add-comic-direct': (
+    seed: IngestAddComicDirectSeed,
+    options?: IngestAddComicDirectOptions
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:add-comic-from-scraper': (
+    profileId: string,
+    lookup: ComicScraperLookup,
+    options?: IngestAddComicFromScraperOptions
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:add-novel-direct': (
+    seed: IngestAddNovelDirectSeed,
+    options?: IngestAddNovelDirectOptions
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:add-novel-from-scraper': (
+    profileId: string,
+    lookup: NovelScraperLookup,
+    options?: IngestAddNovelFromScraperOptions
+  ) => IpcResult<TaskRunStartResult>
   'ingest:add-person-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
@@ -367,6 +421,8 @@ export interface IpcMainHandlers {
   // Ingest update
   'ingest:update-game-from-scraper': (request: GameUpdateRequest) => IpcResult<TaskRunStartResult>
   'ingest:update-anime-from-scraper': (request: AnimeUpdateRequest) => IpcResult<TaskRunStartResult>
+  'ingest:update-comic-from-scraper': (request: ComicUpdateRequest) => IpcResult<TaskRunStartResult>
+  'ingest:update-novel-from-scraper': (request: NovelUpdateRequest) => IpcResult<TaskRunStartResult>
   'ingest:update-person-from-scraper': (
     request: PersonUpdateRequest
   ) => IpcResult<TaskRunStartResult>
@@ -381,6 +437,12 @@ export interface IpcMainHandlers {
   ) => IpcResult<TaskRunStartResult>
   'ingest:batch-update-anime-from-scraper': (
     request: AnimeBatchUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:batch-update-comic-from-scraper': (
+    request: ComicBatchUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:batch-update-novel-from-scraper': (
+    request: NovelBatchUpdateRequest
   ) => IpcResult<TaskRunStartResult>
   'ingest:batch-update-person-from-scraper': (
     request: PersonBatchUpdateRequest
@@ -419,6 +481,32 @@ export interface IpcMainHandlers {
     providerId: string,
     lookup: AnimeScraperLookup,
     imageType: AnimeImageSlot
+  ) => IpcResult<string[]>
+
+  'scraper:list-comic-providers': () => IpcResult<ComicScraperProviderInfo[]>
+  'scraper:get-comic-provider': (providerId: string) => IpcResult<ComicScraperProviderInfo>
+  'scraper:search-comic': (profileId: string, query: string) => IpcResult<ComicSearchResult[]>
+  'scraper:scrape-comic': (
+    profileId: string,
+    lookup: ComicScraperLookup
+  ) => IpcResult<ScrapedComicBundle | null>
+  'scraper:get-comic-provider-images': (
+    providerId: string,
+    lookup: ComicScraperLookup,
+    imageType: ComicImageSlot
+  ) => IpcResult<string[]>
+
+  'scraper:list-novel-providers': () => IpcResult<NovelScraperProviderInfo[]>
+  'scraper:get-novel-provider': (providerId: string) => IpcResult<NovelScraperProviderInfo>
+  'scraper:search-novel': (profileId: string, query: string) => IpcResult<NovelSearchResult[]>
+  'scraper:scrape-novel': (
+    profileId: string,
+    lookup: NovelScraperLookup
+  ) => IpcResult<ScrapedNovelBundle | null>
+  'scraper:get-novel-provider-images': (
+    providerId: string,
+    lookup: NovelScraperLookup,
+    imageType: NovelImageSlot
   ) => IpcResult<string[]>
 
   'scraper:list-person-providers': () => IpcResult<PersonScraperProviderInfo[]>
@@ -478,6 +566,25 @@ export interface IpcMainHandlers {
   'activity:stop-anime-extra': (extraId: string) => IpcResult<AnimeExtraStopResult>
   'activity:list-anime-watching': () => IpcResult<AnimeWatchingState[]>
   'activity:list-anime-extras-playing': () => IpcResult<AnimeExtraPlayingState[]>
+  'activity:read-comic': (
+    comicId: string,
+    chapterId?: string,
+    fileId?: string
+  ) => IpcResult<ComicReadResult>
+  'activity:read-novel': (
+    novelId: string,
+    volumeId?: string,
+    fileId?: string
+  ) => IpcResult<NovelReadResult>
+  'activity:list-comic-reading': () => IpcResult<ComicReadingState[]>
+  'activity:list-novel-reading': () => IpcResult<NovelReadingState[]>
+
+  // Reader window bridge (called from reader windows only)
+  'reader:bootstrap': () => IpcResult<ReaderBootstrap>
+  'reader:comic-progress': (report: ReaderComicProgressReport) => IpcVoidResult
+  'reader:novel-progress': (report: ReaderNovelProgressReport) => IpcVoidResult
+  'reader:unit-opened': (report: ReaderUnitOpenedReport) => IpcVoidResult
+  'reader:close': () => IpcVoidResult
 
   // Player
   'player:list-sessions': () => IpcResult<PlaybackSessionState[]>
@@ -601,6 +708,10 @@ export interface IpcMainHandlers {
   'media-files:sync-anime': (params: AnimeFileSyncParams) => IpcResult<AnimeFileSyncResult>
   'media-files:attach-anime-episode-file': (params: AnimeEpisodeFileAttachParams) => IpcVoidResult
   'media-files:attach-anime-extra-file': (params: AnimeExtraFileAttachParams) => IpcVoidResult
+  'media-files:sync-comic': (params: ComicFileSyncParams) => IpcResult<ComicFileSyncResult>
+  'media-files:attach-comic-chapter-file': (params: ComicChapterFileAttachParams) => IpcVoidResult
+  'media-files:sync-novel': (params: NovelFileSyncParams) => IpcResult<NovelFileSyncResult>
+  'media-files:attach-novel-volume-file': (params: NovelVolumeFileAttachParams) => IpcVoidResult
 
   // Deeplink
   'deeplink:handle': (url: string) => IpcResult<DeeplinkResult>
@@ -625,6 +736,10 @@ export interface IpcRendererEvents {
   'activity:anime-stopped': [state: AnimeWatchingState]
   'activity:anime-extra-started': [state: AnimeExtraPlayingState]
   'activity:anime-extra-stopped': [state: AnimeExtraPlayingState]
+  'activity:comic-started': [state: ComicReadingState]
+  'activity:comic-stopped': [state: ComicReadingState]
+  'activity:novel-started': [state: NovelReadingState]
+  'activity:novel-stopped': [state: NovelReadingState]
   'player:session-started': [state: PlaybackSessionState]
   'player:session-changed': [state: PlaybackSessionState]
   'player:session-progress': [progress: PlaybackProgress]

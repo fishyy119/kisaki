@@ -22,6 +22,10 @@ import type {
   CharacterScraperSlot,
   CharacterSessionResultMap,
   CharacterSearchResult,
+  ComicScraperLookup,
+  ComicScraperSlot,
+  ComicSessionResultMap,
+  ComicSearchResult,
   CompanyScraperSlot,
   CompanySessionResultMap,
   CompanySearchResult,
@@ -30,6 +34,10 @@ import type {
   GameSessionResultMap,
   GameSearchResult,
   IdResolvedTarget,
+  NovelScraperLookup,
+  NovelScraperSlot,
+  NovelSessionResultMap,
+  NovelSearchResult,
   PersonScraperSlot,
   PersonSessionResultMap,
   PersonSearchResult,
@@ -82,6 +90,20 @@ export interface AnimeScraperProviderRegistrationInfo {
   name: string
   externalIdSource: string
   capabilities: readonly ScraperCapability<AnimeScraperSlot>[]
+}
+
+export interface ComicScraperProviderRegistrationInfo {
+  id: string
+  name: string
+  externalIdSource: string
+  capabilities: readonly ScraperCapability<ComicScraperSlot>[]
+}
+
+export interface NovelScraperProviderRegistrationInfo {
+  id: string
+  name: string
+  externalIdSource: string
+  capabilities: readonly ScraperCapability<NovelScraperSlot>[]
 }
 
 export interface PersonScraperProviderRegistrationInfo {
@@ -164,6 +186,8 @@ type ScraperProviderScopedRpcParamsFor<TMediaType extends ScraperMediaType> =
 export type ScraperProviderScopedRpcParams =
   | ScraperProviderScopedRpcParamsFor<'game'>
   | ScraperProviderScopedRpcParamsFor<'anime'>
+  | ScraperProviderScopedRpcParamsFor<'comic'>
+  | ScraperProviderScopedRpcParamsFor<'novel'>
   | ScraperProviderScopedRpcParamsFor<'person'>
   | ScraperProviderScopedRpcParamsFor<'company'>
   | ScraperProviderScopedRpcParamsFor<'character'>
@@ -176,6 +200,14 @@ export type ScraperProviderRegisterRequest =
   | (ExtensionScopedRpcParams & {
       mediaType: 'anime'
       provider: AnimeScraperProviderRegistrationInfo
+    })
+  | (ExtensionScopedRpcParams & {
+      mediaType: 'comic'
+      provider: ComicScraperProviderRegistrationInfo
+    })
+  | (ExtensionScopedRpcParams & {
+      mediaType: 'novel'
+      provider: NovelScraperProviderRegistrationInfo
     })
   | (ExtensionScopedRpcParams & {
       mediaType: 'person'
@@ -201,6 +233,14 @@ export type ScraperProviderSearchRequest =
       query: string
       locale: ContentLocale
     })
+  | (ScraperProviderScopedRpcParamsFor<'comic'> & {
+      query: string
+      locale: ContentLocale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'novel'> & {
+      query: string
+      locale: ContentLocale
+    })
   | (ScraperProviderScopedRpcParamsFor<'person'> & {
       query: string
       locale: ContentLocale
@@ -217,6 +257,8 @@ export type ScraperProviderSearchRequest =
 export type ScraperProviderSearchResponse =
   | { mediaType: 'game'; results: readonly GameSearchResult[] }
   | { mediaType: 'anime'; results: readonly AnimeSearchResult[] }
+  | { mediaType: 'comic'; results: readonly ComicSearchResult[] }
+  | { mediaType: 'novel'; results: readonly NovelSearchResult[] }
   | { mediaType: 'person'; results: readonly PersonSearchResult[] }
   | { mediaType: 'company'; results: readonly CompanySearchResult[] }
   | { mediaType: 'character'; results: readonly CharacterSearchResult[] }
@@ -228,6 +270,14 @@ export type ScraperProviderResolveRequest =
     })
   | (ScraperProviderScopedRpcParamsFor<'anime'> & {
       lookup: AnimeScraperLookup
+      locale: ContentLocale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'comic'> & {
+      lookup: ComicScraperLookup
+      locale: ContentLocale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'novel'> & {
+      lookup: NovelScraperLookup
       locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'person'> & {
@@ -246,6 +296,8 @@ export type ScraperProviderResolveRequest =
 export type ScraperProviderResolveResponse =
   | { mediaType: 'game'; target: IdResolvedTarget | null }
   | { mediaType: 'anime'; target: IdResolvedTarget | null }
+  | { mediaType: 'comic'; target: IdResolvedTarget | null }
+  | { mediaType: 'novel'; target: IdResolvedTarget | null }
   | { mediaType: 'person'; target: IdResolvedTarget | null }
   | { mediaType: 'company'; target: IdResolvedTarget | null }
   | { mediaType: 'character'; target: IdResolvedTarget | null }
@@ -256,6 +308,14 @@ export type ScraperProviderSessionOpenRequest =
       locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'anime'> & {
+      target: IdResolvedTarget
+      locale: ContentLocale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'comic'> & {
+      target: IdResolvedTarget
+      locale: ContentLocale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'novel'> & {
       target: IdResolvedTarget
       locale: ContentLocale
     })
@@ -275,6 +335,8 @@ export type ScraperProviderSessionOpenRequest =
 export type ScraperProviderSessionOpenResponse =
   | { mediaType: 'game'; sessionId: string }
   | { mediaType: 'anime'; sessionId: string }
+  | { mediaType: 'comic'; sessionId: string }
+  | { mediaType: 'novel'; sessionId: string }
   | { mediaType: 'person'; sessionId: string }
   | { mediaType: 'company'; sessionId: string }
   | { mediaType: 'character'; sessionId: string }
@@ -287,6 +349,14 @@ export type ScraperProviderSessionGetRequest =
   | (ScraperProviderScopedRpcParamsFor<'anime'> & {
       sessionId: string
       slots: readonly AnimeScraperSlot[]
+    })
+  | (ScraperProviderScopedRpcParamsFor<'comic'> & {
+      sessionId: string
+      slots: readonly ComicScraperSlot[]
+    })
+  | (ScraperProviderScopedRpcParamsFor<'novel'> & {
+      sessionId: string
+      slots: readonly NovelScraperSlot[]
     })
   | (ScraperProviderScopedRpcParamsFor<'person'> & {
       sessionId: string
@@ -304,6 +374,8 @@ export type ScraperProviderSessionGetRequest =
 export type ScraperProviderSessionGetResponse =
   | { mediaType: 'game'; result: ScraperSessionResult<GameSessionResultMap> }
   | { mediaType: 'anime'; result: ScraperSessionResult<AnimeSessionResultMap> }
+  | { mediaType: 'comic'; result: ScraperSessionResult<ComicSessionResultMap> }
+  | { mediaType: 'novel'; result: ScraperSessionResult<NovelSessionResultMap> }
   | { mediaType: 'person'; result: ScraperSessionResult<PersonSessionResultMap> }
   | { mediaType: 'company'; result: ScraperSessionResult<CompanySessionResultMap> }
   | { mediaType: 'character'; result: ScraperSessionResult<CharacterSessionResultMap> }
@@ -311,6 +383,8 @@ export type ScraperProviderSessionGetResponse =
 export type ScraperProviderSessionCloseRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & { sessionId: string })
   | (ScraperProviderScopedRpcParamsFor<'anime'> & { sessionId: string })
+  | (ScraperProviderScopedRpcParamsFor<'comic'> & { sessionId: string })
+  | (ScraperProviderScopedRpcParamsFor<'novel'> & { sessionId: string })
   | (ScraperProviderScopedRpcParamsFor<'person'> & { sessionId: string })
   | (ScraperProviderScopedRpcParamsFor<'company'> & { sessionId: string })
   | (ScraperProviderScopedRpcParamsFor<'character'> & { sessionId: string })

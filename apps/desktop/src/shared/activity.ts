@@ -110,3 +110,39 @@ export type AnimeExtraStopFailureReason = 'notPlaying' | 'stopFailed'
 
 export type AnimeExtraStopResult =
   { status: 'stopped' } | { status: 'failed'; reason: AnimeExtraStopFailureReason }
+
+export type ComicReadFailureReason =
+  | 'comicNotFound'
+  | 'chapterNotFound'
+  | 'noReadableChapter'
+  | 'noChapterFile'
+  | 'fileNotFound'
+  | 'unsupportedContainer'
+
+export type ComicReadResult =
+  | { status: 'started'; chapterId: string }
+  | { status: 'failed'; reason: ComicReadFailureReason }
+
+export type NovelReadFailureReason =
+  | 'novelNotFound'
+  | 'volumeNotFound'
+  | 'noReadableVolume'
+  | 'noVolumeFile'
+  | 'fileNotFound'
+  | 'unsupportedContainer'
+
+export type NovelReadResult =
+  | { status: 'started'; volumeId: string }
+  | { status: 'failed'; reason: NovelReadFailureReason }
+
+/** Live reading state of one comic, as tracked by the activity service. */
+export interface ComicReadingState {
+  comicId: string
+  chapterId: string
+}
+
+/** Live reading state of one novel, as tracked by the activity service. */
+export interface NovelReadingState {
+  novelId: string
+  volumeId: string
+}

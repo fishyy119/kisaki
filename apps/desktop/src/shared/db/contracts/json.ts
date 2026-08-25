@@ -151,6 +151,31 @@ export type MovieScraperSlot =
   | 'backdrops'
   | 'logos'
 
+/** `chapters` delivers unit facts at either grain: volume rows, chapter rows, or both. */
+export type ComicScraperSlot =
+  | 'info'
+  | 'tags'
+  | 'chapters'
+  | 'characters'
+  | 'persons'
+  | 'companies'
+  | 'relatedEntries'
+  | 'covers'
+  | 'backdrops'
+  | 'logos'
+
+export type NovelScraperSlot =
+  | 'info'
+  | 'tags'
+  | 'volumes'
+  | 'characters'
+  | 'persons'
+  | 'companies'
+  | 'relatedEntries'
+  | 'covers'
+  | 'backdrops'
+  | 'logos'
+
 export type PersonScraperSlot = 'info' | 'tags' | 'photos'
 
 export type CompanyScraperSlot = 'info' | 'tags' | 'logos'
@@ -168,6 +193,8 @@ export type CharacterScraperSlot = 'info' | 'tags' | 'persons' | 'photos'
 export type ScraperSlot =
   | GameScraperSlot
   | AnimeScraperSlot
+  | ComicScraperSlot
+  | NovelScraperSlot
   | TvScraperSlot
   | MovieScraperSlot
   | PersonScraperSlot
@@ -252,6 +279,32 @@ export type TvScraperSlotConfigs = {
 export type MovieScraperSlotConfigs = {
   info: BasicSlotConfig
   tags: BasicSlotConfig
+  characters: RelationCollectionSlotConfig
+  persons: RelationCollectionSlotConfig
+  companies: RelationCollectionSlotConfig
+  relatedEntries: BasicSlotConfig
+  covers: BasicSlotConfig
+  backdrops: BasicSlotConfig
+  logos: BasicSlotConfig
+}
+
+export type ComicScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  chapters: BasicSlotConfig
+  characters: RelationCollectionSlotConfig
+  persons: RelationCollectionSlotConfig
+  companies: RelationCollectionSlotConfig
+  relatedEntries: BasicSlotConfig
+  covers: BasicSlotConfig
+  backdrops: BasicSlotConfig
+  logos: BasicSlotConfig
+}
+
+export type NovelScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  volumes: BasicSlotConfig
   characters: RelationCollectionSlotConfig
   persons: RelationCollectionSlotConfig
   companies: RelationCollectionSlotConfig

@@ -13,8 +13,10 @@ import { BangumiJobEvents } from './jobs/events'
 import { JobRunner } from './jobs/runner'
 import { AnimeLocalMediaAdapter, createAnimeMediaDescriptor } from './media/anime/adapter'
 import { BangumiAnimeProvider } from './media/anime/scraper/provider'
-import { createBookMediaDescriptor } from './media/book/scope'
+import { BookLocalMediaAdapter, createBookMediaDescriptor } from './media/book/adapter'
 import { BangumiCharacterProvider } from './media/character/provider'
+import { BangumiComicProvider } from './media/comic/scraper/provider'
+import { BangumiNovelProvider } from './media/novel/scraper/provider'
 import { BangumiCompanyProvider } from './media/company/provider'
 import { GameLocalMediaAdapter, createGameMediaDescriptor } from './media/game/adapter'
 import { BangumiGameProvider } from './media/game/scraper/provider'
@@ -59,8 +61,15 @@ export default defineExtension({
     const accountService = new AccountService(context.storage, client, tokenService)
     const gameAdapter = new GameLocalMediaAdapter(context.hooks)
     const animeAdapter = new AnimeLocalMediaAdapter(context.hooks)
+    const bookAdapter = new BookLocalMediaAdapter({
+      hooks: context.hooks,
+      resolveSubjectPlatform: async (subjectId) => {
+        const subject = await client.getSubject(Number.parseInt(subjectId, 10))
+        return subject.platform ?? undefined
+      }
+    })
     const mediaRegistry = new MediaRegistry([
-      createBookMediaDescriptor(),
+      createBookMediaDescriptor(bookAdapter),
       createGameMediaDescriptor(gameAdapter),
       createAnimeMediaDescriptor(animeAdapter),
       createMusicMediaDescriptor()
@@ -151,6 +160,12 @@ export default defineExtension({
     )
     context.subscriptions.add(
       context.contributions.scraperProviders.anime.register(new BangumiAnimeProvider(client))
+    )
+    context.subscriptions.add(
+      context.contributions.scraperProviders.comic.register(new BangumiComicProvider(client))
+    )
+    context.subscriptions.add(
+      context.contributions.scraperProviders.novel.register(new BangumiNovelProvider(client))
     )
     context.subscriptions.add(
       context.contributions.scraperProviders.person.register(new BangumiPersonProvider(client))

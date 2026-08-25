@@ -92,6 +92,10 @@ function getEntityTableName(entityType: AllEntityType): TableName {
       return 'games'
     case 'anime':
       return 'animes'
+    case 'comic':
+      return 'comics'
+    case 'novel':
+      return 'novels'
     case 'person':
       return 'persons'
     case 'company':
@@ -111,6 +115,10 @@ function getSingleFileFields(entityType: AllEntityType): string[] {
       return ['coverFile', 'backdropFile', 'logoFile', 'iconFile']
     case 'anime':
       return ['coverFile', 'backdropFile', 'logoFile']
+    case 'comic':
+      return ['coverFile', 'backdropFile', 'logoFile']
+    case 'novel':
+      return ['coverFile', 'backdropFile', 'logoFile']
     case 'person':
       return ['photoFile']
     case 'company':
@@ -126,7 +134,12 @@ function getSingleFileFields(entityType: AllEntityType): string[] {
 
 /** Entity types whose description is a rich surface with inline attachments. */
 function hasDescriptionInlineFiles(entityType: AllEntityType): boolean {
-  return entityType === 'game' || entityType === 'anime'
+  return (
+    entityType === 'game' ||
+    entityType === 'anime' ||
+    entityType === 'comic' ||
+    entityType === 'novel'
+  )
 }
 
 async function copyFiles(

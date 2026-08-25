@@ -13,6 +13,7 @@ export const activity = {
   stopRequestedTitle: '停止リクエストを送信しました',
   watchFailedTitle: '再生を開始できませんでした',
   watchStopFailedTitle: '再生を停止できませんでした',
+  readFailedTitle: '読書を開始できませんでした',
 
   filePickerTitle: '起動ファイルを選択',
   filePickerButton: '選択',
@@ -42,6 +43,15 @@ export const activity = {
     playerUnavailable: '動画プレイヤーを利用できません',
     playerStartFailed: '動画プレイヤーを起動できませんでした',
     notWatching: '現在再生中のものはありません',
-    stopFailed: '動画プレイヤーを停止できませんでした'
+    stopFailed: '動画プレイヤーを停止できませんでした',
+    comicNotFound: 'コミックが存在しません',
+    chapterNotFound: 'ユニットが存在しません',
+    noReadableChapter: '読み込めるファイルを持つユニットがまだありません',
+    noChapterFile: 'このユニットには読み込めるファイルがありません',
+    novelNotFound: '小説が存在しません',
+    volumeNotFound: '巻が存在しません',
+    noReadableVolume: '読み込めるファイルを持つ巻がまだありません',
+    noVolumeFile: 'この巻には読み込めるファイルがありません',
+    unsupportedContainer: '内蔵リーダーではこのファイル形式を表示できません'
   }
 } satisfies Messages['activity']

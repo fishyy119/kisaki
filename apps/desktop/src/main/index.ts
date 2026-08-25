@@ -16,6 +16,7 @@ import { ProcessService } from './services/process'
 import { PlayerService } from './services/player'
 import { MediaInfoService } from './services/media-info'
 import { MediaFilesService } from './services/media-files'
+import { ReaderService } from './services/reader'
 import { ActivityService } from './services/activity'
 import { IngestService } from './services/ingest'
 import { ScannerService } from './services/scanner'
@@ -139,6 +140,7 @@ async function onAppReady(): Promise<void> {
   await container.register(new IngestService())
   await container.register(new ScannerService())
   await container.register(new MediaFilesService())
+  await container.register(new ReaderService())
   await container.register(new ActivityService())
   await container.register(new AttachmentService())
   await container.register(new CommandService())

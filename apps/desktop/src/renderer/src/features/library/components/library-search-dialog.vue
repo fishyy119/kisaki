@@ -46,6 +46,8 @@ const RESULT_LISTS: Record<ContentEntityType, (result: LibrarySearchResult) => S
   {
     game: (result) => result.games,
     anime: (result) => result.animes,
+    comic: (result) => result.comics,
+    novel: (result) => result.novels,
     character: (result) => result.characters,
     person: (result) => result.persons,
     company: (result) => result.companies

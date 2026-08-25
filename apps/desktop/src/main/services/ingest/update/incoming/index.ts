@@ -1,5 +1,7 @@
 export { buildAnimeIncoming } from './anime'
 export { buildCharacterIncoming } from './character'
+export { buildComicIncoming } from './comic'
 export { buildCompanyIncoming } from './company'
 export { buildGameIncoming } from './game'
+export { buildNovelIncoming } from './novel'
 export { buildPersonIncoming } from './person'

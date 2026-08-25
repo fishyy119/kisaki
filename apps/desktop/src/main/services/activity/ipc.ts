@@ -38,4 +38,16 @@ export function registerActivityIpc(service: ActivityService, ipc: IpcService): 
   ipc.handle('activity:list-anime-extras-playing', async () =>
     wrapIpc(() => service.anime.listPlayingExtras())
   )
+
+  ipc.handle('activity:read-comic', async (_, comicId, chapterId, fileId) =>
+    wrapIpc(() => service.comic.read(comicId, chapterId, fileId))
+  )
+
+  ipc.handle('activity:read-novel', async (_, novelId, volumeId, fileId) =>
+    wrapIpc(() => service.novel.read(novelId, volumeId, fileId))
+  )
+
+  ipc.handle('activity:list-comic-reading', async () => wrapIpc(() => service.comic.listReading()))
+
+  ipc.handle('activity:list-novel-reading', async () => wrapIpc(() => service.novel.listReading()))
 }

@@ -11,22 +11,28 @@ import { IngestPersistHandlers } from './persist'
 import {
   AnimeAddHandler,
   CharacterAddHandler,
+  ComicAddHandler,
   CompanyAddHandler,
   GameAddHandler,
+  NovelAddHandler,
   PersonAddHandler
 } from './add'
 import {
   AnimeUpdateHandler,
   CharacterUpdateHandler,
+  ComicUpdateHandler,
   CompanyUpdateHandler,
   GameUpdateHandler,
+  NovelUpdateHandler,
   PersonUpdateHandler
 } from './update'
 import {
   AnimeBatchHandler,
   CharacterBatchHandler,
+  ComicBatchHandler,
   CompanyBatchHandler,
   GameBatchHandler,
+  NovelBatchHandler,
   PersonBatchHandler
 } from './batch'
 import { registerIngestIpc } from './ipc'
@@ -44,6 +50,8 @@ type IngestHandlersByContent<THandlers extends Record<ContentEntityType, object>
 type IngestAddHandlers = IngestHandlersByContent<{
   game: GameAddHandler
   anime: AnimeAddHandler
+  comic: ComicAddHandler
+  novel: NovelAddHandler
   person: PersonAddHandler
   company: CompanyAddHandler
   character: CharacterAddHandler
@@ -52,6 +60,8 @@ type IngestAddHandlers = IngestHandlersByContent<{
 type IngestUpdateHandlers = IngestHandlersByContent<{
   game: GameUpdateHandler
   anime: AnimeUpdateHandler
+  comic: ComicUpdateHandler
+  novel: NovelUpdateHandler
   person: PersonUpdateHandler
   company: CompanyUpdateHandler
   character: CharacterUpdateHandler
@@ -60,6 +70,8 @@ type IngestUpdateHandlers = IngestHandlersByContent<{
 type IngestBatchHandlers = IngestHandlersByContent<{
   game: GameBatchHandler
   anime: AnimeBatchHandler
+  comic: ComicBatchHandler
+  novel: NovelBatchHandler
   person: PersonBatchHandler
   company: CompanyBatchHandler
   character: CharacterBatchHandler
@@ -105,6 +117,22 @@ export class IngestService implements IContentService {
         i18nService,
         this.hooks.anime
       ),
+      comic: new ComicAddHandler(
+        dbService,
+        scraperService,
+        persist.comic,
+        taskRunService,
+        i18nService,
+        this.hooks.comic
+      ),
+      novel: new NovelAddHandler(
+        dbService,
+        scraperService,
+        persist.novel,
+        taskRunService,
+        i18nService,
+        this.hooks.novel
+      ),
       person: new PersonAddHandler(
         dbService,
         scraperService,
@@ -147,6 +175,22 @@ export class IngestService implements IContentService {
         i18nService,
         this.hooks.anime
       ),
+      comic: new ComicUpdateHandler(
+        dbService,
+        scraperService,
+        persist,
+        taskRunService,
+        i18nService,
+        this.hooks.comic
+      ),
+      novel: new NovelUpdateHandler(
+        dbService,
+        scraperService,
+        persist,
+        taskRunService,
+        i18nService,
+        this.hooks.novel
+      ),
       person: new PersonUpdateHandler(
         dbService,
         scraperService,
@@ -185,6 +229,20 @@ export class IngestService implements IContentService {
         taskRunService,
         i18nService
       ),
+      comic: new ComicBatchHandler(
+        dbService,
+        scraperService,
+        this.update.comic,
+        taskRunService,
+        i18nService
+      ),
+      novel: new NovelBatchHandler(
+        dbService,
+        scraperService,
+        this.update.novel,
+        taskRunService,
+        i18nService
+      ),
       person: new PersonBatchHandler(
         dbService,
         scraperService,
@@ -213,6 +271,6 @@ export class IngestService implements IContentService {
   }
 
   getSupportedContent(): ContentEntityType[] {
-    return ['game', 'anime', 'character', 'person', 'company']
+    return ['game', 'anime', 'comic', 'novel', 'character', 'person', 'company']
   }
 }

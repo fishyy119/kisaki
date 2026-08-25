@@ -1,0 +1,8 @@
+export { default as ComicDetailActivityTab } from './activity-tab.vue'
+export { default as ComicDetailCharactersTab } from './characters-tab.vue'
+export { default as ComicDetailCompaniesTab } from './companies-tab.vue'
+export { default as ComicDetailNotesTab } from './notes-tab.vue'
+export { default as ComicDetailOverviewTab } from './overview-tab.vue'
+export { default as ComicDetailPersonsTab } from './persons-tab.vue'
+export { default as ComicDetailRelationsTab } from './relations-tab.vue'
+export { ComicDetailChaptersTab } from './chapters-tab'

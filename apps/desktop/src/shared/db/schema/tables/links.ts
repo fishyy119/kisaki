@@ -7,12 +7,18 @@ import {
   animePersonRole,
   baseColumns,
   characterPersonRole,
+  comicCharacterRole,
+  comicCompanyRole,
+  comicPersonRole,
   gameCharacterRole,
   gameCompanyRole,
-  gamePersonRole
+  gamePersonRole,
+  novelCharacterRole,
+  novelCompanyRole,
+  novelPersonRole
 } from '../../columns'
 import { collections } from './collections'
-import { animes, characters, companies, games, persons } from './content'
+import { animes, characters, comics, companies, games, novels, persons } from './content'
 
 export const gamePersonLinks = sqliteTable(
   'game_person_links',
@@ -152,6 +158,144 @@ export const animeCharacterLinks = sqliteTable(
   ]
 )
 
+export const comicPersonLinks = sqliteTable(
+  'comic_person_links',
+  {
+    ...baseColumns,
+    comicId: text('comic_id')
+      .notNull()
+      .references(() => comics.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    personId: text('person_id')
+      .notNull()
+      .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    role: comicPersonRole('role').notNull().default('other'),
+    note: text('note'),
+    orderInComic: integer('order_in_comic').notNull().default(0),
+    orderInPerson: integer('order_in_person').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.comicId, t.personId, t.role),
+    index('idx_comic_person_links_comic_id').on(t.comicId),
+    index('idx_comic_person_links_person_id').on(t.personId)
+  ]
+)
+
+export const comicCompanyLinks = sqliteTable(
+  'comic_company_links',
+  {
+    ...baseColumns,
+    comicId: text('comic_id')
+      .notNull()
+      .references(() => comics.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    companyId: text('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    role: comicCompanyRole('role').notNull().default('other'),
+    note: text('note'),
+    orderInComic: integer('order_in_comic').notNull().default(0),
+    orderInCompany: integer('order_in_company').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.comicId, t.companyId, t.role),
+    index('idx_comic_company_links_comic_id').on(t.comicId),
+    index('idx_comic_company_links_company_id').on(t.companyId)
+  ]
+)
+
+export const comicCharacterLinks = sqliteTable(
+  'comic_character_links',
+  {
+    ...baseColumns,
+    comicId: text('comic_id')
+      .notNull()
+      .references(() => comics.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    role: comicCharacterRole('role').notNull().default('other'),
+    note: text('note'),
+    orderInComic: integer('order_in_comic').notNull().default(0),
+    orderInCharacter: integer('order_in_character').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.comicId, t.characterId, t.role),
+    index('idx_comic_character_links_comic_id').on(t.comicId),
+    index('idx_comic_character_links_character_id').on(t.characterId)
+  ]
+)
+
+export const novelPersonLinks = sqliteTable(
+  'novel_person_links',
+  {
+    ...baseColumns,
+    novelId: text('novel_id')
+      .notNull()
+      .references(() => novels.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    personId: text('person_id')
+      .notNull()
+      .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    role: novelPersonRole('role').notNull().default('other'),
+    note: text('note'),
+    orderInNovel: integer('order_in_novel').notNull().default(0),
+    orderInPerson: integer('order_in_person').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.novelId, t.personId, t.role),
+    index('idx_novel_person_links_novel_id').on(t.novelId),
+    index('idx_novel_person_links_person_id').on(t.personId)
+  ]
+)
+
+export const novelCompanyLinks = sqliteTable(
+  'novel_company_links',
+  {
+    ...baseColumns,
+    novelId: text('novel_id')
+      .notNull()
+      .references(() => novels.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    companyId: text('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    role: novelCompanyRole('role').notNull().default('other'),
+    note: text('note'),
+    orderInNovel: integer('order_in_novel').notNull().default(0),
+    orderInCompany: integer('order_in_company').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.novelId, t.companyId, t.role),
+    index('idx_novel_company_links_novel_id').on(t.novelId),
+    index('idx_novel_company_links_company_id').on(t.companyId)
+  ]
+)
+
+export const novelCharacterLinks = sqliteTable(
+  'novel_character_links',
+  {
+    ...baseColumns,
+    novelId: text('novel_id')
+      .notNull()
+      .references(() => novels.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    role: novelCharacterRole('role').notNull().default('other'),
+    note: text('note'),
+    orderInNovel: integer('order_in_novel').notNull().default(0),
+    orderInCharacter: integer('order_in_character').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.novelId, t.characterId, t.role),
+    index('idx_novel_character_links_novel_id').on(t.novelId),
+    index('idx_novel_character_links_character_id').on(t.characterId)
+  ]
+)
+
 /**
  * A voice credit: which person voices which character in this entry.
  *
@@ -248,6 +392,46 @@ export const collectionAnimeLinks = sqliteTable(
     unique().on(t.collectionId, t.animeId),
     index('idx_collection_anime_links_collection_id').on(t.collectionId),
     index('idx_collection_anime_links_anime_id').on(t.animeId)
+  ]
+)
+
+export const collectionComicLinks = sqliteTable(
+  'collection_comic_links',
+  {
+    ...baseColumns,
+    collectionId: text('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    comicId: text('comic_id')
+      .notNull()
+      .references(() => comics.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    note: text('note'),
+    orderInCollection: integer('order_in_collection').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.collectionId, t.comicId),
+    index('idx_collection_comic_links_collection_id').on(t.collectionId),
+    index('idx_collection_comic_links_comic_id').on(t.comicId)
+  ]
+)
+
+export const collectionNovelLinks = sqliteTable(
+  'collection_novel_links',
+  {
+    ...baseColumns,
+    collectionId: text('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    novelId: text('novel_id')
+      .notNull()
+      .references(() => novels.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    note: text('note'),
+    orderInCollection: integer('order_in_collection').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.collectionId, t.novelId),
+    index('idx_collection_novel_links_collection_id').on(t.collectionId),
+    index('idx_collection_novel_links_novel_id').on(t.novelId)
   ]
 )
 
@@ -371,3 +555,19 @@ export type CollectionCompanyLink = InferSelectModel<typeof collectionCompanyLin
 export type NewCollectionCompanyLink = InferInsertModel<typeof collectionCompanyLinks>
 export type CharacterPersonLink = InferSelectModel<typeof characterPersonLinks>
 export type NewCharacterPersonLink = InferInsertModel<typeof characterPersonLinks>
+export type ComicPersonLink = InferSelectModel<typeof comicPersonLinks>
+export type NewComicPersonLink = InferInsertModel<typeof comicPersonLinks>
+export type ComicCompanyLink = InferSelectModel<typeof comicCompanyLinks>
+export type NewComicCompanyLink = InferInsertModel<typeof comicCompanyLinks>
+export type ComicCharacterLink = InferSelectModel<typeof comicCharacterLinks>
+export type NewComicCharacterLink = InferInsertModel<typeof comicCharacterLinks>
+export type CollectionComicLink = InferSelectModel<typeof collectionComicLinks>
+export type NewCollectionComicLink = InferInsertModel<typeof collectionComicLinks>
+export type NovelPersonLink = InferSelectModel<typeof novelPersonLinks>
+export type NewNovelPersonLink = InferInsertModel<typeof novelPersonLinks>
+export type NovelCompanyLink = InferSelectModel<typeof novelCompanyLinks>
+export type NewNovelCompanyLink = InferInsertModel<typeof novelCompanyLinks>
+export type NovelCharacterLink = InferSelectModel<typeof novelCharacterLinks>
+export type NewNovelCharacterLink = InferInsertModel<typeof novelCharacterLinks>
+export type CollectionNovelLink = InferSelectModel<typeof collectionNovelLinks>
+export type NewCollectionNovelLink = InferInsertModel<typeof collectionNovelLinks>

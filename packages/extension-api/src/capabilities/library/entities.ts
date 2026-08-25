@@ -3,9 +3,16 @@ import type {
   LibraryAnimeEpisodeType,
   LibraryAnimeFormat,
   LibraryBloodType,
+  LibraryComicFormat,
   LibraryCupSize,
-  LibraryGender
+  LibraryGender,
+  LibraryNovelFormat
 } from '../../shared/library'
+
+/** Page progression / layout of a comic entry. */
+export const LIBRARY_COMIC_READING_DIRECTIONS = ['rtl', 'ltr', 'vertical'] as const
+
+export type LibraryComicReadingDirection = (typeof LIBRARY_COMIC_READING_DIRECTIONS)[number]
 
 export interface SaveBackup {
   backupAt: number
@@ -61,6 +68,8 @@ export interface DynamicEntityConfig {
 export const DYNAMIC_COLLECTION_ENTITY_TYPES = [
   'game',
   'anime',
+  'comic',
+  'novel',
   'character',
   'person',
   'company'
@@ -74,6 +83,8 @@ export type DynamicCollectionConfig = Record<
 export const LIBRARY_ENTITY_TYPES = [
   'game',
   'anime',
+  'comic',
+  'novel',
   'character',
   'person',
   'company',
@@ -86,6 +97,8 @@ export type LibraryEntityType = (typeof LIBRARY_ENTITY_TYPES)[number]
 export const LIBRARY_CONTENT_ENTITY_TYPES = [
   'game',
   'anime',
+  'comic',
+  'novel',
   'character',
   'person',
   'company'
@@ -119,6 +132,28 @@ export const LIBRARY_ANIME_STATUSES = [
 ] as const
 
 export type LibraryAnimeStatus = (typeof LIBRARY_ANIME_STATUSES)[number]
+
+/** Comic reading status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
+export const LIBRARY_COMIC_STATUSES = [
+  'planned',
+  'reading',
+  'completed',
+  'onHold',
+  'dropped'
+] as const
+
+export type LibraryComicStatus = (typeof LIBRARY_COMIC_STATUSES)[number]
+
+/** Novel reading status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
+export const LIBRARY_NOVEL_STATUSES = [
+  'planned',
+  'reading',
+  'completed',
+  'onHold',
+  'dropped'
+] as const
+
+export type LibraryNovelStatus = (typeof LIBRARY_NOVEL_STATUSES)[number]
 
 export const LIBRARY_GAME_LAUNCHER_MODES = ['file', 'url', 'exec'] as const
 
@@ -267,6 +302,158 @@ export interface LibraryAnimeEpisodeQuery {
   unwatchedOnly?: boolean
 }
 
+export interface LibraryComic extends LibraryRankedEntityBase {
+  coverFile?: string
+  backdropFile?: string
+  logoFile?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: readonly string[]
+  releaseDate?: PartialDate
+  status: LibraryComicStatus
+  format: LibraryComicFormat
+  /** Per-entry layout override; absent follows the format default. */
+  readingDirection?: LibraryComicReadingDirection
+  totalVolumes?: number | null
+  totalChapters?: number | null
+  lastActiveAt?: number | null
+  totalDuration: number
+  comicDirPath?: string
+  descriptionInlineFiles?: readonly string[]
+  externalIds: readonly ExternalId[]
+}
+
+/**
+ * One readable unit of a comic entry, at either grain: a collected volume
+ * carries `volumeNumber`, a serialized chapter carries `chapterNumber`.
+ *
+ * Units are a sub-resource of their comic, not a library entity type: they
+ * are addressed through the comic namespace and never appear in
+ * `LibraryEntityType`.
+ */
+export interface LibraryComicChapter {
+  id: string
+  comicId: string
+  volumeNumber?: number | null
+  chapterNumber?: number | null
+  name?: string
+  originalName?: string
+  releaseDate?: PartialDate
+  description?: string
+  coverFile?: string
+  read: boolean
+  /** Completion time of the last full read; absent on units only marked. */
+  readAt?: number | null
+  readCount: number
+  resumePage?: number | null
+  orderInComic: number
+  externalIds: readonly ExternalId[]
+  createdAt: number
+  updatedAt: number
+}
+
+export interface LibraryComicChapterCreateInput {
+  volumeNumber?: number | null
+  chapterNumber?: number | null
+  name?: string
+  originalName?: string
+  releaseDate?: PartialDate
+  description?: string
+  order?: number
+  externalIds?: readonly ExternalId[]
+}
+
+/**
+ * Read-state patch for one comic unit; every field is optional.
+ *
+ * `read` is the state, `readAt` the reading evidence: importers that only
+ * know a unit was read patch `read` alone and leave the time unset rather
+ * than inventing one. Clearing `read` also clears the recorded time.
+ */
+export interface LibraryComicChapterReadStatePatch {
+  read?: boolean
+  readAt?: number | null
+  readCount?: number
+  resumePage?: number | null
+}
+
+export interface LibraryComicChapterQuery {
+  comicId: string
+  readOnly?: boolean
+  unreadOnly?: boolean
+}
+
+export interface LibraryNovel extends LibraryRankedEntityBase {
+  coverFile?: string
+  backdropFile?: string
+  logoFile?: string
+  /** Other titles this entry is known by, such as localized names and abbreviations. */
+  aliases?: readonly string[]
+  releaseDate?: PartialDate
+  status: LibraryNovelStatus
+  format: LibraryNovelFormat
+  totalVolumes?: number | null
+  lastActiveAt?: number | null
+  totalDuration: number
+  novelDirPath?: string
+  descriptionInlineFiles?: readonly string[]
+  externalIds: readonly ExternalId[]
+}
+
+/**
+ * One volume of a novel entry.
+ *
+ * Volumes are a sub-resource of their novel, not a library entity type: they
+ * are addressed through the novel namespace and never appear in
+ * `LibraryEntityType`.
+ */
+export interface LibraryNovelVolume {
+  id: string
+  novelId: string
+  volumeNumber?: number | null
+  name?: string
+  originalName?: string
+  releaseDate?: PartialDate
+  description?: string
+  coverFile?: string
+  read: boolean
+  /** Completion time of the last full read; absent on volumes only marked. */
+  readAt?: number | null
+  readCount: number
+  /** Engine-scoped resume locator; opaque to callers. */
+  resumeLocator?: string | null
+  /** Read fraction in [0, 1] for display; the locator stays authoritative. */
+  resumeProgress?: number | null
+  orderInNovel: number
+  externalIds: readonly ExternalId[]
+  createdAt: number
+  updatedAt: number
+}
+
+export interface LibraryNovelVolumeCreateInput {
+  volumeNumber?: number | null
+  name?: string
+  originalName?: string
+  releaseDate?: PartialDate
+  description?: string
+  order?: number
+  externalIds?: readonly ExternalId[]
+}
+
+/** Read-state patch for one novel volume; see `LibraryComicChapterReadStatePatch`. */
+export interface LibraryNovelVolumeReadStatePatch {
+  read?: boolean
+  readAt?: number | null
+  readCount?: number
+  resumeLocator?: string | null
+  resumeProgress?: number | null
+}
+
+export interface LibraryNovelVolumeQuery {
+  novelId: string
+  readOnly?: boolean
+  unreadOnly?: boolean
+}
+
 export interface LibraryPerson extends LibraryRankedEntityBase {
   photoFile?: string
   /** Other names this person is credited under, such as pen names. */
@@ -383,6 +570,58 @@ export type LibraryAnimePatch = Partial<
   totalDuration?: number
 }
 
+export interface LibraryComicCreateInput extends LibraryRankedEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
+  coverFile?: string
+  backdropFile?: string
+  logoFile?: string
+  aliases?: readonly string[]
+  releaseDate?: PartialDate
+  status?: LibraryComicStatus
+  format?: LibraryComicFormat
+  readingDirection?: LibraryComicReadingDirection | null
+  totalVolumes?: number | null
+  totalChapters?: number | null
+  lastActiveAt?: number | null
+  totalDuration?: number
+  comicDirPath?: string
+  descriptionInlineFiles?: readonly string[]
+  externalIds?: readonly ExternalId[]
+}
+
+export type LibraryComicPatch = Partial<
+  Omit<LibraryComicCreateInput, 'createdAt' | 'updatedAt'>
+> & {
+  lastActiveAt?: number | null
+  totalDuration?: number
+}
+
+export interface LibraryNovelCreateInput extends LibraryRankedEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
+  coverFile?: string
+  backdropFile?: string
+  logoFile?: string
+  aliases?: readonly string[]
+  releaseDate?: PartialDate
+  status?: LibraryNovelStatus
+  format?: LibraryNovelFormat
+  totalVolumes?: number | null
+  lastActiveAt?: number | null
+  totalDuration?: number
+  novelDirPath?: string
+  descriptionInlineFiles?: readonly string[]
+  externalIds?: readonly ExternalId[]
+}
+
+export type LibraryNovelPatch = Partial<
+  Omit<LibraryNovelCreateInput, 'createdAt' | 'updatedAt'>
+> & {
+  lastActiveAt?: number | null
+  totalDuration?: number
+}
+
 export interface LibraryPersonCreateInput extends LibraryRankedEntityInputBase {
   createdAt?: number
   updatedAt?: number
@@ -463,6 +702,24 @@ export interface LibraryGameQuery extends LibraryListQuery {
 export interface LibraryAnimeQuery extends LibraryListQuery {
   statuses?: readonly LibraryAnimeStatus[]
   formats?: readonly LibraryAnimeFormat[]
+  favoritesOnly?: boolean
+  includeNsfw?: boolean
+  collectionIds?: readonly string[]
+  tagIds?: readonly string[]
+}
+
+export interface LibraryComicQuery extends LibraryListQuery {
+  statuses?: readonly LibraryComicStatus[]
+  formats?: readonly LibraryComicFormat[]
+  favoritesOnly?: boolean
+  includeNsfw?: boolean
+  collectionIds?: readonly string[]
+  tagIds?: readonly string[]
+}
+
+export interface LibraryNovelQuery extends LibraryListQuery {
+  statuses?: readonly LibraryNovelStatus[]
+  formats?: readonly LibraryNovelFormat[]
   favoritesOnly?: boolean
   includeNsfw?: boolean
   collectionIds?: readonly string[]

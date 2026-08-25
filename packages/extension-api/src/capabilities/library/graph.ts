@@ -3,10 +3,14 @@ import type {
   LibraryAnimeEpisodeCreateInput,
   LibraryCharacterCreateInput,
   LibraryCollectionCreateInput,
+  LibraryComicChapterCreateInput,
+  LibraryComicCreateInput,
   LibraryCompanyCreateInput,
   LibraryGameCreateInput,
   LibraryGameNoteCreateInput,
   LibraryGameSessionCreateInput,
+  LibraryNovelCreateInput,
+  LibraryNovelVolumeCreateInput,
   LibraryPersonCreateInput,
   LibraryTagCreateInput
 } from './entities'
@@ -15,14 +19,20 @@ import type {
   LibraryAnimeCompanyRole,
   LibraryAnimePersonRole,
   LibraryCharacterPersonRole,
+  LibraryComicCharacterRole,
+  LibraryComicCompanyRole,
+  LibraryComicPersonRole,
   LibraryCompanyRelationType,
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
-  LibraryMediaRelationType
+  LibraryMediaRelationType,
+  LibraryNovelCharacterRole,
+  LibraryNovelCompanyRole,
+  LibraryNovelPersonRole
 } from '../../shared/library'
 
-export const LIBRARY_MEDIA_TYPES = ['game', 'anime'] as const
+export const LIBRARY_MEDIA_TYPES = ['game', 'anime', 'comic', 'novel'] as const
 
 export type LibraryMediaType = (typeof LIBRARY_MEDIA_TYPES)[number]
 
@@ -139,7 +149,8 @@ export interface LibraryGraphNodeBase {
   key: string
 }
 
-export type LibraryGraphMediaNode = LibraryGraphGameNode | LibraryGraphAnimeNode
+export type LibraryGraphMediaNode =
+  LibraryGraphGameNode | LibraryGraphAnimeNode | LibraryGraphComicNode | LibraryGraphNovelNode
 
 export interface LibraryGraphGameNode extends LibraryGraphNodeBase {
   kind: 'media'
@@ -151,6 +162,18 @@ export interface LibraryGraphAnimeNode extends LibraryGraphNodeBase {
   kind: 'media'
   mediaType: 'anime'
   input: LibraryAnimeCreateInput
+}
+
+export interface LibraryGraphComicNode extends LibraryGraphNodeBase {
+  kind: 'media'
+  mediaType: 'comic'
+  input: LibraryComicCreateInput
+}
+
+export interface LibraryGraphNovelNode extends LibraryGraphNodeBase {
+  kind: 'media'
+  mediaType: 'novel'
+  input: LibraryNovelCreateInput
 }
 
 export interface LibraryGraphCollectionNode extends LibraryGraphNodeBase {
@@ -188,12 +211,26 @@ export interface LibraryGraphSessionNode extends LibraryGraphNodeBase {
   input: LibraryGameSessionCreateInput
 }
 
-export type LibraryGraphEpisodeNode = LibraryGraphAnimeEpisodeNode
+export type LibraryGraphEpisodeNode =
+  LibraryGraphAnimeEpisodeNode | LibraryGraphComicChapterNode | LibraryGraphNovelVolumeNode
 
 export interface LibraryGraphAnimeEpisodeNode extends LibraryGraphNodeBase {
   kind: 'episode'
   mediaType: 'anime'
   input: LibraryAnimeEpisodeCreateInput
+}
+
+/** A comic's readable unit: a collected volume or a serialized chapter. */
+export interface LibraryGraphComicChapterNode extends LibraryGraphNodeBase {
+  kind: 'episode'
+  mediaType: 'comic'
+  input: LibraryComicChapterCreateInput
+}
+
+export interface LibraryGraphNovelVolumeNode extends LibraryGraphNodeBase {
+  kind: 'episode'
+  mediaType: 'novel'
+  input: LibraryNovelVolumeCreateInput
 }
 
 export interface LibraryGraphAttachmentNode extends LibraryGraphNodeBase {
@@ -243,7 +280,11 @@ export interface LibraryGraphMediaCompanyEdge {
   kind: 'media-company'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  role: LibraryGameCompanyRole | LibraryAnimeCompanyRole
+  role:
+    | LibraryGameCompanyRole
+    | LibraryAnimeCompanyRole
+    | LibraryComicCompanyRole
+    | LibraryNovelCompanyRole
   order?: number
 }
 
@@ -251,7 +292,8 @@ export interface LibraryGraphMediaPersonEdge {
   kind: 'media-person'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  role: LibraryGamePersonRole | LibraryAnimePersonRole
+  role:
+    LibraryGamePersonRole | LibraryAnimePersonRole | LibraryComicPersonRole | LibraryNovelPersonRole
   order?: number
   note?: string
 }
@@ -261,7 +303,11 @@ export interface LibraryGraphMediaCharacterEdge {
   kind: 'media-character'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  role: LibraryGameCharacterRole | LibraryAnimeCharacterRole
+  role:
+    | LibraryGameCharacterRole
+    | LibraryAnimeCharacterRole
+    | LibraryComicCharacterRole
+    | LibraryNovelCharacterRole
   order?: number
   note?: string
 }

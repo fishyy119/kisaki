@@ -48,6 +48,8 @@ export interface IngestEntityHooks {
 export interface IngestHooks {
   game: IngestEntityHooks
   anime: IngestEntityHooks
+  comic: IngestEntityHooks
+  novel: IngestEntityHooks
   tv: IngestEntityHooks
   movie: IngestEntityHooks
   person: IngestEntityHooks
@@ -59,6 +61,8 @@ export function createIngestHooks(): IngestHooks {
   return {
     game: createIngestEntityHooks('ingest.game'),
     anime: createIngestEntityHooks('ingest.anime'),
+    comic: createIngestEntityHooks('ingest.comic'),
+    novel: createIngestEntityHooks('ingest.novel'),
     tv: createIngestEntityHooks('ingest.tv'),
     movie: createIngestEntityHooks('ingest.movie'),
     person: createIngestEntityHooks('ingest.person'),

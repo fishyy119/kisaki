@@ -17,18 +17,24 @@ import type { IngestWarning } from '@shared/ingest'
 import type {
   AnimeUpdateRelationSurface,
   CharacterUpdateRelationSurface,
-  GameUpdateRelationSurface
+  ComicUpdateRelationSurface,
+  GameUpdateRelationSurface,
+  NovelUpdateRelationSurface
 } from '@shared/ingest/update'
 import type {
   ScrapedAnimeRelationFacts,
   ScrapedCharacterRelationFacts,
-  ScrapedGameRelationFacts
+  ScrapedComicRelationFacts,
+  ScrapedGameRelationFacts,
+  ScrapedNovelRelationFacts
 } from '@shared/scraper'
 import type {
   AnimeLinkKind,
   CharacterLinkKind,
   CollectionUpdateMode,
+  ComicLinkKind,
   GameLinkKind,
+  NovelLinkKind,
   UpdateIncomingRelationAvailability
 } from './types'
 
@@ -153,6 +159,98 @@ export const ANIME_LINK_TOPOLOGY: Record<
   }
 }
 
+/** Fact sources a comic scrape can answer for, named after the slots that fill them. */
+type ComicRelationFactSource = 'persons' | 'companies' | 'characters' | 'characterPersons'
+
+const COMIC_FACT_SOURCE_ANSWERED: Record<
+  ComicRelationFactSource,
+  (facts: ScrapedComicRelationFacts) => boolean
+> = {
+  persons: (facts) => facts.comicPerson !== undefined,
+  companies: (facts) => facts.comicCompany !== undefined,
+  characters: (facts) => facts.comicCharacter !== undefined,
+  // Character-person facts arrive either as a top-level list or nested in every
+  // character, so one definitive channel answers for the whole set.
+  characterPersons: (facts) =>
+    facts.characterPerson !== undefined ||
+    (facts.comicCharacter !== undefined &&
+      facts.comicCharacter.every((fact) => fact.persons !== undefined))
+}
+
+export const COMIC_LINK_TOPOLOGY: Record<
+  ComicLinkKind,
+  LinkTopologySpec<ComicUpdateRelationSurface, ComicRelationFactSource>
+> = {
+  comicPerson: {
+    surface: 'person',
+    label: 'comic person links',
+    sources: ['persons', 'characterPersons']
+  },
+  comicCompany: {
+    surface: 'company',
+    label: 'comic company links',
+    sources: ['companies']
+  },
+  comicCharacter: {
+    surface: 'character',
+    label: 'comic character links',
+    sources: ['characters']
+  },
+  characterPerson: {
+    surface: 'characterPerson',
+    label: 'character person links',
+    sources: ['characterPersons'],
+    // Knowledge layer; see `GAME_LINK_TOPOLOGY.characterPerson`.
+    mergeOnly: true
+  }
+}
+
+/** Fact sources a novel scrape can answer for, named after the slots that fill them. */
+type NovelRelationFactSource = 'persons' | 'companies' | 'characters' | 'characterPersons'
+
+const NOVEL_FACT_SOURCE_ANSWERED: Record<
+  NovelRelationFactSource,
+  (facts: ScrapedNovelRelationFacts) => boolean
+> = {
+  persons: (facts) => facts.novelPerson !== undefined,
+  companies: (facts) => facts.novelCompany !== undefined,
+  characters: (facts) => facts.novelCharacter !== undefined,
+  // Character-person facts arrive either as a top-level list or nested in every
+  // character, so one definitive channel answers for the whole set.
+  characterPersons: (facts) =>
+    facts.characterPerson !== undefined ||
+    (facts.novelCharacter !== undefined &&
+      facts.novelCharacter.every((fact) => fact.persons !== undefined))
+}
+
+export const NOVEL_LINK_TOPOLOGY: Record<
+  NovelLinkKind,
+  LinkTopologySpec<NovelUpdateRelationSurface, NovelRelationFactSource>
+> = {
+  novelPerson: {
+    surface: 'person',
+    label: 'novel person links',
+    sources: ['persons', 'characterPersons']
+  },
+  novelCompany: {
+    surface: 'company',
+    label: 'novel company links',
+    sources: ['companies']
+  },
+  novelCharacter: {
+    surface: 'character',
+    label: 'novel character links',
+    sources: ['characters']
+  },
+  characterPerson: {
+    surface: 'characterPerson',
+    label: 'character person links',
+    sources: ['characterPersons'],
+    // Knowledge layer; see `GAME_LINK_TOPOLOGY.characterPerson`.
+    mergeOnly: true
+  }
+}
+
 type CharacterRelationFactSource = 'cast'
 
 const CHARACTER_FACT_SOURCE_ANSWERED: Record<
@@ -203,6 +301,14 @@ export function buildCompleteGameLinks(facts: ScrapedGameRelationFacts): Set<Gam
 
 export function buildCompleteAnimeLinks(facts: ScrapedAnimeRelationFacts): Set<AnimeLinkKind> {
   return collectCompleteLinks(ANIME_LINK_TOPOLOGY, ANIME_FACT_SOURCE_ANSWERED, facts)
+}
+
+export function buildCompleteComicLinks(facts: ScrapedComicRelationFacts): Set<ComicLinkKind> {
+  return collectCompleteLinks(COMIC_LINK_TOPOLOGY, COMIC_FACT_SOURCE_ANSWERED, facts)
+}
+
+export function buildCompleteNovelLinks(facts: ScrapedNovelRelationFacts): Set<NovelLinkKind> {
+  return collectCompleteLinks(NOVEL_LINK_TOPOLOGY, NOVEL_FACT_SOURCE_ANSWERED, facts)
 }
 
 export function buildCompleteCharacterLinks(

@@ -9,10 +9,16 @@ import type {
   LibraryAnimeCharacterRole,
   LibraryAnimeCompanyRole,
   LibraryAnimePersonRole,
+  LibraryComicCharacterRole,
+  LibraryComicCompanyRole,
+  LibraryComicPersonRole,
   LibraryGameCharacterRole,
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
-  LibraryMediaType
+  LibraryMediaType,
+  LibraryNovelCharacterRole,
+  LibraryNovelCompanyRole,
+  LibraryNovelPersonRole
 } from '@kisaki3/extension-api'
 import {
   animeCastLinks,
@@ -21,12 +27,22 @@ import {
   animePersonLinks,
   animeTagLinks,
   collectionAnimeLinks,
+  collectionComicLinks,
   collectionGameLinks,
+  collectionNovelLinks,
+  comicCharacterLinks,
+  comicCompanyLinks,
+  comicPersonLinks,
+  comicTagLinks,
   gameCastLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
-  gameTagLinks
+  gameTagLinks,
+  novelCharacterLinks,
+  novelCompanyLinks,
+  novelPersonLinks,
+  novelTagLinks
 } from '@shared/db'
 import type { AnySQLiteColumn as CastColumn } from 'drizzle-orm/sqlite-core'
 import type { DbContext } from '@main/services/db'
@@ -76,7 +92,8 @@ export interface MediaLinkConfigs {
   company: MediaLinkConfig
   person: MediaLinkConfig
   character: MediaLinkConfig
-  cast: MediaCastConfig
+  /** Absent on media types without voice credits; validation rejects the edge upstream. */
+  cast?: MediaCastConfig
 }
 
 /**
@@ -375,9 +392,155 @@ const ANIME_LINKS: MediaLinkConfigs = {
   }
 }
 
+const COMIC_LINKS: MediaLinkConfigs = {
+  collection: {
+    table: collectionComicLinks,
+    mediaIdColumn: collectionComicLinks.comicId,
+    targetIdColumn: collectionComicLinks.collectionId,
+    toRow: (row) => ({ order: row.orderInCollection, note: row.note }),
+    buildInsertValue: (input) => ({
+      comicId: input.mediaId,
+      collectionId: input.targetId,
+      orderInCollection: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInCollection: patch.order, note: patch.note })
+  },
+  tag: {
+    table: comicTagLinks,
+    mediaIdColumn: comicTagLinks.comicId,
+    targetIdColumn: comicTagLinks.tagId,
+    toRow: (row) => ({ order: row.orderInComic, note: row.note }),
+    buildInsertValue: (input) => ({
+      comicId: input.mediaId,
+      tagId: input.targetId,
+      orderInComic: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInComic: patch.order, note: patch.note })
+  },
+  company: {
+    table: comicCompanyLinks,
+    mediaIdColumn: comicCompanyLinks.comicId,
+    targetIdColumn: comicCompanyLinks.companyId,
+    buildRoleCondition: (role) => eq(comicCompanyLinks.role, role as LibraryComicCompanyRole),
+    toRow: (row) => ({ order: row.orderInComic, note: row.note }),
+    buildInsertValue: (input) => ({
+      comicId: input.mediaId,
+      companyId: input.targetId,
+      role: input.role as LibraryComicCompanyRole,
+      note: input.note,
+      orderInComic: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInComic: patch.order, note: patch.note })
+  },
+  person: {
+    table: comicPersonLinks,
+    mediaIdColumn: comicPersonLinks.comicId,
+    targetIdColumn: comicPersonLinks.personId,
+    buildRoleCondition: (role) => eq(comicPersonLinks.role, role as LibraryComicPersonRole),
+    toRow: (row) => ({ order: row.orderInComic, note: row.note }),
+    buildInsertValue: (input) => ({
+      comicId: input.mediaId,
+      personId: input.targetId,
+      role: input.role as LibraryComicPersonRole,
+      note: input.note,
+      orderInComic: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInComic: patch.order, note: patch.note })
+  },
+  character: {
+    table: comicCharacterLinks,
+    mediaIdColumn: comicCharacterLinks.comicId,
+    targetIdColumn: comicCharacterLinks.characterId,
+    buildRoleCondition: (role) => eq(comicCharacterLinks.role, role as LibraryComicCharacterRole),
+    toRow: (row) => ({ order: row.orderInComic, note: row.note }),
+    buildInsertValue: (input) => ({
+      comicId: input.mediaId,
+      characterId: input.targetId,
+      role: input.role as LibraryComicCharacterRole,
+      note: input.note,
+      orderInComic: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInComic: patch.order, note: patch.note })
+  }
+}
+
+const NOVEL_LINKS: MediaLinkConfigs = {
+  collection: {
+    table: collectionNovelLinks,
+    mediaIdColumn: collectionNovelLinks.novelId,
+    targetIdColumn: collectionNovelLinks.collectionId,
+    toRow: (row) => ({ order: row.orderInCollection, note: row.note }),
+    buildInsertValue: (input) => ({
+      novelId: input.mediaId,
+      collectionId: input.targetId,
+      orderInCollection: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInCollection: patch.order, note: patch.note })
+  },
+  tag: {
+    table: novelTagLinks,
+    mediaIdColumn: novelTagLinks.novelId,
+    targetIdColumn: novelTagLinks.tagId,
+    toRow: (row) => ({ order: row.orderInNovel, note: row.note }),
+    buildInsertValue: (input) => ({
+      novelId: input.mediaId,
+      tagId: input.targetId,
+      orderInNovel: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInNovel: patch.order, note: patch.note })
+  },
+  company: {
+    table: novelCompanyLinks,
+    mediaIdColumn: novelCompanyLinks.novelId,
+    targetIdColumn: novelCompanyLinks.companyId,
+    buildRoleCondition: (role) => eq(novelCompanyLinks.role, role as LibraryNovelCompanyRole),
+    toRow: (row) => ({ order: row.orderInNovel, note: row.note }),
+    buildInsertValue: (input) => ({
+      novelId: input.mediaId,
+      companyId: input.targetId,
+      role: input.role as LibraryNovelCompanyRole,
+      note: input.note,
+      orderInNovel: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInNovel: patch.order, note: patch.note })
+  },
+  person: {
+    table: novelPersonLinks,
+    mediaIdColumn: novelPersonLinks.novelId,
+    targetIdColumn: novelPersonLinks.personId,
+    buildRoleCondition: (role) => eq(novelPersonLinks.role, role as LibraryNovelPersonRole),
+    toRow: (row) => ({ order: row.orderInNovel, note: row.note }),
+    buildInsertValue: (input) => ({
+      novelId: input.mediaId,
+      personId: input.targetId,
+      role: input.role as LibraryNovelPersonRole,
+      note: input.note,
+      orderInNovel: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInNovel: patch.order, note: patch.note })
+  },
+  character: {
+    table: novelCharacterLinks,
+    mediaIdColumn: novelCharacterLinks.novelId,
+    targetIdColumn: novelCharacterLinks.characterId,
+    buildRoleCondition: (role) => eq(novelCharacterLinks.role, role as LibraryNovelCharacterRole),
+    toRow: (row) => ({ order: row.orderInNovel, note: row.note }),
+    buildInsertValue: (input) => ({
+      novelId: input.mediaId,
+      characterId: input.targetId,
+      role: input.role as LibraryNovelCharacterRole,
+      note: input.note,
+      orderInNovel: input.order
+    }),
+    buildPatchValues: (patch) => ({ orderInNovel: patch.order, note: patch.note })
+  }
+}
+
 const MEDIA_LINKS: Record<LibraryMediaType, MediaLinkConfigs> = {
   game: GAME_LINKS,
-  anime: ANIME_LINKS
+  anime: ANIME_LINKS,
+  comic: COMIC_LINKS,
+  novel: NOVEL_LINKS
 }
 
 export function mediaLinkConfigs(mediaType: LibraryMediaType | undefined): MediaLinkConfigs {

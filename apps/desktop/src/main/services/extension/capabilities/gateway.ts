@@ -239,6 +239,42 @@ export class ExtensionCapabilityGateway {
         start: this.ingest.startAddAnimeFromScraper(runtimeHandle, profileId, lookup, options)
       })
     )
+    rpc.handleHostRequest(
+      'capabilities.ingest.comic.add.fromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }, context) => ({
+        result: await this.ingest.addComicFromScraper(
+          runtimeHandle,
+          profileId,
+          lookup,
+          options,
+          context.signal
+        )
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.comic.add.startFromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }) => ({
+        start: this.ingest.startAddComicFromScraper(runtimeHandle, profileId, lookup, options)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.novel.add.fromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }, context) => ({
+        result: await this.ingest.addNovelFromScraper(
+          runtimeHandle,
+          profileId,
+          lookup,
+          options,
+          context.signal
+        )
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.novel.add.startFromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }) => ({
+        start: this.ingest.startAddNovelFromScraper(runtimeHandle, profileId, lookup, options)
+      })
+    )
 
     rpc.handleHostRequest('capabilities.commands.list', async ({ runtimeHandle }) => ({
       items: this.commands.list(runtimeHandle)

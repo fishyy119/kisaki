@@ -1,5 +1,7 @@
 export { buildAnimeGraph, buildDirectAnimeGraph, normalizeAnimeEpisodes } from './anime'
+export { buildComicGraph, buildDirectComicGraph, normalizeComicChapters } from './comic'
 export { buildGameGraph, buildDirectGameGraph } from './game'
+export { buildNovelGraph, buildDirectNovelGraph, normalizeNovelVolumes } from './novel'
 export { buildPersonGraph } from './person'
 export { buildCompanyGraph } from './company'
 export { buildCharacterGraph } from './character'
@@ -15,6 +17,12 @@ export type {
   IngestCharacterGraph,
   IngestCharacterNode,
   IngestCharacterPersonLink,
+  IngestComicCharacterLink,
+  IngestComicCompanyLink,
+  IngestComicGraph,
+  IngestComicGraphLinks,
+  IngestComicNode,
+  IngestComicPersonLink,
   IngestCompanyGraph,
   IngestCompanyNode,
   IngestEntityNode,
@@ -26,6 +34,12 @@ export type {
   IngestGameNode,
   IngestGamePersonLink,
   IngestLinkBase,
+  IngestNovelCharacterLink,
+  IngestNovelCompanyLink,
+  IngestNovelGraph,
+  IngestNovelGraphLinks,
+  IngestNovelNode,
+  IngestNovelPersonLink,
   IngestPersonGraph,
   IngestPersonNode
 } from './types'

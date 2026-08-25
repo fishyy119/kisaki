@@ -25,6 +25,22 @@ export function registerScraperIpc(service: ScraperService, ipc: IpcService): vo
     wrapIpc(() => service.anime.getProviderInfo(providerId))
   )
 
+  ipc.handle('scraper:list-comic-providers', async () =>
+    wrapIpc(() => service.comic.getProviders())
+  )
+
+  ipc.handle('scraper:get-comic-provider', async (_, providerId) =>
+    wrapIpc(() => service.comic.getProviderInfo(providerId))
+  )
+
+  ipc.handle('scraper:list-novel-providers', async () =>
+    wrapIpc(() => service.novel.getProviders())
+  )
+
+  ipc.handle('scraper:get-novel-provider', async (_, providerId) =>
+    wrapIpc(() => service.novel.getProviderInfo(providerId))
+  )
+
   ipc.handle('scraper:list-person-providers', async () =>
     wrapIpc(() => service.person.getProviders())
   )
@@ -71,6 +87,30 @@ export function registerScraperIpc(service: ScraperService, ipc: IpcService): vo
 
   ipc.handle('scraper:get-anime-provider-images', async (_, providerId, lookup, imageType) =>
     wrapIpc(() => service.anime.getProviderImages(providerId, lookup, imageType))
+  )
+
+  ipc.handle('scraper:search-comic', async (_, profileId, query) =>
+    wrapIpc(() => service.comic.search(profileId, query))
+  )
+
+  ipc.handle('scraper:scrape-comic', async (_, profileId, lookup) =>
+    wrapIpc(() => service.comic.scrape(profileId, lookup))
+  )
+
+  ipc.handle('scraper:get-comic-provider-images', async (_, providerId, lookup, imageType) =>
+    wrapIpc(() => service.comic.getProviderImages(providerId, lookup, imageType))
+  )
+
+  ipc.handle('scraper:search-novel', async (_, profileId, query) =>
+    wrapIpc(() => service.novel.search(profileId, query))
+  )
+
+  ipc.handle('scraper:scrape-novel', async (_, profileId, lookup) =>
+    wrapIpc(() => service.novel.scrape(profileId, lookup))
+  )
+
+  ipc.handle('scraper:get-novel-provider-images', async (_, providerId, lookup, imageType) =>
+    wrapIpc(() => service.novel.getProviderImages(providerId, lookup, imageType))
   )
 
   ipc.handle('scraper:search-person', async (_, profileId, query) =>

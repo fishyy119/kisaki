@@ -8,9 +8,11 @@
 import type {
   AnimeScraperSlot,
   CharacterScraperSlot,
+  ComicScraperSlot,
   CompanyScraperSlot,
   GameScraperSlot,
   MovieScraperSlot,
+  NovelScraperSlot,
   PersonScraperSlot,
   TvScraperSlot
 } from './json'
@@ -38,6 +40,32 @@ export const ANIME_SCRAPER_SLOTS: AnimeScraperSlot[] = [
   'info',
   'tags',
   'episodes',
+  'characters',
+  'persons',
+  'companies',
+  'relatedEntries',
+  'covers',
+  'backdrops',
+  'logos'
+]
+
+export const COMIC_SCRAPER_SLOTS: ComicScraperSlot[] = [
+  'info',
+  'tags',
+  'chapters',
+  'characters',
+  'persons',
+  'companies',
+  'relatedEntries',
+  'covers',
+  'backdrops',
+  'logos'
+]
+
+export const NOVEL_SCRAPER_SLOTS: NovelScraperSlot[] = [
+  'info',
+  'tags',
+  'volumes',
   'characters',
   'persons',
   'companies',

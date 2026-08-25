@@ -11,8 +11,10 @@ import { db } from '@renderer/core/db'
 import {
   animeExternalIds,
   characterExternalIds,
+  comicExternalIds,
   companyExternalIds,
   gameExternalIds,
+  novelExternalIds,
   personExternalIds
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
@@ -67,6 +69,46 @@ export const IDENTITY_STORES: Record<ContentEntityType, IdentityStore> = {
         await db
           .insert(animeExternalIds)
           .values(rows.map((row, index) => ({ ...row, animeId: anchorId, orderInAnime: index })))
+      }
+    }
+  },
+  comic: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: comicExternalIds.id,
+          source: comicExternalIds.source,
+          externalId: comicExternalIds.externalId
+        })
+        .from(comicExternalIds)
+        .where(eq(comicExternalIds.comicId, anchorId))
+        .orderBy(asc(comicExternalIds.orderInComic)),
+    replace: async (anchorId, rows) => {
+      await db.delete(comicExternalIds).where(eq(comicExternalIds.comicId, anchorId))
+      if (rows.length > 0) {
+        await db
+          .insert(comicExternalIds)
+          .values(rows.map((row, index) => ({ ...row, comicId: anchorId, orderInComic: index })))
+      }
+    }
+  },
+  novel: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: novelExternalIds.id,
+          source: novelExternalIds.source,
+          externalId: novelExternalIds.externalId
+        })
+        .from(novelExternalIds)
+        .where(eq(novelExternalIds.novelId, anchorId))
+        .orderBy(asc(novelExternalIds.orderInNovel)),
+    replace: async (anchorId, rows) => {
+      await db.delete(novelExternalIds).where(eq(novelExternalIds.novelId, anchorId))
+      if (rows.length > 0) {
+        await db
+          .insert(novelExternalIds)
+          .values(rows.map((row, index) => ({ ...row, novelId: anchorId, orderInNovel: index })))
       }
     }
   },

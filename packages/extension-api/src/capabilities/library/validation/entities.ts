@@ -11,12 +11,24 @@ import type {
   LibraryCollectionCreateInput,
   LibraryCollectionPatch,
   LibraryCollectionQuery,
+  LibraryComicChapterCreateInput,
+  LibraryComicChapterQuery,
+  LibraryComicChapterReadStatePatch,
+  LibraryComicCreateInput,
+  LibraryComicPatch,
+  LibraryComicQuery,
   LibraryCompanyCreateInput,
   LibraryCompanyPatch,
   LibraryCompanyQuery,
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
+  LibraryNovelCreateInput,
+  LibraryNovelPatch,
+  LibraryNovelQuery,
+  LibraryNovelVolumeCreateInput,
+  LibraryNovelVolumeQuery,
+  LibraryNovelVolumeReadStatePatch,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
   LibraryPersonQuery,
@@ -27,16 +39,21 @@ import type {
 } from '../entities'
 import {
   LIBRARY_ANIME_STATUSES,
+  LIBRARY_COMIC_READING_DIRECTIONS,
+  LIBRARY_COMIC_STATUSES,
   LIBRARY_GAME_LAUNCHER_MODES,
   LIBRARY_GAME_MONITOR_MODES,
-  LIBRARY_GAME_STATUSES
+  LIBRARY_GAME_STATUSES,
+  LIBRARY_NOVEL_STATUSES
 } from '../entities'
 import {
   LIBRARY_ANIME_EPISODE_TYPES,
   LIBRARY_ANIME_FORMATS,
   LIBRARY_BLOOD_TYPES,
+  LIBRARY_COMIC_FORMATS,
   LIBRARY_CUP_SIZES,
-  LIBRARY_GENDERS
+  LIBRARY_GENDERS,
+  LIBRARY_NOVEL_FORMATS
 } from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
@@ -60,7 +77,9 @@ import {
   validateOptionalNonEmptyString,
   validateOptionalNonNegativeFiniteNumber,
   validateOptionalNonNegativeInteger,
+  validateOptionalNullableEnumString,
   validateOptionalNullableFiniteNumber,
+  validateOptionalNullableString,
   validateOptionalPartialDate,
   validateOptionalSaveBackups,
   validateOptionalStringArray,
@@ -169,6 +188,105 @@ const ANIME_EPISODE_QUERY_KEYS = new Set<string>([
   'watchedOnly',
   'unwatchedOnly'
 ])
+const COMIC_CREATE_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'aliases',
+  'releaseDate',
+  'status',
+  'format',
+  'readingDirection',
+  'totalVolumes',
+  'totalChapters',
+  'lastActiveAt',
+  'totalDuration',
+  'comicDirPath',
+  'descriptionInlineFiles',
+  'externalIds'
+])
+const COMIC_PATCH_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'aliases',
+  'releaseDate',
+  'status',
+  'format',
+  'readingDirection',
+  'totalVolumes',
+  'totalChapters',
+  'comicDirPath',
+  'descriptionInlineFiles',
+  'externalIds',
+  'lastActiveAt',
+  'totalDuration'
+])
+const COMIC_CHAPTER_CREATE_KEYS = new Set<string>([
+  'volumeNumber',
+  'chapterNumber',
+  'name',
+  'originalName',
+  'releaseDate',
+  'description',
+  'order',
+  'externalIds'
+])
+const COMIC_CHAPTER_READ_STATE_KEYS = new Set<string>(['read', 'readAt', 'readCount', 'resumePage'])
+const COMIC_CHAPTER_QUERY_KEYS = new Set<string>(['comicId', 'readOnly', 'unreadOnly'])
+const NOVEL_CREATE_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'aliases',
+  'releaseDate',
+  'status',
+  'format',
+  'totalVolumes',
+  'lastActiveAt',
+  'totalDuration',
+  'novelDirPath',
+  'descriptionInlineFiles',
+  'externalIds'
+])
+const NOVEL_PATCH_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'aliases',
+  'releaseDate',
+  'status',
+  'format',
+  'totalVolumes',
+  'novelDirPath',
+  'descriptionInlineFiles',
+  'externalIds',
+  'lastActiveAt',
+  'totalDuration'
+])
+const NOVEL_VOLUME_CREATE_KEYS = new Set<string>([
+  'volumeNumber',
+  'name',
+  'originalName',
+  'releaseDate',
+  'description',
+  'order',
+  'externalIds'
+])
+const NOVEL_VOLUME_READ_STATE_KEYS = new Set<string>([
+  'read',
+  'readAt',
+  'readCount',
+  'resumeLocator',
+  'resumeProgress'
+])
+const NOVEL_VOLUME_QUERY_KEYS = new Set<string>(['novelId', 'readOnly', 'unreadOnly'])
 const PERSON_CREATE_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
   ...CREATE_TIMESTAMP_KEYS,
@@ -277,6 +395,24 @@ const GAME_QUERY_KEYS = new Set<string>([
   'collectionIds',
   'tagIds'
 ])
+const COMIC_QUERY_KEYS = new Set<string>([
+  ...LIST_QUERY_BASE_KEYS,
+  'statuses',
+  'formats',
+  'favoritesOnly',
+  'includeNsfw',
+  'collectionIds',
+  'tagIds'
+])
+const NOVEL_QUERY_KEYS = new Set<string>([
+  ...LIST_QUERY_BASE_KEYS,
+  'statuses',
+  'formats',
+  'favoritesOnly',
+  'includeNsfw',
+  'collectionIds',
+  'tagIds'
+])
 const PERSON_QUERY_KEYS = new Set<string>([
   ...LIST_QUERY_BASE_KEYS,
   'favoritesOnly',
@@ -352,6 +488,93 @@ export function validateLibraryAnimeEpisodeQuery(value: unknown): ValidationIssu
     ),
     ...validateOptionalBoolean(value.watchedOnly, '$.watchedOnly'),
     ...validateOptionalBoolean(value.unwatchedOnly, '$.unwatchedOnly')
+  ]
+}
+
+export function validateLibraryComicCreateInput(value: unknown): ValidationIssue[] {
+  return validateComicWriteInput(value, '$', true)
+}
+
+export function validateLibraryComicPatch(value: unknown): ValidationIssue[] {
+  return validateComicWriteInput(value, '$', false)
+}
+
+export function validateLibraryComicChapterCreateInput(value: unknown): ValidationIssue[] {
+  return validateComicChapterCreateInput(value, '$')
+}
+
+export function validateLibraryComicChapterReadStatePatch(value: unknown): ValidationIssue[] {
+  const input = requireWriteObject(value, '$', 'Comic unit read state patch')
+  if (!input) {
+    return [{ path: '$', message: 'Comic unit read state patch must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, COMIC_CHAPTER_READ_STATE_KEYS),
+    ...validateOptionalBoolean(input.read, '$.read'),
+    ...validateOptionalNullableFiniteNumber(input.readAt, '$.readAt'),
+    ...validateOptionalNonNegativeInteger(input.readCount, '$.readCount'),
+    ...validateOptionalNullableFiniteNumber(input.resumePage, '$.resumePage')
+  ]
+}
+
+export function validateLibraryComicChapterQuery(value: unknown): ValidationIssue[] {
+  if (!isRecord(value)) {
+    return [{ path: '$', message: 'Comic unit query must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, COMIC_CHAPTER_QUERY_KEYS),
+    ...validateRequiredString(value.comicId, '$.comicId', {
+      trim: true,
+      valueMessage: 'comicId must be a non-empty string.'
+    }),
+    ...validateOptionalBoolean(value.readOnly, '$.readOnly'),
+    ...validateOptionalBoolean(value.unreadOnly, '$.unreadOnly')
+  ]
+}
+
+export function validateLibraryNovelCreateInput(value: unknown): ValidationIssue[] {
+  return validateNovelWriteInput(value, '$', true)
+}
+
+export function validateLibraryNovelPatch(value: unknown): ValidationIssue[] {
+  return validateNovelWriteInput(value, '$', false)
+}
+
+export function validateLibraryNovelVolumeCreateInput(value: unknown): ValidationIssue[] {
+  return validateNovelVolumeCreateInput(value, '$')
+}
+
+export function validateLibraryNovelVolumeReadStatePatch(value: unknown): ValidationIssue[] {
+  const input = requireWriteObject(value, '$', 'Novel volume read state patch')
+  if (!input) {
+    return [{ path: '$', message: 'Novel volume read state patch must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, NOVEL_VOLUME_READ_STATE_KEYS),
+    ...validateOptionalBoolean(input.read, '$.read'),
+    ...validateOptionalNullableFiniteNumber(input.readAt, '$.readAt'),
+    ...validateOptionalNonNegativeInteger(input.readCount, '$.readCount'),
+    ...validateOptionalNullableString(input.resumeLocator, '$.resumeLocator'),
+    ...validateOptionalNullableFiniteNumber(input.resumeProgress, '$.resumeProgress')
+  ]
+}
+
+export function validateLibraryNovelVolumeQuery(value: unknown): ValidationIssue[] {
+  if (!isRecord(value)) {
+    return [{ path: '$', message: 'Novel volume query must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, NOVEL_VOLUME_QUERY_KEYS),
+    ...validateRequiredString(value.novelId, '$.novelId', {
+      trim: true,
+      valueMessage: 'novelId must be a non-empty string.'
+    }),
+    ...validateOptionalBoolean(value.readOnly, '$.readOnly'),
+    ...validateOptionalBoolean(value.unreadOnly, '$.unreadOnly')
   ]
 }
 
@@ -437,6 +660,64 @@ export function validateLibraryAnimeQuery(value: unknown): ValidationIssue[] {
       '$.formats',
       LIBRARY_ANIME_FORMATS,
       'formats must be an array of supported anime formats.'
+    ),
+    ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
+    ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
+    ...validateOptionalNonEmptyStringArray(query.collectionIds, '$.collectionIds'),
+    ...validateOptionalNonEmptyStringArray(query.tagIds, '$.tagIds')
+  ]
+}
+
+export function validateLibraryComicQuery(value: unknown): ValidationIssue[] {
+  const query = requireQueryObject(value)
+  if (!query) {
+    return value === undefined
+      ? []
+      : [{ path: '$', message: 'Comic list query must be an object.' }]
+  }
+
+  return [
+    ...validateBaseListQuery(query, COMIC_QUERY_KEYS),
+    ...validateOptionalEnumArray(
+      query.statuses,
+      '$.statuses',
+      LIBRARY_COMIC_STATUSES,
+      'statuses must be an array of supported comic statuses.'
+    ),
+    ...validateOptionalEnumArray(
+      query.formats,
+      '$.formats',
+      LIBRARY_COMIC_FORMATS,
+      'formats must be an array of supported comic formats.'
+    ),
+    ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
+    ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
+    ...validateOptionalNonEmptyStringArray(query.collectionIds, '$.collectionIds'),
+    ...validateOptionalNonEmptyStringArray(query.tagIds, '$.tagIds')
+  ]
+}
+
+export function validateLibraryNovelQuery(value: unknown): ValidationIssue[] {
+  const query = requireQueryObject(value)
+  if (!query) {
+    return value === undefined
+      ? []
+      : [{ path: '$', message: 'Novel list query must be an object.' }]
+  }
+
+  return [
+    ...validateBaseListQuery(query, NOVEL_QUERY_KEYS),
+    ...validateOptionalEnumArray(
+      query.statuses,
+      '$.statuses',
+      LIBRARY_NOVEL_STATUSES,
+      'statuses must be an array of supported novel statuses.'
+    ),
+    ...validateOptionalEnumArray(
+      query.formats,
+      '$.formats',
+      LIBRARY_NOVEL_FORMATS,
+      'formats must be an array of supported novel formats.'
     ),
     ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
     ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
@@ -583,6 +864,92 @@ export function assertValidLibraryAnimeQuery(
   value: unknown
 ): asserts value is LibraryAnimeQuery | undefined {
   throwIfValidationIssues('library.animes.list query', validateLibraryAnimeQuery(value))
+}
+
+export function assertValidLibraryComicCreateInput(
+  value: unknown
+): asserts value is LibraryComicCreateInput {
+  throwIfValidationIssues('library.comics.create input', validateLibraryComicCreateInput(value))
+}
+
+export function assertValidLibraryComicPatch(value: unknown): asserts value is LibraryComicPatch {
+  throwIfValidationIssues('library.comics.update patch', validateLibraryComicPatch(value))
+}
+
+export function assertValidLibraryComicChapterCreateInput(
+  value: unknown
+): asserts value is LibraryComicChapterCreateInput {
+  throwIfValidationIssues(
+    'library.comics.chapters.create input',
+    validateLibraryComicChapterCreateInput(value)
+  )
+}
+
+export function assertValidLibraryComicChapterReadStatePatch(
+  value: unknown
+): asserts value is LibraryComicChapterReadStatePatch {
+  throwIfValidationIssues(
+    'library.comics.chapters.patchReadState patch',
+    validateLibraryComicChapterReadStatePatch(value)
+  )
+}
+
+export function assertValidLibraryComicChapterQuery(
+  value: unknown
+): asserts value is LibraryComicChapterQuery {
+  throwIfValidationIssues(
+    'library.comics.chapters.list query',
+    validateLibraryComicChapterQuery(value)
+  )
+}
+
+export function assertValidLibraryComicQuery(
+  value: unknown
+): asserts value is LibraryComicQuery | undefined {
+  throwIfValidationIssues('library.comics.list query', validateLibraryComicQuery(value))
+}
+
+export function assertValidLibraryNovelCreateInput(
+  value: unknown
+): asserts value is LibraryNovelCreateInput {
+  throwIfValidationIssues('library.novels.create input', validateLibraryNovelCreateInput(value))
+}
+
+export function assertValidLibraryNovelPatch(value: unknown): asserts value is LibraryNovelPatch {
+  throwIfValidationIssues('library.novels.update patch', validateLibraryNovelPatch(value))
+}
+
+export function assertValidLibraryNovelVolumeCreateInput(
+  value: unknown
+): asserts value is LibraryNovelVolumeCreateInput {
+  throwIfValidationIssues(
+    'library.novels.volumes.create input',
+    validateLibraryNovelVolumeCreateInput(value)
+  )
+}
+
+export function assertValidLibraryNovelVolumeReadStatePatch(
+  value: unknown
+): asserts value is LibraryNovelVolumeReadStatePatch {
+  throwIfValidationIssues(
+    'library.novels.volumes.patchReadState patch',
+    validateLibraryNovelVolumeReadStatePatch(value)
+  )
+}
+
+export function assertValidLibraryNovelVolumeQuery(
+  value: unknown
+): asserts value is LibraryNovelVolumeQuery {
+  throwIfValidationIssues(
+    'library.novels.volumes.list query',
+    validateLibraryNovelVolumeQuery(value)
+  )
+}
+
+export function assertValidLibraryNovelQuery(
+  value: unknown
+): asserts value is LibraryNovelQuery | undefined {
+  throwIfValidationIssues('library.novels.list query', validateLibraryNovelQuery(value))
 }
 
 export function assertValidLibraryPersonCreateInput(
@@ -799,6 +1166,132 @@ function validateAnimeEpisodeCreateInput(value: unknown, path: string): Validati
     ...validateOptionalPartialDate(input.airDate, `${path}.airDate`),
     ...validateOptionalString(input.description, `${path}.description`),
     ...validateOptionalNullableFiniteNumber(input.durationMs, `${path}.durationMs`),
+    ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
+  ]
+}
+
+function validateComicWriteInput(value: unknown, path: string, create: boolean): ValidationIssue[] {
+  const input = requireWriteObject(value, path, create ? 'Comic create input' : 'Comic patch')
+  if (!input) {
+    return [
+      {
+        path,
+        message: create ? 'Comic create input must be an object.' : 'Comic patch must be an object.'
+      }
+    ]
+  }
+
+  return [
+    ...validateUnknownKeys(input, create ? COMIC_CREATE_KEYS : COMIC_PATCH_KEYS, path),
+    ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
+    ...validateOptionalNonEmptyString(input.coverFile, `${path}.coverFile`),
+    ...validateOptionalNonEmptyString(input.backdropFile, `${path}.backdropFile`),
+    ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
+    ...validateOptionalStringArray(input.aliases, `${path}.aliases`),
+    ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      input.status,
+      `${path}.status`,
+      LIBRARY_COMIC_STATUSES,
+      'status must be one of the supported comic statuses.'
+    ),
+    ...validateOptionalEnumString(
+      input.format,
+      `${path}.format`,
+      LIBRARY_COMIC_FORMATS,
+      'format must be one of the supported comic formats.'
+    ),
+    ...validateOptionalNullableEnumString(
+      input.readingDirection,
+      `${path}.readingDirection`,
+      LIBRARY_COMIC_READING_DIRECTIONS,
+      'readingDirection must be one of the supported comic reading directions.'
+    ),
+    ...validateOptionalNullableFiniteNumber(input.totalVolumes, `${path}.totalVolumes`),
+    ...validateOptionalNullableFiniteNumber(input.totalChapters, `${path}.totalChapters`),
+    ...validateOptionalString(input.comicDirPath, `${path}.comicDirPath`),
+    ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
+    ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
+    ...validateOptionalNonNegativeFiniteNumber(input.totalDuration, `${path}.totalDuration`)
+  ]
+}
+
+function validateComicChapterCreateInput(value: unknown, path: string): ValidationIssue[] {
+  const input = requireWriteObject(value, path, 'Comic unit create input')
+  if (!input) {
+    return [{ path, message: 'Comic unit create input must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, COMIC_CHAPTER_CREATE_KEYS, path),
+    ...validateOptionalNullableFiniteNumber(input.volumeNumber, `${path}.volumeNumber`),
+    ...validateOptionalNullableFiniteNumber(input.chapterNumber, `${path}.chapterNumber`),
+    ...validateOptionalString(input.name, `${path}.name`),
+    ...validateOptionalString(input.originalName, `${path}.originalName`),
+    ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalString(input.description, `${path}.description`),
+    ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
+  ]
+}
+
+function validateNovelWriteInput(value: unknown, path: string, create: boolean): ValidationIssue[] {
+  const input = requireWriteObject(value, path, create ? 'Novel create input' : 'Novel patch')
+  if (!input) {
+    return [
+      {
+        path,
+        message: create ? 'Novel create input must be an object.' : 'Novel patch must be an object.'
+      }
+    ]
+  }
+
+  return [
+    ...validateUnknownKeys(input, create ? NOVEL_CREATE_KEYS : NOVEL_PATCH_KEYS, path),
+    ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
+    ...validateOptionalNonEmptyString(input.coverFile, `${path}.coverFile`),
+    ...validateOptionalNonEmptyString(input.backdropFile, `${path}.backdropFile`),
+    ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
+    ...validateOptionalStringArray(input.aliases, `${path}.aliases`),
+    ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      input.status,
+      `${path}.status`,
+      LIBRARY_NOVEL_STATUSES,
+      'status must be one of the supported novel statuses.'
+    ),
+    ...validateOptionalEnumString(
+      input.format,
+      `${path}.format`,
+      LIBRARY_NOVEL_FORMATS,
+      'format must be one of the supported novel formats.'
+    ),
+    ...validateOptionalNullableFiniteNumber(input.totalVolumes, `${path}.totalVolumes`),
+    ...validateOptionalString(input.novelDirPath, `${path}.novelDirPath`),
+    ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
+    ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
+    ...validateOptionalNonNegativeFiniteNumber(input.totalDuration, `${path}.totalDuration`)
+  ]
+}
+
+function validateNovelVolumeCreateInput(value: unknown, path: string): ValidationIssue[] {
+  const input = requireWriteObject(value, path, 'Novel volume create input')
+  if (!input) {
+    return [{ path, message: 'Novel volume create input must be an object.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(input, NOVEL_VOLUME_CREATE_KEYS, path),
+    ...validateOptionalNullableFiniteNumber(input.volumeNumber, `${path}.volumeNumber`),
+    ...validateOptionalString(input.name, `${path}.name`),
+    ...validateOptionalString(input.originalName, `${path}.originalName`),
+    ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalString(input.description, `${path}.description`),
     ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
     ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
   ]

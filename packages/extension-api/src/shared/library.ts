@@ -85,6 +85,50 @@ export const LIBRARY_ANIME_COMPANY_ROLES = ['studio', 'producer', 'distributor',
 
 export type LibraryAnimeCompanyRole = (typeof LIBRARY_ANIME_COMPANY_ROLES)[number]
 
+export const LIBRARY_COMIC_FORMATS = [
+  'manga',
+  'manhua',
+  'manhwa',
+  'webtoon',
+  'doujinshi',
+  'other'
+] as const
+
+export type LibraryComicFormat = (typeof LIBRARY_COMIC_FORMATS)[number]
+
+export const LIBRARY_COMIC_PERSON_ROLES = ['author', 'originalCreator', 'art', 'other'] as const
+
+export type LibraryComicPersonRole = (typeof LIBRARY_COMIC_PERSON_ROLES)[number]
+
+export const LIBRARY_COMIC_CHARACTER_ROLES = ['main', 'supporting', 'cameo', 'other'] as const
+
+export type LibraryComicCharacterRole = (typeof LIBRARY_COMIC_CHARACTER_ROLES)[number]
+
+export const LIBRARY_COMIC_COMPANY_ROLES = ['publisher', 'imprint', 'other'] as const
+
+export type LibraryComicCompanyRole = (typeof LIBRARY_COMIC_COMPANY_ROLES)[number]
+
+export const LIBRARY_NOVEL_FORMATS = ['lightNovel', 'webNovel', 'general', 'other'] as const
+
+export type LibraryNovelFormat = (typeof LIBRARY_NOVEL_FORMATS)[number]
+
+export const LIBRARY_NOVEL_PERSON_ROLES = [
+  'author',
+  'illustrator',
+  'originalCreator',
+  'other'
+] as const
+
+export type LibraryNovelPersonRole = (typeof LIBRARY_NOVEL_PERSON_ROLES)[number]
+
+export const LIBRARY_NOVEL_CHARACTER_ROLES = ['main', 'supporting', 'cameo', 'other'] as const
+
+export type LibraryNovelCharacterRole = (typeof LIBRARY_NOVEL_CHARACTER_ROLES)[number]
+
+export const LIBRARY_NOVEL_COMPANY_ROLES = ['publisher', 'imprint', 'other'] as const
+
+export type LibraryNovelCompanyRole = (typeof LIBRARY_NOVEL_COMPANY_ROLES)[number]
+
 export const LIBRARY_CHARACTER_PERSON_ROLES = [
   'actor',
   'illustration',

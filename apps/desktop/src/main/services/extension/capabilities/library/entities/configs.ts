@@ -11,6 +11,10 @@ import type {
   LibraryCollectionCreateInput,
   LibraryCollectionPatch,
   LibraryCollectionQuery,
+  LibraryComic,
+  LibraryComicCreateInput,
+  LibraryComicPatch,
+  LibraryComicQuery,
   LibraryCompany,
   LibraryCompanyCreateInput,
   LibraryCompanyPatch,
@@ -19,6 +23,10 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
+  LibraryNovel,
+  LibraryNovelCreateInput,
+  LibraryNovelPatch,
+  LibraryNovelQuery,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -35,10 +43,14 @@ import {
   characterExternalIds,
   characters,
   collections,
+  comicExternalIds,
+  comics,
   companies,
   companyExternalIds,
   gameExternalIds,
   games,
+  novelExternalIds,
+  novels,
   personExternalIds,
   persons,
   tags
@@ -47,8 +59,10 @@ import {
   animeFilterQuerySpec,
   characterFilterQuerySpec,
   collectionFilterQuerySpec,
+  comicFilterQuerySpec,
   companyFilterQuerySpec,
   gameFilterQuerySpec,
+  novelFilterQuerySpec,
   personFilterQuerySpec,
   tagFilterQuerySpec
 } from '@shared/filter'
@@ -56,8 +70,10 @@ import {
   animeSearchQuerySpec,
   characterSearchQuerySpec,
   collectionSearchQuerySpec,
+  comicSearchQuerySpec,
   companySearchQuerySpec,
   gameSearchQuerySpec,
+  novelSearchQuerySpec,
   personSearchQuerySpec,
   tagSearchQuerySpec
 } from '@shared/search/specs'
@@ -124,6 +140,50 @@ const ANIME_EXTERNAL_IDS_CONFIG = {
     }
   }
 } satisfies ExternalIdConfig<typeof animeExternalIds>
+
+const COMIC_EXTERNAL_IDS_CONFIG = {
+  table: comicExternalIds,
+  entityIdColumn: comicExternalIds.comicId,
+  sourceColumn: comicExternalIds.source,
+  externalIdColumn: comicExternalIds.externalId,
+  orderColumn: comicExternalIds.orderInComic,
+  toEntityId(row) {
+    return row.comicId
+  },
+  toExternalId(row) {
+    return { source: row.source, id: row.externalId }
+  },
+  buildInsertValue(entityId, externalId, order) {
+    return {
+      comicId: entityId,
+      source: externalId.source,
+      externalId: externalId.id,
+      orderInComic: order
+    }
+  }
+} satisfies ExternalIdConfig<typeof comicExternalIds>
+
+const NOVEL_EXTERNAL_IDS_CONFIG = {
+  table: novelExternalIds,
+  entityIdColumn: novelExternalIds.novelId,
+  sourceColumn: novelExternalIds.source,
+  externalIdColumn: novelExternalIds.externalId,
+  orderColumn: novelExternalIds.orderInNovel,
+  toEntityId(row) {
+    return row.novelId
+  },
+  toExternalId(row) {
+    return { source: row.source, id: row.externalId }
+  },
+  buildInsertValue(entityId, externalId, order) {
+    return {
+      novelId: entityId,
+      source: externalId.source,
+      externalId: externalId.id,
+      orderInNovel: order
+    }
+  }
+} satisfies ExternalIdConfig<typeof novelExternalIds>
 
 const PERSON_EXTERNAL_IDS_CONFIG = {
   table: personExternalIds,
@@ -414,6 +474,220 @@ export const ANIME_CONFIG = {
   LibraryAnimeQuery,
   typeof animes,
   typeof animeExternalIds
+>
+
+export const COMIC_CONFIG = {
+  table: comics,
+  filterSpec: comicFilterQuerySpec,
+  searchSpec: comicSearchQuerySpec,
+  externalIds: COMIC_EXTERNAL_IDS_CONFIG,
+  toFilter(query) {
+    return conditionsFilter([
+      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
+      anyOfCondition('status', query?.statuses),
+      anyOfCondition('format', query?.formats),
+      hasAnyOfCondition('tags', query?.tagIds),
+      hasAnyOfCondition('collections', query?.collectionIds)
+    ])
+  },
+  toDto(row, externalIds) {
+    return {
+      ...buildRankedEntityDtoBase(row, externalIds),
+      coverFile: optionalValue(row.coverFile),
+      backdropFile: optionalValue(row.backdropFile),
+      logoFile: optionalValue(row.logoFile),
+      aliases: optionalArray(row.aliases),
+      releaseDate: optionalValue(row.releaseDate),
+      status: row.status,
+      format: row.format,
+      readingDirection: optionalValue(row.readingDirection),
+      totalVolumes: row.totalVolumes,
+      totalChapters: row.totalChapters,
+      lastActiveAt: toNullableTimestampMs(row.lastActiveAt),
+      totalDuration: row.totalDuration,
+      comicDirPath: optionalValue(row.comicDirPath),
+      descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
+    }
+  },
+  buildCreateValues(id, input) {
+    return {
+      id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
+      name: input.name,
+      description: input.description,
+      originalName: input.originalName,
+      sortName: input.sortName,
+      coverFile: input.coverFile,
+      backdropFile: input.backdropFile,
+      logoFile: input.logoFile,
+      aliases: copyReadonlyArray(input.aliases),
+      releaseDate: input.releaseDate,
+      status: input.status,
+      format: input.format,
+      readingDirection: input.readingDirection,
+      totalVolumes: input.totalVolumes,
+      totalChapters: input.totalChapters,
+      lastActiveAt:
+        input.lastActiveAt === undefined
+          ? undefined
+          : input.lastActiveAt === null
+            ? null
+            : new Date(input.lastActiveAt),
+      totalDuration: input.totalDuration,
+      comicDirPath: input.comicDirPath,
+      descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
+      score: input.score,
+      isFavorite: input.isFavorite,
+      isNsfw: input.isNsfw,
+      externalSites: copyReadonlyArray(input.externalSites)
+    }
+  },
+  buildPatchValues(patch) {
+    return stripUndefined({
+      name: patch.name,
+      description: patch.description,
+      originalName: patch.originalName,
+      sortName: patch.sortName,
+      coverFile: patch.coverFile,
+      backdropFile: patch.backdropFile,
+      logoFile: patch.logoFile,
+      aliases: copyReadonlyArray(patch.aliases),
+      releaseDate: patch.releaseDate,
+      status: patch.status,
+      format: patch.format,
+      readingDirection: patch.readingDirection,
+      totalVolumes: patch.totalVolumes,
+      totalChapters: patch.totalChapters,
+      comicDirPath: patch.comicDirPath,
+      descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
+      score: patch.score,
+      isFavorite: patch.isFavorite,
+      isNsfw: patch.isNsfw,
+      externalSites: copyReadonlyArray(patch.externalSites),
+      lastActiveAt:
+        patch.lastActiveAt === undefined
+          ? undefined
+          : patch.lastActiveAt === null
+            ? null
+            : new Date(patch.lastActiveAt),
+      totalDuration: patch.totalDuration
+    })
+  },
+  buildExtraConditions(query) {
+    return query?.includeNsfw ? [] : [eq(comics.isNsfw, false)]
+  }
+} satisfies EntityConfig<
+  LibraryComic,
+  LibraryComicCreateInput,
+  LibraryComicPatch,
+  LibraryComicQuery,
+  typeof comics,
+  typeof comicExternalIds
+>
+
+export const NOVEL_CONFIG = {
+  table: novels,
+  filterSpec: novelFilterQuerySpec,
+  searchSpec: novelSearchQuerySpec,
+  externalIds: NOVEL_EXTERNAL_IDS_CONFIG,
+  toFilter(query) {
+    return conditionsFilter([
+      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
+      anyOfCondition('status', query?.statuses),
+      anyOfCondition('format', query?.formats),
+      hasAnyOfCondition('tags', query?.tagIds),
+      hasAnyOfCondition('collections', query?.collectionIds)
+    ])
+  },
+  toDto(row, externalIds) {
+    return {
+      ...buildRankedEntityDtoBase(row, externalIds),
+      coverFile: optionalValue(row.coverFile),
+      backdropFile: optionalValue(row.backdropFile),
+      logoFile: optionalValue(row.logoFile),
+      aliases: optionalArray(row.aliases),
+      releaseDate: optionalValue(row.releaseDate),
+      status: row.status,
+      format: row.format,
+      totalVolumes: row.totalVolumes,
+      lastActiveAt: toNullableTimestampMs(row.lastActiveAt),
+      totalDuration: row.totalDuration,
+      novelDirPath: optionalValue(row.novelDirPath),
+      descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
+    }
+  },
+  buildCreateValues(id, input) {
+    return {
+      id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
+      name: input.name,
+      description: input.description,
+      originalName: input.originalName,
+      sortName: input.sortName,
+      coverFile: input.coverFile,
+      backdropFile: input.backdropFile,
+      logoFile: input.logoFile,
+      aliases: copyReadonlyArray(input.aliases),
+      releaseDate: input.releaseDate,
+      status: input.status,
+      format: input.format,
+      totalVolumes: input.totalVolumes,
+      lastActiveAt:
+        input.lastActiveAt === undefined
+          ? undefined
+          : input.lastActiveAt === null
+            ? null
+            : new Date(input.lastActiveAt),
+      totalDuration: input.totalDuration,
+      novelDirPath: input.novelDirPath,
+      descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
+      score: input.score,
+      isFavorite: input.isFavorite,
+      isNsfw: input.isNsfw,
+      externalSites: copyReadonlyArray(input.externalSites)
+    }
+  },
+  buildPatchValues(patch) {
+    return stripUndefined({
+      name: patch.name,
+      description: patch.description,
+      originalName: patch.originalName,
+      sortName: patch.sortName,
+      coverFile: patch.coverFile,
+      backdropFile: patch.backdropFile,
+      logoFile: patch.logoFile,
+      aliases: copyReadonlyArray(patch.aliases),
+      releaseDate: patch.releaseDate,
+      status: patch.status,
+      format: patch.format,
+      totalVolumes: patch.totalVolumes,
+      novelDirPath: patch.novelDirPath,
+      descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
+      score: patch.score,
+      isFavorite: patch.isFavorite,
+      isNsfw: patch.isNsfw,
+      externalSites: copyReadonlyArray(patch.externalSites),
+      lastActiveAt:
+        patch.lastActiveAt === undefined
+          ? undefined
+          : patch.lastActiveAt === null
+            ? null
+            : new Date(patch.lastActiveAt),
+      totalDuration: patch.totalDuration
+    })
+  },
+  buildExtraConditions(query) {
+    return query?.includeNsfw ? [] : [eq(novels.isNsfw, false)]
+  }
+} satisfies EntityConfig<
+  LibraryNovel,
+  LibraryNovelCreateInput,
+  LibraryNovelPatch,
+  LibraryNovelQuery,
+  typeof novels,
+  typeof novelExternalIds
 >
 
 export const PERSON_CONFIG = {

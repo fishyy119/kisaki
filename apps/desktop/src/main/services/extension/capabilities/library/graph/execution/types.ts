@@ -5,12 +5,19 @@ import type {
 } from '@kisaki3/extension-api'
 import type { DbService } from '@main/services/db'
 import type { ExtensionLibraryAttachmentStore } from '../../attachments'
-import type { ExtensionLibraryEntityStore, ExtensionLibraryEpisodeStore } from '../../entities'
+import type {
+  ExtensionLibraryComicChapterStore,
+  ExtensionLibraryEntityStore,
+  ExtensionLibraryEpisodeStore,
+  ExtensionLibraryNovelVolumeStore
+} from '../../entities'
 
 export interface ExecuteLibraryGraphOptions {
   db: DbService
   entities: ExtensionLibraryEntityStore
   episodes: ExtensionLibraryEpisodeStore
+  chapters: ExtensionLibraryComicChapterStore
+  volumes: ExtensionLibraryNovelVolumeStore
   attachments: ExtensionLibraryAttachmentStore
 }
 

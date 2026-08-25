@@ -87,6 +87,31 @@ export function extractInfoboxValuesByKeys(
     .filter((value) => !isLikelyUrl(value))
 }
 
+/** Infobox keys under which a book entry states its volume count. */
+const BOOK_VOLUME_COUNT_KEYS = ['册数', '冊數', '卷数', '卷數']
+
+/**
+ * The volume count a book entry states in its infobox.
+ *
+ * Values with trailing wording ("12卷") keep their leading number;
+ * non-numeric wording answers nothing rather than zero.
+ */
+export function readBookVolumeCount(
+  infobox: BangumiInfoboxItem[] | null | undefined
+): number | undefined {
+  for (const value of extractInfoboxValuesByKeys(infobox, BOOK_VOLUME_COUNT_KEYS)) {
+    const match = value.match(/\d+/)
+    if (!match) continue
+
+    const count = Number(match[0])
+    if (Number.isInteger(count) && count > 0) {
+      return count
+    }
+  }
+
+  return undefined
+}
+
 /**
  * Infobox keys that hold alternative names.
  *

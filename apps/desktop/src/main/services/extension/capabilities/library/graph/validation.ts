@@ -3,6 +3,9 @@ import {
   LIBRARY_ANIME_COMPANY_ROLES,
   LIBRARY_ANIME_PERSON_ROLES,
   LIBRARY_CHARACTER_PERSON_ROLES,
+  LIBRARY_COMIC_CHARACTER_ROLES,
+  LIBRARY_COMIC_COMPANY_ROLES,
+  LIBRARY_COMIC_PERSON_ROLES,
   LIBRARY_GRAPH_CONFLICT_MODES,
   LIBRARY_GRAPH_EDGE_KINDS,
   LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS,
@@ -14,12 +17,19 @@ import {
   LIBRARY_COMPANY_RELATION_TYPES,
   LIBRARY_MEDIA_RELATION_TYPE_RULES,
   LIBRARY_MEDIA_TYPES,
+  LIBRARY_NOVEL_CHARACTER_ROLES,
+  LIBRARY_NOVEL_COMPANY_ROLES,
+  LIBRARY_NOVEL_PERSON_ROLES,
   assertValidLibraryAnimeCreateInput,
   assertValidLibraryAnimeEpisodeCreateInput,
   assertValidLibraryCharacterCreateInput,
   assertValidLibraryCollectionCreateInput,
+  assertValidLibraryComicChapterCreateInput,
+  assertValidLibraryComicCreateInput,
   assertValidLibraryCompanyCreateInput,
   assertValidLibraryGameCreateInput,
+  assertValidLibraryNovelCreateInput,
+  assertValidLibraryNovelVolumeCreateInput,
   assertValidLibraryPersonCreateInput,
   assertValidLibraryTagCreateInput,
   createValidationError,
@@ -58,16 +68,24 @@ const NODE_BASE_KEYS = new Set<string>([
 const NODE_REF_KEYS = new Set<string>(['kind', 'key'])
 const COMPANY_ROLES: Record<LibraryMediaType, readonly string[]> = {
   game: LIBRARY_GAME_COMPANY_ROLES,
-  anime: LIBRARY_ANIME_COMPANY_ROLES
+  anime: LIBRARY_ANIME_COMPANY_ROLES,
+  comic: LIBRARY_COMIC_COMPANY_ROLES,
+  novel: LIBRARY_NOVEL_COMPANY_ROLES
 }
 const PERSON_ROLES: Record<LibraryMediaType, readonly string[]> = {
   game: LIBRARY_GAME_PERSON_ROLES,
-  anime: LIBRARY_ANIME_PERSON_ROLES
+  anime: LIBRARY_ANIME_PERSON_ROLES,
+  comic: LIBRARY_COMIC_PERSON_ROLES,
+  novel: LIBRARY_NOVEL_PERSON_ROLES
 }
 const CHARACTER_ROLES: Record<LibraryMediaType, readonly string[]> = {
   game: LIBRARY_GAME_CHARACTER_ROLES,
-  anime: LIBRARY_ANIME_CHARACTER_ROLES
+  anime: LIBRARY_ANIME_CHARACTER_ROLES,
+  comic: LIBRARY_COMIC_CHARACTER_ROLES,
+  novel: LIBRARY_NOVEL_CHARACTER_ROLES
 }
+/** Voice credits exist only where media has an audio track. */
+const CAST_MEDIA_TYPES: readonly LibraryMediaType[] = ['game', 'anime']
 const DIAGNOSTIC_KEYS = new Set<string>(['level', 'code', 'message', 'nodeKey', 'edgeKind'])
 const DIAGNOSTIC_LEVELS = ['info', 'warning', 'error'] as const
 
@@ -197,6 +215,12 @@ function validateMediaNode(node: JsonRecord, label: string): void {
     case 'game':
       assertValidLibraryGameCreateInput(node.input)
       return
+    case 'comic':
+      assertValidLibraryComicCreateInput(node.input)
+      return
+    case 'novel':
+      assertValidLibraryNovelCreateInput(node.input)
+      return
   }
 }
 
@@ -250,11 +274,19 @@ function validateSessionNode(node: JsonRecord, label: string): void {
 }
 
 function validateEpisodeNode(node: JsonRecord, label: string): void {
-  if (node.mediaType !== 'anime') {
-    throw createValidationError(`${label}.mediaType must be "anime".`)
+  switch (node.mediaType) {
+    case 'anime':
+      assertValidLibraryAnimeEpisodeCreateInput(node.input)
+      return
+    case 'comic':
+      assertValidLibraryComicChapterCreateInput(node.input)
+      return
+    case 'novel':
+      assertValidLibraryNovelVolumeCreateInput(node.input)
+      return
+    default:
+      throw createValidationError(`${label}.mediaType must be "anime", "comic", or "novel".`)
   }
-
-  assertValidLibraryAnimeEpisodeCreateInput(node.input)
 }
 
 function validateAttachmentNode(node: JsonRecord, label: string): void {
@@ -354,6 +386,9 @@ function validateEdge(
       return
     case 'media-cast':
       validateEndpointKinds(edge, label, 'media', 'character')
+      if (!CAST_MEDIA_TYPES.includes(edgeMediaType(edge.from.key, mediaTypes))) {
+        throw createValidationError(`${label} requires a game or anime media node.`)
+      }
       validateNodeRef((edge as unknown as JsonRecord).person, `${label}.person`, nodeKinds)
       if (edge.person.kind !== 'person') {
         throw createValidationError(`${label}.person.kind must be "person".`)
@@ -393,10 +428,16 @@ function validateEdge(
       validateEndpointKinds(edge, label, 'media', 'session')
       requireMediaType(edge.from.key, 'game', mediaTypes, label)
       return
-    case 'media-episode':
+    case 'media-episode': {
       validateEndpointKinds(edge, label, 'media', 'episode')
-      requireMediaType(edge.from.key, 'anime', mediaTypes, label)
+      const episodeType = mediaTypes.get(edge.to.key)
+      if (!episodeType || mediaTypes.get(edge.from.key) !== episodeType) {
+        throw createValidationError(
+          `${label} requires a media node of the episode node's media type.`
+        )
+      }
       return
+    }
     case 'media-attachment':
       validateEndpointKinds(edge, label, 'media', 'attachment')
       if (!LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS.includes(edge.slot as never)) {
@@ -409,6 +450,9 @@ function validateEdge(
       return
     case 'episode-attachment':
       validateEndpointKinds(edge, label, 'episode', 'attachment')
+      // The still slot is anime vocabulary; comic and novel unit covers come
+      // from file sync and scraped metadata rather than graph attachments.
+      requireMediaType(edge.from.key, 'anime', mediaTypes, label)
       if (!LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS.includes(edge.slot as never)) {
         throw createValidationError(`${label}.slot is not supported.`)
       }
@@ -535,16 +579,25 @@ function collectNodeKinds(nodesValue: unknown): Map<string, LibraryGraphNodeKind
   return result
 }
 
+/**
+ * Media node and episode node key to declared media type.
+ *
+ * Node keys are globally unique across kinds, so one map serves both: edges
+ * read the from-media type for role vocabularies and compare it against the
+ * episode node's own declaration.
+ */
 function collectMediaTypes(nodesValue: unknown): Map<string, LibraryMediaType> {
   const nodes = requireRecord(nodesValue, 'library.graph.nodes')
   const result = new Map<string, LibraryMediaType>()
-  if (!Array.isArray(nodes.media)) {
-    return result
-  }
 
-  for (const node of nodes.media) {
-    if (node && typeof node === 'object' && 'key' in node && typeof node.key === 'string') {
-      result.set(node.key, (node as { mediaType: LibraryMediaType }).mediaType)
+  for (const value of [nodes.media, nodes.episodes]) {
+    if (!Array.isArray(value)) {
+      continue
+    }
+    for (const node of value) {
+      if (node && typeof node === 'object' && 'key' in node && typeof node.key === 'string') {
+        result.set(node.key, (node as { mediaType: LibraryMediaType }).mediaType)
+      }
     }
   }
 

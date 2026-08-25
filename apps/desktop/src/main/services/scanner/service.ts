@@ -20,7 +20,9 @@ import { isActiveScannerRunStatus } from '@shared/scanner'
 import type { ScannerRunStartResult, ScannerRunState } from '@shared/scanner'
 import type { TaskRunInitiator } from '@shared/task-run'
 import { AnimeScannerHandler } from './handlers/anime'
+import { ComicScannerHandler } from './handlers/comic'
 import { GameScannerHandler } from './handlers/game'
+import { NovelScannerHandler } from './handlers/novel'
 import type { MediaScannerHandler } from './handlers/media-handler'
 import { ScannerDiscovery } from './discovery'
 import { createScannerHooks } from './hooks'
@@ -48,6 +50,8 @@ export class ScannerService implements IMediaService {
 
   game!: GameScannerHandler
   anime!: AnimeScannerHandler
+  comic!: ComicScannerHandler
+  novel!: NovelScannerHandler
   discovery!: ScannerDiscovery
 
   private dbService!: DbService
@@ -76,7 +80,17 @@ export class ScannerService implements IMediaService {
       container.get('ingest'),
       container.get('media-files')
     )
-    this.handlers = { game: this.game, anime: this.anime }
+    this.comic = new ComicScannerHandler(
+      deps,
+      container.get('ingest'),
+      container.get('media-files')
+    )
+    this.novel = new NovelScannerHandler(
+      deps,
+      container.get('ingest'),
+      container.get('media-files')
+    )
+    this.handlers = { game: this.game, anime: this.anime, comic: this.comic, novel: this.novel }
 
     this.watch = new ScannerWatchCoordinator({
       dbService,

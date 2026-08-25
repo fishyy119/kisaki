@@ -70,7 +70,16 @@ const collectionTypes = computed<readonly { value: number; label: string }[]>(()
 const dataItems = computed<readonly { value: BangumiImportDataItem; label: string }[]>(() => [
   { value: 'status', label: m.value.ui.importCollections.itemStatus },
   { value: 'score', label: m.value.ui.importCollections.itemScore },
-  { value: 'tags', label: m.value.ui.importCollections.itemTags }
+  { value: 'tags', label: m.value.ui.importCollections.itemTags },
+  // Unit progress only exists on book subjects (vol_status / ept_status).
+  ...(props.scope === 'book'
+    ? [
+        {
+          value: 'unitProgress' as const,
+          label: m.value.ui.importCollections.itemUnitProgress
+        }
+      ]
+    : [])
 ])
 
 const defaultProfileId = computed(() => props.profiles[0]?.value ?? '')

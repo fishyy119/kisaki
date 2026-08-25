@@ -12,11 +12,15 @@ export {
   type ScraperImageSlot,
   type GameImageSlot,
   type AnimeImageSlot,
+  type ComicImageSlot,
+  type NovelImageSlot,
   type SlotConfigForSlot,
   type SlotConfigsForMediaType,
   type RelationCollectionScraperSlot,
   GAME_IMAGE_SLOTS,
   ANIME_IMAGE_SLOTS,
+  COMIC_IMAGE_SLOTS,
+  NOVEL_IMAGE_SLOTS,
   SCRAPER_IMAGE_SLOTS,
   SLOT_STRATEGIES,
   UNMATCHED_ENTITY_POLICIES,
@@ -52,11 +56,15 @@ export {
   type ScraperSessionResult,
   type ScrapedGameInfo,
   type ScrapedAnimeInfo,
+  type ScrapedComicInfo,
+  type ScrapedNovelInfo,
   type ScrapedPersonInfo,
   type ScrapedCompanyInfo,
   type ScrapedCharacterInfo,
   type ScrapedGameCore,
   type ScrapedAnimeCore,
+  type ScrapedComicCore,
+  type ScrapedNovelCore,
   type ScrapedPersonCore,
   type ScrapedCompanyCore,
   type ScrapedCharacterCore,
@@ -64,6 +72,10 @@ export {
   type ScrapedGameRelationFacts,
   type ScrapedAnimeBundle,
   type ScrapedAnimeRelationFacts,
+  type ScrapedComicBundle,
+  type ScrapedComicRelationFacts,
+  type ScrapedNovelBundle,
+  type ScrapedNovelRelationFacts,
   type ScrapedPersonBundle,
   type ScrapedCompanyBundle,
   type ScrapedCharacterBundle,
@@ -74,10 +86,18 @@ export {
   type ScrapedAnimePersonFact,
   type ScrapedAnimeCharacterFact,
   type ScrapedAnimeCompanyFact,
+  type ScrapedComicPersonFact,
+  type ScrapedComicCharacterFact,
+  type ScrapedComicCompanyFact,
+  type ScrapedNovelPersonFact,
+  type ScrapedNovelCharacterFact,
+  type ScrapedNovelCompanyFact,
   type ScrapedCharacterPersonFact,
   type ScrapedRelatedEntryFact,
   type ScrapedGameMetadata,
   type ScrapedAnimeMetadata,
+  type ScrapedComicMetadata,
+  type ScrapedNovelMetadata,
   type ScrapedPersonMetadata,
   type ScrapedCompanyMetadata,
   type ScrapedCharacterMetadata
@@ -98,6 +118,26 @@ export {
   type AnimeScraperProviderInfo,
   type AnimeSearchResult
 } from './anime'
+
+// Comic-specific types
+export {
+  normalizeComicLookupFacts,
+  selectComicSearchResult,
+  type ComicLookupFacts,
+  type ComicScraperLookup,
+  type ComicScraperProviderInfo,
+  type ComicSearchResult
+} from './comic'
+
+// Novel-specific types
+export {
+  normalizeNovelLookupFacts,
+  selectNovelSearchResult,
+  type NovelLookupFacts,
+  type NovelScraperLookup,
+  type NovelScraperProviderInfo,
+  type NovelSearchResult
+} from './novel'
 
 // Metadata entity scraper types
 export { type PersonScraperProviderInfo, type PersonSearchResult } from './person'

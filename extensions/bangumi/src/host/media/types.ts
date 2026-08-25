@@ -1,9 +1,21 @@
-import type { Disposable, ScraperMediaType, ScraperProfileSummary } from '@kisaki3/extension-sdk'
+import type { Disposable, ScraperProfileSummary } from '@kisaki3/extension-sdk'
 import type { BangumiMediaScope, BangumiSupportedSubjectType } from '../../shared/scopes'
 
 export interface ExternalIdRef {
   source: string
   id: string
+}
+
+/**
+ * Read-unit progress of a book entry, as counts of finished units.
+ *
+ * Bangumi tracks book progress as two integers on the collection
+ * (`vol_status` / `ept_status`); adapters that own per-unit read state report
+ * the matching counts here.
+ */
+export interface LocalUnitProgress {
+  volumes?: number
+  chapters?: number
 }
 
 export interface LocalMediaItem {
@@ -13,6 +25,8 @@ export interface LocalMediaItem {
   status?: string
   score?: number | null
   externalIds: readonly ExternalIdRef[]
+  /** Present for scopes that push unit progress with the collection payload. */
+  unitProgress?: LocalUnitProgress
 }
 
 export interface LocalMediaListQuery {
@@ -87,7 +101,6 @@ export interface LocalCollectionTarget {
 
 export interface LocalMediaAdapter {
   readonly scope: BangumiMediaScope
-  readonly localMediaType: ScraperMediaType
   readonly supportsScraperProfile: boolean
   readonly supportsAutoSync: boolean
   readonly supportsImportWrite: boolean
@@ -101,6 +114,11 @@ export interface LocalMediaAdapter {
   findBySubjectIds(subjectIds: readonly string[]): Promise<ReadonlyMap<string, LocalMediaItem>>
   addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult>
   patchUserFields(localId: string, patch: LocalMediaUserPatch): Promise<LocalMediaItem>
+  /**
+   * Adopts remote unit progress locally by marking the first N units read, in
+   * unit order. Only marks forward: local read state is never cleared here.
+   */
+  applyUnitProgress?(localId: string, progress: LocalUnitProgress): Promise<void>
   listTagNames?(localId: string): Promise<ReadonlySet<string>>
   ensureTag(localId: string, tagName: string): Promise<void>
   listCollections?(): Promise<readonly LocalCollectionSummary[]>
@@ -117,7 +135,7 @@ export interface BangumiMediaDescriptor {
 }
 
 /** Scopes backed by a local library adapter; every other scope is remote-only. */
-export const LOCAL_MEDIA_SCOPES = ['game', 'anime'] as const
+export const LOCAL_MEDIA_SCOPES = ['game', 'anime', 'book'] as const
 
 export type LocalMediaScope = (typeof LOCAL_MEDIA_SCOPES)[number]
 

@@ -10,7 +10,7 @@
 import { asc, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { animeCastLinks, gameCastLinks } from '@shared/db'
-import type { MediaType } from '@shared/common'
+import type { CastMediaType } from '@shared/common'
 
 export interface CastRow {
   id: string
@@ -103,7 +103,7 @@ function toCastRow(row: {
   }
 }
 
-export const CAST_SPECS: Record<MediaType, CastSpec> = {
+export const CAST_SPECS: Record<CastMediaType, CastSpec> = {
   game: { list: listGameCast, replace: replaceGameCast },
   anime: { list: listAnimeCast, replace: replaceAnimeCast }
 }

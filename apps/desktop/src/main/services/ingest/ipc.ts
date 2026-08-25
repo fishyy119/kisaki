@@ -19,6 +19,22 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
     wrapIpc(() => service.add.anime.startAddFromScraper(profileId, lookup, options))
   )
 
+  ipc.handle('ingest:add-comic-direct', async (_, seed, options) =>
+    wrapIpc(() => service.add.comic.startAddDirect(seed, options))
+  )
+
+  ipc.handle('ingest:add-comic-from-scraper', async (_, profileId, lookup, options) =>
+    wrapIpc(() => service.add.comic.startAddFromScraper(profileId, lookup, options))
+  )
+
+  ipc.handle('ingest:add-novel-direct', async (_, seed, options) =>
+    wrapIpc(() => service.add.novel.startAddDirect(seed, options))
+  )
+
+  ipc.handle('ingest:add-novel-from-scraper', async (_, profileId, lookup, options) =>
+    wrapIpc(() => service.add.novel.startAddFromScraper(profileId, lookup, options))
+  )
+
   ipc.handle('ingest:add-person-from-scraper', async (_, profileId, lookup, options) =>
     wrapIpc(() => service.add.person.startAddFromScraper(profileId, lookup, options))
   )
@@ -39,6 +55,14 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
     wrapIpc(() => service.update.anime.startUpdateFromScraper(request))
   )
 
+  ipc.handle('ingest:update-comic-from-scraper', async (_, request) =>
+    wrapIpc(() => service.update.comic.startUpdateFromScraper(request))
+  )
+
+  ipc.handle('ingest:update-novel-from-scraper', async (_, request) =>
+    wrapIpc(() => service.update.novel.startUpdateFromScraper(request))
+  )
+
   ipc.handle('ingest:update-person-from-scraper', async (_, request) =>
     wrapIpc(() => service.update.person.startUpdateFromScraper(request))
   )
@@ -57,6 +81,14 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
 
   ipc.handle('ingest:batch-update-anime-from-scraper', async (_, request) =>
     wrapIpc(() => service.batch.anime.startUpdateFromScraper(request))
+  )
+
+  ipc.handle('ingest:batch-update-comic-from-scraper', async (_, request) =>
+    wrapIpc(() => service.batch.comic.startUpdateFromScraper(request))
+  )
+
+  ipc.handle('ingest:batch-update-novel-from-scraper', async (_, request) =>
+    wrapIpc(() => service.batch.novel.startUpdateFromScraper(request))
   )
 
   ipc.handle('ingest:batch-update-person-from-scraper', async (_, request) =>

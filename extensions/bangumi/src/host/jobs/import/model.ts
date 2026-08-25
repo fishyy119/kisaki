@@ -4,7 +4,8 @@ import type {
   LocalCollectionTarget,
   LocalMediaAdapter,
   LocalMediaItem,
-  LocalMediaUserPatch
+  LocalMediaUserPatch,
+  LocalUnitProgress
 } from '../../media/types'
 import type { BangumiJobPreviewGroup, BangumiJobPreviewRow } from '../../../shared/settings'
 
@@ -12,6 +13,8 @@ export interface CollectionLocalUpdatePlan {
   patch: LocalMediaUserPatch
   tagNames: readonly string[]
   targetCollection?: LocalCollectionTarget
+  /** Remote unit counts to adopt locally; present when ahead of local state. */
+  unitProgress?: LocalUnitProgress
   rows: readonly BangumiJobPreviewRow[]
 }
 

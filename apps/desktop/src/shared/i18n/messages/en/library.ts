@@ -1,12 +1,14 @@
 /**
- * Library entity domain: shared copy for the seven entity types
- * (game/anime/character/person/company/collection/tag) across menus, searchers,
- * selects, detail views, and form dialogs.
+ * Library entity domain: shared copy for the entity types
+ * (game/anime/comic/novel/character/person/company/collection/tag) across
+ * menus, searchers, selects, detail views, and form dialogs.
  */
 export const library = {
   entities: {
     game: 'Game',
     anime: 'Anime',
+    comic: 'Comic',
+    novel: 'Novel',
     character: 'Character',
     person: 'Person',
     company: 'Company',
@@ -78,7 +80,19 @@ export const library = {
     lastWatchedAt: 'Last watched',
     relatedAnimes: 'Related anime',
     relatedEntries: 'Related entries',
-    relatedWorks: 'Related works'
+    relatedWorks: 'Related works',
+    relatedComics: 'Related comics',
+    relatedNovels: 'Related novels',
+    totalVolumes: 'Volume count',
+    totalChapters: 'Chapter count',
+    volumes: 'Volumes',
+    chapters: 'Chapters',
+    readingDirection: 'Reading direction',
+    read: 'Read',
+    readAt: 'Read at',
+    readCount: 'Read count',
+    readDuration: 'Reading time',
+    lastReadAt: 'Last read'
   },
 
   gameStatus: {
@@ -93,6 +107,22 @@ export const library = {
   animeStatus: {
     planned: 'Plan to watch',
     watching: 'Watching',
+    completed: 'Completed',
+    onHold: 'On hold',
+    dropped: 'Dropped'
+  },
+
+  comicStatus: {
+    planned: 'Plan to read',
+    reading: 'Reading',
+    completed: 'Completed',
+    onHold: 'On hold',
+    dropped: 'Dropped'
+  },
+
+  novelStatus: {
+    planned: 'Plan to read',
+    reading: 'Reading',
     completed: 'Completed',
     onHold: 'On hold',
     dropped: 'Dropped'
@@ -167,6 +197,40 @@ export const library = {
       producer: 'Producer',
       distributor: 'Distributor',
       other: 'Other'
+    },
+    comicPerson: {
+      author: 'Author',
+      originalCreator: 'Original creator',
+      art: 'Art',
+      other: 'Other'
+    },
+    comicCharacter: {
+      main: 'Main',
+      supporting: 'Supporting',
+      cameo: 'Cameo',
+      other: 'Other'
+    },
+    comicCompany: {
+      publisher: 'Publisher',
+      imprint: 'Imprint',
+      other: 'Other'
+    },
+    novelPerson: {
+      author: 'Author',
+      illustrator: 'Illustrator',
+      originalCreator: 'Original creator',
+      other: 'Other'
+    },
+    novelCharacter: {
+      main: 'Main',
+      supporting: 'Supporting',
+      cameo: 'Cameo',
+      other: 'Other'
+    },
+    novelCompany: {
+      publisher: 'Publisher',
+      imprint: 'Imprint',
+      other: 'Other'
     }
   },
 
@@ -182,6 +246,28 @@ export const library = {
   animeEpisodeType: {
     regular: 'Episode',
     special: 'Special'
+  },
+
+  comicFormat: {
+    manga: 'Manga',
+    manhua: 'Manhua',
+    manhwa: 'Manhwa',
+    webtoon: 'Webtoon',
+    doujinshi: 'Doujinshi',
+    other: 'Other'
+  },
+
+  novelFormat: {
+    lightNovel: 'Light novel',
+    webNovel: 'Web novel',
+    general: 'General fiction',
+    other: 'Other'
+  },
+
+  readingDirection: {
+    rtl: 'Right to left',
+    ltr: 'Left to right',
+    vertical: 'Vertical scroll'
   },
 
   mediaRelation: {
@@ -221,6 +307,8 @@ export const library = {
   counts: {
     game: ({ count }: { count: number }) => (count === 1 ? '1 game' : `${count} games`),
     anime: ({ count }: { count: number }) => (count === 1 ? '1 anime' : `${count} anime`),
+    comic: ({ count }: { count: number }) => (count === 1 ? '1 comic' : `${count} comics`),
+    novel: ({ count }: { count: number }) => (count === 1 ? '1 novel' : `${count} novels`),
     character: ({ count }: { count: number }) =>
       count === 1 ? '1 character' : `${count} characters`,
     person: ({ count }: { count: number }) => (count === 1 ? '1 person' : `${count} people`),
@@ -417,16 +505,28 @@ export const library = {
     editAnimeCharacters: 'Edit characters',
     editAnimePersons: 'Edit staff',
     editAnimeCompanies: 'Edit companies',
+    editComicCharacters: 'Edit characters',
+    editComicPersons: 'Edit creators',
+    editComicCompanies: 'Edit companies',
+    editNovelCharacters: 'Edit characters',
+    editNovelPersons: 'Edit creators',
+    editNovelCompanies: 'Edit companies',
     editGameCast: 'Edit voice cast',
     editAnimeCast: 'Edit voice cast',
     editCharacterGames: 'Edit game appearances',
     editCharacterAnimes: 'Edit anime appearances',
+    editCharacterComics: 'Edit comic appearances',
+    editCharacterNovels: 'Edit novel appearances',
     editCharacterPersons: 'Edit related people',
     editPersonGames: 'Edit game credits',
     editPersonAnimes: 'Edit anime credits',
+    editPersonComics: 'Edit comic credits',
+    editPersonNovels: 'Edit novel credits',
     editPersonCharacters: 'Edit voiced characters',
     editCompanyGames: 'Edit related games',
     editCompanyAnimes: 'Edit related anime',
+    editCompanyComics: 'Edit related comics',
+    editCompanyNovels: 'Edit related novels',
     editCompanyRelations: 'Edit company relations',
     editCollectionEntities: 'Edit collection contents',
 
@@ -464,6 +564,8 @@ export const library = {
     releaseDateYearDayWithoutMonth: 'Release date needs a month when both year and day are set',
     totalEpisodesPlaceholder: 'Optional',
     totalEpisodesInvalid: 'Total episodes must be a non-negative integer',
+    totalVolumesInvalid: 'Total volumes must be a non-negative integer',
+    totalChaptersInvalid: 'Total chapters must be a non-negative integer',
     totalSeasonsInvalid: 'Total seasons must be a non-negative integer',
     endDateInvalidFormat: 'Last aired date format is invalid',
     endDateYearDayWithoutMonth: 'Last aired date needs a month when both year and day are set',
@@ -537,6 +639,12 @@ export const library = {
       animeCover: 'Anime cover art shown on cards and lists',
       animeBackdrop: 'Backdrop image for the detail page',
       animeLogo: 'Anime title logo',
+      comicCover: 'Comic cover art shown on cards and lists',
+      comicBackdrop: 'Backdrop image for the detail page',
+      comicLogo: 'Comic title logo',
+      novelCover: 'Novel cover art shown on cards and lists',
+      novelBackdrop: 'Backdrop image for the detail page',
+      novelLogo: 'Novel title logo',
       characterPhoto: 'Character photo shown on cards and detail pages',
       personPhoto: 'Person photo shown on cards and detail pages',
       companyLogo: 'Company logo shown on cards and detail pages'
@@ -660,6 +768,8 @@ export const library = {
     linkLabels: {
       game: 'Game link',
       anime: 'Anime link',
+      comic: 'Comic link',
+      novel: 'Novel link',
       character: 'Character link',
       person: 'Person link',
       company: 'Company link',

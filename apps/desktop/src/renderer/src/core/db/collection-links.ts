@@ -12,8 +12,10 @@ import type { TableName } from '@shared/db/table-names'
 import {
   collectionAnimeLinks,
   collectionCharacterLinks,
+  collectionComicLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionNovelLinks,
   collectionPersonLinks
 } from '@shared/db'
 import { ENTITY_TABLES } from './entity-tables'
@@ -63,6 +65,30 @@ export const COLLECTION_LINKS: Record<ContentEntityType, CollectionLinkDef> = {
     orderColumn: collectionAnimeLinks.orderInCollection,
     buildInsertValue({ id, collectionId, entityId, note, orderInCollection }) {
       return { id, collectionId, animeId: entityId, note, orderInCollection }
+    }
+  },
+  comic: {
+    table: collectionComicLinks,
+    tableName: getTableName(collectionComicLinks),
+    idColumn: collectionComicLinks.id,
+    collectionIdColumn: collectionComicLinks.collectionId,
+    entityIdColumn: collectionComicLinks.comicId,
+    noteColumn: collectionComicLinks.note,
+    orderColumn: collectionComicLinks.orderInCollection,
+    buildInsertValue({ id, collectionId, entityId, note, orderInCollection }) {
+      return { id, collectionId, comicId: entityId, note, orderInCollection }
+    }
+  },
+  novel: {
+    table: collectionNovelLinks,
+    tableName: getTableName(collectionNovelLinks),
+    idColumn: collectionNovelLinks.id,
+    collectionIdColumn: collectionNovelLinks.collectionId,
+    entityIdColumn: collectionNovelLinks.novelId,
+    noteColumn: collectionNovelLinks.note,
+    orderColumn: collectionNovelLinks.orderInCollection,
+    buildInsertValue({ id, collectionId, entityId, note, orderInCollection }) {
+      return { id, collectionId, novelId: entityId, note, orderInCollection }
     }
   },
   character: {

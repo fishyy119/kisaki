@@ -15,8 +15,10 @@ import type { Component } from 'vue'
 import { AnimeDetailDialog } from '@renderer/components/shared/anime'
 import { CharacterDetailDialog } from '@renderer/components/shared/character'
 import { CollectionDetailDialog } from '@renderer/components/shared/collection'
+import { ComicDetailDialog } from '@renderer/components/shared/comic'
 import { CompanyDetailDialog } from '@renderer/components/shared/company'
 import { GameDetailDialog } from '@renderer/components/shared/game'
+import { NovelDetailDialog } from '@renderer/components/shared/novel'
 import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagDetailDialog } from '@renderer/components/shared/tag'
 import type { AllEntityType } from '@shared/common'
@@ -24,6 +26,8 @@ import type { AllEntityType } from '@shared/common'
 export const DETAIL_DIALOGS: Record<AllEntityType, () => Component> = {
   game: () => GameDetailDialog,
   anime: () => AnimeDetailDialog,
+  comic: () => ComicDetailDialog,
+  novel: () => NovelDetailDialog,
   character: () => CharacterDetailDialog,
   person: () => PersonDetailDialog,
   company: () => CompanyDetailDialog,

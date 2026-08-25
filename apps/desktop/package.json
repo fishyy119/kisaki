@@ -40,6 +40,7 @@
     "@kisaki3/extension-api": "workspace:*",
     "@kisaki3/extension-registry": "workspace:*",
     "@ximu3/process-list": "^0.0.2",
+    "@zip.js/zip.js": "^2.8.57",
     "async-mutex": "^0.5.0",
     "better-sqlite3": "^12.11.1",
     "chokidar": "catalog:",
@@ -52,6 +53,9 @@
     "fflate": "catalog:",
     "file-type": "^22.0.1",
     "nanoid": "^5.1.16",
+    "node-stream-zip": "^1.16.0",
+    "node-unrar-js": "^2.0.2",
+    "pdfjs-dist": "^6.2.108",
     "semver": "catalog:",
     "sharp": "^0.35.3",
     "smartcrop-sharp": "^2.0.8"

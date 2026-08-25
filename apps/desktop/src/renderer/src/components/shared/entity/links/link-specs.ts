@@ -18,23 +18,41 @@ import {
   ANIME_COMPANY_ROLE_VALUES,
   ANIME_PERSON_ROLE_VALUES,
   CHARACTER_PERSON_ROLE_VALUES,
+  COMIC_CHARACTER_ROLE_VALUES,
+  COMIC_COMPANY_ROLE_VALUES,
+  COMIC_PERSON_ROLE_VALUES,
   GAME_CHARACTER_ROLE_VALUES,
   GAME_COMPANY_ROLE_VALUES,
   GAME_PERSON_ROLE_VALUES,
+  NOVEL_CHARACTER_ROLE_VALUES,
+  NOVEL_COMPANY_ROLE_VALUES,
+  NOVEL_PERSON_ROLE_VALUES,
   animeCharacterLinks,
   animeCompanyLinks,
   animePersonLinks,
   characterPersonLinks,
+  comicCharacterLinks,
+  comicCompanyLinks,
+  comicPersonLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
+  novelCharacterLinks,
+  novelCompanyLinks,
+  novelPersonLinks,
   type AnimeCharacterRole,
   type AnimeCompanyRole,
   type AnimePersonRole,
   type CharacterPersonRole,
+  type ComicCharacterRole,
+  type ComicCompanyRole,
+  type ComicPersonRole,
   type GameCharacterRole,
   type GameCompanyRole,
-  type GamePersonRole
+  type GamePersonRole,
+  type NovelCharacterRole,
+  type NovelCompanyRole,
+  type NovelPersonRole
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 import type { Messages } from '@shared/i18n'
@@ -339,6 +357,264 @@ export const LINK_VIEW_SPECS = {
       }
     }
   },
+  'comic-characters': {
+    targetType: 'character',
+    roleOrder: COMIC_CHARACTER_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.comicCharacter,
+    roleFieldLabel: (m) => m.library.forms.characterRoleLabel,
+    title: (m) => m.library.forms.editComicCharacters,
+    list: async (anchorId) => {
+      const rows = await db.query.comicCharacterLinks.findMany({
+        where: eq(comicCharacterLinks.comicId, anchorId),
+        with: { character: true },
+        orderBy: asc(comicCharacterLinks.orderInComic)
+      })
+      return rows
+        .filter((row) => row.character)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.characterId,
+          targetName: row.character!.name,
+          targetImage: row.character!.photoFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInCharacter
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(comicCharacterLinks).where(eq(comicCharacterLinks.comicId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(comicCharacterLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            comicId: anchorId,
+            characterId: row.targetId,
+            role: row.role as ComicCharacterRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInComic: row.order,
+            orderInCharacter: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'comic-persons': {
+    targetType: 'person',
+    roleOrder: COMIC_PERSON_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.comicPerson,
+    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
+    title: (m) => m.library.forms.editComicPersons,
+    list: async (anchorId) => {
+      const rows = await db.query.comicPersonLinks.findMany({
+        where: eq(comicPersonLinks.comicId, anchorId),
+        with: { person: true },
+        orderBy: asc(comicPersonLinks.orderInComic)
+      })
+      return rows
+        .filter((row) => row.person)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.personId,
+          targetName: row.person!.name,
+          targetImage: row.person!.photoFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInPerson
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(comicPersonLinks).where(eq(comicPersonLinks.comicId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(comicPersonLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            comicId: anchorId,
+            personId: row.targetId,
+            role: row.role as ComicPersonRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInComic: row.order,
+            orderInPerson: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'comic-companies': {
+    targetType: 'company',
+    roleOrder: COMIC_COMPANY_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.comicCompany,
+    roleFieldLabel: (m) => m.library.forms.companyRoleLabel,
+    title: (m) => m.library.forms.editComicCompanies,
+    list: async (anchorId) => {
+      const rows = await db.query.comicCompanyLinks.findMany({
+        where: eq(comicCompanyLinks.comicId, anchorId),
+        with: { company: true },
+        orderBy: asc(comicCompanyLinks.orderInComic)
+      })
+      return rows
+        .filter((row) => row.company)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.companyId,
+          targetName: row.company!.name,
+          targetImage: row.company!.logoFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInCompany
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(comicCompanyLinks).where(eq(comicCompanyLinks.comicId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(comicCompanyLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            comicId: anchorId,
+            companyId: row.targetId,
+            role: row.role as ComicCompanyRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInComic: row.order,
+            orderInCompany: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'novel-characters': {
+    targetType: 'character',
+    roleOrder: NOVEL_CHARACTER_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.novelCharacter,
+    roleFieldLabel: (m) => m.library.forms.characterRoleLabel,
+    title: (m) => m.library.forms.editNovelCharacters,
+    list: async (anchorId) => {
+      const rows = await db.query.novelCharacterLinks.findMany({
+        where: eq(novelCharacterLinks.novelId, anchorId),
+        with: { character: true },
+        orderBy: asc(novelCharacterLinks.orderInNovel)
+      })
+      return rows
+        .filter((row) => row.character)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.characterId,
+          targetName: row.character!.name,
+          targetImage: row.character!.photoFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInCharacter
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(novelCharacterLinks).where(eq(novelCharacterLinks.novelId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(novelCharacterLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            novelId: anchorId,
+            characterId: row.targetId,
+            role: row.role as NovelCharacterRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInNovel: row.order,
+            orderInCharacter: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'novel-persons': {
+    targetType: 'person',
+    roleOrder: NOVEL_PERSON_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.novelPerson,
+    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
+    title: (m) => m.library.forms.editNovelPersons,
+    list: async (anchorId) => {
+      const rows = await db.query.novelPersonLinks.findMany({
+        where: eq(novelPersonLinks.novelId, anchorId),
+        with: { person: true },
+        orderBy: asc(novelPersonLinks.orderInNovel)
+      })
+      return rows
+        .filter((row) => row.person)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.personId,
+          targetName: row.person!.name,
+          targetImage: row.person!.photoFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInPerson
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(novelPersonLinks).where(eq(novelPersonLinks.novelId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(novelPersonLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            novelId: anchorId,
+            personId: row.targetId,
+            role: row.role as NovelPersonRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInNovel: row.order,
+            orderInPerson: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'novel-companies': {
+    targetType: 'company',
+    roleOrder: NOVEL_COMPANY_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.novelCompany,
+    roleFieldLabel: (m) => m.library.forms.companyRoleLabel,
+    title: (m) => m.library.forms.editNovelCompanies,
+    list: async (anchorId) => {
+      const rows = await db.query.novelCompanyLinks.findMany({
+        where: eq(novelCompanyLinks.novelId, anchorId),
+        with: { company: true },
+        orderBy: asc(novelCompanyLinks.orderInNovel)
+      })
+      return rows
+        .filter((row) => row.company)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.companyId,
+          targetName: row.company!.name,
+          targetImage: row.company!.logoFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInCompany
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(novelCompanyLinks).where(eq(novelCompanyLinks.novelId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(novelCompanyLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            novelId: anchorId,
+            companyId: row.targetId,
+            role: row.role as NovelCompanyRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInNovel: row.order,
+            orderInCompany: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
   'character-games': {
     targetType: 'game',
     roleOrder: GAME_CHARACTER_ROLE_VALUES,
@@ -420,6 +696,92 @@ export const LINK_VIEW_SPECS = {
             isSpoiler: row.isSpoiler,
             orderInCharacter: row.order,
             orderInAnime: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'character-comics': {
+    targetType: 'comic',
+    roleOrder: COMIC_CHARACTER_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.comicCharacter,
+    roleFieldLabel: (m) => m.library.forms.characterRoleLabel,
+    title: (m) => m.library.forms.editCharacterComics,
+    list: async (anchorId) => {
+      const rows = await db.query.comicCharacterLinks.findMany({
+        where: eq(comicCharacterLinks.characterId, anchorId),
+        with: { comic: true },
+        orderBy: asc(comicCharacterLinks.orderInCharacter)
+      })
+      return rows
+        .filter((row) => row.comic)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.comicId,
+          targetName: row.comic!.name,
+          targetImage: row.comic!.coverFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInComic
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(comicCharacterLinks).where(eq(comicCharacterLinks.characterId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(comicCharacterLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            characterId: anchorId,
+            comicId: row.targetId,
+            role: row.role as ComicCharacterRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInCharacter: row.order,
+            orderInComic: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'character-novels': {
+    targetType: 'novel',
+    roleOrder: NOVEL_CHARACTER_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.novelCharacter,
+    roleFieldLabel: (m) => m.library.forms.characterRoleLabel,
+    title: (m) => m.library.forms.editCharacterNovels,
+    list: async (anchorId) => {
+      const rows = await db.query.novelCharacterLinks.findMany({
+        where: eq(novelCharacterLinks.characterId, anchorId),
+        with: { novel: true },
+        orderBy: asc(novelCharacterLinks.orderInCharacter)
+      })
+      return rows
+        .filter((row) => row.novel)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.novelId,
+          targetName: row.novel!.name,
+          targetImage: row.novel!.coverFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInNovel
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(novelCharacterLinks).where(eq(novelCharacterLinks.characterId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(novelCharacterLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            characterId: anchorId,
+            novelId: row.targetId,
+            role: row.role as NovelCharacterRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInCharacter: row.order,
+            orderInNovel: row.counterOrder
           }))
         )
       }
@@ -554,6 +916,92 @@ export const LINK_VIEW_SPECS = {
       }
     }
   },
+  'person-comics': {
+    targetType: 'comic',
+    roleOrder: COMIC_PERSON_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.comicPerson,
+    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
+    title: (m) => m.library.forms.editPersonComics,
+    list: async (anchorId) => {
+      const rows = await db.query.comicPersonLinks.findMany({
+        where: eq(comicPersonLinks.personId, anchorId),
+        with: { comic: true },
+        orderBy: asc(comicPersonLinks.orderInPerson)
+      })
+      return rows
+        .filter((row) => row.comic)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.comicId,
+          targetName: row.comic!.name,
+          targetImage: row.comic!.coverFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInComic
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(comicPersonLinks).where(eq(comicPersonLinks.personId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(comicPersonLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            personId: anchorId,
+            comicId: row.targetId,
+            role: row.role as ComicPersonRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInPerson: row.order,
+            orderInComic: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'person-novels': {
+    targetType: 'novel',
+    roleOrder: NOVEL_PERSON_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.novelPerson,
+    roleFieldLabel: (m) => m.library.forms.personRoleLabel,
+    title: (m) => m.library.forms.editPersonNovels,
+    list: async (anchorId) => {
+      const rows = await db.query.novelPersonLinks.findMany({
+        where: eq(novelPersonLinks.personId, anchorId),
+        with: { novel: true },
+        orderBy: asc(novelPersonLinks.orderInPerson)
+      })
+      return rows
+        .filter((row) => row.novel)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.novelId,
+          targetName: row.novel!.name,
+          targetImage: row.novel!.coverFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInNovel
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(novelPersonLinks).where(eq(novelPersonLinks.personId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(novelPersonLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            personId: anchorId,
+            novelId: row.targetId,
+            role: row.role as NovelPersonRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInPerson: row.order,
+            orderInNovel: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
   'person-characters': {
     targetType: 'character',
     roleOrder: CHARACTER_PERSON_ROLE_VALUES,
@@ -678,6 +1126,92 @@ export const LINK_VIEW_SPECS = {
             isSpoiler: row.isSpoiler,
             orderInCompany: row.order,
             orderInAnime: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'company-comics': {
+    targetType: 'comic',
+    roleOrder: COMIC_COMPANY_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.comicCompany,
+    roleFieldLabel: (m) => m.library.forms.companyRoleLabel,
+    title: (m) => m.library.forms.editCompanyComics,
+    list: async (anchorId) => {
+      const rows = await db.query.comicCompanyLinks.findMany({
+        where: eq(comicCompanyLinks.companyId, anchorId),
+        with: { comic: true },
+        orderBy: asc(comicCompanyLinks.orderInCompany)
+      })
+      return rows
+        .filter((row) => row.comic)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.comicId,
+          targetName: row.comic!.name,
+          targetImage: row.comic!.coverFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInComic
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(comicCompanyLinks).where(eq(comicCompanyLinks.companyId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(comicCompanyLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            companyId: anchorId,
+            comicId: row.targetId,
+            role: row.role as ComicCompanyRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInCompany: row.order,
+            orderInComic: row.counterOrder
+          }))
+        )
+      }
+    }
+  },
+  'company-novels': {
+    targetType: 'novel',
+    roleOrder: NOVEL_COMPANY_ROLE_VALUES,
+    roleLabels: (m) => m.library.roles.novelCompany,
+    roleFieldLabel: (m) => m.library.forms.companyRoleLabel,
+    title: (m) => m.library.forms.editCompanyNovels,
+    list: async (anchorId) => {
+      const rows = await db.query.novelCompanyLinks.findMany({
+        where: eq(novelCompanyLinks.companyId, anchorId),
+        with: { novel: true },
+        orderBy: asc(novelCompanyLinks.orderInCompany)
+      })
+      return rows
+        .filter((row) => row.novel)
+        .map((row) => ({
+          id: row.id,
+          targetId: row.novelId,
+          targetName: row.novel!.name,
+          targetImage: row.novel!.coverFile,
+          role: row.role,
+          note: row.note,
+          isSpoiler: row.isSpoiler,
+          counterOrder: row.orderInNovel
+        }))
+    },
+    replace: async (anchorId, rows) => {
+      await db.delete(novelCompanyLinks).where(eq(novelCompanyLinks.companyId, anchorId))
+      if (rows.length > 0) {
+        await db.insert(novelCompanyLinks).values(
+          rows.map((row) => ({
+            id: row.id,
+            companyId: anchorId,
+            novelId: row.targetId,
+            role: row.role as NovelCompanyRole,
+            note: row.note,
+            isSpoiler: row.isSpoiler,
+            orderInCompany: row.order,
+            orderInNovel: row.counterOrder
           }))
         )
       }

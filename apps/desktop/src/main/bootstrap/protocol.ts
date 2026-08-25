@@ -3,6 +3,7 @@
  *
  * Registers custom schemes for the application:
  * - attachment:// - Serves database attachments (images, backups)
+ * - book:// - Streams reading content out of unit file rows
  * - kisaki-extension-icon:// - Lazily proxies extension catalog icons
  * - kisaki-extension-ui:// - Serves packaged and proxied development extension UI assets
  * - kisaki-webview-font:// - Serves app fonts to extension webview documents
@@ -14,6 +15,7 @@
 
 import { protocol } from 'electron'
 import { EXTENSION_WEBVIEW_FONT_SCHEME } from '@shared/extension'
+import { BOOK_SCHEME } from '@shared/book'
 
 const ATTACHMENT_SCHEME = 'attachment'
 const EXTENSION_ICON_SCHEME = 'kisaki-extension-icon'
@@ -41,6 +43,16 @@ export function registerAppSchemes(): void {
         // images so canvas pixel reads stay untainted; those requests are
         // CORS-gated, so the scheme must participate in CORS.
         corsEnabled: true
+      }
+    },
+    {
+      scheme: BOOK_SCHEME,
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        bypassCSP: true,
+        stream: true
       }
     },
     {

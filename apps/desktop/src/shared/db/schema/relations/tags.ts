@@ -5,10 +5,14 @@ import {
   animes,
   characterTagLinks,
   characters,
+  comicTagLinks,
+  comics,
   companies,
   companyTagLinks,
   gameTagLinks,
   games,
+  novelTagLinks,
+  novels,
   persons,
   personTagLinks,
   tags
@@ -17,6 +21,8 @@ import {
 export const tagsRelations = relations(tags, ({ many }) => ({
   gameTagLinks: many(gameTagLinks),
   animeTagLinks: many(animeTagLinks),
+  comicTagLinks: many(comicTagLinks),
+  novelTagLinks: many(novelTagLinks),
   characterTagLinks: many(characterTagLinks),
   personTagLinks: many(personTagLinks),
   companyTagLinks: many(companyTagLinks)
@@ -40,6 +46,28 @@ export const gameTagLinksRelations = relations(gameTagLinks, ({ one }) => ({
   }),
   tag: one(tags, {
     fields: [gameTagLinks.tagId],
+    references: [tags.id]
+  })
+}))
+
+export const comicTagLinksRelations = relations(comicTagLinks, ({ one }) => ({
+  comic: one(comics, {
+    fields: [comicTagLinks.comicId],
+    references: [comics.id]
+  }),
+  tag: one(tags, {
+    fields: [comicTagLinks.tagId],
+    references: [tags.id]
+  })
+}))
+
+export const novelTagLinksRelations = relations(novelTagLinks, ({ one }) => ({
+  novel: one(novels, {
+    fields: [novelTagLinks.novelId],
+    references: [novels.id]
+  }),
+  tag: one(tags, {
+    fields: [novelTagLinks.tagId],
     references: [tags.id]
   })
 }))

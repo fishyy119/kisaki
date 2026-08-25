@@ -247,6 +247,9 @@ export const en = {
       score: 'Score',
       tags: 'Tags',
       collection: 'Collection',
+      unitProgress: 'Reading progress',
+      unitProgressValue: ({ volumes, chapters }: { volumes: number; chapters: number }) =>
+        `${volumes} vol. / ${chapters} ch.`,
       notCollected: 'Not collected',
       notRated: 'Not rated',
       notInCollection: 'Not in collection',
@@ -272,6 +275,15 @@ export const en = {
       planned: 'Plan to watch',
       watching: 'Watching',
       completed: 'Watched',
+      onHold: 'On hold',
+      dropped: 'Dropped',
+      unset: 'Not set'
+    },
+
+    bookStatus: {
+      planned: 'Plan to read',
+      reading: 'Reading',
+      completed: 'Read',
       onHold: 'On hold',
       dropped: 'Dropped',
       unset: 'Not set'
@@ -475,6 +487,7 @@ export const en = {
       itemStatus: 'Entry status',
       itemScore: 'Rating',
       itemTags: 'Tags',
+      itemUnitProgress: 'Reading progress',
       patchExisting: 'Update existing entries',
       targetCollection: 'Add to collection',
       collectionPlaceholder: 'Select a collection',

@@ -11,6 +11,7 @@ export const activity = {
   stopRequestedTitle: 'Stop request sent',
   watchFailedTitle: 'Could not start playback',
   watchStopFailedTitle: 'Could not stop playback',
+  readFailedTitle: 'Could not start reading',
 
   filePickerTitle: 'Select launch file',
   filePickerButton: 'Select',
@@ -40,6 +41,15 @@ export const activity = {
     playerUnavailable: 'The video player is not available',
     playerStartFailed: 'Could not start the video player',
     notWatching: 'Nothing is playing right now',
-    stopFailed: 'Could not stop the video player'
+    stopFailed: 'Could not stop the video player',
+    comicNotFound: 'The comic does not exist',
+    chapterNotFound: 'The unit does not exist',
+    noReadableChapter: 'No unit has a readable file yet',
+    noChapterFile: 'The unit has no readable file yet',
+    novelNotFound: 'The novel does not exist',
+    volumeNotFound: 'The volume does not exist',
+    noReadableVolume: 'No volume has a readable file yet',
+    noVolumeFile: 'The volume has no readable file yet',
+    unsupportedContainer: 'The built-in reader cannot display this file format'
   }
 }

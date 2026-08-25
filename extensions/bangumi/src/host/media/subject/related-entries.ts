@@ -39,9 +39,12 @@ const MEDIA_TYPE_BY_SUBJECT_TYPE: Partial<Record<number, LibraryMediaType>> = {
 /**
  * Related media entries of a subject, referenced by Bangumi identity only.
  *
- * Non-media subjects (books, music, real) are dropped, as is any relation this
+ * Non-media subjects (music, real) are dropped, as is any relation this
  * mapping cannot state in the library vocabulary: an unmapped label, or a word
- * the endpoint pair does not allow.
+ * the endpoint pair does not allow. Book relations are also dropped: Bangumi
+ * folds comics and novels into one subject type, and the relation stub does
+ * not carry the platform fact that tells them apart, so a book edge would
+ * assert a media type the source never stated here.
  */
 export async function buildSubjectRelatedEntries(
   scopeMediaType: LibraryMediaType,

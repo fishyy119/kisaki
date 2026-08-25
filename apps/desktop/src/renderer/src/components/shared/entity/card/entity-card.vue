@@ -19,6 +19,8 @@ import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 import { GameCard } from '@renderer/components/shared/game'
 import { AnimeCard } from '@renderer/components/shared/anime'
+import { ComicCard } from '@renderer/components/shared/comic'
+import { NovelCard } from '@renderer/components/shared/novel'
 import { CharacterCard } from '@renderer/components/shared/character'
 import { PersonCard } from '@renderer/components/shared/person'
 import { CompanyCard } from '@renderer/components/shared/company'
@@ -99,6 +101,38 @@ const target = computed(
   <AnimeCard
     v-else-if="target.entityType === 'anime'"
     :anime="target.entity"
+    :variant="props.variant"
+    :size="props.size"
+    :subtitle="props.subtitle"
+    :hide-name="props.hideName"
+    :badge-label="props.badgeLabel"
+    :align="props.align"
+    :button-variant="props.buttonVariant"
+    :button-size="props.buttonSize"
+    :clickable="props.clickable"
+    :class="props.class"
+    @click="emit('click')"
+  />
+
+  <ComicCard
+    v-else-if="target.entityType === 'comic'"
+    :comic="target.entity"
+    :variant="props.variant"
+    :size="props.size"
+    :subtitle="props.subtitle"
+    :hide-name="props.hideName"
+    :badge-label="props.badgeLabel"
+    :align="props.align"
+    :button-variant="props.buttonVariant"
+    :button-size="props.buttonSize"
+    :clickable="props.clickable"
+    :class="props.class"
+    @click="emit('click')"
+  />
+
+  <NovelCard
+    v-else-if="target.entityType === 'novel'"
+    :novel="target.entity"
     :variant="props.variant"
     :size="props.size"
     :subtitle="props.subtitle"

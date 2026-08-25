@@ -1,6 +1,7 @@
 export type TaskRunCategory = 'scanner' | 'ingest' | 'extension' | 'updater' | 'system'
 
-export type TaskRunContentEntity = 'game' | 'anime' | 'person' | 'company' | 'character'
+export type TaskRunContentEntity =
+  'game' | 'anime' | 'comic' | 'novel' | 'person' | 'company' | 'character'
 
 export type TaskRunOperation =
   | 'scanner.scan'
@@ -72,6 +73,8 @@ export type TaskRunSubjectType =
   | 'scanner'
   | 'game'
   | 'anime'
+  | 'comic'
+  | 'novel'
   | 'person'
   | 'company'
   | 'character'

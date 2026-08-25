@@ -34,6 +34,8 @@ type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
 type LibraryEntityPrefix =
   | 'capabilities.library.games'
   | 'capabilities.library.animes'
+  | 'capabilities.library.comics'
+  | 'capabilities.library.novels'
   | 'capabilities.library.characters'
   | 'capabilities.library.persons'
   | 'capabilities.library.companies'
@@ -42,10 +44,16 @@ type LibraryEntityPrefix =
 
 /** Anime owns an `episodes` sub-namespace that the generic CRUD facade does not build. */
 type LibraryAnimeEntityFacade = Omit<LibraryCapability['animes'], 'episodes'>
+/** Comic owns a `chapters` sub-namespace that the generic CRUD facade does not build. */
+type LibraryComicEntityFacade = Omit<LibraryCapability['comics'], 'chapters'>
+/** Novel owns a `volumes` sub-namespace that the generic CRUD facade does not build. */
+type LibraryNovelEntityFacade = Omit<LibraryCapability['novels'], 'volumes'>
 
 type LibraryEntityNamespaceFacade =
   | LibraryCapability['games']
   | LibraryAnimeEntityFacade
+  | LibraryComicEntityFacade
+  | LibraryNovelEntityFacade
   | LibraryCapability['characters']
   | LibraryCapability['persons']
   | LibraryCapability['companies']
@@ -301,6 +309,60 @@ export function createKisakiApi(
             ).episode
         }
       },
+      comics: {
+        ...createEntityNamespace<LibraryComicEntityFacade>({
+          get: 'capabilities.library.comics.get',
+          list: 'capabilities.library.comics.list',
+          create: 'capabilities.library.comics.create',
+          update: 'capabilities.library.comics.update',
+          remove: 'capabilities.library.comics.remove'
+        }),
+        chapters: {
+          list: async (query) =>
+            (await requestMain('capabilities.library.comics.chapters.list', { query })).items,
+          create: async (comicId, input) =>
+            (
+              await requestMain('capabilities.library.comics.chapters.create', {
+                comicId,
+                input
+              })
+            ).chapter,
+          patchReadState: async (chapterId, patch) =>
+            (
+              await requestMain('capabilities.library.comics.chapters.patchReadState', {
+                chapterId,
+                patch
+              })
+            ).chapter
+        }
+      },
+      novels: {
+        ...createEntityNamespace<LibraryNovelEntityFacade>({
+          get: 'capabilities.library.novels.get',
+          list: 'capabilities.library.novels.list',
+          create: 'capabilities.library.novels.create',
+          update: 'capabilities.library.novels.update',
+          remove: 'capabilities.library.novels.remove'
+        }),
+        volumes: {
+          list: async (query) =>
+            (await requestMain('capabilities.library.novels.volumes.list', { query })).items,
+          create: async (novelId, input) =>
+            (
+              await requestMain('capabilities.library.novels.volumes.create', {
+                novelId,
+                input
+              })
+            ).volume,
+          patchReadState: async (volumeId, patch) =>
+            (
+              await requestMain('capabilities.library.novels.volumes.patchReadState', {
+                volumeId,
+                patch
+              })
+            ).volume
+        }
+      },
       characters: createEntityNamespace<LibraryCapability['characters']>({
         get: 'capabilities.library.characters.get',
         list: 'capabilities.library.characters.list',
@@ -539,6 +601,46 @@ export function createKisakiApi(
           startFromScraper: async (profileId, lookup, options) =>
             (
               await requestMain('capabilities.ingest.anime.add.startFromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).start
+        }
+      },
+      comic: {
+        add: {
+          fromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.comic.add.fromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).result,
+          startFromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.comic.add.startFromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).start
+        }
+      },
+      novel: {
+        add: {
+          fromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.novel.add.fromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).result,
+          startFromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.novel.add.startFromScraper', {
                 profileId,
                 lookup,
                 options

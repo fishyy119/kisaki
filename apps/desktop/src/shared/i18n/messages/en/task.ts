@@ -123,6 +123,8 @@ export const task = {
     scanner: 'Scanner',
     game: 'Game',
     anime: 'Anime',
+    comic: 'Comic',
+    novel: 'Novel',
     person: 'Person',
     company: 'Company',
     character: 'Character',

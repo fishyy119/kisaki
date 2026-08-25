@@ -3,4 +3,5 @@
  */
 
 /** Entity types that support FTS. */
-export type FtsEntityType = 'game' | 'anime' | 'character' | 'person' | 'company'
+export type FtsEntityType =
+  'game' | 'anime' | 'comic' | 'novel' | 'character' | 'person' | 'company'

@@ -31,9 +31,16 @@ import {
   collections,
   collectionAnimeLinks,
   collectionCharacterLinks,
+  collectionComicLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionNovelLinks,
   collectionPersonLinks,
+  comicCharacterLinks,
+  comicCompanyLinks,
+  comicPersonLinks,
+  comics,
+  comicTagLinks,
   companies,
   companyTagLinks,
   gameCastLinks,
@@ -43,6 +50,11 @@ import {
   gamePersonLinks,
   gameTagLinks,
   mediaRelations,
+  novelCharacterLinks,
+  novelCompanyLinks,
+  novelPersonLinks,
+  novels,
+  novelTagLinks,
   persons,
   personTagLinks,
   tags
@@ -52,11 +64,13 @@ import type { DbContext } from '../types'
 const DIRECT_RELATED_ENTITY_TYPES: Record<AllEntityType, readonly AllEntityType[]> = {
   game: ['character', 'person', 'company', 'tag'],
   anime: ['character', 'person', 'company', 'tag'],
-  character: ['game', 'anime', 'person', 'tag'],
-  person: ['game', 'anime', 'character', 'tag'],
-  company: ['game', 'anime', 'tag'],
-  tag: ['game', 'anime', 'character', 'person', 'company'],
-  collection: ['game', 'anime', 'character', 'person', 'company']
+  comic: ['character', 'person', 'company', 'tag'],
+  novel: ['character', 'person', 'company', 'tag'],
+  character: ['game', 'anime', 'comic', 'novel', 'person', 'tag'],
+  person: ['game', 'anime', 'comic', 'novel', 'character', 'tag'],
+  company: ['game', 'anime', 'comic', 'novel', 'tag'],
+  tag: ['game', 'anime', 'comic', 'novel', 'character', 'person', 'company'],
+  collection: ['game', 'anime', 'comic', 'novel', 'character', 'person', 'company']
 }
 
 type RelatedIdMap = Partial<Record<AllEntityType, Set<string>>>
@@ -192,6 +206,52 @@ export class DbEntityDeleteHelper {
             animeTagLinks.tagId
           ])
         }
+      case 'comic':
+        return {
+          character: this.selectDistinctIds(entityIds, [
+            comicCharacterLinks,
+            comicCharacterLinks.comicId,
+            comicCharacterLinks.characterId
+          ]),
+          person: this.selectDistinctIds(entityIds, [
+            comicPersonLinks,
+            comicPersonLinks.comicId,
+            comicPersonLinks.personId
+          ]),
+          company: this.selectDistinctIds(entityIds, [
+            comicCompanyLinks,
+            comicCompanyLinks.comicId,
+            comicCompanyLinks.companyId
+          ]),
+          tag: this.selectDistinctIds(entityIds, [
+            comicTagLinks,
+            comicTagLinks.comicId,
+            comicTagLinks.tagId
+          ])
+        }
+      case 'novel':
+        return {
+          character: this.selectDistinctIds(entityIds, [
+            novelCharacterLinks,
+            novelCharacterLinks.novelId,
+            novelCharacterLinks.characterId
+          ]),
+          person: this.selectDistinctIds(entityIds, [
+            novelPersonLinks,
+            novelPersonLinks.novelId,
+            novelPersonLinks.personId
+          ]),
+          company: this.selectDistinctIds(entityIds, [
+            novelCompanyLinks,
+            novelCompanyLinks.novelId,
+            novelCompanyLinks.companyId
+          ]),
+          tag: this.selectDistinctIds(entityIds, [
+            novelTagLinks,
+            novelTagLinks.novelId,
+            novelTagLinks.tagId
+          ])
+        }
       case 'character':
         return {
           game: this.selectDistinctIds(
@@ -204,6 +264,16 @@ export class DbEntityDeleteHelper {
             [animeCharacterLinks, animeCharacterLinks.characterId, animeCharacterLinks.animeId],
             [animeCastLinks, animeCastLinks.characterId, animeCastLinks.animeId]
           ),
+          comic: this.selectDistinctIds(entityIds, [
+            comicCharacterLinks,
+            comicCharacterLinks.characterId,
+            comicCharacterLinks.comicId
+          ]),
+          novel: this.selectDistinctIds(entityIds, [
+            novelCharacterLinks,
+            novelCharacterLinks.characterId,
+            novelCharacterLinks.novelId
+          ]),
           person: this.selectDistinctIds(
             entityIds,
             [characterPersonLinks, characterPersonLinks.characterId, characterPersonLinks.personId],
@@ -228,6 +298,16 @@ export class DbEntityDeleteHelper {
             [animePersonLinks, animePersonLinks.personId, animePersonLinks.animeId],
             [animeCastLinks, animeCastLinks.personId, animeCastLinks.animeId]
           ),
+          comic: this.selectDistinctIds(entityIds, [
+            comicPersonLinks,
+            comicPersonLinks.personId,
+            comicPersonLinks.comicId
+          ]),
+          novel: this.selectDistinctIds(entityIds, [
+            novelPersonLinks,
+            novelPersonLinks.personId,
+            novelPersonLinks.novelId
+          ]),
           character: this.selectDistinctIds(
             entityIds,
             [characterPersonLinks, characterPersonLinks.personId, characterPersonLinks.characterId],
@@ -252,6 +332,16 @@ export class DbEntityDeleteHelper {
             animeCompanyLinks.companyId,
             animeCompanyLinks.animeId
           ]),
+          comic: this.selectDistinctIds(entityIds, [
+            comicCompanyLinks,
+            comicCompanyLinks.companyId,
+            comicCompanyLinks.comicId
+          ]),
+          novel: this.selectDistinctIds(entityIds, [
+            novelCompanyLinks,
+            novelCompanyLinks.companyId,
+            novelCompanyLinks.novelId
+          ]),
           tag: this.selectDistinctIds(entityIds, [
             companyTagLinks,
             companyTagLinks.companyId,
@@ -269,6 +359,16 @@ export class DbEntityDeleteHelper {
             animeTagLinks,
             animeTagLinks.tagId,
             animeTagLinks.animeId
+          ]),
+          comic: this.selectDistinctIds(entityIds, [
+            comicTagLinks,
+            comicTagLinks.tagId,
+            comicTagLinks.comicId
+          ]),
+          novel: this.selectDistinctIds(entityIds, [
+            novelTagLinks,
+            novelTagLinks.tagId,
+            novelTagLinks.novelId
           ]),
           character: this.selectDistinctIds(entityIds, [
             characterTagLinks,
@@ -297,6 +397,16 @@ export class DbEntityDeleteHelper {
             collectionAnimeLinks,
             collectionAnimeLinks.collectionId,
             collectionAnimeLinks.animeId
+          ]),
+          comic: this.selectDistinctIds(entityIds, [
+            collectionComicLinks,
+            collectionComicLinks.collectionId,
+            collectionComicLinks.comicId
+          ]),
+          novel: this.selectDistinctIds(entityIds, [
+            collectionNovelLinks,
+            collectionNovelLinks.collectionId,
+            collectionNovelLinks.novelId
           ]),
           character: this.selectDistinctIds(entityIds, [
             collectionCharacterLinks,
@@ -335,6 +445,18 @@ export class DbEntityDeleteHelper {
           .select({ id: animes.id, name: animes.name })
           .from(animes)
           .where(inArray(animes.id, entityIds))
+          .all()
+      case 'comic':
+        return this.db
+          .select({ id: comics.id, name: comics.name })
+          .from(comics)
+          .where(inArray(comics.id, entityIds))
+          .all()
+      case 'novel':
+        return this.db
+          .select({ id: novels.id, name: novels.name })
+          .from(novels)
+          .where(inArray(novels.id, entityIds))
           .all()
       case 'character':
         return this.db
@@ -385,6 +507,14 @@ export class DbEntityDeleteHelper {
       case 'anime':
         db.delete(animes).where(inArray(animes.id, entityIds)).run()
         this.deleteMediaRelationEnds(db, 'anime', entityIds)
+        return
+      case 'comic':
+        db.delete(comics).where(inArray(comics.id, entityIds)).run()
+        this.deleteMediaRelationEnds(db, 'comic', entityIds)
+        return
+      case 'novel':
+        db.delete(novels).where(inArray(novels.id, entityIds)).run()
+        this.deleteMediaRelationEnds(db, 'novel', entityIds)
         return
       case 'character':
         db.delete(characters).where(inArray(characters.id, entityIds)).run()

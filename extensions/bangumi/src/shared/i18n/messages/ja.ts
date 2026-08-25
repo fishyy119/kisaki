@@ -250,6 +250,9 @@ export const ja = {
       score: '評価',
       tags: 'タグ',
       collection: 'コレクション',
+      unitProgress: '読書進捗',
+      unitProgressValue: ({ volumes, chapters }: { volumes: number; chapters: number }) =>
+        `${volumes} 巻 / ${chapters} 話`,
       notCollected: '未収集',
       notRated: '未評価',
       notInCollection: '未加入',
@@ -275,6 +278,15 @@ export const ja = {
       planned: '見たい',
       watching: '視聴中',
       completed: '視聴済み',
+      onHold: '保留',
+      dropped: '中断',
+      unset: '未設定'
+    },
+
+    bookStatus: {
+      planned: '読みたい',
+      reading: '読書中',
+      completed: '読了',
       onHold: '保留',
       dropped: '中断',
       unset: '未設定'
@@ -476,6 +488,7 @@ export const ja = {
       itemStatus: '項目ステータス',
       itemScore: '評価',
       itemTags: 'タグ',
+      itemUnitProgress: '読書進捗',
       patchExisting: '既存エントリを更新',
       targetCollection: 'コレクションに追加',
       collectionPlaceholder: 'コレクションを選択',

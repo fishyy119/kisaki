@@ -11,8 +11,14 @@ import { eq } from 'drizzle-orm'
 import { attachment, db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import type { Messages } from '@shared/i18n'
-import type { AnimeImageSlot, GameImageSlot, ScraperCapability } from '@shared/scraper'
-import { animes, characters, companies, games, persons } from '@shared/db'
+import type {
+  AnimeImageSlot,
+  ComicImageSlot,
+  GameImageSlot,
+  NovelImageSlot,
+  ScraperCapability
+} from '@shared/scraper'
+import { animes, characters, comics, companies, games, novels, persons } from '@shared/db'
 import type { TableName } from '@shared/db/table-names'
 import type { ContentEntityType } from '@shared/common'
 
@@ -215,6 +221,88 @@ export const ENTITY_ASSET_SPECS: Record<ContentEntityType, EntityAssetSpec> = {
           format: row?.format ?? undefined
         },
         capability as AnimeImageSlot
+      )
+    }
+  },
+  comic: {
+    attachmentTable: 'comics',
+    slots: [
+      COVER_SLOT((m) => m.library.forms.mediaDescriptions.comicCover),
+      BACKDROP_SLOT((m) => m.library.forms.mediaDescriptions.comicBackdrop),
+      LOGO_SLOT((m) => m.library.forms.mediaDescriptions.comicLogo, 'aspect-[3/1]')
+    ],
+    loadEntry: async (id) => {
+      const row = await db.query.comics.findFirst({ where: eq(comics.id, id) })
+      if (!row) return undefined
+      return {
+        name: row.name,
+        originalName: row.originalName,
+        files: {
+          cover: row.coverFile,
+          backdrop: row.backdropFile,
+          logo: row.logoFile
+        }
+      }
+    },
+    setFile: async (id, slotType, source) => {
+      await attachment.setFile(comics, id, MEDIA_FIELDS[slotType as MediaFieldKey], source)
+    },
+    clearFile: async (id, slotType) => {
+      await attachment.clearFile(comics, id, MEDIA_FIELDS[slotType as MediaFieldKey])
+    },
+    searchImages: async (providerId, request, capability) => {
+      const row = await db.query.comics.findFirst({ where: eq(comics.id, request.entityId) })
+
+      return ipcManager.invoke(
+        'scraper:get-comic-provider-images',
+        providerId,
+        {
+          name: request.name,
+          releaseDate: row?.releaseDate ?? undefined,
+          format: row?.format ?? undefined
+        },
+        capability as ComicImageSlot
+      )
+    }
+  },
+  novel: {
+    attachmentTable: 'novels',
+    slots: [
+      COVER_SLOT((m) => m.library.forms.mediaDescriptions.novelCover),
+      BACKDROP_SLOT((m) => m.library.forms.mediaDescriptions.novelBackdrop),
+      LOGO_SLOT((m) => m.library.forms.mediaDescriptions.novelLogo, 'aspect-[3/1]')
+    ],
+    loadEntry: async (id) => {
+      const row = await db.query.novels.findFirst({ where: eq(novels.id, id) })
+      if (!row) return undefined
+      return {
+        name: row.name,
+        originalName: row.originalName,
+        files: {
+          cover: row.coverFile,
+          backdrop: row.backdropFile,
+          logo: row.logoFile
+        }
+      }
+    },
+    setFile: async (id, slotType, source) => {
+      await attachment.setFile(novels, id, MEDIA_FIELDS[slotType as MediaFieldKey], source)
+    },
+    clearFile: async (id, slotType) => {
+      await attachment.clearFile(novels, id, MEDIA_FIELDS[slotType as MediaFieldKey])
+    },
+    searchImages: async (providerId, request, capability) => {
+      const row = await db.query.novels.findFirst({ where: eq(novels.id, request.entityId) })
+
+      return ipcManager.invoke(
+        'scraper:get-novel-provider-images',
+        providerId,
+        {
+          name: request.name,
+          releaseDate: row?.releaseDate ?? undefined,
+          format: row?.format ?? undefined
+        },
+        capability as NovelImageSlot
       )
     }
   },

@@ -7,10 +7,18 @@ import {
   animes,
   characterExternalIds,
   characters,
+  comicChapterExternalIds,
+  comicChapters,
+  comicExternalIds,
+  comics,
   companies,
   companyExternalIds,
   gameExternalIds,
   games,
+  novelExternalIds,
+  novelVolumeExternalIds,
+  novelVolumes,
+  novels,
   personExternalIds,
   persons
 } from '../tables'
@@ -33,6 +41,34 @@ export const animeEpisodeExternalIdsRelations = relations(animeEpisodeExternalId
   episode: one(animeEpisodes, {
     fields: [animeEpisodeExternalIds.episodeId],
     references: [animeEpisodes.id]
+  })
+}))
+
+export const comicExternalIdsRelations = relations(comicExternalIds, ({ one }) => ({
+  comic: one(comics, {
+    fields: [comicExternalIds.comicId],
+    references: [comics.id]
+  })
+}))
+
+export const comicChapterExternalIdsRelations = relations(comicChapterExternalIds, ({ one }) => ({
+  chapter: one(comicChapters, {
+    fields: [comicChapterExternalIds.chapterId],
+    references: [comicChapters.id]
+  })
+}))
+
+export const novelExternalIdsRelations = relations(novelExternalIds, ({ one }) => ({
+  novel: one(novels, {
+    fields: [novelExternalIds.novelId],
+    references: [novels.id]
+  })
+}))
+
+export const novelVolumeExternalIdsRelations = relations(novelVolumeExternalIds, ({ one }) => ({
+  volume: one(novelVolumes, {
+    fields: [novelVolumeExternalIds.volumeId],
+    references: [novelVolumes.id]
   })
 }))
 

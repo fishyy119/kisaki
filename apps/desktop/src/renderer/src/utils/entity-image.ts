@@ -33,6 +33,14 @@ const ENTITY_IMAGE_SPECS: EntityImageSpecs = {
     cover: (row) => row.coverFile,
     icon: (row) => row.coverFile
   },
+  comic: {
+    cover: (row) => row.coverFile,
+    icon: (row) => row.coverFile
+  },
+  novel: {
+    cover: (row) => row.coverFile,
+    icon: (row) => row.coverFile
+  },
   character: {
     cover: (row) => row.photoFile,
     icon: (row) => row.photoFile

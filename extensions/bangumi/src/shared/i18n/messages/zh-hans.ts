@@ -240,6 +240,9 @@ export const zhHans = {
       score: '评分',
       tags: '标签',
       collection: '合集',
+      unitProgress: '阅读进度',
+      unitProgressValue: ({ volumes, chapters }: { volumes: number; chapters: number }) =>
+        `${volumes} 卷 / ${chapters} 话`,
       notCollected: '未收藏',
       notRated: '未评分',
       notInCollection: '未加入',
@@ -265,6 +268,15 @@ export const zhHans = {
       planned: '想看',
       watching: '在看',
       completed: '看过',
+      onHold: '搁置',
+      dropped: '抛弃',
+      unset: '未设置'
+    },
+
+    bookStatus: {
+      planned: '想读',
+      reading: '在读',
+      completed: '读过',
       onHold: '搁置',
       dropped: '抛弃',
       unset: '未设置'
@@ -457,6 +469,7 @@ export const zhHans = {
       itemStatus: '条目状态',
       itemScore: '评分',
       itemTags: '标签',
+      itemUnitProgress: '阅读进度',
       patchExisting: '更新已有条目',
       targetCollection: '加入合集',
       collectionPlaceholder: '选择合集',

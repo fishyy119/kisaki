@@ -2,6 +2,7 @@ import type {
   AnimeScraperProvider,
   CardActionContribution,
   CharacterScraperProvider,
+  ComicScraperProvider,
   CommandContribution,
   DeeplinkRouteContribution,
   EntityMenuContribution,
@@ -14,6 +15,7 @@ import type {
   ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
   GameScraperProvider,
+  NovelScraperProvider,
   PersonScraperProvider,
   CompanyScraperProvider,
   ScraperMediaType,
@@ -53,6 +55,8 @@ export type EntityMenuRegistrationMaps = {
 export interface ScraperProviderMaps {
   game: Map<string, GameScraperProvider>
   anime: Map<string, AnimeScraperProvider>
+  comic: Map<string, ComicScraperProvider>
+  novel: Map<string, NovelScraperProvider>
   person: Map<string, PersonScraperProvider>
   company: Map<string, CompanyScraperProvider>
   character: Map<string, CharacterScraperProvider>
@@ -260,6 +264,14 @@ export function createEntityMenuRegistrationMaps(): EntityMenuRegistrationMaps {
       single: new Map(),
       batch: new Map()
     },
+    comic: {
+      single: new Map(),
+      batch: new Map()
+    },
+    novel: {
+      single: new Map(),
+      batch: new Map()
+    },
     character: {
       single: new Map()
     },
@@ -302,6 +314,10 @@ export function getEntityMenuRegistrationForInput(
       return runtime.entityMenus.game[input.scope].get(contributionId)
     case 'anime':
       return runtime.entityMenus.anime[input.scope].get(contributionId)
+    case 'comic':
+      return runtime.entityMenus.comic[input.scope].get(contributionId)
+    case 'novel':
+      return runtime.entityMenus.novel[input.scope].get(contributionId)
     case 'character':
       return runtime.entityMenus.character.single.get(contributionId)
     case 'person':
@@ -329,6 +345,8 @@ export function createScraperProviderMaps(): ScraperProviderMaps {
   return {
     game: new Map(),
     anime: new Map(),
+    comic: new Map(),
+    novel: new Map(),
     person: new Map(),
     company: new Map(),
     character: new Map()

@@ -8,6 +8,9 @@ import type {
   LibraryCollection,
   LibraryCollectionCreateInput,
   LibraryCollectionPatch,
+  LibraryComic,
+  LibraryComicCreateInput,
+  LibraryComicPatch,
   LibraryCompany,
   LibraryCompanyCreateInput,
   LibraryCompanyPatch,
@@ -15,6 +18,9 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGraphResultAction,
+  LibraryNovel,
+  LibraryNovelCreateInput,
+  LibraryNovelPatch,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -49,6 +55,30 @@ export function planAnimeAction(
   }
 
   return Object.keys(buildAnimePatch(existing, input, conflictMode)).length > 0 ? 'update' : 'skip'
+}
+
+export function planComicAction(
+  existing: LibraryComic | undefined,
+  input: LibraryComicCreateInput,
+  conflictMode: ConflictMode
+): LibraryGraphResultAction {
+  if (!existing) {
+    return 'create'
+  }
+
+  return Object.keys(buildComicPatch(existing, input, conflictMode)).length > 0 ? 'update' : 'skip'
+}
+
+export function planNovelAction(
+  existing: LibraryNovel | undefined,
+  input: LibraryNovelCreateInput,
+  conflictMode: ConflictMode
+): LibraryGraphResultAction {
+  if (!existing) {
+    return 'create'
+  }
+
+  return Object.keys(buildNovelPatch(existing, input, conflictMode)).length > 0 ? 'update' : 'skip'
 }
 
 export function planCollectionAction(
@@ -121,6 +151,50 @@ export function buildAnimePatch(
   assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
   assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
   assignPatchValue(patch, existing, input, 'animeDirPath', conflictMode)
+  assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
+  patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
+  if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
+    delete patch.externalIds
+  }
+  return patch
+}
+
+export function buildComicPatch(
+  existing: LibraryComic,
+  input: LibraryComicCreateInput,
+  conflictMode: ConflictMode
+): LibraryComicPatch {
+  const patch = buildRankedEntityPatch(existing, input, conflictMode) as LibraryComicPatch
+  assignPatchValue(patch, existing, input, 'releaseDate', conflictMode)
+  assignPatchValue(patch, existing, input, 'status', conflictMode)
+  assignPatchValue(patch, existing, input, 'format', conflictMode)
+  assignPatchValue(patch, existing, input, 'readingDirection', conflictMode)
+  assignPatchValue(patch, existing, input, 'totalVolumes', conflictMode)
+  assignPatchValue(patch, existing, input, 'totalChapters', conflictMode)
+  assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
+  assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
+  assignPatchValue(patch, existing, input, 'comicDirPath', conflictMode)
+  assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
+  patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
+  if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
+    delete patch.externalIds
+  }
+  return patch
+}
+
+export function buildNovelPatch(
+  existing: LibraryNovel,
+  input: LibraryNovelCreateInput,
+  conflictMode: ConflictMode
+): LibraryNovelPatch {
+  const patch = buildRankedEntityPatch(existing, input, conflictMode) as LibraryNovelPatch
+  assignPatchValue(patch, existing, input, 'releaseDate', conflictMode)
+  assignPatchValue(patch, existing, input, 'status', conflictMode)
+  assignPatchValue(patch, existing, input, 'format', conflictMode)
+  assignPatchValue(patch, existing, input, 'totalVolumes', conflictMode)
+  assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
+  assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
+  assignPatchValue(patch, existing, input, 'novelDirPath', conflictMode)
   assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
   patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
   if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
@@ -242,17 +316,28 @@ export function stripUndefined<T extends Record<string, unknown>>(value: T): T {
 type RankedEntityPatch =
   | LibraryAnimePatch
   | LibraryCharacterPatch
+  | LibraryComicPatch
   | LibraryCompanyPatch
   | LibraryGamePatch
+  | LibraryNovelPatch
   | LibraryPersonPatch
 
 function buildRankedEntityPatch(
-  existing: LibraryAnime | LibraryCharacter | LibraryCompany | LibraryGame | LibraryPerson,
+  existing:
+    | LibraryAnime
+    | LibraryCharacter
+    | LibraryComic
+    | LibraryCompany
+    | LibraryGame
+    | LibraryNovel
+    | LibraryPerson,
   input:
     | LibraryAnimeCreateInput
     | LibraryCharacterCreateInput
+    | LibraryComicCreateInput
     | LibraryCompanyCreateInput
     | LibraryGameCreateInput
+    | LibraryNovelCreateInput
     | LibraryPersonCreateInput,
   conflictMode: ConflictMode
 ): RankedEntityPatch {

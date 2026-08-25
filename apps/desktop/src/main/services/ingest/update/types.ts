@@ -7,6 +7,10 @@ import type {
   CharacterUpdateMediaSurface,
   CharacterUpdateRelationSurface,
   CharacterUpdateSurface,
+  ComicUpdateCoreSurface,
+  ComicUpdateMediaSurface,
+  ComicUpdateRelationSurface,
+  ComicUpdateSurface,
   CompanyUpdateCoreSurface,
   CompanyUpdateMediaSurface,
   CompanyUpdateRelationSurface,
@@ -16,6 +20,10 @@ import type {
   GameUpdateRelationSurface,
   GameUpdateSurface,
   IngestUpdatePolicy,
+  NovelUpdateCoreSurface,
+  NovelUpdateMediaSurface,
+  NovelUpdateRelationSurface,
+  NovelUpdateSurface,
   PersonUpdateCoreSurface,
   PersonUpdateMediaSurface,
   PersonUpdateRelationSurface,
@@ -25,7 +33,9 @@ import type { ExternalId } from '@shared/identity'
 import type {
   ScrapedAnimeRelationFacts,
   ScrapedCharacterRelationFacts,
+  ScrapedComicRelationFacts,
   ScrapedGameRelationFacts,
+  ScrapedNovelRelationFacts,
   ScrapedRelatedEntryFact
 } from '@shared/scraper'
 import type { PendingAssetTask } from '../assets'
@@ -33,19 +43,27 @@ import type {
   IngestAnimeGraph,
   IngestAnimeGraphLinks,
   IngestCharacterGraph,
+  IngestComicGraph,
+  IngestComicGraphLinks,
   IngestGameGraph,
-  IngestGameGraphLinks
+  IngestGameGraphLinks,
+  IngestNovelGraph,
+  IngestNovelGraphLinks
 } from '../graph'
 import type {
   AnimeEpisodeInfo,
+  ComicChapterInfo,
   CoreAnimeMetadata,
   CoreCharacterMetadata,
+  CoreComicMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
+  CoreNovelMetadata,
   CorePersonMetadata,
+  NovelVolumeInfo,
   Tag
 } from '@shared/metadata'
-import type { Anime, Character, Company, Game, Person } from '@shared/db'
+import type { Anime, Character, Comic, Company, Game, Novel, Person } from '@shared/db'
 
 export interface UpdateIncomingBundle<TCore, TRelationFacts, TMediaCandidates> {
   core: Partial<TCore>
@@ -97,6 +115,22 @@ export type GameLinkKind = keyof IngestGameGraphLinks
  */
 export type AnimeLinkKind = keyof IngestAnimeGraphLinks
 
+/**
+ * Link tables a comic update can write.
+ *
+ * Derived from the graph builder's output, so a new link table forces a
+ * declaration in `COMIC_LINK_TOPOLOGY`.
+ */
+export type ComicLinkKind = keyof IngestComicGraphLinks
+
+/**
+ * Link tables a novel update can write.
+ *
+ * Derived from the graph builder's output, so a new link table forces a
+ * declaration in `NOVEL_LINK_TOPOLOGY`.
+ */
+export type NovelLinkKind = keyof IngestNovelGraphLinks
+
 /** Link tables a character update can write; the graph carries a single set. */
 export type CharacterLinkKind = 'characterPerson'
 
@@ -120,6 +154,18 @@ export interface GameIncomingMediaCandidates {
 }
 
 export interface AnimeIncomingMediaCandidates {
+  coverUrls?: string[]
+  backdropUrls?: string[]
+  logoUrls?: string[]
+}
+
+export interface ComicIncomingMediaCandidates {
+  coverUrls?: string[]
+  backdropUrls?: string[]
+  logoUrls?: string[]
+}
+
+export interface NovelIncomingMediaCandidates {
   coverUrls?: string[]
   backdropUrls?: string[]
   logoUrls?: string[]
@@ -163,6 +209,26 @@ export interface AnimeIncomingBuildResult extends UpdateIncomingBuildResult<
   episodes?: AnimeEpisodeInfo[]
 }
 
+export interface ComicIncomingBuildResult extends UpdateIncomingBuildResult<
+  UpdateIncomingRelationAvailability<ComicUpdateSurface, ComicLinkKind>,
+  CoreComicMetadata,
+  ScrapedComicRelationFacts,
+  ComicIncomingMediaCandidates
+> {
+  /** Absent means the scrape could not answer units; an empty array means none exist. */
+  chapters?: ComicChapterInfo[]
+}
+
+export interface NovelIncomingBuildResult extends UpdateIncomingBuildResult<
+  UpdateIncomingRelationAvailability<NovelUpdateSurface, NovelLinkKind>,
+  CoreNovelMetadata,
+  ScrapedNovelRelationFacts,
+  NovelIncomingMediaCandidates
+> {
+  /** Absent means the scrape could not answer volumes; an empty array means none exist. */
+  volumes?: NovelVolumeInfo[]
+}
+
 export interface PersonCurrentState {
   person: Person
   externalIds: ExternalId[]
@@ -189,6 +255,18 @@ export interface GameCurrentState {
 
 export interface AnimeCurrentState {
   anime: Anime
+  externalIds: ExternalId[]
+  tags: Tag[]
+}
+
+export interface ComicCurrentState {
+  comic: Comic
+  externalIds: ExternalId[]
+  tags: Tag[]
+}
+
+export interface NovelCurrentState {
+  novel: Novel
   externalIds: ExternalId[]
   tags: Tag[]
 }
@@ -270,6 +348,50 @@ export interface AnimeUpdatePlan {
   /** Link tables where `replace` was downgraded because a fact source stayed silent. */
   degradedLinks: AnimeLinkKind[]
   relationGraph?: IngestAnimeGraph
+  relatedEntries?: RelatedEntriesUpdatePlan
+}
+
+/** Unit write resolved for one comic update; see `AnimeEpisodeUpdatePlan`. */
+export interface ComicChapterUpdatePlan {
+  items: ComicChapterInfo[]
+  mode: CollectionUpdateMode
+}
+
+export interface ComicUpdatePlan {
+  patch: Partial<Comic>
+  externalIds?: ExternalId[]
+  tags?: Tag[]
+  coverUrl?: string
+  backdropUrl?: string
+  logoUrl?: string
+  chapters?: ComicChapterUpdatePlan
+  /** Link tables to write, each with the mode resolved for that table. */
+  links: Partial<Record<ComicLinkKind, CollectionUpdateMode>>
+  /** Link tables where `replace` was downgraded because a fact source stayed silent. */
+  degradedLinks: ComicLinkKind[]
+  relationGraph?: IngestComicGraph
+  relatedEntries?: RelatedEntriesUpdatePlan
+}
+
+/** Volume write resolved for one novel update; see `AnimeEpisodeUpdatePlan`. */
+export interface NovelVolumeUpdatePlan {
+  items: NovelVolumeInfo[]
+  mode: CollectionUpdateMode
+}
+
+export interface NovelUpdatePlan {
+  patch: Partial<Novel>
+  externalIds?: ExternalId[]
+  tags?: Tag[]
+  coverUrl?: string
+  backdropUrl?: string
+  logoUrl?: string
+  volumes?: NovelVolumeUpdatePlan
+  /** Link tables to write, each with the mode resolved for that table. */
+  links: Partial<Record<NovelLinkKind, CollectionUpdateMode>>
+  /** Link tables where `replace` was downgraded because a fact source stayed silent. */
+  degradedLinks: NovelLinkKind[]
+  relationGraph?: IngestNovelGraph
   relatedEntries?: RelatedEntriesUpdatePlan
 }
 
@@ -355,6 +477,32 @@ export interface AnimePlanContext {
     AnimeUpdateCoreSurface,
     AnimeUpdateMediaSurface,
     AnimeUpdateRelationSurface
+  >
+  policy: IngestUpdatePolicy
+}
+
+export interface ComicPlanContext {
+  current: ComicCurrentState
+  incoming: ComicIncomingBuildResult
+  relationGraph?: IngestComicGraph
+  selection: UpdateResolvedSelection<
+    ComicUpdateSurface,
+    ComicUpdateCoreSurface,
+    ComicUpdateMediaSurface,
+    ComicUpdateRelationSurface
+  >
+  policy: IngestUpdatePolicy
+}
+
+export interface NovelPlanContext {
+  current: NovelCurrentState
+  incoming: NovelIncomingBuildResult
+  relationGraph?: IngestNovelGraph
+  selection: UpdateResolvedSelection<
+    NovelUpdateSurface,
+    NovelUpdateCoreSurface,
+    NovelUpdateMediaSurface,
+    NovelUpdateRelationSurface
   >
   policy: IngestUpdatePolicy
 }

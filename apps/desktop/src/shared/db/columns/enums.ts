@@ -25,6 +25,12 @@ import {
   ANIME_PERSON_ROLE_VALUES,
   ANIME_STATUS_VALUES,
   CHARACTER_PERSON_ROLE_VALUES,
+  COMIC_CHARACTER_ROLE_VALUES,
+  COMIC_COMPANY_ROLE_VALUES,
+  COMIC_FORMAT_VALUES,
+  COMIC_PERSON_ROLE_VALUES,
+  COMIC_READING_DIRECTION_VALUES,
+  COMIC_STATUS_VALUES,
   EXTENSION_INSTALL_REASON_VALUES,
   EXTENSION_REPOSITORY_STATE_VALUES,
   EXTENSION_SIGNER_ALGORITHM_VALUES,
@@ -32,7 +38,12 @@ import {
   GAME_CHARACTER_ROLE_VALUES,
   GAME_COMPANY_ROLE_VALUES,
   GAME_PERSON_ROLE_VALUES,
-  GAME_STATUS_VALUES
+  GAME_STATUS_VALUES,
+  NOVEL_CHARACTER_ROLE_VALUES,
+  NOVEL_COMPANY_ROLE_VALUES,
+  NOVEL_FORMAT_VALUES,
+  NOVEL_PERSON_ROLE_VALUES,
+  NOVEL_STATUS_VALUES
 } from '../contracts/enums'
 import type {
   AnimeCharacterRole,
@@ -44,6 +55,12 @@ import type {
   AnimeStatus,
   BloodType,
   CharacterPersonRole,
+  ComicCharacterRole,
+  ComicCompanyRole,
+  ComicFormat,
+  ComicPersonRole,
+  ComicReadingDirection,
+  ComicStatus,
   CupSize,
   ExtensionInstallReason,
   ExtensionRepositoryState,
@@ -57,6 +74,11 @@ import type {
   GameStatus,
   Gender,
   MainWindowCloseAction,
+  NovelCharacterRole,
+  NovelCompanyRole,
+  NovelFormat,
+  NovelPersonRole,
+  NovelStatus,
   ScannerIngestMode
 } from '../contracts/enums'
 import { createBoundedIntegerType, createEnumType, createNullableEnumType } from './factories'
@@ -67,6 +89,18 @@ export const animeStatus = createEnumType<AnimeStatus>(
   ANIME_STATUS_VALUES,
   'planned',
   'animeStatus'
+)
+
+export const comicStatus = createEnumType<ComicStatus>(
+  COMIC_STATUS_VALUES,
+  'planned',
+  'comicStatus'
+)
+
+export const novelStatus = createEnumType<NovelStatus>(
+  NOVEL_STATUS_VALUES,
+  'planned',
+  'novelStatus'
 )
 
 const GAME_LAUNCHER_MODE_VALUES = ['file', 'url', 'exec'] as const
@@ -140,6 +174,55 @@ export const animeExtraType = createEnumType<AnimeExtraType>(
   ANIME_EXTRA_TYPE_VALUES,
   'other',
   'animeExtraType'
+)
+
+export const comicFormat = createEnumType<ComicFormat>(COMIC_FORMAT_VALUES, 'manga', 'comicFormat')
+
+export const comicReadingDirection = createNullableEnumType<ComicReadingDirection>(
+  COMIC_READING_DIRECTION_VALUES,
+  'comicReadingDirection'
+)
+
+export const comicPersonRole = createEnumType<ComicPersonRole>(
+  COMIC_PERSON_ROLE_VALUES,
+  'other',
+  'comicPersonRole'
+)
+
+export const comicCharacterRole = createEnumType<ComicCharacterRole>(
+  COMIC_CHARACTER_ROLE_VALUES,
+  'other',
+  'comicCharacterRole'
+)
+
+export const comicCompanyRole = createEnumType<ComicCompanyRole>(
+  COMIC_COMPANY_ROLE_VALUES,
+  'other',
+  'comicCompanyRole'
+)
+
+export const novelFormat = createEnumType<NovelFormat>(
+  NOVEL_FORMAT_VALUES,
+  'lightNovel',
+  'novelFormat'
+)
+
+export const novelPersonRole = createEnumType<NovelPersonRole>(
+  NOVEL_PERSON_ROLE_VALUES,
+  'other',
+  'novelPersonRole'
+)
+
+export const novelCharacterRole = createEnumType<NovelCharacterRole>(
+  NOVEL_CHARACTER_ROLE_VALUES,
+  'other',
+  'novelCharacterRole'
+)
+
+export const novelCompanyRole = createEnumType<NovelCompanyRole>(
+  NOVEL_COMPANY_ROLE_VALUES,
+  'other',
+  'novelCompanyRole'
 )
 
 const BLOOD_TYPE_VALUES = ['a', 'b', 'ab', 'o'] as const

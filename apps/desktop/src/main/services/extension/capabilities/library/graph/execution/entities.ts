@@ -2,11 +2,13 @@ import type {
   LibraryAnime,
   LibraryCharacter,
   LibraryCollection,
+  LibraryComic,
   LibraryCompany,
   LibraryGame,
   LibraryGraphDiagnostic,
   LibraryGraphMediaNode,
   LibraryGraphResultAction,
+  LibraryNovel,
   LibraryPerson,
   LibraryTag
 } from '@kisaki3/extension-api'
@@ -23,13 +25,17 @@ import {
   buildAnimePatch,
   buildCharacterPatch,
   buildCollectionPatch,
+  buildComicPatch,
   buildCompanyPatch,
   buildGamePatch,
+  buildNovelPatch,
   buildPersonPatch,
   buildTagPatch,
   planAnimeAction,
   planCollectionAction,
+  planComicAction,
   planGameAction,
+  planNovelAction,
   planRankedEntityAction,
   planTagAction
 } from './patches'
@@ -133,6 +139,10 @@ function planMediaAction(
       return planAnimeAction(existing as LibraryAnime | undefined, node.input, conflictMode)
     case 'game':
       return planGameAction(existing as LibraryGame | undefined, node.input, conflictMode)
+    case 'comic':
+      return planComicAction(existing as LibraryComic | undefined, node.input, conflictMode)
+    case 'novel':
+      return planNovelAction(existing as LibraryNovel | undefined, node.input, conflictMode)
   }
 }
 
@@ -212,6 +222,30 @@ function writeMediaNode(
         return { entityId: existing.id, action: 'skip' }
       }
       return { entityId: options.entities.updateGame(existing.id, patch).id, action: 'update' }
+    }
+    case 'comic': {
+      const existing = existingEntity as LibraryComic | undefined
+      if (!existing) {
+        return { entityId: options.entities.createComic(node.input).id, action: 'create' }
+      }
+
+      const patch = buildComicPatch(existing, node.input, conflictMode)
+      if (Object.keys(patch).length === 0) {
+        return { entityId: existing.id, action: 'skip' }
+      }
+      return { entityId: options.entities.updateComic(existing.id, patch).id, action: 'update' }
+    }
+    case 'novel': {
+      const existing = existingEntity as LibraryNovel | undefined
+      if (!existing) {
+        return { entityId: options.entities.createNovel(node.input).id, action: 'create' }
+      }
+
+      const patch = buildNovelPatch(existing, node.input, conflictMode)
+      if (Object.keys(patch).length === 0) {
+        return { entityId: existing.id, action: 'skip' }
+      }
+      return { entityId: options.entities.updateNovel(existing.id, patch).id, action: 'update' }
     }
   }
 }

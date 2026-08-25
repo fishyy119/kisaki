@@ -16,6 +16,14 @@ import type {
   LibraryCollectionCreateInput,
   LibraryCollectionPatch,
   LibraryCollectionQuery,
+  LibraryComic,
+  LibraryComicChapter,
+  LibraryComicChapterCreateInput,
+  LibraryComicChapterQuery,
+  LibraryComicChapterReadStatePatch,
+  LibraryComicCreateInput,
+  LibraryComicPatch,
+  LibraryComicQuery,
   LibraryCompany,
   LibraryCompanyCreateInput,
   LibraryCompanyPatch,
@@ -24,6 +32,14 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
+  LibraryNovel,
+  LibraryNovelCreateInput,
+  LibraryNovelPatch,
+  LibraryNovelQuery,
+  LibraryNovelVolume,
+  LibraryNovelVolumeCreateInput,
+  LibraryNovelVolumeQuery,
+  LibraryNovelVolumeReadStatePatch,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -68,6 +84,50 @@ export interface LibraryAnimeNamespace extends LibraryEntityNamespace<
   episodes: LibraryAnimeEpisodeNamespace
 }
 
+/**
+ * Readable units owned by a comic entry.
+ *
+ * Like anime episodes, units stay a sub-resource: creation is exposed so
+ * importers can materialize a unit list, and read state is the per-unit fact
+ * callers patch.
+ */
+export interface LibraryComicChapterNamespace {
+  list(query: LibraryComicChapterQuery): Promise<readonly LibraryComicChapter[]>
+  create(comicId: string, input: LibraryComicChapterCreateInput): Promise<LibraryComicChapter>
+  patchReadState(
+    chapterId: string,
+    patch: LibraryComicChapterReadStatePatch
+  ): Promise<LibraryComicChapter>
+}
+
+export interface LibraryComicNamespace extends LibraryEntityNamespace<
+  LibraryComic,
+  LibraryComicCreateInput,
+  LibraryComicPatch,
+  LibraryComicQuery
+> {
+  chapters: LibraryComicChapterNamespace
+}
+
+/** Volumes owned by a novel entry; see {@link LibraryComicChapterNamespace}. */
+export interface LibraryNovelVolumeNamespace {
+  list(query: LibraryNovelVolumeQuery): Promise<readonly LibraryNovelVolume[]>
+  create(novelId: string, input: LibraryNovelVolumeCreateInput): Promise<LibraryNovelVolume>
+  patchReadState(
+    volumeId: string,
+    patch: LibraryNovelVolumeReadStatePatch
+  ): Promise<LibraryNovelVolume>
+}
+
+export interface LibraryNovelNamespace extends LibraryEntityNamespace<
+  LibraryNovel,
+  LibraryNovelCreateInput,
+  LibraryNovelPatch,
+  LibraryNovelQuery
+> {
+  volumes: LibraryNovelVolumeNamespace
+}
+
 export interface LibraryCapability {
   graph: LibraryGraphCapability
   games: LibraryEntityNamespace<
@@ -77,6 +137,8 @@ export interface LibraryCapability {
     LibraryGameQuery
   >
   animes: LibraryAnimeNamespace
+  comics: LibraryComicNamespace
+  novels: LibraryNovelNamespace
   characters: LibraryEntityNamespace<
     LibraryCharacter,
     LibraryCharacterCreateInput,

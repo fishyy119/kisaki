@@ -11,6 +11,8 @@ import { installRouteData } from '@renderer/core/route-data'
 import {
   gameDetailData,
   animeDetailData,
+  comicDetailData,
+  novelDetailData,
   characterDetailData,
   personDetailData,
   companyDetailData,
@@ -70,6 +72,20 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@renderer/features/library/pages/anime-detail-page.vue'),
         props: true,
         meta: { entityType: 'anime', dataLoaders: [animeDetailData] }
+      },
+      {
+        path: 'comic/:comicId',
+        name: 'comic-detail',
+        component: () => import('@renderer/features/library/pages/comic-detail-page.vue'),
+        props: true,
+        meta: { entityType: 'comic', dataLoaders: [comicDetailData] }
+      },
+      {
+        path: 'novel/:novelId',
+        name: 'novel-detail',
+        component: () => import('@renderer/features/library/pages/novel-detail-page.vue'),
+        props: true,
+        meta: { entityType: 'novel', dataLoaders: [novelDetailData] }
       },
       {
         path: 'person/:personId',

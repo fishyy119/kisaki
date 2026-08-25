@@ -18,9 +18,20 @@ import {
   characters,
   collectionAnimeLinks,
   collectionCharacterLinks,
+  collectionComicLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionNovelLinks,
   collectionPersonLinks,
+  comicChapters,
+  comicCharacterLinks,
+  comicCompanyLinks,
+  comicExternalIds,
+  comicNotes,
+  comicPersonLinks,
+  comicSessions,
+  comicTagLinks,
+  comics,
   companies,
   companyExternalIds,
   companyTagLinks,
@@ -33,6 +44,15 @@ import {
   games,
   gameSessions,
   gameTagLinks,
+  novelCharacterLinks,
+  novelCompanyLinks,
+  novelExternalIds,
+  novelNotes,
+  novelPersonLinks,
+  novelSessions,
+  novelTagLinks,
+  novelVolumes,
+  novels,
   personExternalIds,
   persons,
   personTagLinks
@@ -85,9 +105,49 @@ export const animeNotesRelations = relations(animeNotes, ({ one }) => ({
   })
 }))
 
+export const comicsRelations = relations(comics, ({ many }) => ({
+  chapters: many(comicChapters),
+  sessions: many(comicSessions),
+  notes: many(comicNotes),
+  comicPersonLinks: many(comicPersonLinks),
+  comicCompanyLinks: many(comicCompanyLinks),
+  comicCharacterLinks: many(comicCharacterLinks),
+  collectionComicLinks: many(collectionComicLinks),
+  comicTagLinks: many(comicTagLinks),
+  externalIds: many(comicExternalIds)
+}))
+
+export const comicNotesRelations = relations(comicNotes, ({ one }) => ({
+  comic: one(comics, {
+    fields: [comicNotes.comicId],
+    references: [comics.id]
+  })
+}))
+
+export const novelsRelations = relations(novels, ({ many }) => ({
+  volumes: many(novelVolumes),
+  sessions: many(novelSessions),
+  notes: many(novelNotes),
+  novelPersonLinks: many(novelPersonLinks),
+  novelCompanyLinks: many(novelCompanyLinks),
+  novelCharacterLinks: many(novelCharacterLinks),
+  collectionNovelLinks: many(collectionNovelLinks),
+  novelTagLinks: many(novelTagLinks),
+  externalIds: many(novelExternalIds)
+}))
+
+export const novelNotesRelations = relations(novelNotes, ({ one }) => ({
+  novel: one(novels, {
+    fields: [novelNotes.novelId],
+    references: [novels.id]
+  })
+}))
+
 export const personsRelations = relations(persons, ({ many }) => ({
   gamePersonLinks: many(gamePersonLinks),
   animePersonLinks: many(animePersonLinks),
+  comicPersonLinks: many(comicPersonLinks),
+  novelPersonLinks: many(novelPersonLinks),
   gameCastLinks: many(gameCastLinks),
   animeCastLinks: many(animeCastLinks),
   characterPersonLinks: many(characterPersonLinks),
@@ -99,6 +159,8 @@ export const personsRelations = relations(persons, ({ many }) => ({
 export const companiesRelations = relations(companies, ({ many }) => ({
   gameCompanyLinks: many(gameCompanyLinks),
   animeCompanyLinks: many(animeCompanyLinks),
+  comicCompanyLinks: many(comicCompanyLinks),
+  novelCompanyLinks: many(novelCompanyLinks),
   collectionCompanyLinks: many(collectionCompanyLinks),
   companyTagLinks: many(companyTagLinks),
   externalIds: many(companyExternalIds)
@@ -107,6 +169,8 @@ export const companiesRelations = relations(companies, ({ many }) => ({
 export const charactersRelations = relations(characters, ({ many }) => ({
   gameCharacterLinks: many(gameCharacterLinks),
   animeCharacterLinks: many(animeCharacterLinks),
+  comicCharacterLinks: many(comicCharacterLinks),
+  novelCharacterLinks: many(novelCharacterLinks),
   gameCastLinks: many(gameCastLinks),
   animeCastLinks: many(animeCastLinks),
   characterPersonLinks: many(characterPersonLinks),

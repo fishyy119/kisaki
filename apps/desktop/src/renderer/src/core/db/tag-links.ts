@@ -13,8 +13,10 @@ import type { TableName } from '@shared/db/table-names'
 import {
   animeTagLinks,
   characterTagLinks,
+  comicTagLinks,
   companyTagLinks,
   gameTagLinks,
+  novelTagLinks,
   personTagLinks,
   tags
 } from '@shared/db'
@@ -76,6 +78,34 @@ export const TAG_LINKS: Record<ContentEntityType, TagLinkDef> = {
     orderInTagColumn: animeTagLinks.orderInTag,
     buildInsertValue(entityId, row, orderInEntity) {
       return { ...row, animeId: entityId, orderInAnime: orderInEntity }
+    }
+  },
+  comic: {
+    table: comicTagLinks,
+    tableName: getTableName(comicTagLinks),
+    idColumn: comicTagLinks.id,
+    tagIdColumn: comicTagLinks.tagId,
+    entityIdColumn: comicTagLinks.comicId,
+    noteColumn: comicTagLinks.note,
+    isSpoilerColumn: comicTagLinks.isSpoiler,
+    orderInEntityColumn: comicTagLinks.orderInComic,
+    orderInTagColumn: comicTagLinks.orderInTag,
+    buildInsertValue(entityId, row, orderInEntity) {
+      return { ...row, comicId: entityId, orderInComic: orderInEntity }
+    }
+  },
+  novel: {
+    table: novelTagLinks,
+    tableName: getTableName(novelTagLinks),
+    idColumn: novelTagLinks.id,
+    tagIdColumn: novelTagLinks.tagId,
+    entityIdColumn: novelTagLinks.novelId,
+    noteColumn: novelTagLinks.note,
+    isSpoilerColumn: novelTagLinks.isSpoiler,
+    orderInEntityColumn: novelTagLinks.orderInNovel,
+    orderInTagColumn: novelTagLinks.orderInTag,
+    buildInsertValue(entityId, row, orderInEntity) {
+      return { ...row, novelId: entityId, orderInNovel: orderInEntity }
     }
   },
   character: {

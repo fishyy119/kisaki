@@ -6,11 +6,23 @@ import {
   animeExtras,
   animeNotes,
   animeSessions,
+  comicChapterExternalIds,
+  comicChapterFiles,
+  comicChapters,
+  comicNotes,
+  comicSessions,
   companyRelations,
   gameNotes,
   gameSessions,
   mediaRelations,
-  type AnimeEpisode
+  novelNotes,
+  novelSessions,
+  novelVolumeExternalIds,
+  novelVolumeFiles,
+  novelVolumes,
+  type AnimeEpisode,
+  type ComicChapter,
+  type NovelVolume
 } from '@shared/db'
 import type { AllEntityType, MediaType } from '@shared/common'
 import type { DbContext, DbQueryContext, DbWriteContext } from '../../types'
@@ -24,6 +36,8 @@ import type { OwnedDataMerge, RelationMergeConfig, SameClassRelationMerge, Merge
 export const OWNED_DATA_MERGES: Record<AllEntityType, OwnedDataMerge | null> = {
   game: mergeGameOwnedData,
   anime: mergeAnimeOwnedData,
+  comic: mergeComicOwnedData,
+  novel: mergeNovelOwnedData,
   character: null,
   person: null,
   company: null,
@@ -39,6 +53,8 @@ export const OWNED_DATA_MERGES: Record<AllEntityType, OwnedDataMerge | null> = {
 export const SAME_CLASS_RELATION_MERGES: Record<AllEntityType, SameClassRelationMerge | null> = {
   game: (db, targetId, sourceId, now) => mergeMediaRelations(db, 'game', targetId, sourceId, now),
   anime: (db, targetId, sourceId, now) => mergeMediaRelations(db, 'anime', targetId, sourceId, now),
+  comic: (db, targetId, sourceId, now) => mergeMediaRelations(db, 'comic', targetId, sourceId, now),
+  novel: (db, targetId, sourceId, now) => mergeMediaRelations(db, 'novel', targetId, sourceId, now),
   character: null,
   person: null,
   company: mergeCompanyRelations,
@@ -279,6 +295,421 @@ function mergeAnimeNotes(db: DbContext, targetId: string, sourceId: string, now:
         updatedAt: now
       })
       .where(eq(animeNotes.id, note.id))
+      .run()
+  }
+
+  return sourceRows.length
+}
+
+/**
+ * Merging two entries of the same comic must preserve the source's read data.
+ * Source units align to target units by shared external id first, then by
+ * number at the same grain (chapter number for chapter rows, volume number for
+ * volume rows); aligned units fold their read state, files, identities, and
+ * sessions into the target row, unmatched units move to the target entry
+ * wholesale (keeping their id, so unit attachments stay valid).
+ */
+function mergeComicOwnedData(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const targetChapters = readComicChapters(db, targetId)
+  const sourceChapters = readComicChapters(db, sourceId)
+  let changed = 0
+
+  const alignment = buildChapterAlignmentIndex(db, targetChapters, sourceChapters)
+  let nextChapterOrder = nextOrderAfter(targetChapters.map((chapter) => chapter.orderInComic))
+
+  for (const chapter of sourceChapters) {
+    const alignedId = alignment.get(chapter.id)
+    if (alignedId) {
+      foldChapterIntoTarget(db, chapter, alignedId, now)
+    } else {
+      db.update(comicChapters)
+        .set({ comicId: targetId, orderInComic: nextChapterOrder++, updatedAt: now })
+        .where(eq(comicChapters.id, chapter.id))
+        .run()
+    }
+    changed++
+  }
+
+  changed += mergeComicSessions(db, targetId, sourceId, now)
+  changed += mergeComicNotes(db, targetId, sourceId, now)
+  return changed
+}
+
+function readComicChapters(db: DbContext, comicId: string): ComicChapter[] {
+  return db.select().from(comicChapters).where(eq(comicChapters.comicId, comicId)).all()
+}
+
+/** Number key at the unit's own grain; null for unnumbered rows. */
+function comicChapterNumberKey(chapter: ComicChapter): string | null {
+  if (chapter.chapterNumber !== null) return `chapter\0${chapter.chapterNumber}`
+  if (chapter.volumeNumber !== null) return `volume\0${chapter.volumeNumber}`
+  return null
+}
+
+/** Maps each source chapter id to the target chapter id it aligns with. */
+function buildChapterAlignmentIndex(
+  db: DbContext,
+  targetChapters: ComicChapter[],
+  sourceChapters: ComicChapter[]
+): Map<string, string> {
+  const byExternalId = new Map<string, string>()
+  const byNumber = new Map<string, string>()
+  for (const chapter of targetChapters) {
+    const numberKey = comicChapterNumberKey(chapter)
+    if (numberKey) byNumber.set(numberKey, chapter.id)
+  }
+  for (const row of readChapterExternalIds(db, targetChapters)) {
+    byExternalId.set(`${row.source}\0${row.externalId}`, row.chapterId)
+  }
+
+  const sourceExternalIds = new Map<string, { source: string; externalId: string }[]>()
+  for (const row of readChapterExternalIds(db, sourceChapters)) {
+    const list = sourceExternalIds.get(row.chapterId) ?? []
+    list.push(row)
+    sourceExternalIds.set(row.chapterId, list)
+  }
+
+  const alignment = new Map<string, string>()
+  const claimed = new Set<string>()
+  for (const chapter of sourceChapters) {
+    const identityMatch = (sourceExternalIds.get(chapter.id) ?? [])
+      .map((row) => byExternalId.get(`${row.source}\0${row.externalId}`))
+      .find((id) => id && !claimed.has(id))
+    const numberKey = comicChapterNumberKey(chapter)
+    const numberMatch = numberKey === null ? undefined : byNumber.get(numberKey)
+    const alignedId =
+      identityMatch ?? (numberMatch && !claimed.has(numberMatch) ? numberMatch : undefined)
+    if (alignedId) {
+      alignment.set(chapter.id, alignedId)
+      claimed.add(alignedId)
+    }
+  }
+  return alignment
+}
+
+function readChapterExternalIds(
+  db: DbContext,
+  chapters: ComicChapter[]
+): { chapterId: string; source: string; externalId: string }[] {
+  if (chapters.length === 0) return []
+  return (db as DbQueryContext)
+    .select({
+      chapterId: comicChapterExternalIds.chapterId,
+      source: comicChapterExternalIds.source,
+      externalId: comicChapterExternalIds.externalId
+    })
+    .from(comicChapterExternalIds)
+    .where(
+      inArray(
+        comicChapterExternalIds.chapterId,
+        chapters.map((chapter) => chapter.id)
+      )
+    )
+    .all()
+}
+
+/**
+ * Folds a source chapter into its aligned target chapter: read state merges
+ * field-wise, while files, external ids, and sessions repoint to the target
+ * row before the now-empty source row is removed. The target chapter's own
+ * cover stays; the source's cover would dangle once its attachment row dies.
+ */
+function foldChapterIntoTarget(
+  db: DbContext,
+  source: ComicChapter,
+  targetChapterId: string,
+  now: Date
+): void {
+  const target = db.select().from(comicChapters).where(eq(comicChapters.id, targetChapterId)).get()
+  if (!target) return
+
+  db.update(comicChapters)
+    .set({
+      read: target.read || source.read,
+      readAt: target.readAt ?? source.readAt,
+      readCount: target.readCount + source.readCount,
+      resumePage: target.resumePage ?? source.resumePage,
+      updatedAt: now
+    })
+    .where(eq(comicChapters.id, targetChapterId))
+    .run()
+
+  const targetHasFiles =
+    (db as DbQueryContext)
+      .select({ id: comicChapterFiles.id })
+      .from(comicChapterFiles)
+      .where(eq(comicChapterFiles.chapterId, targetChapterId))
+      .all().length > 0
+  db.update(comicChapterFiles)
+    .set({
+      chapterId: targetChapterId,
+      // The target's existing primary keeps priority over incoming files.
+      ...(targetHasFiles && { isPrimary: false }),
+      updatedAt: now
+    })
+    .where(eq(comicChapterFiles.chapterId, source.id))
+    .run()
+
+  db.update(comicChapterExternalIds)
+    .set({ chapterId: targetChapterId, updatedAt: now })
+    .where(eq(comicChapterExternalIds.chapterId, source.id))
+    .run()
+
+  db.update(comicSessions)
+    .set({ chapterId: targetChapterId, updatedAt: now })
+    .where(eq(comicSessions.chapterId, source.id))
+    .run()
+
+  db.delete(comicChapters).where(eq(comicChapters.id, source.id)).run()
+}
+
+function mergeComicSessions(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = (db as DbQueryContext)
+    .select({ id: comicSessions.id })
+    .from(comicSessions)
+    .where(eq(comicSessions.comicId, sourceId))
+    .all()
+  if (rows.length === 0) return 0
+
+  db.update(comicSessions)
+    .set({ comicId: targetId, updatedAt: now })
+    .where(eq(comicSessions.comicId, sourceId))
+    .run()
+  return rows.length
+}
+
+function mergeComicNotes(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = db
+    .select()
+    .from(comicNotes)
+    .where(inArray(comicNotes.comicId, [targetId, sourceId]))
+    .all()
+
+  const targetRows = rows.filter((row) => row.comicId === targetId)
+  const sourceRows = rows
+    .filter((row) => row.comicId === sourceId)
+    .sort((a, b) => a.orderInComic - b.orderInComic || toTime(a.createdAt) - toTime(b.createdAt))
+  if (sourceRows.length === 0) return 0
+
+  const usedNames = new Set(targetRows.map((row) => row.name))
+  let nextOrder = targetRows.reduce((max, row) => Math.max(max, row.orderInComic), -1) + 1
+
+  for (const note of sourceRows) {
+    const name = createMergedNoteName(note.name, usedNames)
+    usedNames.add(name)
+
+    db.update(comicNotes)
+      .set({
+        comicId: targetId,
+        name,
+        orderInComic: nextOrder++,
+        updatedAt: now
+      })
+      .where(eq(comicNotes.id, note.id))
+      .run()
+  }
+
+  return sourceRows.length
+}
+
+/**
+ * Merging two entries of the same novel must preserve the source's read data.
+ * Source volumes align to target volumes by shared external id first, then by
+ * volume number; aligned volumes fold their read state, files, identities, and
+ * sessions into the target row, unmatched volumes move to the target entry
+ * wholesale (keeping their id, so volume attachments stay valid).
+ */
+function mergeNovelOwnedData(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const targetVolumes = readNovelVolumes(db, targetId)
+  const sourceVolumes = readNovelVolumes(db, sourceId)
+  let changed = 0
+
+  const alignment = buildVolumeAlignmentIndex(db, targetVolumes, sourceVolumes)
+  let nextVolumeOrder = nextOrderAfter(targetVolumes.map((volume) => volume.orderInNovel))
+
+  for (const volume of sourceVolumes) {
+    const alignedId = alignment.get(volume.id)
+    if (alignedId) {
+      foldVolumeIntoTarget(db, volume, alignedId, now)
+    } else {
+      db.update(novelVolumes)
+        .set({ novelId: targetId, orderInNovel: nextVolumeOrder++, updatedAt: now })
+        .where(eq(novelVolumes.id, volume.id))
+        .run()
+    }
+    changed++
+  }
+
+  changed += mergeNovelSessions(db, targetId, sourceId, now)
+  changed += mergeNovelNotes(db, targetId, sourceId, now)
+  return changed
+}
+
+function readNovelVolumes(db: DbContext, novelId: string): NovelVolume[] {
+  return db.select().from(novelVolumes).where(eq(novelVolumes.novelId, novelId)).all()
+}
+
+/** Maps each source volume id to the target volume id it aligns with. */
+function buildVolumeAlignmentIndex(
+  db: DbContext,
+  targetVolumes: NovelVolume[],
+  sourceVolumes: NovelVolume[]
+): Map<string, string> {
+  const byExternalId = new Map<string, string>()
+  const byNumber = new Map<number, string>()
+  for (const volume of targetVolumes) {
+    if (volume.volumeNumber !== null) {
+      byNumber.set(volume.volumeNumber, volume.id)
+    }
+  }
+  for (const row of readVolumeExternalIds(db, targetVolumes)) {
+    byExternalId.set(`${row.source}\0${row.externalId}`, row.volumeId)
+  }
+
+  const sourceExternalIds = new Map<string, { source: string; externalId: string }[]>()
+  for (const row of readVolumeExternalIds(db, sourceVolumes)) {
+    const list = sourceExternalIds.get(row.volumeId) ?? []
+    list.push(row)
+    sourceExternalIds.set(row.volumeId, list)
+  }
+
+  const alignment = new Map<string, string>()
+  const claimed = new Set<string>()
+  for (const volume of sourceVolumes) {
+    const identityMatch = (sourceExternalIds.get(volume.id) ?? [])
+      .map((row) => byExternalId.get(`${row.source}\0${row.externalId}`))
+      .find((id) => id && !claimed.has(id))
+    const numberMatch = volume.volumeNumber === null ? undefined : byNumber.get(volume.volumeNumber)
+    const alignedId =
+      identityMatch ?? (numberMatch && !claimed.has(numberMatch) ? numberMatch : undefined)
+    if (alignedId) {
+      alignment.set(volume.id, alignedId)
+      claimed.add(alignedId)
+    }
+  }
+  return alignment
+}
+
+function readVolumeExternalIds(
+  db: DbContext,
+  volumes: NovelVolume[]
+): { volumeId: string; source: string; externalId: string }[] {
+  if (volumes.length === 0) return []
+  return (db as DbQueryContext)
+    .select({
+      volumeId: novelVolumeExternalIds.volumeId,
+      source: novelVolumeExternalIds.source,
+      externalId: novelVolumeExternalIds.externalId
+    })
+    .from(novelVolumeExternalIds)
+    .where(
+      inArray(
+        novelVolumeExternalIds.volumeId,
+        volumes.map((volume) => volume.id)
+      )
+    )
+    .all()
+}
+
+/**
+ * Folds a source volume into its aligned target volume: read state merges
+ * field-wise, while files, external ids, and sessions repoint to the target
+ * row before the now-empty source row is removed. The target volume's own
+ * cover stays; the source's cover would dangle once its attachment row dies.
+ */
+function foldVolumeIntoTarget(
+  db: DbContext,
+  source: NovelVolume,
+  targetVolumeId: string,
+  now: Date
+): void {
+  const target = db.select().from(novelVolumes).where(eq(novelVolumes.id, targetVolumeId)).get()
+  if (!target) return
+
+  db.update(novelVolumes)
+    .set({
+      read: target.read || source.read,
+      readAt: target.readAt ?? source.readAt,
+      readCount: target.readCount + source.readCount,
+      resumeLocator: target.resumeLocator ?? source.resumeLocator,
+      resumeProgress: target.resumeProgress ?? source.resumeProgress,
+      updatedAt: now
+    })
+    .where(eq(novelVolumes.id, targetVolumeId))
+    .run()
+
+  const targetHasFiles =
+    (db as DbQueryContext)
+      .select({ id: novelVolumeFiles.id })
+      .from(novelVolumeFiles)
+      .where(eq(novelVolumeFiles.volumeId, targetVolumeId))
+      .all().length > 0
+  db.update(novelVolumeFiles)
+    .set({
+      volumeId: targetVolumeId,
+      // The target's existing primary keeps priority over incoming files.
+      ...(targetHasFiles && { isPrimary: false }),
+      updatedAt: now
+    })
+    .where(eq(novelVolumeFiles.volumeId, source.id))
+    .run()
+
+  db.update(novelVolumeExternalIds)
+    .set({ volumeId: targetVolumeId, updatedAt: now })
+    .where(eq(novelVolumeExternalIds.volumeId, source.id))
+    .run()
+
+  db.update(novelSessions)
+    .set({ volumeId: targetVolumeId, updatedAt: now })
+    .where(eq(novelSessions.volumeId, source.id))
+    .run()
+
+  db.delete(novelVolumes).where(eq(novelVolumes.id, source.id)).run()
+}
+
+function mergeNovelSessions(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = (db as DbQueryContext)
+    .select({ id: novelSessions.id })
+    .from(novelSessions)
+    .where(eq(novelSessions.novelId, sourceId))
+    .all()
+  if (rows.length === 0) return 0
+
+  db.update(novelSessions)
+    .set({ novelId: targetId, updatedAt: now })
+    .where(eq(novelSessions.novelId, sourceId))
+    .run()
+  return rows.length
+}
+
+function mergeNovelNotes(db: DbContext, targetId: string, sourceId: string, now: Date): number {
+  const rows = db
+    .select()
+    .from(novelNotes)
+    .where(inArray(novelNotes.novelId, [targetId, sourceId]))
+    .all()
+
+  const targetRows = rows.filter((row) => row.novelId === targetId)
+  const sourceRows = rows
+    .filter((row) => row.novelId === sourceId)
+    .sort((a, b) => a.orderInNovel - b.orderInNovel || toTime(a.createdAt) - toTime(b.createdAt))
+  if (sourceRows.length === 0) return 0
+
+  const usedNames = new Set(targetRows.map((row) => row.name))
+  let nextOrder = targetRows.reduce((max, row) => Math.max(max, row.orderInNovel), -1) + 1
+
+  for (const note of sourceRows) {
+    const name = createMergedNoteName(note.name, usedNames)
+    usedNames.add(name)
+
+    db.update(novelNotes)
+      .set({
+        novelId: targetId,
+        name,
+        orderInNovel: nextOrder++,
+        updatedAt: now
+      })
+      .where(eq(novelNotes.id, note.id))
       .run()
   }
 

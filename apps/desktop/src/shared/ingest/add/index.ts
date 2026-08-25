@@ -19,6 +19,26 @@ export type {
   IngestAddAnimeResult
 } from './anime'
 export type {
+  IngestAddComicDirectOptions,
+  IngestAddComicDirectParams,
+  IngestAddComicDirectResult,
+  IngestAddComicDirectSeed,
+  IngestAddComicFromScraperOptions,
+  IngestAddComicFromScraperParams,
+  IngestAddComicFromScraperResult,
+  IngestAddComicResult
+} from './comic'
+export type {
+  IngestAddNovelDirectOptions,
+  IngestAddNovelDirectParams,
+  IngestAddNovelDirectResult,
+  IngestAddNovelDirectSeed,
+  IngestAddNovelFromScraperOptions,
+  IngestAddNovelFromScraperParams,
+  IngestAddNovelFromScraperResult,
+  IngestAddNovelResult
+} from './novel'
+export type {
   IngestAddPersonFromScraperOptions,
   IngestAddPersonFromScraperParams,
   IngestAddPersonFromScraperResult,

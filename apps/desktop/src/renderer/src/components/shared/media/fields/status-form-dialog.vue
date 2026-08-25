@@ -34,7 +34,12 @@ import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { Messages } from '@shared/i18n'
-import { ANIME_STATUS_VALUES, GAME_STATUS_VALUES } from '@shared/db'
+import {
+  ANIME_STATUS_VALUES,
+  COMIC_STATUS_VALUES,
+  GAME_STATUS_VALUES,
+  NOVEL_STATUS_VALUES
+} from '@shared/db'
 import { MEDIA_STATUS_WRITERS, MEDIA_TABLES } from '../media-tables'
 
 const { m } = useI18n()
@@ -65,7 +70,11 @@ const STATUS_OPTIONS: Record<
   game: (messages) =>
     GAME_STATUS_VALUES.map((value) => ({ value, label: messages.library.gameStatus[value] })),
   anime: (messages) =>
-    ANIME_STATUS_VALUES.map((value) => ({ value, label: messages.library.animeStatus[value] }))
+    ANIME_STATUS_VALUES.map((value) => ({ value, label: messages.library.animeStatus[value] })),
+  comic: (messages) =>
+    COMIC_STATUS_VALUES.map((value) => ({ value, label: messages.library.comicStatus[value] })),
+  novel: (messages) =>
+    NOVEL_STATUS_VALUES.map((value) => ({ value, label: messages.library.novelStatus[value] }))
 }
 
 const options = computed(() => STATUS_OPTIONS[props.mediaType](m.value))

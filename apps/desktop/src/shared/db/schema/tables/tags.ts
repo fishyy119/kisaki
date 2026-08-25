@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-co
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import { baseColumns, identityKeyText } from '../../columns'
-import { animes, characters, companies, persons, games } from './content'
+import { animes, characters, comics, companies, novels, persons, games } from './content'
 
 export const tags = sqliteTable(
   'tags',
@@ -68,6 +68,50 @@ export const animeTagLinks = sqliteTable(
     unique().on(t.animeId, t.tagId),
     index('idx_anime_tag_links_anime_id').on(t.animeId),
     index('idx_anime_tag_links_tag_id').on(t.tagId)
+  ]
+)
+
+export const comicTagLinks = sqliteTable(
+  'comic_tag_links',
+  {
+    ...baseColumns,
+    comicId: text('comic_id')
+      .notNull()
+      .references(() => comics.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    note: text('note'),
+    orderInComic: integer('order_in_comic').notNull().default(0),
+    orderInTag: integer('order_in_tag').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.comicId, t.tagId),
+    index('idx_comic_tag_links_comic_id').on(t.comicId),
+    index('idx_comic_tag_links_tag_id').on(t.tagId)
+  ]
+)
+
+export const novelTagLinks = sqliteTable(
+  'novel_tag_links',
+  {
+    ...baseColumns,
+    novelId: text('novel_id')
+      .notNull()
+      .references(() => novels.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    isSpoiler: integer('is_spoiler', { mode: 'boolean' }).notNull().default(false),
+    note: text('note'),
+    orderInNovel: integer('order_in_novel').notNull().default(0),
+    orderInTag: integer('order_in_tag').notNull().default(0)
+  },
+  (t) => [
+    unique().on(t.novelId, t.tagId),
+    index('idx_novel_tag_links_novel_id').on(t.novelId),
+    index('idx_novel_tag_links_tag_id').on(t.tagId)
   ]
 )
 
@@ -143,6 +187,10 @@ export type GameTagLink = InferSelectModel<typeof gameTagLinks>
 export type NewGameTagLink = InferInsertModel<typeof gameTagLinks>
 export type AnimeTagLink = InferSelectModel<typeof animeTagLinks>
 export type NewAnimeTagLink = InferInsertModel<typeof animeTagLinks>
+export type ComicTagLink = InferSelectModel<typeof comicTagLinks>
+export type NewComicTagLink = InferInsertModel<typeof comicTagLinks>
+export type NovelTagLink = InferSelectModel<typeof novelTagLinks>
+export type NewNovelTagLink = InferInsertModel<typeof novelTagLinks>
 export type CharacterTagLink = InferSelectModel<typeof characterTagLinks>
 export type NewCharacterTagLink = InferInsertModel<typeof characterTagLinks>
 export type PersonTagLink = InferSelectModel<typeof personTagLinks>

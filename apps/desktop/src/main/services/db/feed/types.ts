@@ -26,7 +26,8 @@ export interface MediaLinkTables {
   person: string
   company: string
   character: string
-  cast: string
+  /** Absent for media types without voice credits (comics, novels). */
+  cast?: string
 }
 
 /** Table and column layout of one playable media type, for change projection. */
@@ -47,6 +48,8 @@ export interface MediaFeedProjection {
   assetFields: Record<string, string>
   /** Present when the media type tracks per-episode watch state. */
   episodesTable?: string
+  /** Present when the media type tracks per-unit read state (chapters, volumes). */
+  unitsTable?: string
 }
 
 export interface EntityProjection {

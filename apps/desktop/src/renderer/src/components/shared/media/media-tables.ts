@@ -12,15 +12,23 @@ import type { MediaType } from '@shared/common'
 import {
   animeSessions,
   animes,
+  comicSessions,
+  comics,
   gameSessions,
   games,
+  novelSessions,
+  novels,
   type AnimeStatus,
-  type GameStatus
+  type ComicStatus,
+  type GameStatus,
+  type NovelStatus
 } from '@shared/db'
 
 export const MEDIA_TABLES = {
   game: games,
-  anime: animes
+  anime: animes,
+  comic: comics,
+  novel: novels
 } as const
 
 /** Status writers keyed per media type; the option list guarantees the value. */
@@ -39,6 +47,18 @@ export const MEDIA_STATUS_WRITERS: Record<
       .update(animes)
       .set({ status: status as AnimeStatus })
       .where(eq(animes.id, entityId))
+  },
+  comic: async (entityId, status) => {
+    await db
+      .update(comics)
+      .set({ status: status as ComicStatus })
+      .where(eq(comics.id, entityId))
+  },
+  novel: async (entityId, status) => {
+    await db
+      .update(novels)
+      .set({ status: status as NovelStatus })
+      .where(eq(novels.id, entityId))
   }
 }
 
@@ -97,6 +117,48 @@ export const MEDIA_SESSION_STORES: Record<MediaType, MediaSessionStore> = {
     },
     remove: async (id) => {
       await db.delete(animeSessions).where(eq(animeSessions.id, id))
+    }
+  },
+  comic: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: comicSessions.id,
+          startedAt: comicSessions.startedAt,
+          endedAt: comicSessions.endedAt
+        })
+        .from(comicSessions)
+        .where(eq(comicSessions.comicId, anchorId))
+        .orderBy(desc(comicSessions.startedAt)),
+    insert: async (anchorId, data) => {
+      await db.insert(comicSessions).values({ comicId: anchorId, ...data })
+    },
+    update: async (id, data) => {
+      await db.update(comicSessions).set(data).where(eq(comicSessions.id, id))
+    },
+    remove: async (id) => {
+      await db.delete(comicSessions).where(eq(comicSessions.id, id))
+    }
+  },
+  novel: {
+    list: (anchorId) =>
+      db
+        .select({
+          id: novelSessions.id,
+          startedAt: novelSessions.startedAt,
+          endedAt: novelSessions.endedAt
+        })
+        .from(novelSessions)
+        .where(eq(novelSessions.novelId, anchorId))
+        .orderBy(desc(novelSessions.startedAt)),
+    insert: async (anchorId, data) => {
+      await db.insert(novelSessions).values({ novelId: anchorId, ...data })
+    },
+    update: async (id, data) => {
+      await db.update(novelSessions).set(data).where(eq(novelSessions.id, id))
+    },
+    remove: async (id) => {
+      await db.delete(novelSessions).where(eq(novelSessions.id, id))
     }
   }
 }

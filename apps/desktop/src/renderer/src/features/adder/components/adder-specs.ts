@@ -11,8 +11,10 @@ import type { ScraperLookup } from '@shared/scraper'
 import {
   type IngestAddAnimeFromScraperResult,
   type IngestAddCharacterFromScraperResult,
+  type IngestAddComicFromScraperResult,
   type IngestAddCompanyFromScraperResult,
   type IngestAddGameFromScraperResult,
+  type IngestAddNovelFromScraperResult,
   type IngestAddPersonFromScraperResult
 } from '@shared/ingest/add'
 
@@ -46,6 +48,16 @@ export const ADDER_SPECS: Record<ContentEntityType, AdderSpec> = {
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-anime-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddAnimeFromScraperResult | undefined)?.animeId
+  },
+  comic: {
+    submit: (profileId, lookup, options) =>
+      ipcManager.invoke('ingest:add-comic-from-scraper', profileId, lookup, options),
+    extractId: (output) => (output as IngestAddComicFromScraperResult | undefined)?.comicId
+  },
+  novel: {
+    submit: (profileId, lookup, options) =>
+      ipcManager.invoke('ingest:add-novel-from-scraper', profileId, lookup, options),
+    extractId: (output) => (output as IngestAddNovelFromScraperResult | undefined)?.novelId
   },
   character: {
     submit: (profileId, lookup, options) =>

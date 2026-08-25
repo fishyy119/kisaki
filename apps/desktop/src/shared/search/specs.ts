@@ -14,6 +14,18 @@ export const animeSearchQuerySpec: SearchQuerySpec = {
   sourceTable: 'animes'
 }
 
+export const comicSearchQuerySpec: SearchQuerySpec = {
+  kind: 'fts',
+  ftsTable: 'comics_fts',
+  sourceTable: 'comics'
+}
+
+export const novelSearchQuerySpec: SearchQuerySpec = {
+  kind: 'fts',
+  ftsTable: 'novels_fts',
+  sourceTable: 'novels'
+}
+
 export const characterSearchQuerySpec: SearchQuerySpec = {
   kind: 'fts',
   ftsTable: 'characters_fts',
@@ -48,6 +60,10 @@ export function getSearchQuerySpec(entityType: AllEntityType): SearchQuerySpec {
       return gameSearchQuerySpec
     case 'anime':
       return animeSearchQuerySpec
+    case 'comic':
+      return comicSearchQuerySpec
+    case 'novel':
+      return novelSearchQuerySpec
     case 'character':
       return characterSearchQuerySpec
     case 'person':

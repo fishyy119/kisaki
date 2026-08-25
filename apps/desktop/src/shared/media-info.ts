@@ -40,3 +40,16 @@ export interface MediaFileInfo {
   audioTracks: readonly MediaAudioTrack[]
   subtitleTracks: readonly MediaSubtitleTrack[]
 }
+
+/** Container kind of one comic unit file, as probed. */
+export type ComicUnitContainer = 'zip' | 'rar' | 'directory' | 'pdf'
+
+/** Technical facts read from one comic unit file. */
+export interface ComicUnitFileInfo {
+  container: ComicUnitContainer
+  /** Readable page count; null when the container hides it (PDF probe failure). */
+  pageCount: number | null
+}
+
+/** Container kind of one novel volume file, told by its extension. */
+export type NovelFileContainer = 'epub' | 'mobi' | 'azw3' | 'fb2' | 'txt' | 'pdf'

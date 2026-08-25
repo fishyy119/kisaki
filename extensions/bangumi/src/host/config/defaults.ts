@@ -8,7 +8,7 @@ export const DEFAULT_BANGUMI_SETTINGS: BangumiSettingsV1 = {
   media: {
     book: {
       enabled: true,
-      localSyncEnabled: false
+      localSyncEnabled: true
     },
     game: {
       enabled: true,
@@ -44,6 +44,13 @@ export const DEFAULT_BANGUMI_SETTINGS: BangumiSettingsV1 = {
       anime: {
         planned: 1,
         watching: 3,
+        completed: 2,
+        onHold: 4,
+        dropped: 5
+      },
+      book: {
+        planned: 1,
+        reading: 3,
         completed: 2,
         onHold: 4,
         dropped: 5

@@ -10,16 +10,26 @@ import {
   characters,
   collectionAnimeLinks,
   collectionCharacterLinks,
+  collectionComicLinks,
   collectionCompanyLinks,
   collectionGameLinks,
+  collectionNovelLinks,
   collectionPersonLinks,
   collections,
+  comicCharacterLinks,
+  comicCompanyLinks,
+  comicPersonLinks,
+  comics,
   companies,
   gameCastLinks,
   gameCharacterLinks,
   gameCompanyLinks,
   gamePersonLinks,
   games,
+  novelCharacterLinks,
+  novelCompanyLinks,
+  novelPersonLinks,
+  novels,
   persons
 } from '../tables'
 
@@ -119,6 +129,72 @@ export const animeCastLinksRelations = relations(animeCastLinks, ({ one }) => ({
   })
 }))
 
+export const comicPersonLinksRelations = relations(comicPersonLinks, ({ one }) => ({
+  comic: one(comics, {
+    fields: [comicPersonLinks.comicId],
+    references: [comics.id]
+  }),
+  person: one(persons, {
+    fields: [comicPersonLinks.personId],
+    references: [persons.id]
+  })
+}))
+
+export const comicCompanyLinksRelations = relations(comicCompanyLinks, ({ one }) => ({
+  comic: one(comics, {
+    fields: [comicCompanyLinks.comicId],
+    references: [comics.id]
+  }),
+  company: one(companies, {
+    fields: [comicCompanyLinks.companyId],
+    references: [companies.id]
+  })
+}))
+
+export const comicCharacterLinksRelations = relations(comicCharacterLinks, ({ one }) => ({
+  comic: one(comics, {
+    fields: [comicCharacterLinks.comicId],
+    references: [comics.id]
+  }),
+  character: one(characters, {
+    fields: [comicCharacterLinks.characterId],
+    references: [characters.id]
+  })
+}))
+
+export const novelPersonLinksRelations = relations(novelPersonLinks, ({ one }) => ({
+  novel: one(novels, {
+    fields: [novelPersonLinks.novelId],
+    references: [novels.id]
+  }),
+  person: one(persons, {
+    fields: [novelPersonLinks.personId],
+    references: [persons.id]
+  })
+}))
+
+export const novelCompanyLinksRelations = relations(novelCompanyLinks, ({ one }) => ({
+  novel: one(novels, {
+    fields: [novelCompanyLinks.novelId],
+    references: [novels.id]
+  }),
+  company: one(companies, {
+    fields: [novelCompanyLinks.companyId],
+    references: [companies.id]
+  })
+}))
+
+export const novelCharacterLinksRelations = relations(novelCharacterLinks, ({ one }) => ({
+  novel: one(novels, {
+    fields: [novelCharacterLinks.novelId],
+    references: [novels.id]
+  }),
+  character: one(characters, {
+    fields: [novelCharacterLinks.characterId],
+    references: [characters.id]
+  })
+}))
+
 export const collectionAnimeLinksRelations = relations(collectionAnimeLinks, ({ one }) => ({
   collection: one(collections, {
     fields: [collectionAnimeLinks.collectionId],
@@ -138,6 +214,28 @@ export const collectionGameLinksRelations = relations(collectionGameLinks, ({ on
   game: one(games, {
     fields: [collectionGameLinks.gameId],
     references: [games.id]
+  })
+}))
+
+export const collectionComicLinksRelations = relations(collectionComicLinks, ({ one }) => ({
+  collection: one(collections, {
+    fields: [collectionComicLinks.collectionId],
+    references: [collections.id]
+  }),
+  comic: one(comics, {
+    fields: [collectionComicLinks.comicId],
+    references: [comics.id]
+  })
+}))
+
+export const collectionNovelLinksRelations = relations(collectionNovelLinks, ({ one }) => ({
+  collection: one(collections, {
+    fields: [collectionNovelLinks.collectionId],
+    references: [collections.id]
+  }),
+  novel: one(novels, {
+    fields: [collectionNovelLinks.novelId],
+    references: [novels.id]
   })
 }))
 

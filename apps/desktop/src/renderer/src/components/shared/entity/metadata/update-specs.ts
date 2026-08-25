@@ -11,19 +11,25 @@ import type { Messages } from '@shared/i18n'
 import {
   ANIME_UPDATE_SURFACE_KEYS,
   CHARACTER_UPDATE_SURFACE_KEYS,
+  COMIC_UPDATE_SURFACE_KEYS,
   COMPANY_UPDATE_SURFACE_KEYS,
   GAME_UPDATE_SURFACE_KEYS,
+  NOVEL_UPDATE_SURFACE_KEYS,
   PERSON_UPDATE_SURFACE_KEYS,
   type AnimeBatchUpdateRequest,
   type AnimeUpdateRequest,
   type CharacterBatchUpdateRequest,
   type CharacterUpdateRequest,
+  type ComicBatchUpdateRequest,
+  type ComicUpdateRequest,
   type CompanyBatchUpdateRequest,
   type CompanyUpdateRequest,
   type GameBatchUpdateRequest,
   type GameUpdateRequest,
   type IngestBatchUpdateRequest,
   type IngestUpdateRequest,
+  type NovelBatchUpdateRequest,
+  type NovelUpdateRequest,
   type PersonBatchUpdateRequest,
   type PersonUpdateRequest
 } from '@shared/ingest/update'
@@ -98,6 +104,69 @@ export const METADATA_UPDATE_SPECS: Record<ContentEntityType, MetadataUpdateSpec
       ipcManager.invoke(
         'ingest:batch-update-anime-from-scraper',
         request as AnimeBatchUpdateRequest
+      )
+  },
+  comic: {
+    surfaceKeys: COMIC_UPDATE_SURFACE_KEYS,
+    surfaceLabels: (m) => ({
+      name: m.library.fields.name,
+      originalName: m.library.fields.originalName,
+      aliases: m.library.fields.aliases,
+      releaseDate: m.library.fields.releaseDate,
+      description: m.library.fields.description,
+      format: m.library.fields.format,
+      totalVolumes: m.library.fields.totalVolumes,
+      totalChapters: m.library.fields.totalChapters,
+      externalSites: m.library.fields.externalSites,
+      externalIds: m.library.fields.externalIds,
+      tags: m.library.fields.tags,
+      chapters: m.library.fields.chapters,
+      person: m.library.entities.person,
+      company: m.library.entities.company,
+      character: m.library.entities.character,
+      characterPerson: m.library.fields.characterPersons,
+      relatedEntries: m.library.fields.relatedEntries,
+      covers: m.library.fields.covers,
+      backdrops: m.library.fields.backdrops,
+      logos: m.library.fields.logos
+    }),
+    submit: (request) =>
+      ipcManager.invoke('ingest:update-comic-from-scraper', request as ComicUpdateRequest),
+    submitBatch: (request) =>
+      ipcManager.invoke(
+        'ingest:batch-update-comic-from-scraper',
+        request as ComicBatchUpdateRequest
+      )
+  },
+  novel: {
+    surfaceKeys: NOVEL_UPDATE_SURFACE_KEYS,
+    surfaceLabels: (m) => ({
+      name: m.library.fields.name,
+      originalName: m.library.fields.originalName,
+      aliases: m.library.fields.aliases,
+      releaseDate: m.library.fields.releaseDate,
+      description: m.library.fields.description,
+      format: m.library.fields.format,
+      totalVolumes: m.library.fields.totalVolumes,
+      externalSites: m.library.fields.externalSites,
+      externalIds: m.library.fields.externalIds,
+      tags: m.library.fields.tags,
+      volumes: m.library.fields.volumes,
+      person: m.library.entities.person,
+      company: m.library.entities.company,
+      character: m.library.entities.character,
+      characterPerson: m.library.fields.characterPersons,
+      relatedEntries: m.library.fields.relatedEntries,
+      covers: m.library.fields.covers,
+      backdrops: m.library.fields.backdrops,
+      logos: m.library.fields.logos
+    }),
+    submit: (request) =>
+      ipcManager.invoke('ingest:update-novel-from-scraper', request as NovelUpdateRequest),
+    submitBatch: (request) =>
+      ipcManager.invoke(
+        'ingest:batch-update-novel-from-scraper',
+        request as NovelBatchUpdateRequest
       )
   },
   character: {

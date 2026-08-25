@@ -1,12 +1,13 @@
 /**
  * Change projection for playable media entries.
  *
- * Games and anime differ only in table names, asset columns, and the episode
- * facet, so one projection descriptor drives both instead of a per-media copy.
+ * The media types differ only in table names, asset columns, and their
+ * consumption facet (episodes or readable units), so one projection descriptor
+ * drives all of them instead of a per-media copy.
  */
 
 import type Database from 'better-sqlite3'
-import type { AnimeStatus, GameStatus } from '@shared/db/contracts/enums'
+import type { AnimeStatus, ComicStatus, GameStatus, NovelStatus } from '@shared/db/contracts/enums'
 import type { RawDbChange } from '@shared/db/changes'
 import type {
   LibraryChange,
@@ -34,7 +35,7 @@ import {
 } from '../shared/normalization'
 import { createPartialSnapshot, sameJson } from '../shared/snapshot'
 
-type MediaStatus = GameStatus | AnimeStatus
+type MediaStatus = GameStatus | AnimeStatus | ComicStatus | NovelStatus
 
 const GAME_PROJECTION: MediaFeedProjection = {
   entity: 'game',
@@ -103,7 +104,78 @@ const ANIME_PROJECTION: MediaFeedProjection = {
   episodesTable: 'anime_episodes'
 }
 
-export const MEDIA_PROJECTIONS: readonly MediaFeedProjection[] = [GAME_PROJECTION, ANIME_PROJECTION]
+const COMIC_PROJECTION: MediaFeedProjection = {
+  entity: 'comic',
+  table: 'comics',
+  ownerColumn: 'comic_id',
+  orderColumn: 'order_in_comic',
+  externalIdsTable: 'comic_external_ids',
+  tagLinksTable: 'comic_tag_links',
+  collectionLinksTable: 'collection_comic_links',
+  linkTables: {
+    person: 'comic_person_links',
+    company: 'comic_company_links',
+    character: 'comic_character_links'
+  },
+  // Chapter file rows have no comic_id column; file-row changes reach
+  // subscribers via the chapter rows they hang off, like anime episode files.
+  ownedTables: ['comic_chapters', 'comic_sessions'],
+  coreFields: {
+    name: 'name',
+    original_name: 'originalName',
+    aliases: 'aliases',
+    description: 'description',
+    release_date: 'releaseDate',
+    format: 'format',
+    reading_direction: 'readingDirection',
+    total_volumes: 'totalVolumes',
+    total_chapters: 'totalChapters'
+  },
+  assetFields: {
+    cover_file: 'coverFile',
+    backdrop_file: 'backdropFile',
+    logo_file: 'logoFile'
+  },
+  unitsTable: 'comic_chapters'
+}
+
+const NOVEL_PROJECTION: MediaFeedProjection = {
+  entity: 'novel',
+  table: 'novels',
+  ownerColumn: 'novel_id',
+  orderColumn: 'order_in_novel',
+  externalIdsTable: 'novel_external_ids',
+  tagLinksTable: 'novel_tag_links',
+  collectionLinksTable: 'collection_novel_links',
+  linkTables: {
+    person: 'novel_person_links',
+    company: 'novel_company_links',
+    character: 'novel_character_links'
+  },
+  ownedTables: ['novel_volumes', 'novel_sessions'],
+  coreFields: {
+    name: 'name',
+    original_name: 'originalName',
+    aliases: 'aliases',
+    description: 'description',
+    release_date: 'releaseDate',
+    format: 'format',
+    total_volumes: 'totalVolumes'
+  },
+  assetFields: {
+    cover_file: 'coverFile',
+    backdrop_file: 'backdropFile',
+    logo_file: 'logoFile'
+  },
+  unitsTable: 'novel_volumes'
+}
+
+export const MEDIA_PROJECTIONS: readonly MediaFeedProjection[] = [
+  GAME_PROJECTION,
+  ANIME_PROJECTION,
+  COMIC_PROJECTION,
+  NOVEL_PROJECTION
+]
 
 export function getMediaProjectionForTable(table: string): MediaFeedProjection | undefined {
   return MEDIA_PROJECTIONS.find((projection) => projection.table === table)
@@ -232,7 +304,9 @@ export function projectMediaChanges(
     })
   }
 
-  const linkTables = Object.values(projection.linkTables)
+  const linkTables = Object.values(projection.linkTables).filter(
+    (table): table is string => table !== undefined
+  )
   const linkChanges = changes.filter((change) => linkTables.includes(change.table))
   if (linkChanges.length > 0) {
     const after = readLinkSnapshot(sqlite, projection, mediaId)
@@ -269,6 +343,11 @@ export function projectMediaChanges(
   const episodes = projectEpisodesChange(sqlite, projection, mediaId, changes)
   if (episodes) {
     projected.push(episodes)
+  }
+
+  const units = projectUnitsChange(sqlite, projection, mediaId, changes)
+  if (units) {
+    projected.push(units)
   }
 
   return projected
@@ -384,6 +463,40 @@ function projectEpisodesChange(
   }
 }
 
+function projectUnitsChange(
+  sqlite: Database.Database,
+  projection: MediaFeedProjection,
+  mediaId: string,
+  changes: RawDbChange[]
+): LibraryChange | null {
+  const unitsTable = projection.unitsTable
+  if (!unitsTable) {
+    return null
+  }
+
+  const unitChanges = changes.filter((change) => change.table === unitsTable)
+  if (unitChanges.length === 0) {
+    return null
+  }
+
+  const after = readIds(
+    sqlite,
+    `SELECT id FROM ${unitsTable} WHERE ${projection.ownerColumn} = ? AND read = 1 ORDER BY id ASC`,
+    mediaId
+  )
+  const before = rebuildFlaggedIdSetBefore(after, unitChanges, 'read')
+  if (sameJson(before, after)) {
+    return null
+  }
+
+  return {
+    facet: 'units',
+    before: { readUnitIds: before },
+    after: { readUnitIds: after },
+    fields: ['readUnitIds']
+  }
+}
+
 function projectIdSet(
   sqlite: Database.Database,
   options: {
@@ -455,11 +568,14 @@ function readLinkSnapshot(
     companyLinkIds: readLinkIds(projection.linkTables.company),
     characterLinkIds: readLinkIds(projection.linkTables.character),
     // Cast rows carry no order column of their own; the id keeps them stable.
-    castLinkIds: readIds(
-      sqlite,
-      `SELECT id FROM ${projection.linkTables.cast} WHERE ${projection.ownerColumn} = ? ORDER BY id ASC`,
-      mediaId
-    )
+    // Media types without voice credits report a constant empty set.
+    castLinkIds: projection.linkTables.cast
+      ? readIds(
+          sqlite,
+          `SELECT id FROM ${projection.linkTables.cast} WHERE ${projection.ownerColumn} = ? ORDER BY id ASC`,
+          mediaId
+        )
+      : []
   }
 }
 

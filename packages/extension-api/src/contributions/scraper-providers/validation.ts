@@ -1,13 +1,17 @@
 import {
   ANIME_SCRAPER_SLOTS,
   CHARACTER_SCRAPER_SLOTS,
+  COMIC_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
   GAME_SCRAPER_SLOTS,
+  NOVEL_SCRAPER_SLOTS,
   PERSON_SCRAPER_SLOTS,
   type AnimeScraperSlot,
   type CharacterScraperSlot,
+  type ComicScraperSlot,
   type CompanyScraperSlot,
   type GameScraperSlot,
+  type NovelScraperSlot,
   type PersonScraperSlot
 } from './contracts'
 import {
@@ -18,12 +22,20 @@ import {
   LIBRARY_ANIME_PERSON_ROLES,
   LIBRARY_BLOOD_TYPES,
   LIBRARY_CHARACTER_PERSON_ROLES,
+  LIBRARY_COMIC_CHARACTER_ROLES,
+  LIBRARY_COMIC_COMPANY_ROLES,
+  LIBRARY_COMIC_FORMATS,
+  LIBRARY_COMIC_PERSON_ROLES,
   LIBRARY_CUP_SIZES,
   LIBRARY_GAME_CHARACTER_ROLES,
   LIBRARY_GAME_COMPANY_ROLES,
   LIBRARY_GAME_PERSON_ROLES,
   LIBRARY_GENDERS,
-  LIBRARY_MEDIA_RELATION_TYPES
+  LIBRARY_MEDIA_RELATION_TYPES,
+  LIBRARY_NOVEL_CHARACTER_ROLES,
+  LIBRARY_NOVEL_COMPANY_ROLES,
+  LIBRARY_NOVEL_FORMATS,
+  LIBRARY_NOVEL_PERSON_ROLES
 } from '../../shared/library'
 import { LIBRARY_MEDIA_TYPES } from '../../capabilities/library/graph'
 import type { ValidationIssue } from '../../shared/validation'
@@ -56,6 +68,22 @@ const GAME_SEARCH_RESULT_KEYS = new Set<string>([
   'externalIds'
 ])
 const ANIME_SEARCH_RESULT_KEYS = new Set<string>([
+  'id',
+  'name',
+  'originalName',
+  'releaseDate',
+  'format',
+  'externalIds'
+])
+const COMIC_SEARCH_RESULT_KEYS = new Set<string>([
+  'id',
+  'name',
+  'originalName',
+  'releaseDate',
+  'format',
+  'externalIds'
+])
+const NOVEL_SEARCH_RESULT_KEYS = new Set<string>([
   'id',
   'name',
   'originalName',
@@ -111,6 +139,44 @@ const ANIME_EPISODE_KEYS = new Set<string>([
   'airDate',
   'description',
   'durationMs',
+  'externalIds'
+])
+const COMIC_INFO_KEYS = new Set<string>([
+  'name',
+  'originalName',
+  'aliases',
+  'releaseDate',
+  'description',
+  'format',
+  'totalVolumes',
+  'totalChapters',
+  'externalSites'
+])
+const COMIC_CHAPTER_KEYS = new Set<string>([
+  'volumeNumber',
+  'chapterNumber',
+  'name',
+  'originalName',
+  'releaseDate',
+  'description',
+  'externalIds'
+])
+const NOVEL_INFO_KEYS = new Set<string>([
+  'name',
+  'originalName',
+  'aliases',
+  'releaseDate',
+  'description',
+  'format',
+  'totalVolumes',
+  'externalSites'
+])
+const NOVEL_VOLUME_KEYS = new Set<string>([
+  'volumeNumber',
+  'name',
+  'originalName',
+  'releaseDate',
+  'description',
   'externalIds'
 ])
 const PERSON_INFO_KEYS = new Set<string>([
@@ -175,9 +241,60 @@ const GAME_CHARACTER_FACT_KEYS = new Set<string>([
   'isSpoiler',
   'note'
 ])
-const ANIME_PERSON_FACT_KEYS = GAME_PERSON_FACT_KEYS
-const ANIME_COMPANY_FACT_KEYS = GAME_COMPANY_FACT_KEYS
-const ANIME_CHARACTER_FACT_KEYS = GAME_CHARACTER_FACT_KEYS
+const ANIME_PERSON_FACT_KEYS = new Set<string>([
+  ...PERSON_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
+const ANIME_COMPANY_FACT_KEYS = new Set<string>([
+  ...COMPANY_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
+const ANIME_CHARACTER_FACT_KEYS = new Set<string>([
+  ...CHARACTER_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
+const COMIC_PERSON_FACT_KEYS = new Set<string>([
+  ...PERSON_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
+const COMIC_COMPANY_FACT_KEYS = new Set<string>([
+  ...COMPANY_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
+const COMIC_CHARACTER_FACT_KEYS = new Set<string>([
+  ...CHARACTER_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
+const NOVEL_PERSON_FACT_KEYS = new Set<string>([
+  ...PERSON_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
+const NOVEL_COMPANY_FACT_KEYS = new Set<string>([
+  ...COMPANY_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
+const NOVEL_CHARACTER_FACT_KEYS = new Set<string>([
+  ...CHARACTER_METADATA_KEYS,
+  'role',
+  'isSpoiler',
+  'note'
+])
 const CHARACTER_PERSON_FACT_KEYS = new Set<string>([
   ...PERSON_METADATA_KEYS,
   'character',
@@ -194,6 +311,8 @@ const RELATED_ENTRY_FACT_KEYS = new Set<string>([
 ])
 const GAME_SESSION_KEYS: ReadonlySet<GameScraperSlot> = new Set(GAME_SCRAPER_SLOTS)
 const ANIME_SESSION_KEYS: ReadonlySet<AnimeScraperSlot> = new Set(ANIME_SCRAPER_SLOTS)
+const COMIC_SESSION_KEYS: ReadonlySet<ComicScraperSlot> = new Set(COMIC_SCRAPER_SLOTS)
+const NOVEL_SESSION_KEYS: ReadonlySet<NovelScraperSlot> = new Set(NOVEL_SCRAPER_SLOTS)
 const PERSON_SESSION_KEYS: ReadonlySet<PersonScraperSlot> = new Set(PERSON_SCRAPER_SLOTS)
 const COMPANY_SESSION_KEYS: ReadonlySet<CompanyScraperSlot> = new Set(COMPANY_SCRAPER_SLOTS)
 const CHARACTER_SESSION_KEYS: ReadonlySet<CharacterScraperSlot> = new Set(CHARACTER_SCRAPER_SLOTS)
@@ -291,6 +410,14 @@ export function validateAnimeScraperProviderShape(value: unknown): ValidationIss
   return validateScraperProviderShape(value, ANIME_SCRAPER_SLOTS, 'Anime scraper provider')
 }
 
+export function validateComicScraperProviderShape(value: unknown): ValidationIssue[] {
+  return validateScraperProviderShape(value, COMIC_SCRAPER_SLOTS, 'Comic scraper provider')
+}
+
+export function validateNovelScraperProviderShape(value: unknown): ValidationIssue[] {
+  return validateScraperProviderShape(value, NOVEL_SCRAPER_SLOTS, 'Novel scraper provider')
+}
+
 export function validatePersonScraperProviderShape(value: unknown): ValidationIssue[] {
   return validateScraperProviderShape(value, PERSON_SCRAPER_SLOTS, 'Person scraper provider')
 }
@@ -326,6 +453,18 @@ export function validateGameScraperSearchResults(value: unknown): ValidationIssu
 export function validateAnimeScraperSearchResults(value: unknown): ValidationIssue[] {
   return validateArrayOf(value, '$', 'Search results must be an array.', (item, path) =>
     validateAnimeSearchResult(item, path)
+  )
+}
+
+export function validateComicScraperSearchResults(value: unknown): ValidationIssue[] {
+  return validateArrayOf(value, '$', 'Search results must be an array.', (item, path) =>
+    validateComicSearchResult(item, path)
+  )
+}
+
+export function validateNovelScraperSearchResults(value: unknown): ValidationIssue[] {
+  return validateArrayOf(value, '$', 'Search results must be an array.', (item, path) =>
+    validateNovelSearchResult(item, path)
   )
 }
 
@@ -379,6 +518,14 @@ export function validateAnimeScraperSessionResults(value: unknown): ValidationIs
   return validateSessionResults(value, ANIME_SESSION_KEYS, validateAnimeSessionSlot)
 }
 
+export function validateComicScraperSessionResults(value: unknown): ValidationIssue[] {
+  return validateSessionResults(value, COMIC_SESSION_KEYS, validateComicSessionSlot)
+}
+
+export function validateNovelScraperSessionResults(value: unknown): ValidationIssue[] {
+  return validateSessionResults(value, NOVEL_SESSION_KEYS, validateNovelSessionSlot)
+}
+
 export function validatePersonScraperSessionResults(value: unknown): ValidationIssue[] {
   return validateSessionResults(value, PERSON_SESSION_KEYS, validatePersonSessionSlot)
 }
@@ -421,6 +568,46 @@ function validateAnimeSearchResult(value: unknown, path: string): ValidationIssu
       `${path}.format`,
       LIBRARY_ANIME_FORMATS,
       'format must be one of the supported anime formats.'
+    )
+  ]
+}
+
+function validateComicSearchResult(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Comic search result must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const result = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(result, COMIC_SEARCH_RESULT_KEYS, path),
+    ...validateSearchResultBase(result, path),
+    ...validateOptionalPartialDate(result.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      result.format,
+      `${path}.format`,
+      LIBRARY_COMIC_FORMATS,
+      'format must be one of the supported comic formats.'
+    )
+  ]
+}
+
+function validateNovelSearchResult(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Novel search result must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const result = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(result, NOVEL_SEARCH_RESULT_KEYS, path),
+    ...validateSearchResultBase(result, path),
+    ...validateOptionalPartialDate(result.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      result.format,
+      `${path}.format`,
+      LIBRARY_NOVEL_FORMATS,
+      'format must be one of the supported novel formats.'
     )
   ]
 }
@@ -546,6 +733,117 @@ function validateAnimeEpisode(value: unknown, path: string): ValidationIssue[] {
       validateExternalId
     )
   ]
+}
+
+function validateComicInfo(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Comic info must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const info = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(info, COMIC_INFO_KEYS, path),
+    ...validateNamedInfoFields(info, path),
+    ...validateOptionalStringArray(info.aliases, `${path}.aliases`, 'aliases must be an array.'),
+    ...validateOptionalPartialDate(info.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      info.format,
+      `${path}.format`,
+      LIBRARY_COMIC_FORMATS,
+      'format must be one of the supported comic formats.'
+    ),
+    ...validateOptionalInteger(info.totalVolumes, `${path}.totalVolumes`),
+    ...validateOptionalInteger(info.totalChapters, `${path}.totalChapters`)
+  ]
+}
+
+function validateComicChapter(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Comic unit must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const chapter = value as Record<string, unknown>
+  const issues = [
+    ...validateUnknownKeys(chapter, COMIC_CHAPTER_KEYS, path),
+    ...validateOptionalFiniteNumber(chapter.volumeNumber, `${path}.volumeNumber`),
+    ...validateOptionalFiniteNumber(chapter.chapterNumber, `${path}.chapterNumber`),
+    ...validateOptionalString(chapter.name, `${path}.name`),
+    ...validateOptionalString(chapter.originalName, `${path}.originalName`),
+    ...validateOptionalPartialDate(chapter.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalString(chapter.description, `${path}.description`),
+    ...validateOptionalArrayOf(
+      chapter.externalIds,
+      `${path}.externalIds`,
+      'externalIds must be an array.',
+      validateExternalId
+    )
+  ]
+
+  if (
+    chapter.volumeNumber === undefined &&
+    chapter.chapterNumber === undefined &&
+    chapter.name === undefined
+  ) {
+    issues.push({
+      path,
+      message: 'Comic unit must state a volume number, a chapter number, or a name.'
+    })
+  }
+
+  return issues
+}
+
+function validateNovelInfo(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Novel info must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const info = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(info, NOVEL_INFO_KEYS, path),
+    ...validateNamedInfoFields(info, path),
+    ...validateOptionalStringArray(info.aliases, `${path}.aliases`, 'aliases must be an array.'),
+    ...validateOptionalPartialDate(info.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalEnumString(
+      info.format,
+      `${path}.format`,
+      LIBRARY_NOVEL_FORMATS,
+      'format must be one of the supported novel formats.'
+    ),
+    ...validateOptionalInteger(info.totalVolumes, `${path}.totalVolumes`)
+  ]
+}
+
+function validateNovelVolume(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'Novel volume must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const volume = value as Record<string, unknown>
+  const issues = [
+    ...validateUnknownKeys(volume, NOVEL_VOLUME_KEYS, path),
+    ...validateOptionalFiniteNumber(volume.volumeNumber, `${path}.volumeNumber`),
+    ...validateOptionalString(volume.name, `${path}.name`),
+    ...validateOptionalString(volume.originalName, `${path}.originalName`),
+    ...validateOptionalPartialDate(volume.releaseDate, `${path}.releaseDate`),
+    ...validateOptionalString(volume.description, `${path}.description`),
+    ...validateOptionalArrayOf(
+      volume.externalIds,
+      `${path}.externalIds`,
+      'externalIds must be an array.',
+      validateExternalId
+    )
+  ]
+
+  if (volume.volumeNumber === undefined && volume.name === undefined) {
+    issues.push({ path, message: 'Novel volume must state a volume number or a name.' })
+  }
+
+  return issues
 }
 
 function validatePersonInfo(value: unknown, path: string): ValidationIssue[] {
@@ -754,6 +1052,54 @@ function validateAnimeCharacterFact(value: unknown, path: string): ValidationIss
   ]
 }
 
+function validateComicPersonFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, COMIC_PERSON_FACT_KEYS, validatePersonMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactRole(value, path, LIBRARY_COMIC_PERSON_ROLES, 'comic person role')
+  ]
+}
+
+function validateComicCompanyFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, COMIC_COMPANY_FACT_KEYS, validateCompanyMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactRole(value, path, LIBRARY_COMIC_COMPANY_ROLES, 'comic company role')
+  ]
+}
+
+function validateComicCharacterFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, COMIC_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactRole(value, path, LIBRARY_COMIC_CHARACTER_ROLES, 'comic character role')
+  ]
+}
+
+function validateNovelPersonFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, NOVEL_PERSON_FACT_KEYS, validatePersonMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactRole(value, path, LIBRARY_NOVEL_PERSON_ROLES, 'novel person role')
+  ]
+}
+
+function validateNovelCompanyFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, NOVEL_COMPANY_FACT_KEYS, validateCompanyMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactRole(value, path, LIBRARY_NOVEL_COMPANY_ROLES, 'novel company role')
+  ]
+}
+
+function validateNovelCharacterFact(value: unknown, path: string): ValidationIssue[] {
+  return [
+    ...validateFactObject(value, path, NOVEL_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
+    ...validateFactFields(value, path),
+    ...validateRequiredFactRole(value, path, LIBRARY_NOVEL_CHARACTER_ROLES, 'novel character role')
+  ]
+}
+
 function validateCharacterPersonFact(value: unknown, path: string): ValidationIssue[] {
   return [
     ...validateFactObject(value, path, CHARACTER_PERSON_FACT_KEYS, validatePersonMetadataFields),
@@ -917,6 +1263,76 @@ function validateAnimeSessionSlot(slot: AnimeScraperSlot, value: unknown, path: 
       return validateArrayOf(value, path, 'persons must be an array.', validateAnimePersonFact)
     case 'companies':
       return validateArrayOf(value, path, 'companies must be an array.', validateAnimeCompanyFact)
+    case 'relatedEntries':
+      return validateArrayOf(
+        value,
+        path,
+        'relatedEntries must be an array.',
+        validateRelatedEntryFact
+      )
+    case 'covers':
+    case 'backdrops':
+    case 'logos':
+      return validateStringArray(value, path, `${slot} must be an array of strings.`)
+  }
+
+  return []
+}
+
+function validateComicSessionSlot(slot: ComicScraperSlot, value: unknown, path: string) {
+  switch (slot) {
+    case 'info':
+      return validateComicInfo(value, path)
+    case 'tags':
+      return validateArrayOf(value, path, 'tags must be an array.', validateScrapedTag)
+    case 'chapters':
+      return validateArrayOf(value, path, 'chapters must be an array.', validateComicChapter)
+    case 'characters':
+      return validateArrayOf(
+        value,
+        path,
+        'characters must be an array.',
+        validateComicCharacterFact
+      )
+    case 'persons':
+      return validateArrayOf(value, path, 'persons must be an array.', validateComicPersonFact)
+    case 'companies':
+      return validateArrayOf(value, path, 'companies must be an array.', validateComicCompanyFact)
+    case 'relatedEntries':
+      return validateArrayOf(
+        value,
+        path,
+        'relatedEntries must be an array.',
+        validateRelatedEntryFact
+      )
+    case 'covers':
+    case 'backdrops':
+    case 'logos':
+      return validateStringArray(value, path, `${slot} must be an array of strings.`)
+  }
+
+  return []
+}
+
+function validateNovelSessionSlot(slot: NovelScraperSlot, value: unknown, path: string) {
+  switch (slot) {
+    case 'info':
+      return validateNovelInfo(value, path)
+    case 'tags':
+      return validateArrayOf(value, path, 'tags must be an array.', validateScrapedTag)
+    case 'volumes':
+      return validateArrayOf(value, path, 'volumes must be an array.', validateNovelVolume)
+    case 'characters':
+      return validateArrayOf(
+        value,
+        path,
+        'characters must be an array.',
+        validateNovelCharacterFact
+      )
+    case 'persons':
+      return validateArrayOf(value, path, 'persons must be an array.', validateNovelPersonFact)
+    case 'companies':
+      return validateArrayOf(value, path, 'companies must be an array.', validateNovelCompanyFact)
     case 'relatedEntries':
       return validateArrayOf(
         value,

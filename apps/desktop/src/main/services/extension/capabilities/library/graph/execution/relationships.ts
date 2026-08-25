@@ -106,7 +106,7 @@ export function previewMediaCastEdge(
     return 'create'
   }
 
-  const config = mediaLinkConfigs(state.mediaTypes.get(edge.from.key)).cast
+  const config = requireCastConfig(state, edge.from.key)
   const existing = readMediaCast(options.db.client, config, mediaId, characterId, personId)
   if (!existing) {
     return 'create'
@@ -130,7 +130,7 @@ export function applyMediaCastEdge(
   const mediaId = requireEntityId(state, edge.from.kind, edge.from.key)
   const characterId = requireEntityId(state, edge.to.kind, edge.to.key)
   const personId = requireEntityId(state, edge.person.kind, edge.person.key)
-  const config = mediaLinkConfigs(state.mediaTypes.get(edge.from.key)).cast
+  const config = requireCastConfig(state, edge.from.key)
   const existing = readMediaCast(options.db.client, config, mediaId, characterId, personId)
 
   if (!existing) {
@@ -149,6 +149,15 @@ export function applyMediaCastEdge(
   }
 
   return 'skip'
+}
+
+/** Input validation already rejects cast edges on media types without one. */
+function requireCastConfig(state: ApplyState, mediaNodeKey: string) {
+  const config = mediaLinkConfigs(state.mediaTypes.get(mediaNodeKey)).cast
+  if (!config) {
+    throw new Error(`Media node "${mediaNodeKey}" has no cast table.`)
+  }
+  return config
 }
 
 export function previewCompanyCompanyEdge(

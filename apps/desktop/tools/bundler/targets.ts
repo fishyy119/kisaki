@@ -128,7 +128,8 @@ export function createRendererConfig(paths: BundlerPaths, mode: BundlerMode): In
       rolldownOptions: {
         input: {
           main: path.join(rendererRoot, 'main.html'),
-          'tray-menu': path.join(rendererRoot, 'tray-menu.html')
+          'tray-menu': path.join(rendererRoot, 'tray-menu.html'),
+          reader: path.join(rendererRoot, 'reader.html')
         }
       }
     },

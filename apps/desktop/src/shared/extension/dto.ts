@@ -1,6 +1,7 @@
 import type {
   AnimeScraperProviderRegistrationInfo,
   CharacterScraperProviderRegistrationInfo,
+  ComicScraperProviderRegistrationInfo,
   CompanyScraperProviderRegistrationInfo,
   DeeplinkRouteRegistrationInfo,
   EntityMenuActionNode,
@@ -15,6 +16,7 @@ import type {
   ExtensionCategory,
   ExtensionRuntimeDiagnostic,
   GameScraperProviderRegistrationInfo,
+  NovelScraperProviderRegistrationInfo,
   PersonScraperProviderRegistrationInfo,
   JsonObject,
   JsonSafe,
@@ -455,6 +457,8 @@ export interface ExtensionScraperProviderRegistrationInfo extends ExtensionContr
   provider:
     | GameScraperProviderRegistrationInfo
     | AnimeScraperProviderRegistrationInfo
+    | ComicScraperProviderRegistrationInfo
+    | NovelScraperProviderRegistrationInfo
     | PersonScraperProviderRegistrationInfo
     | CompanyScraperProviderRegistrationInfo
     | CharacterScraperProviderRegistrationInfo

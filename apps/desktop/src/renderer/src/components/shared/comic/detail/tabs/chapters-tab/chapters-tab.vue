@@ -1,0 +1,160 @@
+<!--
+  Comic Chapters Tab
+
+  Unit list with read state and the file toolbar (files configuration, sync,
+  manual unit creation). Units render at their own grain: collected volumes
+  and serialized chapters share one ordered list.
+-->
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { Button } from '@renderer/components/ui/button'
+import { Icon } from '@renderer/components/ui/icon'
+import { Section } from '@renderer/components/ui/section'
+import { StateView } from '@renderer/components/ui/state-view'
+import { useComicFileSync } from '@renderer/composables'
+import { useComic } from '@renderer/composables/use-comic'
+import { toggleChapterRead } from '@renderer/composables/use-comic-read'
+import { useI18n } from '@renderer/composables/use-i18n'
+import { cn } from '@renderer/utils/cn'
+import { notify } from '@renderer/core/notify'
+import { ipcManager } from '@renderer/core/ipc'
+import { ComicFilesConfigFormDialog } from '../../../forms'
+import ComicDetailChapterItem from './chapter-item.vue'
+import ComicChapterFormDialog from './chapter-form-dialog.vue'
+
+const { comic, chapters } = useComic()
+const { m } = useI18n()
+const { isSyncing, syncFiles } = useComicFileSync()
+
+const addDialogOpen = ref(false)
+const filesConfigOpen = ref(false)
+const editChapterId = ref<string | null>(null)
+
+const readCount = computed(() => chapters.value.filter((chapter) => chapter.read).length)
+
+const canSyncFiles = computed(() => !!comic.value?.comicDirPath)
+
+const editDialogOpen = computed({
+  get: () => editChapterId.value !== null,
+  set: (value) => {
+    if (!value) editChapterId.value = null
+  }
+})
+
+async function handleSyncFiles(): Promise<void> {
+  const current = comic.value
+  if (!current) return
+  if (!current.comicDirPath) {
+    notify.error(m.value.comic.detail.comicDirNotSet)
+    return
+  }
+
+  await syncFiles(current.id)
+}
+
+async function handleOpenFolder(path: string): Promise<void> {
+  const result = await ipcManager.invoke('native:open-path', { path, ensure: 'file' })
+  if (!result.success) {
+    notify.error(m.value.comic.files.openFolderFailed)
+  }
+}
+</script>
+
+<template>
+  <div
+    v-if="comic"
+    class="space-y-6"
+  >
+    <Section :title="m.comic.chapters.title">
+      <template #actions>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-muted-foreground">
+            {{ m.comic.chapters.progress({ read: readCount, total: chapters.length }) }}
+          </span>
+
+          <Button
+            variant="outline"
+            size="sm"
+            @click="addDialogOpen = true"
+          >
+            <Icon
+              icon="icon-[mdi--plus]"
+              class="size-4 mr-1.5"
+            />
+            {{ m.comic.chapters.addChapter }}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            @click="filesConfigOpen = true"
+          >
+            <Icon
+              icon="icon-[mdi--folder-cog-outline]"
+              class="size-4 mr-1.5"
+            />
+            {{ m.comic.filesConfig.title }}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="!canSyncFiles || isSyncing"
+            :tooltip="canSyncFiles ? undefined : m.comic.detail.comicDirNotSet"
+            @click="handleSyncFiles"
+          >
+            <Icon
+              :icon="isSyncing ? 'icon-[mdi--loading]' : 'icon-[mdi--folder-sync-outline]'"
+              :class="cn('size-4 mr-1.5', isSyncing && 'animate-spin')"
+            />
+            {{ m.comic.chapters.syncFiles }}
+          </Button>
+        </div>
+      </template>
+
+      <StateView
+        v-if="chapters.length === 0"
+        state="empty"
+        icon="icon-[mdi--book-open-page-variant-outline]"
+        :title="m.comic.chapters.emptyTitle"
+        :description="m.comic.chapters.emptyHint"
+        class="py-10"
+      />
+      <div
+        v-else
+        class="space-y-2"
+      >
+        <ComicDetailChapterItem
+          v-for="chapter in chapters"
+          :key="chapter.id"
+          :chapter="chapter"
+          @toggle-read="toggleChapterRead(chapter)"
+          @open-folder="handleOpenFolder"
+          @edit="editChapterId = chapter.id"
+        />
+      </div>
+    </Section>
+
+    <!-- Create unit dialog -->
+    <ComicChapterFormDialog
+      v-if="addDialogOpen"
+      v-model:open="addDialogOpen"
+      :comic-id="comic.id"
+    />
+
+    <!-- Edit unit dialog -->
+    <ComicChapterFormDialog
+      v-if="editChapterId"
+      v-model:open="editDialogOpen"
+      :comic-id="comic.id"
+      :chapter-id="editChapterId"
+    />
+
+    <!-- Files configuration dialog -->
+    <ComicFilesConfigFormDialog
+      v-if="filesConfigOpen"
+      v-model:open="filesConfigOpen"
+      :comic-id="comic.id"
+    />
+  </div>
+</template>

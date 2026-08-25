@@ -180,6 +180,24 @@ const MEDIA_STATISTICS_SOURCES = {
     collectionLinkEntityId: schema.collectionAnimeLinks.animeId,
     sessionTable: 'anime_sessions',
     entityTable: 'animes'
+  },
+  comic: {
+    sessions: schema.comicSessions,
+    sessionEntityId: schema.comicSessions.comicId,
+    entities: schema.comics,
+    collectionLinks: schema.collectionComicLinks,
+    collectionLinkEntityId: schema.collectionComicLinks.comicId,
+    sessionTable: 'comic_sessions',
+    entityTable: 'comics'
+  },
+  novel: {
+    sessions: schema.novelSessions,
+    sessionEntityId: schema.novelSessions.novelId,
+    entities: schema.novels,
+    collectionLinks: schema.collectionNovelLinks,
+    collectionLinkEntityId: schema.collectionNovelLinks.novelId,
+    sessionTable: 'novel_sessions',
+    entityTable: 'novels'
   }
 } as const satisfies Record<MediaType, MediaStatisticsSource>
 

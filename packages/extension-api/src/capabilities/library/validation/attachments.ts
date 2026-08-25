@@ -21,6 +21,8 @@ const ATTACHMENT_REMOVE_KEYS = new Set<string>(['entity', 'slot', 'fileName'])
 const ATTACHMENT_SLOTS_BY_OWNER = {
   game: ['cover', 'backdrop', 'logo', 'icon', 'description-inline'],
   anime: ['cover', 'backdrop', 'logo', 'description-inline'],
+  comic: ['cover', 'backdrop', 'logo', 'description-inline'],
+  novel: ['cover', 'backdrop', 'logo', 'description-inline'],
   character: ['photo'],
   person: ['photo'],
   company: ['logo'],

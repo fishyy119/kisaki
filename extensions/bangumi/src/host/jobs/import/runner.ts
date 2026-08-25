@@ -579,6 +579,13 @@ function requireCollectedAdapter(adapter: LocalMediaAdapter | undefined): LocalM
   return adapter
 }
 
-function countEnabledFields(fields: { status: boolean; score: boolean; tags: boolean }): number {
-  return Number(fields.status) + Number(fields.score) + Number(fields.tags)
+function countEnabledFields(fields: {
+  status: boolean
+  score: boolean
+  tags: boolean
+  unitProgress: boolean
+}): number {
+  return (
+    Number(fields.status) + Number(fields.score) + Number(fields.tags) + Number(fields.unitProgress)
+  )
 }

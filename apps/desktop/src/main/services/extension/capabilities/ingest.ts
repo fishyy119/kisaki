@@ -2,37 +2,51 @@ import {
   GAME_UPDATE_SURFACES,
   CONTENT_LOCALES,
   LIBRARY_ANIME_FORMATS,
+  LIBRARY_COMIC_FORMATS,
+  LIBRARY_NOVEL_FORMATS,
   createUnavailableError,
   createValidationError,
   type AnimeScraperLookup,
+  type ComicScraperLookup,
   type ContentLocale,
   type ExtensionRuntimeMetadata,
   type GameScraperLookup,
   type GameUpdateSurface,
   type IngestAddAnimeFromScraperOptions,
   type IngestAddAnimeFromScraperResult,
+  type IngestAddComicFromScraperOptions,
+  type IngestAddComicFromScraperResult,
   type IngestAddGameFromScraperOptions,
   type IngestAddGameFromScraperResult,
+  type IngestAddNovelFromScraperOptions,
+  type IngestAddNovelFromScraperResult,
   type IngestGameUpdateFromScraperInput,
   type IngestUpdateResult,
   type MediaScraperLookup,
+  type NovelScraperLookup,
   type ScraperLookup
 } from '@kisaki3/extension-api'
 import type { IngestService } from '@main/services/ingest'
 import type { TaskRunInitiator, TaskRunStartResult } from '@shared/task-run'
-import type { AnimeFormat, PartialDate } from '@shared/db'
+import type { AnimeFormat, ComicFormat, NovelFormat, PartialDate } from '@shared/db'
 import { matchesPartialDate } from '@shared/db/columns/partial-date'
 import type {
   AnimeScraperLookup as AppAnimeScraperLookup,
+  ComicScraperLookup as AppComicScraperLookup,
   MediaScraperLookup as AppMediaScraperLookup,
+  NovelScraperLookup as AppNovelScraperLookup,
   ScraperLookup as AppScraperLookup
 } from '@shared/scraper'
 import type { GameUpdateRequest } from '@shared/ingest/update'
 import type {
   IngestAddAnimeFromScraperOptions as AppIngestAddAnimeFromScraperOptions,
   IngestAddAnimeFromScraperResult as AppIngestAddAnimeFromScraperResult,
+  IngestAddComicFromScraperOptions as AppIngestAddComicFromScraperOptions,
+  IngestAddComicFromScraperResult as AppIngestAddComicFromScraperResult,
   IngestAddGameFromScraperOptions as AppIngestAddGameFromScraperOptions,
-  IngestAddGameFromScraperResult as AppIngestAddGameFromScraperResult
+  IngestAddGameFromScraperResult as AppIngestAddGameFromScraperResult,
+  IngestAddNovelFromScraperOptions as AppIngestAddNovelFromScraperOptions,
+  IngestAddNovelFromScraperResult as AppIngestAddNovelFromScraperResult
 } from '@shared/ingest/add'
 
 export interface ExtensionIngestCapabilityProviderOptions {
@@ -108,6 +122,76 @@ export class ExtensionIngestCapabilityProvider {
       toAppAnimeScraperLookup(lookup),
       {
         ...toAppAddAnimeFromScraperOptions(options),
+        taskRunInitiator: createExtensionTaskRunInitiator(metadata)
+      }
+    )
+  }
+
+  async addComicFromScraper(
+    runtimeHandle: string,
+    profileId: string,
+    lookup: ComicScraperLookup,
+    options?: IngestAddComicFromScraperOptions,
+    signal?: AbortSignal
+  ): Promise<IngestAddComicFromScraperResult> {
+    this.requireRuntime(runtimeHandle)
+    readNonEmptyString(profileId, 'ingest profileId')
+    const result = await this.options.ingest.add.comic.addFromScraper(
+      profileId,
+      toAppComicScraperLookup(lookup),
+      { ...toAppAddComicFromScraperOptions(options), signal }
+    )
+    return toPublicIngestAddComicFromScraperResult(result)
+  }
+
+  startAddComicFromScraper(
+    runtimeHandle: string,
+    profileId: string,
+    lookup: ComicScraperLookup,
+    options?: IngestAddComicFromScraperOptions
+  ): TaskRunStartResult {
+    const metadata = this.requireRuntime(runtimeHandle)
+    readNonEmptyString(profileId, 'ingest profileId')
+    return this.options.ingest.add.comic.startAddFromScraper(
+      profileId,
+      toAppComicScraperLookup(lookup),
+      {
+        ...toAppAddComicFromScraperOptions(options),
+        taskRunInitiator: createExtensionTaskRunInitiator(metadata)
+      }
+    )
+  }
+
+  async addNovelFromScraper(
+    runtimeHandle: string,
+    profileId: string,
+    lookup: NovelScraperLookup,
+    options?: IngestAddNovelFromScraperOptions,
+    signal?: AbortSignal
+  ): Promise<IngestAddNovelFromScraperResult> {
+    this.requireRuntime(runtimeHandle)
+    readNonEmptyString(profileId, 'ingest profileId')
+    const result = await this.options.ingest.add.novel.addFromScraper(
+      profileId,
+      toAppNovelScraperLookup(lookup),
+      { ...toAppAddNovelFromScraperOptions(options), signal }
+    )
+    return toPublicIngestAddNovelFromScraperResult(result)
+  }
+
+  startAddNovelFromScraper(
+    runtimeHandle: string,
+    profileId: string,
+    lookup: NovelScraperLookup,
+    options?: IngestAddNovelFromScraperOptions
+  ): TaskRunStartResult {
+    const metadata = this.requireRuntime(runtimeHandle)
+    readNonEmptyString(profileId, 'ingest profileId')
+    return this.options.ingest.add.novel.startAddFromScraper(
+      profileId,
+      toAppNovelScraperLookup(lookup),
+      {
+        ...toAppAddNovelFromScraperOptions(options),
         taskRunInitiator: createExtensionTaskRunInitiator(metadata)
       }
     )
@@ -215,6 +299,68 @@ function toAppAddAnimeFromScraperOptions(
 
 const ADD_ANIME_OPTION_KEYS = new Set<string>(['animeDirPath', 'targetCollectionId'])
 
+function toAppAddComicFromScraperOptions(
+  options: IngestAddComicFromScraperOptions | undefined
+): AppIngestAddComicFromScraperOptions {
+  if (options === undefined) {
+    return {}
+  }
+
+  if (!isPlainRecord(options)) {
+    throw createValidationError('ingest add options must be an object.')
+  }
+
+  for (const key of Object.keys(options)) {
+    if (!ADD_COMIC_OPTION_KEYS.has(key)) {
+      throw createValidationError(`ingest add options contain an unknown field "${key}".`)
+    }
+  }
+
+  return {
+    comicDirPath: readOptionalNonEmptyString(
+      options.comicDirPath,
+      'ingest add options.comicDirPath'
+    ),
+    targetCollectionId: readOptionalNonEmptyString(
+      options.targetCollectionId,
+      'ingest add options.targetCollectionId'
+    )
+  }
+}
+
+const ADD_COMIC_OPTION_KEYS = new Set<string>(['comicDirPath', 'targetCollectionId'])
+
+function toAppAddNovelFromScraperOptions(
+  options: IngestAddNovelFromScraperOptions | undefined
+): AppIngestAddNovelFromScraperOptions {
+  if (options === undefined) {
+    return {}
+  }
+
+  if (!isPlainRecord(options)) {
+    throw createValidationError('ingest add options must be an object.')
+  }
+
+  for (const key of Object.keys(options)) {
+    if (!ADD_NOVEL_OPTION_KEYS.has(key)) {
+      throw createValidationError(`ingest add options contain an unknown field "${key}".`)
+    }
+  }
+
+  return {
+    novelDirPath: readOptionalNonEmptyString(
+      options.novelDirPath,
+      'ingest add options.novelDirPath'
+    ),
+    targetCollectionId: readOptionalNonEmptyString(
+      options.targetCollectionId,
+      'ingest add options.targetCollectionId'
+    )
+  }
+}
+
+const ADD_NOVEL_OPTION_KEYS = new Set<string>(['novelDirPath', 'targetCollectionId'])
+
 function createExtensionTaskRunInitiator(metadata: ExtensionRuntimeMetadata): TaskRunInitiator {
   return {
     type: 'extension',
@@ -251,6 +397,20 @@ function toAppAnimeScraperLookup(lookup: AnimeScraperLookup): AppAnimeScraperLoo
   }
 }
 
+function toAppComicScraperLookup(lookup: ComicScraperLookup): AppComicScraperLookup {
+  return {
+    ...toAppMediaScraperLookup(lookup),
+    format: readOptionalComicFormat(lookup.format)
+  }
+}
+
+function toAppNovelScraperLookup(lookup: NovelScraperLookup): AppNovelScraperLookup {
+  return {
+    ...toAppMediaScraperLookup(lookup),
+    format: readOptionalNovelFormat(lookup.format)
+  }
+}
+
 function readOptionalPartialDate(value: unknown, label: string): PartialDate | undefined {
   if (value === undefined) {
     return undefined
@@ -267,6 +427,18 @@ function readOptionalAnimeFormat(value: unknown): AnimeFormat | undefined {
   return value === undefined
     ? undefined
     : readEnum(value, LIBRARY_ANIME_FORMATS, 'ingest lookup.format')
+}
+
+function readOptionalComicFormat(value: unknown): ComicFormat | undefined {
+  return value === undefined
+    ? undefined
+    : readEnum(value, LIBRARY_COMIC_FORMATS, 'ingest lookup.format')
+}
+
+function readOptionalNovelFormat(value: unknown): NovelFormat | undefined {
+  return value === undefined
+    ? undefined
+    : readEnum(value, LIBRARY_NOVEL_FORMATS, 'ingest lookup.format')
 }
 
 function readOptionalLocale(value: unknown): ContentLocale | undefined {
@@ -397,6 +569,34 @@ function toPublicIngestAddAnimeFromScraperResult(
 ): IngestAddAnimeFromScraperResult {
   return {
     animeId: result.animeId,
+    isNew: result.isNew,
+    existingReason: result.existingReason,
+    warnings: result.warnings?.map((warning) => ({
+      code: warning.code,
+      message: warning.message
+    }))
+  }
+}
+
+function toPublicIngestAddComicFromScraperResult(
+  result: AppIngestAddComicFromScraperResult
+): IngestAddComicFromScraperResult {
+  return {
+    comicId: result.comicId,
+    isNew: result.isNew,
+    existingReason: result.existingReason,
+    warnings: result.warnings?.map((warning) => ({
+      code: warning.code,
+      message: warning.message
+    }))
+  }
+}
+
+function toPublicIngestAddNovelFromScraperResult(
+  result: AppIngestAddNovelFromScraperResult
+): IngestAddNovelFromScraperResult {
+  return {
+    novelId: result.novelId,
     isNew: result.isNew,
     existingReason: result.existingReason,
     warnings: result.warnings?.map((warning) => ({

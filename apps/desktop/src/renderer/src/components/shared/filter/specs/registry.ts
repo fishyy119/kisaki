@@ -12,8 +12,10 @@ import type { FilterUiSpec } from './types'
 import { animeFilterUiSpec } from './anime'
 import { characterFilterUiSpec } from './character'
 import { collectionFilterUiSpec } from './collection'
+import { comicFilterUiSpec } from './comic'
 import { companyFilterUiSpec } from './company'
 import { gameFilterUiSpec } from './game'
+import { novelFilterUiSpec } from './novel'
 import { personFilterUiSpec } from './person'
 import { tagFilterUiSpec } from './tag'
 
@@ -23,6 +25,10 @@ export function getFilterUiSpec(entityType: AllEntityType): ComputedRef<FilterUi
       return gameFilterUiSpec
     case 'anime':
       return animeFilterUiSpec
+    case 'comic':
+      return comicFilterUiSpec
+    case 'novel':
+      return novelFilterUiSpec
     case 'character':
       return characterFilterUiSpec
     case 'person':

@@ -5,8 +5,10 @@ import { createExtensionScraperProviderId, type ScraperMediaType } from '@shared
 import type {
   AnimeScraperProvider,
   CharacterScraperProvider,
+  ComicScraperProvider,
   CompanyScraperProvider,
   GameScraperProvider,
+  NovelScraperProvider,
   PersonScraperProvider,
   ScraperService
 } from '@main/services/scraper'
@@ -43,6 +45,22 @@ const SCRAPER_DOMAINS = {
       scraper.anime.registerProvider(provider as AnimeScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
       scraper.anime.unregisterProvider(registryProviderId)
+  },
+  comic: {
+    kind: 'comics',
+    mediaType: 'comic',
+    registerWithScraper: (scraper, provider) =>
+      scraper.comic.registerProvider(provider as ComicScraperProvider),
+    unregisterFromScraper: (scraper, registryProviderId) =>
+      scraper.comic.unregisterProvider(registryProviderId)
+  },
+  novel: {
+    kind: 'novels',
+    mediaType: 'novel',
+    registerWithScraper: (scraper, provider) =>
+      scraper.novel.registerProvider(provider as NovelScraperProvider),
+    unregisterFromScraper: (scraper, registryProviderId) =>
+      scraper.novel.unregisterProvider(registryProviderId)
   },
   person: {
     kind: 'persons',

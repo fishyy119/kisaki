@@ -8,10 +8,14 @@ import type {
   BasicSlotConfig,
   CharacterScraperSlot,
   CharacterScraperSlotConfigs,
+  ComicScraperSlot,
+  ComicScraperSlotConfigs,
   CompanyScraperSlot,
   CompanyScraperSlotConfigs,
   GameScraperSlot,
   GameScraperSlotConfigs,
+  NovelScraperSlot,
+  NovelScraperSlotConfigs,
   PersonScraperSlot,
   PersonScraperSlotConfigs,
   RelationCollectionSlotConfig,
@@ -28,8 +32,10 @@ import type { ContentLocale } from '@shared/i18n'
 import {
   ANIME_SCRAPER_SLOTS,
   CHARACTER_SCRAPER_SLOTS,
+  COMIC_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
   GAME_SCRAPER_SLOTS,
+  NOVEL_SCRAPER_SLOTS,
   PERSON_SCRAPER_SLOTS
 } from '@shared/db'
 
@@ -44,6 +50,8 @@ export type SlotConfigForSlot<S extends ScraperSlot> = S extends RelationCollect
 export interface ScraperSlotConfigsByMediaType {
   game: GameScraperSlotConfigs
   anime: AnimeScraperSlotConfigs
+  comic: ComicScraperSlotConfigs
+  novel: NovelScraperSlotConfigs
   person: PersonScraperSlotConfigs
   company: CompanyScraperSlotConfigs
   character: CharacterScraperSlotConfigs
@@ -71,6 +79,18 @@ export type AnimeImageSlot = 'covers' | 'backdrops' | 'logos'
 
 /** Anime image slot list. */
 export const ANIME_IMAGE_SLOTS: AnimeImageSlot[] = ['covers', 'backdrops', 'logos']
+
+/** Comic image slot types. */
+export type ComicImageSlot = 'covers' | 'backdrops' | 'logos'
+
+/** Comic image slot list. */
+export const COMIC_IMAGE_SLOTS: ComicImageSlot[] = ['covers', 'backdrops', 'logos']
+
+/** Novel image slot types. */
+export type NovelImageSlot = 'covers' | 'backdrops' | 'logos'
+
+/** Novel image slot list. */
+export const NOVEL_IMAGE_SLOTS: NovelImageSlot[] = ['covers', 'backdrops', 'logos']
 
 /** Every image slot across media types; must stay in sync with ScraperImageSlot. */
 export const SCRAPER_IMAGE_SLOTS: ScraperImageSlot[] = [
@@ -158,6 +178,8 @@ function normalizeBasicSlotConfig(value: unknown): BasicSlotConfig | null {
 
 export function getScraperSlotsForMediaType(mediaType: 'game'): readonly GameScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'anime'): readonly AnimeScraperSlot[]
+export function getScraperSlotsForMediaType(mediaType: 'comic'): readonly ComicScraperSlot[]
+export function getScraperSlotsForMediaType(mediaType: 'novel'): readonly NovelScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'person'): readonly PersonScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'company'): readonly CompanyScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: 'character'): readonly CharacterScraperSlot[]
@@ -168,6 +190,10 @@ export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readon
       return GAME_SCRAPER_SLOTS
     case 'anime':
       return ANIME_SCRAPER_SLOTS
+    case 'comic':
+      return COMIC_SCRAPER_SLOTS
+    case 'novel':
+      return NOVEL_SCRAPER_SLOTS
     case 'person':
       return PERSON_SCRAPER_SLOTS
     case 'company':
@@ -191,6 +217,14 @@ export function normalizeSlotConfigs(
   mediaType: 'anime',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): AnimeScraperSlotConfigs
+export function normalizeSlotConfigs(
+  mediaType: 'comic',
+  slotConfigs: ScraperSlotConfigs | null | undefined
+): ComicScraperSlotConfigs
+export function normalizeSlotConfigs(
+  mediaType: 'novel',
+  slotConfigs: ScraperSlotConfigs | null | undefined
+): NovelScraperSlotConfigs
 export function normalizeSlotConfigs(
   mediaType: 'person',
   slotConfigs: ScraperSlotConfigs | null | undefined
@@ -367,6 +401,18 @@ export function createSlotConfigs(
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): AnimeScraperSlotConfigs
+export function createSlotConfigs(
+  mediaType: 'comic',
+  providerId: string,
+  capabilities: ScraperCapability[],
+  locale?: ContentLocale
+): ComicScraperSlotConfigs
+export function createSlotConfigs(
+  mediaType: 'novel',
+  providerId: string,
+  capabilities: ScraperCapability[],
+  locale?: ContentLocale
+): NovelScraperSlotConfigs
 export function createSlotConfigs(
   mediaType: 'person',
   providerId: string,

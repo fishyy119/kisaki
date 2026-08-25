@@ -242,6 +242,10 @@ export const scanner = {
         '外部 ID が既存の項目に関連付けられているため、このパスは追加しませんでした',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 件の動画ファイルは話数を判別できないため、番号なしのエピソードとして追加しました`,
+      unitNumbersUnreadable: ({ count }: { count: number }) =>
+        `${count} 件のファイルは巻数・話数を判別できないため、番号なしのユニットとして追加しました`,
+      volumeNumbersUnreadable: ({ count }: { count: number }) =>
+        `${count} 件の書籍ファイルは巻数を判別できないため、番号なしの巻として追加しました`,
       fileSyncFailed:
         '項目は追加しましたが、動画ファイルの同期に失敗しました。詳細はログを参照してください。'
     }

@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { attachment, db } from '@renderer/core/db'
 import type { MediaType } from '@shared/common'
-import { animeNotes, gameNotes } from '@shared/db'
+import { animeNotes, comicNotes, gameNotes, novelNotes } from '@shared/db'
 
 /** Media-neutral note row consumed by the shared notes components. */
 export interface MediaNoteRow {
@@ -135,6 +135,102 @@ export const MEDIA_NOTE_STORES: Record<MediaType, MediaNoteStore> = {
     },
     clearCover: async (id) => {
       await attachment.clearFile(animeNotes, id, 'coverFile')
+    }
+  },
+  comic: {
+    tableName: 'comic_notes',
+    find: async (id) => {
+      const rows = await db
+        .select({
+          id: comicNotes.id,
+          name: comicNotes.name,
+          content: comicNotes.content,
+          coverFile: comicNotes.coverFile,
+          order: comicNotes.orderInComic,
+          createdAt: comicNotes.createdAt,
+          updatedAt: comicNotes.updatedAt
+        })
+        .from(comicNotes)
+        .where(eq(comicNotes.id, id))
+        .limit(1)
+      return rows[0]
+    },
+    create: async (anchorId, data) => {
+      const id = nanoid()
+      await db.insert(comicNotes).values({
+        id,
+        comicId: anchorId,
+        name: data.name,
+        content: data.content,
+        orderInComic: data.order
+      })
+      return id
+    },
+    update: async (id, data) => {
+      await db
+        .update(comicNotes)
+        .set({ name: data.name, content: data.content, updatedAt: new Date() })
+        .where(eq(comicNotes.id, id))
+    },
+    remove: async (id) => {
+      await db.delete(comicNotes).where(eq(comicNotes.id, id))
+    },
+    setOrder: async (id, order) => {
+      await db.update(comicNotes).set({ orderInComic: order }).where(eq(comicNotes.id, id))
+    },
+    setCover: async (id, sourcePath) => {
+      await attachment.setFile(comicNotes, id, 'coverFile', { kind: 'path', path: sourcePath })
+    },
+    clearCover: async (id) => {
+      await attachment.clearFile(comicNotes, id, 'coverFile')
+    }
+  },
+  novel: {
+    tableName: 'novel_notes',
+    find: async (id) => {
+      const rows = await db
+        .select({
+          id: novelNotes.id,
+          name: novelNotes.name,
+          content: novelNotes.content,
+          coverFile: novelNotes.coverFile,
+          order: novelNotes.orderInNovel,
+          createdAt: novelNotes.createdAt,
+          updatedAt: novelNotes.updatedAt
+        })
+        .from(novelNotes)
+        .where(eq(novelNotes.id, id))
+        .limit(1)
+      return rows[0]
+    },
+    create: async (anchorId, data) => {
+      const id = nanoid()
+      await db.insert(novelNotes).values({
+        id,
+        novelId: anchorId,
+        name: data.name,
+        content: data.content,
+        orderInNovel: data.order
+      })
+      return id
+    },
+    update: async (id, data) => {
+      await db
+        .update(novelNotes)
+        .set({ name: data.name, content: data.content, updatedAt: new Date() })
+        .where(eq(novelNotes.id, id))
+    },
+    remove: async (id) => {
+      await db.delete(novelNotes).where(eq(novelNotes.id, id))
+    },
+    setOrder: async (id, order) => {
+      await db.update(novelNotes).set({ orderInNovel: order }).where(eq(novelNotes.id, id))
+    },
+    setCover: async (id, sourcePath) => {
+      await attachment.setFile(novelNotes, id, 'coverFile', { kind: 'path', path: sourcePath })
+    },
+    clearCover: async (id) => {
+      await attachment.clearFile(novelNotes, id, 'coverFile')
     }
   }
 }

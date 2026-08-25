@@ -10,8 +10,10 @@ import type { FilterQuerySpec } from '../spec'
 import { animeFilterQuerySpec } from './anime'
 import { characterFilterQuerySpec } from './character'
 import { collectionFilterQuerySpec } from './collection'
+import { comicFilterQuerySpec } from './comic'
 import { companyFilterQuerySpec } from './company'
 import { gameFilterQuerySpec } from './game'
+import { novelFilterQuerySpec } from './novel'
 import { personFilterQuerySpec } from './person'
 import { tagFilterQuerySpec } from './tag'
 
@@ -21,6 +23,10 @@ export function getFilterQuerySpec(entityType: AllEntityType): FilterQuerySpec {
       return gameFilterQuerySpec
     case 'anime':
       return animeFilterQuerySpec
+    case 'comic':
+      return comicFilterQuerySpec
+    case 'novel':
+      return novelFilterQuerySpec
     case 'character':
       return characterFilterQuerySpec
     case 'person':

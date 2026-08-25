@@ -3,8 +3,10 @@ import { parseExtensionScraperProviderId } from '@shared/scraper'
 import type {
   AnimeScraperProviderInfo,
   CharacterScraperProviderInfo,
+  ComicScraperProviderInfo,
   CompanyScraperProviderInfo,
   GameScraperProviderInfo,
+  NovelScraperProviderInfo,
   PersonScraperProviderInfo,
   ScraperCapability
 } from '@shared/scraper'
@@ -14,6 +16,8 @@ import { messages } from '@renderer/core/i18n'
 export type ScraperProviderInfo =
   | GameScraperProviderInfo
   | AnimeScraperProviderInfo
+  | ComicScraperProviderInfo
+  | NovelScraperProviderInfo
   | PersonScraperProviderInfo
   | CompanyScraperProviderInfo
   | CharacterScraperProviderInfo

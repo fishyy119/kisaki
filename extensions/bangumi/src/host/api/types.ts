@@ -264,6 +264,10 @@ export interface BangumiUserCollection {
   tags?: string[]
   private?: boolean
   updated_at?: string
+  /** Read volume count; book subjects only. */
+  vol_status?: number
+  /** Read chapter count; book subjects only. */
+  ept_status?: number
 }
 
 export interface BangumiCollectionQuery extends BangumiPageQuery {
@@ -276,6 +280,10 @@ export interface BangumiCollectionPatch {
   type?: BangumiCollectionType
   rate?: number
   tags?: readonly string[]
+  /** Read volume count; accepted on book subjects only. */
+  vol_status?: number
+  /** Read chapter count; accepted on book subjects only. */
+  ept_status?: number
 }
 
 /** Per-episode collection state: 0 none, 1 wish, 2 watched, 3 dropped. */

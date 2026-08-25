@@ -10,7 +10,7 @@ import type {
 import { createNotFoundError, normalizeCapabilityError } from '@kisaki3/extension-api'
 import { and, eq, or, type SQL } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { animes, games, mediaRelations, type MediaRelation } from '@shared/db'
+import { animes, comics, games, mediaRelations, novels, type MediaRelation } from '@shared/db'
 import type { DbService } from '@main/services/db'
 
 export interface ExtensionLibraryMediaRelationStoreOptions {
@@ -130,6 +130,18 @@ export class ExtensionLibraryMediaRelationStore {
           .select({ id: animes.id })
           .from(animes)
           .where(eq(animes.id, reference.id))
+          .get()?.id
+      case 'comic':
+        return this.options.db.client
+          .select({ id: comics.id })
+          .from(comics)
+          .where(eq(comics.id, reference.id))
+          .get()?.id
+      case 'novel':
+        return this.options.db.client
+          .select({ id: novels.id })
+          .from(novels)
+          .where(eq(novels.id, reference.id))
           .get()?.id
     }
   }

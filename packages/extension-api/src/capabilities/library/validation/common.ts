@@ -6,6 +6,7 @@ import type { ValidationIssue } from '../../../shared/validation'
 import {
   isPlainObject,
   validateOptionalBoolean,
+  validateOptionalEnumString,
   validateOptionalFiniteNumber,
   validateOptionalString,
   validateRequiredArray,
@@ -231,6 +232,27 @@ export function validateOptionalNullableFiniteNumber(
   }
 
   return validateOptionalFiniteNumber(value, path)
+}
+
+export function validateOptionalNullableString(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined || value === null) {
+    return []
+  }
+
+  return validateOptionalString(value, path)
+}
+
+export function validateOptionalNullableEnumString<TValue extends string>(
+  value: unknown,
+  path: string,
+  allowedValues: readonly TValue[],
+  message: string
+): ValidationIssue[] {
+  if (value === undefined || value === null) {
+    return []
+  }
+
+  return validateOptionalEnumString(value, path, allowedValues, message)
 }
 
 export function validateOptionalNonNegativeFiniteNumber(

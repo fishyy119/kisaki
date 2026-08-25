@@ -13,11 +13,13 @@ import {
   MEDIA_RELATION_TYPE_INVERSE,
   mediaRelations,
   type Anime,
+  type Comic,
   type Game,
   type MediaRelation,
-  type MediaRelationType
+  type MediaRelationType,
+  type Novel
 } from '@shared/db'
-import { animes, games } from '@shared/db'
+import { animes, comics, games, novels } from '@shared/db'
 import { db } from './proxy'
 
 /**
@@ -27,7 +29,10 @@ import { db } from './proxy'
  * reader that handles every member is provably complete.
  */
 export type MediaRelationTarget =
-  { mediaType: 'game'; entity: Game } | { mediaType: 'anime'; entity: Anime }
+  | { mediaType: 'game'; entity: Game }
+  | { mediaType: 'anime'; entity: Anime }
+  | { mediaType: 'comic'; entity: Comic }
+  | { mediaType: 'novel'; entity: Novel }
 
 /** One display-ready relation entry of an entity, either edge direction. */
 export interface MediaRelationEntry {
@@ -102,14 +107,18 @@ async function attachTargets(
     idsByType.set(edge.targetType, ids)
   }
 
-  const [gameRows, animeRows] = await Promise.all([
+  const [gameRows, animeRows, comicRows, novelRows] = await Promise.all([
     loadGameTargets(idsByType.get('game'), showNsfw),
-    loadAnimeTargets(idsByType.get('anime'), showNsfw)
+    loadAnimeTargets(idsByType.get('anime'), showNsfw),
+    loadComicTargets(idsByType.get('comic'), showNsfw),
+    loadNovelTargets(idsByType.get('novel'), showNsfw)
   ])
 
   const targetsByType = {
     game: new Map(gameRows.map((row) => [row.id, row])),
-    anime: new Map(animeRows.map((row) => [row.id, row]))
+    anime: new Map(animeRows.map((row) => [row.id, row])),
+    comic: new Map(comicRows.map((row) => [row.id, row])),
+    novel: new Map(novelRows.map((row) => [row.id, row]))
   }
 
   // Targets hidden by the NSFW preference, and ids left behind by a deleted
@@ -125,6 +134,8 @@ async function attachTargets(
 interface TargetsByType {
   game: Map<string, Game>
   anime: Map<string, Anime>
+  comic: Map<string, Comic>
+  novel: Map<string, Novel>
 }
 
 function readTarget(edge: MediaRelationEdge, targets: TargetsByType): MediaRelationTarget | null {
@@ -136,6 +147,14 @@ function readTarget(edge: MediaRelationEdge, targets: TargetsByType): MediaRelat
     case 'anime': {
       const entity = targets.anime.get(edge.targetId)
       return entity ? { mediaType: 'anime', entity } : null
+    }
+    case 'comic': {
+      const entity = targets.comic.get(edge.targetId)
+      return entity ? { mediaType: 'comic', entity } : null
+    }
+    case 'novel': {
+      const entity = targets.novel.get(edge.targetId)
+      return entity ? { mediaType: 'novel', entity } : null
     }
   }
 }
@@ -154,4 +173,20 @@ async function loadAnimeTargets(ids: string[] | undefined, showNsfw: boolean): P
     .select()
     .from(animes)
     .where(and(inArray(animes.id, ids), showNsfw ? undefined : eq(animes.isNsfw, false)))
+}
+
+async function loadComicTargets(ids: string[] | undefined, showNsfw: boolean): Promise<Comic[]> {
+  if (!ids?.length) return []
+  return db
+    .select()
+    .from(comics)
+    .where(and(inArray(comics.id, ids), showNsfw ? undefined : eq(comics.isNsfw, false)))
+}
+
+async function loadNovelTargets(ids: string[] | undefined, showNsfw: boolean): Promise<Novel[]> {
+  if (!ids?.length) return []
+  return db
+    .select()
+    .from(novels)
+    .where(and(inArray(novels.id, ids), showNsfw ? undefined : eq(novels.isNsfw, false)))
 }

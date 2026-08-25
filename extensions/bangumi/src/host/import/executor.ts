@@ -6,7 +6,8 @@ import type {
   LocalMediaAddFromScraperInput,
   LocalMediaAddResult,
   LocalMediaItem,
-  LocalMediaUserPatch
+  LocalMediaUserPatch,
+  LocalUnitProgress
 } from '../media/types'
 import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
@@ -43,6 +44,22 @@ export class ImportExecutor {
     patch: LocalMediaUserPatch
   ): Promise<LocalMediaItem> {
     return this.requireWritableAdapter(scope).patchUserFields(localId, patch)
+  }
+
+  async applyUnitProgress(
+    scope: BangumiMediaScope,
+    localId: string,
+    progress: LocalUnitProgress
+  ): Promise<void> {
+    const adapter = this.requireWritableAdapter(scope)
+    if (!adapter.applyUnitProgress) {
+      throw new BangumiExtensionError(
+        'local_media_unsupported',
+        m().errors.localWriteUnsupportedGeneric
+      )
+    }
+
+    await adapter.applyUnitProgress(localId, progress)
   }
 
   async ensureTag(scope: BangumiMediaScope, localId: string, tagName: string): Promise<void> {

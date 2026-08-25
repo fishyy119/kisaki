@@ -6,11 +6,16 @@ import {
   animeStatus,
   baseColumns,
   bloodType,
+  comicFormat,
+  comicReadingDirection,
+  comicStatus,
   cupSize,
   gameLauncherMode,
   gameMonitorMode,
   gameStatus,
   gender,
+  novelFormat,
+  novelStatus,
   partialDate,
   externalSites,
   saveBackups,
@@ -155,6 +160,143 @@ export const animeNotes = sqliteTable(
 
 export type AnimeNote = InferSelectModel<typeof animeNotes>
 export type NewAnimeNote = InferInsertModel<typeof animeNotes>
+
+export const comics = sqliteTable(
+  'comics',
+  {
+    ...baseColumns,
+    name: text('name').notNull().default('unknown comic'),
+    originalName: text('original_name'),
+    sortName: text('sort_name'),
+    /** Other titles this entry is known by: localized names, abbreviations, fan names. */
+    aliases: stringArrayJson('aliases').notNull().default([]),
+    coverFile: text('cover_file'),
+    backdropFile: text('backdrop_file'),
+    logoFile: text('logo_file'),
+    score: integer('score'),
+    isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+    releaseDate: partialDate('release_date'),
+    description: text('description'),
+    externalSites: externalSites('external_sites'),
+    status: comicStatus('status').notNull().default('planned'),
+    format: comicFormat('format').notNull().default('manga'),
+    /**
+     * Per-entry layout override; null follows the format default (`webtoon`
+     * scrolls vertically, `manga` pages right-to-left, the rest left-to-right).
+     */
+    readingDirection: comicReadingDirection('reading_direction'),
+    /** Volume count declared by metadata; the unit rows remain authoritative. */
+    totalVolumes: integer('total_volumes'),
+    /** Chapter count declared by metadata; the unit rows remain authoritative. */
+    totalChapters: integer('total_chapters'),
+    lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
+    totalDuration: integer('total_duration').notNull().default(0),
+    comicDirPath: text('comic_dir_path'),
+    isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
+    descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
+  },
+  (t) => [
+    index('idx_comics_status').on(t.status),
+    index('idx_comics_format').on(t.format),
+    index('idx_comics_is_favorite').on(t.isFavorite),
+    index('idx_comics_is_nsfw').on(t.isNsfw),
+    index('idx_comics_last_active_at').on(t.lastActiveAt),
+    index('idx_comics_created_at').on(t.createdAt),
+    index('idx_comics_name').on(t.name),
+    index('idx_comics_score').on(t.score)
+  ]
+)
+
+export type Comic = InferSelectModel<typeof comics>
+export type NewComic = InferInsertModel<typeof comics>
+
+export const comicNotes = sqliteTable(
+  'comic_notes',
+  {
+    ...baseColumns,
+    comicId: text('comic_id')
+      .notNull()
+      .references(() => comics.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    name: text('name').notNull(),
+    content: text('content'),
+    contentInlineFiles: stringArrayJson('content_inline_files').notNull().default([]),
+    coverFile: text('cover_file'),
+    orderInComic: integer('order_in_comic').notNull().default(0)
+  },
+  (t) => [
+    unique('unique_comic_notes_comic_id_name').on(t.comicId, t.name),
+    index('idx_comic_notes_comic_id').on(t.comicId),
+    index('idx_comic_notes_comic_id_order').on(t.comicId, t.orderInComic)
+  ]
+)
+
+export type ComicNote = InferSelectModel<typeof comicNotes>
+export type NewComicNote = InferInsertModel<typeof comicNotes>
+
+export const novels = sqliteTable(
+  'novels',
+  {
+    ...baseColumns,
+    name: text('name').notNull().default('unknown novel'),
+    originalName: text('original_name'),
+    sortName: text('sort_name'),
+    /** Other titles this entry is known by: localized names, abbreviations, fan names. */
+    aliases: stringArrayJson('aliases').notNull().default([]),
+    coverFile: text('cover_file'),
+    backdropFile: text('backdrop_file'),
+    logoFile: text('logo_file'),
+    score: integer('score'),
+    isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+    releaseDate: partialDate('release_date'),
+    description: text('description'),
+    externalSites: externalSites('external_sites'),
+    status: novelStatus('status').notNull().default('planned'),
+    format: novelFormat('format').notNull().default('lightNovel'),
+    /** Volume count declared by metadata; the unit rows remain authoritative. */
+    totalVolumes: integer('total_volumes'),
+    lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
+    totalDuration: integer('total_duration').notNull().default(0),
+    novelDirPath: text('novel_dir_path'),
+    isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
+    descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
+  },
+  (t) => [
+    index('idx_novels_status').on(t.status),
+    index('idx_novels_format').on(t.format),
+    index('idx_novels_is_favorite').on(t.isFavorite),
+    index('idx_novels_is_nsfw').on(t.isNsfw),
+    index('idx_novels_last_active_at').on(t.lastActiveAt),
+    index('idx_novels_created_at').on(t.createdAt),
+    index('idx_novels_name').on(t.name),
+    index('idx_novels_score').on(t.score)
+  ]
+)
+
+export type Novel = InferSelectModel<typeof novels>
+export type NewNovel = InferInsertModel<typeof novels>
+
+export const novelNotes = sqliteTable(
+  'novel_notes',
+  {
+    ...baseColumns,
+    novelId: text('novel_id')
+      .notNull()
+      .references(() => novels.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    name: text('name').notNull(),
+    content: text('content'),
+    contentInlineFiles: stringArrayJson('content_inline_files').notNull().default([]),
+    coverFile: text('cover_file'),
+    orderInNovel: integer('order_in_novel').notNull().default(0)
+  },
+  (t) => [
+    unique('unique_novel_notes_novel_id_name').on(t.novelId, t.name),
+    index('idx_novel_notes_novel_id').on(t.novelId),
+    index('idx_novel_notes_novel_id_order').on(t.novelId, t.orderInNovel)
+  ]
+)
+
+export type NovelNote = InferSelectModel<typeof novelNotes>
+export type NewNovelNote = InferInsertModel<typeof novelNotes>
 
 export const persons = sqliteTable(
   'persons',

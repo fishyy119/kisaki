@@ -3,6 +3,7 @@ import type {
   CardActionContribution,
   CardActionRegistrar,
   CharacterScraperProvider,
+  ComicScraperProvider,
   CommandContribution,
   CommandRegistrar,
   CompanyScraperProvider,
@@ -19,6 +20,7 @@ import type {
   GameScraperProvider,
   HooksRegistrar,
   HookTapOptions,
+  NovelScraperProvider,
   PersonScraperProvider,
   ScraperProviderRegistrar,
   ThemeRegistrar,
@@ -77,6 +79,14 @@ export function createEntityMenuRegistrar(
       single: point('anime', 'single'),
       batch: point('anime', 'batch')
     },
+    comic: {
+      single: point('comic', 'single'),
+      batch: point('comic', 'batch')
+    },
+    novel: {
+      single: point('novel', 'single'),
+      batch: point('novel', 'batch')
+    },
     character: {
       single: point('character', 'single')
     },
@@ -131,6 +141,20 @@ export function createScraperProviderRegistrar(
     anime: {
       register(provider: AnimeScraperProvider) {
         const disposable = bridge.registerScraperProvider(scope, 'anime', provider)
+        subscriptions.add(disposable)
+        return disposable
+      }
+    },
+    comic: {
+      register(provider: ComicScraperProvider) {
+        const disposable = bridge.registerScraperProvider(scope, 'comic', provider)
+        subscriptions.add(disposable)
+        return disposable
+      }
+    },
+    novel: {
+      register(provider: NovelScraperProvider) {
+        const disposable = bridge.registerScraperProvider(scope, 'novel', provider)
         subscriptions.add(disposable)
         return disposable
       }

@@ -11,6 +11,10 @@ import type {
   LibraryCollectionCreateInput,
   LibraryCollectionPatch,
   LibraryCollectionQuery,
+  LibraryComic,
+  LibraryComicCreateInput,
+  LibraryComicPatch,
+  LibraryComicQuery,
   LibraryCompany,
   LibraryCompanyCreateInput,
   LibraryCompanyPatch,
@@ -19,6 +23,10 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
+  LibraryNovel,
+  LibraryNovelCreateInput,
+  LibraryNovelPatch,
+  LibraryNovelQuery,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -44,8 +52,10 @@ import {
   ANIME_CONFIG,
   CHARACTER_CONFIG,
   COLLECTION_CONFIG,
+  COMIC_CONFIG,
   COMPANY_CONFIG,
   GAME_CONFIG,
+  NOVEL_CONFIG,
   PERSON_CONFIG,
   TAG_CONFIG
 } from './configs'
@@ -104,6 +114,46 @@ export class ExtensionLibraryEntityStore {
 
   removeAnime(id: string): void {
     this.removeEntity(id, ANIME_CONFIG)
+  }
+
+  getComic(id: string): LibraryComic | null {
+    return this.getEntity(id, COMIC_CONFIG)
+  }
+
+  listComics(query?: LibraryComicQuery): readonly LibraryComic[] {
+    return this.listEntities(query, COMIC_CONFIG)
+  }
+
+  createComic(input: LibraryComicCreateInput): LibraryComic {
+    return this.createEntity(input, COMIC_CONFIG)
+  }
+
+  updateComic(id: string, patch: LibraryComicPatch): LibraryComic {
+    return this.updateEntity(id, patch, COMIC_CONFIG)
+  }
+
+  removeComic(id: string): void {
+    this.removeEntity(id, COMIC_CONFIG)
+  }
+
+  getNovel(id: string): LibraryNovel | null {
+    return this.getEntity(id, NOVEL_CONFIG)
+  }
+
+  listNovels(query?: LibraryNovelQuery): readonly LibraryNovel[] {
+    return this.listEntities(query, NOVEL_CONFIG)
+  }
+
+  createNovel(input: LibraryNovelCreateInput): LibraryNovel {
+    return this.createEntity(input, NOVEL_CONFIG)
+  }
+
+  updateNovel(id: string, patch: LibraryNovelPatch): LibraryNovel {
+    return this.updateEntity(id, patch, NOVEL_CONFIG)
+  }
+
+  removeNovel(id: string): void {
+    this.removeEntity(id, NOVEL_CONFIG)
   }
 
   getCharacter(id: string): LibraryCharacter | null {

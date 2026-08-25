@@ -15,6 +15,8 @@ import type { IContentService, ServiceInitContainer, ServiceName } from '@main/c
 import type { ContentEntityType } from '@shared/common'
 import { GameScraperHandler } from './handlers/game'
 import { AnimeScraperHandler } from './handlers/anime'
+import { ComicScraperHandler } from './handlers/comic'
+import { NovelScraperHandler } from './handlers/novel'
 import { PersonScraperHandler } from './handlers/person'
 import { CompanyScraperHandler } from './handlers/company'
 import { CharacterScraperHandler } from './handlers/character'
@@ -32,6 +34,8 @@ export class ScraperService implements IContentService {
   profiles!: ScraperProfileCatalog
   game!: GameScraperHandler
   anime!: AnimeScraperHandler
+  comic!: ComicScraperHandler
+  novel!: NovelScraperHandler
   person!: PersonScraperHandler
   company!: CompanyScraperHandler
   character!: CharacterScraperHandler
@@ -44,6 +48,8 @@ export class ScraperService implements IContentService {
     this.profiles = new ScraperProfileCatalog(db)
     this.game = new GameScraperHandler(db, i18n, this.hooks.game)
     this.anime = new AnimeScraperHandler(db, i18n, this.hooks.anime)
+    this.comic = new ComicScraperHandler(db, i18n, this.hooks.comic)
+    this.novel = new NovelScraperHandler(db, i18n, this.hooks.novel)
     this.person = new PersonScraperHandler(db, i18n, this.hooks.person)
     this.company = new CompanyScraperHandler(db, i18n, this.hooks.company)
     this.character = new CharacterScraperHandler(db, i18n, this.hooks.character)
@@ -53,6 +59,6 @@ export class ScraperService implements IContentService {
   }
 
   getSupportedContent(): ContentEntityType[] {
-    return ['game', 'anime', 'character', 'person', 'company']
+    return ['game', 'anime', 'comic', 'novel', 'character', 'person', 'company']
   }
 }

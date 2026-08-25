@@ -33,6 +33,22 @@ export function buildEntityFieldPatch(
       applyFirst(patch, target, source, 'totalEpisodes')
       applyFirst(patch, target, source, 'animeDirPath')
       break
+    case 'comic':
+      applyFirst(patch, target, source, 'releaseDate')
+      patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
+      patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
+      applyFirst(patch, target, source, 'totalVolumes')
+      applyFirst(patch, target, source, 'totalChapters')
+      applyFirst(patch, target, source, 'readingDirection')
+      applyFirst(patch, target, source, 'comicDirPath')
+      break
+    case 'novel':
+      applyFirst(patch, target, source, 'releaseDate')
+      patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
+      patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
+      applyFirst(patch, target, source, 'totalVolumes')
+      applyFirst(patch, target, source, 'novelDirPath')
+      break
     case 'person':
       patch.aliases = mergeAliases(target, source)
       applyFirst(patch, target, source, 'birthDate')

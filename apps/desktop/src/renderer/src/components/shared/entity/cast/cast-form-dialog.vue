@@ -26,7 +26,7 @@ import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { MediaType } from '@shared/common'
+import type { CastMediaType } from '@shared/common'
 import { CAST_SPECS, type CastRow } from './cast-specs'
 import CastItemFormDialog, { type CastItemData } from './cast-item-form-dialog.vue'
 
@@ -35,7 +35,7 @@ const { m } = useI18n()
 const log = createLogger('Library')
 
 interface Props {
-  mediaType: MediaType
+  mediaType: CastMediaType
   entityId: string
 }
 

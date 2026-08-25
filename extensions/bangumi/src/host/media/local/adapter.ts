@@ -283,7 +283,7 @@ export abstract class BangumiLocalMediaAdapter<
  * Entry fields and episode watch state travel to different sync paths, so a
  * single change summary can carry both reasons.
  */
-function readChangeReasons(change: LibraryEntityChangeSummary): LocalMediaChangeReason[] {
+export function readChangeReasons(change: LibraryEntityChangeSummary): LocalMediaChangeReason[] {
   if (change.kind === 'created') {
     return ['created']
   }
@@ -298,7 +298,9 @@ function readChangeReasons(change: LibraryEntityChangeSummary): LocalMediaChange
   if (facets.has('status') || facets.has('score') || facets.has('identity')) {
     reasons.push('updated')
   }
-  if (facets.has('episodes')) {
+  // Unit read-state changes (comic chapters, novel volumes) ride the same
+  // progress path as episode watch state.
+  if (facets.has('episodes') || facets.has('units')) {
     reasons.push('episodes')
   }
 

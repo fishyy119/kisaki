@@ -4,11 +4,13 @@ import type {
   LibraryAnime,
   LibraryCharacter,
   LibraryCollection,
+  LibraryComic,
   LibraryCompany,
   LibraryGame,
   LibraryGraphDiagnostic,
   LibraryGraphMediaNode,
   LibraryMediaType,
+  LibraryNovel,
   LibraryPerson,
   LibraryTag
 } from '@kisaki3/extension-api'
@@ -17,9 +19,13 @@ import {
   animes,
   characterExternalIds,
   collections,
+  comicExternalIds,
+  comics,
   companyExternalIds,
   gameExternalIds,
   games,
+  novelExternalIds,
+  novels,
   personExternalIds,
   tags
 } from '@shared/db'
@@ -266,7 +272,7 @@ function matchCharacterNode(
   return { key, kind: 'character', diagnostics: [] }
 }
 
-type LibraryMediaEntity = LibraryAnime | LibraryGame
+type LibraryMediaEntity = LibraryAnime | LibraryGame | LibraryComic | LibraryNovel
 
 function findMediaExternalIdMatches(
   mediaType: LibraryMediaType,
@@ -278,6 +284,10 @@ function findMediaExternalIdMatches(
       return findAnimeExternalIdMatches(externalIds, options)
     case 'game':
       return findGameExternalIdMatches(externalIds, options)
+    case 'comic':
+      return findComicExternalIdMatches(externalIds, options)
+    case 'novel':
+      return findNovelExternalIdMatches(externalIds, options)
   }
 }
 
@@ -290,6 +300,10 @@ function findMediaByPath(
       return findAnimeByPath(node.input.animeDirPath, options)
     case 'game':
       return findGameByPath(node.input.gameDirPath, options)
+    case 'comic':
+      return findComicByPath(node.input.comicDirPath, options)
+    case 'novel':
+      return findNovelByPath(node.input.novelDirPath, options)
   }
 }
 
@@ -344,6 +358,64 @@ function findAnimeExternalIdMatches(
         externalId,
         entityId: row.animeId,
         existing: options.entities.getAnime(row.animeId)
+      })
+    }
+  }
+
+  return matches
+}
+
+function findComicExternalIdMatches(
+  externalIds: readonly ExternalId[] | undefined,
+  options: MatchLibraryGraphOptions
+): ExternalIdEntityMatch<LibraryComic>[] {
+  const matches: ExternalIdEntityMatch<LibraryComic>[] = []
+  for (const externalId of normalizeExternalIds([...(externalIds ?? [])])) {
+    const rows = options.db.client
+      .select({ comicId: comicExternalIds.comicId })
+      .from(comicExternalIds)
+      .where(
+        and(
+          eq(comicExternalIds.source, externalId.source),
+          eq(comicExternalIds.externalId, externalId.id)
+        )
+      )
+      .all()
+
+    for (const row of rows) {
+      matches.push({
+        externalId,
+        entityId: row.comicId,
+        existing: options.entities.getComic(row.comicId)
+      })
+    }
+  }
+
+  return matches
+}
+
+function findNovelExternalIdMatches(
+  externalIds: readonly ExternalId[] | undefined,
+  options: MatchLibraryGraphOptions
+): ExternalIdEntityMatch<LibraryNovel>[] {
+  const matches: ExternalIdEntityMatch<LibraryNovel>[] = []
+  for (const externalId of normalizeExternalIds([...(externalIds ?? [])])) {
+    const rows = options.db.client
+      .select({ novelId: novelExternalIds.novelId })
+      .from(novelExternalIds)
+      .where(
+        and(
+          eq(novelExternalIds.source, externalId.source),
+          eq(novelExternalIds.externalId, externalId.id)
+        )
+      )
+      .all()
+
+    for (const row of rows) {
+      matches.push({
+        externalId,
+        entityId: row.novelId,
+        existing: options.entities.getNovel(row.novelId)
       })
     }
   }
@@ -468,6 +540,38 @@ function findAnimeByPath(
     .where(eq(animes.animeDirPath, animeDirPath))
     .get()
   return row ? options.entities.getAnime(row.id) : null
+}
+
+function findComicByPath(
+  comicDirPath: string | undefined,
+  options: MatchLibraryGraphOptions
+): LibraryComic | null {
+  if (!comicDirPath) {
+    return null
+  }
+
+  const row = options.db.client
+    .select({ id: comics.id })
+    .from(comics)
+    .where(eq(comics.comicDirPath, comicDirPath))
+    .get()
+  return row ? options.entities.getComic(row.id) : null
+}
+
+function findNovelByPath(
+  novelDirPath: string | undefined,
+  options: MatchLibraryGraphOptions
+): LibraryNovel | null {
+  if (!novelDirPath) {
+    return null
+  }
+
+  const row = options.db.client
+    .select({ id: novels.id })
+    .from(novels)
+    .where(eq(novels.novelDirPath, novelDirPath))
+    .get()
+  return row ? options.entities.getNovel(row.id) : null
 }
 
 function createExternalIdConflictDiagnostic(

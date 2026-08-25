@@ -4,6 +4,7 @@ import { adder } from './adder'
 import { anime } from './anime'
 import { automation } from './automation'
 import { app } from './app'
+import { comic } from './comic'
 import { common } from './common'
 import { extension } from './extension'
 import { filter } from './filter'
@@ -13,6 +14,8 @@ import { library } from './library'
 import { media } from './media'
 import { merge } from './merge'
 import { nav } from './nav'
+import { novel } from './novel'
+import { reader } from './reader'
 import { scanner } from './scanner'
 import { scraper } from './scraper'
 import { settings } from './settings'
@@ -27,6 +30,7 @@ export const ja = {
   anime,
   automation,
   app,
+  comic,
   common,
   extension,
   filter,
@@ -36,6 +40,8 @@ export const ja = {
   media,
   merge,
   nav,
+  novel,
+  reader,
   scanner,
   scraper,
   settings,
