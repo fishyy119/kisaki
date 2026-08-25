@@ -1,0 +1,1 @@
+export { CompanyUpdateHandler } from './update'

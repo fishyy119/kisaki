@@ -7,14 +7,14 @@
 
 import { app, BrowserWindow, ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import type { IpcMainListeners, IpcMainHandlers, IpcRendererEvents } from '@shared/ipc'
 
 const log = createLogger('Ipc')
 
-export class IpcService implements IService {
+export class IpcService implements INonDomainService<'ipc'> {
   readonly id = 'ipc'
-  readonly deps = [] as const satisfies readonly ServiceName[]
+  readonly deps = [] as const
 
   private registeredListeners: string[] = []
   private registeredHandlers: string[] = []

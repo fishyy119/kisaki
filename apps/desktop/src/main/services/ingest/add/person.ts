@@ -12,10 +12,10 @@ import type { PersonIngestPersistHandler } from '../persist'
 import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { buildPersonGraph } from '../graph'
 import { addPersonToCollection, normalizeIngestLookupInput, requireScrapedBundle } from './common'
-import { reportIngestProgress } from '../progress'
-import { throwIfIngestAborted } from '../abort'
+import { reportIngestProgress } from '../run/progress'
+import { throwIfIngestAborted } from '../run/abort'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
-import { createIngestRun, toTaskRunWarnings, waitForIngestRunOutput } from '../task-run'
+import { createIngestRun, toTaskRunWarnings, waitForIngestRunOutput } from '../run/task-run'
 
 type PersonAddFromScraperOptions = IngestAddPersonFromScraperOptions & IngestOperationOptions
 type PersonAddFromScraperTaskRunOptions = IngestAddPersonFromScraperOptions & IngestTaskRunOptions

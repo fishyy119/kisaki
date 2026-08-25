@@ -19,7 +19,7 @@ import {
 } from '@kisaki3/extension-api'
 import type { NetworkService } from '@main/services/network'
 import type { FetchOptions } from '@shared/network'
-import { assertInsideAnyRoot, resolveInsideRoot } from '../shared/path-confinement'
+import { assertInsideAnyRoot, resolveInsideRoot } from '@shared/extension/path-confinement'
 
 const NETWORK_METHODS: readonly NetworkMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 

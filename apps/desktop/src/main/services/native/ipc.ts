@@ -20,8 +20,4 @@ export function registerNativeIpc(service: NativeService, ipc: IpcService): void
   ipc.handle('native:set-auto-launch', async (_, enabled) =>
     wrapIpcVoid(() => service.autoLaunch.setEnabled(enabled))
   )
-
-  ipc.on('native:set-tray-menu-height', (_e, height) => {
-    service.tray.updateMenuHeight(height)
-  })
 }

@@ -18,7 +18,7 @@
 - `apps/desktop/src/main/services/extension/signers/` - Extension-scoped signer trust storage and fingerprint checks
 - `apps/desktop/src/main/services/extension/updates/` - Update candidate selection and automatic-update eligibility
 - `apps/desktop/src/main/services/extension/runtime/manager.ts` - Extension host lifecycle and bridge requests
-- `apps/desktop/src/main/services/extension/runtime/host/entry.ts` - Shared extension host process entry
+- `apps/desktop/src/extension-host/entry.ts` - Extension host utility-process entry (separately bundled)
 - `apps/desktop/src/main/services/extension/capabilities/task-runs/` - Scoped extension-owned TaskRun provider
 - `apps/desktop/src/main/services/extension/contributions/` - Main-side contribution adapters
 - `apps/desktop/src/renderer/src/core/extensions/` - Renderer-side structured contribution consumption
@@ -49,9 +49,9 @@ Keep extension responsibilities split by process and transport boundary:
 - `installer/**` owns renderer-facing install plans and all repository/local package mutation orchestration, including the package replacement path used by updates. Main returns risks and plan fingerprints; renderer performs confirmation.
 - `updates/**` owns update candidate selection, preview-update/pin compatibility, signer trust eligibility, and automatic-update filtering. It delegates execution to the public installer command and must not import installer private split files such as confirmation, preparation, source snapshot, or signer trust helpers.
 - `signers/**` owns extension-scoped signer trust. Trusting one fingerprint for one extension never grants global signer trust.
-- `installations/view.ts`, `installations/store.ts`, `installer/planner.ts`, `packages/preparer.ts`, `packages/manifest.ts`, `packages/layout.ts`, `packages/commit.ts`, `packages/recovery.ts`, `packages/integrity.ts`, `repositories/manager.ts`, `updates/planner.ts`, `reload-watcher.ts`, and `shared/path-confinement.ts` are single-purpose helpers. Keep scan, installation records, package validation, repository download, and path safety logic out of anonymous IPC handlers.
-- `runtime/manager.ts` owns the desired-vs-loaded runtime state machine for the shared extension host. `runtime/host-controller.ts`, `runtime/rpc-client.ts`, `runtime/rpc-core.ts`, `runtime/storage.ts`, and `runtime/secrets.ts` are runtime infrastructure, not contribution or capability logic.
-- `runtime/host/**` is code that runs inside the extension host process. It loads extension entries, builds the SDK bridge, normalizes extension-owned contributions, and talks back to main through typed RPC only.
+- `installations/view.ts`, `installations/store.ts`, `installer/planner.ts`, `packages/preparer.ts`, `packages/manifest.ts`, `packages/layout.ts`, `packages/commit.ts`, `packages/recovery.ts`, `packages/integrity.ts`, `repositories/manager.ts`, `updates/planner.ts`, `reload-watcher.ts`, and `@shared/extension/path-confinement` are single-purpose helpers. Keep scan, installation records, package validation, repository download, and path safety logic out of anonymous IPC handlers.
+- `runtime/manager.ts` owns the desired-vs-loaded runtime state machine for the shared extension host. `runtime/host-controller.ts`, `runtime/rpc-client.ts`, `runtime/storage.ts`, and `runtime/secrets.ts` are runtime infrastructure, not contribution or capability logic. The wire protocol itself lives in `@extension-host/protocol` because both processes speak it.
+- `src/extension-host/**` is a separate utility-process program with its own bundle. It loads extension entries, builds the SDK bridge, normalizes extension-owned contributions, and talks back to main through typed RPC only. It must not import Electron or `@main`, and main may import only `@extension-host/protocol`; both constraints are enforced by lint.
 - `capabilities/**` are main-side adapters for host-owned services that extensions call through `kisaki.*`. Capability providers are stateless extension-direction boundaries: runtime-handle auth, untrusted-DTO validation, and forwarding to the owning app service or module. Renderer-facing state, renderer callbacks, and renderer IPC never live in a capability provider.
 - `contributions/**` are main-side adapters for extension-owned registrations. They own renderer-facing snapshots, callback routing, and release of runtime-scoped registrations. The shared `ExtensionContributionPointOptions` base carries only dependencies every point needs (`resolveRuntimeHandle`, `requestHost`); each point declares its own options type extending the base for domain services and callbacks, and `ExtensionContributionRegistryOptions` is the aggregate the registry composes per-point options from.
 - `webviews.ts` owns live webview session runtime: the `ExtensionWebviewSessionManager` holds open sessions, enforces the one-session-per-declared-id policy, buffers and relays messages between the extension host and the renderer, and emits session lifecycle events. It is a third first-level member beside `capabilities/**` and `contributions/**` because sessions are app-owned runtime state bridging both directions: the `kisaki.webviews` capability provider adapts extension-side calls into it, renderer webview IPC lands on it directly through `service.webviews`, and the runtime lifecycle attaches/detaches its RPC and releases its sessions alongside capabilities and contributions.
@@ -105,7 +105,7 @@ Contribution point directories must stay mirrored exactly across:
 ```
 packages/extension-api/src/contributions/<point>/
 apps/desktop/src/main/services/extension/contributions/<point>/
-apps/desktop/src/main/services/extension/runtime/host/contributions/<point>/
+apps/desktop/src/extension-host/contributions/<point>/
 apps/desktop/src/renderer/src/components/extension/<point>/        # when renderer-visible UI exists
 ```
 
@@ -203,6 +203,10 @@ derived from the `ExtensionHookPoints` map per point id.
 
 ### Contracts
 
+- Point ids take either the dispatching service's id as root or one of the closed topic roots
+  `app.*` / `library.*` / `play.*`. See "Hook Id Roots" in [ipc-events.md](ipc-events.md); the
+  contract files below are grouped by that root, which is why `play.ts` holds every consumption
+  vertical and `app.ts` holds events several services dispatch.
 - Public contracts live in `packages/extension-api/src/contributions/hooks/` split by domain:
   `contracts/scraper.ts`, `ingest.ts`, `scanner.ts`, `play.ts`, `library.ts`, `app.ts`,
   `extension.ts`, plus `contracts/point.ts` for kind primitives.
@@ -256,7 +260,7 @@ Extension failures must never destabilize the app. The main-side point applies p
   `veto`, `notify`, `settle`) plus `bindings/<domain>.ts` declarative binding tables mapping public
   point ids to module hook taps. `ExtensionService` supplies the module hook surfaces through
   `moduleHooks` in the registry options.
-- Host side: `runtime/host/contributions/hooks/point.ts` (`HostHooksContributionPoint`) validates
+- Host side: `extension-host/contributions/hooks/point.ts` (`HostHooksContributionPoint`) validates
   point ids, stores handlers by registration id, mirrors registrations to main, answers `invoke`,
   and consumes `notify`.
 
@@ -381,14 +385,14 @@ For a new capability:
 1. Add the public callable shape under `packages/extension-api/src/capabilities/<name>.ts` and export it.
 2. Add typed RPC payloads and method strings in `packages/extension-api/src/rpc/capabilities.ts`.
 3. Implement the main adapter under `apps/desktop/src/main/services/extension/capabilities/<name>.ts` and wire it through `ExtensionCapabilityGateway`.
-4. Expose the SDK bridge in `runtime/host/sdk-bridge/kisaki-api.ts` and `packages/extension-sdk/src/index.ts`.
+4. Expose the SDK bridge in `extension-host/sdk-bridge/kisaki-api.ts` and `packages/extension-sdk/src/index.ts`.
 5. Keep method strings in the form `capabilities.<capability>.<operation>`.
 
 For a new contribution point:
 
 1. Add contracts and validation under `packages/extension-api/src/contributions/<point>/`.
 2. Add RPC payloads and method strings in `packages/extension-api/src/rpc/contributions.ts`.
-3. Add host-process registration/normalization under `runtime/host/contributions/<point>/`, with public entry `point.ts` exporting `Host<ContributionPoint>ContributionPoint`, and SDK registrar wiring in `runtime/host/sdk-bridge/registrars.ts`.
+3. Add host-process registration/normalization under `extension-host/contributions/<point>/`, with public entry `point.ts` exporting `Host<ContributionPoint>ContributionPoint`, and SDK registrar wiring in `extension-host/sdk-bridge/registrars.ts`.
 4. Add main-process adapter under `contributions/<point>/`, with public entry `point.ts` exporting `Extension<ContributionPointSingular>ContributionPoint`, and wire it through `ExtensionContributionRegistry`.
 5. If renderer-visible, add shared DTOs in `apps/desktop/src/shared/extension/`, IPC channels in `apps/desktop/src/shared/ipc.ts`, main handlers in `extension/ipc.ts`, and renderer consumption under `@renderer/core/extensions` or `@renderer/components/extension/<point>`.
 6. Keep method strings in the form `contributions.<contributionPoint>.<operation>`.

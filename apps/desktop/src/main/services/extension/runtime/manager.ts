@@ -28,7 +28,7 @@ import { registerHostRequests } from './host-request'
 import { ExtensionHostController, type ExtensionHostExitInfo } from './host-controller'
 import { ExtensionHostRpcClient } from './rpc-client'
 import { ExtensionRuntimeLogs } from './logs'
-import type { RpcRequestOptions } from './rpc-core'
+import type { RpcRequestOptions } from '@extension-host/protocol'
 import { ExtensionRuntimeSecrets } from './secrets'
 import {
   createRuntimeFailureState,
@@ -50,14 +50,14 @@ import {
   EXTENSION_HOST_HANDSHAKE_TIMEOUT_MS,
   EXTENSION_HOST_LIFECYCLE_TIMEOUT_MS,
   EXTENSION_HOST_SHUTDOWN_TIMEOUT_MS
-} from '../shared/rpc-timeouts'
+} from '@shared/extension/rpc-timeouts'
 
 const log = createLogger('Extension')
 
 export type { ExtensionRuntimeChangeCause } from '@kisaki3/extension-api'
 export type { ExtensionRuntimeState, ExtensionRuntimeStatus } from './state'
 
-export interface RuntimeManagerOptions {
+export interface ExtensionRuntimeManagerOptions {
   hostModulePath: string
   hostInspect?: ExtensionHostInspectOptions
   capabilities?: ExtensionCapabilityGateway
@@ -79,7 +79,7 @@ export interface RuntimeReconcileOptions {
  * package updates, development file changes and crash recovery all flow through
  * the same state machine so the main process does not drift from the host process.
  */
-export class RuntimeManager {
+export class ExtensionRuntimeManager {
   private readonly mutex = new Mutex()
   private readonly crashPolicy = new ExtensionHostCrashPolicy()
   private readonly desiredExtensions = new Map<string, ExtensionRuntimeMetadata>()
@@ -100,7 +100,7 @@ export class RuntimeManager {
   private generationCounter = 0
   private handshaken = false
 
-  constructor(private readonly options: RuntimeManagerOptions) {}
+  constructor(private readonly options: ExtensionRuntimeManagerOptions) {}
 
   getLoadedExtensions(): ReadonlyMap<string, ExtensionRuntimeMetadata> {
     return mapLoadedMetadata(this.loadedExtensions)

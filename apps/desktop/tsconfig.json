@@ -4,6 +4,7 @@
   "compilerOptions": {
     "paths": {
       "@main/*": ["./src/main/*"],
+      "@extension-host/*": ["./src/extension-host/*"],
       "@renderer/*": ["./src/renderer/src/*"],
       "@shared/*": ["./src/shared/*"]
     }

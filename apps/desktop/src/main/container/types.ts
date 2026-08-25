@@ -4,8 +4,6 @@
  * Defines the core interfaces for the service layer architecture.
  */
 
-import type { ContentEntityType, MediaType } from '@shared/common'
-
 /**
  * Service initialization status
  */
@@ -28,7 +26,7 @@ import type { IngestService } from '@main/services/ingest/service'
 import type { ScannerService } from '@main/services/scanner/service'
 import type { ProcessService } from '@main/services/process/service'
 import type { VideoService } from '@main/services/video/service'
-import type { MediaFilesService } from '@main/services/media-files/service'
+import type { HoldingsService } from '@main/services/holdings/service'
 import type { ReaderService } from '@main/services/reader/service'
 import type { ActivityService } from '@main/services/activity/service'
 import type { AttachmentService } from '@main/services/attachment/service'
@@ -45,9 +43,11 @@ import type { TaskRunService } from '@main/services/task-run/service'
  * Service Registry - Centralized type mapping for all core services.
  * Used by ServiceContainer.get() for type-safe service retrieval.
  *
- * Grouped by layer. The layer is a property of a service, not a location: it is
- * enforced by `deps`, which is why capability services declare no domain
- * dependency. See `.agents/skills/kisaki/references/architecture.md`.
+ * Grouped by layer. The layer is a property of a service, not a location:
+ * `services/` stays flat so a service id maps to exactly one directory, and the
+ * one hard rule — non-domain services never depend on domain services — is
+ * enforced by `INonDomainService` below rather than by any folder.
+ * See `.agents/skills/kisaki/references/architecture.md`.
  */
 export interface ServiceRegistry {
   // Platform: Electron, OS, and transport adapters
@@ -72,7 +72,7 @@ export interface ServiceRegistry {
   scraper: ScraperService
   ingest: IngestService
   scanner: ScannerService
-  'media-files': MediaFilesService
+  holdings: HoldingsService
   activity: ActivityService
   attachment: AttachmentService
   command: CommandService
@@ -86,6 +86,38 @@ export interface ServiceRegistry {
 export type ServiceName = keyof ServiceRegistry
 
 /**
+ * Services that own library meaning: entity rows, media workflows, and the
+ * vocabulary of the collection.
+ */
+export type DomainServiceName =
+  | 'scraper'
+  | 'ingest'
+  | 'scanner'
+  | 'holdings'
+  | 'activity'
+  | 'attachment'
+  | 'command'
+  | 'automation'
+  | 'extension'
+
+/** Platform and capability services: no library meaning of their own. */
+export type NonDomainServiceName = Exclude<ServiceName, DomainServiceName>
+
+/**
+ * The layering red line, as a type.
+ *
+ * A platform or capability service may depend on other non-domain services, but
+ * never on a domain service — otherwise the "technical layer knows nothing about
+ * the library" claim is only a comment. Declaring a domain dep on one of these
+ * services fails to compile; the fix is to invert the dependency (let the domain
+ * service register itself with the platform one) rather than widen this type.
+ */
+export interface INonDomainService<K extends NonDomainServiceName = NonDomainServiceName>
+  extends IService<K> {
+  readonly deps: readonly NonDomainServiceName[]
+}
+
+/**
  * Get service type by name
  */
 export type ServiceType<K extends ServiceName> = ServiceRegistry[K]
@@ -95,12 +127,11 @@ export type ServiceType<K extends ServiceName> = ServiceRegistry[K]
 /**
  * Scoped container view.
  *
- * Exposes only dependency-safe accessors (no escape-hatch overloads like get<T>(string)).
- * Used to restrict what a service can access based on its declared deps.
+ * Narrows what a service can reach to the services it declared in `deps`, so a
+ * missing declaration is a compile error rather than an init-order surprise.
  */
 export interface ScopedContainer<Allowed extends ServiceName> {
   get<K extends Allowed>(name: K): ServiceType<K>
-  tryGet<K extends Allowed>(name: K): ServiceType<K> | undefined
 }
 
 /**
@@ -134,25 +165,4 @@ export interface IService<K extends ServiceName = ServiceName> {
    * Called in reverse registration order during shutdown.
    */
   dispose?(): Promise<void>
-}
-
-/**
- * Interface for services that support multiple media types.
- * Extend this when a service has media-specific handlers.
- */
-export interface IMediaService extends IService {
-  /**
-   * Get the media types this service currently supports.
-   */
-  getSupportedMedia(): MediaType[]
-}
-
-/**
- * Interface for services that operate on content entities.
- */
-export interface IContentService extends IService {
-  /**
-   * Get the content entity types this service currently supports.
-   */
-  getSupportedContent(): ContentEntityType[]
 }

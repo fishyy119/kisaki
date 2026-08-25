@@ -109,7 +109,7 @@ async function handleSubmit(): Promise<void> {
 }
 
 async function saveCreate(): Promise<void> {
-  const result = await ipcManager.invoke('media-files:attach-anime-extra-file', {
+  const result = await ipcManager.invoke('holdings:attach-anime-extra-file', {
     animeId: props.animeId,
     path: filePath.value,
     ...(name.value.trim() ? { name: name.value.trim() } : {}),

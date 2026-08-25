@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { createLogger } from '@main/log'
 import type { FileWatchScope, FileWatchService } from '@main/services/file-watch'
-import { isInsideOrEqualPath } from '@main/utils/fs'
+import { isInsideOrEqualPath } from '@shared/utils/path'
 
 const log = createLogger('Extension')
 

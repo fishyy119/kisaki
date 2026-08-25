@@ -6,7 +6,7 @@ import type {
   CreateOrUpdateExtensionInstallationInput,
   ExtensionInstallationStore
 } from '../installations'
-import { assertInsideRoot } from '../shared/path-confinement'
+import { assertInsideRoot } from '@shared/extension/path-confinement'
 import { createWorkspaceCleanupPaths, removeCleanupPaths } from './cleanup'
 import type { ExtensionPackageLayout } from './layout'
 import { wrapExtensionPackageError } from './types'

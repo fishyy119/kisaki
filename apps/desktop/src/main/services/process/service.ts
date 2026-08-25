@@ -7,16 +7,16 @@
  */
 
 import { createLogger } from '@main/log'
-import type { IService, ServiceName } from '@main/container'
+import type { INonDomainService } from '@main/container'
 import { createProcessHooks } from './hooks'
 import { ProcessLauncher } from './launch'
 import { ProcessWatcher } from './watch'
 
 const log = createLogger('Process')
 
-export class ProcessService implements IService<'process'> {
+export class ProcessService implements INonDomainService<'process'> {
   readonly id = 'process'
-  readonly deps = [] as const satisfies readonly ServiceName[]
+  readonly deps = [] as const
   readonly hooks = createProcessHooks()
 
   readonly launch = new ProcessLauncher()

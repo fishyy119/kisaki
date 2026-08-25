@@ -21,7 +21,7 @@ function postTrayMenuHeight() {
     const el = rootEl.value
     if (!el) return
     const height = Math.ceil(el.getBoundingClientRect().height)
-    ipcManager.send('native:set-tray-menu-height', height)
+    ipcManager.send('window:set-tray-menu-height', height)
   })
 }
 

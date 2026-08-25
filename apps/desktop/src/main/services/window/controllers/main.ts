@@ -6,7 +6,6 @@ import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import { openExternalLink } from '@main/utils/external-url'
-import { settings } from '@shared/db'
 import type { MainWindowCloseAction } from '@shared/db/contracts/enums'
 
 const log = createLogger('Window')
@@ -43,17 +42,7 @@ export class MainWindowController implements MainWindowApi {
   }
 
   private loadMainWindowCloseActionFromDb(dbService: DbService): MainWindowCloseAction {
-    try {
-      const row = dbService.client
-        .select({ action: settings.mainWindowCloseAction })
-        .from(settings)
-        .get()
-
-      return row?.action ?? 'exit'
-    } catch (error) {
-      log.warn('Failed to read mainWindowCloseAction from settings, fallback to exit:', error)
-      return 'exit'
-    }
+    return dbService.settings.tryGet()?.mainWindowCloseAction ?? 'exit'
   }
 
   setCloseAction(action: MainWindowCloseAction): void {

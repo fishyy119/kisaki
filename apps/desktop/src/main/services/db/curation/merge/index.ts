@@ -1,0 +1,1 @@
+export { EntityMergeCoordinator } from './coordinator'

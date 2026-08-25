@@ -1,43 +1,35 @@
 /**
  * Native Service
  *
- * Coordinates native desktop integration capabilities.
+ * Stateless facades over OS integration points: startup registration, native
+ * dialogs, and shell open. Windowed surfaces belong to the window service, so
+ * the tray lives there instead of here.
  */
 
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import { NativeAutoLaunch } from './auto-launch'
 import { NativeDialogs } from './dialogs'
 import { NativeShell } from './shell'
-import { NativeTray } from './tray'
 import { registerNativeIpc } from './ipc'
 
 const log = createLogger('Native')
 
-export class NativeService implements IService {
+export class NativeService implements INonDomainService<'native'> {
   readonly id = 'native'
-  readonly deps = ['ipc', 'window'] as const satisfies readonly ServiceName[]
+  readonly deps = ['ipc', 'window'] as const
 
   readonly autoLaunch = new NativeAutoLaunch()
   readonly shell = new NativeShell()
 
   dialogs!: NativeDialogs
-  tray!: NativeTray
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const ipcService = container.get('ipc')
-    const windowService = container.get('window')
 
-    this.dialogs = new NativeDialogs({ windowService })
-    this.tray = new NativeTray({ windowService })
+    this.dialogs = new NativeDialogs({ windowService: container.get('window') })
 
     registerNativeIpc(this, ipcService)
-    this.tray.init()
     log.info('Initialized')
-  }
-
-  async dispose(): Promise<void> {
-    this.tray.dispose()
-    log.info('Disposed')
   }
 }

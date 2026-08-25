@@ -28,15 +28,12 @@ import type {
   ScrapedGameRelationFacts,
   ScrapedNovelRelationFacts
 } from '@shared/scraper'
-import type {
-  AnimeLinkKind,
-  CharacterLinkKind,
-  CollectionUpdateMode,
-  ComicLinkKind,
-  GameLinkKind,
-  NovelLinkKind,
-  UpdateIncomingRelationAvailability
-} from './types'
+import type { CollectionUpdateMode, UpdateIncomingRelationAvailability } from './types'
+import type { AnimeLinkKind } from './anime/types'
+import type { CharacterLinkKind } from './character/types'
+import type { ComicLinkKind } from './comic/types'
+import type { GameLinkKind } from './game/types'
+import type { NovelLinkKind } from './novel/types'
 
 interface LinkTopologySpec<TSurface extends string, TFactSource extends string> {
   /** Update surface that selects this link table. */

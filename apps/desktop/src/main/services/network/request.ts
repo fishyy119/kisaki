@@ -6,7 +6,7 @@ import {
   DEFAULT_NETWORK_TIMEOUT_MS,
   executeWithNetworkRetry,
   NetworkTimeoutError
-} from './shared'
+} from './retry'
 
 export class NetworkRequestClient {
   /**

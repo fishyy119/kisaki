@@ -1,7 +1,7 @@
 /**
  * Comic file sync invocation with user feedback.
  *
- * Wraps the `media-files:sync-comic` call with the shared success, warning,
+ * Wraps the `holdings:sync-comic` call with the shared success, warning,
  * and failure notifications so every sync entry point reports the same way.
  */
 
@@ -27,7 +27,7 @@ export function useComicFileSync(): ComicFileSync {
 
     isSyncing.value = true
     try {
-      const result = await ipcManager.invoke('media-files:sync-comic', { comicId })
+      const result = await ipcManager.invoke('holdings:sync-comic', { comicId })
       if (!result.success) {
         notify.error(m.value.comic.chapters.syncFailed, result.error)
         return

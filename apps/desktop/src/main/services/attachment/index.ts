@@ -3,4 +3,4 @@
  */
 
 export { AttachmentService } from './service'
-export { GameAttachmentHandler } from './handlers/game'
+export { GameAttachmentHandler } from './game'

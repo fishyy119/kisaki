@@ -14,7 +14,7 @@ import {
   createValidationError,
   normalizeCapabilityError
 } from '@kisaki3/extension-api'
-import { resolveInsideRoot } from '../shared/path-confinement'
+import { resolveInsideRoot } from '@shared/extension/path-confinement'
 
 interface FileGrantRecord {
   runtimeHandle: string

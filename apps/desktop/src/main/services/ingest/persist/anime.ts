@@ -34,7 +34,7 @@ import type {
   IngestAnimePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
-import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../media-relations'
+import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../persist/media-relations'
 import { insertAnimeEpisodeRow } from './episodes'
 import {
   requireOwnerIdentity,
@@ -46,7 +46,7 @@ import type { PersistAnimeGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
 import type { CompanyIngestPersistHandler } from './company'
 import type { CharacterIngestPersistHandler } from './character'
-import { reportIngestProgress } from '../progress'
+import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
 type AnimePersistOptions = IngestAddAnimeFromScraperOptions &

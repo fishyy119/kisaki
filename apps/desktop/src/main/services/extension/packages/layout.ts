@@ -2,7 +2,7 @@ import path from 'node:path'
 import { mkdir } from 'node:fs/promises'
 import { createValidationError } from '@kisaki3/extension-api'
 import type { ExtensionServicePaths } from '../types'
-import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
+import { requireSafeExtensionId, resolveInsideRoot } from '@shared/extension/path-confinement'
 
 const WORKSPACE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/

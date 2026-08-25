@@ -8,24 +8,26 @@
  */
 
 import { createLogger } from '@main/log'
-import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { MediaType } from '@shared/common'
+import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import { AnimeActivityHandler } from './handlers/anime'
 import { ComicActivityHandler } from './handlers/comic'
 import { GameActivityHandler } from './handlers/game'
 import { NovelActivityHandler } from './handlers/novel'
 import { createActivityHooks } from './hooks'
 import { registerActivityIpc } from './ipc'
+import { ActivityLaunchRoute, LAUNCH_DEEPLINK_ROUTE } from './launch-route'
 
 const log = createLogger('Activity')
 
-export class ActivityService implements IMediaService {
+export class ActivityService implements IService<'activity'> {
   readonly id = 'activity'
   readonly deps = [
     'db',
+    'deeplink',
     'i18n',
     'ipc',
     'native',
+    'notify',
     'process',
     'video',
     'reader',
@@ -37,6 +39,8 @@ export class ActivityService implements IMediaService {
   anime!: AnimeActivityHandler
   comic!: ComicActivityHandler
   novel!: NovelActivityHandler
+
+  private unregisterLaunchRoute?: () => void
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const ipc = container.get('ipc')
@@ -59,18 +63,26 @@ export class ActivityService implements IMediaService {
     this.novel = new NovelActivityHandler(db, reader, i18n, ipc, this.hooks)
 
     registerActivityIpc(this, ipc)
+
+    // Launching is an activity action, so activity owns the route that triggers
+    // it; the deeplink router stays free of domain vocabulary.
+    this.unregisterLaunchRoute = container
+      .get('deeplink')
+      .router.register(
+        LAUNCH_DEEPLINK_ROUTE,
+        new ActivityLaunchRoute(this, container.get('notify'), i18n)
+      )
+
     log.info('Initialized')
   }
 
   async dispose(): Promise<void> {
+    this.unregisterLaunchRoute?.()
+    this.unregisterLaunchRoute = undefined
     await this.anime.dispose()
     await this.game.dispose()
     this.comic.dispose()
     this.novel.dispose()
     log.info('Disposed')
-  }
-
-  getSupportedMedia(): MediaType[] {
-    return ['game', 'anime', 'comic', 'novel']
   }
 }

@@ -194,6 +194,34 @@ semantics for persisted entity lifecycle, `-ing` forms for pre-write participati
 `started`/`finished`/`ended` for runtime lifecycle. Reserve `:` for IPC channel names and dotted
 lowercase ids for public extension hook point ids (`ingest.game.committing`).
 
+### Hook Id Roots
+
+The dotted id is a public, extension-facing contract, so its first segment is chosen for stability
+rather than for whoever happens to dispatch it. Two roots are allowed, and nothing else:
+
+- **Service root** (default): the dispatching service's id, e.g. `video.session.progress`,
+  `scanner.run.started`, `ingest.<entity>.committing`, `reader.unit.opened`, `process.started`,
+  `extension.enabled`. Use this whenever the event is about that service's own work.
+- **Topic root** (closed whitelist): `app.*`, `library.*`, `play.*`. These name a subject the whole
+  application shares, so they must not move when internal ownership does — `app.theme.changed` should
+  survive theme handling relocating out of the window service. Any service may dispatch a topic-root
+  hook: `window` dispatches `app.theme.changed`, `i18n` dispatches `app.ui-locale.changed`, `db`
+  dispatches `library.changed` and `app.settings.changed`, and `bootstrap` dispatches `app.ready`.
+  That is the rule working, not a violation.
+
+Whitelist meanings, so a new hook lands in the right root:
+
+| Root       | Subject                                                                  |
+| ---------- | ------------------------------------------------------------------------ |
+| `app.*`    | Application-wide lifecycle and preferences (ready, shutting down, theme, ui-locale, settings) |
+| `library.*`| The catalog itself: entity changes, merges                               |
+| `play.*`   | Consumption of an entry by the user, in any vertical: launching a game, watching, reading |
+
+`play.*` deliberately covers watching and reading as well as launching: to an extension author the
+interesting event is "the user started consuming this entry", and one root keeps that subscribable
+without knowing which engine runs it. Adding a fourth topic root needs the same test the first three
+pass: the subject outlives any single service's ownership of it.
+
 ## TaskRun IPC State Source
 
 Long-running application workflows use dedicated `task-run:*` IPC channels and the renderer task-run
@@ -232,7 +260,7 @@ must not cancel the run.
 - Hooks: `createNotifyHook`, `createWaterfallHook`, `createVetoHook`, `.hooks.`, `@main/hooks`
 - Db feed: `DbChangeFeed`, `DbChangeSummary`, `'db:changed'`, `hooks.dbChanged`
 - Common channels: `'db:execute'`, `'db:changed'`, `'notify:*'`, `'task-run:*'`, `'extension:*'`,
-  `'media-files:*'`
+  `'holdings:*'`
 
 ## Procedures
 

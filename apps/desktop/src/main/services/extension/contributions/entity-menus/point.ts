@@ -27,7 +27,7 @@ import {
   type ExtensionContributionPointOptions,
   type RuntimeContributionOwner
 } from '../types'
-import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
+import { EXTENSION_CLEANUP_TIMEOUT_MS } from '@shared/extension/rpc-timeouts'
 
 export interface ExtensionEntityMenuContributionPointOptions extends ExtensionContributionPointOptions {
   onRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void

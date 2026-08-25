@@ -5,15 +5,15 @@
  */
 
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import { registerUpdaterIpc } from './ipc'
 import { UpdaterChangelogProvider } from './changelog'
-import { UpdaterSettings } from './settings'
-import { AppUpdateManager } from './updates'
+import { UpdaterSettings } from './preferences'
+import { AppUpdateManager } from './manager'
 
 const log = createLogger('Updater')
 
-export class UpdaterService implements IService {
+export class UpdaterService implements INonDomainService<'updater'> {
   readonly id = 'updater'
   readonly deps = [
     'db',
@@ -21,7 +21,7 @@ export class UpdaterService implements IService {
     'ipc',
     'network',
     'task-run'
-  ] as const satisfies readonly ServiceName[]
+  ] as const
 
   updates!: AppUpdateManager
   changelog!: UpdaterChangelogProvider

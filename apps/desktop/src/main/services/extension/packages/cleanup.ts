@@ -2,7 +2,7 @@ import path from 'node:path'
 import { rm } from 'node:fs/promises'
 import { createLogger } from '@main/log'
 import type { ExtensionPackageLayout } from './layout'
-import { assertInsideRoot } from '../shared/path-confinement'
+import { assertInsideRoot } from '@shared/extension/path-confinement'
 
 const log = createLogger('Extension')
 

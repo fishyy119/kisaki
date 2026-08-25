@@ -1,5 +1,5 @@
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import { TaskRunHistoryStore } from './history/store'
 import { registerTaskRunIpc } from './ipc'
@@ -8,9 +8,9 @@ import { TaskRunManager } from './runs/manager'
 
 const log = createLogger('TaskRun')
 
-export class TaskRunService implements IService {
+export class TaskRunService implements INonDomainService<'task-run'> {
   readonly id = 'task-run'
-  readonly deps = ['db', 'i18n', 'ipc', 'notify'] as const satisfies readonly ServiceName[]
+  readonly deps = ['db', 'i18n', 'ipc', 'notify'] as const
 
   runs!: TaskRunManager
   history!: TaskRunHistoryStore

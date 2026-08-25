@@ -1,5 +1,5 @@
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
-import { normalizeOptionalString } from './normalization'
+import { normalizeOptionalString } from '../../normalization'
 
 export function normalizePolicy(
   policy: Partial<IngestUpdatePolicy> | undefined

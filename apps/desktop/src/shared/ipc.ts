@@ -82,7 +82,7 @@ import type {
   NovelFileSyncParams,
   NovelFileSyncResult,
   NovelVolumeFileAttachParams
-} from './media-files'
+} from './holdings'
 import type {
   AnimeBatchUpdateRequest,
   AnimeUpdateRequest,
@@ -253,7 +253,7 @@ export interface IpcMainListeners {
   'notify:auto': [NotifyOptions]
   'notify:action': [event: { toastId: string; actionId: string }]
   'notify:closed': [event: { toastId: string }]
-  'native:set-tray-menu-height': [height: number]
+  'window:set-tray-menu-height': [height: number]
   'window:set-main-window-close-action': [action: MainWindowCloseAction]
 }
 
@@ -705,13 +705,13 @@ export interface IpcMainHandlers {
   ) => IpcResult<ExtractionTestResult[]>
 
   // Media files
-  'media-files:sync-anime': (params: AnimeFileSyncParams) => IpcResult<AnimeFileSyncResult>
-  'media-files:attach-anime-episode-file': (params: AnimeEpisodeFileAttachParams) => IpcVoidResult
-  'media-files:attach-anime-extra-file': (params: AnimeExtraFileAttachParams) => IpcVoidResult
-  'media-files:sync-comic': (params: ComicFileSyncParams) => IpcResult<ComicFileSyncResult>
-  'media-files:attach-comic-chapter-file': (params: ComicChapterFileAttachParams) => IpcVoidResult
-  'media-files:sync-novel': (params: NovelFileSyncParams) => IpcResult<NovelFileSyncResult>
-  'media-files:attach-novel-volume-file': (params: NovelVolumeFileAttachParams) => IpcVoidResult
+  'holdings:sync-anime': (params: AnimeFileSyncParams) => IpcResult<AnimeFileSyncResult>
+  'holdings:attach-anime-episode-file': (params: AnimeEpisodeFileAttachParams) => IpcVoidResult
+  'holdings:attach-anime-extra-file': (params: AnimeExtraFileAttachParams) => IpcVoidResult
+  'holdings:sync-comic': (params: ComicFileSyncParams) => IpcResult<ComicFileSyncResult>
+  'holdings:attach-comic-chapter-file': (params: ComicChapterFileAttachParams) => IpcVoidResult
+  'holdings:sync-novel': (params: NovelFileSyncParams) => IpcResult<NovelFileSyncResult>
+  'holdings:attach-novel-volume-file': (params: NovelVolumeFileAttachParams) => IpcVoidResult
 
   // Deeplink
   'deeplink:handle': (url: string) => IpcResult<DeeplinkResult>

@@ -22,7 +22,7 @@ import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { requireOwnerIdentity, requirePersistedId, resolveOrderedLinks } from './links'
 import { pickFirstAssetUrl, type PersistCharacterGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
-import { reportIngestProgress } from '../progress'
+import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
 type CharacterPersistOptions = IngestAddCharacterFromScraperOptions &

@@ -12,7 +12,7 @@ import type {
   ExtensionPurgeDataRequest,
   ExtensionUpdatePolicyRequest
 } from '@shared/extension'
-import type { ExtensionRuntimeChangeCause, ExtensionRuntimeState, RuntimeManager } from '../runtime'
+import type { ExtensionRuntimeChangeCause, ExtensionRuntimeState, ExtensionRuntimeManager } from '../runtime'
 import type { ExtensionContributionRegistry } from '../contributions'
 import type {
   ExtensionDevelopmentWatcher,
@@ -20,16 +20,18 @@ import type {
 } from '../development-watcher'
 import {
   type ExtensionPackageCommitter,
-  type ExtensionIconManager,
   type ExtensionPackageLayout,
-  type ExtensionWebviewUiSource,
   readExtensionManifestFile,
-  resolveExtensionFilePath,
-  resolveExtensionUiRootPath,
   validateExtensionFileExists
 } from '../packages'
-import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
-import { isInsideOrEqualPath } from '@main/utils/fs'
+import {
+  type ExtensionIconManager,
+  type ExtensionWebviewUiSource,
+  resolveExtensionUiRootPath
+} from '../assets'
+import { resolveExtensionFilePath } from '@shared/extension/manifest'
+import { requireSafeExtensionId, resolveInsideRoot } from '@shared/extension/path-confinement'
+import { isInsideOrEqualPath } from '@shared/utils/path'
 import { createExtensionRuntimeMetadata, type ExtensionInstalledEntry } from '../types'
 import { createExtensionInstallationsHooks } from './hooks'
 import { ExtensionInstallationStore } from './store'
@@ -43,7 +45,7 @@ export interface ExtensionInstallationManagerOptions {
   layout: ExtensionPackageLayout
   view: ExtensionInstallationView
   store: ExtensionInstallationStore
-  runtime: RuntimeManager
+  runtime: ExtensionRuntimeManager
   contributions: ExtensionContributionRegistry
   developmentWatcher: ExtensionDevelopmentWatcher
   packageCommitter: ExtensionPackageCommitter
@@ -60,7 +62,7 @@ export class ExtensionInstallationManager {
 
   private readonly layout: ExtensionPackageLayout
   private readonly view: ExtensionInstallationView
-  private readonly runtime: RuntimeManager
+  private readonly runtime: ExtensionRuntimeManager
   private readonly contributions: ExtensionContributionRegistry
   private readonly developmentWatcher: ExtensionDevelopmentWatcher
   private readonly packageCommitter: ExtensionPackageCommitter

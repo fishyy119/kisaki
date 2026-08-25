@@ -8,7 +8,7 @@ import { AutomationStore } from './store'
 
 const log = createLogger('Automation')
 
-export class AutomationService implements IService {
+export class AutomationService implements IService<'automation'> {
   readonly id = 'automation'
   readonly deps = ['db', 'ipc', 'command'] as const satisfies readonly ServiceName[]
 

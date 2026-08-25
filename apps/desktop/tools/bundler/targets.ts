@@ -30,6 +30,7 @@ export function createMainConfig(paths: BundlerPaths, mode: BundlerMode): Inline
     resolve: {
       alias: {
         '@main': path.join(paths.desktopRoot, 'src/main'),
+        '@extension-host': path.join(paths.desktopRoot, 'src/extension-host'),
         '@shared': path.join(paths.desktopRoot, 'src/shared')
       }
     },
@@ -49,10 +50,7 @@ export function createMainConfig(paths: BundlerPaths, mode: BundlerMode): Inline
       rolldownOptions: {
         input: {
           index: path.join(paths.desktopRoot, 'src/main/index.ts'),
-          'extension-host': path.join(
-            paths.desktopRoot,
-            'src/main/services/extension/runtime/host/entry.ts'
-          )
+          'extension-host': path.join(paths.desktopRoot, 'src/extension-host/entry.ts')
         },
         output: {
           format: 'es',

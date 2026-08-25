@@ -19,15 +19,17 @@ import { ExtensionInstallerManager } from './installer'
 import { registerExtensionIpc } from './ipc'
 import {
   ExtensionIconManager,
+  ExtensionUiAssetServer,
+  ExtensionWebviewFontServer
+} from './assets'
+import {
   ExtensionPackageArchiveStore,
   ExtensionPackageCommitter,
   ExtensionPackageDownloader,
   ExtensionPackageExtractor,
   ExtensionPackageLayout,
   ExtensionPackageRecovery,
-  ExtensionPackageVerifier,
-  ExtensionUiAssetServer,
-  ExtensionWebviewFontServer
+  ExtensionPackageVerifier
 } from './packages'
 import {
   ExtensionRepositoryFetcher,
@@ -35,19 +37,19 @@ import {
   ExtensionRepositoryStore
 } from './repositories'
 import { ExtensionDevelopmentWatcher } from './development-watcher'
-import { RuntimeManager, type ExtensionRuntimeState } from './runtime'
+import { ExtensionRuntimeManager, type ExtensionRuntimeState } from './runtime'
 import { ExtensionSignerTrustManager, ExtensionSignerTrustStore } from './signers'
 import { ExtensionUpdateManager, ExtensionUpdatePlanner } from './updates'
 import { ExtensionWebviewSessionManager } from './webviews'
 import type { ExtensionServicePaths } from './types'
-import { resolveInsideRoot } from './shared/path-confinement'
+import { resolveInsideRoot } from '@shared/extension/path-confinement'
 
 const log = createLogger('Extension')
 
 /**
  * Main-process composition root for the extension system.
  */
-export class ExtensionService implements IService {
+export class ExtensionService implements IService<'extension'> {
   readonly id = 'extension'
   readonly deps = [
     'ipc',
@@ -72,7 +74,7 @@ export class ExtensionService implements IService {
   installations!: ExtensionInstallationManager
   installer!: ExtensionInstallerManager
   repositories!: ExtensionRepositoryManager
-  runtime!: RuntimeManager
+  runtime!: ExtensionRuntimeManager
   signers!: ExtensionSignerTrustManager
   updates!: ExtensionUpdateManager
   webviews!: ExtensionWebviewSessionManager
@@ -201,7 +203,7 @@ export class ExtensionService implements IService {
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
       requestHost: (method, params, options) => this.runtime.requestHost(method, params, options)
     })
-    this.runtime = new RuntimeManager({
+    this.runtime = new ExtensionRuntimeManager({
       hostModulePath: resolveInsideRoot(app.getAppPath(), 'out', 'main', 'extension-host.js'),
       hostInspect: getBootstrapArgs().extensionHostInspect,
       capabilities: this.capabilities,

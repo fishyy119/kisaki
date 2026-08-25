@@ -5,7 +5,7 @@ import {
   type ExtensionRepositoryRow,
   type ExtensionRepositoryState
 } from '@shared/db'
-import type { DbContext } from '../../db/types'
+import type { DbContext } from '@main/services/db'
 import { assertRegistryManifestUrlPolicy, type ExtensionRegistryUrlPolicy } from './url-policy'
 
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/

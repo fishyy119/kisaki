@@ -2,7 +2,7 @@ import { eq, inArray } from 'drizzle-orm'
 import { measureJsonBytes } from '@kisaki3/extension-api'
 import type { TaskRun, TaskRunFinalStatus, TaskRunHistoryListQuery } from '@shared/task-run'
 import { taskRunHistory, type NewTaskRunHistoryRow, type TaskRunHistoryRow } from '@shared/db'
-import type { DbContext } from '@main/services/db/types'
+import type { DbContext } from '@main/services/db'
 import { selectTaskRunHistoryPruneIds } from './retention'
 
 const MAX_HISTORY_JSON_BYTES = 256 * 1024

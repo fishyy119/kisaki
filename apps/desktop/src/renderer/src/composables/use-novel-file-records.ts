@@ -47,7 +47,7 @@ export function useNovelFileRecords(
       const picked = dialogResult.data?.filePaths[0]
       if (!picked || dialogResult.data?.canceled) return
 
-      const result = await ipcManager.invoke('media-files:attach-novel-volume-file', {
+      const result = await ipcManager.invoke('holdings:attach-novel-volume-file', {
         volumeId: owner.id,
         path: picked
       })

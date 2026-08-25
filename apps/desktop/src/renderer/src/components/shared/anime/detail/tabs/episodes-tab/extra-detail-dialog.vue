@@ -80,7 +80,7 @@ const { isAttaching, attachFile, setPrimary, removeFile, saveNote } = useAnimeFi
   table: animeExtraFiles,
   ownerColumn: animeExtraFiles.extraId,
   attach: (extraId, path) =>
-    ipcManager.invoke('media-files:attach-anime-extra-file', {
+    ipcManager.invoke('holdings:attach-anime-extra-file', {
       animeId: props.animeId,
       path,
       extraId

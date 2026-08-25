@@ -11,8 +11,7 @@
  */
 
 import { createLogger } from '@main/log'
-import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { ContentEntityType } from '@shared/common'
+import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import { GameScraperHandler } from './handlers/game'
 import { AnimeScraperHandler } from './handlers/anime'
 import { ComicScraperHandler } from './handlers/comic'
@@ -26,7 +25,7 @@ import { ScraperProfileCatalog } from './profiles'
 
 const log = createLogger('Scraper')
 
-export class ScraperService implements IContentService {
+export class ScraperService implements IService<'scraper'> {
   readonly id = 'scraper'
   readonly deps = ['db', 'i18n', 'ipc'] as const satisfies readonly ServiceName[]
   readonly hooks = createScraperHooks()
@@ -56,9 +55,5 @@ export class ScraperService implements IContentService {
     registerScraperIpc(this, ipcService)
 
     log.info('Initialized')
-  }
-
-  getSupportedContent(): ContentEntityType[] {
-    return ['game', 'anime', 'comic', 'novel', 'character', 'person', 'company']
   }
 }

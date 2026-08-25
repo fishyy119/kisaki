@@ -3,9 +3,10 @@
  */
 
 export type {
-  IContentService,
+  DomainServiceName,
+  INonDomainService,
   IService,
-  IMediaService,
+  NonDomainServiceName,
   ScopedContainer,
   ServiceInitContainer,
   ServiceStatus,

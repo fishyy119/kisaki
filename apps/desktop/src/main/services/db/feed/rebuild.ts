@@ -2,7 +2,7 @@ import type { RawDbChange } from '@shared/db/changes'
 import type { LibraryMediaLinkSnapshot, LibraryMediaRelationEdge } from '@shared/library'
 import type { ExternalId } from '@shared/identity'
 import type { MediaLinkTables } from './types'
-import { stringValue } from './shared/normalization'
+import { stringValue } from './normalization'
 
 export function rebuildExternalIdsBefore(
   after: ExternalId[],

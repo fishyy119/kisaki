@@ -1,0 +1,1 @@
+export { ComicUpdateHandler } from './update'

@@ -5,7 +5,7 @@
  */
 
 import { createLogger } from '@main/log'
-import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { ContentEntityType } from '@shared/common'
 import { IngestPersistHandlers } from './persist'
 import {
@@ -77,7 +77,7 @@ type IngestBatchHandlers = IngestHandlersByContent<{
   character: CharacterBatchHandler
 }>
 
-export class IngestService implements IContentService {
+export class IngestService implements IService<'ingest'> {
   readonly id = 'ingest'
   readonly deps = [
     'db',
@@ -268,9 +268,5 @@ export class IngestService implements IContentService {
 
     registerIngestIpc(this, ipcService)
     log.info('Initialized')
-  }
-
-  getSupportedContent(): ContentEntityType[] {
-    return ['game', 'anime', 'comic', 'novel', 'character', 'person', 'company']
   }
 }

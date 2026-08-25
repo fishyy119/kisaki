@@ -26,6 +26,25 @@ const rendererImportBoundaryPatterns = [
   }
 ]
 
+// The extension host is a separate utility-process program that is bundled on
+// its own. Electron and main-process modules must never reach its bundle, and
+// the main process may only speak to it through its wire protocol boundary.
+const extensionHostBoundaryPatterns = [
+  {
+    group: ['@main', '@main/*', '@renderer', '@renderer/*', 'electron', 'electron/*'],
+    message:
+      'The extension host runs in its own utility process. Import only @shared, @kisaki3/extension-api, and host-local modules.'
+  }
+]
+
+const mainToExtensionHostBoundaryPatterns = [
+  {
+    group: ['@extension-host/*', '!@extension-host/protocol'],
+    message:
+      'The main process may only import the extension host wire protocol: @extension-host/protocol.'
+  }
+]
+
 // The router singleton may only be imported by the app entry (composition
 // root). Anything reachable from the shared composable/store graph that
 // imports it creates renderer-wide circular imports and breaks HMR.
@@ -87,10 +106,34 @@ export default defineConfig([
       // Parses CJK source data from the YMGal API; not UI copy.
       'src/main/services/scraper/handlers/game/providers/ymgal/format.ts',
       // Matches CJK tokens in release file names; not UI copy.
-      'src/main/services/media-files/anime/recognition.ts'
+      'src/main/services/holdings/anime/recognition.ts'
     ],
     rules: {
       'no-restricted-syntax': ['error', ...noCjkLiteralRestrictions]
+    }
+  },
+  // Process boundary: the host bundle must stay free of Electron and main.
+  {
+    files: ['src/extension-host/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: extensionHostBoundaryPatterns
+        }
+      ]
+    }
+  },
+  // Process boundary: main reaches the host only through its protocol entry.
+  {
+    files: ['src/main/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: mainToExtensionHostBoundaryPatterns
+        }
+      ]
     }
   },
   {

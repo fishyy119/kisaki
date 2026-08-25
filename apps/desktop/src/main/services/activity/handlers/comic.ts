@@ -36,7 +36,7 @@ import {
   RESUME_WRITE_INTERVAL_MS,
   formatUnitNumber,
   resolveComicPageFlow
-} from './reading'
+} from '../reading'
 
 const log = createLogger('Activity')
 

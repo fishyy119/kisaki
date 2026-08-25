@@ -31,7 +31,7 @@ import type {
   IngestComicPersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
-import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../media-relations'
+import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../persist/media-relations'
 import { insertComicChapterRow } from './chapters'
 import {
   requireOwnerIdentity,
@@ -43,7 +43,7 @@ import type { PersistComicGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
 import type { CompanyIngestPersistHandler } from './company'
 import type { CharacterIngestPersistHandler } from './character'
-import { reportIngestProgress } from '../progress'
+import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
 type ComicPersistOptions = IngestAddComicFromScraperOptions &

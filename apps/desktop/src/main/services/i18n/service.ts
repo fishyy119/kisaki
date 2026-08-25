@@ -9,7 +9,7 @@
 
 import { app } from 'electron'
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import { settings } from '@shared/db'
@@ -29,9 +29,9 @@ import { registerI18nIpc } from './ipc'
 
 const log = createLogger('I18n')
 
-export class I18nService implements IService {
+export class I18nService implements INonDomainService<'i18n'> {
   readonly id = 'i18n'
-  readonly deps = ['db', 'ipc'] as const satisfies readonly ServiceName[]
+  readonly deps = ['db', 'ipc'] as const
   readonly hooks = createI18nHooks()
 
   private db!: DbService
@@ -101,13 +101,7 @@ export class I18nService implements IService {
   }
 
   private readPreference(): UiLocale | null {
-    try {
-      const row = this.db.client.select({ uiLocale: settings.uiLocale }).from(settings).get()
-      return row?.uiLocale ?? null
-    } catch (error) {
-      log.warn('Failed to read UI locale preference from settings.', error)
-      return null
-    }
+    return this.db.settings.tryGet()?.uiLocale ?? null
   }
 
   private resolveEffective(preference: UiLocale | null): UiLocale {

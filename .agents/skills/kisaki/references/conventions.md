@@ -412,7 +412,7 @@ Distinguish the two growth axes:
   place in a shared mechanism the same way. Four samples is still not a licence to generalize a
   surface only one type needs — the reader's page engine is shared by comic and novel because both
   page through images, while their unit lists and catch-up flows stay mirrored per type.
-- What three samples proved invariant is extracted, not forked. `media-files` keeps one
+- What three samples proved invariant is extracted, not forked. `holdings` keeps one
   `AutoSyncCoordinator` driven by a per-type `AutoSyncSpec` (directory query, file predicate, watch
   depth, sync call) and one `reconcile.ts` of pass mechanics (pass serialization, file revision,
   probe freshness, primary election). What a unit is, how candidates claim rows, and when a row may

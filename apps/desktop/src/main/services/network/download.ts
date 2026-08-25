@@ -8,7 +8,7 @@ import { assertNotAborted } from '@main/utils/async'
 import { movePath } from '@main/utils/fs'
 import type { FetchOptions } from '@shared/network'
 import type { NetworkRequestClient } from './request'
-import { DEFAULT_NETWORK_RETRY_COUNT, executeWithNetworkRetry } from './shared'
+import { DEFAULT_NETWORK_RETRY_COUNT, executeWithNetworkRetry } from './retry'
 
 export interface NetworkDownloaderOptions {
   request: NetworkRequestClient

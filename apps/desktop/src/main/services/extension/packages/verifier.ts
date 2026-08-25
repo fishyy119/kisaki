@@ -23,11 +23,8 @@ import {
   createExtensionRegistrySignerFingerprint,
   stringifyExtensionRegistryCanonicalJson
 } from '@kisaki3/extension-registry/node'
-import {
-  parseExtensionManifest,
-  readExtensionManifestFile,
-  validateInstalledExtensionPackage
-} from './manifest'
+import { parseExtensionManifest } from '@shared/extension/manifest'
+import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
 import { wrapExtensionPackageError } from './types'
 
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/

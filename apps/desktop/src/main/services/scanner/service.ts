@@ -12,7 +12,7 @@
 import { eq } from 'drizzle-orm'
 import { bootstrapHooks } from '@main/bootstrap/hooks'
 import { createLogger } from '@main/log'
-import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { DbService } from '@main/services/db'
 import type { MediaType } from '@shared/common'
 import { scanners } from '@shared/db'
@@ -23,7 +23,7 @@ import { AnimeScannerHandler } from './handlers/anime'
 import { ComicScannerHandler } from './handlers/comic'
 import { GameScannerHandler } from './handlers/game'
 import { NovelScannerHandler } from './handlers/novel'
-import type { MediaScannerHandler } from './handlers/media-handler'
+import type { MediaScannerHandler } from './handlers/base'
 import { ScannerDiscovery } from './discovery'
 import { createScannerHooks } from './hooks'
 import { registerScannerIpc } from './ipc'
@@ -35,7 +35,7 @@ const log = createLogger('Scanner')
 // Scanner Service
 // =============================================================================
 
-export class ScannerService implements IMediaService {
+export class ScannerService implements IService<'scanner'> {
   readonly id = 'scanner'
   readonly deps = [
     'db',
@@ -43,7 +43,7 @@ export class ScannerService implements IMediaService {
     'i18n',
     'ingest',
     'ipc',
-    'media-files',
+    'holdings',
     'task-run'
   ] as const satisfies readonly ServiceName[]
   readonly hooks = createScannerHooks()
@@ -78,17 +78,17 @@ export class ScannerService implements IMediaService {
     this.anime = new AnimeScannerHandler(
       deps,
       container.get('ingest'),
-      container.get('media-files')
+      container.get('holdings')
     )
     this.comic = new ComicScannerHandler(
       deps,
       container.get('ingest'),
-      container.get('media-files')
+      container.get('holdings')
     )
     this.novel = new NovelScannerHandler(
       deps,
       container.get('ingest'),
-      container.get('media-files')
+      container.get('holdings')
     )
     this.handlers = { game: this.game, anime: this.anime, comic: this.comic, novel: this.novel }
 
@@ -118,10 +118,6 @@ export class ScannerService implements IMediaService {
       handler.cleanup()
     }
     log.info('Disposed')
-  }
-
-  getSupportedMedia(): MediaType[] {
-    return Object.keys(this.handlers) as MediaType[]
   }
 
   /** Run states across every media type, since one UI lists them together. */

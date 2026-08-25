@@ -16,7 +16,7 @@
 import path from 'node:path'
 import { watch, type FSWatcher } from 'chokidar'
 import { createLogger } from '@main/log'
-import { isInsideOrEqualPath } from '@main/utils/fs'
+import { isInsideOrEqualPath } from '@shared/utils/path'
 
 const log = createLogger('Watch')
 

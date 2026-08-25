@@ -7,7 +7,7 @@ import type {
 } from '@kisaki3/extension-registry'
 import type { ExtensionPackageDownloader } from './downloader'
 import type { ExtensionPackageExtractor } from './extractor'
-import type { ExtensionPackagePhase } from './phases'
+import type { ExtensionPackagePhase } from './types'
 
 export interface ExtensionPackagePreparerOptions {
   downloader: ExtensionPackageDownloader

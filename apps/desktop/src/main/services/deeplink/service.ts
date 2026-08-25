@@ -1,32 +1,28 @@
 /**
  * Deeplink Service
  *
- * Handles kisaki:// protocol URLs and owns the built-in route registration.
+ * Parses `kisaki://` URLs, queues them until the app can act, and routes them.
+ * It owns the routes whose whole effect is a window or renderer concern (auth,
+ * navigate); routes that perform a domain action are registered by the service
+ * that owns that action through the public `router`.
  */
 
 import { app } from 'electron'
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import { DeeplinkRouter } from './router'
 import type { DeeplinkResult, ParsedDeeplink } from './types'
 import { DEEPLINK_SCHEME } from '@main/bootstrap/protocol'
 import type { WindowService } from '@main/services/window'
 import { AUTH_DEEPLINK_ROUTE, AuthHandler } from './handlers/auth'
-import { LAUNCH_DEEPLINK_ROUTE, LaunchHandler } from './handlers/launch'
 import { NAVIGATE_DEEPLINK_ROUTE, NavigateHandler } from './handlers/navigate'
 import { registerDeeplinkIpc } from './ipc'
 
 const log = createLogger('Deeplink')
 
-export class DeeplinkService implements IService {
+export class DeeplinkService implements INonDomainService<'deeplink'> {
   readonly id = 'deeplink'
-  readonly deps = [
-    'activity',
-    'i18n',
-    'ipc',
-    'notify',
-    'window'
-  ] as const satisfies readonly ServiceName[]
+  readonly deps = ['ipc', 'window'] as const
 
   router!: DeeplinkRouter
   private windowService!: WindowService
@@ -38,13 +34,9 @@ export class DeeplinkService implements IService {
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const ipc = container.get('ipc')
     this.windowService = container.get('window')
-    const activity = container.get('activity')
-    const notify = container.get('notify')
-    const i18n = container.get('i18n')
 
     this.router = new DeeplinkRouter()
 
-    this.router.register(LAUNCH_DEEPLINK_ROUTE, new LaunchHandler(activity, notify, i18n))
     this.router.register(AUTH_DEEPLINK_ROUTE, new AuthHandler(ipc, this.windowService))
     this.router.register(NAVIGATE_DEEPLINK_ROUTE, new NavigateHandler(ipc, this.windowService))
 

@@ -18,7 +18,7 @@ import {
 import type { IngestPersonGraph, IngestPersonNode } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { pickFirstAssetUrl, type PersistPersonGraphResult } from './types'
-import { reportIngestProgress } from '../progress'
+import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
 type PersonPersistOptions = IngestAddPersonFromScraperOptions &

@@ -9,7 +9,7 @@
 - `apps/desktop/src/main/services/task-run/` - Application-level long-running task run infrastructure
 - `apps/desktop/src/main/services/automation/` - Persistent automation rules, scheduling, and invocation history
 - `apps/desktop/src/main/services/file-watch/` - Debounced filesystem watch scopes shared by every watcher
-- `apps/desktop/src/main/services/media-files/` - Local media files of an entry and their row ownership
+- `apps/desktop/src/main/services/holdings/` - The user-owned files an entry actually has, and their row ownership
 - `apps/desktop/src/main/services/video/` - Playback sessions and container probing for the video vertical
 - `apps/desktop/src/main/services/reader/` - Reader windows, book container access, and the `book://` transport
 
@@ -18,9 +18,9 @@
 Services are managed by a central container with automatic lifecycle management:
 
 ```typescript
-// Phase 1: register service instances (no side effects)
-await container.register(new DbService())
-await container.register(new IpcService())
+// Phase 1: register service instances (synchronous, no side effects)
+container.register(new DbService())
+container.register(new IpcService())
 // ...register all services (order does not matter)
 
 // Phase 2: initialize in dependency order (based on service.deps)
@@ -33,19 +33,32 @@ await container.disposeAll()
 ### Service Layers
 
 Services fall into three layers. The layer is a property of a service, not a folder: `services/` stays
-flat so a service id maps to exactly one directory, and the layering is enforced by `deps` plus
-`ScopedContainer`, not by location.
+flat so a service id maps to exactly one directory. Layer membership is a judgement that gets
+revisited, and a path is the most expensive place to store a judgement — so it lives in the type
+system instead, where the compiler can check it and a re-classification costs one line.
 
-**Red line**: a capability service owns no domain vocabulary and reads no library rows. It never
-depends on a domain service, and it never interprets what a row means; platform deps such as `ipc`
-or `db` are allowed where the capability genuinely needs them (`task-run` persists its own history).
-Domain services consume capabilities, never the reverse.
+**Red line**: a platform or capability service owns no domain vocabulary and reads no library rows.
+It never depends on a domain service; platform deps such as `ipc` or `db` are allowed where the
+capability genuinely needs them (`task-run` persists its own history). Domain services consume
+capabilities, never the reverse.
 
-| Layer      | Services                                                                                                      | Charter                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+This is enforced, not just documented. Non-domain services implement
+`INonDomainService<'<id>'>`, whose `deps` are typed as `readonly NonDomainServiceName[]`, so
+declaring a domain dependency fails to compile. When a platform service seems to need a domain
+service, invert it: the domain service registers itself with the platform one. `activity` registering
+its own `kisaki://launch` route on `deeplink.router` is the reference example.
+
+| Layer      | Services                                                                                                     | Charter                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
 | Platform   | `ipc`, `db`, `window`, `native`, `notify`, `network`, `deeplink`, `updater`, `i18n`                           | Wrap Electron, the OS, and transports; no library business rules  |
 | Capability | `task-run`, `file-watch`, `process`, `video`, `reader`                                                        | Technical abilities with no domain vocabulary and no library rows |
-| Domain     | `scraper`, `ingest`, `scanner`, `media-files`, `activity`, `attachment`, `command`, `automation`, `extension` | Own library meaning and workflows; grow one media type at a time  |
+| Domain     | `scraper`, `ingest`, `scanner`, `holdings`, `activity`, `attachment`, `command`, `automation`, `extension`    | Own library meaning and workflows; grow one media type at a time  |
+
+`db` is the one platform service that is a data platform rather than a thin adapter. A synchronous
+better-sqlite3 connection cannot hand a transaction to another service, so every operation that must
+see all entity tables at once lives with the connection: `db.curation` (merge, delete), `db.helper`
+(finder, tag, external-id primitives), and `db.feed` change projection. It stays non-domain because
+it owns no workflow of its own — it exposes cross-table primitives that domain services compose.
 
 ### Consumption Engines
 
@@ -64,12 +77,12 @@ pageable is the same question as asking whether that engine can open it.
 
 `reader` is a capability despite carrying library ids in its contracts. Those ids pass through
 untouched: an activity handler prepares the bootstrap, the reader window runs an engine against it
-and reports position facts back, and media-files registers the resolver that turns a unit file-row
+and reports position facts back, and holdings registers the resolver that turns a unit file-row
 id into a path. The reader never reads a library table itself.
 
 Two neighbours are easy to confuse, so their charters are stated once here:
 
-- `media-files` answers "which files does this entry have": the seam between user-owned media on
+- `holdings` answers "which files does this entry actually have": the seam between user-owned media on
   disk and the consumption-unit rows that play it, including row ownership (`isManual`) and
   watch-driven reconcile.
 - `attachment` owns app-owned derived assets (covers, backdrops) whose bytes the app stores itself.
@@ -80,15 +93,14 @@ Two neighbours are easy to confuse, so their charters are stated once here:
 interface IService {
   readonly id: string // Unique identifier, must match ServiceRegistry key
   readonly deps: readonly string[] // Explicit dependencies (service IDs)
-  init(container: ServiceContainer): Promise<void>
+  init(container: ScopedContainer<this['deps'][number]>): Promise<void>
   dispose?(): Promise<void>
 }
-
-// For media-related services (scanner, scraper, activity, etc.)
-interface IMediaService extends IService {
-  // Additional media-specific methods
-}
 ```
+
+`IService` is the only service interface. Do not add per-shape marker interfaces
+(`IMediaService`-style) that only declare a "which types do you support" accessor: media coverage is
+already visible in the per-entity registries the compiler checks.
 
 ### Folder Organization Semantics
 
@@ -397,7 +409,7 @@ change in the library. Two contracts hold the seam together:
 
 | File/Directory | Used By                                          | Purpose                                   |
 | -------------- | ------------------------------------------------ | ----------------------------------------- |
-| `handlers/`    | activity, attachment, deeplink, scanner, scraper | IMediaService handlers or route handlers  |
+| `handlers/`    | activity, deeplink, scraper                      | Per-media handlers or route handlers      |
 | `types.ts`     | db, deeplink, extension, process                 | Service-specific type definitions         |
 | `ipc.ts`       | Any service with IPC channels                    | IPC registration using `wrapIpc` helpers  |
 | `router.ts`    | deeplink                                         | URL route definitions (deeplink-specific) |
@@ -405,7 +417,8 @@ change in the library. Two contracts hold the seam together:
 
 **Complex services** may have additional domain-specific files:
 
-- `db/`: attachment.ts, fts.ts, helper.ts, thumbnail.ts, trigger.ts
+- `db/`: attachment/ (store, protocol, thumbnail), curation/ (merge, delete), helper/ (finder, tag,
+  external-id), feed/, fts.ts, sql.ts, settings.ts, trigger.ts
 - `extension/`: service.ts, ipc.ts, installations/, installer/, packages/, repositories/, signers/, updates/, runtime/, capabilities/, contributions/
 
 ## Bootstrap Sequence
@@ -447,10 +460,10 @@ Must complete before Electron is ready:
    ```typescript
    export class MyService implements IService {
      readonly id = 'my-service'
-     readonly deps = ['ipc'] as const
+     readonly deps = ['ipc'] as const satisfies readonly ServiceName[]
 
-     async init(container: ServiceContainer) {
-       // Setup logic.
+     async init(container: ServiceInitContainer<this>) {
+       // Setup logic; only declared deps are reachable here.
        void container
      }
 
@@ -474,7 +487,7 @@ Must complete before Electron is ready:
 3. Register in `apps/desktop/src/main/index.ts`:
 
    ```typescript
-   await container.register(new MyService())
+   container.register(new MyService())
    ```
 
 4. If service needs IPC:

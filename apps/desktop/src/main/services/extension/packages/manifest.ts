@@ -1,3 +1,8 @@
+/**
+ * Filesystem side of manifest handling: reads and installation-time checks.
+ * Parsing and path resolution live in `@shared/extension/manifest`.
+ */
+
 import { readFile } from 'node:fs/promises'
 // Import the fs module directly: the utils barrel links Electron main-process
 // modules, which must stay out of the extension host utility process bundle.
@@ -7,22 +12,13 @@ import type {
   ParsedExtensionManifest,
   ValidationIssue
 } from '@kisaki3/extension-api'
-import { parseExtensionManifest as parseSharedExtensionManifest } from '@kisaki3/extension-api'
-import { resolveInsideRoot } from '../shared/path-confinement'
-
-export function parseExtensionManifest(value: unknown): ParsedExtensionManifest {
-  return parseSharedExtensionManifest(value)
-}
+import { parseExtensionManifest, resolveExtensionFilePath } from '@shared/extension/manifest'
 
 export async function readExtensionManifestFile(
   manifestPath: string
 ): Promise<ParsedExtensionManifest> {
   const raw = JSON.parse(await readFile(manifestPath, 'utf8'))
   return parseExtensionManifest(raw)
-}
-
-export function resolveExtensionFilePath(extensionPath: string, relativePath: string): string {
-  return resolveInsideRoot(extensionPath, relativePath)
 }
 
 export async function validateExtensionFileExists(

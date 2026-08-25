@@ -13,7 +13,7 @@ import { createAbortError } from '@main/utils/async'
 import type { ScraperLookup } from '@shared/scraper'
 import type { ScraperProviderContext } from '@main/services/scraper'
 import type { ExtensionContributionPointOptions } from '../types'
-import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
+import { EXTENSION_CLEANUP_TIMEOUT_MS } from '@shared/extension/rpc-timeouts'
 import { getScraperRpcMethod } from './descriptors'
 import type { ScraperDomain, ScraperRegistration, ScraperRpcAction } from './domain'
 

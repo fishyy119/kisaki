@@ -17,7 +17,7 @@ import type {
   ExtensionRegistryManifest,
   ExtensionRegistryReleaseKind
 } from '@kisaki3/extension-registry'
-import type { ExtensionIconManager } from '../packages'
+import type { ExtensionIconManager } from '../assets'
 import { ExtensionRepositoryAggregator } from './aggregate'
 import { ExtensionRepositoryFetcher } from './fetcher'
 import { ExtensionRepositoryStore } from './store'

@@ -5,7 +5,7 @@ import { movePath, pathExists } from '@main/utils/fs'
 import type { ExtensionPackageLayout } from './layout'
 import { requireSafeArchiveSha256 } from './layout'
 import { hashFile } from './verifier'
-import { resolveInsideRoot } from '../shared/path-confinement'
+import { resolveInsideRoot } from '@shared/extension/path-confinement'
 
 const ARCHIVE_FILE_PATTERN = /^([a-f0-9]{64})\.kisx$/
 

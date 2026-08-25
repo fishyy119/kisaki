@@ -5,7 +5,7 @@ import {
   type ExtensionInstallReason,
   type ExtensionUpdatePolicy
 } from '@shared/db'
-import type { DbContext } from '../../db/types'
+import type { DbContext } from '@main/services/db'
 import type { ExtensionInstallationSource } from '@shared/extension/installation-source'
 
 export interface CreateOrUpdateExtensionInstallationInput {

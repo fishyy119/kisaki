@@ -9,7 +9,7 @@ import type {
 } from '@shared/extension/installation-source'
 import type { ExtensionRegistryArtifact } from '@kisaki3/extension-registry'
 import { createExtensionRegistryReleaseDigest } from '@kisaki3/extension-registry/node'
-import { resolveInsideRoot } from '../shared/path-confinement'
+import { resolveInsideRoot } from '@shared/extension/path-confinement'
 import type { ExtensionPackageArchiveStore } from './archive'
 import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
 import { ExtensionPackageVerifier, hashFile, type ExtensionPackageArchiveEntry } from './verifier'

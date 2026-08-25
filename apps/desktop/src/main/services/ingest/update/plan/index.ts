@@ -1,7 +1,0 @@
-export { buildAnimePlan } from './anime'
-export { buildCharacterPlan } from './character'
-export { buildComicPlan } from './comic'
-export { buildCompanyPlan } from './company'
-export { buildGamePlan } from './game'
-export { buildNovelPlan } from './novel'
-export { buildPersonPlan } from './person'

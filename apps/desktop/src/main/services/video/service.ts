@@ -9,7 +9,7 @@
  */
 
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import { createVideoHooks } from './hooks'
 import { registerVideoIpc } from './ipc'
@@ -18,9 +18,9 @@ import { VideoProbe } from './probe'
 
 const log = createLogger('Video')
 
-export class VideoService implements IService<'video'> {
+export class VideoService implements INonDomainService<'video'> {
   readonly id = 'video'
-  readonly deps = ['ipc'] as const satisfies readonly ServiceName[]
+  readonly deps = ['ipc'] as const
   readonly hooks = createVideoHooks()
 
   readonly sessions = new PlaybackSessionManager(this.hooks)

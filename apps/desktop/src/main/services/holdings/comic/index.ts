@@ -1,0 +1,6 @@
+/**
+ * Comic file domain exports
+ */
+
+export { comicAutoSyncSpec } from './auto-sync-spec'
+export { ComicFileSyncHandler } from './sync'

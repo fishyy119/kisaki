@@ -6,7 +6,7 @@ import type {
   RpcParams,
   RpcResult
 } from '@kisaki3/extension-api'
-import type { RpcRequestOptions } from '../runtime'
+import type { RpcRequestOptions } from '@extension-host/protocol'
 
 /**
  * Dependencies every contribution point needs. Domain-specific services and

@@ -1,0 +1,1 @@
+export { CharacterUpdateHandler } from './update'

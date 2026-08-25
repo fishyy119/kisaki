@@ -7,6 +7,10 @@ export function registerWindowIpc(service: WindowService, ipc: IpcService): void
     service.mainWindow.setCloseAction(action)
   })
 
+  ipc.on('window:set-tray-menu-height', (_e, height) => {
+    service.tray.setMenuHeight(height)
+  })
+
   ipc.on('app:theme-changed', (_e, theme) => {
     service.hooks.themeChanged.dispatch(theme)
   })

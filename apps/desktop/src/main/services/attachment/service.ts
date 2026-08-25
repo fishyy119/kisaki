@@ -1,10 +1,9 @@
 import { app } from 'electron'
 import { createLogger } from '@main/log'
 import path from 'node:path'
-import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { MediaType } from '@shared/common'
+import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import { AttachmentImages } from './images'
-import { GameAttachmentHandler } from './handlers/game'
+import { GameAttachmentHandler } from './game'
 import { registerAttachmentIpc } from './ipc'
 
 const log = createLogger('Attachment')
@@ -16,7 +15,7 @@ const log = createLogger('Attachment')
  * workflows that need main-process capabilities, exposed through submodule
  * namespaces.
  */
-export class AttachmentService implements IMediaService {
+export class AttachmentService implements IService<'attachment'> {
   readonly id = 'attachment'
   readonly deps = ['db', 'ipc', 'network'] as const satisfies readonly ServiceName[]
 
@@ -39,9 +38,5 @@ export class AttachmentService implements IMediaService {
       log.warn('Failed to cleanup temp crops:', error)
     })
     log.info('Initialized')
-  }
-
-  getSupportedMedia(): MediaType[] {
-    return ['game']
   }
 }

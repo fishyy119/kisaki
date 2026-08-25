@@ -10,7 +10,7 @@ import {
   validateInstalledExtensionPackage
 } from '../packages'
 import type { ExtensionInstalledEntry, ScannedExtensionPackage } from '../types'
-import { resolveInsideRoot } from '../shared/path-confinement'
+import { resolveInsideRoot } from '@shared/extension/path-confinement'
 import type { ExtensionInstallationStore } from './store'
 
 const log = createLogger('Extension')

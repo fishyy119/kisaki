@@ -18,7 +18,7 @@ import {
 import type { IngestCompanyGraph, IngestCompanyNode } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { pickFirstAssetUrl, type PersistCompanyGraphResult } from './types'
-import { reportIngestProgress } from '../progress'
+import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
 type CompanyPersistOptions = IngestAddCompanyFromScraperOptions &

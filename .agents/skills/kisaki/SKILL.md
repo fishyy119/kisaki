@@ -61,7 +61,7 @@ Load the relevant reference based on your task:
 
 Search within `references/` for keywords:
 
-- Service patterns: `container.register`, `IService`, `IMediaService`
+- Service patterns: `container.register`, `IService`, `ScopedContainer`
 - IPC: `IpcMainHandlers`, `IpcResult`, `ipc.handle`
 - Hooks & pushes: `createNotifyHook`, `service.hooks`, `useDbChanges`, `useIpc`, `db:changed`
 - Extension API: `ExtensionContext`, `KisakiApi`, `Contribution`, `Capability`, `RpcMethodDefinition`
@@ -95,7 +95,7 @@ Search within `references/` for keywords:
 - Use the project log wrappers (`@main/log` and `@renderer/core/log`) in app runtime code; do not scatter direct `electron-log/*` imports through business modules. `shared/**` stays pure and does not write runtime logs.
 - Main app logs are thin `electron-log` wrappers: add one stable prefix, route to `userData/logs/main.log` or `userData/logs/renderer.log`, and pass through the remaining arguments. Do not add custom JSON formatting, Error serialization, semantic redaction, or log protocols in business code.
 - Extension author logs are a separate extension-scoped capability. `context.logger` writes to `userData/extensions/data/<extensionId>/logs/extension.log`; the host must not inject app prefixes, extension ids, or rewrite extension messages.
-- Logger prefixes are single-level stable domains such as `Extension`, `Db`, `Window`, `Updater`, `Scanner`, `Watch`, `MediaFiles`, `Activity`, `Video`, `Reader`, `Process`, `Library`, `Theme`, `Hook`, `Ipc`, or `AsyncData`. Do not use dotted prefixes, `main`/`renderer`, file names, class names, function names, or dynamic ids as prefixes; pass dynamic values as log arguments.
+- Logger prefixes are single-level stable domains such as `Extension`, `Db`, `Window`, `Updater`, `Scanner`, `Watch`, `Holdings`, `Activity`, `Video`, `Reader`, `Process`, `Library`, `Theme`, `Hook`, `Ipc`, or `AsyncData`. Do not use dotted prefixes, `main`/`renderer`, file names, class names, function names, or dynamic ids as prefixes; pass dynamic values as log arguments.
 - Log lifecycle events, background task results, external boundary failures, recovery/degradation, extension host state, renderer global errors, and cross-process sync failures. Avoid logging ordinary renders, every watcher tick, form input, routine IPC calls, or tight-loop item details.
 - Never log secrets, auth headers, OAuth code/state, PKCE verifier, extension storage/secrets values, user body text, notes, comments, clipboard content, full DB rows, full HTTP bodies, unbounded arrays, private keys, or signing keys. Prefer basenames, ids, or app-derived paths over full user paths.
 - Catch only to add business semantics, recover, change the boundary message, or record full context once at the layer that owns it. Re-throw safe English errors in our own wording such as `new Error('Failed to install extension package.')`; messages may embed the dynamic values a reader needs to act (ids, paths, names, enum values), but never raw library messages (wrap with `cause` and log instead), secrets, remote-sourced content, or unbounded collections. Never branch on `error.message` text; classify errors with typed classes or reason fields. See `references/conventions.md` for details.

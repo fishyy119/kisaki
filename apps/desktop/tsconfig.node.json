@@ -5,6 +5,7 @@
     "tools/**/*",
     "src/main/**/*",
     "src/main/**/*.json",
+    "src/extension-host/**/*",
     "src/preload/**/*",
     "src/shared/**/*"
   ],
@@ -14,6 +15,7 @@
     "types": ["node"],
     "paths": {
       "@main/*": ["./src/main/*"],
+      "@extension-host/*": ["./src/extension-host/*"],
       "@shared/*": ["./src/shared/*"]
     }
   }

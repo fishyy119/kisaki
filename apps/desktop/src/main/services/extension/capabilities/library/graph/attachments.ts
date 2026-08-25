@@ -13,7 +13,7 @@ import {
 } from '@kisaki3/extension-api'
 import { animeEpisodes, gameNotes } from '@shared/db'
 import type { DbService } from '@main/services/db'
-import { assertInsideAnyRoot } from '../../../shared/path-confinement'
+import { assertInsideAnyRoot } from '@shared/extension/path-confinement'
 import { createDiagnostic } from './diagnostics'
 import type { NormalizedLibraryGraph } from './types'
 

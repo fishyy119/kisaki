@@ -1,1 +1,0 @@
-export { NovelScannerHandler } from './handler'

@@ -26,7 +26,7 @@ import {
   mediaExists,
   projectEntityChanges,
   projectMediaChanges
-} from './entities'
+} from './projections/registry'
 import {
   FEED_DEBOUNCE_MS,
   FEED_PUSH_CHUNK_SIZE,
@@ -34,9 +34,9 @@ import {
   type EntityGroup,
   type MediaFeedProjection
 } from './types'
-import { SETTINGS_PROJECTIONS, type SettingsColumnProjection } from './settings'
-import { stringValue } from './shared/normalization'
-import { dedupeTargets } from './shared/targets'
+import { SETTINGS_PROJECTIONS, type SettingsColumnProjection } from './projections/settings'
+import { stringValue } from './normalization'
+import { dedupeTargets } from './targets'
 
 const log = createLogger('Db')
 

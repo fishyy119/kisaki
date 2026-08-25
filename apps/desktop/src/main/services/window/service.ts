@@ -6,11 +6,11 @@
 
 import { app, BrowserWindow } from 'electron'
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import { createWindowHooks } from './hooks'
 import { registerWindowIpc } from './ipc'
 import { MainWindowController } from './controllers/main'
-import { TrayMenuWindowController } from './controllers/tray-menu'
+import { TrayController } from './controllers/tray'
 import { watchWindowShortcuts } from './shortcuts'
 
 const log = createLogger('Window')
@@ -19,13 +19,13 @@ export interface WindowsApi {
   getAll(): BrowserWindow[]
 }
 
-export class WindowService implements IService {
+export class WindowService implements INonDomainService<'window'> {
   readonly id = 'window'
-  readonly deps = ['ipc', 'db'] as const satisfies readonly ServiceName[]
+  readonly deps = ['ipc', 'db'] as const
   readonly hooks = createWindowHooks()
 
   readonly mainWindow = new MainWindowController()
-  readonly trayMenuWindow = new TrayMenuWindowController()
+  readonly tray = new TrayController()
   readonly windows: WindowsApi = {
     getAll: () => BrowserWindow.getAllWindows()
   }
@@ -46,6 +46,7 @@ export class WindowService implements IService {
     const dbService = container.get('db')
 
     this.mainWindow.init({ ipcService, dbService })
+    this.tray.init({ focusMainWindow: () => this.mainWindow.focus() })
     registerWindowIpc(this, ipcService)
     app.on('before-quit', this.onBeforeQuit)
     app.on('browser-window-created', this.onBrowserWindowCreated)
@@ -57,7 +58,7 @@ export class WindowService implements IService {
     app.off('before-quit', this.onBeforeQuit)
     app.off('browser-window-created', this.onBrowserWindowCreated)
 
-    this.trayMenuWindow.dispose()
+    this.tray.dispose()
     this.mainWindow.dispose()
 
     log.info('Disposed')

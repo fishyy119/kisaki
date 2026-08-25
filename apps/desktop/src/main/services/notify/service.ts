@@ -7,7 +7,7 @@
 import { Notification } from 'electron'
 import { nanoid } from 'nanoid'
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
 import type { NotifyOptions } from '@shared/notify'
@@ -24,9 +24,9 @@ export interface NotifyCallbacks {
   onClose?: NotifyCloseHandler
 }
 
-export class NotifyService implements IService {
+export class NotifyService implements INonDomainService<'notify'> {
   readonly id = 'notify'
-  readonly deps = ['ipc', 'window'] as const satisfies readonly ServiceName[]
+  readonly deps = ['ipc', 'window'] as const
 
   private ipcService!: IpcService
   private windowService!: WindowService

@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { cp, mkdir, rm, stat } from 'node:fs/promises'
 import type { NetworkService } from '@main/services/network'
-import { assertPackageSignalNotAborted } from './abort'
+import { assertPackageSignalNotAborted } from './types'
 import type { ExtensionPackageLayout } from './layout'
 import { wrapExtensionPackageError } from './types'
 import { hashFile } from './verifier'

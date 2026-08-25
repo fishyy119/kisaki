@@ -1,30 +1,31 @@
 /**
- * Database Service
+ * Data platform service.
  *
- * Unified database service that provides:
- * - Database connection and lifecycle management
- * - Entity lookup and deletion helpers
- * - Attachment storage (via attachment sub-store)
- * - Thumbnail generation (via thumbnail sub-store)
+ * Owns three layers that a synchronous SQLite connection cannot separate:
+ * - infrastructure: connection, migrations, change capture, SQL execution;
+ * - library-graph transaction core (`curation`, `helper`), whose operations must
+ *   see every entity table inside one transaction;
+ * - row-attached bytes (`attachment`), whose lifetime follows its owning row.
+ *
+ * Workflows that only need main-process capabilities belong to the service that
+ * owns them, not here: AttachmentService owns cropping, ingest owns imports.
  */
 
 import Database from 'better-sqlite3'
 import { drizzle, BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import { app, net, protocol } from 'electron'
-import { pathToFileURL } from 'node:url'
+import { app } from 'electron'
 import { mkdir } from 'node:fs/promises'
-import { pathExists } from '@main/utils/fs'
 import path from 'node:path'
 import { createLogger } from '@main/log'
 import { eq } from 'drizzle-orm'
 import * as schema from '@shared/db/schema'
 import { settings, tags } from '@shared/db/schema'
 import { normalizeKeyText } from '@shared/identity'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import { AttachmentStore, requireStorageTable } from './attachment'
-import { ThumbnailStore } from './thumbnail'
-import { DbEntityDeleteHelper, DbEntityFinderHelper, DbEntityMergeCoordinator } from './helper'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
+import { AttachmentStore, ThumbnailStore, registerAttachmentProtocol } from './attachment'
+import { EntityDeleteCoordinator, EntityMergeCoordinator } from './curation'
+import { EntityFinderHelper } from './helper'
 import { FtsStore } from './fts'
 import { TriggerStore, dropAllTriggers } from './trigger'
 import { DbChangeFeed } from './feed'
@@ -35,24 +36,15 @@ import { SqlExecutor } from './sql'
 
 const log = createLogger('Db')
 
-// Re-export types
-export type { ThumbnailOptions, ThumbnailFit, FileColumns, FilesColumns } from './types'
+/** Entity curation workflows: merging duplicates and weeding rows out. */
+export interface DbCuration {
+  merge: EntityMergeCoordinator
+  delete: EntityDeleteCoordinator
+}
 
-/** Image extensions that support thumbnails */
-const THUMBNAIL_SUPPORTED_EXTENSIONS = new Set([
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.gif',
-  '.avif',
-  '.tiff',
-  '.tif'
-])
-
-export class DbService implements IService {
+export class DbService implements INonDomainService<'db'> {
   readonly id = 'db'
-  readonly deps = ['ipc', 'network'] as const satisfies readonly ServiceName[]
+  readonly deps = ['ipc', 'network'] as const
   readonly hooks = createDbHooks()
 
   // Database infrastructure
@@ -64,9 +56,8 @@ export class DbService implements IService {
   // First-level capabilities
   attachment!: AttachmentStore
   private thumbnail!: ThumbnailStore
-  entityFinder!: DbEntityFinderHelper
-  entityDelete!: DbEntityDeleteHelper
-  entityMerge!: DbEntityMergeCoordinator
+  entityFinder!: EntityFinderHelper
+  curation!: DbCuration
   fts!: FtsStore
   sql!: SqlExecutor
   settings!: SettingsStore
@@ -132,9 +123,11 @@ export class DbService implements IService {
     // Initialize first-level capabilities
     this.thumbnail = new ThumbnailStore()
     this.attachment = new AttachmentStore(this.client, this.storageDir, this.thumbnail, network)
-    this.entityFinder = new DbEntityFinderHelper(this.client)
-    this.entityDelete = new DbEntityDeleteHelper(this.client)
-    this.entityMerge = new DbEntityMergeCoordinator(this.client, this.attachment, this.hooks, ipc)
+    this.entityFinder = new EntityFinderHelper(this.client)
+    this.curation = {
+      merge: new EntityMergeCoordinator(this.client, this.attachment, this.hooks, ipc),
+      delete: new EntityDeleteCoordinator(this.client)
+    }
     this.fts = new FtsStore(this.sqlite)
     this.sql = new SqlExecutor(this.sqlite)
     this.settings = new SettingsStore(this.client)
@@ -146,25 +139,10 @@ export class DbService implements IService {
 
     this.backfillTagNormalizedNames()
 
-    // Setup attachment:// protocol handler
-    this.setupAttachmentProtocol()
-
+    registerAttachmentProtocol({ attachment: this.attachment, thumbnail: this.thumbnail })
     registerDbIpc(this, ipc)
 
     log.info('Database initialized.', { dbPath: this.dbPath })
-  }
-
-  // Attachment responses are consumed cross-origin (ambient color extraction
-  // decodes covers as crossOrigin="anonymous" images for canvas pixel reads),
-  // so successful responses opt into CORS.
-  private withAttachmentCors(response: Response): Response {
-    const headers = new Headers(response.headers)
-    headers.set('Access-Control-Allow-Origin', '*')
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers
-    })
   }
 
   /**
@@ -196,64 +174,6 @@ export class DbService implements IService {
     })
 
     log.info('Backfilled tag normalized names.', { filled: pending.length - removed, removed })
-  }
-
-  private setupAttachmentProtocol(): void {
-    protocol.handle('attachment', async (request) => {
-      // Parse URL: attachment://tableName/rowId/fileName?w=240&h=320
-      const url = new URL(request.url)
-      const pathParts = url.pathname.split('/').filter(Boolean)
-
-      if (pathParts.length !== 2) {
-        return new Response('Invalid attachment path', { status: 400 })
-      }
-
-      const [rowId, fileName] = pathParts
-
-      // URL segments are untrusted; the store validates them and confines the
-      // result to the storage root.
-      let fileDir: string
-      let filePath: string
-      try {
-        const tableName = requireStorageTable(url.hostname)
-        fileDir = this.attachment.getRowDir(tableName, rowId)
-        filePath = this.attachment.getPath(tableName, rowId, fileName)
-      } catch {
-        return new Response('Invalid attachment path', { status: 400 })
-      }
-
-      try {
-        if (!(await pathExists(filePath))) {
-          return new Response('Attachment not found', { status: 404 })
-        }
-
-        // Check for thumbnail request
-        const thumbnailOptions = this.thumbnail.parseOptions(url.searchParams)
-        const fileExt = path.extname(fileName).toLowerCase()
-
-        if (thumbnailOptions && THUMBNAIL_SUPPORTED_EXTENSIONS.has(fileExt)) {
-          try {
-            const thumbnailPath = await this.thumbnail.getOrCreate(
-              filePath,
-              fileDir,
-              thumbnailOptions
-            )
-            const thumbnailUrl = pathToFileURL(thumbnailPath).toString()
-            return this.withAttachmentCors(await net.fetch(thumbnailUrl))
-          } catch (error) {
-            log.warn('Thumbnail generation failed, falling back to original.', error, {
-              fileName
-            })
-          }
-        }
-
-        const fileUrl = pathToFileURL(filePath).toString()
-        return this.withAttachmentCors(await net.fetch(fileUrl))
-      } catch (error) {
-        log.error('Attachment protocol failed.', error)
-        return new Response('Failed to load attachment', { status: 500 })
-      }
-    })
   }
 
   async dispose(): Promise<void> {

@@ -1,0 +1,1 @@
+export { PersonUpdateHandler } from './update'

@@ -1,22 +1,15 @@
 /**
- * Database module exports
+ * Public surface of the data platform service.
+ *
+ * Only what other services actually consume: the service itself, the context
+ * types they thread through their own transactions, and the entity-graph
+ * primitives ingest composes with.
  */
 
 export { DbService } from './service'
-export type {
-  ThumbnailFit,
-  ThumbnailOptions,
-  FileColumns,
-  FilesColumns,
-  DbContext,
-  DbQueryContext,
-  DbWriteContext
-} from './types'
-
-// Sub-modules
+export type { DbCuration } from './service'
+export type { DbContext, DbQueryContext, DbWriteContext } from './types'
 export { AttachmentStore } from './attachment'
-export { ThumbnailStore } from './thumbnail'
-export { DbEntityDeleteHelper, DbEntityFinderHelper } from './helper'
 export {
   animeExternalIdLink,
   characterExternalIdLink,
@@ -30,7 +23,3 @@ export {
   resolveTagId,
   type ExternalIdLinkTable
 } from './helper'
-export { SettingsStore } from './settings'
-export { FtsStore } from './fts'
-export { SqlExecutor, type DbSqlMethod } from './sql'
-export type { FtsEntityType } from '@shared/db/contracts/fts'

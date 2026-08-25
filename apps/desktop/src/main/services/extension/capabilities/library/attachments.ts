@@ -22,7 +22,7 @@ import { animes, characters, collections, companies, games, persons } from '@sha
 import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/contracts/attachment'
 import type { TableName } from '@shared/db/table-names'
 import type { DbService } from '@main/services/db'
-import { assertInsideAnyRoot } from '../../shared/path-confinement'
+import { assertInsideAnyRoot } from '@shared/extension/path-confinement'
 
 type AttachmentMode = 'single' | 'multiple'
 type AttachmentTable =

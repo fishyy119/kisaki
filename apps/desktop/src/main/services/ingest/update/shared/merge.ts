@@ -9,7 +9,7 @@ import type { ExternalSite } from '@shared/db'
 import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import type { Tag } from '@shared/metadata'
-import { normalizeAliases, normalizeExternalSites, normalizeTags } from './normalization'
+import { normalizeAliases, normalizeExternalSites, normalizeTags } from '../../normalization'
 
 export function mergeExternalIds(
   current: ExternalId[],

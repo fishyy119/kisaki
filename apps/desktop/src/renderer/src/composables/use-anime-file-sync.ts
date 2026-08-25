@@ -1,7 +1,7 @@
 /**
  * Anime file sync invocation with user feedback.
  *
- * Wraps the `media-files:sync-anime` call with the shared success, warning,
+ * Wraps the `holdings:sync-anime` call with the shared success, warning,
  * and failure notifications so every sync entry point reports the same way.
  */
 
@@ -27,7 +27,7 @@ export function useAnimeFileSync(): AnimeFileSync {
 
     isSyncing.value = true
     try {
-      const result = await ipcManager.invoke('media-files:sync-anime', { animeId })
+      const result = await ipcManager.invoke('holdings:sync-anime', { animeId })
       if (!result.success) {
         notify.error(m.value.anime.episodes.syncFailed, result.error)
         return

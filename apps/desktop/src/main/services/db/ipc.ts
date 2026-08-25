@@ -14,15 +14,15 @@ export function registerDbIpc(service: DbService, ipc: IpcService): void {
   ipc.handle('db:rebuild-all-fts', async () => wrapIpcVoid(() => service.fts.rebuildAll()))
 
   ipc.handle('db:preview-entity-delete', async (_, params) =>
-    wrapIpc(() => service.entityDelete.preview(params))
+    wrapIpc(() => service.curation.delete.preview(params))
   )
 
   ipc.handle('db:delete-entities', async (_, params) =>
-    wrapIpc(() => service.entityDelete.delete(params))
+    wrapIpc(() => service.curation.delete.apply(params))
   )
 
   ipc.handle('db:merge-entities', async (_, params) =>
-    wrapIpc(() => service.entityMerge.merge(params))
+    wrapIpc(() => service.curation.merge.apply(params))
   )
 
   ipc.handle('db:attachment-set-file', async (_, tableName, rowId, field, input) =>

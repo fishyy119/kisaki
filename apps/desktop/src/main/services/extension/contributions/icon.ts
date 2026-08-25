@@ -5,7 +5,7 @@ import {
   type ContributionIcon
 } from '@kisaki3/extension-api'
 import type { ExtensionIconInfo } from '@shared/extension'
-import { resolveInsideRoot } from '../shared/path-confinement'
+import { resolveInsideRoot } from '@shared/extension/path-confinement'
 
 /**
  * Translates the public contribution icon contract into the renderer DTO.

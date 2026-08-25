@@ -8,7 +8,7 @@ import {
   type ExtensionRuntimeMetadata,
   type RpcValue
 } from '@kisaki3/extension-api'
-import { resolveInsideRoot } from '../shared/path-confinement'
+import { resolveInsideRoot } from '@shared/extension/path-confinement'
 
 type ExtensionLogLevel = 'debug' | 'info' | 'warn' | 'error'
 

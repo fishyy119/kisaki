@@ -14,7 +14,7 @@ import { I18nService } from './services/i18n'
 import { ScraperService } from './services/scraper'
 import { ProcessService } from './services/process'
 import { VideoService } from './services/video'
-import { MediaFilesService } from './services/media-files'
+import { HoldingsService } from './services/holdings'
 import { ReaderService } from './services/reader'
 import { ActivityService } from './services/activity'
 import { IngestService } from './services/ingest'
@@ -117,39 +117,39 @@ async function onAppReady(): Promise<void> {
   // grouped by layer to keep the architecture readable.
 
   // Platform: Electron, OS, and transport adapters
-  await container.register(new IpcService())
-  await container.register(new DbService())
-  await container.register(new WindowService())
-  await container.register(new NativeService())
-  await container.register(new NotifyService())
-  await container.register(new NetworkService())
-  await container.register(new DeeplinkService())
-  await container.register(new UpdaterService())
-  await container.register(new I18nService())
+  container.register(new IpcService())
+  container.register(new DbService())
+  container.register(new WindowService())
+  container.register(new NativeService())
+  container.register(new NotifyService())
+  container.register(new NetworkService())
+  container.register(new DeeplinkService())
+  container.register(new UpdaterService())
+  container.register(new I18nService())
 
   // Capability: no domain vocabulary, no library rows
-  await container.register(new TaskRunService())
-  await container.register(new FileWatchService())
-  await container.register(new ProcessService())
-  await container.register(new VideoService())
-  await container.register(new ReaderService())
+  container.register(new TaskRunService())
+  container.register(new FileWatchService())
+  container.register(new ProcessService())
+  container.register(new VideoService())
+  container.register(new ReaderService())
 
   // Domain: library ownership, grows per media type
-  await container.register(new ScraperService())
-  await container.register(new IngestService())
-  await container.register(new ScannerService())
-  await container.register(new MediaFilesService())
-  await container.register(new ActivityService())
-  await container.register(new AttachmentService())
-  await container.register(new CommandService())
-  await container.register(new AutomationService())
-  await container.register(new ExtensionService())
+  container.register(new ScraperService())
+  container.register(new IngestService())
+  container.register(new ScannerService())
+  container.register(new HoldingsService())
+  container.register(new ActivityService())
+  container.register(new AttachmentService())
+  container.register(new CommandService())
+  container.register(new AutomationService())
+  container.register(new ExtensionService())
 
   await container.initAll()
   log.info('All services initialized')
 
   // Setup portable IPC handlers (after services are ready)
-  const ipcService = container.get<IpcService>('ipc')
+  const ipcService = container.get('ipc')
   setupBootstrapArgsIpc(ipcService)
   setupPortableIpc(ipcService)
 
@@ -164,19 +164,19 @@ async function onAppReady(): Promise<void> {
   })
 
   // Create main window first (so renderer IPC listeners are ready)
-  const windowService = container.get<WindowService>('window')
+  const windowService = container.get('window')
   windowService.mainWindow.create()
-  windowService.trayMenuWindow.create()
+  windowService.tray.create()
 
   bootstrapHooks.appReady.dispatch()
 
-  const automationService = container.get<AutomationService>('automation')
+  const automationService = container.get('automation')
   automationService.runStartupAutomations().catch((error) => {
     log.error('Startup automations failed.', error)
   })
 
   // Mark deeplink service as ready and process any pending deeplinks
-  const deeplinkService = container.get<DeeplinkService>('deeplink')
+  const deeplinkService = container.get('deeplink')
   deeplinkService.markReady()
 
   // Handle deeplink from startup arguments (Windows/Linux)
@@ -192,7 +192,7 @@ async function onAppReady(): Promise<void> {
     // dock icon is clicked and there are no other windows open.
     if (windowService.windows.getAll().length === 0) {
       windowService.mainWindow.create()
-      windowService.trayMenuWindow.create()
+      windowService.tray.create()
     }
   })
 }

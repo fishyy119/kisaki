@@ -1,7 +1,7 @@
 /**
  * Novel file sync invocation with user feedback.
  *
- * Wraps the `media-files:sync-novel` call with the shared success, warning,
+ * Wraps the `holdings:sync-novel` call with the shared success, warning,
  * and failure notifications so every sync entry point reports the same way.
  */
 
@@ -27,7 +27,7 @@ export function useNovelFileSync(): NovelFileSync {
 
     isSyncing.value = true
     try {
-      const result = await ipcManager.invoke('media-files:sync-novel', { novelId })
+      const result = await ipcManager.invoke('holdings:sync-novel', { novelId })
       if (!result.success) {
         notify.error(m.value.novel.volumes.syncFailed, result.error)
         return

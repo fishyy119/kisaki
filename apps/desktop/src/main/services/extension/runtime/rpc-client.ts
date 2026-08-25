@@ -14,7 +14,7 @@ import {
   type RpcParams,
   type RpcResult
 } from '@kisaki3/extension-api'
-import { RpcChannel, type RpcRequestContext, type RpcRequestOptions } from './rpc-core'
+import { RpcChannel, type RpcRequestContext, type RpcRequestOptions } from '@extension-host/protocol'
 
 export class ExtensionHostRpcClient {
   private readonly channel: RpcChannel

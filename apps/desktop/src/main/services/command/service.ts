@@ -11,7 +11,7 @@ import { CommandRegistry } from './registry'
 
 const log = createLogger('Command')
 
-export class CommandService implements IService {
+export class CommandService implements IService<'command'> {
   readonly id = 'command'
   readonly deps = ['ipc'] as const satisfies readonly ServiceName[]
 

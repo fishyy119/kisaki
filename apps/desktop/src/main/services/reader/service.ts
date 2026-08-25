@@ -6,12 +6,12 @@
  * (`books`), the `book://` content transport, the reader windows, and the
  * position facts they report — and republishes those facts as hooks. What a
  * position means for read state belongs to the activity handlers, never here,
- * and which rows own reading files belongs to media-files, which registers the
+ * and which rows own reading files belongs to holdings, which registers the
  * transport's file resolver.
  */
 
 import { createLogger } from '@main/log'
-import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import type {
   ReaderBootstrap,
   ReaderComicProgressReport,
@@ -26,9 +26,9 @@ import { ReaderWindowManager } from './windows'
 
 const log = createLogger('Reader')
 
-export class ReaderService implements IService<'reader'> {
+export class ReaderService implements INonDomainService<'reader'> {
   readonly id = 'reader'
-  readonly deps = ['ipc'] as const satisfies readonly ServiceName[]
+  readonly deps = ['ipc'] as const
   readonly hooks = createReaderHooks()
   readonly windows = new ReaderWindowManager(this.hooks)
   readonly books = new BookContainerReader()

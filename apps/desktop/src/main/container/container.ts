@@ -21,9 +21,10 @@ export class ServiceContainer {
   private initOrder: string[] = []
 
   /**
-   * Register a service instance (no initialization).
+   * Register a service instance. Synchronous by contract: registration has no
+   * side effects, so nothing can await between two registrations.
    */
-  async register<T extends IService>(service: T): Promise<this> {
+  register<T extends IService>(service: T): void {
     if (this.services.has(service.id)) {
       throw new Error(`Service "${service.id}" is already registered`)
     }
@@ -31,8 +32,6 @@ export class ServiceContainer {
     this.services.set(service.id, service)
     this.serviceStatus.set(service.id, 'registered')
     log.info('Service registered.', { serviceId: service.id })
-
-    return this
   }
 
   /**
@@ -80,12 +79,13 @@ export class ServiceContainer {
   }
 
   /**
-   * Get a service by name with automatic type inference.
+   * Get a service by name.
+   *
+   * Typed by the service registry on purpose: there is no `string` overload, so
+   * a mistyped id fails to compile instead of failing at startup.
    * @throws Error if service not registered or not ready
    */
-  get<K extends ServiceName>(name: K): ServiceType<K>
-  get<T extends IService>(name: string): T
-  get(name: string): IService {
+  get<K extends ServiceName>(name: K): ServiceType<K> {
     const service = this.services.get(name)
     if (!service) {
       throw new Error(`Service "${name}" not found`)
@@ -95,102 +95,7 @@ export class ServiceContainer {
     if (status !== 'ready') {
       throw new Error(`Service "${name}" is not ready (status: ${status ?? 'unknown'})`)
     }
-    return service
-  }
-
-  /**
-   * Try to get a service by name.
-   * Returns undefined if service not registered or not ready.
-   */
-  tryGet<K extends ServiceName>(name: K): ServiceType<K> | undefined
-  tryGet<T extends IService>(name: string): T | undefined
-  tryGet(name: string): IService | undefined {
-    const service = this.services.get(name)
-    if (!service) return undefined
-    return this.serviceStatus.get(name) === 'ready' ? service : undefined
-  }
-
-  /**
-   * Check if a service is registered
-   */
-  has(name: string): boolean {
-    return this.services.has(name)
-  }
-
-  /**
-   * Get the dependency graph for all registered services.
-   */
-  getGraph(): Record<string, readonly string[]> {
-    const graph: Record<string, readonly string[]> = {}
-    for (const [id, service] of this.services) {
-      graph[id] = service.deps
-    }
-    return graph
-  }
-
-  /**
-   * Get all registered service names
-   */
-  getServiceNames(): string[] {
-    return Array.from(this.services.keys())
-  }
-
-  /**
-   * Get the status of a service or all services
-   */
-  getStatus<K extends ServiceName>(name: K): ServiceStatus | undefined
-  getStatus(name: string): ServiceStatus | undefined
-  getStatus(): Record<string, ServiceStatus>
-  getStatus(name?: string): ServiceStatus | undefined | Record<string, ServiceStatus> {
-    if (name === undefined) {
-      const allStatus: Record<string, ServiceStatus> = {}
-      for (const [n, status] of this.serviceStatus) {
-        allStatus[n] = status
-      }
-      return allStatus
-    }
-    return this.serviceStatus.get(name)
-  }
-
-  /**
-   * Check if all services are ready
-   */
-  isReady(): boolean {
-    if (this.services.size === 0) return false
-    for (const [id, status] of this.serviceStatus) {
-      if (this.services.has(id) && status !== 'ready') return false
-    }
-    return true
-  }
-
-  /**
-   * Unregister and dispose a service at runtime.
-   */
-  async unregister(name: string): Promise<void> {
-    const service = this.services.get(name)
-    if (!service) {
-      throw new Error(`Service "${name}" not found`)
-    }
-
-    const status = this.serviceStatus.get(name)
-    if (status === 'initializing') {
-      throw new Error(`Service "${name}" is initializing and cannot be unregistered`)
-    }
-
-    log.info('Service unregistering.', { serviceId: name })
-
-    if (status === 'ready' && service.dispose) {
-      this.serviceStatus.set(name, 'disposing')
-      try {
-        await service.dispose()
-      } catch (error) {
-        log.error('Service disposal failed.', error, { serviceId: name })
-      }
-    }
-
-    this.services.delete(name)
-    this.serviceStatus.delete(name)
-    this.initOrder = this.initOrder.filter((n) => n !== name)
+    return service as ServiceType<K>
   }
 
   /**

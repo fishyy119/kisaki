@@ -36,7 +36,7 @@ import type {
 } from '@shared/activity'
 import type { PlaybackTarget } from '@shared/video'
 import type { ActivityHooks } from '../hooks'
-import { RESUME_WRITE_INTERVAL_MS, isWatchedPosition, toResumePosition } from './progress'
+import { RESUME_WRITE_INTERVAL_MS, isWatchedPosition, toResumePosition } from '../progress'
 
 const log = createLogger('Activity')
 

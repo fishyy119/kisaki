@@ -31,7 +31,7 @@ import type {
   ExtensionPackageVerifier
 } from '../packages'
 import { ExtensionPackagePreparer } from '../packages'
-import type { RuntimeManager } from '../runtime'
+import type { ExtensionRuntimeManager } from '../runtime'
 import type {
   ExtensionRepositoryInstallCandidate,
   ExtensionRepositoryManager
@@ -48,7 +48,7 @@ import type {
 
 export interface ExtensionInstallerManagerOptions {
   layout: ExtensionPackageLayout
-  runtime: RuntimeManager
+  runtime: ExtensionRuntimeManager
   repositories: ExtensionRepositoryManager
   installations: ExtensionInstallationManager
   signers: ExtensionSignerTrustManager
@@ -70,7 +70,7 @@ interface StartedPackageTaskRun<T> {
 
 export class ExtensionInstallerManager {
   private readonly layout: ExtensionPackageLayout
-  private readonly runtime: RuntimeManager
+  private readonly runtime: ExtensionRuntimeManager
   private readonly repositories: ExtensionRepositoryManager
   private readonly installations: ExtensionInstallationManager
   private readonly signers: ExtensionSignerTrustManager

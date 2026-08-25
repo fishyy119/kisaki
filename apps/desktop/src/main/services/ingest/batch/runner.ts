@@ -13,7 +13,7 @@
 import { createLogger } from '@main/log'
 import type { I18nService } from '@main/services/i18n'
 import { isCancellation, type TaskRunHandle, type TaskRunService } from '@main/services/task-run'
-import { createIngestRun } from '../task-run'
+import { createIngestRun } from '../run/task-run'
 import type { ExternalId } from '@shared/identity'
 import type { IngestUpdateResult } from '@shared/ingest'
 import {
@@ -22,7 +22,7 @@ import {
   type IngestUpdateRequest
 } from '@shared/ingest/update'
 import type { TaskRunContentEntity, TaskRunStartResult } from '@shared/task-run'
-import { throwIfIngestAborted } from '../abort'
+import { throwIfIngestAborted } from '../run/abort'
 import {
   createBatchTaskRunWarnings,
   getBatchRowQueryName,

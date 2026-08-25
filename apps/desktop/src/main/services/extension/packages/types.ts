@@ -2,6 +2,17 @@ export type ExtensionPackageSourceKind = 'repository' | 'local-file'
 
 export type ExtensionPackageStage = 'download' | 'verify' | 'extract' | 'commit' | 'recover'
 
+/** Progress steps a package operation reports, including waiting for the lock. */
+export type ExtensionPackagePhase = 'waiting-lock' | 'download' | 'verify' | 'extract' | 'commit'
+
+export function assertPackageSignalNotAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    const error = new Error('Extension package task was cancelled.')
+    error.name = 'AbortError'
+    throw error
+  }
+}
+
 export interface ExtensionPackageDiagnostic {
   stage: ExtensionPackageStage
   message: string

@@ -14,7 +14,7 @@ import {
   type ExtensionRuntimeMetadata,
   type JsonValue
 } from '@kisaki3/extension-api'
-import { resolveInsideRoot } from '../shared/path-confinement'
+import { resolveInsideRoot } from '@shared/extension/path-confinement'
 
 const log = createLogger('Extension')
 

@@ -24,9 +24,12 @@ old internal shapes.
 
 ## Architecture
 
-- `apps/desktop/` is the Electron app:
+- `apps/desktop/` is the Electron app. Its top-level `src/` folders are process boundaries, one
+  bundle each:
   - `src/main/` owns services, lifecycle, IPC registration, database access, background work, and
-    extension hosting.
+    the extension host lifecycle.
+  - `src/extension-host/` is the extension host utility-process program. It must stay free of
+    Electron and `@main`; the main process may import only `@extension-host/protocol`.
   - `src/preload/` exposes the safe bridge between Electron and the renderer.
   - `src/renderer/` owns the Vue UI, composables, dialogs, and renderer-local state.
   - `src/shared/` contains pure cross-process contracts and shared value definitions only.
@@ -46,11 +49,28 @@ old internal shapes.
 - Build and release: in-repo Vite bundler (`apps/desktop/tools/bundler`), electron-builder, pnpm
   workspaces.
 
+## Domain Vocabulary
+
+Library-science words carry their library-science meaning here; keep them apart:
+
+- **catalog** — the entity graph itself: what the library knows exists. Cross-table writes over it
+  live with the connection, in `db.curation` (merge, delete) and `db.helper` (finder, tag,
+  external-id primitives).
+- **holdings** — what the user actually has on disk, bound to consumption-unit rows. The `holdings`
+  service owns that seam. A catalogued entry with zero holdings is normal, not an error.
+- **curation** — tending existing records: merging duplicates, weeding rows out. It never creates
+  entries; creation belongs to ingest and to direct renderer writes.
+- **attachment** — app-owned asset bytes (covers, backdrops) that the app itself stores, as opposed
+  to the user's own files in holdings.
+
 ## Main Process Standards
 
 - Services are managed by `ServiceContainer`; register services first, initialize by declared deps,
   and dispose in reverse initialization order.
 - Service ids must be stable and match the `ServiceRegistry` key.
+- Non-domain (platform, capability) services implement `INonDomainService<'<id>'>`, which makes a
+  dependency on a domain service a compile error. Invert instead: the domain service registers
+  itself with the platform one.
 - Keep `service.ts` as the service boundary. For real first-level service capabilities, expose
   namespaces such as `service.repositories.refreshRepository()` instead of flattening every method
   onto the service.
@@ -100,7 +120,10 @@ old internal shapes.
 ## Runtime And Logging
 
 - Use project log wrappers (`@main/log` and `@renderer/core/log`) in runtime code. Logger prefixes
-  are single-level stable domains such as `Db`, `Scanner`, `Watch`, `MediaFiles`, or `Extension`.
+  are single-level stable domains such as `Db`, `Scanner`, `Watch`, `Holdings`, or `Extension`.
+- Module hook ids take either the dispatching service's id as root (default) or one of the
+  application-wide topic roots `app.*`, `library.*`, `play.*`. Any service may dispatch a topic-root
+  hook; the whitelist is closed.
 - Never log secrets, auth headers, OAuth values, extension storage/secrets, full user content, full
   database rows, full HTTP bodies, unbounded arrays, private keys, or signing keys.
 - Catch errors only to add business context, recover, change the boundary message, or log once at the

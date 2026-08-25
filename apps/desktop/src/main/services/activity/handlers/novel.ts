@@ -36,7 +36,7 @@ import {
   NOVEL_READ_PROGRESS,
   RESUME_WRITE_INTERVAL_MS,
   formatUnitNumber
-} from './reading'
+} from '../reading'
 
 const log = createLogger('Activity')
 

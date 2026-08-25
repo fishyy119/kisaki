@@ -1,0 +1,1 @@
+export { GameUpdateHandler } from './update'

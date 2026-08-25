@@ -7,14 +7,14 @@
  */
 
 import { createLogger } from '@main/log'
-import type { IService, ServiceName } from '@main/container'
+import type { INonDomainService } from '@main/container'
 import { FileWatchScope, type FileWatchOptions } from './scope'
 
 const log = createLogger('Watch')
 
-export class FileWatchService implements IService<'file-watch'> {
+export class FileWatchService implements INonDomainService<'file-watch'> {
   readonly id = 'file-watch'
-  readonly deps = [] as const satisfies readonly ServiceName[]
+  readonly deps = [] as const
 
   private readonly scopes = new Set<FileWatchScope>()
 

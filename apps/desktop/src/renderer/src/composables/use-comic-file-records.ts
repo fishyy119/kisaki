@@ -50,7 +50,7 @@ export function useComicFileRecords(
       const picked = dialogResult.data?.filePaths[0]
       if (!picked || dialogResult.data?.canceled) return
 
-      const result = await ipcManager.invoke('media-files:attach-comic-chapter-file', {
+      const result = await ipcManager.invoke('holdings:attach-comic-chapter-file', {
         chapterId: owner.id,
         path: picked
       })
