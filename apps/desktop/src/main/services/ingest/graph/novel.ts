@@ -5,6 +5,7 @@ import type {
   NovelPersonRole
 } from '@shared/db'
 import { buildEntityCanonicalIdentityKey } from '@shared/identity'
+import { novelUnitIdentityKey } from '@shared/metadata'
 import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
@@ -329,12 +330,6 @@ function normalizeCharacterPersonFactCore(
   })
 }
 
-/** Volume key by number; unnumbered rows key by name. */
-function volumeInfoKey(volume: NovelVolumeInfo): string {
-  if (volume.volumeNumber != null) return `volume:${volume.volumeNumber}`
-  return `name:${volume.name ?? ''}`
-}
-
 /**
  * Normalize scraped volumes into ingest order.
  *
@@ -360,7 +355,7 @@ export function normalizeNovelVolumes(
       description: normalizeOptionalString(volume.description),
       externalIds: mergeExternalIds(undefined, volume.externalIds)
     }
-    byKey.set(volumeInfoKey(normalized), normalized)
+    byKey.set(novelUnitIdentityKey(normalized), normalized)
   }
 
   return [...byKey.values()].sort(

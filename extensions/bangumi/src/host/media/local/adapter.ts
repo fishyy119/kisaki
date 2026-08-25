@@ -28,9 +28,9 @@ import type {
 import {
   createStaticCollectionByName,
   ensureTag,
-  findStaticCollectionByName,
-  mapCollectionSummary,
-  normalizeCollectionName
+  listStaticCollections,
+  resolveStaticCollectionById,
+  resolveStaticCollectionByTitle
 } from './library'
 
 const SUBJECT_LOOKUP_PAGE_SIZE = 500
@@ -195,26 +195,15 @@ export abstract class BangumiLocalMediaAdapter<
   }
 
   async listCollections(): Promise<readonly LocalCollectionSummary[]> {
-    const collections = await kisaki.library.collections.list({
-      includeDynamic: false,
-      includeStatic: true
-    })
-    return collections.map(mapCollectionSummary)
+    return listStaticCollections()
   }
 
   async resolveExistingCollection(collectionId: string): Promise<LocalCollectionTarget> {
-    const collection = await kisaki.library.collections.get(collectionId)
-    if (!collection || collection.isDynamic) {
-      throw new BangumiExtensionError('bangumi_validation', m().errors.targetCollectionMissing)
-    }
-
-    return { id: collection.id, name: collection.name }
+    return resolveStaticCollectionById(collectionId)
   }
 
   async resolveCollectionByTitle(title: string): Promise<LocalCollectionTarget> {
-    const name = normalizeCollectionName(title)
-    const existing = await findStaticCollectionByName(name)
-    return existing ? { id: existing.id, name: existing.name } : { name, willCreate: true }
+    return resolveStaticCollectionByTitle(title)
   }
 
   async hasCollectionMembership(localId: string, target: LocalCollectionTarget): Promise<boolean> {

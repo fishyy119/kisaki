@@ -549,7 +549,7 @@ export const library = {
     releaseDateInvalidFormat: '発売日の形式が正しくありません',
     foundedDateYearDayWithoutMonth: '設立日に年と日を入力する場合は、月も入力してください',
     releaseDateYearDayWithoutMonth: '発売日に年と日を入力する場合は、月も入力してください',
-    totalEpisodesPlaceholder: '空欄可',
+    countPlaceholder: '空欄可',
     totalEpisodesInvalid: '総話数は 0 以上の整数で入力してください',
     totalVolumesInvalid: '総巻数は 0 以上の整数で入力してください',
     totalChaptersInvalid: '総話数は 0 以上の整数で入力してください',

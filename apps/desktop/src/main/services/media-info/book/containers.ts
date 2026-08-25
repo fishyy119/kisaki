@@ -1,5 +1,5 @@
 /**
- * Comic container access.
+ * Paged container access.
  *
  * One module owns how pages are found and read inside each container kind, so
  * probing and page serving share a single implementation. Page order is the
@@ -10,7 +10,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import StreamZip from 'node-stream-zip'
 import { createExtractorFromData } from 'node-unrar-js'
-import type { ComicUnitContainer } from '@shared/media-info'
+import type { PagedContainer } from '@shared/media-info'
 
 const IMAGE_EXTENSIONS = new Set([
   '.jpg',
@@ -30,8 +30,8 @@ export function isImageFile(fileName: string): boolean {
   return IMAGE_EXTENSIONS.has(path.extname(fileName).toLowerCase())
 }
 
-/** Container kind a comic unit path resolves to, or null when unsupported. */
-export async function resolveComicContainer(filePath: string): Promise<ComicUnitContainer | null> {
+/** Paged container a path resolves to, or null when unsupported. */
+export async function resolvePagedContainer(filePath: string): Promise<PagedContainer | null> {
   try {
     const stat = await fs.stat(filePath)
     if (stat.isDirectory()) return 'directory'
@@ -103,10 +103,51 @@ export async function readZipPage(filePath: string, entryName: string): Promise<
   }
 }
 
-/** Ordered image entry names inside a rar container. */
-export async function listRarPages(filePath: string): Promise<string[]> {
+type RarExtractor = Awaited<ReturnType<typeof createExtractorFromData>>
+
+/**
+ * The rar archive most recently read from.
+ *
+ * Parsing a rar means reading the whole file and handing it to the unrar WASM
+ * build, which is far too expensive to repeat per page turn. Reading is
+ * sequential within one file, so a single live extractor serves a whole
+ * session; it is released once reading moves elsewhere or stops.
+ */
+interface RarSession {
+  filePath: string
+  extractor: RarExtractor
+  idleTimer: NodeJS.Timeout
+}
+
+const RAR_SESSION_IDLE_MS = 60_000
+
+let rarSession: RarSession | null = null
+
+async function acquireRarExtractor(filePath: string): Promise<RarExtractor> {
+  if (rarSession?.filePath === filePath) {
+    rarSession.idleTimer.refresh()
+    return rarSession.extractor
+  }
+
+  releaseRarSession()
   const data = await fs.readFile(filePath)
   const extractor = await createExtractorFromData({ data: toArrayBuffer(data) })
+
+  const idleTimer = setTimeout(releaseRarSession, RAR_SESSION_IDLE_MS)
+  idleTimer.unref()
+  rarSession = { filePath, extractor, idleTimer }
+  return extractor
+}
+
+function releaseRarSession(): void {
+  if (!rarSession) return
+  clearTimeout(rarSession.idleTimer)
+  rarSession = null
+}
+
+/** Ordered image entry names inside a rar container. */
+export async function listRarPages(filePath: string): Promise<string[]> {
+  const extractor = await acquireRarExtractor(filePath)
   const list = extractor.getFileList()
   const names: string[] = []
   for (const header of list.fileHeaders) {
@@ -119,8 +160,7 @@ export async function listRarPages(filePath: string): Promise<string[]> {
 
 /** One page's bytes out of a rar container. */
 export async function readRarPage(filePath: string, entryName: string): Promise<Buffer> {
-  const data = await fs.readFile(filePath)
-  const extractor = await createExtractorFromData({ data: toArrayBuffer(data) })
+  const extractor = await acquireRarExtractor(filePath)
   const extracted = extractor.extract({ files: [entryName] })
   for (const file of extracted.files) {
     if (file.extraction) {

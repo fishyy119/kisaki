@@ -53,7 +53,7 @@ export const LIBRARY_GRAPH_NODE_KINDS = [
   'character',
   'note',
   'session',
-  'episode',
+  'unit',
   'attachment'
 ] as const
 
@@ -71,9 +71,9 @@ export const LIBRARY_GRAPH_EDGE_KINDS = [
   'company-company',
   'media-note',
   'media-session',
-  'media-episode',
+  'media-unit',
   'media-attachment',
-  'episode-attachment'
+  'unit-attachment'
 ] as const
 
 export type LibraryGraphEdgeKind = (typeof LIBRARY_GRAPH_EDGE_KINDS)[number]
@@ -89,15 +89,20 @@ export const LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS = [
 
 export type LibraryGraphMediaAttachmentSlot = (typeof LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS)[number]
 
-/** Episodes own exactly one attachment slot: the still frame. */
-export const LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS = ['still'] as const
+/**
+ * Units own exactly one attachment slot: the still frame.
+ *
+ * Only anime episodes accept it. Comic and novel unit covers come from file
+ * sync and scraped metadata, so a `unit-attachment` edge from a comic or novel
+ * unit is rejected.
+ */
+export const LIBRARY_GRAPH_UNIT_ATTACHMENT_SLOTS = ['still'] as const
 
-export type LibraryGraphEpisodeAttachmentSlot =
-  (typeof LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS)[number]
+export type LibraryGraphUnitAttachmentSlot = (typeof LIBRARY_GRAPH_UNIT_ATTACHMENT_SLOTS)[number]
 
 export const LIBRARY_GRAPH_ATTACHMENT_SLOTS = [
   ...LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS,
-  ...LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS
+  ...LIBRARY_GRAPH_UNIT_ATTACHMENT_SLOTS
 ] as const
 
 export type LibraryGraphAttachmentSlot = (typeof LIBRARY_GRAPH_ATTACHMENT_SLOTS)[number]
@@ -141,7 +146,7 @@ export interface LibraryGraphNodes {
   characters?: readonly LibraryGraphCharacterNode[]
   notes?: readonly LibraryGraphNoteNode[]
   sessions?: readonly LibraryGraphSessionNode[]
-  episodes?: readonly LibraryGraphEpisodeNode[]
+  units?: readonly LibraryGraphUnitNode[]
   attachments?: readonly LibraryGraphAttachmentNode[]
 }
 
@@ -211,24 +216,24 @@ export interface LibraryGraphSessionNode extends LibraryGraphNodeBase {
   input: LibraryGameSessionCreateInput
 }
 
-export type LibraryGraphEpisodeNode =
+export type LibraryGraphUnitNode =
   LibraryGraphAnimeEpisodeNode | LibraryGraphComicChapterNode | LibraryGraphNovelVolumeNode
 
 export interface LibraryGraphAnimeEpisodeNode extends LibraryGraphNodeBase {
-  kind: 'episode'
+  kind: 'unit'
   mediaType: 'anime'
   input: LibraryAnimeEpisodeCreateInput
 }
 
 /** A comic's readable unit: a collected volume or a serialized chapter. */
 export interface LibraryGraphComicChapterNode extends LibraryGraphNodeBase {
-  kind: 'episode'
+  kind: 'unit'
   mediaType: 'comic'
   input: LibraryComicChapterCreateInput
 }
 
 export interface LibraryGraphNovelVolumeNode extends LibraryGraphNodeBase {
-  kind: 'episode'
+  kind: 'unit'
   mediaType: 'novel'
   input: LibraryNovelVolumeCreateInput
 }
@@ -257,9 +262,9 @@ export type LibraryGraphEdge =
   | LibraryGraphCompanyCompanyEdge
   | LibraryGraphMediaNoteEdge
   | LibraryGraphMediaSessionEdge
-  | LibraryGraphMediaEpisodeEdge
+  | LibraryGraphMediaUnitEdge
   | LibraryGraphMediaAttachmentEdge
-  | LibraryGraphEpisodeAttachmentEdge
+  | LibraryGraphUnitAttachmentEdge
 
 export interface LibraryGraphCollectionMediaEdge {
   kind: 'collection-media'
@@ -379,9 +384,9 @@ export interface LibraryGraphMediaSessionEdge {
   to: LibraryGraphNodeRef
 }
 
-/** Attaches an episode to its owning entry. */
-export interface LibraryGraphMediaEpisodeEdge {
-  kind: 'media-episode'
+/** Attaches a consumption unit to its owning entry. */
+export interface LibraryGraphMediaUnitEdge {
+  kind: 'media-unit'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
 }
@@ -395,11 +400,12 @@ export interface LibraryGraphMediaAttachmentEdge {
   saveBackup?: LibraryGraphSaveBackupInput
 }
 
-export interface LibraryGraphEpisodeAttachmentEdge {
-  kind: 'episode-attachment'
+/** Anime episodes only; see {@link LIBRARY_GRAPH_UNIT_ATTACHMENT_SLOTS}. */
+export interface LibraryGraphUnitAttachmentEdge {
+  kind: 'unit-attachment'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  slot: LibraryGraphEpisodeAttachmentSlot
+  slot: LibraryGraphUnitAttachmentSlot
   replace?: boolean
 }
 

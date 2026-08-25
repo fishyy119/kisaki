@@ -22,7 +22,7 @@ import type {
 export class AnimeLocalMediaAdapter extends BangumiLocalMediaAdapter<LibraryAnimeStatus> {
   readonly scope = 'anime' as const
   readonly localMediaType = 'anime' as const
-  readonly supportsEpisodeSync = true
+  readonly supportsUnitProgress = true
 
   protected readonly entityType = 'anime' as const
   protected readonly tagLinkKind = 'anime-tag' as const

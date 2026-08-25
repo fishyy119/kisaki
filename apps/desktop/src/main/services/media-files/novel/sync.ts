@@ -32,6 +32,7 @@ import type {
   NovelFileSyncResult,
   NovelVolumeFileAttachParams
 } from '@shared/media-files'
+import { isNumberedNovelVolume, novelUnitIdentityKey } from '@shared/metadata'
 import { and, eq, inArray } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { isNovelBookFile, recognizeNovelVolume, type NovelVolumeCandidate } from './recognition'
@@ -65,13 +66,16 @@ function compareVolumes(a: NovelVolumeCandidate, b: NovelVolumeCandidate): numbe
 }
 
 /**
- * Identity of a candidate across sync runs: numbered files share their volume
- * by number; unreadable filenames stay one volume per file, keyed by path.
+ * Identity of a candidate across sync runs.
+ *
+ * Numbered files share their volume through the library-wide identity key;
+ * unreadable filenames stay one volume per file, keyed by path, since two
+ * unreadable names are not evidence of one volume.
  */
 function volumeCandidateKey(candidate: NovelVolumeCandidate): string {
-  return candidate.volumeNumber === undefined
-    ? `file:${candidate.path}`
-    : `volume:${candidate.volumeNumber}`
+  return isNumberedNovelVolume(candidate)
+    ? novelUnitIdentityKey(candidate)
+    : `file:${candidate.path}`
 }
 
 export class NovelFileSyncHandler {
@@ -126,7 +130,7 @@ export class NovelFileSyncHandler {
       statted.push({
         candidate,
         stat,
-        container: this.mediaInfo.book.resolveNovelContainer(candidate.path)
+        container: this.mediaInfo.book.resolveDocumentContainer(candidate.path)
       })
     }
 
@@ -167,7 +171,7 @@ export class NovelFileSyncHandler {
     if (!stat) {
       throw new Error(`Novel volume file is not readable: ${filePath}`)
     }
-    const container = this.mediaInfo.book.resolveNovelContainer(filePath)
+    const container = this.mediaInfo.book.resolveDocumentContainer(filePath)
     if (!container) {
       throw new Error(`Novel volume file is not a supported book container: ${filePath}`)
     }

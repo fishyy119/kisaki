@@ -24,7 +24,7 @@ import {
   rebuildLinkSnapshotBefore,
   rebuildMediaRelationEdgesBefore
 } from '../rebuild'
-import type { MediaFeedProjection, MediaRow } from '../types'
+import type { MediaEntityTopic, MediaFeedProjection, MediaRow } from '../types'
 import {
   normalizeActivityValue,
   normalizeCoreValue,
@@ -170,12 +170,19 @@ const NOVEL_PROJECTION: MediaFeedProjection = {
   unitsTable: 'novel_volumes'
 }
 
-export const MEDIA_PROJECTIONS: readonly MediaFeedProjection[] = [
-  GAME_PROJECTION,
-  ANIME_PROJECTION,
-  COMIC_PROJECTION,
-  NOVEL_PROJECTION
-]
+/**
+ * Every media type's projection, keyed by the union so adding a media type
+ * fails to compile here instead of silently dropping it from the feed.
+ */
+const MEDIA_PROJECTION_BY_TOPIC = {
+  game: GAME_PROJECTION,
+  anime: ANIME_PROJECTION,
+  comic: COMIC_PROJECTION,
+  novel: NOVEL_PROJECTION
+} as const satisfies Record<MediaEntityTopic, MediaFeedProjection>
+
+export const MEDIA_PROJECTIONS: readonly MediaFeedProjection[] =
+  Object.values(MEDIA_PROJECTION_BY_TOPIC)
 
 export function getMediaProjectionForTable(table: string): MediaFeedProjection | undefined {
   return MEDIA_PROJECTIONS.find((projection) => projection.table === table)
@@ -184,7 +191,11 @@ export function getMediaProjectionForTable(table: string): MediaFeedProjection |
 export function getMediaProjectionForTopic(
   entity: LibraryEntityTopic
 ): MediaFeedProjection | undefined {
-  return MEDIA_PROJECTIONS.find((projection) => projection.entity === entity)
+  return isMediaEntityTopic(entity) ? MEDIA_PROJECTION_BY_TOPIC[entity] : undefined
+}
+
+function isMediaEntityTopic(entity: LibraryEntityTopic): entity is MediaEntityTopic {
+  return entity in MEDIA_PROJECTION_BY_TOPIC
 }
 
 const MEDIA_RELATIONS_TABLE = 'media_relations'
@@ -316,7 +327,13 @@ export function projectMediaChanges(
         facet: 'links',
         before,
         after,
-        fields: ['personLinkIds', 'companyLinkIds', 'characterLinkIds', 'castLinkIds']
+        fields: [
+          'personLinkIds',
+          'companyLinkIds',
+          'characterLinkIds',
+          // Only advertised by media types that own a cast table.
+          ...(projection.linkTables.cast ? ['castLinkIds'] : [])
+        ]
       })
     }
   }
@@ -563,19 +580,23 @@ function readLinkSnapshot(
       mediaId
     )
 
+  const castTable = projection.linkTables.cast
+
   return {
     personLinkIds: readLinkIds(projection.linkTables.person),
     companyLinkIds: readLinkIds(projection.linkTables.company),
     characterLinkIds: readLinkIds(projection.linkTables.character),
     // Cast rows carry no order column of their own; the id keeps them stable.
-    // Media types without voice credits report a constant empty set.
-    castLinkIds: projection.linkTables.cast
-      ? readIds(
-          sqlite,
-          `SELECT id FROM ${projection.linkTables.cast} WHERE ${projection.ownerColumn} = ? ORDER BY id ASC`,
-          mediaId
-        )
-      : []
+    // Print media owns no cast table, so the facet is absent rather than empty.
+    ...(castTable
+      ? {
+          castLinkIds: readIds(
+            sqlite,
+            `SELECT id FROM ${castTable} WHERE ${projection.ownerColumn} = ? ORDER BY id ASC`,
+            mediaId
+          )
+        }
+      : {})
   }
 }
 

@@ -30,7 +30,7 @@ export interface MediaLinkTables {
   cast?: string
 }
 
-/** Table and column layout of one playable media type, for change projection. */
+/** Table and column layout of one media type, for change projection. */
 export interface MediaFeedProjection {
   entity: MediaEntityTopic
   table: string

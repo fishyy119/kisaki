@@ -7,6 +7,7 @@
  * decision and database write lives here.
  */
 
+import { existsSync } from 'node:fs'
 import { and, asc, eq, sql } from 'drizzle-orm'
 
 import { createLogger } from '@main/log'
@@ -23,9 +24,19 @@ import {
   type NovelVolumeFile
 } from '@shared/db'
 import type { NovelReadResult, NovelReadingState } from '@shared/activity'
-import type { ReaderNovelBootstrap, ReaderNovelProgressReport, ReaderNovelUnit } from '@shared/reader'
+import { parseDocumentContainer } from '@shared/media-info'
+import type {
+  ReaderNovelBootstrap,
+  ReaderNovelProgressReport,
+  ReaderNovelUnit
+} from '@shared/reader'
 import type { ActivityHooks } from '../hooks'
-import { MIN_READING_SEGMENT_MS, NOVEL_READ_PROGRESS, RESUME_WRITE_INTERVAL_MS } from './reading'
+import {
+  MIN_READING_SEGMENT_MS,
+  NOVEL_READ_PROGRESS,
+  RESUME_WRITE_INTERVAL_MS,
+  formatUnitNumber
+} from './reading'
 
 const log = createLogger('Activity')
 
@@ -35,6 +46,12 @@ interface ReadingSession {
   /** Start of the current per-volume session segment. */
   segmentStartedAt: number
   lastResumeWriteAt: number
+  /** Newest position the throttle held back; flushed before the session moves on. */
+  pendingReport: ReaderNovelProgressReport | null
+  /** Units already counted as read here, so one read-through counts once. */
+  countedUnitIds: Set<string>
+  /** Reading time of the segments recorded so far in this window. */
+  accumulatedMs: number
 }
 
 export class NovelActivityHandler {
@@ -66,28 +83,29 @@ export class NovelActivityHandler {
     }
 
     const volumes = this.readVolumes(novelId)
-    const files = this.readVolumeFiles(volumes.map((volume) => volume.id))
-    const units = volumes.map((volume) =>
-      this.toReaderUnit(volume, files.get(volume.id) ?? [], fileId)
-    )
+    const filesByVolume = this.readVolumeFiles(novelId)
+    const electedFiles = new Map<string, NovelVolumeFile>()
+    const units = volumes.map((volume) => {
+      const file = electFile(filesByVolume.get(volume.id) ?? [], fileId)
+      if (file) electedFiles.set(volume.id, file)
+      return this.toReaderUnit(volume, file)
+    })
 
     const startUnit = volumeId
       ? units.find((unit) => unit.id === volumeId)
-      : (units.find((unit) => !unit.read && unit.fileId && unit.supported) ??
-        units.find((unit) => unit.fileId && unit.supported))
+      : (units.find((unit) => !unit.read && unit.fileId) ?? units.find((unit) => unit.fileId))
     if (!startUnit) {
       return { status: 'failed', reason: volumeId ? 'volumeNotFound' : 'noReadableVolume' }
     }
-    if (!startUnit.fileId) {
+
+    const startFile = electedFiles.get(startUnit.id)
+    if (!startFile) {
       log.warn('Novel volume has no readable file.', { novelId, volumeId: startUnit.id })
       return { status: 'failed', reason: 'noVolumeFile' }
     }
-    if (!startUnit.supported) {
-      log.warn('Novel volume file container is not renderable.', {
-        novelId,
-        volumeId: startUnit.id
-      })
-      return { status: 'failed', reason: 'unsupportedContainer' }
+    if (!existsSync(startFile.path)) {
+      log.warn('Novel volume file is missing on disk.', { novelId, volumeId: startUnit.id })
+      return { status: 'failed', reason: 'fileNotFound' }
     }
 
     const bootstrap: ReaderNovelBootstrap = {
@@ -98,17 +116,24 @@ export class NovelActivityHandler {
       startUnitId: startUnit.id
     }
 
-    const windowId = this.reader.windows.open(`novel:${novelId}`, bootstrap)
-    const now = Date.now()
-
-    if (!this.reading.has(windowId)) {
-      this.reading.set(windowId, {
-        novelId,
-        volumeId: startUnit.id,
-        segmentStartedAt: now,
-        lastResumeWriteAt: 0
-      })
+    const opened = this.reader.windows.open(`novel:${novelId}`, bootstrap)
+    if (opened.reused) {
+      // The window was re-aimed and reports the unit it lands on, which moves
+      // the running session; repeating the started event would be a lie.
+      log.info('Novel reader refocused.', { novelId, volumeId: startUnit.id })
+      return { status: 'refocused', volumeId: startUnit.id }
     }
+
+    const now = Date.now()
+    this.reading.set(opened.windowId, {
+      novelId,
+      volumeId: startUnit.id,
+      segmentStartedAt: now,
+      lastResumeWriteAt: 0,
+      pendingReport: null,
+      countedUnitIds: new Set(),
+      accumulatedMs: 0
+    })
 
     this.db.client
       .update(novels)
@@ -155,7 +180,10 @@ export class NovelActivityHandler {
     this.reader.hooks.unitOpened.tap(({ windowId, report }) => {
       const session = this.reading.get(windowId)
       if (!session || session.volumeId === report.unitId) return
+      // A window may only claim units from the bootstrap prepared for it.
+      if (!this.isWindowUnit(windowId, report.unitId)) return
 
+      this.flushResume(session)
       this.recordSegment(session)
       session.volumeId = report.unitId
       session.segmentStartedAt = Date.now()
@@ -167,29 +195,32 @@ export class NovelActivityHandler {
     })
   }
 
+  private isWindowUnit(windowId: number, unitId: string): boolean {
+    const bootstrap = this.reader.windows.getBootstrap(windowId)
+    if (bootstrap?.kind !== 'novel') return false
+    return bootstrap.units.some((unit) => unit.id === unitId)
+  }
+
   private handleProgress(session: ReadingSession, report: ReaderNovelProgressReport): void {
     if (report.volumeId !== session.volumeId) return
 
-    const finished = report.progress >= NOVEL_READ_PROGRESS
-    if (finished) {
-      // The where-clause guard makes completion idempotent per read-through.
-      this.db.client
-        .update(novelVolumes)
-        .set({
-          read: true,
-          readAt: new Date(),
-          readCount: sql`${novelVolumes.readCount} + 1`,
-          resumeLocator: null,
-          resumeProgress: null
-        })
-        .where(and(eq(novelVolumes.id, report.volumeId), eq(novelVolumes.read, false)))
-        .run()
+    if (report.progress >= NOVEL_READ_PROGRESS) {
+      this.markUnitRead(session, report.volumeId)
       return
     }
 
-    const now = Date.now()
-    if (now - session.lastResumeWriteAt < RESUME_WRITE_INTERVAL_MS) return
-    session.lastResumeWriteAt = now
+    session.pendingReport = report
+    if (Date.now() - session.lastResumeWriteAt < RESUME_WRITE_INTERVAL_MS) return
+    this.flushResume(session)
+  }
+
+  /** Persists the newest held-back position, so no relocation is lost. */
+  private flushResume(session: ReadingSession): void {
+    const report = session.pendingReport
+    if (!report) return
+
+    session.pendingReport = null
+    session.lastResumeWriteAt = Date.now()
 
     this.db.client
       .update(novelVolumes)
@@ -201,12 +232,36 @@ export class NovelActivityHandler {
       .run()
   }
 
+  /**
+   * Marks a volume read once per read-through: the session remembers what it
+   * counted, so drifting across the end threshold counts once while opening
+   * the volume again later is a genuine re-read.
+   */
+  private markUnitRead(session: ReadingSession, volumeId: string): void {
+    if (session.countedUnitIds.has(volumeId)) return
+    session.countedUnitIds.add(volumeId)
+    session.pendingReport = null
+
+    this.db.client
+      .update(novelVolumes)
+      .set({
+        read: true,
+        readAt: new Date(),
+        readCount: sql`${novelVolumes.readCount} + 1`,
+        resumeLocator: null,
+        resumeProgress: null
+      })
+      .where(eq(novelVolumes.id, volumeId))
+      .run()
+  }
+
   private endSession(windowId: number): void {
     const session = this.reading.get(windowId)
     if (!session) return
 
     this.reading.delete(windowId)
-    const elapsedMs = this.recordSegment(session)
+    this.flushResume(session)
+    this.recordSegment(session)
 
     log.info('Novel reading ended.', { novelId: session.novelId })
     this.ipc.send('activity:novel-stopped', {
@@ -215,17 +270,17 @@ export class NovelActivityHandler {
     })
     this.hooks.novelReadEnded.dispatch({
       novelId: session.novelId,
-      readTimeSeconds: Math.floor(elapsedMs / 1000)
+      readTimeSeconds: Math.floor(session.accumulatedMs / 1000)
     })
   }
 
   /** Records the current per-volume segment; too-short segments are mis-clicks. */
-  private recordSegment(session: ReadingSession): number {
+  private recordSegment(session: ReadingSession): void {
     const endedAt = Date.now()
     const elapsedMs = endedAt - session.segmentStartedAt
-    if (elapsedMs < MIN_READING_SEGMENT_MS) {
-      return 0
-    }
+    if (elapsedMs < MIN_READING_SEGMENT_MS) return
+
+    session.accumulatedMs += elapsedMs
 
     this.db.client.transaction((tx) => {
       tx.insert(novelSessions)
@@ -245,21 +300,9 @@ export class NovelActivityHandler {
         .where(eq(novels.id, session.novelId))
         .run()
     })
-
-    return elapsedMs
   }
 
-  private toReaderUnit(
-    volume: NovelVolume,
-    files: NovelVolumeFile[],
-    requestedFileId: string | undefined
-  ): ReaderNovelUnit {
-    // Matching inside the volume's own files keeps ownership validated.
-    const requested = requestedFileId
-      ? files.find((file) => file.id === requestedFileId)
-      : undefined
-    const file = requested ?? files.find((entry) => entry.isPrimary) ?? files[0]
-
+  private toReaderUnit(volume: NovelVolume, file: NovelVolumeFile | null): ReaderNovelUnit {
     return {
       id: volume.id,
       label: formatVolumeLabel(this.i18n, volume),
@@ -267,8 +310,7 @@ export class NovelActivityHandler {
       resumeLocator: volume.resumeLocator,
       resumeProgress: volume.resumeProgress,
       fileId: file?.id ?? null,
-      container: file?.container ?? null,
-      supported: file ? file.container !== 'pdf' : false
+      container: parseDocumentContainer(file?.container ?? null)
     }
   }
 
@@ -281,26 +323,33 @@ export class NovelActivityHandler {
       .all()
   }
 
-  private readVolumeFiles(volumeIds: string[]): Map<string, NovelVolumeFile[]> {
-    const grouped = new Map<string, NovelVolumeFile[]>()
-    if (volumeIds.length === 0) return grouped
-
+  private readVolumeFiles(novelId: string): Map<string, NovelVolumeFile[]> {
     const rows = this.db.client
-      .select()
+      .select({ file: novelVolumeFiles })
       .from(novelVolumeFiles)
+      .innerJoin(novelVolumes, eq(novelVolumeFiles.volumeId, novelVolumes.id))
+      .where(eq(novelVolumes.novelId, novelId))
       .orderBy(asc(novelVolumeFiles.createdAt))
       .all()
 
-    const wanted = new Set(volumeIds)
-    for (const row of rows) {
-      if (!wanted.has(row.volumeId)) continue
-      const bucket = grouped.get(row.volumeId)
-      if (bucket) bucket.push(row)
-      else grouped.set(row.volumeId, [row])
+    const grouped = new Map<string, NovelVolumeFile[]>()
+    for (const { file } of rows) {
+      const bucket = grouped.get(file.volumeId)
+      if (bucket) bucket.push(file)
+      else grouped.set(file.volumeId, [file])
     }
 
     return grouped
   }
+}
+
+/** Matching inside the volume's own files keeps ownership validated. */
+function electFile(
+  files: NovelVolumeFile[],
+  requestedFileId: string | undefined
+): NovelVolumeFile | null {
+  if (requestedFileId) return files.find((file) => file.id === requestedFileId) ?? null
+  return files.find((file) => file.isPrimary) ?? files[0] ?? null
 }
 
 /** Reader-facing volume label: name when present, otherwise the volume number. */
@@ -312,10 +361,6 @@ function formatVolumeLabel(i18n: I18nService, volume: NovelVolume): string {
     return labels.unnamed({ number: formatUnitNumber(volume.volumeNumber) })
   }
   return labels.entityLabel
-}
-
-function formatUnitNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
 
 function clampFraction(value: number): number | null {

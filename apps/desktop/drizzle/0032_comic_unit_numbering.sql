@@ -1,0 +1,3 @@
+DROP INDEX `unique_comic_chapters_chapter_number`;--> statement-breakpoint
+CREATE UNIQUE INDEX `unique_comic_chapters_numbering_in_volume` ON `comic_chapters` (`comic_id`,`volume_number`,`chapter_number`) WHERE chapter_number IS NOT NULL AND volume_number IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX `unique_comic_chapters_numbering_no_volume` ON `comic_chapters` (`comic_id`,`chapter_number`) WHERE chapter_number IS NOT NULL AND volume_number IS NULL;

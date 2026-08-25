@@ -20,13 +20,16 @@ import { BOOK_SCHEME } from '@shared/book'
 
 const log = createLogger('Reader')
 
+/** Reader windows enforce web security, so every response is CORS-readable. */
+const CORS_HEADERS = { 'access-control-allow-origin': '*' } as const
+
 export function registerBookProtocol(dbService: DbService, mediaInfo: MediaInfoService): void {
   protocol.handle(BOOK_SCHEME, async (request) => {
     try {
       return await handleBookRequest(dbService, mediaInfo, new URL(request.url))
     } catch (error) {
       log.warn('Book content request failed.', error, { url: request.url })
-      return new Response(null, { status: 404 })
+      return emptyResponse(404)
     }
   })
 }
@@ -43,15 +46,16 @@ async function handleBookRequest(
       const [fileId, pageSegment] = segments
       const pageIndex = Number.parseInt(pageSegment ?? '', 10)
       if (!fileId || !Number.isInteger(pageIndex) || pageIndex < 0) {
-        return new Response(null, { status: 400 })
+        return emptyResponse(400)
       }
 
       const path = findComicFilePath(dbService, fileId)
-      if (!path) return new Response(null, { status: 404 })
+      if (!path) return emptyResponse(404)
 
-      const page = await mediaInfo.book.readComicPage(path, pageIndex)
+      const page = await mediaInfo.book.readPage(path, pageIndex)
       return new Response(new Uint8Array(page.data), {
         headers: {
+          ...CORS_HEADERS,
           'content-type': page.mimeType,
           // Pages of one immutable file row never change under the same URL.
           'cache-control': 'max-age=3600'
@@ -62,20 +66,35 @@ async function handleBookRequest(
     case 'comic-file': {
       const [fileId] = segments
       const path = fileId ? findComicFilePath(dbService, fileId) : null
-      if (!path) return new Response(null, { status: 404 })
-      return net.fetch(pathToFileURL(path).toString())
+      if (!path) return emptyResponse(404)
+      return fetchFileWithCors(path)
     }
 
     case 'novel-file': {
       const [fileId] = segments
       const path = fileId ? findNovelFilePath(dbService, fileId) : null
-      if (!path) return new Response(null, { status: 404 })
-      return net.fetch(pathToFileURL(path).toString())
+      if (!path) return emptyResponse(404)
+      return fetchFileWithCors(path)
     }
 
     default:
-      return new Response(null, { status: 400 })
+      return emptyResponse(400)
   }
+}
+
+/** Streams a library-owned file, re-headered so the reader window may read it. */
+async function fetchFileWithCors(path: string): Promise<Response> {
+  const response = await net.fetch(pathToFileURL(path).toString())
+  const headers = new Headers(response.headers)
+  for (const [name, value] of Object.entries(CORS_HEADERS)) {
+    headers.set(name, value)
+  }
+
+  return new Response(response.body, { status: response.status, headers })
+}
+
+function emptyResponse(status: number): Response {
+  return new Response(null, { status, headers: CORS_HEADERS })
 }
 
 function findComicFilePath(dbService: DbService, fileId: string): string | null {

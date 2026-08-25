@@ -134,12 +134,13 @@ watch(
   { immediate: true }
 )
 
+/** Zero is a real episode number: pilots and prologues ship as episode 0. */
 function parseEpisodeNumber(): { valid: boolean; value: number | null } {
   const text = formData.value.episodeNumber.trim()
   if (text === '') return { valid: true, value: null }
 
   const value = Number(text)
-  if (!Number.isFinite(value) || value <= 0) return { valid: false, value: null }
+  if (!Number.isFinite(value) || value < 0) return { valid: false, value: null }
   return { valid: true, value }
 }
 

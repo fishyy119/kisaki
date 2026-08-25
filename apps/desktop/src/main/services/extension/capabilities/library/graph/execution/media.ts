@@ -25,7 +25,7 @@ import {
 } from './state'
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
 
-type EpisodeAttachmentEdge = Extract<LibraryGraphEdge, { kind: 'episode-attachment' }>
+type UnitAttachmentEdge = Extract<LibraryGraphEdge, { kind: 'unit-attachment' }>
 
 /** Slots that live on a media row column rather than in a list or backup set. */
 type MediaFileSlot = Exclude<
@@ -108,8 +108,8 @@ export async function applyAttachmentEdge(
   }
 }
 
-export async function previewEpisodeAttachmentEdge(
-  edge: EpisodeAttachmentEdge,
+export async function previewUnitAttachmentEdge(
+  edge: UnitAttachmentEdge,
   graph: NormalizedLibraryGraph,
   draft: LibraryGraphResultDraft,
   state: ApplyState,
@@ -130,8 +130,8 @@ export async function previewEpisodeAttachmentEdge(
   return action
 }
 
-export async function applyEpisodeAttachmentEdge(
-  edge: EpisodeAttachmentEdge,
+export async function applyUnitAttachmentEdge(
+  edge: UnitAttachmentEdge,
   graph: NormalizedLibraryGraph,
   draft: LibraryGraphResultDraft,
   state: ApplyState,
@@ -236,7 +236,7 @@ function previewAttachmentAction(
 }
 
 function previewEpisodeStillAction(
-  edge: EpisodeAttachmentEdge,
+  edge: UnitAttachmentEdge,
   graph: NormalizedLibraryGraph,
   state: ApplyState,
   options: ExecuteLibraryGraphOptions

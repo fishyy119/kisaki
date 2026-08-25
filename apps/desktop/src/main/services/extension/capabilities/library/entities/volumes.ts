@@ -58,7 +58,7 @@ export class ExtensionLibraryNovelVolumeStore {
 
     try {
       const conditions: SQL[] = [eq(novelVolumes.novelId, query.novelId)]
-      if (query.readOnly) {
+      if (query.finishedOnly) {
         conditions.push(eq(novelVolumes.read, true))
       }
       if (query.unreadOnly) {

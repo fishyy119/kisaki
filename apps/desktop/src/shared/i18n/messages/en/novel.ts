@@ -5,8 +5,7 @@
 export const novel = {
   readStart: 'Start reading',
   readContinue: 'Continue reading',
-  readNext: 'Read next',
-  showDetail: 'Show details',
+  readOpen: 'Open reader',
 
   volumes: {
     title: 'Volumes',
@@ -62,7 +61,6 @@ export const novel = {
     noFiles: 'No files yet',
     fileCount: ({ count }: { count: number }) => (count === 1 ? '1 file' : `${count} files`),
     primary: 'Primary',
-    container: 'Format',
     openFolder: 'Open containing folder',
     openFolderFailed: 'Could not open the containing folder',
     setPrimary: 'Set as primary',

@@ -42,14 +42,36 @@ export interface AnimeWatchEndedPayload {
   watchTimeSeconds: number
 }
 
+export interface ComicReadStartedPayload {
+  comicId: string
+  chapterId: string
+}
+
+export interface ComicReadEndedPayload {
+  comicId: string
+  /** Total reading duration across the window's session, in seconds. */
+  readTimeSeconds: number
+}
+
+export interface NovelReadStartedPayload {
+  novelId: string
+  volumeId: string
+}
+
+export interface NovelReadEndedPayload {
+  novelId: string
+  /** Total reading duration across the window's session, in seconds. */
+  readTimeSeconds: number
+}
+
 /**
  * Play hook points.
  *
  * `play.game.launching` and `play.game.session.ending` are waterfall
  * transforms before the launch / persist; session start and end are
- * notifications. Watch points are notify-only: the outcome of a playback
- * session is a fact, and the subscribers that mirror it to remote services
- * must not alter it.
+ * notifications. Watch and read points are notify-only: the outcome of a
+ * consumption session is a fact, and the subscribers that mirror it to remote
+ * services must not alter it.
  */
 export interface PlayHookPoints {
   'play.game.launching': HookPointSpec<'waterfall', GameLaunchConfig>
@@ -58,4 +80,8 @@ export interface PlayHookPoints {
   'play.game.session.ended': HookPointSpec<'notify', GameSessionEndedPayload>
   'play.anime.watch.started': HookPointSpec<'notify', AnimeWatchStartedPayload>
   'play.anime.watch.ended': HookPointSpec<'notify', AnimeWatchEndedPayload>
+  'play.comic.read.started': HookPointSpec<'notify', ComicReadStartedPayload>
+  'play.comic.read.ended': HookPointSpec<'notify', ComicReadEndedPayload>
+  'play.novel.read.started': HookPointSpec<'notify', NovelReadStartedPayload>
+  'play.novel.read.ended': HookPointSpec<'notify', NovelReadEndedPayload>
 }

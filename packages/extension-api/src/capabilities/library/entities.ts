@@ -367,18 +367,21 @@ export interface LibraryComicChapterCreateInput {
  *
  * `read` is the state, `readAt` the reading evidence: importers that only
  * know a unit was read patch `read` alone and leave the time unset rather
- * than inventing one. Clearing `read` also clears the recorded time.
+ * than inventing one. Clearing `read` also clears the recorded time;
+ * combining a cleared state with a time is rejected.
  */
 export interface LibraryComicChapterReadStatePatch {
   read?: boolean
   readAt?: number | null
   readCount?: number
+  /** Zero-based page index to resume at; null once the unit is read. */
   resumePage?: number | null
 }
 
 export interface LibraryComicChapterQuery {
   comicId: string
-  readOnly?: boolean
+  /** Keeps only units already read; `unreadOnly` is its complement. */
+  finishedOnly?: boolean
   unreadOnly?: boolean
 }
 
@@ -439,18 +442,23 @@ export interface LibraryNovelVolumeCreateInput {
   externalIds?: readonly ExternalId[]
 }
 
-/** Read-state patch for one novel volume; see `LibraryComicChapterReadStatePatch`. */
+/**
+ * Read-state patch for one novel volume; see
+ * {@link LibraryComicChapterReadStatePatch}, including the cleared-state rule.
+ */
 export interface LibraryNovelVolumeReadStatePatch {
   read?: boolean
   readAt?: number | null
   readCount?: number
   resumeLocator?: string | null
+  /** Read fraction in [0, 1]; values outside the range are rejected. */
   resumeProgress?: number | null
 }
 
 export interface LibraryNovelVolumeQuery {
   novelId: string
-  readOnly?: boolean
+  /** Keeps only volumes already read; `unreadOnly` is its complement. */
+  finishedOnly?: boolean
   unreadOnly?: boolean
 }
 

@@ -20,6 +20,17 @@ export async function fetchReaderBootstrap(): Promise<ReaderBootstrap> {
   return unwrapIpcData(await ipcManager.invoke('reader:bootstrap'))
 }
 
+/**
+ * Subscribes to re-aim pushes: reading an entry that already has a window
+ * refocuses it and sends the freshly resolved bootstrap here.
+ * @returns Unsubscribe function.
+ */
+export function onReaderNavigate(handler: (bootstrap: ReaderBootstrap) => void): () => void {
+  return ipcManager.on('reader:navigate', (_event, bootstrap) => {
+    handler(bootstrap)
+  })
+}
+
 export function reportComicProgress(report: ReaderComicProgressReport): void {
   void ipcManager.invoke('reader:comic-progress', report).catch((error) => {
     log.warn('Failed to report comic progress.', error)

@@ -93,6 +93,8 @@ export const en = {
 
     localMediaStatusUnknown: 'Could not recognize the local entry status',
     localMediaMissing: 'The local entry does not exist',
+    bookKindUnresolved:
+      'Bangumi does not say whether this book is a comic or a novel, so it was not imported',
     localItemMissing: 'The local entry does not exist',
     importedItemMissing: 'The imported local entry does not exist',
     targetCollectionMissing: 'The selected target collection does not exist',
@@ -404,7 +406,7 @@ export const en = {
       itemCreate: 'Create collections',
       itemStatus: 'Entry status',
       itemScore: 'Rating',
-      itemEpisodes: 'Episode watch state',
+      itemUnitProgress: 'Per-unit progress',
       clearRemoteScore: 'Allow clearing remote ratings',
       clearRemoteScoreDescription:
         'Also clears the Bangumi rating when the local rating is cleared',
@@ -467,7 +469,7 @@ export const en = {
       syncData: 'Sync data',
       itemStatus: 'Entry status',
       itemScore: 'Rating',
-      itemEpisodes: 'Episode watch state',
+      itemUnitProgress: 'Per-unit progress',
       updateExisting: 'Update existing collections',
       updateExistingDescription:
         'When off, Bangumi collections are only created for entries missing remotely',

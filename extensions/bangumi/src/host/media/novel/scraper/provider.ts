@@ -9,13 +9,17 @@ import type {
 import type { BangumiSubject } from '../../../api/types'
 import { omitUndefined } from '../../../utils/object'
 import { parseBangumiSubjectDate } from '../../format/dates'
-import { isBangumiComicPlatform, mapBangumiNovelFormat } from '../../format/formats'
+import {
+  mapBangumiNovelFormat,
+  resolveBangumiBookKind,
+  type BangumiBookKind
+} from '../../format/formats'
 import { resolveLocalizedSubjectName } from '../../format/names'
 import { BangumiSubjectProvider } from '../../subject/provider'
 import { createBangumiNovelSession } from './session'
 
 /** Search result plus the platform fact the comic/novel split filters on. */
-type NovelCandidate = NovelSearchResult & { platformIsComic?: boolean }
+type NovelCandidate = NovelSearchResult & { bookKind?: BangumiBookKind }
 
 export class BangumiNovelProvider
   extends BangumiSubjectProvider<NovelCandidate>
@@ -36,15 +40,15 @@ export class BangumiNovelProvider
   protected readonly scope = 'book' as const
 
   /**
-   * Book search spans comics and novels, so comic-labelled entries drop out
-   * here. Entries with no platform label stay: both book providers keep them
-   * in reach rather than both losing them.
+   * Book search spans comics, novels, and art books, so comic-labelled entries
+   * drop out here. Unlabelled entries stay in reach of both book providers;
+   * art books stay in reach of neither, and reaching one is a manual choice.
    */
   override async search(query: string, ctx: ScraperProviderContext): Promise<NovelSearchResult[]> {
     const results = await super.search(query, ctx)
     return results
-      .filter((result) => result.platformIsComic !== true)
-      .map(({ platformIsComic: _platformIsComic, ...rest }) => rest)
+      .filter((result) => result.bookKind !== 'comic')
+      .map(({ bookKind: _bookKind, ...rest }) => rest)
   }
 
   async openSession(
@@ -73,7 +77,7 @@ export class BangumiNovelProvider
       releaseDate: parseBangumiSubjectDate(subject.date),
       format: mapBangumiNovelFormat(subject.platform),
       externalIds: this.buildSearchExternalIds(subject),
-      platformIsComic: isBangumiComicPlatform(subject.platform)
+      bookKind: resolveBangumiBookKind(subject.platform)
     })
   }
 }

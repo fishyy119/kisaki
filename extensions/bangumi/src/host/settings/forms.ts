@@ -16,7 +16,7 @@ export function toFormState(settings: BangumiSettingsV1): BangumiSettingsFormSta
       ...(autoSync.syncOnCreate ? (['create'] as const) : []),
       ...(autoSync.playStatusEnabled ? (['status'] as const) : []),
       ...(autoSync.scoreEnabled ? (['score'] as const) : []),
-      ...(autoSync.episodeStatusEnabled ? (['episodes'] as const) : [])
+      ...(autoSync.unitProgressEnabled ? (['unitProgress'] as const) : [])
     ],
     clearRemoteScoreWhenEmpty: autoSync.clearRemoteScoreWhenEmpty,
     loginTimeoutMinutes: Math.round(settings.auth.loginTimeoutMs / 60_000),
@@ -44,7 +44,7 @@ export function applyFormState(
       syncOnCreate: form.autoSyncItems.includes('create'),
       playStatusEnabled: form.autoSyncItems.includes('status'),
       scoreEnabled: form.autoSyncItems.includes('score'),
-      episodeStatusEnabled: form.autoSyncItems.includes('episodes'),
+      unitProgressEnabled: form.autoSyncItems.includes('unitProgress'),
       clearRemoteScoreWhenEmpty: form.clearRemoteScoreWhenEmpty,
       debounceMs: Math.round(form.debounceSeconds * 1000),
       notifyErrors: form.notifyErrors
@@ -66,7 +66,7 @@ export function toFullSyncArgs(args: BangumiFullSyncFormArgs): JsonObject {
     updateExisting: args.updateExisting,
     playStatusEnabled: args.items.includes('status'),
     scoreEnabled: args.items.includes('score'),
-    episodeStatusEnabled: args.items.includes('episodes'),
+    unitProgressEnabled: args.items.includes('unitProgress'),
     clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
     batchSize: args.batchSize
   }

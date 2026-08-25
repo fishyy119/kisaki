@@ -1,8 +1,9 @@
+import type { Messages } from '@shared/i18n'
+
 export const novel = {
   readStart: '読み始める',
   readContinue: '続きを読む',
-  readNext: '次の巻を読む',
-  showDetail: '詳細を表示',
+  readOpen: 'リーダーを開く',
 
   volumes: {
     title: '巻',
@@ -54,7 +55,6 @@ export const novel = {
     noFiles: 'まだファイルがありません',
     fileCount: ({ count }: { count: number }) => `${count} 件のファイル`,
     primary: 'プライマリ',
-    container: '形式',
     openFolder: '保存先フォルダーを開く',
     openFolderFailed: '保存先フォルダーを開けませんでした',
     setPrimary: 'プライマリに設定',
@@ -142,4 +142,4 @@ export const novel = {
     lastSession: '最終閲覧',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day} 日`
   }
-}
+} satisfies Messages['novel']

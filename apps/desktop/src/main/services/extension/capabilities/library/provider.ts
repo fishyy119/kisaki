@@ -1,5 +1,6 @@
 import {
   assertValidLibraryAnimeCreateInput,
+  assertValidLibraryAnimeEpisodeCreateInput,
   assertValidLibraryAnimeEpisodeQuery,
   assertValidLibraryAnimeEpisodeWatchStatePatch,
   assertValidLibraryAnimePatch,
@@ -101,7 +102,15 @@ import { ExtensionLibraryLinkStore } from './links'
 import { ExtensionLibraryMediaRelationStore } from './relations'
 
 type LibraryEntityNamespaceName =
-  'games' | 'animes' | 'comics' | 'novels' | 'characters' | 'persons' | 'companies' | 'collections' | 'tags'
+  | 'games'
+  | 'animes'
+  | 'comics'
+  | 'novels'
+  | 'characters'
+  | 'persons'
+  | 'companies'
+  | 'collections'
+  | 'tags'
 type LibraryEntityRpcMethod<
   TNamespace extends LibraryEntityNamespaceName,
   TAction extends 'get' | 'list' | 'create' | 'update' | 'remove'
@@ -199,6 +208,15 @@ export class ExtensionLibraryCapabilityProvider {
         this.withRuntime(runtimeHandle, () => {
           assertValidLibraryAnimeEpisodeQuery(query)
           return { items: this.episodes.list(query) }
+        })
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.animes.episodes.create',
+      async ({ runtimeHandle, animeId, input }) =>
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryEntityId(animeId, 'library.animes.episodes.create animeId')
+          assertValidLibraryAnimeEpisodeCreateInput(input)
+          return { episode: this.episodes.create(animeId, input) }
         })
     )
     rpc.handleHostRequest(

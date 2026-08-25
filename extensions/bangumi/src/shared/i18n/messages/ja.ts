@@ -91,6 +91,7 @@ export const ja = {
 
     localMediaStatusUnknown: 'ローカル項目のステータスを認識できませんでした',
     localMediaMissing: 'ローカル項目が存在しません',
+    bookKindUnresolved: 'この書籍がマンガか小説か Bangumi が示していないため、取り込みませんでした',
     localItemMissing: 'ローカルエントリが存在しません',
     importedItemMissing: 'インポート済みのローカルエントリが存在しません',
     targetCollectionMissing: '選択したターゲットコレクションが存在しません',
@@ -406,7 +407,7 @@ export const ja = {
       itemCreate: 'コレクション作成',
       itemStatus: '項目ステータス',
       itemScore: '評価',
-      itemEpisodes: 'エピソード視聴状態',
+      itemUnitProgress: 'ユニット進捗',
       clearRemoteScore: 'リモート評価の削除を許可',
       clearRemoteScoreDescription: 'ローカル評価をクリアしたとき Bangumi の評価も削除します',
       manualTitle: '手動同期',
@@ -468,7 +469,7 @@ export const ja = {
       syncData: '同期データ',
       itemStatus: '項目ステータス',
       itemScore: '評価',
-      itemEpisodes: 'エピソード視聴状態',
+      itemUnitProgress: 'ユニット進捗',
       updateExisting: '既存コレクションを更新',
       updateExistingDescription:
         'オフの場合、リモートに存在しないエントリの Bangumi コレクションのみ作成します',

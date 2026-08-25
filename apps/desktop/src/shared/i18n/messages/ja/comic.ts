@@ -1,8 +1,9 @@
+import type { Messages } from '@shared/i18n'
+
 export const comic = {
   readStart: '読み始める',
   readContinue: '続きを読む',
-  readNext: '次を読む',
-  showDetail: '詳細を表示',
+  readOpen: 'リーダーを開く',
 
   chapters: {
     title: 'ユニット',
@@ -57,8 +58,6 @@ export const comic = {
     noFiles: 'まだファイルがありません',
     fileCount: ({ count }: { count: number }) => `${count} 件のファイル`,
     primary: 'プライマリ',
-    container: 'コンテナ',
-    pageCount: 'ページ数',
     openFolder: '保存先フォルダーを開く',
     openFolderFailed: '保存先フォルダーを開けませんでした',
     setPrimary: 'プライマリに設定',
@@ -146,4 +145,4 @@ export const comic = {
     lastSession: '最終閲覧',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day} 日`
   }
-}
+} satisfies Messages['comic']

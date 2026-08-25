@@ -93,6 +93,8 @@ export interface BangumiSubject {
   /** Episode count declared by the entry; `total_episodes` counts known rows. */
   eps?: number
   total_episodes?: number
+  /** Volume count of a book subject, parsed server-side from the infobox. */
+  volumes?: number
   images?: BangumiImages | null
   infobox?: BangumiInfoboxItem[] | null
   tags?: BangumiTag[] | null
@@ -264,10 +266,10 @@ export interface BangumiUserCollection {
   tags?: string[]
   private?: boolean
   updated_at?: string
-  /** Read volume count; book subjects only. */
+  /** Finished volume count; only book subjects carry one. */
   vol_status?: number
-  /** Read chapter count; book subjects only. */
-  ept_status?: number
+  /** Finished episode or chapter count, returned for every subject type. */
+  ep_status?: number
 }
 
 export interface BangumiCollectionQuery extends BangumiPageQuery {
@@ -280,10 +282,12 @@ export interface BangumiCollectionPatch {
   type?: BangumiCollectionType
   rate?: number
   tags?: readonly string[]
-  /** Read volume count; accepted on book subjects only. */
+  // Bangumi only accepts completion counts for book subjects: sending them for
+  // a video subject has effects the API documents as unintended.
+  /** Finished volume count. */
   vol_status?: number
-  /** Read chapter count; accepted on book subjects only. */
-  ept_status?: number
+  /** Finished chapter count. */
+  ep_status?: number
 }
 
 /** Per-episode collection state: 0 none, 1 wish, 2 watched, 3 dropped. */

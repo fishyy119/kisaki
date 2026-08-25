@@ -5,11 +5,7 @@
  *
  * Supported URLs:
  * - kisaki://navigate/library
- * - kisaki://navigate/library/game/{gameId}
- * - kisaki://navigate/library/character/{characterId}
- * - kisaki://navigate/library/person/{personId}
- * - kisaki://navigate/library/company/{companyId}
- * - kisaki://navigate/library/collection/{collectionId}
+ * - kisaki://navigate/library/{entityType}/{entityId}
  * - kisaki://navigate/scanner
  * - kisaki://navigate/extension
  */

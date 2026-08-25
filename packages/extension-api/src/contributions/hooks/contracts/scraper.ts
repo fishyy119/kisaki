@@ -2,14 +2,20 @@ import type {
   AnimeScraperLookup,
   AnimeSearchResult,
   CharacterSearchResult,
+  ComicScraperLookup,
+  ComicSearchResult,
   CompanySearchResult,
   GameScraperLookup,
   GameSearchResult,
+  NovelScraperLookup,
+  NovelSearchResult,
   PersonSearchResult,
   ScrapedAnimeBundle,
   ScrapedCharacterBundle,
+  ScrapedComicBundle,
   ScrapedCompanyBundle,
   ScrapedGameBundle,
+  ScrapedNovelBundle,
   ScrapedPersonBundle,
   ScraperLookup
 } from '../../scraper-providers'
@@ -29,6 +35,12 @@ export interface ScraperHookPoints {
   'scraper.anime.lookup': HookPointSpec<'waterfall', AnimeScraperLookup>
   'scraper.anime.searched': HookPointSpec<'waterfall', AnimeSearchResult[]>
   'scraper.anime.collected': HookPointSpec<'waterfall', ScrapedAnimeBundle>
+  'scraper.comic.lookup': HookPointSpec<'waterfall', ComicScraperLookup>
+  'scraper.comic.searched': HookPointSpec<'waterfall', ComicSearchResult[]>
+  'scraper.comic.collected': HookPointSpec<'waterfall', ScrapedComicBundle>
+  'scraper.novel.lookup': HookPointSpec<'waterfall', NovelScraperLookup>
+  'scraper.novel.searched': HookPointSpec<'waterfall', NovelSearchResult[]>
+  'scraper.novel.collected': HookPointSpec<'waterfall', ScrapedNovelBundle>
   'scraper.person.lookup': HookPointSpec<'waterfall', ScraperLookup>
   'scraper.person.searched': HookPointSpec<'waterfall', PersonSearchResult[]>
   'scraper.person.collected': HookPointSpec<'waterfall', ScrapedPersonBundle>

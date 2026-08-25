@@ -1,8 +1,9 @@
+import type { Messages } from '@shared/i18n'
+
 export const comic = {
   readStart: '開始閱讀',
   readContinue: '繼續閱讀',
-  readNext: '讀下一話',
-  showDetail: '查看詳情',
+  readOpen: '開啟閱讀器',
 
   chapters: {
     title: '單元',
@@ -56,8 +57,6 @@ export const comic = {
     noFiles: '還沒有檔案',
     fileCount: ({ count }: { count: number }) => `${count} 個檔案`,
     primary: '主檔案',
-    container: '容器',
-    pageCount: '頁數',
     openFolder: '開啟所在資料夾',
     openFolderFailed: '無法開啟所在資料夾',
     setPrimary: '設為主檔案',
@@ -145,4 +144,4 @@ export const comic = {
     lastSession: '最後閱讀',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day} 日`
   }
-}
+} satisfies Messages['comic']

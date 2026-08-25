@@ -8,7 +8,7 @@ import {
   LIBRARY_COMIC_PERSON_ROLES,
   LIBRARY_GRAPH_CONFLICT_MODES,
   LIBRARY_GRAPH_EDGE_KINDS,
-  LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS,
+  LIBRARY_GRAPH_UNIT_ATTACHMENT_SLOTS,
   LIBRARY_GRAPH_MEDIA_ATTACHMENT_SLOTS,
   LIBRARY_GRAPH_NODE_KINDS,
   LIBRARY_GAME_CHARACTER_ROLES,
@@ -157,13 +157,7 @@ function validateNodes(value: unknown): void {
     keys,
     validateSessionNode
   )
-  validateNodeArray(
-    nodes.episodes,
-    'episode',
-    'library.graph.nodes.episodes',
-    keys,
-    validateEpisodeNode
-  )
+  validateNodeArray(nodes.units, 'unit', 'library.graph.nodes.units', keys, validateUnitNode)
   validateNodeArray(
     nodes.attachments,
     'attachment',
@@ -273,7 +267,7 @@ function validateSessionNode(node: JsonRecord, label: string): void {
   }
 }
 
-function validateEpisodeNode(node: JsonRecord, label: string): void {
+function validateUnitNode(node: JsonRecord, label: string): void {
   switch (node.mediaType) {
     case 'anime':
       assertValidLibraryAnimeEpisodeCreateInput(node.input)
@@ -318,11 +312,7 @@ function validateEdges(value: unknown, nodesValue: unknown): void {
     }
     edgeKeys.add(identity)
 
-    if (
-      edge.kind === 'media-note' ||
-      edge.kind === 'media-session' ||
-      edge.kind === 'media-episode'
-    ) {
+    if (edge.kind === 'media-note' || edge.kind === 'media-session' || edge.kind === 'media-unit') {
       const ownerKey = graphNodeIdentity(edge.to.kind, edge.to.key)
       if (singleOwnerKeys.has(ownerKey)) {
         throw createValidationError(`${edge.to.kind} node "${edge.to.key}" has multiple owners.`)
@@ -428,10 +418,10 @@ function validateEdge(
       validateEndpointKinds(edge, label, 'media', 'session')
       requireMediaType(edge.from.key, 'game', mediaTypes, label)
       return
-    case 'media-episode': {
-      validateEndpointKinds(edge, label, 'media', 'episode')
-      const episodeType = mediaTypes.get(edge.to.key)
-      if (!episodeType || mediaTypes.get(edge.from.key) !== episodeType) {
+    case 'media-unit': {
+      validateEndpointKinds(edge, label, 'media', 'unit')
+      const unitType = mediaTypes.get(edge.to.key)
+      if (!unitType || mediaTypes.get(edge.from.key) !== unitType) {
         throw createValidationError(
           `${label} requires a media node of the episode node's media type.`
         )
@@ -448,12 +438,12 @@ function validateEdge(
       }
       validateSaveBackup(edge.saveBackup, `${label}.saveBackup`)
       return
-    case 'episode-attachment':
-      validateEndpointKinds(edge, label, 'episode', 'attachment')
+    case 'unit-attachment':
+      validateEndpointKinds(edge, label, 'unit', 'attachment')
       // The still slot is anime vocabulary; comic and novel unit covers come
       // from file sync and scraped metadata rather than graph attachments.
       requireMediaType(edge.from.key, 'anime', mediaTypes, label)
-      if (!LIBRARY_GRAPH_EPISODE_ATTACHMENT_SLOTS.includes(edge.slot as never)) {
+      if (!LIBRARY_GRAPH_UNIT_ATTACHMENT_SLOTS.includes(edge.slot as never)) {
         throw createValidationError(`${label}.slot is not supported.`)
       }
       if (edge.replace !== undefined && typeof edge.replace !== 'boolean') {
@@ -560,7 +550,7 @@ function collectNodeKinds(nodesValue: unknown): Map<string, LibraryGraphNodeKind
     [nodes.characters, 'character'],
     [nodes.notes, 'note'],
     [nodes.sessions, 'session'],
-    [nodes.episodes, 'episode'],
+    [nodes.units, 'unit'],
     [nodes.attachments, 'attachment']
   ]
   const result = new Map<string, LibraryGraphNodeKind>()
@@ -590,7 +580,7 @@ function collectMediaTypes(nodesValue: unknown): Map<string, LibraryMediaType> {
   const nodes = requireRecord(nodesValue, 'library.graph.nodes')
   const result = new Map<string, LibraryMediaType>()
 
-  for (const value of [nodes.media, nodes.episodes]) {
+  for (const value of [nodes.media, nodes.units]) {
     if (!Array.isArray(value)) {
       continue
     }

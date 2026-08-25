@@ -36,9 +36,9 @@ export interface BangumiJobPreviewGroup extends JsonObject {
   rows: readonly BangumiJobPreviewRow[]
 }
 
-export type BangumiAutoSyncItem = 'create' | 'status' | 'score' | 'episodes'
+export type BangumiAutoSyncItem = 'create' | 'status' | 'score' | 'unitProgress'
 
-export type BangumiSyncDataItem = 'status' | 'score' | 'episodes'
+export type BangumiSyncDataItem = 'status' | 'score' | 'unitProgress'
 
 export type BangumiImportDataItem = 'status' | 'score' | 'tags' | 'unitProgress'
 
@@ -86,8 +86,8 @@ export interface BangumiOptionItem {
 export interface BangumiScopeOption {
   scope: BangumiMediaScope
   label: string
-  /** Whether the scope tracks per-episode watch state. */
-  supportsEpisodes: boolean
+  /** Whether the scope pushes per-unit progress alongside entry status. */
+  supportsUnitProgress: boolean
   profiles: readonly BangumiOptionItem[]
 }
 

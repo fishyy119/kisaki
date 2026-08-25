@@ -31,6 +31,7 @@ const WATCH_DEBOUNCE_MS = 3_000
 /** A download in progress keeps growing; report it once it stops changing. */
 const WRITE_FINISH_MS = 2_000
 
+/** Sync lists book files, so only a couple of entries reconcile at a time. */
 const MAX_CONCURRENT_SYNCS = 2
 
 export interface NovelAutoSyncOptions {

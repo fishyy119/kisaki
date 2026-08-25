@@ -746,6 +746,10 @@ export interface IpcRendererEvents {
   'player:session-ended': [report: PlaybackEndReport]
   'scanner:run-state-changed': [state: ScannerRunState]
 
+  // Reader window push: a read request for an entry already open re-aims the
+  // existing window instead of opening a second one.
+  'reader:navigate': [bootstrap: ReaderBootstrap]
+
   // Db change feed (main -> renderer, batched)
   'db:changed': [changes: DbChangeSummary[]]
   'library:entity-merged': [event: LibraryEntityMergedEvent]

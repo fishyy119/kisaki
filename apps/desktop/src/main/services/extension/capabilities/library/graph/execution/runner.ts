@@ -13,15 +13,15 @@ import type {
 import { applyEntityNodes, previewEntityNodes } from './entities'
 import {
   applyAttachmentEdge,
-  applyEpisodeAttachmentEdge,
+  applyUnitAttachmentEdge,
   previewAttachmentEdge,
-  previewEpisodeAttachmentEdge
+  previewUnitAttachmentEdge
 } from './media'
 import {
-  applyEpisodeEdge,
+  applyUnitEdge,
   applyNoteEdge,
   applySessionEdge,
-  previewEpisodeEdge,
+  previewUnitEdge,
   previewNoteEdge,
   previewSessionEdge
 } from './owned-items'
@@ -88,7 +88,7 @@ export async function applyLibraryGraph(
 
 /**
  * Edges run in dependency order rather than input order: a season must exist
- * before its episodes can be placed, and both must exist before their
+ * before its units can be placed, and both must exist before their
  * attachments resolve. Edges within one phase keep their input order.
  */
 const EDGE_PHASES: Record<LibraryGraphEdgeKind, number> = {
@@ -103,9 +103,9 @@ const EDGE_PHASES: Record<LibraryGraphEdgeKind, number> = {
   'company-company': 0,
   'media-note': 0,
   'media-session': 0,
-  'media-episode': 3,
+  'media-unit': 3,
   'media-attachment': 4,
-  'episode-attachment': 4
+  'unit-attachment': 4
 }
 
 function orderedEdges(graph: NormalizedLibraryGraph): readonly LibraryGraphEdge[] {
@@ -166,12 +166,12 @@ async function previewEdge(
       return previewNoteEdge(edge, graph, draft, state, options)
     case 'media-session':
       return previewSessionEdge(edge, graph, draft, state, options)
-    case 'media-episode':
-      return previewEpisodeEdge(edge, graph, draft, state, options)
+    case 'media-unit':
+      return previewUnitEdge(edge, graph, draft, state, options)
     case 'media-attachment':
       return await previewAttachmentEdge(edge, graph, draft, state, options)
-    case 'episode-attachment':
-      return await previewEpisodeAttachmentEdge(edge, graph, draft, state, options)
+    case 'unit-attachment':
+      return await previewUnitAttachmentEdge(edge, graph, draft, state, options)
   }
 }
 
@@ -206,11 +206,11 @@ async function applyEdge(
       return await applyNoteEdge(edge, graph, draft, state, context, options)
     case 'media-session':
       return applySessionEdge(edge, graph, draft, state, options)
-    case 'media-episode':
-      return applyEpisodeEdge(edge, graph, draft, state, options)
+    case 'media-unit':
+      return applyUnitEdge(edge, graph, draft, state, options)
     case 'media-attachment':
       return await applyAttachmentEdge(edge, graph, draft, state, context, options)
-    case 'episode-attachment':
-      return await applyEpisodeAttachmentEdge(edge, graph, draft, state, context, options)
+    case 'unit-attachment':
+      return await applyUnitAttachmentEdge(edge, graph, draft, state, context, options)
   }
 }

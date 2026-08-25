@@ -1,9 +1,7 @@
-import type { KisakiPreloadBridge } from './index'
+import type { KisakiPreloadBridge } from './bridge'
 
 declare global {
   interface Window {
     kisaki: KisakiPreloadBridge
   }
 }
-
-export {}

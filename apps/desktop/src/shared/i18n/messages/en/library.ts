@@ -562,7 +562,7 @@ export const library = {
     releaseDateInvalidFormat: 'Release date format is invalid',
     foundedDateYearDayWithoutMonth: 'Founded date needs a month when both year and day are set',
     releaseDateYearDayWithoutMonth: 'Release date needs a month when both year and day are set',
-    totalEpisodesPlaceholder: 'Optional',
+    countPlaceholder: 'Optional',
     totalEpisodesInvalid: 'Total episodes must be a non-negative integer',
     totalVolumesInvalid: 'Total volumes must be a non-negative integer',
     totalChaptersInvalid: 'Total chapters must be a non-negative integer',

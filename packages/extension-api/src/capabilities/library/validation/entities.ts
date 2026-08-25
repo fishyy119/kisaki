@@ -79,6 +79,8 @@ import {
   validateOptionalNonNegativeInteger,
   validateOptionalNullableEnumString,
   validateOptionalNullableFiniteNumber,
+  validateOptionalNullableFraction,
+  validateOptionalNullableNonNegativeInteger,
   validateOptionalNullableString,
   validateOptionalPartialDate,
   validateOptionalSaveBackups,
@@ -236,7 +238,7 @@ const COMIC_CHAPTER_CREATE_KEYS = new Set<string>([
   'externalIds'
 ])
 const COMIC_CHAPTER_READ_STATE_KEYS = new Set<string>(['read', 'readAt', 'readCount', 'resumePage'])
-const COMIC_CHAPTER_QUERY_KEYS = new Set<string>(['comicId', 'readOnly', 'unreadOnly'])
+const COMIC_CHAPTER_QUERY_KEYS = new Set<string>(['comicId', 'finishedOnly', 'unreadOnly'])
 const NOVEL_CREATE_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
   ...CREATE_TIMESTAMP_KEYS,
@@ -286,7 +288,7 @@ const NOVEL_VOLUME_READ_STATE_KEYS = new Set<string>([
   'resumeLocator',
   'resumeProgress'
 ])
-const NOVEL_VOLUME_QUERY_KEYS = new Set<string>(['novelId', 'readOnly', 'unreadOnly'])
+const NOVEL_VOLUME_QUERY_KEYS = new Set<string>(['novelId', 'finishedOnly', 'unreadOnly'])
 const PERSON_CREATE_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
   ...CREATE_TIMESTAMP_KEYS,
@@ -514,7 +516,8 @@ export function validateLibraryComicChapterReadStatePatch(value: unknown): Valid
     ...validateOptionalBoolean(input.read, '$.read'),
     ...validateOptionalNullableFiniteNumber(input.readAt, '$.readAt'),
     ...validateOptionalNonNegativeInteger(input.readCount, '$.readCount'),
-    ...validateOptionalNullableFiniteNumber(input.resumePage, '$.resumePage')
+    // A resume point is a zero-based page index, not an arbitrary number.
+    ...validateOptionalNullableNonNegativeInteger(input.resumePage, '$.resumePage')
   ]
 }
 
@@ -529,7 +532,7 @@ export function validateLibraryComicChapterQuery(value: unknown): ValidationIssu
       trim: true,
       valueMessage: 'comicId must be a non-empty string.'
     }),
-    ...validateOptionalBoolean(value.readOnly, '$.readOnly'),
+    ...validateOptionalBoolean(value.finishedOnly, '$.finishedOnly'),
     ...validateOptionalBoolean(value.unreadOnly, '$.unreadOnly')
   ]
 }
@@ -558,7 +561,9 @@ export function validateLibraryNovelVolumeReadStatePatch(value: unknown): Valida
     ...validateOptionalNullableFiniteNumber(input.readAt, '$.readAt'),
     ...validateOptionalNonNegativeInteger(input.readCount, '$.readCount'),
     ...validateOptionalNullableString(input.resumeLocator, '$.resumeLocator'),
-    ...validateOptionalNullableFiniteNumber(input.resumeProgress, '$.resumeProgress')
+    // The column is a display fraction; a value outside [0, 1] renders as a
+    // nonsense percentage and is never something the reader could produce.
+    ...validateOptionalNullableFraction(input.resumeProgress, '$.resumeProgress')
   ]
 }
 
@@ -573,7 +578,7 @@ export function validateLibraryNovelVolumeQuery(value: unknown): ValidationIssue
       trim: true,
       valueMessage: 'novelId must be a non-empty string.'
     }),
-    ...validateOptionalBoolean(value.readOnly, '$.readOnly'),
+    ...validateOptionalBoolean(value.finishedOnly, '$.finishedOnly'),
     ...validateOptionalBoolean(value.unreadOnly, '$.unreadOnly')
   ]
 }
@@ -1167,7 +1172,12 @@ function validateAnimeEpisodeCreateInput(value: unknown, path: string): Validati
     ...validateOptionalString(input.description, `${path}.description`),
     ...validateOptionalNullableFiniteNumber(input.durationMs, `${path}.durationMs`),
     ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
-    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
+    ...validateUnitIdentityStated(
+      [input.episodeNumber, input.name],
+      path,
+      'An anime episode needs an episode number or a name.'
+    )
   ]
 }
 
@@ -1234,7 +1244,12 @@ function validateComicChapterCreateInput(value: unknown, path: string): Validati
     ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
     ...validateOptionalString(input.description, `${path}.description`),
     ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
-    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
+    ...validateUnitIdentityStated(
+      [input.volumeNumber, input.chapterNumber, input.name],
+      path,
+      'A comic unit needs a volume number, a chapter number, or a name.'
+    )
   ]
 }
 
@@ -1293,8 +1308,33 @@ function validateNovelVolumeCreateInput(value: unknown, path: string): Validatio
     ...validateOptionalPartialDate(input.releaseDate, `${path}.releaseDate`),
     ...validateOptionalString(input.description, `${path}.description`),
     ...validateOptionalNonNegativeInteger(input.order, `${path}.order`),
-    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
+    ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
+    ...validateUnitIdentityStated(
+      [input.volumeNumber, input.name],
+      path,
+      'A novel volume needs a volume number or a name.'
+    )
   ]
+}
+
+/**
+ * A created unit must be identifiable.
+ *
+ * Every later pass — realignment, file matching, the reader's unit list —
+ * keys on a number or a name, so a unit stating neither can never be matched
+ * again and would duplicate on the next scrape.
+ */
+function validateUnitIdentityStated(
+  facts: readonly unknown[],
+  path: string,
+  message: string
+): ValidationIssue[] {
+  const stated = facts.some(
+    (fact) =>
+      (typeof fact === 'number' && Number.isFinite(fact)) ||
+      (typeof fact === 'string' && fact.trim().length > 0)
+  )
+  return stated ? [] : [{ path, message }]
 }
 
 function validatePersonWriteInput(

@@ -62,7 +62,9 @@ export class EpisodeSyncEngine {
   async syncEpisodes(options: EpisodeSyncOptions): Promise<EpisodeSyncResult> {
     const { scope, localId } = options
     const adapter = this.deps.mediaRegistry.getLocalAdapter(scope)
-    if (!adapter?.supportsEpisodeSync || !adapter.listEpisodes) {
+    // Only scopes that can enumerate episodes reach the per-episode engine;
+    // book scopes carry their progress on the collection payload instead.
+    if (!adapter?.supportsUnitProgress || !adapter.listEpisodes) {
       return { status: 'skippedUnsupportedScope', scope, localId }
     }
 
@@ -70,7 +72,7 @@ export class EpisodeSyncEngine {
     if (!settings.media[scope].localSyncEnabled) {
       return { status: 'skippedLocalSyncDisabled', scope, localId }
     }
-    if (!settings.autoSync.episodeStatusEnabled) {
+    if (!settings.autoSync.unitProgressEnabled) {
       return { status: 'skippedDisabled', scope, localId }
     }
 

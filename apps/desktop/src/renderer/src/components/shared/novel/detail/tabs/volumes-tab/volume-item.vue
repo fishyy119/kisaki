@@ -22,7 +22,7 @@ const emit = defineEmits<{
   toggleRead: []
   /** Carries the readable file path so the parent never re-derives it. */
   openFolder: [path: string]
-  edit: []
+  showDetail: []
 }>()
 
 const { m, f } = useI18n()
@@ -72,7 +72,7 @@ const resumePercent = computed(() =>
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <span
-            v-if="numberLabel && props.volume.name"
+            v-if="numberLabel"
             class="text-xs font-mono text-muted-foreground shrink-0"
           >
             {{ numberLabel }}
@@ -113,11 +113,11 @@ const resumePercent = computed(() =>
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.novel.volumes.editVolume"
-        @click="emit('edit')"
+        :tooltip="m.novel.files.title"
+        @click="emit('showDetail')"
       >
         <Icon
-          icon="icon-[mdi--pencil-outline]"
+          icon="icon-[mdi--information-outline]"
           class="size-4"
         />
       </Button>

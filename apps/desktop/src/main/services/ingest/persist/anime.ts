@@ -197,24 +197,14 @@ export class AnimeIngestPersistHandler {
     private readonly i18nService: I18nService
   ) {}
 
-  persistAnimeGraph(
-    graph: IngestAnimeGraph,
-    options?: AnimePersistOptions
-  ): Promise<IngestAddAnimeFromScraperResult>
-  persistAnimeGraph(
-    graph: IngestAnimeGraph,
-    options: AnimePersistOptions | undefined,
-    tx: DbContext
-  ): Promise<PersistAnimeGraphResult>
+  /**
+   * Persists a whole graph in its own transaction, then flushes assets.
+   * Callers already inside a transaction use `persistAnimeGraphInternal`.
+   */
   async persistAnimeGraph(
     graph: IngestAnimeGraph,
-    options?: AnimePersistOptions,
-    tx?: DbContext
-  ): Promise<IngestAddAnimeFromScraperResult | PersistAnimeGraphResult> {
-    if (tx) {
-      return this.persistAnimeGraphInternal(graph, options, tx)
-    }
-
+    options?: AnimePersistOptions
+  ): Promise<IngestAddAnimeFromScraperResult> {
     const result = this.dbService.client.transaction((trx) =>
       this.persistAnimeGraphInternal(graph, options, trx)
     )

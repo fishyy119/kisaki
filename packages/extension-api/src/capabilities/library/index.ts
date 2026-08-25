@@ -4,6 +4,7 @@ import type {
   LibraryAnime,
   LibraryAnimeCreateInput,
   LibraryAnimeEpisode,
+  LibraryAnimeEpisodeCreateInput,
   LibraryAnimeEpisodeQuery,
   LibraryAnimeEpisodeWatchStatePatch,
   LibraryAnimePatch,
@@ -63,12 +64,14 @@ export interface LibraryEntityNamespace<TEntity, TCreate, TPatch, TQuery> {
 /**
  * Episodes owned by an anime entry.
  *
- * Exposed under the anime namespace rather than promoted to an entity type:
- * an episode has no independent identity in the library, and per-episode watch
- * state is the only reason callers reach for it.
+ * Exposed under the anime namespace rather than promoted to an entity type: an
+ * episode has no independent identity in the library. Creation is exposed for
+ * the same reason as comic units — a watch-history importer needs rows to mark
+ * — and watch state is the per-episode fact callers patch.
  */
 export interface LibraryAnimeEpisodeNamespace {
   list(query: LibraryAnimeEpisodeQuery): Promise<readonly LibraryAnimeEpisode[]>
+  create(animeId: string, input: LibraryAnimeEpisodeCreateInput): Promise<LibraryAnimeEpisode>
   patchWatchState(
     episodeId: string,
     patch: LibraryAnimeEpisodeWatchStatePatch

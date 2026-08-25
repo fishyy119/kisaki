@@ -1,19 +1,12 @@
 import type { JsonObject } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionType } from '../config/schema'
+import type { ImportWriteFields } from '../import/planner'
 import { isBangumiMediaScope, type BangumiMediaScope } from '../../shared/scopes'
 import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
 
 export type BangumiImportTargetCollection =
   { kind: 'none' } | { kind: 'existing'; collectionId: string } | { kind: 'byIndexTitle' }
-
-export interface BangumiImportWriteFields {
-  status: boolean
-  score: boolean
-  tags: boolean
-  /** Adopt remote vol/ept counts as local unit read state; book scope only. */
-  unitProgress: boolean
-}
 
 export interface BangumiAuthRefreshArgs {
   forceRefresh: boolean
@@ -33,14 +26,14 @@ export interface BangumiFullSyncArgs extends BangumiScopedArgs {
   batchSize: number
   playStatusEnabled?: boolean
   scoreEnabled?: boolean
-  episodeStatusEnabled?: boolean
+  unitProgressEnabled?: boolean
   clearRemoteScoreWhenEmpty?: boolean
 }
 
 export interface BangumiImportCollectionsArgs extends BangumiScopedArgs {
   profileId?: string
   collectionTypes: readonly BangumiCollectionType[]
-  fields: BangumiImportWriteFields
+  fields: ImportWriteFields
   patchExisting: boolean
   targetCollection: BangumiImportTargetCollection
 }
@@ -76,7 +69,7 @@ export function normalizeFullSyncArgs(args: JsonObject): BangumiFullSyncArgs {
     batchSize: readInteger(args.batchSize, 100, { min: 1, max: 500 }),
     ...readOptionalBooleanProp(args.playStatusEnabled, 'playStatusEnabled'),
     ...readOptionalBooleanProp(args.scoreEnabled, 'scoreEnabled'),
-    ...readOptionalBooleanProp(args.episodeStatusEnabled, 'episodeStatusEnabled'),
+    ...readOptionalBooleanProp(args.unitProgressEnabled, 'unitProgressEnabled'),
     ...readOptionalBooleanProp(args.clearRemoteScoreWhenEmpty, 'clearRemoteScoreWhenEmpty')
   }
 }
@@ -153,7 +146,7 @@ function normalizeCollectionTypes(value: unknown): readonly BangumiCollectionTyp
   return collectionTypes.length > 0 ? [...new Set(collectionTypes)] : [...BANGUMI_COLLECTION_TYPES]
 }
 
-function normalizeImportWriteFields(value: unknown): BangumiImportWriteFields {
+function normalizeImportWriteFields(value: unknown): ImportWriteFields {
   const record = asRecord(value)
   return {
     status: readBoolean(record?.status, false),
@@ -186,7 +179,7 @@ function normalizeTargetCollection(
 
 function readOptionalBooleanProp(
   value: unknown,
-  key: 'playStatusEnabled' | 'scoreEnabled' | 'episodeStatusEnabled' | 'clearRemoteScoreWhenEmpty'
+  key: 'playStatusEnabled' | 'scoreEnabled' | 'unitProgressEnabled' | 'clearRemoteScoreWhenEmpty'
 ): Partial<BangumiFullSyncArgs> {
   return typeof value === 'boolean' ? { [key]: value } : {}
 }

@@ -11,10 +11,8 @@ import type {
   ComicScraperSlot,
   CompanyScraperSlot,
   GameScraperSlot,
-  MovieScraperSlot,
   NovelScraperSlot,
-  PersonScraperSlot,
-  TvScraperSlot
+  PersonScraperSlot
 } from './json'
 
 export const SCANNER_INGEST_MODE_VALUES = [
@@ -66,32 +64,6 @@ export const NOVEL_SCRAPER_SLOTS: NovelScraperSlot[] = [
   'info',
   'tags',
   'volumes',
-  'characters',
-  'persons',
-  'companies',
-  'relatedEntries',
-  'covers',
-  'backdrops',
-  'logos'
-]
-
-export const TV_SCRAPER_SLOTS: TvScraperSlot[] = [
-  'info',
-  'tags',
-  'seasons',
-  'episodes',
-  'characters',
-  'persons',
-  'companies',
-  'relatedEntries',
-  'covers',
-  'backdrops',
-  'logos'
-]
-
-export const MOVIE_SCRAPER_SLOTS: MovieScraperSlot[] = [
-  'info',
-  'tags',
   'characters',
   'persons',
   'companies',

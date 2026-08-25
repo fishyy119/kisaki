@@ -28,6 +28,7 @@ export interface SyncPayloadPlan {
 export interface SyncMappingOverrides {
   playStatusEnabled?: boolean | undefined
   scoreEnabled?: boolean | undefined
+  unitProgressEnabled?: boolean | undefined
   clearRemoteScoreWhenEmpty?: boolean | undefined
 }
 
@@ -38,7 +39,7 @@ export function createSyncMappingOptions(
   return {
     playStatusEnabled: overrides.playStatusEnabled ?? settings.autoSync.playStatusEnabled,
     scoreEnabled: overrides.scoreEnabled ?? settings.autoSync.scoreEnabled,
-    unitProgressEnabled: settings.autoSync.episodeStatusEnabled,
+    unitProgressEnabled: overrides.unitProgressEnabled ?? settings.autoSync.unitProgressEnabled,
     clearRemoteScoreWhenEmpty:
       overrides.clearRemoteScoreWhenEmpty ?? settings.autoSync.clearRemoteScoreWhenEmpty,
     statusToBangumi: settings.autoSync.statusToBangumi
@@ -71,7 +72,7 @@ export function createSyncPayloadPlan(
       payload.vol_status = item.unitProgress.volumes
     }
     if (isPositiveCount(item.unitProgress.chapters)) {
-      payload.ept_status = item.unitProgress.chapters
+      payload.ep_status = item.unitProgress.chapters
     }
   }
 
@@ -149,7 +150,7 @@ export function normalizeBangumiRemoteRate(value: unknown): number | undefined {
 export function syncPayloadMatchesRemote(
   payload: BangumiCollectionPatch,
   remote:
-    { type?: BangumiCollectionType; rate?: number; vol_status?: number; ept_status?: number }
+    | { type?: BangumiCollectionType; rate?: number; vol_status?: number; ep_status?: number }
     | undefined
 ): boolean {
   if (!remote) {
@@ -170,11 +171,17 @@ export function syncPayloadMatchesRemote(
     }
   }
 
-  if (payload.vol_status !== undefined && normalizeUnitCount(remote.vol_status) !== payload.vol_status) {
+  if (
+    payload.vol_status !== undefined &&
+    normalizeUnitCount(remote.vol_status) !== payload.vol_status
+  ) {
     return false
   }
 
-  if (payload.ept_status !== undefined && normalizeUnitCount(remote.ept_status) !== payload.ept_status) {
+  if (
+    payload.ep_status !== undefined &&
+    normalizeUnitCount(remote.ep_status) !== payload.ep_status
+  ) {
     return false
   }
 

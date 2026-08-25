@@ -88,11 +88,12 @@ watch(chapter, (row) => {
   }
 })
 
+/** Zero is a real unit number: prologues ship as chapter 0 all the time. */
 function parseOptionalNumber(text: string): number | null | false {
   const trimmed = text.trim()
   if (trimmed === '') return null
   const value = Number(trimmed)
-  if (!Number.isFinite(value) || value <= 0) return false
+  if (!Number.isFinite(value) || value < 0) return false
   return value
 }
 

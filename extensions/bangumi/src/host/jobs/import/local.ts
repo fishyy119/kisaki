@@ -7,11 +7,13 @@ import type {
   LocalMediaAdapter,
   LocalMediaItem,
   LocalMediaUserPatch,
+  LocalUnitCapacity,
   LocalUnitProgress
 } from '../../media/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 import { BangumiExtensionError } from '../../utils/errors'
 import { m } from '../../i18n'
+import { readPositiveInteger } from '../../utils/numbers'
 import { omitUndefined } from '../../utils/object'
 import type { BangumiImportCollectionsArgs, BangumiImportTargetCollection } from '../args'
 import type { CollectionLocalUpdatePlan } from './model'
@@ -67,7 +69,7 @@ export async function importItemFromIndexSubject(
   profileId: string | undefined,
   subject: BangumiIndexSubject
 ) {
-  const subjectId = normalizePositiveInteger(subject.id)
+  const subjectId = readPositiveInteger(subject.id)
   if (!subjectId) {
     throw new BangumiExtensionError('bangumi_validation', m().errors.indexSubjectMissingId)
   }
@@ -207,8 +209,8 @@ export async function buildCollectionLocalUpdatePlan({
   }
 
   const unitProgress =
-    fields.unitProgress && adapter.applyUnitProgress
-      ? planUnitProgressAdoption(item, collection)
+    fields.unitProgress && adapter.applyUnitProgress && adapter.readUnitCapacity
+      ? planUnitProgressAdoption(item, collection, await adapter.readUnitCapacity(item.localId))
       : undefined
   if (unitProgress) {
     rows.push({
@@ -244,25 +246,41 @@ export async function buildCollectionLocalUpdatePlan({
 /**
  * Remote unit counts worth adopting: only the dimensions where Bangumi is
  * ahead of the local read state, so imports never regress local progress.
+ *
+ * Adoption marks existing unit rows, so it is capped by how many the entry
+ * has. An entry Bangumi tracks but the library has no units for adopts
+ * nothing, and the preview says so by omitting the row.
  */
 function planUnitProgressAdoption(
   item: LocalMediaItem,
-  collection: BangumiUserCollection
+  collection: BangumiUserCollection,
+  capacity: LocalUnitCapacity
 ): LocalUnitProgress | undefined {
-  const remoteVolumes = normalizePositiveInteger(collection.vol_status)
-  const remoteChapters = normalizePositiveInteger(collection.ept_status)
-  const localVolumes = item.unitProgress?.volumes ?? 0
-  const localChapters = item.unitProgress?.chapters ?? 0
-
   const progress: LocalUnitProgress = {}
-  if (remoteVolumes !== undefined && remoteVolumes > localVolumes) {
-    progress.volumes = remoteVolumes
-  }
-  if (remoteChapters !== undefined && remoteChapters > localChapters) {
-    progress.chapters = remoteChapters
-  }
+
+  const volumes = planGrainAdoption(
+    collection.vol_status,
+    item.unitProgress?.volumes ?? 0,
+    capacity.volumes
+  )
+  if (volumes !== undefined) progress.volumes = volumes
+
+  const chapters = planGrainAdoption(
+    collection.ep_status,
+    item.unitProgress?.chapters ?? 0,
+    capacity.chapters
+  )
+  if (chapters !== undefined) progress.chapters = chapters
 
   return progress.volumes !== undefined || progress.chapters !== undefined ? progress : undefined
+}
+
+function planGrainAdoption(remote: unknown, local: number, capacity: number): number | undefined {
+  const remoteCount = readPositiveInteger(remote)
+  if (remoteCount === undefined || capacity <= 0) return undefined
+
+  const adoptable = Math.min(remoteCount, capacity)
+  return adoptable > local ? adoptable : undefined
 }
 
 function mergeUnitProgress(
@@ -294,16 +312,8 @@ export function hasCollectionLocalChanges(plan: CollectionLocalUpdatePlan): bool
 
 export function readCollectionSubjectId(collection: BangumiUserCollection): number {
   return (
-    normalizePositiveInteger(collection.subject_id) ??
-    normalizePositiveInteger(collection.subject?.id) ??
-    0
+    readPositiveInteger(collection.subject_id) ?? readPositiveInteger(collection.subject?.id) ?? 0
   )
-}
-
-export function normalizePositiveInteger(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0
-    ? Math.trunc(value)
-    : undefined
 }
 
 export function formatTargetCollectionValue(targetCollection: LocalCollectionTarget): string {

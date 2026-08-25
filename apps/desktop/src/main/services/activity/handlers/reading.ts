@@ -9,6 +9,11 @@ import type { ComicFormat, ComicReadingDirection } from '@shared/db/contracts/en
 /** Persisting a resume point on every page turn is waste. */
 export const RESUME_WRITE_INTERVAL_MS = 5_000
 
+/** Unit numbers are real: keep the decimals a source stated, drop none. */
+export function formatUnitNumber(value: number): string {
+  return String(value)
+}
+
 /** Below this, a session segment is a mis-click rather than reading time. */
 export const MIN_READING_SEGMENT_MS = 5_000
 

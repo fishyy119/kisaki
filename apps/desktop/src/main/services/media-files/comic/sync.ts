@@ -33,12 +33,16 @@ import type {
   ComicFileSyncParams,
   ComicFileSyncResult
 } from '@shared/media-files'
+import {
+  comicUnitIdentityKey,
+  isNumberedComicUnit,
+  isSameChapterAcrossVolumeKnowledge
+} from '@shared/metadata'
 import { and, eq, inArray } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { isImageFile } from '@main/services/media-info/book/containers'
 import {
   isComicArchiveFile,
-  isNumberedComicUnit,
+  isComicPageFile,
   recognizeComicUnit,
   type ComicUnitCandidate
 } from './recognition'
@@ -86,21 +90,35 @@ function compareUnits(a: ComicUnitCandidate, b: ComicUnitCandidate): number {
 }
 
 /**
- * Identity of a candidate across sync runs: numbered containers share their
- * unit at their own grain; unreadable names stay one unit per container,
- * keyed by path, since two unreadable names are not evidence of one unit.
+ * Identity of a candidate across sync runs.
+ *
+ * Numbered containers share their unit through the library-wide identity key;
+ * unreadable names stay one unit per container, keyed by path, since two
+ * unreadable names are not evidence of one unit.
  */
 function unitCandidateKey(candidate: ComicUnitCandidate): string {
-  if (candidate.chapterNumber !== undefined) return `chapter:${candidate.chapterNumber}`
-  if (candidate.volumeNumber !== undefined) return `volume:${candidate.volumeNumber}`
-  return `file:${candidate.path}`
+  return isNumberedComicUnit(candidate) ? comicUnitIdentityKey(candidate) : `file:${candidate.path}`
 }
 
-/** Number key of a stored row at its own grain; null for unnumbered rows. */
+/** Identity key of a stored row; null for unnumbered rows, which key by file. */
 function rowNumberKey(row: ComicChapter): string | null {
-  if (row.chapterNumber !== null) return `chapter:${row.chapterNumber}`
-  if (row.volumeNumber !== null) return `volume:${row.volumeNumber}`
-  return null
+  return isNumberedComicUnit(row) ? comicUnitIdentityKey(row) : null
+}
+
+/**
+ * The stored row is the same installment the filename now labels with (or
+ * without) a volume. Only an unambiguous single candidate is claimed, so a
+ * library numbering chapters per volume never cross-matches.
+ */
+function claimUnitAcrossVolumeKnowledge(
+  candidate: ComicUnitCandidate,
+  existingUnits: ComicChapter[],
+  claimedUnitIds: ReadonlySet<string>
+): ComicChapter | undefined {
+  const matches = existingUnits.filter(
+    (unit) => !claimedUnitIds.has(unit.id) && isSameChapterAcrossVolumeKnowledge(candidate, unit)
+  )
+  return matches.length === 1 ? matches[0] : undefined
 }
 
 /** Whether stored values already describe the file as it is on disk now. */
@@ -207,7 +225,7 @@ export class ComicFileSyncHandler {
   async attachFile(params: ComicChapterFileAttachParams): Promise<void> {
     const { chapterId, path: filePath } = params
 
-    const info = await this.mediaInfo.book.probeComicUnit(filePath)
+    const info = await this.mediaInfo.book.probePagedContainer(filePath)
     if (!info) {
       throw new Error(`Comic unit file is not readable: ${filePath}`)
     }
@@ -315,7 +333,7 @@ export class ComicFileSyncHandler {
       return stored
     }
 
-    const info = await this.mediaInfo.book.probeComicUnit(filePath)
+    const info = await this.mediaInfo.book.probePagedContainer(filePath)
     if (!info) return null
 
     return {
@@ -364,7 +382,7 @@ export class ComicFileSyncHandler {
         if (entry.isFile()) {
           if (isComicArchiveFile(entry.name)) {
             candidates.push(recognizeComicUnit(entryPath, 'archive'))
-          } else if (depth === 0 && isImageFile(entry.name)) {
+          } else if (depth === 0 && isComicPageFile(entry.name)) {
             rootHasImages = true
           }
           continue
@@ -373,7 +391,9 @@ export class ComicFileSyncHandler {
         if (!entry.isDirectory()) continue
 
         const childEntries = await fs.readdir(entryPath, { withFileTypes: true }).catch(() => [])
-        const hasImages = childEntries.some((child) => child.isFile() && isImageFile(child.name))
+        const hasImages = childEntries.some(
+          (child) => child.isFile() && isComicPageFile(child.name)
+        )
         if (hasImages) {
           candidates.push(recognizeComicUnit(entryPath, 'directory'))
         } else {
@@ -385,7 +405,14 @@ export class ComicFileSyncHandler {
     await visit(dirPath, 0)
 
     if (candidates.length === 0 && rootHasImages) {
-      candidates.push(recognizeComicUnit(dirPath, 'directory'))
+      // The root directory is named after the entry, not after a unit, so its
+      // numbering is stripped: a comic titled "86" holds one unnumbered unit.
+      const {
+        volumeNumber: _volume,
+        chapterNumber: _chapter,
+        ...root
+      } = recognizeComicUnit(dirPath, 'directory')
+      candidates.push(root)
     }
 
     return candidates
@@ -419,6 +446,7 @@ export class ComicFileSyncHandler {
     }
 
     const unitIdByKey = new Map<string, string>()
+    const claimedUnitIds = new Set<string>()
     let nextOrder = existingUnits.length
 
     for (const { candidate } of probed) {
@@ -426,9 +454,22 @@ export class ComicFileSyncHandler {
 
       if (unitIdByKey.has(key)) continue
 
-      const match = existingByKey.get(key)
+      // Exact identity first, then the same volume-knowledge pass ingest uses:
+      // renaming `Ch.5.cbz` to `Vol.1 Ch.5.cbz` must move the unit, not fork it.
+      const match =
+        existingByKey.get(key) ??
+        claimUnitAcrossVolumeKnowledge(candidate, existingUnits, claimedUnitIds)
       if (match) {
+        claimedUnitIds.add(match.id)
         unitIdByKey.set(key, match.id)
+        // A learned volume number is a fact about the same unit; record it so
+        // the row's identity matches its files from now on.
+        if ((match.volumeNumber ?? null) !== (candidate.volumeNumber ?? null)) {
+          tx.update(comicChapters)
+            .set({ volumeNumber: candidate.volumeNumber ?? null })
+            .where(eq(comicChapters.id, match.id))
+            .run()
+        }
         continue
       }
 
@@ -442,6 +483,7 @@ export class ComicFileSyncHandler {
       }
 
       tx.insert(comicChapters).values(row).run()
+      claimedUnitIds.add(row.id as string)
       unitIdByKey.set(key, row.id as string)
     }
 

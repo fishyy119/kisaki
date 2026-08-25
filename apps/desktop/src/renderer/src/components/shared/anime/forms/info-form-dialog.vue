@@ -214,7 +214,7 @@ function handleCancel() {
                     v-model="formData.totalEpisodes"
                     type="number"
                     min="0"
-                    :placeholder="m.library.forms.totalEpisodesPlaceholder"
+                    :placeholder="m.library.forms.countPlaceholder"
                   />
                 </FieldContent>
               </Field>

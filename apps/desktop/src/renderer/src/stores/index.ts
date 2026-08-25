@@ -7,6 +7,7 @@ export {
   type AnimePlaybackState,
   type AnimeWatchingStatus
 } from './anime-activity'
+export { useReadingActivityStore } from './reading-activity'
 export { useScannerStore } from './scanner'
 export { useDefaultFromStore } from './default-from'
 export { usePreferencesStore } from './preferences'

@@ -51,3 +51,26 @@ export interface NovelVolumeInfo {
   description?: string
   externalIds?: ExternalId[]
 }
+
+/** Numbering a novel volume can be identified by, whether stated or stored. */
+export interface NovelUnitNumbering {
+  volumeNumber?: number | null
+  name?: string | null
+}
+
+/** Whether the volume states a number the library can identify it by. */
+export function isNumberedNovelVolume(unit: NovelUnitNumbering): boolean {
+  return unit.volumeNumber != null
+}
+
+/**
+ * Identity of one volume within its novel.
+ *
+ * The single source of truth for volume identity: ingest, file sync, entity
+ * merge, and the `unique_novel_volumes_number` index must all agree.
+ * Unnumbered volumes fall back to their name, which is what keeps a named
+ * side story from being re-inserted on every re-scrape.
+ */
+export function novelUnitIdentityKey(unit: NovelUnitNumbering): string {
+  return unit.volumeNumber != null ? `volume:${unit.volumeNumber}` : `name:${unit.name ?? ''}`
+}

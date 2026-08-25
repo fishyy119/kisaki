@@ -13,7 +13,7 @@ import type {
   LibraryGraphDiagnostic,
   LibraryGraphEdge,
   LibraryGraphEdgeResult,
-  LibraryGraphEpisodeNode,
+  LibraryGraphUnitNode,
   LibraryGraphInput,
   LibraryGraphMediaNode,
   LibraryGraphNodeKind,
@@ -37,7 +37,7 @@ export type LibraryGraphNode =
   | LibraryGraphCharacterNode
   | LibraryGraphNoteNode
   | LibraryGraphSessionNode
-  | LibraryGraphEpisodeNode
+  | LibraryGraphUnitNode
   | LibraryGraphAttachmentNode
 
 export interface LibraryGraphNodeEntry<TNode extends LibraryGraphNode = LibraryGraphNode> {
@@ -64,7 +64,7 @@ export interface NormalizedLibraryGraphNodes {
   characters: readonly LibraryGraphNodeEntry<LibraryGraphCharacterNode>[]
   notes: readonly LibraryGraphNodeEntry<LibraryGraphNoteNode>[]
   sessions: readonly LibraryGraphNodeEntry<LibraryGraphSessionNode>[]
-  episodes: readonly LibraryGraphNodeEntry<LibraryGraphEpisodeNode>[]
+  units: readonly LibraryGraphNodeEntry<LibraryGraphUnitNode>[]
   attachments: readonly LibraryGraphNodeEntry<LibraryGraphAttachmentNode>[]
 }
 

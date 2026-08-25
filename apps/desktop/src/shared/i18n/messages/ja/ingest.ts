@@ -7,7 +7,7 @@ type IngestEntity = 'game' | 'anime' | 'comic' | 'novel' | 'character' | 'person
 const NOUNS: Record<IngestEntity, string> = {
   game: 'ゲーム',
   anime: 'アニメ',
-  comic: 'コミック',
+  comic: 'マンガ',
   novel: '小説',
   character: 'キャラクター',
   person: '人物',

@@ -111,7 +111,7 @@ export async function createIndexCollectionPatchPreviewChange(
   return createPreviewGroup({
     title: item.name,
     subjectId,
-    badge: { label: m().jobs.preview.updateLocalBadge({ scope: 'game' }), tone: 'info' },
+    badge: { label: m().jobs.preview.updateLocalBadge({ scope: adapter.scope }), tone: 'info' },
     rows: [
       {
         label: m().jobs.preview.collection,

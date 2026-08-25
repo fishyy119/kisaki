@@ -1,14 +1,14 @@
 /**
- * Comic read-state writes shared by unit rows and detail dialogs.
+ * Comic read-state writes shared by unit rows, detail dialogs, and catch-up.
  *
  * `read` is the state, `readAt` the reading evidence: manual toggles record
  * the state alone, and clearing the state also clears the recorded time.
  */
 
-import { eq } from 'drizzle-orm'
+import { and, count, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
-import { comicChapters, type ComicChapter } from '@shared/db'
+import { comicChapters, type ComicChapter, type ComicStatus } from '@shared/db'
 import { useI18n } from './use-i18n'
 
 export async function toggleChapterRead(chapter: Pick<ComicChapter, 'id' | 'read'>): Promise<void> {
@@ -22,4 +22,40 @@ export async function toggleChapterRead(chapter: Pick<ComicChapter, 'id' | 'read
   } catch {
     notify.error(m.value.library.feedback.updateFailed)
   }
+}
+
+export async function readUnreadChapterCount(comicId: string): Promise<number> {
+  const rows = await db
+    .select({ value: count() })
+    .from(comicChapters)
+    .where(and(eq(comicChapters.comicId, comicId), eq(comicChapters.read, false)))
+
+  return rows[0]?.value ?? 0
+}
+
+/**
+ * Whether writing this status should offer to catch the entry's units up.
+ *
+ * Only `completed` carries a unit meaning; the remaining statuses say nothing
+ * about individual units, and no status ever implies unmarking one.
+ */
+export async function shouldOfferReadCatchUp(
+  comicId: string,
+  status: ComicStatus
+): Promise<boolean> {
+  if (status !== 'completed') return false
+  return (await readUnreadChapterCount(comicId)) > 0
+}
+
+/**
+ * Marks every unread unit of the entry as read.
+ *
+ * Already-read rows are excluded rather than rewritten, so their real reading
+ * times and read counts survive and repeating the call is a no-op.
+ */
+export async function markChaptersRead(comicId: string): Promise<void> {
+  await db
+    .update(comicChapters)
+    .set({ read: true, resumePage: null })
+    .where(and(eq(comicChapters.comicId, comicId), eq(comicChapters.read, false)))
 }

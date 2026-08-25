@@ -17,6 +17,7 @@ import { useDbChanges } from '@renderer/composables'
 import { useComicReading } from '@renderer/composables/use-comic-reading'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
+import { useReadingActivityStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
 import { comicChapters } from '@shared/db'
 
@@ -37,8 +38,12 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const { m } = useI18n()
+const readingActivity = useReadingActivityStore()
 
 const { isStartPending, read } = useComicReading(() => props.comicId)
+
+/** A window already open reads as live: the action refocuses it. */
+const isReading = computed(() => readingActivity.isComicReading(props.comicId))
 
 /**
  * Whether the read action resumes existing progress: a unit button resumes
@@ -83,9 +88,10 @@ useDbChanges(({ table }) => {
   if (table === 'comic_chapters') void refreshProgress()
 })
 
-const label = computed<string>(() =>
-  hasProgress.value ? m.value.comic.readContinue : m.value.comic.readStart
-)
+const label = computed<string>(() => {
+  if (isReading.value) return m.value.comic.readOpen
+  return hasProgress.value ? m.value.comic.readContinue : m.value.comic.readStart
+})
 
 const iconVariants = cva('', {
   variants: {

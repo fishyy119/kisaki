@@ -5,8 +5,7 @@
 export const comic = {
   readStart: 'Start reading',
   readContinue: 'Continue reading',
-  readNext: 'Read next',
-  showDetail: 'Show details',
+  readOpen: 'Open reader',
 
   chapters: {
     title: 'Units',
@@ -65,8 +64,6 @@ export const comic = {
     noFiles: 'No files yet',
     fileCount: ({ count }: { count: number }) => (count === 1 ? '1 file' : `${count} files`),
     primary: 'Primary',
-    container: 'Container',
-    pageCount: 'Pages',
     openFolder: 'Open containing folder',
     openFolderFailed: 'Could not open the containing folder',
     setPrimary: 'Set as primary',

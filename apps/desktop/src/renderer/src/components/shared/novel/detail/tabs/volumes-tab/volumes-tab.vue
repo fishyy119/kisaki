@@ -18,6 +18,7 @@ import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import { ipcManager } from '@renderer/core/ipc'
 import { NovelFilesConfigFormDialog } from '../../../forms'
+import NovelVolumeDetailDialog from './volume-detail-dialog.vue'
 import NovelDetailVolumeItem from './volume-item.vue'
 import NovelVolumeFormDialog from './volume-form-dialog.vue'
 
@@ -27,16 +28,16 @@ const { isSyncing, syncFiles } = useNovelFileSync()
 
 const addDialogOpen = ref(false)
 const filesConfigOpen = ref(false)
-const editVolumeId = ref<string | null>(null)
+const detailVolumeId = ref<string | null>(null)
 
 const readCount = computed(() => volumes.value.filter((volume) => volume.read).length)
 
 const canSyncFiles = computed(() => !!novel.value?.novelDirPath)
 
-const editDialogOpen = computed({
-  get: () => editVolumeId.value !== null,
+const detailDialogOpen = computed({
+  get: () => detailVolumeId.value !== null,
   set: (value) => {
-    if (!value) editVolumeId.value = null
+    if (!value) detailVolumeId.value = null
   }
 })
 
@@ -129,7 +130,7 @@ async function handleOpenFolder(path: string): Promise<void> {
           :volume="volume"
           @toggle-read="toggleVolumeRead(volume)"
           @open-folder="handleOpenFolder"
-          @edit="editVolumeId = volume.id"
+          @show-detail="detailVolumeId = volume.id"
         />
       </div>
     </Section>
@@ -141,12 +142,12 @@ async function handleOpenFolder(path: string): Promise<void> {
       :novel-id="novel.id"
     />
 
-    <!-- Edit volume dialog -->
-    <NovelVolumeFormDialog
-      v-if="editVolumeId"
-      v-model:open="editDialogOpen"
+    <!-- Volume workbench dialog -->
+    <NovelVolumeDetailDialog
+      v-if="detailVolumeId"
+      v-model:open="detailDialogOpen"
       :novel-id="novel.id"
-      :volume-id="editVolumeId"
+      :volume-id="detailVolumeId"
     />
 
     <!-- Files configuration dialog -->

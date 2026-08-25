@@ -134,7 +134,7 @@ export interface ScraperLookup {
 }
 
 /**
- * Lookup for a media entry (game, anime).
+ * Lookup for a media entry.
  *
  * The facts only matter to a name search, where one work spans many provider
  * entries: a visual novel and its fandisc, or a series and its OVA, share a

@@ -62,4 +62,13 @@ export { insertNovelVolumeExternalIds, insertNovelVolumeRow } from './volumes'
 export { GameIngestPersistHandler } from './game'
 export { NovelIngestPersistHandler } from './novel'
 export { PersonIngestPersistHandler } from './person'
-export * from './types'
+export {
+  pickFirstAssetUrl,
+  type PersistAnimeGraphResult,
+  type PersistCharacterGraphResult,
+  type PersistComicGraphResult,
+  type PersistCompanyGraphResult,
+  type PersistGameGraphResult,
+  type PersistNovelGraphResult,
+  type PersistPersonGraphResult
+} from './types'

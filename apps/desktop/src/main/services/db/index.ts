@@ -20,13 +20,11 @@ export { DbEntityDeleteHelper, DbEntityFinderHelper } from './helper'
 export {
   animeExternalIdLink,
   characterExternalIdLink,
-  comicChapterExternalIdLink,
   comicExternalIdLink,
   companyExternalIdLink,
   findExternalIdOwners,
   gameExternalIdLink,
   novelExternalIdLink,
-  novelVolumeExternalIdLink,
   personExternalIdLink,
   requireExternalIdsAvailable,
   resolveTagId,

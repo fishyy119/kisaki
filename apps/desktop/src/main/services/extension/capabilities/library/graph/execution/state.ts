@@ -2,7 +2,7 @@ import type {
   LibraryGraphAttachmentNode,
   LibraryGraphDiagnostic,
   LibraryGraphEdge,
-  LibraryGraphEpisodeNode,
+  LibraryGraphUnitNode,
   LibraryGraphNodeKind,
   LibraryGraphNoteNode,
   LibraryGraphResult,
@@ -43,14 +43,14 @@ export function createApplyState(graph: NormalizedLibraryGraph): ApplyState {
     skippedMedia: new Set(),
     noteOwners: new Map(),
     sessionOwners: new Map(),
-    episodeOwners: new Map(),
+    unitOwners: new Map(),
     attachmentActions: new Map(),
     attachmentDiagnostics: new Map()
   }
 }
 
 /**
- * Owned rows (notes, sessions, episodes) publish their ids through the same map
+ * Owned rows (notes, sessions, units) publish their ids through the same map
  * as entity nodes so later edges can resolve their endpoints.
  */
 export function setOwnedEntityId(
@@ -223,12 +223,12 @@ export function markUnownedNodes(
     }
   }
 
-  for (const entry of graph.nodes.episodes) {
-    if (!state.episodeOwners.has(entry.key)) {
+  for (const entry of graph.nodes.units) {
+    if (!state.unitOwners.has(entry.key)) {
       const diagnostic = createDiagnostic({
         level: 'error',
-        code: 'kisaki.graph.episodeUnowned',
-        message: 'Episode nodes require a media-episode edge.',
+        code: 'kisaki.graph.unitUnowned',
+        message: 'Unit nodes require a media-unit edge.',
         nodeKey: entry.key
       })
       draft.diagnostics.push(diagnostic)
@@ -277,9 +277,9 @@ export function requireNodeEntry(
 ): LibraryGraphNodeEntry<LibraryGraphSessionNode>
 export function requireNodeEntry(
   graph: NormalizedLibraryGraph,
-  kind: 'episode',
+  kind: 'unit',
   key: string
-): LibraryGraphNodeEntry<LibraryGraphEpisodeNode>
+): LibraryGraphNodeEntry<LibraryGraphUnitNode>
 export function requireNodeEntry(
   graph: NormalizedLibraryGraph,
   kind: 'attachment',
@@ -287,16 +287,16 @@ export function requireNodeEntry(
 ): LibraryGraphNodeEntry<LibraryGraphAttachmentNode>
 export function requireNodeEntry(
   graph: NormalizedLibraryGraph,
-  kind: 'note' | 'session' | 'episode' | 'attachment',
+  kind: 'note' | 'session' | 'unit' | 'attachment',
   key: string
 ):
   | LibraryGraphNodeEntry<LibraryGraphNoteNode>
   | LibraryGraphNodeEntry<LibraryGraphSessionNode>
-  | LibraryGraphNodeEntry<LibraryGraphEpisodeNode>
+  | LibraryGraphNodeEntry<LibraryGraphUnitNode>
   | LibraryGraphNodeEntry<LibraryGraphAttachmentNode> {
   return graph.nodes.byIdentity.get(graphNodeIdentity(kind, key)) as
     | LibraryGraphNodeEntry<LibraryGraphNoteNode>
     | LibraryGraphNodeEntry<LibraryGraphSessionNode>
-    | LibraryGraphNodeEntry<LibraryGraphEpisodeNode>
+    | LibraryGraphNodeEntry<LibraryGraphUnitNode>
     | LibraryGraphNodeEntry<LibraryGraphAttachmentNode>
 }

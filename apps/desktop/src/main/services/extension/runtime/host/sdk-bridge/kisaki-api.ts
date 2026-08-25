@@ -300,6 +300,13 @@ export function createKisakiApi(
         episodes: {
           list: async (query) =>
             (await requestMain('capabilities.library.animes.episodes.list', { query })).items,
+          create: async (animeId, input) =>
+            (
+              await requestMain('capabilities.library.animes.episodes.create', {
+                animeId,
+                input
+              })
+            ).episode,
           patchWatchState: async (episodeId, patch) =>
             (
               await requestMain('capabilities.library.animes.episodes.patchWatchState', {

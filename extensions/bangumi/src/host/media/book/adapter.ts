@@ -17,17 +17,17 @@ import { omitUndefined } from '../../utils/object'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
 import { parseBangumiSubjectDate } from '../format/dates'
 import {
-  isBangumiComicPlatform,
   mapBangumiComicFormat,
-  mapBangumiNovelFormat
+  mapBangumiNovelFormat,
+  resolveBangumiBookKind
 } from '../format/formats'
 import { readChangeReasons } from '../local/adapter'
 import {
   createStaticCollectionByName,
   ensureTag,
-  findStaticCollectionByName,
-  mapCollectionSummary,
-  normalizeCollectionName
+  listStaticCollections,
+  resolveStaticCollectionById,
+  resolveStaticCollectionByTitle
 } from '../local/library'
 import type {
   BangumiMediaDescriptor,
@@ -40,6 +40,7 @@ import type {
   LocalMediaItem,
   LocalMediaListQuery,
   LocalMediaUserPatch,
+  LocalUnitCapacity,
   LocalUnitProgress
 } from '../types'
 
@@ -70,6 +71,7 @@ interface BookHalf {
   get(localId: string): Promise<BookEntity | null>
   update(localId: string, patch: { status?: BookStatus; score?: number | null }): Promise<void>
   readUnitProgress(localId: string): Promise<LocalUnitProgress>
+  readUnitCapacity(localId: string): Promise<LocalUnitCapacity>
   applyUnitProgress(localId: string, progress: LocalUnitProgress): Promise<void>
   createTagLink(localId: string, tagId: string): Promise<void>
   createCollectionLink(collectionId: string, localId: string): Promise<void>
@@ -101,6 +103,11 @@ const comicHalf: BookHalf = {
       else readVolumes += 1
     }
     return { volumes: readVolumes, chapters: readChapters }
+  },
+  async readUnitCapacity(localId) {
+    const chapters = await kisaki.library.comics.chapters.list({ comicId: localId })
+    const chapterGrain = chapters.filter((chapter) => chapter.chapterNumber != null).length
+    return { volumes: chapters.length - chapterGrain, chapters: chapterGrain }
   },
   async applyUnitProgress(localId, progress) {
     const chapters = await kisaki.library.comics.chapters.list({ comicId: localId })
@@ -151,6 +158,10 @@ const novelHalf: BookHalf = {
     const volumes = await kisaki.library.novels.volumes.list({ novelId: localId })
     return { volumes: volumes.filter((volume) => volume.read).length }
   },
+  async readUnitCapacity(localId) {
+    const volumes = await kisaki.library.novels.volumes.list({ novelId: localId })
+    return { volumes: volumes.length, chapters: 0 }
+  },
   async applyUnitProgress(localId, progress) {
     const volumes = await kisaki.library.novels.volumes.list({ novelId: localId })
     for (const unit of unitsToMark(volumes, progress.volumes)) {
@@ -190,7 +201,7 @@ export interface BookLocalMediaAdapterDependencies {
  * Bangumi folds comics and novels into one subject type while the library
  * keeps two media types, so this adapter is a router over two halves: the
  * platform label decides where a new entry lands, and existing ids resolve to
- * whichever library owns them. Unit progress (`vol_status` / `ept_status`)
+ * whichever library owns them. Unit progress (`vol_status` / `ep_status`)
  * rides the collection payload instead of per-episode sync.
  */
 export class BookLocalMediaAdapter implements LocalMediaAdapter {
@@ -198,6 +209,7 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
   readonly supportsScraperProfile = true
   readonly supportsAutoSync = true
   readonly supportsImportWrite = true
+  readonly supportsUnitProgress = true
 
   private readonly halves = [comicHalf, novelHalf] as const
 
@@ -333,6 +345,11 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
     return item
   }
 
+  async readUnitCapacity(localId: string): Promise<LocalUnitCapacity> {
+    const owned = await this.requireHalf(localId)
+    return owned.half.readUnitCapacity(localId)
+  }
+
   async applyUnitProgress(localId: string, progress: LocalUnitProgress): Promise<void> {
     const owned = await this.requireHalf(localId)
     await owned.half.applyUnitProgress(localId, progress)
@@ -369,26 +386,15 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   async listCollections(): Promise<readonly LocalCollectionSummary[]> {
-    const collections = await kisaki.library.collections.list({
-      includeDynamic: false,
-      includeStatic: true
-    })
-    return collections.map(mapCollectionSummary)
+    return listStaticCollections()
   }
 
   async resolveExistingCollection(collectionId: string): Promise<LocalCollectionTarget> {
-    const collection = await kisaki.library.collections.get(collectionId)
-    if (!collection || collection.isDynamic) {
-      throw new BangumiExtensionError('bangumi_validation', m().errors.targetCollectionMissing)
-    }
-
-    return { id: collection.id, name: collection.name }
+    return resolveStaticCollectionById(collectionId)
   }
 
   async resolveCollectionByTitle(title: string): Promise<LocalCollectionTarget> {
-    const name = normalizeCollectionName(title)
-    const existing = await findStaticCollectionByName(name)
-    return existing ? { id: existing.id, name: existing.name } : { name, willCreate: true }
+    return resolveStaticCollectionByTitle(title)
   }
 
   async hasCollectionMembership(localId: string, target: LocalCollectionTarget): Promise<boolean> {
@@ -462,26 +468,21 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
 
   /**
    * Decides which library a new entry belongs to. The platform label wins;
-   * entries without one are resolved through one subject read, and entries
-   * Bangumi itself leaves unlabelled default to the comic library, the larger
-   * share of its book catalogue.
+   * entries without one on the search fact are resolved through one subject
+   * read. A subject the label never places — an art book, or one Bangumi left
+   * unlabelled — is refused rather than filed into a library by guess.
    */
   private async resolveTarget(input: LocalMediaAddFromScraperInput): Promise<BookTarget> {
-    const fromFacts = isBangumiComicPlatform(input.facts?.platform)
-    if (fromFacts !== undefined) {
-      return fromFacts ? 'comic' : 'novel'
-    }
+    const fromFacts = resolveBangumiBookKind(input.facts?.platform)
+    if (fromFacts) return fromFacts
 
     const subjectId = readBangumiSubjectIdFromExternalIds({ externalIds: input.knownIds })
     if (subjectId) {
-      const platform = await this.deps.resolveSubjectPlatform(subjectId)
-      const fromSubject = isBangumiComicPlatform(platform)
-      if (fromSubject !== undefined) {
-        return fromSubject ? 'comic' : 'novel'
-      }
+      const fromSubject = resolveBangumiBookKind(await this.deps.resolveSubjectPlatform(subjectId))
+      if (fromSubject) return fromSubject
     }
 
-    return 'comic'
+    throw new BangumiExtensionError('library_update_failed', m().errors.bookKindUnresolved)
   }
 
   /**

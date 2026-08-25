@@ -31,7 +31,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { formatEpisodeNumber } from '@renderer/utils/format'
+import { formatUnitNumber } from '@renderer/utils/format'
 import { animeEpisodeFiles, animeEpisodes } from '@shared/db'
 import AnimeWatchButton from '../../../anime-watch-button.vue'
 import AnimeEpisodeFormDialog from './episode-form-dialog.vue'
@@ -65,7 +65,7 @@ const title = computed(() => {
   const numbered =
     entry.episodeNumber === null
       ? null
-      : m.value.anime.episodes.unnamed({ number: formatEpisodeNumber(entry.episodeNumber) })
+      : m.value.anime.episodes.unnamed({ number: formatUnitNumber(entry.episodeNumber) })
   return entry.name ?? numbered ?? m.value.common.emptyValue
 })
 
@@ -152,7 +152,7 @@ async function handleDeleteEpisode(): Promise<void> {
               v-if="episode.episodeNumber !== null"
               class="font-mono text-muted-foreground shrink-0"
             >
-              {{ formatEpisodeNumber(episode.episodeNumber) }}
+              {{ formatUnitNumber(episode.episodeNumber) }}
             </span>
             <span class="truncate">{{ title }}</span>
           </DialogTitle>

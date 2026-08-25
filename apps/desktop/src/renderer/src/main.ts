@@ -15,6 +15,7 @@ import { setupDeeplinkHandlers } from './core/deeplink'
 import {
   useAnimeActivityStore,
   useGameActivityStore,
+  useReadingActivityStore,
   useScannerStore,
   useDefaultFromStore,
   useUpdaterStore,
@@ -74,6 +75,7 @@ async function initMainWindowRenderer() {
     // Store initialization (registers listeners + fetches initial state)
     await useGameActivityStore().init()
     await useAnimeActivityStore().init()
+    await useReadingActivityStore().init()
     await useTaskRunStore().init()
     await useScannerStore().init()
     await useDefaultFromStore().init()

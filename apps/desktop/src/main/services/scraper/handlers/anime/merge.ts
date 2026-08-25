@@ -397,8 +397,11 @@ export function toScrapedAnimeBundle(metadata: ScrapedAnimeMetadata): ScrapedAni
       }
     }))
   )
-  if (characterPersonFacts) {
-    relationFacts.characterPerson = characterPersonFacts
+  // Presence survives the flattening: characters that stated no credits leave
+  // the channel unanswered, so a scrape never claims authority to clear links
+  // another source wrote.
+  if (metadata.characters?.some((character) => character.persons !== undefined)) {
+    relationFacts.characterPerson = characterPersonFacts ?? []
   }
 
   const mediaCandidates: ScrapedAnimeBundle['mediaCandidates'] = {}

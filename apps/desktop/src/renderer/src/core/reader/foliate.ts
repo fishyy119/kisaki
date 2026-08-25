@@ -9,6 +9,7 @@
 
 import { buildNovelFileUrl } from '@shared/book'
 import type { ReaderNovelUnit } from '@shared/reader'
+import { decodeTextFile } from './text-encoding'
 import { makeTxtBook } from './txt-book'
 
 export interface FoliateTocItem {
@@ -37,6 +38,17 @@ export interface FoliateView extends HTMLElement {
   goRight(): Promise<unknown>
 }
 
+/** Resource-load fact the engine publishes before fetching a book resource. */
+interface FoliateResourceLoadDetail {
+  isScript: boolean
+  allow: boolean
+}
+
+/** A book whose resource loader can be tapped; only container formats have one. */
+interface FoliateBook {
+  transformTarget?: EventTarget
+}
+
 export async function createFoliateView(): Promise<FoliateView> {
   await import('../../../vendor/foliate-js/view.js')
   return document.createElement('foliate-view') as FoliateView
@@ -44,7 +56,10 @@ export async function createFoliateView(): Promise<FoliateView> {
 
 /**
  * Opens one volume file in the view: TXT through the local adapter, every
- * other container through foliate's own sniffing (`makeBook`).
+ * other container through foliate's own sniffing.
+ *
+ * The book is built here rather than inside `view.open` so its resource loader
+ * can be tapped before any resource is fetched.
  */
 export async function openNovelVolume(view: FoliateView, unit: ReaderNovelUnit): Promise<void> {
   if (!unit.fileId) {
@@ -57,14 +72,29 @@ export async function openNovelVolume(view: FoliateView, unit: ReaderNovelUnit):
   }
 
   if (unit.container === 'txt') {
-    const text = await response.text()
-    await view.open(makeTxtBook(text, unit.label))
+    await view.open(makeTxtBook(decodeTextFile(await response.arrayBuffer()), unit.label))
     return
   }
 
-  const blob = await response.blob()
-  const file = new File([blob], `volume.${unit.container ?? 'epub'}`)
-  await view.open(file)
+  const { makeBook } = await import('../../../vendor/foliate-js/view.js')
+  const file = new File([await response.blob()], `volume.${unit.container ?? 'epub'}`)
+  const book = (await makeBook(file)) as FoliateBook
+  rejectScriptResources(book)
+  await view.open(book)
+}
+
+/**
+ * Refuses to load a book's script resources.
+ *
+ * The reader's CSP and the section iframes' sandbox already keep book scripts
+ * from executing; dropping them at the loader means they are never fetched,
+ * decoded, or handed a blob URL in the first place.
+ */
+function rejectScriptResources(book: FoliateBook): void {
+  book.transformTarget?.addEventListener('load', (event) => {
+    const detail = (event as CustomEvent<FoliateResourceLoadDetail>).detail
+    if (detail.isScript) detail.allow = false
+  })
 }
 
 /** Content styles following the reader window's resolved theme tokens. */

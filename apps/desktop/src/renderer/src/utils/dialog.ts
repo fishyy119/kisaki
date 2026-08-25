@@ -76,3 +76,25 @@ export function getOpenVideoDialogOptions(
     properties: ['openFile']
   }
 }
+
+/** Mirrors the containers the main-process comic recognition accepts. */
+const DEFAULT_COMIC_EXTENSIONS = ['cbz', 'zip', 'cbr', 'rar', 'pdf']
+
+export function getOpenComicDialogOptions(): OpenDialogOptions {
+  return {
+    title: 'Select comic file',
+    filters: [{ name: 'Comics', extensions: DEFAULT_COMIC_EXTENSIONS }],
+    properties: ['openFile']
+  }
+}
+
+/** Mirrors the containers the main-process novel recognition accepts. */
+const DEFAULT_BOOK_EXTENSIONS = ['epub', 'mobi', 'azw3', 'azw', 'fb2', 'txt', 'pdf']
+
+export function getOpenBookDialogOptions(): OpenDialogOptions {
+  return {
+    title: 'Select book file',
+    filters: [{ name: 'Books', extensions: DEFAULT_BOOK_EXTENSIONS }],
+    properties: ['openFile']
+  }
+}

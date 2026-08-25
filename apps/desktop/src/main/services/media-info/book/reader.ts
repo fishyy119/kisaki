@@ -1,16 +1,20 @@
 /**
- * Book container facts and page access.
+ * Reading-container facts and page access.
  *
- * The book-side probing engine of the media-info service: in-process container
+ * The reading-container probing engine of the media-info service: in-process
  * parsing (zip, rar, image directories, PDF) with the same cache discipline as
  * the ffprobe side — successful probes are remembered per (size, mtime) so
- * library re-syncs only pay for files that changed.
+ * library re-syncs only pay for files that changed, and failures are never
+ * remembered so a locked or half-copied file is retried.
+ *
+ * Page entry lists are cached on the same key: serving pages would otherwise
+ * resolve the same ordered list once per page turn.
  */
 
 import { promises as fs, type Stats } from 'node:fs'
 import path from 'node:path'
 import { createLogger } from '@main/log'
-import type { ComicUnitContainer, ComicUnitFileInfo, NovelFileContainer } from '@shared/media-info'
+import type { PagedContainer, PagedContainerInfo, DocumentContainer } from '@shared/media-info'
 import {
   countPdfPages,
   listDirectoryPages,
@@ -20,7 +24,7 @@ import {
   readDirectoryPage,
   readRarPage,
   readZipPage,
-  resolveComicContainer
+  resolvePagedContainer
 } from './containers'
 
 const log = createLogger('MediaInfo')
@@ -28,7 +32,7 @@ const log = createLogger('MediaInfo')
 /** Bounds cache memory for long sessions that probe large libraries. */
 const PROBE_CACHE_MAX_ENTRIES = 2048
 
-const NOVEL_CONTAINER_BY_EXTENSION: Record<string, NovelFileContainer> = {
+const DOCUMENT_CONTAINER_BY_EXTENSION: Record<string, DocumentContainer> = {
   '.epub': 'epub',
   '.mobi': 'mobi',
   '.azw3': 'azw3',
@@ -38,10 +42,18 @@ const NOVEL_CONTAINER_BY_EXTENSION: Record<string, NovelFileContainer> = {
   '.pdf': 'pdf'
 }
 
-interface CachedComicProbe {
+interface FileRevision {
   size: number
   mtimeMs: number
-  info: ComicUnitFileInfo
+}
+
+interface CachedContainerProbe extends FileRevision {
+  info: PagedContainerInfo
+}
+
+interface CachedPageEntries extends FileRevision {
+  container: PagedContainer
+  entries: string[]
 }
 
 /** One readable page resolved for a protocol response. */
@@ -51,79 +63,90 @@ export interface BookPageContent {
 }
 
 export class BookInfoReader {
-  private readonly probeCache = new Map<string, CachedComicProbe>()
+  private readonly probeCache = new Map<string, CachedContainerProbe>()
+  private readonly entriesCache = new Map<string, CachedPageEntries>()
 
-  /** Container kind of one novel volume file, or null when unsupported. */
-  resolveNovelContainer(filePath: string): NovelFileContainer | null {
-    return NOVEL_CONTAINER_BY_EXTENSION[path.extname(filePath).toLowerCase()] ?? null
+  /** Document container of one file, or null when the extension is unsupported. */
+  resolveDocumentContainer(filePath: string): DocumentContainer | null {
+    return DOCUMENT_CONTAINER_BY_EXTENSION[path.extname(filePath).toLowerCase()] ?? null
   }
 
   /**
-   * Reads container facts of one comic unit file, or null when the path is
-   * unreadable or not a supported container.
+   * Reads facts of one paged container, or null when the path is unreadable
+   * or not a supported container.
    */
-  async probeComicUnit(filePath: string): Promise<ComicUnitFileInfo | null> {
-    let stat: Stats
-    try {
-      stat = await fs.stat(filePath)
-    } catch {
-      return null
-    }
+  async probePagedContainer(filePath: string): Promise<PagedContainerInfo | null> {
+    const revision = await readRevision(filePath)
+    if (!revision) return null
 
     const cached = this.probeCache.get(filePath)
-    if (cached && cached.size === stat.size && cached.mtimeMs === Math.trunc(stat.mtimeMs)) {
+    if (cached && matchesRevision(cached, revision)) {
       return cached.info
     }
 
-    const container = await resolveComicContainer(filePath)
+    const container = await resolvePagedContainer(filePath)
     if (!container) return null
 
-    const pageCount = await this.countPages(filePath, container)
-    const info: ComicUnitFileInfo = { container, pageCount }
-    this.rememberProbe(filePath, stat, info)
+    const pageCount = await this.countPages(filePath, container, revision)
+    const info: PagedContainerInfo = { container, pageCount }
+    // A failed count is a transient fact about the file, not about the library.
+    if (pageCount !== null) {
+      remember(this.probeCache, filePath, { ...revision, info })
+    }
     return info
   }
 
-  /** Ordered page entry names of one comic unit file; empty for PDF containers. */
-  async listComicPages(filePath: string): Promise<string[]> {
-    const container = await resolveComicContainer(filePath)
+  /** Ordered page entry names inside a container; empty for PDF, which has none. */
+  async listPages(filePath: string): Promise<string[]> {
+    const revision = await readRevision(filePath)
+    if (!revision) return []
+
+    const container = await resolvePagedContainer(filePath)
     if (!container) return []
 
-    switch (container) {
-      case 'zip':
-        return listZipPages(filePath)
-      case 'rar':
-        return listRarPages(filePath)
-      case 'directory':
-        return listDirectoryPages(filePath)
-      case 'pdf':
-        return []
-    }
+    return this.readPageEntries(filePath, container, revision)
   }
 
   /**
-   * Reads one page of a comic unit file by index.
+   * Reads one page of a paged container by index.
    * @throws When the container is unsupported or the index is out of range.
    */
-  async readComicPage(filePath: string, pageIndex: number): Promise<BookPageContent> {
-    const container = await resolveComicContainer(filePath)
-    if (!container || container === 'pdf') {
-      throw new Error(`Comic container has no page entries: ${filePath}`)
+  async readPage(filePath: string, pageIndex: number): Promise<BookPageContent> {
+    const revision = await readRevision(filePath)
+    const container = revision ? await resolvePagedContainer(filePath) : null
+    if (!revision || !container || container === 'pdf') {
+      throw new Error(`Container has no page entries: ${filePath}`)
     }
 
-    const pages = await this.listComicPages(filePath)
+    const pages = await this.readPageEntries(filePath, container, revision)
     const entryName = pages[pageIndex]
     if (entryName === undefined) {
-      throw new Error(`Comic page index out of range: ${pageIndex}`)
+      throw new Error(`Page index out of range: ${pageIndex}`)
     }
 
     const data = await this.readPageData(filePath, container, entryName)
     return { data, mimeType: pageMimeType(entryName) }
   }
 
+  /** Entry list of one container revision, resolved once and reused per page. */
+  private async readPageEntries(
+    filePath: string,
+    container: PagedContainer,
+    revision: FileRevision
+  ): Promise<string[]> {
+    const cached = this.entriesCache.get(filePath)
+    if (cached && cached.container === container && matchesRevision(cached, revision)) {
+      return cached.entries
+    }
+
+    const entries = await listContainerPages(filePath, container)
+    remember(this.entriesCache, filePath, { ...revision, container, entries })
+    return entries
+  }
+
   private async readPageData(
     filePath: string,
-    container: Exclude<ComicUnitContainer, 'pdf'>,
+    container: Exclude<PagedContainer, 'pdf'>,
     entryName: string
   ): Promise<Buffer> {
     switch (container) {
@@ -138,39 +161,57 @@ export class BookInfoReader {
 
   private async countPages(
     filePath: string,
-    container: ComicUnitContainer
+    container: PagedContainer,
+    revision: FileRevision
   ): Promise<number | null> {
     try {
-      switch (container) {
-        case 'zip':
-          return (await listZipPages(filePath)).length
-        case 'rar':
-          return (await listRarPages(filePath)).length
-        case 'directory':
-          return (await listDirectoryPages(filePath)).length
-        case 'pdf':
-          return await countPdfPages(filePath)
-      }
+      return container === 'pdf'
+        ? await countPdfPages(filePath)
+        : (await this.readPageEntries(filePath, container, revision)).length
     } catch (error) {
-      log.warn('Failed to count comic pages.', error, { fileName: path.basename(filePath) })
+      log.warn('Failed to count container pages.', error, { fileName: path.basename(filePath) })
       return null
     }
   }
+}
 
-  private rememberProbe(filePath: string, stat: Stats, info: ComicUnitFileInfo): void {
-    // Delete before set so a refreshed entry counts as the newest insertion.
-    this.probeCache.delete(filePath)
-    this.probeCache.set(filePath, {
-      size: stat.size,
-      mtimeMs: Math.trunc(stat.mtimeMs),
-      info
-    })
+async function listContainerPages(filePath: string, container: PagedContainer): Promise<string[]> {
+  switch (container) {
+    case 'zip':
+      return listZipPages(filePath)
+    case 'rar':
+      return listRarPages(filePath)
+    case 'directory':
+      return listDirectoryPages(filePath)
+    case 'pdf':
+      return []
+  }
+}
 
-    if (this.probeCache.size > PROBE_CACHE_MAX_ENTRIES) {
-      const oldest = this.probeCache.keys().next().value
-      if (oldest !== undefined) {
-        this.probeCache.delete(oldest)
-      }
+async function readRevision(filePath: string): Promise<FileRevision | null> {
+  let stat: Stats
+  try {
+    stat = await fs.stat(filePath)
+  } catch {
+    return null
+  }
+  return { size: stat.size, mtimeMs: Math.trunc(stat.mtimeMs) }
+}
+
+function matchesRevision(cached: FileRevision, revision: FileRevision): boolean {
+  return cached.size === revision.size && cached.mtimeMs === revision.mtimeMs
+}
+
+/** Insertion-ordered cache write with an eviction bound. */
+function remember<T>(cache: Map<string, T>, filePath: string, value: T): void {
+  // Delete before set so a refreshed entry counts as the newest insertion.
+  cache.delete(filePath)
+  cache.set(filePath, value)
+
+  if (cache.size > PROBE_CACHE_MAX_ENTRIES) {
+    const oldest = cache.keys().next().value
+    if (oldest !== undefined) {
+      cache.delete(oldest)
     }
   }
 }

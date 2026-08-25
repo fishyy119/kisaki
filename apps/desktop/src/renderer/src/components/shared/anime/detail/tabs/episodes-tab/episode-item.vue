@@ -11,7 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAnimeWatch } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
-import { formatEpisodeNumber } from '@renderer/utils/format'
+import { formatUnitNumber } from '@renderer/utils/format'
 import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
 import AnimeWatchButton from '../../../anime-watch-button.vue'
 import { MediaPlaybackProgress } from '@renderer/components/shared/media'
@@ -38,7 +38,7 @@ const playableFile = computed(() => props.episode.files[0] ?? null)
 const title = computed(() => {
   const number = props.episode.episodeNumber
   const numbered =
-    number === null ? null : m.value.anime.episodes.unnamed({ number: formatEpisodeNumber(number) })
+    number === null ? null : m.value.anime.episodes.unnamed({ number: formatUnitNumber(number) })
   return props.episode.name ?? numbered ?? m.value.common.emptyValue
 })
 
@@ -95,7 +95,7 @@ const {
             v-if="props.episode.episodeNumber !== null"
             class="text-xs font-mono text-muted-foreground shrink-0"
           >
-            {{ formatEpisodeNumber(props.episode.episodeNumber) }}
+            {{ formatUnitNumber(props.episode.episodeNumber) }}
           </span>
           <p class="text-sm font-medium truncate">{{ title }}</p>
         </div>

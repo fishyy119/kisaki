@@ -5,6 +5,7 @@ import type {
   ComicPersonRole
 } from '@shared/db'
 import { buildEntityCanonicalIdentityKey } from '@shared/identity'
+import { comicUnitIdentityKey } from '@shared/metadata'
 import type {
   ComicChapterInfo,
   CoreCharacterMetadata,
@@ -329,13 +330,6 @@ function normalizeCharacterPersonFactCore(
   })
 }
 
-/** Unit key at its own grain; unnumbered rows key by name. */
-function chapterInfoKey(chapter: ComicChapterInfo): string {
-  if (chapter.chapterNumber != null) return `chapter:${chapter.chapterNumber}`
-  if (chapter.volumeNumber != null) return `volume:${chapter.volumeNumber}`
-  return `name:${chapter.name ?? ''}`
-}
-
 /**
  * Normalize scraped units into ingest order.
  *
@@ -364,7 +358,7 @@ export function normalizeComicChapters(
       description: normalizeOptionalString(chapter.description),
       externalIds: mergeExternalIds(undefined, chapter.externalIds)
     }
-    byKey.set(chapterInfoKey(normalized), normalized)
+    byKey.set(comicUnitIdentityKey(normalized), normalized)
   }
 
   // Volume-grained rows sort before chapter-grained ones; numbers order within.

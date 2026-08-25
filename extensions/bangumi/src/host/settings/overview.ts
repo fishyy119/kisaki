@@ -50,7 +50,7 @@ async function listScopes(runtime: BangumiSettingsRuntime): Promise<BangumiScope
     adapters.map(async (adapter) => ({
       scope: adapter.scope,
       label: m().media.scopes[adapter.scope],
-      supportsEpisodes: adapter.supportsEpisodeSync === true,
+      supportsUnitProgress: adapter.supportsUnitProgress === true,
       profiles: await listProfiles(adapter)
     }))
   )

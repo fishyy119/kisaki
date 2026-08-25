@@ -277,6 +277,31 @@ export function validateOptionalNonNegativeInteger(
   return issues
 }
 
+/** Nullable non-negative integer, for cleared counters and zero-based indexes. */
+export function validateOptionalNullableNonNegativeInteger(
+  value: unknown,
+  path: string
+): ValidationIssue[] {
+  if (value === undefined || value === null) {
+    return []
+  }
+
+  return validateOptionalNonNegativeInteger(value, path)
+}
+
+/** Nullable fraction in [0, 1], for progress a reader reports back. */
+export function validateOptionalNullableFraction(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined || value === null) {
+    return []
+  }
+
+  const issues = validateOptionalFiniteNumber(value, path)
+  if (typeof value === 'number' && Number.isFinite(value) && (value < 0 || value > 1)) {
+    issues.push({ path, message: 'Field must be between 0 and 1.' })
+  }
+  return issues
+}
+
 export function validateOptionalInteger(
   value: unknown,
   path: string,

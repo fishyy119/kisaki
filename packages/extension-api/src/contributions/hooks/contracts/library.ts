@@ -91,16 +91,28 @@ export interface LibraryNovelAssetSnapshot {
   logoFile?: string | null
 }
 
-/** Consumption counters shared by every playable media type. */
+/** Consumption counters shared by every media type that tracks consumption. */
 export interface LibraryMediaActivitySnapshot {
   totalDuration?: number
   lastActiveAt?: number | null
 }
 
+/** Satellite links every media type owns. */
+/** Satellite links every media type owns. */
 export interface LibraryMediaLinkSnapshot {
   personLinkIds: readonly string[]
   companyLinkIds: readonly string[]
   characterLinkIds: readonly string[]
+}
+
+/**
+ * Link snapshot of a media type that credits voice actors.
+ *
+ * Print media has no audio track, so comics and novels never carry cast rows
+ * and their snapshot omits the field rather than reporting a constant empty
+ * set.
+ */
+export interface LibraryCastMediaLinkSnapshot extends LibraryMediaLinkSnapshot {
   castLinkIds: readonly string[]
 }
 
@@ -270,8 +282,12 @@ export type LibraryDynamicConfigChange = {
 
 export type LibraryStatusChange = {
   facet: 'status'
-  before: { status: LibraryGameStatus | LibraryAnimeStatus | LibraryComicStatus | LibraryNovelStatus }
-  after: { status: LibraryGameStatus | LibraryAnimeStatus | LibraryComicStatus | LibraryNovelStatus }
+  before: {
+    status: LibraryGameStatus | LibraryAnimeStatus | LibraryComicStatus | LibraryNovelStatus
+  }
+  after: {
+    status: LibraryGameStatus | LibraryAnimeStatus | LibraryComicStatus | LibraryNovelStatus
+  }
   fields?: readonly ['status']
 }
 
@@ -323,7 +339,7 @@ export type LibraryGameChange =
   | LibraryTagsChange
   | LibraryCollectionsChange
   | LibraryAssetChange<LibraryGameAssetSnapshot>
-  | LibraryLinksChange<LibraryMediaLinkSnapshot>
+  | LibraryLinksChange<LibraryCastMediaLinkSnapshot>
   | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
 
 export type LibraryAnimeChange =
@@ -335,7 +351,7 @@ export type LibraryAnimeChange =
   | LibraryTagsChange
   | LibraryCollectionsChange
   | LibraryAssetChange<LibraryAnimeAssetSnapshot>
-  | LibraryLinksChange<LibraryMediaLinkSnapshot>
+  | LibraryLinksChange<LibraryCastMediaLinkSnapshot>
   | LibraryRelationsChange<LibraryMediaRelationsSnapshot>
   | LibraryEpisodesChange
 

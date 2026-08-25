@@ -23,16 +23,24 @@ import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { NovelDetailContent, NovelReadButton } from '@renderer/components/shared/novel'
+import {
+  NovelDetailContent,
+  NovelReadButton,
+  NovelReadCatchUpDialog
+} from '@renderer/components/shared/novel'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useAmbientLight, useNovelRouteProvider, useEntityDetailRoute } from '@renderer/composables'
+import { shouldOfferReadCatchUp } from '@renderer/composables/use-novel-read'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
+import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { NOVEL_STATUS_VALUES, novels, type NovelStatus } from '@shared/db'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { formatNovelStatus, getNovelStatusVariant, getEntityIcon } from '@renderer/utils/format'
+
+const log = createLogger('Novel')
 
 const { m } = useI18n()
 
@@ -71,6 +79,7 @@ useAmbientLight(() =>
 // =============================================================================
 
 const scoreDialogOpen = ref(false)
+const catchUpOpen = ref(false)
 const isPendingFavorite = ref(false)
 const isPendingStatus = ref(false)
 
@@ -122,8 +131,16 @@ const selectedStatus = computed({
       notify.success(m.value.library.feedback.statusUpdated)
     } catch {
       notify.error(m.value.library.feedback.updateFailed)
+      return
     } finally {
       isPendingStatus.value = false
+    }
+
+    try {
+      catchUpOpen.value = await shouldOfferReadCatchUp(current.id, status)
+    } catch (error) {
+      // The status change already succeeded; a missed offer is not worth a notice.
+      log.warn('Volume catch-up offer check failed:', error)
     }
   }
 })
@@ -314,6 +331,12 @@ async function handleOpenNovelDir() {
       v-model:open="scoreDialogOpen"
       entity-type="novel"
       :entity-id="novel.id"
+    />
+
+    <NovelReadCatchUpDialog
+      v-if="catchUpOpen"
+      v-model:open="catchUpOpen"
+      :novel-id="novel.id"
     />
 
     <SpoilerConfirmDialog

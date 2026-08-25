@@ -28,6 +28,7 @@ import type {
   LibraryAnime,
   LibraryAnimeCreateInput,
   LibraryAnimeEpisode,
+  LibraryAnimeEpisodeCreateInput,
   LibraryAnimeEpisodeQuery,
   LibraryAnimeEpisodeWatchStatePatch,
   LibraryAnimePatch,
@@ -396,6 +397,10 @@ export type HostToMainCapabilityRpcRequestMap = {
   'capabilities.library.animes.episodes.list': RpcMethodDefinition<
     ExtensionScopedRpcParams & { query: LibraryAnimeEpisodeQuery },
     { items: readonly LibraryAnimeEpisode[] }
+  >
+  'capabilities.library.animes.episodes.create': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { animeId: string; input: LibraryAnimeEpisodeCreateInput },
+    { episode: LibraryAnimeEpisode }
   >
   'capabilities.library.animes.episodes.patchWatchState': RpcMethodDefinition<
     ExtensionScopedRpcParams & { episodeId: string; patch: LibraryAnimeEpisodeWatchStatePatch },

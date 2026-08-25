@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import type {
   LibraryGraphEdge,
-  LibraryGraphEpisodeNode,
+  LibraryGraphUnitNode,
   LibraryGraphNoteNode,
   LibraryGraphResultAction
 } from '@kisaki3/extension-api'
@@ -27,7 +27,7 @@ import {
 
 type NoteEdge = Extract<LibraryGraphEdge, { kind: 'media-note' }>
 type SessionEdge = Extract<LibraryGraphEdge, { kind: 'media-session' }>
-type EpisodeEdge = Extract<LibraryGraphEdge, { kind: 'media-episode' }>
+type MediaUnitEdge = Extract<LibraryGraphEdge, { kind: 'media-unit' }>
 
 export function previewNoteEdge(
   edge: NoteEdge,
@@ -86,62 +86,62 @@ export function previewSessionEdge(
   return action
 }
 
-export function previewEpisodeEdge(
-  edge: EpisodeEdge,
+export function previewUnitEdge(
+  edge: MediaUnitEdge,
   graph: NormalizedLibraryGraph,
   draft: LibraryGraphResultDraft,
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): LibraryGraphResultAction {
-  state.episodeOwners.set(edge.to.key, edge.from.key)
-  const episodeEntry = requireNodeEntry(graph, 'episode', edge.to.key)
+  state.unitOwners.set(edge.to.key, edge.from.key)
+  const unitEntry = requireNodeEntry(graph, 'unit', edge.to.key)
   if (state.skippedMedia.has(edge.from.key)) {
-    setOwnedNodeResult(draft, episodeEntry, 'skip')
+    setOwnedNodeResult(draft, unitEntry, 'skip')
     return 'skip'
   }
 
   const mediaId = getEntityId(state, edge.from.kind, edge.from.key)
   if (!mediaId) {
-    setOwnedNodeResult(draft, episodeEntry, 'create')
+    setOwnedNodeResult(draft, unitEntry, 'create')
     return 'create'
   }
 
-  const existing = findExistingUnit(episodeEntry.node, mediaId, options)
+  const existing = findExistingUnit(unitEntry.node, mediaId, options)
   const action = existing ? 'update' : 'create'
-  setOwnedNodeResult(draft, episodeEntry, action, existing?.id)
+  setOwnedNodeResult(draft, unitEntry, action, existing?.id)
   if (existing) {
-    setOwnedEntityId(state, 'episode', edge.to.key, existing.id)
+    setOwnedEntityId(state, 'unit', edge.to.key, existing.id)
   }
   return action
 }
 
-export function applyEpisodeEdge(
-  edge: EpisodeEdge,
+export function applyUnitEdge(
+  edge: MediaUnitEdge,
   graph: NormalizedLibraryGraph,
   draft: LibraryGraphResultDraft,
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): LibraryGraphResultAction {
-  state.episodeOwners.set(edge.to.key, edge.from.key)
-  const episodeEntry = requireNodeEntry(graph, 'episode', edge.to.key)
+  state.unitOwners.set(edge.to.key, edge.from.key)
+  const unitEntry = requireNodeEntry(graph, 'unit', edge.to.key)
   if (state.skippedMedia.has(edge.from.key)) {
-    setOwnedNodeResult(draft, episodeEntry, 'skip')
+    setOwnedNodeResult(draft, unitEntry, 'skip')
     return 'skip'
   }
 
   const mediaId = requireEntityId(state, edge.from.kind, edge.from.key)
-  const existing = findExistingUnit(episodeEntry.node, mediaId, options)
-  const written = writeUnit(episodeEntry.node, mediaId, existing?.id, options)
+  const existing = findExistingUnit(unitEntry.node, mediaId, options)
+  const written = writeUnit(unitEntry.node, mediaId, existing?.id, options)
   const action = existing ? 'update' : 'create'
 
-  setOwnedEntityId(state, 'episode', edge.to.key, written.id)
-  setOwnedNodeResult(draft, episodeEntry, action, written.id)
+  setOwnedEntityId(state, 'unit', edge.to.key, written.id)
+  setOwnedNodeResult(draft, unitEntry, action, written.id)
   return action
 }
 
-/** Resolves an episode-kind node to its per-media-type unit row, if present. */
+/** Resolves a unit-kind node to its per-media-type unit row, if present. */
 function findExistingUnit(
-  node: LibraryGraphEpisodeNode,
+  node: LibraryGraphUnitNode,
   mediaId: string,
   options: ExecuteLibraryGraphOptions
 ): { id: string } | null {
@@ -155,9 +155,9 @@ function findExistingUnit(
   }
 }
 
-/** Writes an episode-kind node through its per-media-type unit store. */
+/** Writes a unit-kind node through its per-media-type unit store. */
 function writeUnit(
-  node: LibraryGraphEpisodeNode,
+  node: LibraryGraphUnitNode,
   mediaId: string,
   existingId: string | undefined,
   options: ExecuteLibraryGraphOptions

@@ -183,6 +183,7 @@ export class SyncJobRunner {
               checkRemote: true,
               playStatusEnabled: args.playStatusEnabled,
               scoreEnabled: args.scoreEnabled,
+              unitProgressEnabled: args.unitProgressEnabled,
               clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
               signal: job.signal
             })
@@ -195,7 +196,7 @@ export class SyncJobRunner {
             await this.deps.syncEngine.applyItem(result, { signal: job.signal })
           }
 
-          if (!options.includePreview && args.episodeStatusEnabled !== false) {
+          if (!options.includePreview && args.unitProgressEnabled !== false) {
             await this.syncEpisodes(job, args.scope, item.localId)
           }
         } catch (error) {
@@ -392,16 +393,16 @@ function createFullSyncPreviewChange(result: SyncItemResult): BangumiJobPreviewG
     })
   }
 
-  if (payload.vol_status !== undefined || payload.ept_status !== undefined) {
+  if (payload.vol_status !== undefined || payload.ep_status !== undefined) {
     rows.push({
       label: m().jobs.preview.unitProgress,
       before: m().jobs.preview.unitProgressValue({
         volumes: remote?.vol_status ?? 0,
-        chapters: remote?.ept_status ?? 0
+        chapters: remote?.ep_status ?? 0
       }),
       after: m().jobs.preview.unitProgressValue({
         volumes: payload.vol_status ?? remote?.vol_status ?? 0,
-        chapters: payload.ept_status ?? remote?.ept_status ?? 0
+        chapters: payload.ep_status ?? remote?.ep_status ?? 0
       }),
       tone: remote ? 'info' : 'success'
     })

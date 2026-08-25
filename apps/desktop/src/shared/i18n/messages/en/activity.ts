@@ -49,7 +49,6 @@ export const activity = {
     novelNotFound: 'The novel does not exist',
     volumeNotFound: 'The volume does not exist',
     noReadableVolume: 'No volume has a readable file yet',
-    noVolumeFile: 'The volume has no readable file yet',
-    unsupportedContainer: 'The built-in reader cannot display this file format'
+    noVolumeFile: 'The volume has no readable file yet'
   }
 }

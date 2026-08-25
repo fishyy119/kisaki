@@ -293,7 +293,7 @@ export const COMIC_CHARACTER_ROLE_VALUES = [
   'other'
 ] as const satisfies readonly ComicCharacterRole[]
 
-/** Comic-company link role; `imprint` is the publishing line (レーベル/文库). */
+/** Comic-company link role; `imprint` is the publishing line, such as Jump Comics. */
 export type ComicCompanyRole = 'publisher' | 'imprint' | 'other'
 
 /** Comic-company role values in canonical display order. */
@@ -330,7 +330,7 @@ export const NOVEL_CHARACTER_ROLE_VALUES = [
   'other'
 ] as const satisfies readonly NovelCharacterRole[]
 
-/** Novel-company link role; `imprint` is the publishing line (文库/レーベル). */
+/** Novel-company link role; `imprint` is the publishing line, such as Dengeki Bunko. */
 export type NovelCompanyRole = 'publisher' | 'imprint' | 'other'
 
 /** Novel-company role values in canonical display order. */

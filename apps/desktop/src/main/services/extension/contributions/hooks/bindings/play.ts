@@ -12,4 +12,8 @@ export function bindPlayHookPoints(
   activity.gameSessionEnded.tap((payload) => point.notify('play.game.session.ended', payload))
   activity.animeWatchStarted.tap((payload) => point.notify('play.anime.watch.started', payload))
   activity.animeWatchEnded.tap((payload) => point.notify('play.anime.watch.ended', payload))
+  activity.comicReadStarted.tap((payload) => point.notify('play.comic.read.started', payload))
+  activity.comicReadEnded.tap((payload) => point.notify('play.comic.read.ended', payload))
+  activity.novelReadStarted.tap((payload) => point.notify('play.novel.read.started', payload))
+  activity.novelReadEnded.tap((payload) => point.notify('play.novel.read.ended', payload))
 }

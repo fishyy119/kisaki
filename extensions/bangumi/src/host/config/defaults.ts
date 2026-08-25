@@ -28,7 +28,7 @@ export const DEFAULT_BANGUMI_SETTINGS: BangumiSettingsV1 = {
     syncOnCreate: false,
     playStatusEnabled: true,
     scoreEnabled: true,
-    episodeStatusEnabled: true,
+    unitProgressEnabled: true,
     clearRemoteScoreWhenEmpty: false,
     debounceMs: 3000,
     notifyErrors: true,

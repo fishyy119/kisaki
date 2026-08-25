@@ -3,7 +3,7 @@
  *
  * Manages media scanning from disk.
  * Provides:
- * - Namespace-style access to media-specific handlers (game, anime)
+ * - Namespace-style access to one handler per media type
  * - Routing of scanner-id controls to the handler owning that scanner
  * - Discovery utilities shared across all media types
  * - Watch-driven scanning, so a library scans when it actually changes

@@ -104,14 +104,15 @@ export function getNovelStatusVariant(status: NovelStatus): StatusVariant {
   return NOVEL_STATUS_VARIANTS[status] ?? 'secondary'
 }
 
-/** Format a volume or chapter number, keeping one decimal only for half numbers. */
+/**
+ * Format a consumption unit number: an episode, volume, or chapter.
+ *
+ * Unit numbers are real numbers because sources place extras between
+ * installments (24.5). Every decimal a source stated is kept: rounding to one
+ * place would render 42.25 and 42.5 identically.
+ */
 export function formatUnitNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1)
-}
-
-/** Format an episode number, keeping one decimal only for half-numbered episodes. */
-export function formatEpisodeNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+  return String(value)
 }
 
 /** Parse the comma-separated aliases input of an entity form into names. */

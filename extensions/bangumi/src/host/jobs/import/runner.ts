@@ -7,6 +7,7 @@ import { ImportPlanner } from '../../import/planner'
 import type { BangumiMediaScope } from '../../../shared/scopes'
 import type { LocalMediaAdapter } from '../../media/types'
 import { BangumiExtensionError } from '../../utils/errors'
+import { readPositiveInteger } from '../../utils/numbers'
 import { omitUndefined } from '../../utils/object'
 import { createImportSuppressTtlMs } from '../../sync/suppressor'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'
@@ -23,7 +24,6 @@ import {
   hasCollectionLocalChanges,
   importItemFromCollection,
   importItemFromIndexSubject,
-  normalizePositiveInteger,
   readCollectionSubjectId,
   requireLocalItem,
   resolveIndexTargetCollection,
@@ -325,7 +325,7 @@ export class ImportJobRunner {
       total: subjects.length
     })
     const subjectIds = subjects
-      .map((subject) => normalizePositiveInteger(subject.id))
+      .map((subject) => readPositiveInteger(subject.id))
       .filter((subjectId): subjectId is number => !!subjectId)
       .map(String)
     const localItems = new Map(await adapter.findBySubjectIds(subjectIds))

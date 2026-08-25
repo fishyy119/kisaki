@@ -65,7 +65,7 @@ export function createMainConfig(paths: BundlerPaths, mode: BundlerMode): Inline
   }
 }
 
-/** Creates the Vite config for the preload bundle exposed to renderer windows. */
+/** Creates the Vite config for the preload bundles exposed to renderer windows. */
 export function createPreloadConfig(paths: BundlerPaths, mode: BundlerMode): InlineConfig {
   return {
     configFile: false,
@@ -74,6 +74,11 @@ export function createPreloadConfig(paths: BundlerPaths, mode: BundlerMode): Inl
     clearScreen: false,
     publicDir: false,
     envDir: false,
+    resolve: {
+      alias: {
+        '@shared': path.join(paths.desktopRoot, 'src/shared')
+      }
+    },
     ssr: {
       target: 'node',
       noExternal: true
@@ -88,7 +93,10 @@ export function createPreloadConfig(paths: BundlerPaths, mode: BundlerMode): Inl
       reportCompressedSize: false,
       rolldownOptions: {
         input: {
-          index: path.join(paths.desktopRoot, 'src/preload/index.ts')
+          index: path.join(paths.desktopRoot, 'src/preload/index.ts'),
+          // Reader windows render untrusted book content and get a preload
+          // restricted to the channels that window actually uses.
+          reader: path.join(paths.desktopRoot, 'src/preload/reader.ts')
         },
         output: {
           // Electron requires the .mjs extension for ESM preload entries.
@@ -139,16 +147,21 @@ export function createRendererConfig(paths: BundlerPaths, mode: BundlerMode): In
   }
 }
 
+const READER_ENTRY_FILE = 'reader.html'
+
 function rendererContentSecurityPolicyPlugin(): PluginOption {
   return {
     name: 'kisaki-renderer-content-security-policy',
-    transformIndexHtml() {
+    transformIndexHtml(_html, ctx) {
+      const isReaderEntry = path.basename(ctx.filename) === READER_ENTRY_FILE
       return [
         {
           tag: 'meta',
           attrs: {
             'http-equiv': 'Content-Security-Policy',
-            content: createRendererContentSecurityPolicy()
+            content: isReaderEntry
+              ? createReaderContentSecurityPolicy()
+              : createRendererContentSecurityPolicy()
           },
           injectTo: 'head'
         }
@@ -166,6 +179,30 @@ function createRendererContentSecurityPolicy(): string {
     // Ambient light extraction fetches attachment cover thumbnails.
     "connect-src 'self' attachment:",
     "frame-src 'self' kisaki-extension-ui:"
+  ].join('; ')
+}
+
+/**
+ * Reader-window policy.
+ *
+ * The reading engines lay out book content in `blob:` documents, so this entry
+ * must allow `blob:` where the main window does not: section frames, embedded
+ * images, fonts, and media. `script-src` stays `'self'` — that is the backstop
+ * that keeps a book's own scripts from ever executing, since `blob:`
+ * documents inherit this policy from their creator.
+ */
+function createReaderContentSecurityPolicy(): string {
+  return [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: book:",
+    "font-src 'self' data: blob:",
+    "media-src 'self' blob: book:",
+    "connect-src 'self' book:",
+    "frame-src 'self' blob:",
+    // The PDF engine's worker ships as a bundled same-origin asset.
+    "worker-src 'self'"
   ].join('; ')
 }
 

@@ -51,7 +51,6 @@ export const activity = {
     novelNotFound: '小說不存在',
     volumeNotFound: '卷不存在',
     noReadableVolume: '還沒有卷擁有可讀取的檔案',
-    noVolumeFile: '該卷尚無可讀取的檔案',
-    unsupportedContainer: '內建閱讀器無法顯示該檔案格式'
+    noVolumeFile: '該卷尚無可讀取的檔案'
   }
 } satisfies Messages['activity']

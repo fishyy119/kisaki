@@ -40,6 +40,14 @@ export interface IngestHookPoints {
   /** Anime ingest currently supports add only, so it has no update points. */
   'ingest.anime.committing': HookPointSpec<'veto', IngestCommittingPayload>
   'ingest.anime.committed': HookPointSpec<'notify', IngestCommittedPayload>
+  'ingest.comic.committing': HookPointSpec<'veto', IngestCommittingPayload>
+  'ingest.comic.committed': HookPointSpec<'notify', IngestCommittedPayload>
+  'ingest.comic.updating': HookPointSpec<'veto', IngestUpdatingPayload>
+  'ingest.comic.updated': HookPointSpec<'notify', IngestUpdatedPayload>
+  'ingest.novel.committing': HookPointSpec<'veto', IngestCommittingPayload>
+  'ingest.novel.committed': HookPointSpec<'notify', IngestCommittedPayload>
+  'ingest.novel.updating': HookPointSpec<'veto', IngestUpdatingPayload>
+  'ingest.novel.updated': HookPointSpec<'notify', IngestUpdatedPayload>
   'ingest.person.committing': HookPointSpec<'veto', IngestCommittingPayload>
   'ingest.person.committed': HookPointSpec<'notify', IngestCommittedPayload>
   'ingest.person.updating': HookPointSpec<'veto', IngestUpdatingPayload>

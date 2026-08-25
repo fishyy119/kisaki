@@ -34,33 +34,46 @@ export function mapBangumiAnimeFormat(platform?: string | null): LibraryAnimeFor
   return 'other'
 }
 
+/** Library a Bangumi book subject belongs to. */
+export type BangumiBookKind = 'comic' | 'novel'
+
 /**
- * Whether a Bangumi book entry is a comic, at the platform grain.
+ * Which library a Bangumi book subject belongs to, at the platform grain.
  *
- * Bangumi folds comics and novels into one book subject type; the platform
- * label is the only per-entry fact that separates them. An entry with no
- * label answers `undefined`, so both media types keep it in reach rather
- * than both dropping it.
+ * Bangumi folds comics, novels, and art books into one subject type, and the
+ * platform label is the only per-entry fact that separates them. Art books
+ * are deliberately unclaimed: they have no unit a reader pages through, so
+ * neither library takes them automatically. An unlabelled entry answers
+ * `undefined` too — unknown is not a licence to guess.
  */
-export function isBangumiComicPlatform(platform?: string | null): boolean | undefined {
+export function resolveBangumiBookKind(platform?: string | null): BangumiBookKind | undefined {
   const normalized = normalizeToken(platform)
   if (!normalized) return undefined
 
   if (
-    normalized.includes('漫画') ||
-    normalized.includes('漫畫') ||
     normalized.includes('画集') ||
     normalized.includes('畫集') ||
     normalized.includes('绘本') ||
     normalized.includes('繪本') ||
-    normalized.includes('comic') ||
-    normalized.includes('manga')
+    normalized.includes('artbook')
   ) {
-    return true
+    return undefined
+  }
+
+  if (
+    normalized.includes('漫画') ||
+    normalized.includes('漫畫') ||
+    normalized.includes('条漫') ||
+    normalized.includes('條漫') ||
+    normalized.includes('comic') ||
+    normalized.includes('manga') ||
+    normalized.includes('webtoon')
+  ) {
+    return 'comic'
   }
 
   if (normalized.includes('小说') || normalized.includes('小說') || normalized.includes('novel')) {
-    return false
+    return 'novel'
   }
 
   return undefined

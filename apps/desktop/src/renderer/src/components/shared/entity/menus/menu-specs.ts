@@ -10,6 +10,8 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { defineAsyncComponent, type Component } from 'vue'
 import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
+import { shouldOfferReadCatchUp as shouldOfferComicReadCatchUp } from '@renderer/composables/use-comic-read'
+import { shouldOfferReadCatchUp as shouldOfferNovelReadCatchUp } from '@renderer/composables/use-novel-read'
 import { db } from '@renderer/core/db'
 import type { Messages } from '@shared/i18n'
 import type { TableName } from '@shared/db/table-names'
@@ -53,8 +55,14 @@ const AnimeWatchCatchUpDialog = defineAsyncComponent(() =>
 const ComicFilesConfigFormDialog = defineAsyncComponent(() =>
   import('@renderer/components/shared/comic').then((mod) => mod.ComicFilesConfigFormDialog)
 )
+const ComicReadCatchUpDialog = defineAsyncComponent(() =>
+  import('@renderer/components/shared/comic').then((mod) => mod.ComicReadCatchUpDialog)
+)
 const NovelFilesConfigFormDialog = defineAsyncComponent(() =>
   import('@renderer/components/shared/novel').then((mod) => mod.NovelFilesConfigFormDialog)
+)
+const NovelReadCatchUpDialog = defineAsyncComponent(() =>
+  import('@renderer/components/shared/novel').then((mod) => mod.NovelReadCatchUpDialog)
 )
 interface CollectionLinkStore {
   /** Link table name for db-change invalidation. */
@@ -350,6 +358,12 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
           .update(comics)
           .set({ status: status as ComicStatus })
           .where(eq(comics.id, entityId))
+      },
+      followUp: {
+        component: ComicReadCatchUpDialog,
+        buildProps: (entityId) => ({ comicId: entityId }),
+        shouldOffer: (entityId, status) =>
+          shouldOfferComicReadCatchUp(entityId, status as ComicStatus)
       }
     },
     dir: {
@@ -433,6 +447,12 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
           .update(novels)
           .set({ status: status as NovelStatus })
           .where(eq(novels.id, entityId))
+      },
+      followUp: {
+        component: NovelReadCatchUpDialog,
+        buildProps: (entityId) => ({ novelId: entityId }),
+        shouldOffer: (entityId, status) =>
+          shouldOfferNovelReadCatchUp(entityId, status as NovelStatus)
       }
     },
     dir: {

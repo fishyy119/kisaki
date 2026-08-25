@@ -17,6 +17,7 @@ import { useDbChanges } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useNovelReading } from '@renderer/composables/use-novel-reading'
 import { db } from '@renderer/core/db'
+import { useReadingActivityStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
 import { novelVolumes } from '@shared/db'
 
@@ -37,8 +38,12 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const { m } = useI18n()
+const readingActivity = useReadingActivityStore()
 
 const { isStartPending, read } = useNovelReading(() => props.novelId)
+
+/** A window already open reads as live: the action refocuses it. */
+const isReading = computed(() => readingActivity.isNovelReading(props.novelId))
 
 /**
  * Whether the read action resumes existing progress: a volume button resumes
@@ -83,9 +88,10 @@ useDbChanges(({ table }) => {
   if (table === 'novel_volumes') void refreshProgress()
 })
 
-const label = computed<string>(() =>
-  hasProgress.value ? m.value.novel.readContinue : m.value.novel.readStart
-)
+const label = computed<string>(() => {
+  if (isReading.value) return m.value.novel.readOpen
+  return hasProgress.value ? m.value.novel.readContinue : m.value.novel.readStart
+})
 
 const iconVariants = cva('', {
   variants: {

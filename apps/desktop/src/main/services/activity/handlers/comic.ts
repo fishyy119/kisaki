@@ -7,6 +7,7 @@
  * and database write lives here.
  */
 
+import { existsSync } from 'node:fs'
 import { and, asc, eq, sql } from 'drizzle-orm'
 
 import { createLogger } from '@main/log'
@@ -23,9 +24,19 @@ import {
   type ComicChapterFile
 } from '@shared/db'
 import type { ComicReadResult, ComicReadingState } from '@shared/activity'
-import type { ReaderComicBootstrap, ReaderComicProgressReport, ReaderComicUnit } from '@shared/reader'
+import { parsePagedContainer } from '@shared/media-info'
+import type {
+  ReaderComicBootstrap,
+  ReaderComicProgressReport,
+  ReaderComicUnit
+} from '@shared/reader'
 import type { ActivityHooks } from '../hooks'
-import { MIN_READING_SEGMENT_MS, RESUME_WRITE_INTERVAL_MS, resolveComicPageFlow } from './reading'
+import {
+  MIN_READING_SEGMENT_MS,
+  RESUME_WRITE_INTERVAL_MS,
+  formatUnitNumber,
+  resolveComicPageFlow
+} from './reading'
 
 const log = createLogger('Activity')
 
@@ -35,6 +46,12 @@ interface ReadingSession {
   /** Start of the current per-unit session segment. */
   segmentStartedAt: number
   lastResumeWriteAt: number
+  /** Newest position the throttle held back; flushed before the session moves on. */
+  pendingReport: ReaderComicProgressReport | null
+  /** Units already counted as read here, so one read-through counts once. */
+  countedUnitIds: Set<string>
+  /** Reading time of the segments recorded so far in this window. */
+  accumulatedMs: number
 }
 
 export class ComicActivityHandler {
@@ -66,25 +83,29 @@ export class ComicActivityHandler {
     }
 
     const chapters = this.readChapters(comicId)
-    const files = this.readChapterFiles(chapters.map((chapter) => chapter.id))
-    const units = chapters.map((chapter) =>
-      this.toReaderUnit(chapter, files.get(chapter.id) ?? [], fileId)
-    )
+    const filesByChapter = this.readChapterFiles(comicId)
+    const electedFiles = new Map<string, ComicChapterFile>()
+    const units = chapters.map((chapter) => {
+      const file = electFile(filesByChapter.get(chapter.id) ?? [], fileId)
+      if (file) electedFiles.set(chapter.id, file)
+      return this.toReaderUnit(chapter, file)
+    })
 
     const startUnit = chapterId
       ? units.find((unit) => unit.id === chapterId)
-      : (units.find((unit) => !unit.read && unit.fileId && unit.supported) ??
-        units.find((unit) => unit.fileId && unit.supported))
+      : (units.find((unit) => !unit.read && unit.fileId) ?? units.find((unit) => unit.fileId))
     if (!startUnit) {
       return { status: 'failed', reason: chapterId ? 'chapterNotFound' : 'noReadableChapter' }
     }
-    if (!startUnit.fileId) {
+
+    const startFile = electedFiles.get(startUnit.id)
+    if (!startFile) {
       log.warn('Comic unit has no readable file.', { comicId, chapterId: startUnit.id })
       return { status: 'failed', reason: 'noChapterFile' }
     }
-    if (!startUnit.supported) {
-      log.warn('Comic unit file container is not pageable.', { comicId, chapterId: startUnit.id })
-      return { status: 'failed', reason: 'unsupportedContainer' }
+    if (!existsSync(startFile.path)) {
+      log.warn('Comic unit file is missing on disk.', { comicId, chapterId: startUnit.id })
+      return { status: 'failed', reason: 'fileNotFound' }
     }
 
     const bootstrap: ReaderComicBootstrap = {
@@ -96,17 +117,24 @@ export class ComicActivityHandler {
       startUnitId: startUnit.id
     }
 
-    const windowId = this.reader.windows.open(`comic:${comicId}`, bootstrap)
-    const now = Date.now()
-
-    if (!this.reading.has(windowId)) {
-      this.reading.set(windowId, {
-        comicId,
-        chapterId: startUnit.id,
-        segmentStartedAt: now,
-        lastResumeWriteAt: 0
-      })
+    const opened = this.reader.windows.open(`comic:${comicId}`, bootstrap)
+    if (opened.reused) {
+      // The window was re-aimed and reports the unit it lands on, which moves
+      // the running session; repeating the started event would be a lie.
+      log.info('Comic reader refocused.', { comicId, chapterId: startUnit.id })
+      return { status: 'refocused', chapterId: startUnit.id }
     }
+
+    const now = Date.now()
+    this.reading.set(opened.windowId, {
+      comicId,
+      chapterId: startUnit.id,
+      segmentStartedAt: now,
+      lastResumeWriteAt: 0,
+      pendingReport: null,
+      countedUnitIds: new Set(),
+      accumulatedMs: 0
+    })
 
     this.db.client
       .update(comics)
@@ -155,7 +183,10 @@ export class ComicActivityHandler {
     this.reader.hooks.unitOpened.tap(({ windowId, report }) => {
       const session = this.reading.get(windowId)
       if (!session || session.chapterId === report.unitId) return
+      // A window may only claim units from the bootstrap prepared for it.
+      if (!this.isWindowUnit(windowId, report.unitId)) return
 
+      this.flushResume(session)
       this.recordSegment(session)
       session.chapterId = report.unitId
       session.segmentStartedAt = Date.now()
@@ -167,29 +198,33 @@ export class ComicActivityHandler {
     })
   }
 
+  private isWindowUnit(windowId: number, unitId: string): boolean {
+    const bootstrap = this.reader.windows.getBootstrap(windowId)
+    if (bootstrap?.kind !== 'comic') return false
+    return bootstrap.units.some((unit) => unit.id === unitId)
+  }
+
   private handleProgress(session: ReadingSession, report: ReaderComicProgressReport): void {
     if (report.chapterId !== session.chapterId) return
 
     const finished = report.pageCount > 0 && report.pageIndex >= report.pageCount - 1
     if (finished) {
-      // The where-clause guard makes completion idempotent per read-through:
-      // lingering on the last page marks and counts the unit exactly once.
-      this.db.client
-        .update(comicChapters)
-        .set({
-          read: true,
-          readAt: new Date(),
-          readCount: sql`${comicChapters.readCount} + 1`,
-          resumePage: null
-        })
-        .where(and(eq(comicChapters.id, report.chapterId), eq(comicChapters.read, false)))
-        .run()
+      this.markUnitRead(session, report.chapterId)
       return
     }
 
-    const now = Date.now()
-    if (now - session.lastResumeWriteAt < RESUME_WRITE_INTERVAL_MS) return
-    session.lastResumeWriteAt = now
+    session.pendingReport = report
+    if (Date.now() - session.lastResumeWriteAt < RESUME_WRITE_INTERVAL_MS) return
+    this.flushResume(session)
+  }
+
+  /** Persists the newest held-back position, so no page turn is lost. */
+  private flushResume(session: ReadingSession): void {
+    const report = session.pendingReport
+    if (!report) return
+
+    session.pendingReport = null
+    session.lastResumeWriteAt = Date.now()
 
     this.db.client
       .update(comicChapters)
@@ -198,12 +233,35 @@ export class ComicActivityHandler {
       .run()
   }
 
+  /**
+   * Marks a unit read once per read-through: the session remembers what it
+   * counted, so lingering on the last page counts once while opening the unit
+   * again later is a genuine re-read.
+   */
+  private markUnitRead(session: ReadingSession, chapterId: string): void {
+    if (session.countedUnitIds.has(chapterId)) return
+    session.countedUnitIds.add(chapterId)
+    session.pendingReport = null
+
+    this.db.client
+      .update(comicChapters)
+      .set({
+        read: true,
+        readAt: new Date(),
+        readCount: sql`${comicChapters.readCount} + 1`,
+        resumePage: null
+      })
+      .where(eq(comicChapters.id, chapterId))
+      .run()
+  }
+
   private endSession(windowId: number): void {
     const session = this.reading.get(windowId)
     if (!session) return
 
     this.reading.delete(windowId)
-    const elapsedMs = this.recordSegment(session)
+    this.flushResume(session)
+    this.recordSegment(session)
 
     log.info('Comic reading ended.', { comicId: session.comicId })
     this.ipc.send('activity:comic-stopped', {
@@ -212,17 +270,17 @@ export class ComicActivityHandler {
     })
     this.hooks.comicReadEnded.dispatch({
       comicId: session.comicId,
-      readTimeSeconds: Math.floor(elapsedMs / 1000)
+      readTimeSeconds: Math.floor(session.accumulatedMs / 1000)
     })
   }
 
   /** Records the current per-unit segment; too-short segments are mis-clicks. */
-  private recordSegment(session: ReadingSession): number {
+  private recordSegment(session: ReadingSession): void {
     const endedAt = Date.now()
     const elapsedMs = endedAt - session.segmentStartedAt
-    if (elapsedMs < MIN_READING_SEGMENT_MS) {
-      return 0
-    }
+    if (elapsedMs < MIN_READING_SEGMENT_MS) return
+
+    session.accumulatedMs += elapsedMs
 
     this.db.client.transaction((tx) => {
       tx.insert(comicSessions)
@@ -242,21 +300,9 @@ export class ComicActivityHandler {
         .where(eq(comics.id, session.comicId))
         .run()
     })
-
-    return elapsedMs
   }
 
-  private toReaderUnit(
-    chapter: ComicChapter,
-    files: ComicChapterFile[],
-    requestedFileId: string | undefined
-  ): ReaderComicUnit {
-    // Matching inside the unit's own files keeps ownership validated.
-    const requested = requestedFileId
-      ? files.find((file) => file.id === requestedFileId)
-      : undefined
-    const file = requested ?? files.find((entry) => entry.isPrimary) ?? files[0]
-
+  private toReaderUnit(chapter: ComicChapter, file: ComicChapterFile | null): ReaderComicUnit {
     return {
       id: chapter.id,
       label: formatChapterLabel(this.i18n, chapter),
@@ -264,7 +310,7 @@ export class ComicActivityHandler {
       resumePage: chapter.resumePage,
       fileId: file?.id ?? null,
       pageCount: file?.pageCount ?? null,
-      supported: file ? file.container !== 'pdf' : false
+      container: parsePagedContainer(file?.container ?? null)
     }
   }
 
@@ -277,26 +323,33 @@ export class ComicActivityHandler {
       .all()
   }
 
-  private readChapterFiles(chapterIds: string[]): Map<string, ComicChapterFile[]> {
-    const grouped = new Map<string, ComicChapterFile[]>()
-    if (chapterIds.length === 0) return grouped
-
+  private readChapterFiles(comicId: string): Map<string, ComicChapterFile[]> {
     const rows = this.db.client
-      .select()
+      .select({ file: comicChapterFiles })
       .from(comicChapterFiles)
+      .innerJoin(comicChapters, eq(comicChapterFiles.chapterId, comicChapters.id))
+      .where(eq(comicChapters.comicId, comicId))
       .orderBy(asc(comicChapterFiles.createdAt))
       .all()
 
-    const wanted = new Set(chapterIds)
-    for (const row of rows) {
-      if (!wanted.has(row.chapterId)) continue
-      const bucket = grouped.get(row.chapterId)
-      if (bucket) bucket.push(row)
-      else grouped.set(row.chapterId, [row])
+    const grouped = new Map<string, ComicChapterFile[]>()
+    for (const { file } of rows) {
+      const bucket = grouped.get(file.chapterId)
+      if (bucket) bucket.push(file)
+      else grouped.set(file.chapterId, [file])
     }
 
     return grouped
   }
+}
+
+/** Matching inside the unit's own files keeps ownership validated. */
+function electFile(
+  files: ComicChapterFile[],
+  requestedFileId: string | undefined
+): ComicChapterFile | null {
+  if (requestedFileId) return files.find((file) => file.id === requestedFileId) ?? null
+  return files.find((file) => file.isPrimary) ?? files[0] ?? null
 }
 
 /** Reader-facing unit label: name when present, otherwise the unit number. */
@@ -311,8 +364,4 @@ function formatChapterLabel(i18n: I18nService, chapter: ComicChapter): string {
     return labels.unnamedVolume({ number: formatUnitNumber(chapter.volumeNumber) })
   }
   return labels.entityLabel
-}
-
-function formatUnitNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }

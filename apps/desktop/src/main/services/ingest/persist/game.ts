@@ -195,24 +195,14 @@ export class GameIngestPersistHandler {
     private readonly i18nService: I18nService
   ) {}
 
-  persistGameGraph(
-    graph: IngestGameGraph,
-    options?: GamePersistOptions
-  ): Promise<IngestAddGameFromScraperResult>
-  persistGameGraph(
-    graph: IngestGameGraph,
-    options: GamePersistOptions | undefined,
-    tx: DbContext
-  ): Promise<PersistGameGraphResult>
+  /**
+   * Persists a whole graph in its own transaction, then flushes assets.
+   * Callers already inside a transaction use `persistGameGraphInternal`.
+   */
   async persistGameGraph(
     graph: IngestGameGraph,
-    options?: GamePersistOptions,
-    tx?: DbContext
-  ): Promise<IngestAddGameFromScraperResult | PersistGameGraphResult> {
-    if (tx) {
-      return this.persistGameGraphInternal(graph, options, tx)
-    }
-
+    options?: GamePersistOptions
+  ): Promise<IngestAddGameFromScraperResult> {
     const result = this.dbService.client.transaction((trx) =>
       this.persistGameGraphInternal(graph, options, trx)
     )

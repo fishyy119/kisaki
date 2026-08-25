@@ -13,16 +13,31 @@ import path from 'node:path'
 
 const ARCHIVE_EXTENSIONS = new Set(['.cbz', '.zip', '.cbr', '.rar', '.pdf'])
 
-/** Numbers stay decimal-capable: extras are published between installments (42.5). */
+/** Loose pages a directory container is recognized by. */
+const IMAGE_EXTENSIONS = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.bmp',
+  '.avif',
+  '.jxl'
+])
+
+/**
+ * Numbers stay decimal-capable: extras are published between installments
+ * (42.5). Full-width volume words match anywhere; the bare `v` form is left to
+ * `stripRevisionMarkers`, which decides whether it means a volume or a scan
+ * revision.
+ */
 const VOLUME_PATTERNS: ReadonlyArray<RegExp> = [
   /(?:^|[^a-z0-9])(?:v|vol|volume)[\s._-]*(\d{1,4}(?:\.\d)?)(?![a-z0-9])/i,
-  /第\s*(\d{1,4}(?:\.\d)?)\s*[巻卷]/,
   /(\d{1,4}(?:\.\d)?)\s*[巻卷]/
 ]
 
 const CHAPTER_PATTERNS: ReadonlyArray<RegExp> = [
   /(?:^|[^a-z0-9])(?:c|ch|chap|chapter|ep|episode)[\s._-]*(\d{1,4}(?:\.\d)?)(?![a-z0-9])/i,
-  /第\s*(\d{1,4}(?:\.\d)?)\s*[話话回]/,
   /(\d{1,4}(?:\.\d)?)\s*[話话回]/
 ]
 
@@ -43,6 +58,10 @@ export function isComicArchiveFile(fileName: string): boolean {
   return ARCHIVE_EXTENSIONS.has(path.extname(fileName).toLowerCase())
 }
 
+export function isComicPageFile(fileName: string): boolean {
+  return IMAGE_EXTENSIONS.has(path.extname(fileName).toLowerCase())
+}
+
 function parseNumber(value: string | undefined): number | undefined {
   if (value === undefined) return undefined
   const parsed = Number.parseFloat(value)
@@ -56,6 +75,23 @@ function matchFirst(name: string, patterns: ReadonlyArray<RegExp>): number | und
     if (parsed !== undefined) return parsed
   }
   return undefined
+}
+
+/**
+ * Drops scan-revision markers.
+ *
+ * Releases append `v2` to a re-scan of an installment they already numbered
+ * ("One Piece 1044 v2"), which reads exactly like the volume shorthand. A
+ * single-letter `v` that follows another number is the revision; the full
+ * words `vol` and `volume` always mean the volume.
+ */
+function stripRevisionMarkers(name: string): string {
+  return name.replace(/(\d)([\s._-]*)v\d{1,2}(?![a-z0-9])/gi, '$1')
+}
+
+/** Integer tokens inside the plausible release-year range (1900-2100). */
+function isPlausibleYearToken(value: number): boolean {
+  return Number.isInteger(value) && value >= 1900 && value <= 2100
 }
 
 /** Bracketed release-group and quality tags carry no unit identity. */
@@ -90,7 +126,7 @@ export function recognizeComicUnit(
     form === 'archive'
       ? fileName.slice(0, fileName.length - path.extname(fileName).length)
       : fileName
-  const searchable = stripReleaseTags(baseName)
+  const searchable = stripRevisionMarkers(stripReleaseTags(baseName))
 
   const chapterNumber = matchFirst(searchable, CHAPTER_PATTERNS)
   const volumeNumber = matchFirst(searchable, VOLUME_PATTERNS)
@@ -106,7 +142,8 @@ export function recognizeComicUnit(
 
   if (chapterNumber === undefined && volumeNumber === undefined) {
     const bare = parseNumber(searchable.match(BARE_NUMBER_PATTERN)?.[1])
-    if (bare !== undefined) {
+    // A leading year is a title ("1984", "2001 Nights"), not a unit number.
+    if (bare !== undefined && !isPlausibleYearToken(bare)) {
       if (form === 'archive') {
         candidate.volumeNumber = bare
       } else {
@@ -116,9 +153,4 @@ export function recognizeComicUnit(
   }
 
   return candidate
-}
-
-/** Whether a candidate carries any readable unit number. */
-export function isNumberedComicUnit(candidate: ComicUnitCandidate): boolean {
-  return candidate.volumeNumber !== undefined || candidate.chapterNumber !== undefined
 }

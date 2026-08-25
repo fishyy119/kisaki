@@ -167,24 +167,14 @@ export class NovelIngestPersistHandler {
     private readonly i18nService: I18nService
   ) {}
 
-  persistNovelGraph(
-    graph: IngestNovelGraph,
-    options?: NovelPersistOptions
-  ): Promise<IngestAddNovelFromScraperResult>
-  persistNovelGraph(
-    graph: IngestNovelGraph,
-    options: NovelPersistOptions | undefined,
-    tx: DbContext
-  ): Promise<PersistNovelGraphResult>
+  /**
+   * Persists a whole graph in its own transaction, then flushes assets.
+   * Callers already inside a transaction use `persistNovelGraphInternal`.
+   */
   async persistNovelGraph(
     graph: IngestNovelGraph,
-    options?: NovelPersistOptions,
-    tx?: DbContext
-  ): Promise<IngestAddNovelFromScraperResult | PersistNovelGraphResult> {
-    if (tx) {
-      return this.persistNovelGraphInternal(graph, options, tx)
-    }
-
+    options?: NovelPersistOptions
+  ): Promise<IngestAddNovelFromScraperResult> {
     const result = this.dbService.client.transaction((trx) =>
       this.persistNovelGraphInternal(graph, options, trx)
     )

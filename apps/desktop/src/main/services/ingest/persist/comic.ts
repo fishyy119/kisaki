@@ -167,24 +167,14 @@ export class ComicIngestPersistHandler {
     private readonly i18nService: I18nService
   ) {}
 
-  persistComicGraph(
-    graph: IngestComicGraph,
-    options?: ComicPersistOptions
-  ): Promise<IngestAddComicFromScraperResult>
-  persistComicGraph(
-    graph: IngestComicGraph,
-    options: ComicPersistOptions | undefined,
-    tx: DbContext
-  ): Promise<PersistComicGraphResult>
+  /**
+   * Persists a whole graph in its own transaction, then flushes assets.
+   * Callers already inside a transaction use `persistComicGraphInternal`.
+   */
   async persistComicGraph(
     graph: IngestComicGraph,
-    options?: ComicPersistOptions,
-    tx?: DbContext
-  ): Promise<IngestAddComicFromScraperResult | PersistComicGraphResult> {
-    if (tx) {
-      return this.persistComicGraphInternal(graph, options, tx)
-    }
-
+    options?: ComicPersistOptions
+  ): Promise<IngestAddComicFromScraperResult> {
     const result = this.dbService.client.transaction((trx) =>
       this.persistComicGraphInternal(graph, options, trx)
     )

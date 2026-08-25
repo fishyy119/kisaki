@@ -2,6 +2,7 @@ import type { BangumiMediaScope } from '../../shared/scopes'
 import type { BangumiIndexSubject, BangumiUserCollection } from '../api/types'
 import type { LocalCollectionTarget, LocalMediaItem } from '../media/types'
 import { m } from '../i18n'
+import { readPositiveInteger } from '../utils/numbers'
 
 export type PlannedImportAction =
   | {
@@ -22,10 +23,13 @@ export type PlannedImportAction =
   | { kind: 'unsupported'; scope: BangumiMediaScope; subjectId?: string; reason: string }
   | { kind: 'error'; scope: BangumiMediaScope; subjectId?: string; message: string }
 
-export interface ImportPlannerWriteFields {
+/** Fields one import run is allowed to write locally. */
+export interface ImportWriteFields {
   status: boolean
   score: boolean
   tags: boolean
+  /** Adopt remote vol/ep counts as local unit read state; book scope only. */
+  unitProgress: boolean
 }
 
 export interface CollectionImportPlanItem {
@@ -60,7 +64,7 @@ export interface PlanCollectionsOptions {
   localItems?: ReadonlyMap<string, LocalMediaItem>
   localWritable: boolean
   patchExisting: boolean
-  fields: ImportPlannerWriteFields
+  fields: ImportWriteFields
   targetCollection?: LocalCollectionTarget | undefined
 }
 
@@ -185,7 +189,7 @@ export class ImportPlanner {
     localItem: LocalMediaItem | undefined
     localWritable: boolean
     patchExisting: boolean
-    fields: ImportPlannerWriteFields
+    fields: ImportWriteFields
     targetCollection: LocalCollectionTarget | undefined
   }): PlannedImportAction {
     if (!localWritable) {
@@ -282,8 +286,7 @@ export class ImportPlanner {
 
 function readCollectionSubjectId(collection: BangumiUserCollection): string {
   const subjectId =
-    normalizePositiveInteger(collection.subject_id) ??
-    normalizePositiveInteger(collection.subject?.id)
+    readPositiveInteger(collection.subject_id) ?? readPositiveInteger(collection.subject?.id)
   return subjectId ? String(subjectId) : ''
 }
 
@@ -296,7 +299,7 @@ function readCollectionTitle(collection: BangumiUserCollection, subjectId: strin
 }
 
 function readIndexSubjectId(subject: BangumiIndexSubject): string {
-  const subjectId = normalizePositiveInteger(subject.id)
+  const subjectId = readPositiveInteger(subject.id)
   return subjectId ? String(subjectId) : ''
 }
 
@@ -305,7 +308,7 @@ function readIndexSubjectTitle(subject: BangumiIndexSubject, subjectId: string):
 }
 
 function describeCollectionFields(
-  fields: ImportPlannerWriteFields,
+  fields: ImportWriteFields,
   targetCollection: LocalCollectionTarget | undefined
 ): readonly string[] {
   const names: string[] = []
@@ -322,6 +325,10 @@ function describeCollectionFields(
     names.push('tags')
   }
 
+  if (fields.unitProgress) {
+    names.push('unitProgress')
+  }
+
   if (targetCollection) {
     names.push('collection')
   }
@@ -333,10 +340,4 @@ function describeIndexFields(
   targetCollection: LocalCollectionTarget | undefined
 ): readonly string[] {
   return targetCollection ? ['collection'] : []
-}
-
-function normalizePositiveInteger(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0
-    ? Math.trunc(value)
-    : undefined
 }

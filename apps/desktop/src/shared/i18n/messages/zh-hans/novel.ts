@@ -1,8 +1,9 @@
+import type { Messages } from '@shared/i18n'
+
 export const novel = {
   readStart: '开始阅读',
   readContinue: '继续阅读',
-  readNext: '读下一卷',
-  showDetail: '查看详情',
+  readOpen: '打开阅读器',
 
   volumes: {
     title: '卷',
@@ -53,7 +54,6 @@ export const novel = {
     noFiles: '还没有文件',
     fileCount: ({ count }: { count: number }) => `${count} 个文件`,
     primary: '主文件',
-    container: '格式',
     openFolder: '打开所在文件夹',
     openFolderFailed: '无法打开所在文件夹',
     setPrimary: '设为主文件',
@@ -141,4 +141,4 @@ export const novel = {
     lastSession: '最后阅读',
     dayOfMonthLabel: ({ day }: { day: number }) => `${day} 日`
   }
-}
+} satisfies Messages['novel']

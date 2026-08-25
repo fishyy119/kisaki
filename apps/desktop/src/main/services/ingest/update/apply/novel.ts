@@ -18,6 +18,7 @@ import {
   type NovelVolume
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
+import { novelUnitIdentityKey } from '@shared/metadata'
 import type { NovelVolumeInfo } from '@shared/metadata'
 import type {
   NovelLinkKind,
@@ -149,18 +150,20 @@ function reconcileNovelVolumes(tx: DbContext, novelId: string, plan: NovelVolume
     }
   }
 
-  const rowsByNumber = new Map<number, NovelVolume[]>()
+  // Named unnumbered volumes are claimable too, so a side story stops being
+  // re-inserted on every re-scrape.
+  const rowsByIdentity = new Map<string, NovelVolume[]>()
   for (const row of existing) {
-    if (claimedRowIds.has(row.id) || row.volumeNumber === null) continue
-    const queue = rowsByNumber.get(row.volumeNumber) ?? []
+    if (claimedRowIds.has(row.id)) continue
+    const key = novelUnitIdentityKey(row)
+    const queue = rowsByIdentity.get(key) ?? []
     queue.push(row)
-    rowsByNumber.set(row.volumeNumber, queue)
+    rowsByIdentity.set(key, queue)
   }
 
   const inserts: Array<{ volume: NovelVolumeInfo; order: number }> = []
   for (const { volume, order } of numberPass) {
-    const row =
-      volume.volumeNumber === undefined ? undefined : rowsByNumber.get(volume.volumeNumber)?.shift()
+    const row = rowsByIdentity.get(novelUnitIdentityKey(volume))?.shift()
     if (row) {
       claimedRowIds.add(row.id)
       matches.push({ row, volume, order })

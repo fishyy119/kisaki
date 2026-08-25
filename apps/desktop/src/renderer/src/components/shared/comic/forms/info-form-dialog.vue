@@ -65,7 +65,10 @@ const FORMAT_OPTIONS = computed<{ value: ComicFormat; label: string }[]>(() =>
 /** Absent direction follows the format default, so the select carries an empty member. */
 const DIRECTION_UNSET = 'default'
 
-const DIRECTION_OPTIONS = computed<{ value: string; label: string }[]>(() => [
+/** Select values are the direction union plus the "follow the format" member. */
+type DirectionChoice = ComicReadingDirection | typeof DIRECTION_UNSET
+
+const DIRECTION_OPTIONS = computed<{ value: DirectionChoice; label: string }[]>(() => [
   { value: DIRECTION_UNSET, label: m.value.common.emptyValue },
   ...COMIC_READING_DIRECTION_VALUES.map((value) => ({
     value,
@@ -78,7 +81,7 @@ interface FormData {
   sortName: string
   aliases: string
   format: ComicFormat
-  readingDirection: string
+  readingDirection: DirectionChoice
   totalVolumes: string
   totalChapters: string
   releaseDate: PartialDate | null
@@ -166,7 +169,7 @@ async function handleSubmit() {
         readingDirection:
           formData.value.readingDirection === DIRECTION_UNSET
             ? null
-            : (formData.value.readingDirection as ComicReadingDirection),
+            : formData.value.readingDirection,
         totalVolumes,
         totalChapters,
         releaseDate,
@@ -278,7 +281,7 @@ function handleCancel() {
                       v-model="formData.totalVolumes"
                       type="number"
                       min="0"
-                      :placeholder="m.library.forms.totalEpisodesPlaceholder"
+                      :placeholder="m.library.forms.countPlaceholder"
                     />
                   </FieldContent>
                 </Field>
@@ -290,7 +293,7 @@ function handleCancel() {
                       v-model="formData.totalChapters"
                       type="number"
                       min="0"
-                      :placeholder="m.library.forms.totalEpisodesPlaceholder"
+                      :placeholder="m.library.forms.countPlaceholder"
                     />
                   </FieldContent>
                 </Field>

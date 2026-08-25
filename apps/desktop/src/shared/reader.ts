@@ -9,6 +9,7 @@
  */
 
 import type { ComicReadingDirection } from './db/contracts/enums'
+import type { PagedContainer, DocumentContainer } from './media-info'
 
 export interface ReaderComicUnit {
   id: string
@@ -19,8 +20,8 @@ export interface ReaderComicUnit {
   /** Primary readable file; null when the unit has no file yet. */
   fileId: string | null
   pageCount: number | null
-  /** Containers without page entries (pdf) cannot be paged by the comic engine. */
-  supported: boolean
+  /** Container kind as probed; decides which page source the engine uses. */
+  container: PagedContainer | null
 }
 
 export interface ReaderComicBootstrap {
@@ -37,15 +38,13 @@ export interface ReaderNovelUnit {
   id: string
   label: string
   read: boolean
-  /** Engine-scoped resume locator (EPUB CFI or text fraction); opaque here. */
+  /** Engine-scoped resume locator (EPUB CFI or page locator); opaque here. */
   resumeLocator: string | null
   resumeProgress: number | null
   /** Primary readable file; null when the volume has no file yet. */
   fileId: string | null
-  /** Container kind as probed (epub, mobi, azw3, fb2, txt, pdf). */
-  container: string | null
-  /** PDF volumes are not renderable by the bundled text engine. */
-  supported: boolean
+  /** Container kind as probed; PDF volumes render through the page engine. */
+  container: DocumentContainer | null
 }
 
 export interface ReaderNovelBootstrap {

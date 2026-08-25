@@ -41,15 +41,46 @@ export interface MediaFileInfo {
   subtitleTracks: readonly MediaSubtitleTrack[]
 }
 
-/** Container kind of one comic unit file, as probed. */
-export type ComicUnitContainer = 'zip' | 'rar' | 'directory' | 'pdf'
+/** A container addressable page by page, as probed. */
+export type PagedContainer = 'zip' | 'rar' | 'directory' | 'pdf'
 
-/** Technical facts read from one comic unit file. */
-export interface ComicUnitFileInfo {
-  container: ComicUnitContainer
-  /** Readable page count; null when the container hides it (PDF probe failure). */
+const PAGED_CONTAINERS: readonly PagedContainer[] = ['zip', 'rar', 'directory', 'pdf']
+
+/** Technical facts read from one paged container. */
+export interface PagedContainerInfo {
+  container: PagedContainer
+  /** Readable page count; null when the container probe could not answer. */
   pageCount: number | null
 }
 
-/** Container kind of one novel volume file, told by its extension. */
-export type NovelFileContainer = 'epub' | 'mobi' | 'azw3' | 'fb2' | 'txt' | 'pdf'
+/** A container holding one document, told by its extension. */
+export type DocumentContainer = 'epub' | 'mobi' | 'azw3' | 'fb2' | 'txt' | 'pdf'
+
+const DOCUMENT_CONTAINERS: readonly DocumentContainer[] = [
+  'epub',
+  'mobi',
+  'azw3',
+  'fb2',
+  'txt',
+  'pdf'
+]
+
+/**
+ * Reads a stored container value back into its union.
+ *
+ * Probes write these columns, so a value can predate the current vocabulary;
+ * an unrecognized one degrades to null and the caller treats the file as a
+ * plain container rather than refusing to open it.
+ */
+export function parsePagedContainer(value: string | null): PagedContainer | null {
+  return (PAGED_CONTAINERS as readonly string[]).includes(value ?? '')
+    ? (value as PagedContainer)
+    : null
+}
+
+/** Reads a stored document container value back into its union; see above. */
+export function parseDocumentContainer(value: string | null): DocumentContainer | null {
+  return (DOCUMENT_CONTAINERS as readonly string[]).includes(value ?? '')
+    ? (value as DocumentContainer)
+    : null
+}

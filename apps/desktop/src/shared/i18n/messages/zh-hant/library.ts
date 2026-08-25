@@ -545,7 +545,7 @@ export const library = {
     releaseDateInvalidFormat: '發行日期格式不正確',
     foundedDateYearDayWithoutMonth: '成立日期填寫了年份和日期時，必須同時填寫月份',
     releaseDateYearDayWithoutMonth: '發行日期填寫了年份和日期時，必須同時填寫月份',
-    totalEpisodesPlaceholder: '可留空',
+    countPlaceholder: '可留空',
     totalEpisodesInvalid: '總集數必須為非負整數',
     totalVolumesInvalid: '總卷數必須為非負整數',
     totalChaptersInvalid: '總話數必須為非負整數',

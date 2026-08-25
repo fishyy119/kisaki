@@ -25,6 +25,12 @@ import {
   MediaLastActiveFormDialog,
   MediaStatusFormDialog
 } from '@renderer/components/shared/media'
+import { createLogger } from '@renderer/core/log'
+import { shouldOfferReadCatchUp } from '@renderer/composables/use-novel-read'
+import type { NovelStatus } from '@shared/db'
+import NovelReadCatchUpDialog from '../novel-read-catch-up-dialog.vue'
+
+const log = createLogger('Novel')
 
 const { novel } = useNovel()
 const { m, f } = useI18n()
@@ -41,6 +47,21 @@ const editDialogs = ref({
 
 function openEditDialog(dialog: keyof typeof editDialogs.value) {
   editDialogs.value[dialog] = true
+}
+
+/** Catch-up prompt lives beside the status dialog so it survives its close. */
+const catchUpOpen = ref(false)
+
+async function handleStatusSaved(status: string): Promise<void> {
+  const entry = novel.value
+  if (!entry) return
+
+  try {
+    catchUpOpen.value = await shouldOfferReadCatchUp(entry.id, status as NovelStatus)
+  } catch (error) {
+    // The status change already succeeded; a missed offer is not worth a notice.
+    log.warn('Volume catch-up offer check failed:', error)
+  }
 }
 
 const coverUrl = computed(() =>
@@ -217,6 +238,12 @@ const coverUrl = computed(() =>
       v-model:open="editDialogs.status"
       media-type="novel"
       :entity-id="novel.id"
+      @saved="handleStatusSaved"
+    />
+    <NovelReadCatchUpDialog
+      v-if="catchUpOpen"
+      v-model:open="catchUpOpen"
+      :novel-id="novel.id"
     />
     <MediaDurationFormDialog
       v-if="editDialogs.duration"

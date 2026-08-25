@@ -5,3 +5,7 @@
 pnpm-lock.yaml
 **/*.d.ts
 tmp/
+
+# Vendored upstream sources: kept close to upstream so updates stay diffable.
+# Local deviations are documented in each directory's README.
+apps/desktop/src/renderer/vendor/

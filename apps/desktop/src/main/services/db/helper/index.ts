@@ -4,13 +4,11 @@ export { DbEntityMergeCoordinator } from './entity-merge'
 export {
   animeExternalIdLink,
   characterExternalIdLink,
-  comicChapterExternalIdLink,
   comicExternalIdLink,
   companyExternalIdLink,
   findExternalIdOwners,
   gameExternalIdLink,
   novelExternalIdLink,
-  novelVolumeExternalIdLink,
   personExternalIdLink,
   requireExternalIdsAvailable,
   type ExternalIdLinkTable

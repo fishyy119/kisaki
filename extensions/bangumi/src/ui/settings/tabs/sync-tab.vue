@@ -36,7 +36,7 @@ const autoSyncItems = computed<readonly { value: BangumiAutoSyncItem; label: str
   { value: 'create', label: m.value.ui.sync.itemCreate },
   { value: 'status', label: m.value.ui.sync.itemStatus },
   { value: 'score', label: m.value.ui.sync.itemScore },
-  { value: 'episodes', label: m.value.ui.sync.itemEpisodes }
+  { value: 'unitProgress', label: m.value.ui.sync.itemUnitProgress }
 ])
 
 const syncing = ref(false)

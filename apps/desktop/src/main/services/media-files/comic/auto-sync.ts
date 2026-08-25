@@ -21,8 +21,7 @@ import type { FileWatchEvent, FileWatchScope, FileWatchService } from '@main/ser
 import type { HookUntap } from '@main/hooks'
 import { comics } from '@shared/db'
 import { isNotNull } from 'drizzle-orm'
-import { isImageFile } from '@main/services/media-info/book/containers'
-import { isComicArchiveFile } from './recognition'
+import { isComicArchiveFile, isComicPageFile } from './recognition'
 import { MAX_COMIC_WALK_DEPTH, type ComicFileSyncHandler } from './sync'
 
 const log = createLogger('MediaFiles')
@@ -126,7 +125,7 @@ export class ComicAutoSync {
   private handleEvents(events: readonly FileWatchEvent[]): void {
     const touched = new Set(
       events
-        .filter((event) => isComicArchiveFile(event.path) || isImageFile(event.path))
+        .filter((event) => isComicArchiveFile(event.path) || isComicPageFile(event.path))
         .flatMap((event) => {
           const comicId = this.comicIdsByDirectory.get(event.root)
           return comicId ? [comicId] : []

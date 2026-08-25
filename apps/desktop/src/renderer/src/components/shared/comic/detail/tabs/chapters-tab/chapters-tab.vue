@@ -19,6 +19,7 @@ import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import { ipcManager } from '@renderer/core/ipc'
 import { ComicFilesConfigFormDialog } from '../../../forms'
+import ComicChapterDetailDialog from './chapter-detail-dialog.vue'
 import ComicDetailChapterItem from './chapter-item.vue'
 import ComicChapterFormDialog from './chapter-form-dialog.vue'
 
@@ -28,16 +29,16 @@ const { isSyncing, syncFiles } = useComicFileSync()
 
 const addDialogOpen = ref(false)
 const filesConfigOpen = ref(false)
-const editChapterId = ref<string | null>(null)
+const detailChapterId = ref<string | null>(null)
 
 const readCount = computed(() => chapters.value.filter((chapter) => chapter.read).length)
 
 const canSyncFiles = computed(() => !!comic.value?.comicDirPath)
 
-const editDialogOpen = computed({
-  get: () => editChapterId.value !== null,
+const detailDialogOpen = computed({
+  get: () => detailChapterId.value !== null,
   set: (value) => {
-    if (!value) editChapterId.value = null
+    if (!value) detailChapterId.value = null
   }
 })
 
@@ -130,7 +131,7 @@ async function handleOpenFolder(path: string): Promise<void> {
           :chapter="chapter"
           @toggle-read="toggleChapterRead(chapter)"
           @open-folder="handleOpenFolder"
-          @edit="editChapterId = chapter.id"
+          @show-detail="detailChapterId = chapter.id"
         />
       </div>
     </Section>
@@ -142,12 +143,12 @@ async function handleOpenFolder(path: string): Promise<void> {
       :comic-id="comic.id"
     />
 
-    <!-- Edit unit dialog -->
-    <ComicChapterFormDialog
-      v-if="editChapterId"
-      v-model:open="editDialogOpen"
+    <!-- Unit workbench dialog -->
+    <ComicChapterDetailDialog
+      v-if="detailChapterId"
+      v-model:open="detailDialogOpen"
       :comic-id="comic.id"
-      :chapter-id="editChapterId"
+      :chapter-id="detailChapterId"
     />
 
     <!-- Files configuration dialog -->

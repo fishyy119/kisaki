@@ -25,6 +25,12 @@ import {
   type NovelVolume
 } from '@shared/db'
 import type { AllEntityType, MediaType } from '@shared/common'
+import {
+  comicUnitIdentityKey,
+  isNumberedComicUnit,
+  isNumberedNovelVolume,
+  novelUnitIdentityKey
+} from '@shared/metadata'
 import type { DbContext, DbQueryContext, DbWriteContext } from '../../types'
 import type { OwnedDataMerge, RelationMergeConfig, SameClassRelationMerge, MergeRow } from './types'
 
@@ -82,14 +88,27 @@ function mergeAnimeOwnedData(db: DbContext, targetId: string, sourceId: string, 
 
   const alignment = buildEpisodeAlignmentIndex(db, targetEpisodes, sourceEpisodes)
   let nextEpisodeOrder = nextOrderAfter(targetEpisodes.map((episode) => episode.orderInAnime))
+  const takenNumberKeys = collectNumberKeys(targetEpisodes, animeEpisodeNumberKey)
 
   for (const episode of sourceEpisodes) {
     const alignedId = alignment.get(episode.id)
     if (alignedId) {
       foldEpisodeIntoTarget(db, episode, alignedId, now)
     } else {
+      // Numbering is unique per entry and type, so a moved episode whose
+      // number the target already holds gives the number up instead of
+      // failing the merge; its files and watch state cross over untouched.
+      const numberKey = animeEpisodeNumberKey(episode)
+      const taken = numberKey !== null && takenNumberKeys.has(numberKey)
+      if (numberKey !== null && !taken) takenNumberKeys.add(numberKey)
+
       db.update(animeEpisodes)
-        .set({ animeId: targetId, orderInAnime: nextEpisodeOrder++, updatedAt: now })
+        .set({
+          animeId: targetId,
+          orderInAnime: nextEpisodeOrder++,
+          updatedAt: now,
+          ...(taken ? { episodeNumber: null } : {})
+        })
         .where(eq(animeEpisodes.id, episode.id))
         .run()
     }
@@ -104,6 +123,10 @@ function mergeAnimeOwnedData(db: DbContext, targetId: string, sourceId: string, 
 
 function readAnimeEpisodes(db: DbContext, animeId: string): AnimeEpisode[] {
   return db.select().from(animeEpisodes).where(eq(animeEpisodes.animeId, animeId)).all()
+}
+
+function animeEpisodeNumberKey(episode: AnimeEpisode): string | null {
+  return episode.episodeNumber === null ? null : `${episode.type}\0${episode.episodeNumber}`
 }
 
 /** Maps each source episode id to the target episode id it aligns with. */
@@ -316,14 +339,28 @@ function mergeComicOwnedData(db: DbContext, targetId: string, sourceId: string, 
 
   const alignment = buildChapterAlignmentIndex(db, targetChapters, sourceChapters)
   let nextChapterOrder = nextOrderAfter(targetChapters.map((chapter) => chapter.orderInComic))
+  const takenNumberKeys = collectNumberKeys(targetChapters, comicChapterNumberKey)
 
   for (const chapter of sourceChapters) {
     const alignedId = alignment.get(chapter.id)
     if (alignedId) {
       foldChapterIntoTarget(db, chapter, alignedId, now)
     } else {
+      // A target row aligned by external id can already hold this number, and
+      // numbering is unique per entry. The moved row gives up its numbers
+      // rather than failing the merge; its name, files, and read state cross
+      // over untouched and the user can renumber it.
+      const numberKey = comicChapterNumberKey(chapter)
+      const taken = numberKey !== null && takenNumberKeys.has(numberKey)
+      if (numberKey !== null && !taken) takenNumberKeys.add(numberKey)
+
       db.update(comicChapters)
-        .set({ comicId: targetId, orderInComic: nextChapterOrder++, updatedAt: now })
+        .set({
+          comicId: targetId,
+          orderInComic: nextChapterOrder++,
+          updatedAt: now,
+          ...(taken ? { volumeNumber: null, chapterNumber: null } : {})
+        })
         .where(eq(comicChapters.id, chapter.id))
         .run()
     }
@@ -339,11 +376,19 @@ function readComicChapters(db: DbContext, comicId: string): ComicChapter[] {
   return db.select().from(comicChapters).where(eq(comicChapters.comicId, comicId)).all()
 }
 
-/** Number key at the unit's own grain; null for unnumbered rows. */
+/** Identity key of a stored unit; null for unnumbered rows, which never collide. */
 function comicChapterNumberKey(chapter: ComicChapter): string | null {
-  if (chapter.chapterNumber !== null) return `chapter\0${chapter.chapterNumber}`
-  if (chapter.volumeNumber !== null) return `volume\0${chapter.volumeNumber}`
-  return null
+  return isNumberedComicUnit(chapter) ? comicUnitIdentityKey(chapter) : null
+}
+
+/** Numbers already spoken for on the target side of a merge. */
+function collectNumberKeys<T>(rows: readonly T[], keyOf: (row: T) => string | null): Set<string> {
+  const keys = new Set<string>()
+  for (const row of rows) {
+    const key = keyOf(row)
+    if (key !== null) keys.add(key)
+  }
+  return keys
 }
 
 /** Maps each source chapter id to the target chapter id it aligns with. */
@@ -526,14 +571,27 @@ function mergeNovelOwnedData(db: DbContext, targetId: string, sourceId: string, 
 
   const alignment = buildVolumeAlignmentIndex(db, targetVolumes, sourceVolumes)
   let nextVolumeOrder = nextOrderAfter(targetVolumes.map((volume) => volume.orderInNovel))
+  const takenNumberKeys = collectNumberKeys(targetVolumes, novelVolumeNumberKey)
 
   for (const volume of sourceVolumes) {
     const alignedId = alignment.get(volume.id)
     if (alignedId) {
       foldVolumeIntoTarget(db, volume, alignedId, now)
     } else {
+      // See the comic merge: numbering is unique per entry, so a moved volume
+      // whose number the target already holds gives the number up instead of
+      // failing the merge.
+      const numberKey = novelVolumeNumberKey(volume)
+      const taken = numberKey !== null && takenNumberKeys.has(numberKey)
+      if (numberKey !== null && !taken) takenNumberKeys.add(numberKey)
+
       db.update(novelVolumes)
-        .set({ novelId: targetId, orderInNovel: nextVolumeOrder++, updatedAt: now })
+        .set({
+          novelId: targetId,
+          orderInNovel: nextVolumeOrder++,
+          updatedAt: now,
+          ...(taken ? { volumeNumber: null } : {})
+        })
         .where(eq(novelVolumes.id, volume.id))
         .run()
     }
@@ -547,6 +605,10 @@ function mergeNovelOwnedData(db: DbContext, targetId: string, sourceId: string, 
 
 function readNovelVolumes(db: DbContext, novelId: string): NovelVolume[] {
   return db.select().from(novelVolumes).where(eq(novelVolumes.novelId, novelId)).all()
+}
+
+function novelVolumeNumberKey(volume: NovelVolume): string | null {
+  return isNumberedNovelVolume(volume) ? novelUnitIdentityKey(volume) : null
 }
 
 /** Maps each source volume id to the target volume id it aligns with. */

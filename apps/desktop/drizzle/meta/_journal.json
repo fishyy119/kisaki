@@ -225,6 +225,13 @@
       "when": 1787581166116,
       "tag": "0031_comic_novel_media",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1787649880682,
+      "tag": "0032_comic_unit_numbering",
+      "breakpoints": true
     }
   ]
 }

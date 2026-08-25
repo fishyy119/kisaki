@@ -14,6 +14,7 @@ import {
 import { and, asc, eq, isNull, type SQL } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { comicChapterExternalIds, comicChapters, comics } from '@shared/db'
+import { isSameChapterAcrossVolumeKnowledge } from '@shared/metadata'
 import type { DbService } from '@main/services/db'
 import { loadExternalIds, syncExternalIds } from './external-ids'
 import type { ExternalIdConfig } from './types'
@@ -58,7 +59,7 @@ export class ExtensionLibraryComicChapterStore {
 
     try {
       const conditions: SQL[] = [eq(comicChapters.comicId, query.comicId)]
-      if (query.readOnly) {
+      if (query.finishedOnly) {
         conditions.push(eq(comicChapters.read, true))
       }
       if (query.unreadOnly) {
@@ -255,9 +256,12 @@ export class ExtensionLibraryComicChapterStore {
   }
 
   /**
-   * Resolves an incoming unit to an existing row: external id first, then the
-   * dual numbering — a chapter number matches at the chapter grain, otherwise
-   * a volume number matches volume-grain rows that carry no chapter number.
+   * Resolves an incoming unit to an existing row.
+   *
+   * External id first, then the unit's full numbering, then one looser pass
+   * for a chapter whose volume the caller learned or forgot — see
+   * {@link isSameChapterAcrossVolumeKnowledge}. The looser pass only claims an
+   * unambiguous single candidate, so per-volume numbering never cross-matches.
    */
   findMatch(
     comicId: string,
@@ -282,17 +286,7 @@ export class ExtensionLibraryComicChapterStore {
     }
 
     if (input.chapterNumber !== undefined && input.chapterNumber !== null) {
-      const row = this.options.db.client
-        .select({ id: comicChapters.id })
-        .from(comicChapters)
-        .where(
-          and(
-            eq(comicChapters.comicId, comicId),
-            eq(comicChapters.chapterNumber, input.chapterNumber)
-          )
-        )
-        .get()
-      return row ? this.get(row.id) : null
+      return this.findChapterGrainMatch(comicId, input.chapterNumber, input.volumeNumber ?? null)
     }
 
     if (input.volumeNumber !== undefined && input.volumeNumber !== null) {
@@ -311,6 +305,33 @@ export class ExtensionLibraryComicChapterStore {
     }
 
     return null
+  }
+
+  /** Exact numbering first, then the volume-knowledge pass; see `findMatch`. */
+  private findChapterGrainMatch(
+    comicId: string,
+    chapterNumber: number,
+    volumeNumber: number | null
+  ): LibraryComicChapter | null {
+    const rows = this.options.db.client
+      .select({
+        id: comicChapters.id,
+        volumeNumber: comicChapters.volumeNumber,
+        chapterNumber: comicChapters.chapterNumber
+      })
+      .from(comicChapters)
+      .where(
+        and(eq(comicChapters.comicId, comicId), eq(comicChapters.chapterNumber, chapterNumber))
+      )
+      .all()
+
+    const exact = rows.find((row) => row.volumeNumber === volumeNumber)
+    if (exact) return this.get(exact.id)
+
+    const looser = rows.filter((row) =>
+      isSameChapterAcrossVolumeKnowledge({ volumeNumber, chapterNumber }, row)
+    )
+    return looser.length === 1 ? this.get(looser[0].id) : null
   }
 
   private require(chapterId: string): LibraryComicChapter {

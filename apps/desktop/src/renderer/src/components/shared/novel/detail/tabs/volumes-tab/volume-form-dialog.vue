@@ -87,7 +87,8 @@ watch(volume, (row) => {
 async function handleSubmit() {
   const numberText = formData.value.volumeNumberText.trim()
   const volumeNumber = numberText === '' ? null : Number(numberText)
-  if (volumeNumber !== null && (!Number.isFinite(volumeNumber) || volumeNumber <= 0)) {
+  // Zero is a real volume number: prologue volumes ship as volume 0.
+  if (volumeNumber !== null && (!Number.isFinite(volumeNumber) || volumeNumber < 0)) {
     notify.error(m.value.novel.volumes.numberInvalid)
     return
   }

@@ -243,8 +243,8 @@ carrying a second, weaker data model behind the same tables.
 | ---------- | ------------------------------ | --------------------------- | ------- |
 | game       | Session on an installed build  | Process launch + monitoring | Shipped |
 | anime      | Episode within a season entry  | Video playback (mpv)        | Shipped |
-| comic      | Page within a volume/chapter   | Image reading               | Planned |
-| novel      | Page/position within a volume  | Text reading                | Planned |
+| comic      | Page within a volume/chapter   | Image reading               | Shipped |
+| novel      | Page/position within a volume  | Text reading                | Shipped |
 | music      | Track within a release         | Audio playback              | Planned |
 | audio      | Track within a release (voice) | Audio playback              | Planned |
 
@@ -293,6 +293,23 @@ inherited from whichever media type shipped first.
   sequel graph is not a tree (interleaved films, split cours, side stories, summaries, alternative
   retellings), so an integer season number would lose information. Anime owns no season table: with
   the entry at season grain there is nothing left for one to hold.
+- **`comic` and `novel` entries are the work or series, not the volume.** Sources issue one id,
+  title, rating, and status per serialized work; a volume has no independent identity and no rating
+  anywhere. Volumes and chapters are therefore unit rows under the entry, not entries.
+- **Comic units carry two numbers, not two grains.** One `comic_chapters` row is either a collected
+  volume (volume number, no chapter number) or a serialized chapter (chapter number, plus the volume
+  it was collected into when known). Novels need only the volume number, so they carry one.
+  - A chapter's identity is its **full numbering**, not the chapter number alone: magazine
+    serialization numbers chapters continuously, but works collected straight to volumes restart at
+    chapter 1 in every volume, and both must fit. Two partial unique indexes enforce this, because
+    SQLite counts NULLs in a unique index as distinct.
+  - Identity and realignment are different concerns. Identity is what the indexes enforce and
+    `comicUnitIdentityKey` computes — ingest, file sync, and entity merge all call that one
+    function, because a key the application reads as new but an index reads as taken aborts the
+    whole write. Realignment is how a re-scrape or a file rename finds the existing row, and it is
+    allowed to be looser: external id, then exact numbering, then one pass for a chapter whose
+    volume the source learned or forgot. That last pass claims only an unambiguous single
+    candidate, so per-volume numbering never cross-matches.
 - Remaining planned types decide their grain when they land, by the same question.
 
 Grain differences stay contained. Below the entry, mechanics are isomorphic (watch state, resume
@@ -386,12 +403,15 @@ Distinguish the two growth axes:
 - Satellite entities (person, company, character) are cross-media and shared; media types attach to
   them through per-media link tables. Deduplicating genuinely uniform mechanics across satellites
   is safe — they are structurally identical, not coincidentally similar.
-- Root media types grow one exemplar at a time (game and anime are shipped; the rest of the
-  taxonomy above is planned). Never extract a generic root-media flow, engine, or entity spec from
-  a single sample — with one sample you cannot tell invariants from media-specific accidents. When
-  the second sample lands, extract only what both proved invariant (the scanner's shared
-  media-handler mechanics and the feed's media projection descriptors are the game+anime
-  precedents); every further media type re-earns its place in a shared mechanism the same way.
+- Root media types grow one exemplar at a time (game, anime, comic, and novel are shipped; the rest
+  of the taxonomy above is planned). Never extract a generic root-media flow, engine, or entity spec
+  from a single sample — with one sample you cannot tell invariants from media-specific accidents.
+  Extract only what the shipped samples proved invariant (the scanner's shared media-handler
+  mechanics and the feed's media projection descriptors are the original game+anime precedents;
+  comic and novel widened them rather than forking them); every further media type re-earns its
+  place in a shared mechanism the same way. Four samples is still not a licence to generalize a
+  surface only one type needs — the reader's page engine is shared by comic and novel because both
+  page through images, while their unit lists and catch-up flows stay mirrored per type.
 
 Keep registries per consumer (merge config, feed projection, delete config, query spec). Each
 consumer declares only the schema facts it needs. Do not merge them into one grand all-consumer

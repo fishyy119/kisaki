@@ -41,8 +41,11 @@ export interface BangumiSettingsV1 {
     syncOnCreate: boolean
     playStatusEnabled: boolean
     scoreEnabled: boolean
-    /** Pushes per-episode watch state for scopes that track episodes. */
-    episodeStatusEnabled: boolean
+    /**
+     * Pushes per-unit progress: episode watch state for anime, finished
+     * volume and chapter counts for books.
+     */
+    unitProgressEnabled: boolean
     clearRemoteScoreWhenEmpty: boolean
     debounceMs: number
     notifyErrors: boolean
@@ -123,10 +126,7 @@ function normalizeAutoSyncSettings(
     syncOnCreate: normalizeBoolean(input?.syncOnCreate, defaults.syncOnCreate),
     playStatusEnabled: normalizeBoolean(input?.playStatusEnabled, defaults.playStatusEnabled),
     scoreEnabled: normalizeBoolean(input?.scoreEnabled, defaults.scoreEnabled),
-    episodeStatusEnabled: normalizeBoolean(
-      input?.episodeStatusEnabled,
-      defaults.episodeStatusEnabled
-    ),
+    unitProgressEnabled: normalizeBoolean(input?.unitProgressEnabled, defaults.unitProgressEnabled),
     clearRemoteScoreWhenEmpty: normalizeBoolean(
       input?.clearRemoteScoreWhenEmpty,
       defaults.clearRemoteScoreWhenEmpty

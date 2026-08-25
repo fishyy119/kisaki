@@ -12,10 +12,14 @@ import path from 'node:path'
 
 const BOOK_EXTENSIONS = new Set(['.epub', '.mobi', '.azw3', '.azw', '.fb2', '.txt', '.pdf'])
 
-/** Numbers stay decimal-capable: side volumes ship between numbered ones (5.5). */
+/**
+ * Numbers stay decimal-capable: side volumes ship between numbered ones (5.5).
+ * Full-width volume words match anywhere; the bare `v` form is left to
+ * `stripRevisionMarkers`, which decides whether it means a volume or a
+ * release revision.
+ */
 const VOLUME_PATTERNS: ReadonlyArray<RegExp> = [
   /(?:^|[^a-z0-9])(?:v|vol|volume)[\s._-]*(\d{1,4}(?:\.\d)?)(?![a-z0-9])/i,
-  /第\s*(\d{1,4}(?:\.\d)?)\s*[巻卷]/,
   /(\d{1,4}(?:\.\d)?)\s*[巻卷]/
 ]
 
@@ -56,11 +60,28 @@ function cleanDisplayName(baseName: string): string {
   return cleaned || baseName
 }
 
+/**
+ * Drops release-revision markers.
+ *
+ * A re-release appends `v2` to an installment it already numbered, which reads
+ * exactly like the volume shorthand. A single-letter `v` that follows another
+ * number is the revision; the full words `vol` and `volume` always mean the
+ * volume.
+ */
+function stripRevisionMarkers(name: string): string {
+  return name.replace(/(\d)([\s._-]*)v\d{1,2}(?![a-z0-9])/gi, '$1')
+}
+
+/** Integer tokens inside the plausible release-year range (1900-2100). */
+function isPlausibleYearToken(value: number): boolean {
+  return Number.isInteger(value) && value >= 1900 && value <= 2100
+}
+
 /** Recognize one book file as a volume candidate. */
 export function recognizeNovelVolume(filePath: string): NovelVolumeCandidate {
   const fileName = path.basename(filePath)
   const baseName = fileName.slice(0, fileName.length - path.extname(fileName).length)
-  const searchable = stripReleaseTags(baseName)
+  const searchable = stripRevisionMarkers(stripReleaseTags(baseName))
 
   let volumeNumber = undefined as number | undefined
   for (const pattern of VOLUME_PATTERNS) {
@@ -68,7 +89,9 @@ export function recognizeNovelVolume(filePath: string): NovelVolumeCandidate {
     if (volumeNumber !== undefined) break
   }
   if (volumeNumber === undefined) {
-    volumeNumber = parseNumber(searchable.match(BARE_NUMBER_PATTERN)?.[1])
+    const bare = parseNumber(searchable.match(BARE_NUMBER_PATTERN)?.[1])
+    // A leading year is a title ("1984"), not a volume number.
+    if (bare !== undefined && !isPlausibleYearToken(bare)) volumeNumber = bare
   }
 
   const candidate: NovelVolumeCandidate = {

@@ -18,6 +18,7 @@ import {
   type NewComic
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
+import { comicUnitIdentityKey, isSameChapterAcrossVolumeKnowledge } from '@shared/metadata'
 import type { ComicChapterInfo } from '@shared/metadata'
 import type {
   ComicChapterUpdatePlan,
@@ -54,16 +55,6 @@ interface ChapterMatch {
   chapter: ComicChapterInfo
   /** Position in the authoritative incoming list, written to `orderInComic`. */
   order: number
-}
-
-/** Number key at the unit's own grain; null for unnumbered rows. */
-function chapterNumberKey(unit: {
-  chapterNumber?: number | null
-  volumeNumber?: number | null
-}): string | null {
-  if (unit.chapterNumber != null) return `chapter:${unit.chapterNumber}`
-  if (unit.volumeNumber != null) return `volume:${unit.volumeNumber}`
-  return null
 }
 
 /** Scrape-owned metadata refresh; read state and covers are never touched. */
@@ -165,20 +156,22 @@ function reconcileComicChapters(
     }
   }
 
-  const rowsByNumberKey = new Map<string, ComicChapter[]>()
+  // Named unnumbered units are claimable too, so an extra stops being
+  // re-inserted on every re-scrape.
+  const rowsByIdentity = new Map<string, ComicChapter[]>()
   for (const row of existing) {
     if (claimedRowIds.has(row.id)) continue
-    const key = chapterNumberKey(row)
-    if (key === null) continue
-    const queue = rowsByNumberKey.get(key) ?? []
+    const key = comicUnitIdentityKey(row)
+    const queue = rowsByIdentity.get(key) ?? []
     queue.push(row)
-    rowsByNumberKey.set(key, queue)
+    rowsByIdentity.set(key, queue)
   }
 
   const inserts: Array<{ chapter: ComicChapterInfo; order: number }> = []
   for (const { chapter, order } of numberPass) {
-    const key = chapterNumberKey(chapter)
-    const row = key === null ? undefined : rowsByNumberKey.get(key)?.shift()
+    const row =
+      rowsByIdentity.get(comicUnitIdentityKey(chapter))?.shift() ??
+      claimChapterAcrossVolumeKnowledge(chapter, existing, claimedRowIds)
     if (row) {
       claimedRowIds.add(row.id)
       matches.push({ row, chapter, order })
@@ -230,6 +223,22 @@ function reconcileComicChapters(
   for (const { chapter, order } of inserts) {
     insertComicChapterRow(tx, comicId, chapter, order)
   }
+}
+
+/**
+ * Second realignment pass: the source learned or forgot which volume collected
+ * a chapter, so the existing row is the same installment under a different
+ * identity key. Only an unambiguous single candidate is claimed.
+ */
+function claimChapterAcrossVolumeKnowledge(
+  chapter: ComicChapterInfo,
+  existing: ComicChapter[],
+  claimedRowIds: ReadonlySet<string>
+): ComicChapter | undefined {
+  const candidates = existing.filter(
+    (row) => !claimedRowIds.has(row.id) && isSameChapterAcrossVolumeKnowledge(chapter, row)
+  )
+  return candidates.length === 1 ? candidates[0] : undefined
 }
 
 export function applyComicPlan(

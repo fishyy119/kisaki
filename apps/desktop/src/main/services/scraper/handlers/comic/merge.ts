@@ -4,7 +4,7 @@ import {
   type ScraperProfile,
   type SlotStrategy
 } from '@shared/db'
-import type { ComicChapterInfo } from '@shared/metadata'
+import { comicUnitIdentityKey } from '@shared/metadata'
 import type {
   ScrapedComicBundle,
   ScrapedComicCharacterFact,
@@ -242,23 +242,13 @@ function mergeTags(
   )
 }
 
-/**
- * Units are keyed at their own grain: chapter rows by chapter number, volume
- * rows by volume number; unnumbered rows fall back to their name.
- */
-function chapterKey(chapter: ComicChapterInfo): string {
-  if (chapter.chapterNumber != null) return `chapter#${chapter.chapterNumber}`
-  if (chapter.volumeNumber != null) return `volume#${chapter.volumeNumber}`
-  return `name#${chapter.name ?? ''}`
-}
-
 function mergeChapters(
   metadata: Partial<ScrapedComicMetadata>,
   results: ComicScraperChaptersResult[],
   strategy: SlotStrategy
 ): void {
   metadata.chapters = foldCollectionResults(results, strategy, (merged, result) =>
-    applyStrategy(merged, result.data, strategy, chapterKey)
+    applyStrategy(merged, result.data, strategy, comicUnitIdentityKey)
   )
 }
 
@@ -407,8 +397,11 @@ export function toScrapedComicBundle(metadata: ScrapedComicMetadata): ScrapedCom
       }
     }))
   )
-  if (characterPersonFacts) {
-    relationFacts.characterPerson = characterPersonFacts
+  // Presence survives the flattening: characters that stated no credits leave
+  // the channel unanswered, so a scrape never claims authority to clear links
+  // another source wrote.
+  if (metadata.characters?.some((character) => character.persons !== undefined)) {
+    relationFacts.characterPerson = characterPersonFacts ?? []
   }
 
   const mediaCandidates: ScrapedComicBundle['mediaCandidates'] = {}

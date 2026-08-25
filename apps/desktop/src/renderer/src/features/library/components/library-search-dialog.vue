@@ -299,10 +299,11 @@ watch(
         </kbd>
       </div>
 
-      <!-- Results grid -->
+      <!-- Results grid; one column per content entity type. -->
       <div
         ref="contentRef"
-        class="grid grid-cols-7 divide-x"
+        class="grid divide-x"
+        :style="{ gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(0, 1fr))` }"
       >
         <div
           v-for="(config, columnIndex) in COLUMNS"

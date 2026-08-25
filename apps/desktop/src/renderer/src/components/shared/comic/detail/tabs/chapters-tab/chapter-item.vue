@@ -23,7 +23,7 @@ const emit = defineEmits<{
   toggleRead: []
   /** Carries the readable file path so the parent never re-derives it. */
   openFolder: [path: string]
-  edit: []
+  showDetail: []
 }>()
 
 const { m, f } = useI18n()
@@ -31,15 +31,24 @@ const { m, f } = useI18n()
 const isRead = computed(() => props.chapter.read)
 const readableFile = computed(() => props.chapter.files[0] ?? null)
 
-/** Number badge at the unit's own grain: chapters read as chapters, volumes as volumes. */
+/**
+ * Number badge showing every grain the unit carries: a serialized chapter
+ * collected into a volume states both, and hiding the volume would lose the
+ * only place that pairing is visible outside the edit form.
+ */
 const numberLabel = computed(() => {
-  if (props.chapter.chapterNumber !== null) return formatUnitNumber(props.chapter.chapterNumber)
+  const parts: string[] = []
   if (props.chapter.volumeNumber !== null) {
-    return m.value.comic.chapters.unnamedVolume({
-      number: formatUnitNumber(props.chapter.volumeNumber)
-    })
+    parts.push(
+      m.value.comic.chapters.unnamedVolume({
+        number: formatUnitNumber(props.chapter.volumeNumber)
+      })
+    )
   }
-  return null
+  if (props.chapter.chapterNumber !== null) {
+    parts.push(formatUnitNumber(props.chapter.chapterNumber))
+  }
+  return parts.length > 0 ? parts.join(' · ') : null
 })
 
 const title = computed(() => {
@@ -83,7 +92,7 @@ const title = computed(() => {
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <span
-            v-if="numberLabel && props.chapter.name"
+            v-if="numberLabel"
             class="text-xs font-mono text-muted-foreground shrink-0"
           >
             {{ numberLabel }}
@@ -128,11 +137,11 @@ const title = computed(() => {
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.comic.chapters.editChapter"
-        @click="emit('edit')"
+        :tooltip="m.comic.files.title"
+        @click="emit('showDetail')"
       >
         <Icon
-          icon="icon-[mdi--pencil-outline]"
+          icon="icon-[mdi--information-outline]"
           class="size-4"
         />
       </Button>

@@ -52,7 +52,10 @@ export function registerAppSchemes(): void {
         secure: true,
         supportFetchAPI: true,
         bypassCSP: true,
-        stream: true
+        stream: true,
+        // Reader windows keep web security on, so the reading engines fetch
+        // book bytes cross-origin; the scheme must participate in CORS.
+        corsEnabled: true
       }
     },
     {

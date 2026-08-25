@@ -4,7 +4,7 @@ import {
   type ScraperProfile,
   type SlotStrategy
 } from '@shared/db'
-import type { NovelVolumeInfo } from '@shared/metadata'
+import { novelUnitIdentityKey } from '@shared/metadata'
 import type {
   ScrapedNovelBundle,
   ScrapedNovelCharacterFact,
@@ -239,19 +239,13 @@ function mergeTags(
   )
 }
 
-/** Volumes are keyed by number; unnumbered rows fall back to their name. */
-function volumeKey(volume: NovelVolumeInfo): string {
-  if (volume.volumeNumber != null) return `volume#${volume.volumeNumber}`
-  return `name#${volume.name ?? ''}`
-}
-
 function mergeVolumes(
   metadata: Partial<ScrapedNovelMetadata>,
   results: NovelScraperVolumesResult[],
   strategy: SlotStrategy
 ): void {
   metadata.volumes = foldCollectionResults(results, strategy, (merged, result) =>
-    applyStrategy(merged, result.data, strategy, volumeKey)
+    applyStrategy(merged, result.data, strategy, novelUnitIdentityKey)
   )
 }
 
@@ -399,8 +393,11 @@ export function toScrapedNovelBundle(metadata: ScrapedNovelMetadata): ScrapedNov
       }
     }))
   )
-  if (characterPersonFacts) {
-    relationFacts.characterPerson = characterPersonFacts
+  // Presence survives the flattening: characters that stated no credits leave
+  // the channel unanswered, so a scrape never claims authority to clear links
+  // another source wrote.
+  if (metadata.characters?.some((character) => character.persons !== undefined)) {
+    relationFacts.characterPerson = characterPersonFacts ?? []
   }
 
   const mediaCandidates: ScrapedNovelBundle['mediaCandidates'] = {}

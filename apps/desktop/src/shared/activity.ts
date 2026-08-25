@@ -112,27 +112,21 @@ export type AnimeExtraStopResult =
   { status: 'stopped' } | { status: 'failed'; reason: AnimeExtraStopFailureReason }
 
 export type ComicReadFailureReason =
-  | 'comicNotFound'
-  | 'chapterNotFound'
-  | 'noReadableChapter'
-  | 'noChapterFile'
-  | 'fileNotFound'
-  | 'unsupportedContainer'
+  'comicNotFound' | 'chapterNotFound' | 'noReadableChapter' | 'noChapterFile' | 'fileNotFound'
 
+/** `refocused` re-aims the entry's open reader window instead of opening a second one. */
 export type ComicReadResult =
   | { status: 'started'; chapterId: string }
+  | { status: 'refocused'; chapterId: string }
   | { status: 'failed'; reason: ComicReadFailureReason }
 
 export type NovelReadFailureReason =
-  | 'novelNotFound'
-  | 'volumeNotFound'
-  | 'noReadableVolume'
-  | 'noVolumeFile'
-  | 'fileNotFound'
-  | 'unsupportedContainer'
+  'novelNotFound' | 'volumeNotFound' | 'noReadableVolume' | 'noVolumeFile' | 'fileNotFound'
 
+/** `refocused` re-aims the entry's open reader window instead of opening a second one. */
 export type NovelReadResult =
   | { status: 'started'; volumeId: string }
+  | { status: 'refocused'; volumeId: string }
   | { status: 'failed'; reason: NovelReadFailureReason }
 
 /** Live reading state of one comic, as tracked by the activity service. */

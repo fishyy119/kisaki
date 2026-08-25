@@ -13,6 +13,10 @@ import { comics } from './content'
  * `chapterNumber` (plus its volume when known) — so neither library layout has
  * to fake the other's grain. Numbers are real-valued because extras are
  * published between two regular installments (chapter 42.5).
+ *
+ * A chapter's identity is its full numbering, not the chapter number alone:
+ * magazine serialization numbers chapters continuously, but works collected
+ * straight to volumes restart at chapter 1 in every volume, and both must fit.
  */
 export const comicChapters = sqliteTable(
   'comic_chapters',
@@ -48,10 +52,22 @@ export const comicChapters = sqliteTable(
   (t) => [
     index('idx_comic_chapters_comic_id').on(t.comicId),
     index('idx_comic_chapters_comic_id_order').on(t.comicId, t.orderInComic),
-    /** Chapter-grained rows are unique per entry by chapter number. */
-    uniqueIndex('unique_comic_chapters_chapter_number')
+    /**
+     * Chapter-grained rows are unique per entry by their full numbering.
+     *
+     * Split in two because SQLite counts NULLs in a unique index as distinct,
+     * which alone would let volume-less chapter 5 repeat: the first index
+     * scopes numbering to its volume, the second guards the rows that state no
+     * volume. Together they enforce exactly what `comicUnitIdentityKey`
+     * computes — a key the application reads as new but an index reads as
+     * taken aborts the whole write.
+     */
+    uniqueIndex('unique_comic_chapters_numbering_in_volume')
+      .on(t.comicId, t.volumeNumber, t.chapterNumber)
+      .where(sql`chapter_number IS NOT NULL AND volume_number IS NOT NULL`),
+    uniqueIndex('unique_comic_chapters_numbering_no_volume')
       .on(t.comicId, t.chapterNumber)
-      .where(sql`chapter_number IS NOT NULL`),
+      .where(sql`chapter_number IS NOT NULL AND volume_number IS NULL`),
     /** Volume-grained rows are unique per entry by volume number; unnumbered rows may repeat. */
     uniqueIndex('unique_comic_chapters_volume_number')
       .on(t.comicId, t.volumeNumber)

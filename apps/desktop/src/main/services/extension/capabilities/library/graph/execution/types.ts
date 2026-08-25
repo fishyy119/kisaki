@@ -29,7 +29,7 @@ export interface ApplyState {
   skippedMedia: Set<string>
   noteOwners: Map<string, string>
   sessionOwners: Map<string, string>
-  episodeOwners: Map<string, string>
+  unitOwners: Map<string, string>
   attachmentActions: Map<string, LibraryGraphResultAction>
   attachmentDiagnostics: Map<string, LibraryGraphDiagnostic[]>
 }

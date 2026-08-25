@@ -3,7 +3,7 @@ import type { BangumiCollectionPatch } from '../api/types'
 import { isBangumiMediaScope, type BangumiMediaScope } from '../../shared/scopes'
 import { BANGUMI_STORAGE_KEYS } from '../utils/ids'
 
-const SYNC_FINGERPRINT_VERSION = 1
+const SYNC_FINGERPRINT_VERSION = 2
 const MAX_SYNC_FINGERPRINTS = 5000
 
 export interface SyncFingerprintInput {
@@ -66,6 +66,13 @@ export class SyncStateStore {
   }
 }
 
+/**
+ * Digest of everything one sync would write.
+ *
+ * Change detection compares this against the last successful sync, so every
+ * field of the payload has to appear here — reading further into a book moves
+ * only the unit counts, and leaving them out would suppress that sync forever.
+ */
 export function createSyncFingerprint(input: SyncFingerprintInput): string {
   return stableStringify({
     version: SYNC_FINGERPRINT_VERSION,
@@ -79,7 +86,9 @@ export function createSyncFingerprint(input: SyncFingerprintInput): string {
     clearRemoteScoreWhenEmpty: input.clearRemoteScoreWhenEmpty,
     payload: {
       type: input.payload.type ?? null,
-      rate: input.payload.rate ?? null
+      rate: input.payload.rate ?? null,
+      volStatus: input.payload.vol_status ?? null,
+      epStatus: input.payload.ep_status ?? null
     }
   })
 }

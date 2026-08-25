@@ -59,11 +59,14 @@ export function rebuildIdSetBefore(
   return [...ids].sort()
 }
 
+/** Either link facet: cast is present only for media types that credit actors. */
+type MediaLinkSnapshot = LibraryMediaLinkSnapshot & { castLinkIds?: string[] }
+
 export function rebuildLinkSnapshotBefore(
-  after: LibraryMediaLinkSnapshot,
+  after: MediaLinkSnapshot,
   tables: MediaLinkTables,
   changes: RawDbChange[]
-): LibraryMediaLinkSnapshot {
+): MediaLinkSnapshot {
   return {
     personLinkIds: rebuildIdSetBefore(
       after.personLinkIds,
@@ -80,11 +83,16 @@ export function rebuildLinkSnapshotBefore(
       changes.filter((change) => change.table === tables.character),
       'id'
     ),
-    castLinkIds: rebuildIdSetBefore(
-      after.castLinkIds,
-      changes.filter((change) => change.table === tables.cast),
-      'id'
-    )
+    // Absent on print media, where the facet has no cast field at all.
+    ...(after.castLinkIds
+      ? {
+          castLinkIds: rebuildIdSetBefore(
+            after.castLinkIds,
+            changes.filter((change) => change.table === tables.cast),
+            'id'
+          )
+        }
+      : {})
   }
 }
 

@@ -10,12 +10,24 @@ export interface ExternalIdRef {
  * Read-unit progress of a book entry, as counts of finished units.
  *
  * Bangumi tracks book progress as two integers on the collection
- * (`vol_status` / `ept_status`); adapters that own per-unit read state report
+ * (`vol_status` / `ep_status`); adapters that own per-unit read state report
  * the matching counts here.
  */
 export interface LocalUnitProgress {
   volumes?: number
   chapters?: number
+}
+
+/**
+ * Units the entry actually holds, per grain.
+ *
+ * An entry can be tracked on Bangumi long before its unit rows exist locally,
+ * so adoption is capped by this: an import must not report progress it has no
+ * row to record.
+ */
+export interface LocalUnitCapacity {
+  volumes: number
+  chapters: number
 }
 
 export interface LocalMediaItem {
@@ -104,8 +116,11 @@ export interface LocalMediaAdapter {
   readonly supportsScraperProfile: boolean
   readonly supportsAutoSync: boolean
   readonly supportsImportWrite: boolean
-  /** Set when the media type tracks watch state per episode. */
-  readonly supportsEpisodeSync?: boolean
+  /**
+   * Set when the scope pushes per-unit progress: episode watch state for
+   * anime, finished volume and chapter counts for books.
+   */
+  readonly supportsUnitProgress?: boolean
   listProfiles?(): Promise<readonly ScraperProfileSummary[]>
   listEpisodes?(localId: string): Promise<readonly LocalEpisodeItem[]>
   subscribeLocalChanges?(listener: LocalMediaChangeListener): Promise<Disposable>
@@ -119,6 +134,8 @@ export interface LocalMediaAdapter {
    * unit order. Only marks forward: local read state is never cleared here.
    */
   applyUnitProgress?(localId: string, progress: LocalUnitProgress): Promise<void>
+  /** Units available to mark, paired with `applyUnitProgress`. */
+  readUnitCapacity?(localId: string): Promise<LocalUnitCapacity>
   listTagNames?(localId: string): Promise<ReadonlySet<string>>
   ensureTag(localId: string, tagName: string): Promise<void>
   listCollections?(): Promise<readonly LocalCollectionSummary[]>

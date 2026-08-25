@@ -51,16 +51,17 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const supportsEpisodes = computed(
+const supportsUnitProgress = computed(
   () =>
-    props.overview.scopes.find((option) => option.scope === props.scope)?.supportsEpisodes === true
+    props.overview.scopes.find((option) => option.scope === props.scope)?.supportsUnitProgress ===
+    true
 )
 
 const fullSyncItems = computed<readonly { value: BangumiSyncDataItem; label: string }[]>(() => [
   { value: 'status', label: m.value.ui.fullSync.itemStatus },
   { value: 'score', label: m.value.ui.fullSync.itemScore },
-  ...(supportsEpisodes.value
-    ? [{ value: 'episodes' as const, label: m.value.ui.fullSync.itemEpisodes }]
+  ...(supportsUnitProgress.value
+    ? [{ value: 'unitProgress' as const, label: m.value.ui.fullSync.itemUnitProgress }]
     : [])
 ])
 
