@@ -234,7 +234,7 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
         </div>
 
         <!-- Backup list -->
-        <div class="space-y-2">
+        <div class="rounded-md border divide-y overflow-hidden">
           <GameDetailSavesItem
             v-for="backup in sortedBackups"
             :key="backup.backupAt"

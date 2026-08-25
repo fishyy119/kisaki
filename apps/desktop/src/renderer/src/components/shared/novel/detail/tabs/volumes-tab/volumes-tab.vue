@@ -122,7 +122,7 @@ async function handleOpenFolder(path: string): Promise<void> {
       />
       <div
         v-else
-        class="space-y-2"
+        class="rounded-md border divide-y overflow-hidden"
       >
         <NovelDetailVolumeItem
           v-for="volume in volumes"

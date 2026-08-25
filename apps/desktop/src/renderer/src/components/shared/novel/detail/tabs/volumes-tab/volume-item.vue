@@ -51,7 +51,7 @@ const resumePercent = computed(() =>
   <div
     :class="
       cn(
-        'flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50',
+        'flex items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-accent/30',
         !readableFile && 'opacity-70'
       )
     "
@@ -80,23 +80,18 @@ const resumePercent = computed(() =>
           <p class="text-sm font-medium truncate">{{ title }}</p>
         </div>
 
-        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+        <div class="flex items-center gap-x-3 text-xs text-muted-foreground">
           <span v-if="!readableFile">{{ m.novel.files.missingFile }}</span>
           <template v-else>
             <span>{{ readableFile.container }}</span>
-            <template v-if="props.volume.files.length > 1">
-              <span>·</span>
-              <span>{{ m.novel.files.fileCount({ count: props.volume.files.length }) }}</span>
-            </template>
+            <span v-if="props.volume.files.length > 1">
+              {{ m.novel.files.fileCount({ count: props.volume.files.length }) }}
+            </span>
           </template>
-          <template v-if="props.volume.releaseDate">
-            <span>·</span>
-            <span>{{ f.date(props.volume.releaseDate) }}</span>
-          </template>
-          <template v-if="resumePercent !== null">
-            <span>·</span>
-            <span>{{ m.novel.volumes.resumeProgress({ percent: resumePercent }) }}</span>
-          </template>
+          <span v-if="props.volume.releaseDate">{{ f.date(props.volume.releaseDate) }}</span>
+          <span v-if="resumePercent !== null">
+            {{ m.novel.volumes.resumeProgress({ percent: resumePercent }) }}
+          </span>
         </div>
       </div>
     </div>

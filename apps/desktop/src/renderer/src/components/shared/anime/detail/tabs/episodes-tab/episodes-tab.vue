@@ -147,7 +147,7 @@ const extraDetailOpen = computed({
       />
       <div
         v-else
-        class="space-y-2"
+        class="rounded-md border divide-y overflow-hidden"
       >
         <AnimeDetailEpisodeItem
           v-for="episode in episodes"
@@ -180,7 +180,7 @@ const extraDetailOpen = computed({
         </Button>
       </template>
 
-      <div class="space-y-2">
+      <div class="rounded-md border divide-y overflow-hidden">
         <AnimeDetailExtraItem
           v-for="extra in sortedExtras"
           :key="extra.id"

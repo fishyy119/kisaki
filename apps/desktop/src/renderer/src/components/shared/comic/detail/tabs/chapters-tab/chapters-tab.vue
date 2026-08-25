@@ -123,7 +123,7 @@ async function handleOpenFolder(path: string): Promise<void> {
       />
       <div
         v-else
-        class="space-y-2"
+        class="rounded-md border divide-y overflow-hidden"
       >
         <ComicDetailChapterItem
           v-for="chapter in chapters"

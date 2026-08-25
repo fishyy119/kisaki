@@ -38,7 +38,9 @@ function formatSize(bytes?: number): string {
 </script>
 
 <template>
-  <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+  <div
+    class="flex items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-accent/30"
+  >
     <div class="flex items-center gap-3 min-w-0">
       <Icon
         icon="icon-[mdi--content-save-outline]"
@@ -55,12 +57,9 @@ function formatSize(bytes?: number): string {
             class="size-3.5 text-warning shrink-0"
           />
         </div>
-        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+        <div class="flex items-center gap-x-3 text-xs text-muted-foreground">
           <span>{{ f.dateTime(new Date(props.backupAt)) }}</span>
-          <template v-if="props.sizeBytes">
-            <span>·</span>
-            <span>{{ formatSize(props.sizeBytes) }}</span>
-          </template>
+          <span v-if="props.sizeBytes">{{ formatSize(props.sizeBytes) }}</span>
         </div>
       </div>
     </div>

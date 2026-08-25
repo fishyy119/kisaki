@@ -65,7 +65,7 @@ const {
   <div
     :class="
       cn(
-        'flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50',
+        'flex items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-accent/30',
         !playableFile && 'opacity-70'
       )
     "
@@ -100,31 +100,23 @@ const {
           <p class="text-sm font-medium truncate">{{ title }}</p>
         </div>
 
-        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+        <div class="flex items-center gap-x-3 text-xs text-muted-foreground">
           <span v-if="!playableFile">{{ m.anime.files.missingFile }}</span>
           <template v-else>
             <span v-if="resolution">{{ resolution }}</span>
-            <span v-if="resolution && playableFile.videoCodec">·</span>
             <span v-if="playableFile.videoCodec">{{ playableFile.videoCodec }}</span>
-            <template v-if="props.episode.files.length > 1">
-              <span>·</span>
-              <span>{{ m.anime.files.fileCount({ count: props.episode.files.length }) }}</span>
-            </template>
-          </template>
-          <template v-if="props.episode.durationMs">
-            <span>·</span>
-            <span>{{ f.duration(props.episode.durationMs) }}</span>
-          </template>
-          <template v-if="props.episode.resumePositionMs">
-            <span>·</span>
-            <span>
-              {{
-                m.anime.episodes.resumeAt({
-                  position: f.durationFine(props.episode.resumePositionMs)
-                })
-              }}
+            <span v-if="props.episode.files.length > 1">
+              {{ m.anime.files.fileCount({ count: props.episode.files.length }) }}
             </span>
           </template>
+          <span v-if="props.episode.durationMs">{{ f.duration(props.episode.durationMs) }}</span>
+          <span v-if="props.episode.resumePositionMs">
+            {{
+              m.anime.episodes.resumeAt({
+                position: f.durationFine(props.episode.resumePositionMs)
+              })
+            }}
+          </span>
         </div>
 
         <!-- Live playback progress for the currently-watching episode -->

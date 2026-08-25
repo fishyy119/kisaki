@@ -71,7 +71,7 @@ const title = computed(() => {
   <div
     :class="
       cn(
-        'flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50',
+        'flex items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-accent/30',
         !readableFile && 'opacity-70'
       )
     "
@@ -100,27 +100,21 @@ const title = computed(() => {
           <p class="text-sm font-medium truncate">{{ title }}</p>
         </div>
 
-        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+        <div class="flex items-center gap-x-3 text-xs text-muted-foreground">
           <span v-if="!readableFile">{{ m.comic.files.missingFile }}</span>
           <template v-else>
             <span>{{ readableFile.container }}</span>
-            <template v-if="readableFile.pageCount">
-              <span>·</span>
-              <span>{{ m.comic.chapters.pageCount({ count: readableFile.pageCount }) }}</span>
-            </template>
-            <template v-if="props.chapter.files.length > 1">
-              <span>·</span>
-              <span>{{ m.comic.files.fileCount({ count: props.chapter.files.length }) }}</span>
-            </template>
+            <span v-if="readableFile.pageCount">
+              {{ m.comic.chapters.pageCount({ count: readableFile.pageCount }) }}
+            </span>
+            <span v-if="props.chapter.files.length > 1">
+              {{ m.comic.files.fileCount({ count: props.chapter.files.length }) }}
+            </span>
           </template>
-          <template v-if="props.chapter.releaseDate">
-            <span>·</span>
-            <span>{{ f.date(props.chapter.releaseDate) }}</span>
-          </template>
-          <template v-if="props.chapter.resumePage">
-            <span>·</span>
-            <span>{{ m.comic.chapters.resumeAt({ page: props.chapter.resumePage }) }}</span>
-          </template>
+          <span v-if="props.chapter.releaseDate">{{ f.date(props.chapter.releaseDate) }}</span>
+          <span v-if="props.chapter.resumePage">
+            {{ m.comic.chapters.resumeAt({ page: props.chapter.resumePage }) }}
+          </span>
         </div>
       </div>
     </div>

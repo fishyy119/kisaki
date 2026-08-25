@@ -64,7 +64,7 @@ const {
   <div
     :class="
       cn(
-        'flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50',
+        'flex items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-accent/30',
         !primaryFile && 'opacity-70'
       )
     "
@@ -83,20 +83,15 @@ const {
           <p class="text-sm font-medium truncate">{{ props.extra.name }}</p>
         </div>
 
-        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+        <div class="flex items-center gap-x-3 text-xs text-muted-foreground">
           <span v-if="!primaryFile">{{ m.anime.files.missingFile }}</span>
           <template v-else>
             <span v-if="resolution">{{ resolution }}</span>
-            <span v-if="resolution && primaryFile.videoCodec">·</span>
             <span v-if="primaryFile.videoCodec">{{ primaryFile.videoCodec }}</span>
-            <template v-if="primaryFile.durationMs">
-              <span>·</span>
-              <span>{{ f.duration(primaryFile.durationMs) }}</span>
-            </template>
-            <template v-if="props.extra.files.length > 1">
-              <span>·</span>
-              <span>{{ m.anime.files.fileCount({ count: props.extra.files.length }) }}</span>
-            </template>
+            <span v-if="primaryFile.durationMs">{{ f.duration(primaryFile.durationMs) }}</span>
+            <span v-if="props.extra.files.length > 1">
+              {{ m.anime.files.fileCount({ count: props.extra.files.length }) }}
+            </span>
           </template>
         </div>
 

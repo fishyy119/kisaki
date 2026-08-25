@@ -93,11 +93,11 @@ const recentSessions = computed(() => props.sessions.slice(0, RECENT_SESSION_LIM
 
     <!-- Recent Sessions -->
     <Section :title="labels.recentSessions">
-      <div class="space-y-2">
+      <div class="rounded-md border divide-y overflow-hidden">
         <div
           v-for="session in recentSessions"
           :key="session.id"
-          class="flex items-center justify-between gap-3 rounded-lg border bg-muted/50 p-3"
+          class="flex items-center justify-between gap-3 px-3 py-2.5"
         >
           <div class="flex items-center gap-3 min-w-0">
             <Icon

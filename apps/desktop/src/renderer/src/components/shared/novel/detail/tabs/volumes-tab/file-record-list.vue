@@ -89,11 +89,11 @@ function fileBasename(filePath: string): string {
   return segments[segments.length - 1] || filePath
 }
 
-function fileFacts(file: NovelVolumeFile): string {
+function fileFacts(file: NovelVolumeFile): string[] {
   const parts: string[] = []
   if (file.container) parts.push(file.container)
   if (file.fileSize !== null && file.fileSize > 0) parts.push(formatBytes(file.fileSize))
-  return parts.join(' · ')
+  return parts
 }
 </script>
 
@@ -125,12 +125,12 @@ function fileFacts(file: NovelVolumeFile): string {
     />
     <div
       v-else
-      class="space-y-2"
+      class="rounded-md border divide-y overflow-hidden"
     >
       <div
         v-for="file in props.files"
         :key="file.id"
-        class="flex items-center justify-between gap-3 rounded-lg border bg-muted/50 p-2.5"
+        class="flex items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-accent/30"
       >
         <div class="min-w-0">
           <div class="flex items-center gap-2">
@@ -150,7 +150,14 @@ function fileFacts(file: NovelVolumeFile): string {
               {{ m.novel.files.manualBadge }}
             </Badge>
           </div>
-          <p class="truncate text-xs text-muted-foreground">{{ fileFacts(file) }}</p>
+          <div class="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+            <span
+              v-for="fact in fileFacts(file)"
+              :key="fact"
+            >
+              {{ fact }}
+            </span>
+          </div>
           <p
             v-if="file.note"
             class="truncate text-xs italic text-muted-foreground"

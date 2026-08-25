@@ -195,7 +195,7 @@ async function reorder(noteId: string, direction: -1 | 1) {
         </div>
       </div>
 
-      <div class="space-y-2">
+      <div class="rounded-md border divide-y overflow-hidden">
         <MediaNotesItem
           v-for="(note, index) in displayNotes"
           :key="note.id"

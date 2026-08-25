@@ -37,17 +37,19 @@ const coverUrl = computed(() => {
     props.note.id,
     props.note.coverFile,
     {
-      width: 96,
-      height: 96
+      width: 64,
+      height: 64
     }
   )
 })
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/50 border">
+  <div
+    class="flex items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-accent/30"
+  >
     <div class="flex items-center gap-3 min-w-0">
-      <div class="size-12 rounded-md overflow-hidden bg-muted shrink-0">
+      <div class="size-8 rounded-md overflow-hidden bg-muted shrink-0">
         <img
           v-if="coverUrl"
           :src="coverUrl"
@@ -60,7 +62,7 @@ const coverUrl = computed(() => {
         >
           <Icon
             icon="icon-[mdi--note-text-outline]"
-            class="size-6 text-muted-foreground/50"
+            class="size-4 text-muted-foreground/50"
           />
         </div>
       </div>
