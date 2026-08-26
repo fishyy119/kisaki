@@ -14,6 +14,7 @@ export const activity = {
   watchFailedTitle: '开始播放失败',
   watchStopFailedTitle: '停止播放失败',
   readFailedTitle: '开始阅读失败',
+  readStopFailedTitle: '停止阅读失败',
 
   filePickerTitle: '选择启动文件',
   filePickerButton: '选择',
@@ -44,6 +45,7 @@ export const activity = {
     playerStartFailed: '启动视频播放器失败',
     notWatching: '当前没有正在播放的内容',
     stopFailed: '停止视频播放器失败',
+    notReading: '当前没有正在阅读的内容',
     comicNotFound: '漫画不存在',
     chapterNotFound: '单元不存在',
     noReadableChapter: '还没有单元拥有可读取的文件',

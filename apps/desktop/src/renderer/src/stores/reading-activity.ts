@@ -58,10 +58,16 @@ export const useReadingActivityStore = defineStore('readingActivity', () => {
     ipcManager.on('activity:comic-started', (_, state) => {
       setEntry(comics, state.comicId, state.chapterId)
     })
+    ipcManager.on('activity:comic-unit-changed', (_, state) => {
+      setEntry(comics, state.comicId, state.chapterId)
+    })
     ipcManager.on('activity:comic-stopped', (_, state) => {
       clearEntry(comics, state.comicId)
     })
     ipcManager.on('activity:novel-started', (_, state) => {
+      setEntry(novels, state.novelId, state.volumeId)
+    })
+    ipcManager.on('activity:novel-unit-changed', (_, state) => {
       setEntry(novels, state.novelId, state.volumeId)
     })
     ipcManager.on('activity:novel-stopped', (_, state) => {

@@ -1,9 +1,10 @@
 <!--
   ComicReadButton
-  Read button for a comic entry or a specific unit. The action reads "start"
-  or "continue" depending on recorded unit progress; a live reader window is
-  refocused by the same action, so there is no stop state. Transport and
-  failure notices live in the shared reading facade.
+  Read/stop button for a comic entry or a specific unit. The read action reads
+  "start" or "continue" depending on recorded unit progress, a live reader
+  window turns the button into the stop that closes it, and transitional
+  phases keep the action label and show a spinner. Transport and failure
+  notices live in the shared reading facade.
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
@@ -17,9 +18,10 @@ import { useDbChanges } from '@renderer/composables'
 import { useComicReading } from '@renderer/composables/use-comic-reading'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
-import { useReadingActivityStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
 import { comicChapters } from '@shared/db'
+
+type ReadButtonState = 'idle' | 'starting' | 'reading' | 'stopping'
 
 interface Props {
   comicId: string
@@ -38,12 +40,22 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const { m } = useI18n()
-const readingActivity = useReadingActivityStore()
 
-const { isStartPending, read } = useComicReading(() => props.comicId)
+const { isReading, pendingAction, read, stop } = useComicReading(
+  () => props.comicId,
+  () => props.chapterId
+)
 
-/** A window already open reads as live: the action refocuses it. */
-const isReading = computed(() => readingActivity.isComicReading(props.comicId))
+// The activity push lands before the IPC reply, so the in-flight phase ends
+// on the tracked state instead of the reply.
+const state = computed<ReadButtonState>(() => {
+  if (pendingAction.value === 'start' && !isReading.value) return 'starting'
+  if (pendingAction.value === 'stop' && isReading.value) return 'stopping'
+  return isReading.value ? 'reading' : 'idle'
+})
+
+const isBusy = computed(() => state.value === 'starting' || state.value === 'stopping')
+const isStopAction = computed(() => state.value === 'reading' || state.value === 'stopping')
 
 /**
  * Whether the read action resumes existing progress: a unit button resumes
@@ -88,10 +100,14 @@ useDbChanges(({ table }) => {
   if (table === 'comic_chapters') void refreshProgress()
 })
 
-const label = computed<string>(() => {
-  if (isReading.value) return m.value.comic.readOpen
-  return hasProgress.value ? m.value.comic.readContinue : m.value.comic.readStart
-})
+// Transitional phases keep the action label; the spinner alone signals progress.
+const label = computed<string>(() =>
+  isStopAction.value
+    ? m.value.comic.stop
+    : hasProgress.value
+      ? m.value.comic.readContinue
+      : m.value.comic.readStart
+)
 
 const iconVariants = cva('', {
   variants: {
@@ -131,7 +147,7 @@ const labeledButtonSize = computed(() => {
 async function handleClick(e: Event) {
   e.stopPropagation()
   e.preventDefault()
-  await read(props.chapterId, props.fileId)
+  await (isReading.value ? stop() : read(props.fileId))
 }
 </script>
 
@@ -141,20 +157,20 @@ async function handleClick(e: Event) {
     v-if="props.display === 'icon'"
     variant="ghost"
     :size="iconButtonSize"
-    :disabled="isStartPending"
-    :aria-busy="isStartPending"
+    :disabled="isBusy"
+    :aria-busy="isBusy"
     :aria-label="label"
     :tooltip="label"
     :class="cn('disabled:opacity-100', props.class)"
     @click="handleClick"
   >
     <Spinner
-      v-if="isStartPending"
+      v-if="isBusy"
       :class="iconVariants({ size: props.size })"
     />
     <Icon
       v-else
-      icon="icon-[mdi--play]"
+      :icon="isStopAction ? 'icon-[mdi--stop]' : 'icon-[mdi--play]'"
       :class="iconVariants({ size: props.size })"
     />
   </Button>
@@ -162,20 +178,20 @@ async function handleClick(e: Event) {
   <!-- Labeled variant -->
   <Button
     v-else
-    variant="default"
+    :variant="isStopAction ? 'secondary' : 'default'"
     :size="labeledButtonSize"
-    :disabled="isStartPending"
-    :aria-busy="isStartPending"
+    :disabled="isBusy"
+    :aria-busy="isBusy"
     :class="cn(labeledVariants({ size: props.size }), props.class)"
     @click="handleClick"
   >
     <Spinner
-      v-if="isStartPending"
+      v-if="isBusy"
       class="size-4"
     />
     <Icon
       v-else
-      icon="icon-[mdi--play]"
+      :icon="isStopAction ? 'icon-[mdi--stop]' : 'icon-[mdi--play]'"
       class="size-4"
     />
     {{ label }}

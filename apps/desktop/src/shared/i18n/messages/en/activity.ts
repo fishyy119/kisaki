@@ -12,6 +12,7 @@ export const activity = {
   watchFailedTitle: 'Could not start playback',
   watchStopFailedTitle: 'Could not stop playback',
   readFailedTitle: 'Could not start reading',
+  readStopFailedTitle: 'Could not stop reading',
 
   filePickerTitle: 'Select launch file',
   filePickerButton: 'Select',
@@ -42,6 +43,7 @@ export const activity = {
     playerStartFailed: 'Could not start the video player',
     notWatching: 'Nothing is playing right now',
     stopFailed: 'Could not stop the video player',
+    notReading: 'Nothing is being read right now',
     comicNotFound: 'The comic does not exist',
     chapterNotFound: 'The unit does not exist',
     noReadableChapter: 'No unit has a readable file yet',

@@ -14,6 +14,7 @@ export const activity = {
   watchFailedTitle: '再生を開始できませんでした',
   watchStopFailedTitle: '再生を停止できませんでした',
   readFailedTitle: '読書を開始できませんでした',
+  readStopFailedTitle: '読書を停止できませんでした',
 
   filePickerTitle: '起動ファイルを選択',
   filePickerButton: '選択',
@@ -44,6 +45,7 @@ export const activity = {
     playerStartFailed: '動画プレイヤーを起動できませんでした',
     notWatching: '現在再生中のものはありません',
     stopFailed: '動画プレイヤーを停止できませんでした',
+    notReading: '現在読書中のものはありません',
     comicNotFound: 'マンガが存在しません',
     chapterNotFound: 'ユニットが存在しません',
     noReadableChapter: '読み込めるファイルを持つユニットがまだありません',

@@ -5,8 +5,7 @@
 export const comic = {
   readStart: 'Start reading',
   readContinue: 'Continue reading',
-  readOpen: 'Open reader',
-
+  stop: 'Stop',
   chapters: {
     title: 'Units',
     emptyTitle: 'No volumes or chapters yet',

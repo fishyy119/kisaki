@@ -45,8 +45,16 @@ export function registerActivityIpc(service: ActivityService, ipc: IpcService): 
     wrapIpc(() => service.comic.read(comicId, chapterId, fileId))
   )
 
+  ipc.handle('activity:stop-comic', async (_, comicId) =>
+    wrapIpc(() => service.comic.stop(comicId))
+  )
+
   ipc.handle('activity:read-novel', async (_, novelId, volumeId, fileId) =>
     wrapIpc(() => service.novel.read(novelId, volumeId, fileId))
+  )
+
+  ipc.handle('activity:stop-novel', async (_, novelId) =>
+    wrapIpc(() => service.novel.stop(novelId))
   )
 
   ipc.handle('activity:list-comic-reading', async () => wrapIpc(() => service.comic.listReading()))

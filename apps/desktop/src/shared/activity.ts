@@ -129,6 +129,16 @@ export type NovelReadResult =
   | { status: 'refocused'; volumeId: string }
   | { status: 'failed'; reason: NovelReadFailureReason }
 
+export type ComicStopFailureReason = 'notReading'
+
+export type ComicStopResult =
+  { status: 'stopped' } | { status: 'failed'; reason: ComicStopFailureReason }
+
+export type NovelStopFailureReason = 'notReading'
+
+export type NovelStopResult =
+  { status: 'stopped' } | { status: 'failed'; reason: NovelStopFailureReason }
+
 /** Live reading state of one comic, as tracked by the activity service. */
 export interface ComicReadingState {
   comicId: string

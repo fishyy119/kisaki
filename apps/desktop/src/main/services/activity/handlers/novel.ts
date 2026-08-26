@@ -23,7 +23,7 @@ import {
   type NovelVolume,
   type NovelVolumeFile
 } from '@shared/db'
-import type { NovelReadResult, NovelReadingState } from '@shared/activity'
+import type { NovelReadResult, NovelReadingState, NovelStopResult } from '@shared/activity'
 import { parseDocumentContainer } from '@shared/book'
 import type {
   ReaderNovelBootstrap,
@@ -155,6 +155,23 @@ export class NovelActivityHandler {
     return { status: 'started', volumeId: startUnit.id }
   }
 
+  /**
+   * Stops reading by closing the entry's reader window.
+   *
+   * The session ends before the close so the stopped push (and the state it
+   * clears) lands ahead of the IPC reply, like the other activity stops; the
+   * closing window's remaining reports find no session and are dropped.
+   */
+  stop(novelId: string): NovelStopResult {
+    for (const [windowId, session] of this.reading) {
+      if (session.novelId !== novelId) continue
+      this.endSession(windowId)
+      this.reader.windows.close(windowId)
+      return { status: 'stopped' }
+    }
+    return { status: 'failed', reason: 'notReading' }
+  }
+
   /** Live reading states, letting a reloaded renderer resynchronize. */
   listReading(): NovelReadingState[] {
     return [...this.reading.values()].map((session) => ({
@@ -188,6 +205,11 @@ export class NovelActivityHandler {
       session.volumeId = report.unitId
       session.segmentStartedAt = Date.now()
       session.lastResumeWriteAt = 0
+      // Unit-scoped read buttons key their live state on the unit being read.
+      this.ipc.send('activity:novel-unit-changed', {
+        novelId: session.novelId,
+        volumeId: report.unitId
+      })
     })
 
     this.reader.hooks.windowClosed.tap(({ windowId }) => {

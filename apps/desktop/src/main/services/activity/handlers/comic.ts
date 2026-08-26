@@ -23,7 +23,7 @@ import {
   type ComicChapter,
   type ComicChapterFile
 } from '@shared/db'
-import type { ComicReadResult, ComicReadingState } from '@shared/activity'
+import type { ComicReadResult, ComicReadingState, ComicStopResult } from '@shared/activity'
 import { parsePagedContainer } from '@shared/book'
 import type {
   ReaderComicBootstrap,
@@ -156,6 +156,23 @@ export class ComicActivityHandler {
     return { status: 'started', chapterId: startUnit.id }
   }
 
+  /**
+   * Stops reading by closing the entry's reader window.
+   *
+   * The session ends before the close so the stopped push (and the state it
+   * clears) lands ahead of the IPC reply, like the other activity stops; the
+   * closing window's remaining reports find no session and are dropped.
+   */
+  stop(comicId: string): ComicStopResult {
+    for (const [windowId, session] of this.reading) {
+      if (session.comicId !== comicId) continue
+      this.endSession(windowId)
+      this.reader.windows.close(windowId)
+      return { status: 'stopped' }
+    }
+    return { status: 'failed', reason: 'notReading' }
+  }
+
   /** Live reading states, letting a reloaded renderer resynchronize. */
   listReading(): ComicReadingState[] {
     return [...this.reading.values()].map((session) => ({
@@ -191,6 +208,11 @@ export class ComicActivityHandler {
       session.chapterId = report.unitId
       session.segmentStartedAt = Date.now()
       session.lastResumeWriteAt = 0
+      // Unit-scoped read buttons key their live state on the unit being read.
+      this.ipc.send('activity:comic-unit-changed', {
+        comicId: session.comicId,
+        chapterId: report.unitId
+      })
     })
 
     this.reader.hooks.windowClosed.tap(({ windowId }) => {

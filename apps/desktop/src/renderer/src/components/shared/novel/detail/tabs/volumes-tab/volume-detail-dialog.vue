@@ -49,7 +49,10 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m, f } = useI18n()
 const { volumes } = useNovel()
-const { read } = useNovelReading(() => props.novelId)
+const { read } = useNovelReading(
+  () => props.novelId,
+  () => props.volumeId
+)
 
 const volume = computed<NovelVolumeEntry | null>(
   () => volumes.value.find((entry) => entry.id === props.volumeId) ?? null
@@ -175,7 +178,7 @@ async function handleDeleteVolume(): Promise<void> {
             :files="volume.files"
             :attaching="isAttaching"
             @attach="attachFile"
-            @read="(fileId) => read(volume?.id, fileId)"
+            @read="(fileId) => read(fileId)"
             @set-primary="setPrimary"
             @remove-file="removeFile"
             @open-folder="revealNovelFile"
@@ -201,7 +204,7 @@ async function handleDeleteVolume(): Promise<void> {
                 @click="handleToggleRead"
               >
                 <Icon
-                  icon="icon-[mdi--circle]"
+                  :icon="isRead ? 'icon-[mdi--circle]' : 'icon-[mdi--circle-outline]'"
                   class="size-4"
                   :class="isRead ? 'text-success' : ''"
                 />

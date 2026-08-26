@@ -3,8 +3,7 @@ import type { Messages } from '@shared/i18n'
 export const novel = {
   readStart: '開始閱讀',
   readContinue: '繼續閱讀',
-  readOpen: '開啟閱讀器',
-
+  stop: '停止',
   volumes: {
     title: '卷',
     emptyTitle: '還沒有卷',

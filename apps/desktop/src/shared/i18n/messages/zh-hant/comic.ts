@@ -3,8 +3,7 @@ import type { Messages } from '@shared/i18n'
 export const comic = {
   readStart: '開始閱讀',
   readContinue: '繼續閱讀',
-  readOpen: '開啟閱讀器',
-
+  stop: '停止',
   chapters: {
     title: '單元',
     emptyTitle: '還沒有卷或話',

@@ -5,8 +5,7 @@
 export const novel = {
   readStart: 'Start reading',
   readContinue: 'Continue reading',
-  readOpen: 'Open reader',
-
+  stop: 'Stop',
   volumes: {
     title: 'Volumes',
     emptyTitle: 'No volumes yet',

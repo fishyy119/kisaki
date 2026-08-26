@@ -179,6 +179,7 @@ import type {
   ComicBookmarkUpdate,
   ComicReadingState,
   ComicReadResult,
+  ComicStopResult,
   GameActivityEvent,
   GameLaunchResult,
   GameMonitorPathConfig,
@@ -189,7 +190,8 @@ import type {
   NovelHighlightInput,
   NovelHighlightUpdate,
   NovelReadingState,
-  NovelReadResult
+  NovelReadResult,
+  NovelStopResult
 } from './activity'
 import type { PlaybackEndReport, PlaybackProgress, PlaybackSessionState } from './video'
 import type {
@@ -578,11 +580,13 @@ export interface IpcMainHandlers {
     chapterId?: string,
     fileId?: string
   ) => IpcResult<ComicReadResult>
+  'activity:stop-comic': (comicId: string) => IpcResult<ComicStopResult>
   'activity:read-novel': (
     novelId: string,
     volumeId?: string,
     fileId?: string
   ) => IpcResult<NovelReadResult>
+  'activity:stop-novel': (novelId: string) => IpcResult<NovelStopResult>
   'activity:list-comic-reading': () => IpcResult<ComicReadingState[]>
   'activity:list-novel-reading': () => IpcResult<NovelReadingState[]>
 
@@ -761,8 +765,10 @@ export interface IpcRendererEvents {
   'activity:anime-extra-started': [state: AnimeExtraPlayingState]
   'activity:anime-extra-stopped': [state: AnimeExtraPlayingState]
   'activity:comic-started': [state: ComicReadingState]
+  'activity:comic-unit-changed': [state: ComicReadingState]
   'activity:comic-stopped': [state: ComicReadingState]
   'activity:novel-started': [state: NovelReadingState]
+  'activity:novel-unit-changed': [state: NovelReadingState]
   'activity:novel-stopped': [state: NovelReadingState]
   'video:session-started': [state: PlaybackSessionState]
   'video:session-changed': [state: PlaybackSessionState]

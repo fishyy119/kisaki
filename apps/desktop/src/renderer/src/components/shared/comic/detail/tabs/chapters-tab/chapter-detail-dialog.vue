@@ -49,7 +49,10 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m, f } = useI18n()
 const { chapters } = useComic()
-const { read } = useComicReading(() => props.comicId)
+const { read } = useComicReading(
+  () => props.comicId,
+  () => props.chapterId
+)
 
 const chapter = computed<ComicChapterEntry | null>(
   () => chapters.value.find((entry) => entry.id === props.chapterId) ?? null
@@ -186,7 +189,7 @@ async function handleDeleteChapter(): Promise<void> {
             :files="chapter.files"
             :attaching="isAttaching"
             @attach="attachFile"
-            @read="(fileId) => read(chapter?.id, fileId)"
+            @read="(fileId) => read(fileId)"
             @set-primary="setPrimary"
             @remove-file="removeFile"
             @open-folder="revealComicFile"
@@ -212,7 +215,7 @@ async function handleDeleteChapter(): Promise<void> {
                 @click="handleToggleRead"
               >
                 <Icon
-                  icon="icon-[mdi--circle]"
+                  :icon="isRead ? 'icon-[mdi--circle]' : 'icon-[mdi--circle-outline]'"
                   class="size-4"
                   :class="isRead ? 'text-success' : ''"
                 />
