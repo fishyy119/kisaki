@@ -174,7 +174,7 @@ function fileFacts(file: NovelVolumeFile): string[] {
             @click="emit('read', file.id)"
           >
             <Icon
-              icon="icon-[mdi--book-open-blank-variant-outline]"
+              icon="icon-[mdi--play]"
               class="size-4"
             />
           </Button>

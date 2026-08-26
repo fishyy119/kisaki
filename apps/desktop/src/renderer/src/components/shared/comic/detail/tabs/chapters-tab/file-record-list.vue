@@ -177,7 +177,7 @@ function fileFacts(file: ComicChapterFile): string[] {
             @click="emit('read', file.id)"
           >
             <Icon
-              icon="icon-[mdi--image-filter-hdr-outline]"
+              icon="icon-[mdi--play]"
               class="size-4"
             />
           </Button>

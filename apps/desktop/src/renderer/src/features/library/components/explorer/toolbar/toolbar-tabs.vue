@@ -24,10 +24,7 @@ const entityTypeModel = computed({
 </script>
 
 <template>
-  <SegmentedControl
-    v-model="entityTypeModel"
-    class="w-full"
-  >
+  <SegmentedControl v-model="entityTypeModel">
     <SegmentedControlItem
       v-for="type in CONTENT_ENTITY_TYPES"
       :key="type"

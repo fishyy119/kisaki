@@ -1,12 +1,12 @@
 <!--
   MediaRelationsSection
   Overview row of related media entries as one horizontal scroll; incoming
-  edges arrive pre-labelled with the inverse vocabulary. The relation type
-  renders as the card's bottom badge and clicking opens the target's detail
-  dialog.
+  edges arrive pre-labelled with the inverse vocabulary. The target's media
+  type renders as the card's bottom badge (the relations tab owns the
+  relation-type grouping) and clicking opens the target's detail dialog.
 -->
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { SectionScroll } from '@renderer/components/ui/section'
 import {
   EntityCard,
@@ -29,13 +29,7 @@ const emit = defineEmits<{
 
 const { m } = useI18n()
 
-const RELATION_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.mediaRelation)
-
 const openEntity = ref<EntityDetailTarget | null>(null)
-
-function getTypeLabel(entry: MediaRelationEntry): string {
-  return RELATION_TYPE_LABELS.value[entry.type] || entry.type
-}
 
 function openDetail(target: MediaRelationTarget): void {
   openEntity.value = { entityType: target.mediaType, entityId: target.entity.id }
@@ -57,7 +51,7 @@ function openDetail(target: MediaRelationTarget): void {
         :entity="entry.target.entity"
         size="sm"
         align="left"
-        :badge-label="getTypeLabel(entry)"
+        :badge-label="m.library.entities[entry.target.mediaType]"
         @click="openDetail(entry.target)"
       />
     </template>
