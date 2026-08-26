@@ -99,7 +99,8 @@ function originalNameColumn<TResult extends { originalName?: string }>(
  */
 function grainColumn<TResult extends { grain?: MediaEntryGrain }>(): SearcherColumn<TResult> {
   return {
-    width: '5rem',
+    // 4rem: the widest value in any locale is 4 full-width chars (シリーズ).
+    width: '4rem',
     header: (m) => m.library.searcher.columnGrain,
     cell: (result, m) =>
       result.grain ? m.library.mediaEntryGrain[result.grain] : m.common.emptyValue

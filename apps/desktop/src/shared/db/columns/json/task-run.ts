@@ -2,6 +2,7 @@ import { customType } from 'drizzle-orm/sqlite-core'
 
 import type {
   TaskRunCategory,
+  TaskRunContentEntity,
   TaskRunControls,
   TaskRunFinalStatus,
   TaskRunInitiator,
@@ -40,7 +41,19 @@ export const taskRunFinalStatus = createEnumType<TaskRunFinalStatus>(
   'taskRunFinalStatus'
 )
 
-const TASK_RUN_CONTENT_ENTITY_VALUES = new Set(['game', 'anime', 'person', 'company', 'character'])
+// Entity-keyed value sets derive from Record keys so extending the entity
+// unions (a new media type) is a compile error here instead of a silent miss.
+const TASK_RUN_CONTENT_ENTITY_VALUES = new Set<string>(
+  Object.keys({
+    game: true,
+    anime: true,
+    comic: true,
+    novel: true,
+    person: true,
+    company: true,
+    character: true
+  } satisfies Record<TaskRunContentEntity, true>)
+)
 const TASK_RUN_INGEST_ACTION_VALUES = new Set([
   'add',
   'update',
@@ -68,19 +81,23 @@ const TASK_RUN_SYSTEM_REASON_VALUES = new Set([
   'shutdown',
   'watch'
 ])
-const TASK_RUN_SUBJECT_TYPE_VALUES = new Set<TaskRunSubjectType>([
-  'command',
-  'automation',
-  'scanner',
-  'game',
-  'anime',
-  'person',
-  'company',
-  'character',
-  'extension',
-  'repository',
-  'app'
-])
+const TASK_RUN_SUBJECT_TYPE_VALUES = new Set<string>(
+  Object.keys({
+    command: true,
+    automation: true,
+    scanner: true,
+    game: true,
+    anime: true,
+    comic: true,
+    novel: true,
+    person: true,
+    company: true,
+    character: true,
+    extension: true,
+    repository: true,
+    app: true
+  } satisfies Record<TaskRunSubjectType, true>)
+)
 const TASK_RUN_PROGRESS_UNIT_VALUES = new Set<TaskRunProgressUnit>([
   'item',
   'file',
@@ -186,7 +203,7 @@ function matchesTaskRunSubject(value: unknown): value is TaskRunSubject {
   return (
     matchesPlainObject(value) &&
     typeof value.type === 'string' &&
-    TASK_RUN_SUBJECT_TYPE_VALUES.has(value.type as TaskRunSubjectType) &&
+    TASK_RUN_SUBJECT_TYPE_VALUES.has(value.type) &&
     matchesOptionalString(value.id) &&
     matchesOptionalString(value.labelSnapshot)
   )

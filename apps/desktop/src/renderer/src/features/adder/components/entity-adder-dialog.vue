@@ -109,7 +109,7 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent class="max-w-xl">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <Icon
