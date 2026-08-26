@@ -229,11 +229,11 @@ export function getSpoilerDisplay(
 const ENTITY_ICONS: Record<AllEntityType, string> = {
   game: 'icon-[mdi--gamepad-variant-outline]',
   anime: 'icon-[mdi--tv]',
-  comic: 'icon-[mdi--image-filter-hdr-outline]',
+  comic: 'icon-[mdi--thought-bubble-outline]',
   novel: 'icon-[mdi--book-open-blank-variant-outline]',
   character: 'icon-[mdi--ghost-outline]',
   person: 'icon-[mdi--account-circle-outline]',
-  company: 'icon-[mdi--company]',
+  company: 'icon-[mdi--office-building-outline]',
   collection: 'icon-[mdi--folder-outline]',
   tag: 'icon-[mdi--tag-outline]'
 }

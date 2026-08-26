@@ -48,7 +48,7 @@ const activeTab = ref('overview')
         </TabsTrigger>
         <TabsTrigger value="chapters">
           <Icon
-            icon="icon-[mdi--image-filter-hdr-outline]"
+            icon="icon-[mdi--thought-bubble-outline]"
             class="size-3.5"
           />
           {{ m.comic.chapters.title }}

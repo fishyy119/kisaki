@@ -116,7 +116,7 @@ async function handleOpenFolder(path: string): Promise<void> {
       <StateView
         v-if="chapters.length === 0"
         state="empty"
-        icon="icon-[mdi--image-filter-hdr-outline]"
+        icon="icon-[mdi--thought-bubble-outline]"
         :title="m.comic.chapters.emptyTitle"
         :description="m.comic.chapters.emptyHint"
         class="py-10"
