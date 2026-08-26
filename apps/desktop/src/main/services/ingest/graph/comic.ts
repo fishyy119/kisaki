@@ -356,6 +356,7 @@ export function normalizeComicChapters(
       originalName: normalizeOptionalString(chapter.originalName),
       releaseDate: chapter.releaseDate,
       description: normalizeOptionalString(chapter.description),
+      coverUrl: normalizeOptionalString(chapter.coverUrl),
       externalIds: mergeExternalIds(undefined, chapter.externalIds)
     }
     byKey.set(comicUnitIdentityKey(normalized), normalized)

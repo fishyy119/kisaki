@@ -203,7 +203,7 @@ export class NovelIngestPersistHandler {
     const novelId = novelResult.novelId
     const pendingAssets: PendingAssetTask[] = [...novelResult.pendingAssets]
 
-    this.insertVolumes(tx, novelId, graph.volumes)
+    this.insertVolumes(tx, novelId, graph.volumes, pendingAssets)
 
     const personByIdentity = new Map(graph.persons.map((node) => [node.identityKey, node]))
     const companyByIdentity = new Map(graph.companies.map((node) => [node.identityKey, node]))
@@ -408,16 +408,27 @@ export class NovelIngestPersistHandler {
    *
    * Volume identity is stored on first write so the update flow's re-scrapes
    * realign rows by external id rather than by number, which sources revise.
+   * Volume covers are deferred like every other asset, because the row must be
+   * committed before its file can be attached.
    */
   private insertVolumes(
     tx: DbContext,
     novelId: string,
-    volumes: NovelVolumeInfo[] | undefined
+    volumes: NovelVolumeInfo[] | undefined,
+    pendingAssets: PendingAssetTask[]
   ): void {
     if (!volumes?.length) return
 
     for (const [index, volume] of volumes.entries()) {
-      insertNovelVolumeRow(tx, novelId, volume, index)
+      const volumeId = insertNovelVolumeRow(tx, novelId, volume, index)
+      if (volume.coverUrl) {
+        pendingAssets.push({
+          table: 'novel_volumes',
+          rowId: volumeId,
+          field: 'coverFile',
+          url: volume.coverUrl
+        })
+      }
     }
   }
 

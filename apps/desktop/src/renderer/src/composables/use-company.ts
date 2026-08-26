@@ -30,9 +30,13 @@ import type {
   Company,
   GameCompanyLink,
   AnimeCompanyLink,
+  ComicCompanyLink,
+  NovelCompanyLink,
   CompanyTagLink,
   Game,
   Anime,
+  Comic,
+  Novel,
   Tag
 } from '@shared/db/schema'
 import { COMPANY_RELATION_TYPE_INVERSE, type CompanyRelationType } from '@shared/db'
@@ -61,6 +65,8 @@ interface CompanyData {
   tags: (CompanyTagLink & { tag: Tag | null })[]
   games: (GameCompanyLink & { game: Game | null })[]
   animes: (AnimeCompanyLink & { anime: Anime | null })[]
+  comics: (ComicCompanyLink & { comic: Comic | null })[]
+  novels: (NovelCompanyLink & { novel: Novel | null })[]
   relations: CompanyRelationEntry[]
 }
 
@@ -69,6 +75,8 @@ export interface CompanyContext {
   tags: ComputedRef<(CompanyTagLink & { tag: Tag | null })[]>
   games: ComputedRef<(GameCompanyLink & { game: Game | null })[]>
   animes: ComputedRef<(AnimeCompanyLink & { anime: Anime | null })[]>
+  comics: ComputedRef<(ComicCompanyLink & { comic: Comic | null })[]>
+  novels: ComputedRef<(NovelCompanyLink & { novel: Novel | null })[]>
   relations: ComputedRef<CompanyRelationEntry[]>
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
@@ -124,47 +132,74 @@ async function fetchCompanyData(
     showNsfw ? undefined : eq(schema.animes.isNsfw, false)
   )
 
+  const comicCompanyLinksWhere = and(
+    eq(schema.comicCompanyLinks.companyId, companyId),
+    spoilersRevealed ? undefined : eq(schema.comicCompanyLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.comics.isNsfw, false)
+  )
+
+  const novelCompanyLinksWhere = and(
+    eq(schema.novelCompanyLinks.companyId, companyId),
+    spoilersRevealed ? undefined : eq(schema.novelCompanyLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.novels.isNsfw, false)
+  )
+
   const relatedCompanyWhere = showNsfw ? undefined : eq(schema.companies.isNsfw, false)
 
   // Parallel fetch all related data
-  const [tagLinks, gameLinks, animeLinks, outRelations, inRelations] = await Promise.all([
-    db
-      .select()
-      .from(schema.companyTagLinks)
-      .leftJoin(schema.tags, eq(schema.companyTagLinks.tagId, schema.tags.id))
-      .where(companyTagLinksWhere)
-      .orderBy(asc(schema.companyTagLinks.orderInCompany)),
-    db
-      .select()
-      .from(schema.gameCompanyLinks)
-      .leftJoin(schema.games, eq(schema.gameCompanyLinks.gameId, schema.games.id))
-      .where(gameCompanyLinksWhere)
-      .orderBy(asc(schema.gameCompanyLinks.orderInCompany)),
-    db
-      .select()
-      .from(schema.animeCompanyLinks)
-      .leftJoin(schema.animes, eq(schema.animeCompanyLinks.animeId, schema.animes.id))
-      .where(animeCompanyLinksWhere)
-      .orderBy(asc(schema.animeCompanyLinks.orderInCompany)),
-    db
-      .select()
-      .from(schema.companyRelations)
-      .innerJoin(schema.companies, eq(schema.companyRelations.toId, schema.companies.id))
-      .where(and(eq(schema.companyRelations.fromId, companyId), relatedCompanyWhere))
-      .orderBy(asc(schema.companyRelations.orderInFrom)),
-    db
-      .select()
-      .from(schema.companyRelations)
-      .innerJoin(schema.companies, eq(schema.companyRelations.fromId, schema.companies.id))
-      .where(and(eq(schema.companyRelations.toId, companyId), relatedCompanyWhere))
-      .orderBy(asc(schema.companyRelations.createdAt))
-  ])
+  const [tagLinks, gameLinks, animeLinks, comicLinks, novelLinks, outRelations, inRelations] =
+    await Promise.all([
+      db
+        .select()
+        .from(schema.companyTagLinks)
+        .leftJoin(schema.tags, eq(schema.companyTagLinks.tagId, schema.tags.id))
+        .where(companyTagLinksWhere)
+        .orderBy(asc(schema.companyTagLinks.orderInCompany)),
+      db
+        .select()
+        .from(schema.gameCompanyLinks)
+        .leftJoin(schema.games, eq(schema.gameCompanyLinks.gameId, schema.games.id))
+        .where(gameCompanyLinksWhere)
+        .orderBy(asc(schema.gameCompanyLinks.orderInCompany)),
+      db
+        .select()
+        .from(schema.animeCompanyLinks)
+        .leftJoin(schema.animes, eq(schema.animeCompanyLinks.animeId, schema.animes.id))
+        .where(animeCompanyLinksWhere)
+        .orderBy(asc(schema.animeCompanyLinks.orderInCompany)),
+      db
+        .select()
+        .from(schema.comicCompanyLinks)
+        .leftJoin(schema.comics, eq(schema.comicCompanyLinks.comicId, schema.comics.id))
+        .where(comicCompanyLinksWhere)
+        .orderBy(asc(schema.comicCompanyLinks.orderInCompany)),
+      db
+        .select()
+        .from(schema.novelCompanyLinks)
+        .leftJoin(schema.novels, eq(schema.novelCompanyLinks.novelId, schema.novels.id))
+        .where(novelCompanyLinksWhere)
+        .orderBy(asc(schema.novelCompanyLinks.orderInCompany)),
+      db
+        .select()
+        .from(schema.companyRelations)
+        .innerJoin(schema.companies, eq(schema.companyRelations.toId, schema.companies.id))
+        .where(and(eq(schema.companyRelations.fromId, companyId), relatedCompanyWhere))
+        .orderBy(asc(schema.companyRelations.orderInFrom)),
+      db
+        .select()
+        .from(schema.companyRelations)
+        .innerJoin(schema.companies, eq(schema.companyRelations.fromId, schema.companies.id))
+        .where(and(eq(schema.companyRelations.toId, companyId), relatedCompanyWhere))
+        .orderBy(asc(schema.companyRelations.createdAt))
+    ])
 
   return {
     company: companyData,
     tags: tagLinks.map((row) => ({ ...row.company_tag_links, tag: row.tags })),
     games: gameLinks.map((row) => ({ ...row.game_company_links, game: row.games })),
     animes: animeLinks.map((row) => ({ ...row.anime_company_links, anime: row.animes })),
+    comics: comicLinks.map((row) => ({ ...row.comic_company_links, comic: row.comics })),
+    novels: novelLinks.map((row) => ({ ...row.novel_company_links, novel: row.novels })),
     relations: [
       ...outRelations.map((row): CompanyRelationEntry => ({
         id: row.company_relations.id,
@@ -219,6 +254,8 @@ function provideCompanyContext(source: CompanyDataSource): CompanyContext {
     tags: computed(() => source.data.value?.tags ?? []),
     games: computed(() => source.data.value?.games ?? []),
     animes: computed(() => source.data.value?.animes ?? []),
+    comics: computed(() => source.data.value?.comics ?? []),
+    novels: computed(() => source.data.value?.novels ?? []),
     relations: computed(() => source.data.value?.relations ?? []),
     isLoading: source.isLoading,
     isFetching: source.isFetching,
@@ -235,6 +272,8 @@ const COMPANY_LINK_TABLES: readonly TableName[] = [
   'company_tag_links',
   'game_company_links',
   'anime_company_links',
+  'comic_company_links',
+  'novel_company_links',
   'company_relations'
 ]
 

@@ -1,5 +1,6 @@
 import { isCancellationError } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../api/client'
+import type { BangumiSubject } from '../../api/types'
 import { getBangumiSubjectType, type BangumiMediaScope } from '../../../shared/scopes'
 import { fetchCharacterDetails, fetchCharacterPersons } from './characters'
 import { fetchSubjectImageVariants } from './images'
@@ -71,6 +72,17 @@ export function createSubjectLoaders({
     fetchSubjectImageVariants(client, subjectId, signal)
   )
 
+  const relatedSubjectTasks = new Map<number, Promise<BangumiSubject | null>>()
+  const getRelatedSubject = (relatedSubjectId: number): Promise<BangumiSubject | null> => {
+    let task = relatedSubjectTasks.get(relatedSubjectId)
+    if (!task) {
+      task = client.getSubject(relatedSubjectId, { signal }).catch(recoverNull)
+      relatedSubjectTasks.set(relatedSubjectId, task)
+    }
+
+    return task
+  }
+
   return {
     getSubject,
     getSubjectPersons,
@@ -80,7 +92,8 @@ export function createSubjectLoaders({
     getPersonDetails,
     getCharacterDetails,
     getCharacterPersons,
-    getSubjectImageVariants
+    getSubjectImageVariants,
+    getRelatedSubject
   }
 }
 
@@ -103,4 +116,13 @@ function recoverEmpty(error: unknown): never[] {
   }
 
   return []
+}
+
+/** Optional enrichment of a single resource; see `recoverEmpty`. */
+function recoverNull(error: unknown): null {
+  if (isCancellationError(error)) {
+    throw error
+  }
+
+  return null
 }

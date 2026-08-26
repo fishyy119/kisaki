@@ -49,6 +49,8 @@ export interface NovelVolumeInfo {
   originalName?: string
   releaseDate?: PartialDate
   description?: string
+  /** Cover art of this volume, not a page render. */
+  coverUrl?: string
   externalIds?: ExternalId[]
 }
 

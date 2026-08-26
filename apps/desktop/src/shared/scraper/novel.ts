@@ -7,7 +7,13 @@
 
 import { NOVEL_FORMAT_VALUES, type NovelFormat, type PartialDate } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
-import { normalizeMediaLookupFacts, rankReleaseYear, type MediaScraperLookup } from './media'
+import {
+  normalizeMediaLookupFacts,
+  rankEntryGrain,
+  rankReleaseYear,
+  type MediaEntryGrain,
+  type MediaScraperLookup
+} from './media'
 import type { ScraperCapability } from './slot'
 
 // =============================================================================
@@ -64,19 +70,25 @@ export interface NovelSearchResult {
   originalName?: string
   releaseDate?: PartialDate
   format?: NovelFormat
+  /** Layer this row sits at, for sources that list works and volumes together. */
+  grain?: MediaEntryGrain
   externalIds: ExternalId[]
 }
+
+/** The candidate-side facts the selection ranks on. */
+type NovelSearchCandidate = NovelLookupFacts & { grain?: MediaEntryGrain }
 
 /**
  * Pick the search result an entry's own facts point at.
  *
- * A name search spans every entry of a work: the web serialization and its
- * print edition are separate entries with the same name. The facts rank them
- * instead of trusting provider order — the format says which kind of entry to
- * look for, the release date says which one of that kind. Rows the facts
- * cannot separate keep the order the provider gave them.
+ * A name search spans every entry of a work: the web serialization, its print
+ * edition, and each of its volumes share one name. The facts rank them instead
+ * of trusting provider order — the format says which kind of entry to look
+ * for, the grain says the work rather than one of its volumes, and the release
+ * date says which one of that kind. Rows the facts cannot separate keep the
+ * order the provider gave them.
  */
-export function selectNovelSearchResult<TResult extends NovelLookupFacts>(
+export function selectNovelSearchResult<TResult extends NovelSearchCandidate>(
   results: readonly TResult[],
   facts: NovelLookupFacts
 ): TResult | null {
@@ -84,8 +96,13 @@ export function selectNovelSearchResult<TResult extends NovelLookupFacts>(
   let bestRank = -1
 
   for (const result of results) {
-    // Format outranks date: the kind of entry narrows harder than the year.
-    const rank = rankNovelFormat(result.format, facts.format) * 3 + rankReleaseYear(result, facts)
+    // Strict priority format > grain > date: each tier outweighs everything
+    // below it, because the kind of entry narrows harder than the layer, which
+    // narrows harder than the year.
+    const rank =
+      rankNovelFormat(result.format, facts.format) * 9 +
+      rankEntryGrain(result.grain) * 3 +
+      rankReleaseYear(result, facts)
     if (rank > bestRank) {
       best = result
       bestRank = rank

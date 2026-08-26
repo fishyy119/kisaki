@@ -353,6 +353,7 @@ export function normalizeNovelVolumes(
       originalName: normalizeOptionalString(volume.originalName),
       releaseDate: volume.releaseDate,
       description: normalizeOptionalString(volume.description),
+      coverUrl: normalizeOptionalString(volume.coverUrl),
       externalIds: mergeExternalIds(undefined, volume.externalIds)
     }
     byKey.set(novelUnitIdentityKey(normalized), normalized)

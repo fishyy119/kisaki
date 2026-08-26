@@ -18,7 +18,13 @@ import path from 'node:path'
 import { createLogger } from '@main/log'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
 import type { BookContainerReader } from '@main/services/reader'
-import { isProbeCurrent, readFileStat, readPrimaryElection, SyncPassQueue } from '../reconcile'
+import {
+  isProbeCurrent,
+  readFileStat,
+  readPrimaryElection,
+  SyncPassQueue,
+  unnamedUnitGroupKey
+} from '../reconcile'
 import {
   comicChapterFiles,
   comicChapters,
@@ -86,14 +92,17 @@ function compareUnits(a: ComicUnitCandidate, b: ComicUnitCandidate): number {
 }
 
 /**
- * Identity of a candidate across sync runs.
+ * Identity of a candidate across sync runs, and across sibling versions of one
+ * unit within a run.
  *
  * Numbered containers share their unit through the library-wide identity key;
- * unreadable names stay one unit per container, keyed by path, since two
- * unreadable names are not evidence of one unit.
+ * unnumbered ones group by directory and cleaned name, so a raw scan and a
+ * cleaned release of the same one-shot become two files of one unit.
  */
 function unitCandidateKey(candidate: ComicUnitCandidate): string {
-  return isNumberedComicUnit(candidate) ? comicUnitIdentityKey(candidate) : `file:${candidate.path}`
+  return isNumberedComicUnit(candidate)
+    ? comicUnitIdentityKey(candidate)
+    : unnamedUnitGroupKey(candidate.path, candidate.name)
 }
 
 /** Identity key of a stored row; null for unnumbered rows, which key by file. */
@@ -394,8 +403,9 @@ export class ComicFileSyncHandler {
 
   /**
    * Map each recognized container onto a unit row, creating rows for numbers
-   * the scraped list is missing. Unnumbered existing rows are re-matched
-   * through the paths of the files they own, so re-syncs stay idempotent.
+   * the scraped list is missing. Unnumbered existing rows are re-matched by
+   * their group key, then by the paths of the files they own, so a re-sync
+   * stays idempotent even after the row was renamed by hand.
    */
   private writeUnits(
     tx: DbContext,
@@ -410,13 +420,17 @@ export class ComicFileSyncHandler {
       const key = rowNumberKey(unit)
       if (key) existingByKey.set(key, unit)
     }
-    // Unnumbered rows exist only because of their files, so any of their file
-    // paths identifies them across runs.
+    // Unnumbered rows exist only because of their files, so those files locate
+    // them again: their group key when the stored name still matches, and the
+    // path outright when a rename moved it out of reach.
+    const existingByFilePath = new Map<string, ComicChapter>()
     for (const file of existingFiles) {
       const unit = unitById.get(file.chapterId)
-      if (unit && rowNumberKey(unit) === null) {
-        existingByKey.set(`file:${file.path}`, unit)
-      }
+      if (!unit || rowNumberKey(unit) !== null) continue
+
+      existingByFilePath.set(file.path, unit)
+      const groupKey = unnamedUnitGroupKey(file.path, unit.name ?? '')
+      if (!existingByKey.has(groupKey)) existingByKey.set(groupKey, unit)
     }
 
     const unitIdByKey = new Map<string, string>()
@@ -432,6 +446,7 @@ export class ComicFileSyncHandler {
       // renaming `Ch.5.cbz` to `Vol.1 Ch.5.cbz` must move the unit, not fork it.
       const match =
         existingByKey.get(key) ??
+        existingByFilePath.get(candidate.path) ??
         claimUnitAcrossVolumeKnowledge(candidate, existingUnits, claimedUnitIds)
       if (match) {
         claimedUnitIds.add(match.id)

@@ -18,10 +18,14 @@ const SAME_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
 /**
  * Cross-type pairs carry provenance plus the side-story pair: an anime's
  * spin-off game and a visual novel's fandisc adaptation are told across media.
+ *
+ * `mediaMix` is the undirected member of that group, for sources that name the
+ * same work in another medium without stating which one derives from the other.
  */
 const CROSS_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
   'adaptation',
   'sourceMaterial',
+  'mediaMix',
   'sideStory',
   'parentStory',
   'other'

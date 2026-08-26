@@ -54,6 +54,8 @@ export interface ComicChapterInfo {
   originalName?: string
   releaseDate?: PartialDate
   description?: string
+  /** Cover art of this installment (tankobon art), not a page render. */
+  coverUrl?: string
   externalIds?: ExternalId[]
 }
 

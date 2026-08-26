@@ -100,7 +100,11 @@ function loadSlot(
         locale
       })
     case 'relatedEntries':
-      return buildSubjectRelatedEntries('anime', loaders.getSubjectRelations)
+      return buildSubjectRelatedEntries({
+        scopeMediaType: 'anime',
+        getSubjectRelations: loaders.getSubjectRelations,
+        getRelatedSubject: loaders.getRelatedSubject
+      })
     case 'covers':
       return buildSubjectCovers(loaders.getSubject, loaders.getSubjectImageVariants)
     case 'backdrops':

@@ -296,6 +296,13 @@ inherited from whichever media type shipped first.
 - **`comic` and `novel` entries are the work or series, not the volume.** Sources issue one id,
   title, rating, and status per serialized work; a volume has no independent identity and no rating
   anywhere. Volumes and chapters are therefore unit rows under the entry, not entries.
+  - A source may still publish a volume as its own searchable record — Bangumi files each collected
+    volume as a subject beside the work, and only the work carries the `series` flag. Those records
+    are unit facts, not entries: the volume subject's id lands in `*_external_ids` on the unit row
+    (so a re-scrape realigns by id), and its `series` flag becomes the search result's
+    `grain: 'work'` so neither a picker nor an automated resolve anchors an entry to one
+    installment. `grain` is stated only when the source separates the two; silence never reads as
+    "volume".
 - **Comic units carry two numbers, not two grains.** One `comic_chapters` row is either a collected
   volume (volume number, no chapter number) or a serialized chapter (chapter number, plus the volume
   it was collected into when known). Novels need only the volume number, so they carry one.
@@ -474,7 +481,16 @@ question the row answers, not by table name.
 - The ordered endpoint pair constrains the vocabulary (`MEDIA_RELATION_TYPE_RULES`): same-type
   pairs carry the structural words (sequel/prequel, sideStory/parentStory, summary/fullStory,
   alternative), cross-type pairs carry provenance plus derivation (adaptation/sourceMaterial,
-  sideStory/parentStory). Adding a media type forces new pair entries at compile time.
+  mediaMix, sideStory/parentStory). Adding a media type forces new pair entries at compile time.
+- **A source that states no direction may not be given one.** `mediaMix` is the undirected member
+  of the provenance group, for cross-type edges that say only "the same work in another medium".
+  Bangumi is the reason it exists: it labels a cross-media edge with the target's own media type
+  (`动画`, `书籍`), so one anime's `书籍` edges point at both the novel it adapts and the art book
+  drawn from it. Mapping those onto `adaptation` would invent a direction that no later scrape
+  could tell from a real one, and mapping them onto `other` would bury the most common ACGN
+  relation in the fallback word. Sources that do state direction (AniList's `SOURCE` /
+  `ADAPTATION`) keep using `adaptation` / `sourceMaterial`; `mediaMix` is self-inverse, so it reads
+  the same from either endpoint.
 - `sideStory`/`parentStory` is a cross-type pair precisely because ACGN spin-offs cross media: a
   fandisc of a visual novel, a spin-off comic of an anime. Restricting derivation words to same-type
   pairs would force those edges into `other`.

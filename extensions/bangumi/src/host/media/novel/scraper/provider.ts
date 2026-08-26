@@ -10,8 +10,9 @@ import type { BangumiSubject } from '../../../api/types'
 import { omitUndefined } from '../../../utils/object'
 import { parseBangumiSubjectDate } from '../../format/dates'
 import {
-  mapBangumiNovelFormat,
+  resolveBangumiBookGrain,
   resolveBangumiBookKind,
+  resolveBangumiNovelFormat,
   type BangumiBookKind
 } from '../../format/formats'
 import { resolveLocalizedSubjectName } from '../../format/names'
@@ -29,6 +30,7 @@ export class BangumiNovelProvider
     'search',
     'info',
     'tags',
+    'volumes',
     'characters',
     'persons',
     'companies',
@@ -75,7 +77,8 @@ export class BangumiNovelProvider
       name,
       originalName,
       releaseDate: parseBangumiSubjectDate(subject.date),
-      format: mapBangumiNovelFormat(subject.platform),
+      format: resolveBangumiNovelFormat(subject),
+      grain: resolveBangumiBookGrain(subject.series),
       externalIds: this.buildSearchExternalIds(subject),
       bookKind: resolveBangumiBookKind(subject.platform)
     })

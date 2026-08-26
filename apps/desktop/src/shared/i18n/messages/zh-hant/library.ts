@@ -267,6 +267,11 @@ export const library = {
     vertical: '縱向捲動'
   },
 
+  mediaEntryGrain: {
+    work: '系列',
+    volume: '單行本'
+  },
+
   mediaRelation: {
     sequel: '續作',
     prequel: '前作',
@@ -276,6 +281,7 @@ export const library = {
     fullStory: '完整版',
     adaptation: '改編作品',
     sourceMaterial: '原作',
+    mediaMix: '跨媒體作品',
     alternative: '不同版本',
     other: '其他'
   },
@@ -381,6 +387,7 @@ export const library = {
     columnDeath: '逝世',
     columnFounded: '成立',
     columnReleaseDate: '發行日期',
+    columnGrain: '層級',
     startHint: ({ label }: { label: string }) => `輸入${label}名稱開始搜尋`,
     noMatchTitle: '無符合結果',
     noMatchDescription: '請嘗試其他關鍵字',

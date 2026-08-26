@@ -94,13 +94,20 @@ function updateMatchedVolume(tx: DbContext, match: VolumeMatch): void {
  * Incoming volumes claim stored rows by shared external id first, then by
  * volume number for rows no id claimed; sources revise numbering, so identity
  * outranks position. Matched rows refresh scraped metadata but never read
- * state (`read`/`readAt`/`readCount`/`resumeLocator`/`resumeProgress`/
- * `coverFile`). Unclaimed incoming volumes insert with their identity. Stored
- * rows the source no longer lists are deleted only under `replace` and only
- * when nothing user-owned hangs off them: not read, no readable files, no
- * sessions. `merge` never deletes.
+ * state (`read`/`readAt`/`readCount`/`resumeLocator`/`resumeProgress`).
+ * Unclaimed incoming volumes insert with their identity. Stored rows the
+ * source no longer lists are deleted only under `replace` and only when
+ * nothing user-owned hangs off them: not read, no readable files, no sessions.
+ * `merge` never deletes.
+ *
+ * Covers are filled, never replaced: a stored `coverFile` outranks any scrape,
+ * so the returned tasks only cover new rows and rows that still have none.
  */
-function reconcileNovelVolumes(tx: DbContext, novelId: string, plan: NovelVolumeUpdatePlan): void {
+function reconcileNovelVolumes(
+  tx: DbContext,
+  novelId: string,
+  plan: NovelVolumeUpdatePlan
+): PendingAssetTask[] {
   const existing = tx.select().from(novelVolumes).where(eq(novelVolumes.novelId, novelId)).all()
   const existingIds = existing.map((row) => row.id)
   const idRows = existingIds.length
@@ -196,6 +203,8 @@ function reconcileNovelVolumes(tx: DbContext, novelId: string, plan: NovelVolume
     }
   }
 
+  const pendingAssets: PendingAssetTask[] = []
+
   for (const match of matches) {
     updateMatchedVolume(tx, match)
 
@@ -206,11 +215,24 @@ function reconcileNovelVolumes(tx: DbContext, novelId: string, plan: NovelVolume
     if (missingIds.length > 0) {
       insertNovelVolumeExternalIds(tx, match.row.id, missingIds, knownKeys.size)
     }
+
+    if (match.row.coverFile === null && match.volume.coverUrl) {
+      pendingAssets.push(toVolumeCoverTask(match.row.id, match.volume.coverUrl))
+    }
   }
 
   for (const { volume, order } of inserts) {
-    insertNovelVolumeRow(tx, novelId, volume, order)
+    const volumeId = insertNovelVolumeRow(tx, novelId, volume, order)
+    if (volume.coverUrl) {
+      pendingAssets.push(toVolumeCoverTask(volumeId, volume.coverUrl))
+    }
   }
+
+  return pendingAssets
+}
+
+function toVolumeCoverTask(volumeId: string, url: string): PendingAssetTask {
+  return { table: 'novel_volumes', rowId: volumeId, field: 'coverFile', url }
 }
 
 export function applyNovelPlan(
@@ -235,9 +257,7 @@ export function applyNovelPlan(
       .run()
   }
 
-  if (plan.volumes) {
-    reconcileNovelVolumes(tx, novelId, plan.volumes)
-  }
+  const volumeAssets = plan.volumes ? reconcileNovelVolumes(tx, novelId, plan.volumes) : []
 
   const plannedMedia: Array<[string, string | undefined]> = [
     ['coverFile', plan.coverUrl],
@@ -247,6 +267,7 @@ export function applyNovelPlan(
   const pendingAssets: PendingAssetTask[] = plannedMedia
     .filter(([, url]) => Boolean(url))
     .map(([field, url]) => ({ table: 'novels', rowId: novelId, field, url: url as string }))
+  pendingAssets.push(...volumeAssets)
 
   const relationGraph = plan.relationGraph
   const relations = relationGraph

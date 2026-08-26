@@ -29,6 +29,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatUnitNumber } from '@renderer/utils/format'
 import { comicChapters } from '@shared/db'
 import ComicReadButton from '../../../comic-read-button.vue'
@@ -70,6 +71,12 @@ const title = computed(() => {
     return m.value.comic.chapters.unnamedVolume({ number: formatUnitNumber(entry.volumeNumber) })
   }
   return m.value.common.emptyValue
+})
+
+const coverUrl = computed(() => {
+  const entry = chapter.value
+  if (!entry?.coverFile) return null
+  return getAttachmentUrl('comic_chapters', entry.id, entry.coverFile, { width: 320 })
 })
 
 const isRead = computed(() => chapter.value?.read === true)
@@ -127,6 +134,18 @@ async function handleDeleteChapter(): Promise<void> {
         </DialogHeader>
 
         <DialogBody class="min-h-0 flex-1 space-y-4 overflow-auto">
+          <!-- Cover (display only; edited through the chapter form) -->
+          <div
+            v-if="coverUrl"
+            class="overflow-hidden rounded-lg border bg-muted"
+          >
+            <img
+              :src="coverUrl"
+              :alt="title"
+              class="mx-auto max-h-64 object-contain"
+            />
+          </div>
+
           <!-- Facts -->
           <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="grid grid-cols-[auto_1fr] gap-3">

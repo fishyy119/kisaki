@@ -97,7 +97,11 @@ function loadSlot(
         locale
       })
     case 'relatedEntries':
-      return buildSubjectRelatedEntries('game', loaders.getSubjectRelations)
+      return buildSubjectRelatedEntries({
+        scopeMediaType: 'game',
+        getSubjectRelations: loaders.getSubjectRelations,
+        getRelatedSubject: loaders.getRelatedSubject
+      })
     case 'covers':
       return buildSubjectCovers(loaders.getSubject, loaders.getSubjectImageVariants)
     case 'backdrops':

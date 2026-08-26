@@ -16,6 +16,7 @@ import { createSubjectLoaders, memoizeTask } from '../../subject/loaders'
 import { buildSubjectCompanies, buildSubjectPersons } from '../../subject/people'
 import { buildSubjectRelatedEntries } from '../../subject/related-entries'
 import type { BangumiSubjectLoaders } from '../../subject/types'
+import { buildNovelVolumeUnits } from '../../book/units'
 import { buildNovelInfo } from './info'
 
 interface BangumiNovelSessionOptions {
@@ -74,9 +75,13 @@ function loadSlot(
     case 'tags':
       return buildSubjectTags(loaders.getSubject)
     case 'volumes':
-      // Bangumi carries only a volume count on book subjects, not the
-      // per-volume rows this slot states, so the provider never declares it.
-      return Promise.resolve(undefined)
+      // Bangumi files a work's volumes as their own subjects, so the unit rows
+      // come from the relation list.
+      return buildNovelVolumeUnits({
+        getSubjectRelations: loaders.getSubjectRelations,
+        getRelatedSubject: loaders.getRelatedSubject,
+        locale
+      })
     case 'characters':
       return buildSubjectCharacters({
         subjectId,
@@ -101,7 +106,11 @@ function loadSlot(
         locale
       })
     case 'relatedEntries':
-      return buildSubjectRelatedEntries('novel', loaders.getSubjectRelations)
+      return buildSubjectRelatedEntries({
+        scopeMediaType: 'novel',
+        getSubjectRelations: loaders.getSubjectRelations,
+        getRelatedSubject: loaders.getRelatedSubject
+      })
     case 'covers':
       return buildSubjectCovers(loaders.getSubject, loaders.getSubjectImageVariants)
     case 'backdrops':

@@ -2,7 +2,7 @@ import type { ContentLocale, ScrapedNovelInfo } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../../api/types'
 import { omitUndefined } from '../../../utils/object'
 import { readPositiveInteger } from '../../../utils/numbers'
-import { mapBangumiNovelFormat } from '../../format/formats'
+import { resolveBangumiNovelFormat } from '../../format/formats'
 import { buildSubjectCoreInfo } from '../../subject/info'
 
 export async function buildNovelInfo(
@@ -16,7 +16,7 @@ export async function buildNovelInfo(
 
   return omitUndefined({
     ...core,
-    format: mapBangumiNovelFormat(subject.platform),
+    format: resolveBangumiNovelFormat(subject),
     totalVolumes: readPositiveInteger(subject.volumes)
   })
 }

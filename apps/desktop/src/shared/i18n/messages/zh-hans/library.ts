@@ -267,6 +267,11 @@ export const library = {
     vertical: '纵向滚动'
   },
 
+  mediaEntryGrain: {
+    work: '系列',
+    volume: '单行本'
+  },
+
   mediaRelation: {
     sequel: '续作',
     prequel: '前作',
@@ -276,6 +281,7 @@ export const library = {
     fullStory: '完整版',
     adaptation: '改编作品',
     sourceMaterial: '原作',
+    mediaMix: '跨媒体作品',
     alternative: '不同版本',
     other: '其他'
   },
@@ -381,6 +387,7 @@ export const library = {
     columnDeath: '逝世',
     columnFounded: '成立',
     columnReleaseDate: '发行日期',
+    columnGrain: '层级',
     startHint: ({ label }: { label: string }) => `输入${label}名称开始搜索`,
     noMatchTitle: '无匹配结果',
     noMatchDescription: '请尝试其他关键词',

@@ -270,6 +270,11 @@ export const library = {
     vertical: 'Vertical scroll'
   },
 
+  mediaEntryGrain: {
+    work: 'Series',
+    volume: 'Volume'
+  },
+
   mediaRelation: {
     sequel: 'Sequel',
     prequel: 'Prequel',
@@ -279,6 +284,7 @@ export const library = {
     fullStory: 'Full story',
     adaptation: 'Adaptation',
     sourceMaterial: 'Source material',
+    mediaMix: 'Media mix',
     alternative: 'Alternative version',
     other: 'Other'
   },
@@ -387,6 +393,7 @@ export const library = {
     columnDeath: 'Died',
     columnFounded: 'Founded',
     columnReleaseDate: 'Release date',
+    columnGrain: 'Layer',
     startHint: ({ label }: { label: string }) =>
       `Enter a ${label.toLowerCase()} name to start searching`,
     noMatchTitle: 'No matches',

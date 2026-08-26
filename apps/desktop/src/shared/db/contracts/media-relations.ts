@@ -24,6 +24,7 @@ export const MEDIA_RELATION_TYPES = [
   'fullStory',
   'adaptation',
   'sourceMaterial',
+  'mediaMix',
   'alternative',
   'other'
 ] as const
@@ -40,6 +41,7 @@ export const MEDIA_RELATION_TYPE_INVERSE: Record<MediaRelationType, MediaRelatio
   fullStory: 'summary',
   adaptation: 'sourceMaterial',
   sourceMaterial: 'adaptation',
+  mediaMix: 'mediaMix',
   alternative: 'alternative',
   other: 'other'
 }
@@ -61,10 +63,16 @@ const SAME_TYPE_RELATION_TYPES: readonly MediaRelationType[] = [
  * Cross-type pairs carry provenance plus the side-story pair: an anime's spin-off
  * game and a visual novel's fandisc adaptation are told across media, so the
  * derivation an edge states does not narrow to one type.
+ *
+ * `mediaMix` is the undirected member of that provenance group: sources that
+ * publish "the same work in another medium" without saying which came first
+ * state exactly this and nothing more, so mapping them onto `adaptation` would
+ * invent a direction no later scrape could tell from a real one.
  */
 const CROSS_TYPE_RELATION_TYPES: readonly MediaRelationType[] = [
   'adaptation',
   'sourceMaterial',
+  'mediaMix',
   'sideStory',
   'parentStory',
   'other'

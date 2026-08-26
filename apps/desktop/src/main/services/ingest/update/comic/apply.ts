@@ -96,17 +96,19 @@ function updateMatchedChapter(tx: DbContext, match: ChapterMatch): void {
  * Incoming units claim stored rows by shared external id first, then by number
  * at the same grain for rows no id claimed; sources revise numbering, so
  * identity outranks position. Matched rows refresh scraped metadata but never
- * read state (`read`/`readAt`/`readCount`/`resumePage`/`coverFile`). Unclaimed
- * incoming units insert with their identity. Stored rows the source no longer
- * lists are deleted only under `replace` and only when nothing user-owned
- * hangs off them: not read, no readable files, no sessions. `merge` never
- * deletes.
+ * read state (`read`/`readAt`/`readCount`/`resumePage`). Unclaimed incoming
+ * units insert with their identity. Stored rows the source no longer lists are
+ * deleted only under `replace` and only when nothing user-owned hangs off them:
+ * not read, no readable files, no sessions. `merge` never deletes.
+ *
+ * Covers are filled, never replaced: a stored `coverFile` outranks any scrape,
+ * so the returned tasks only cover new rows and rows that still have none.
  */
 function reconcileComicChapters(
   tx: DbContext,
   comicId: string,
   plan: ComicChapterUpdatePlan
-): void {
+): PendingAssetTask[] {
   const existing = tx.select().from(comicChapters).where(eq(comicChapters.comicId, comicId)).all()
   const existingIds = existing.map((row) => row.id)
   const idRows = existingIds.length
@@ -204,6 +206,8 @@ function reconcileComicChapters(
     }
   }
 
+  const pendingAssets: PendingAssetTask[] = []
+
   for (const match of matches) {
     updateMatchedChapter(tx, match)
 
@@ -214,11 +218,24 @@ function reconcileComicChapters(
     if (missingIds.length > 0) {
       insertComicChapterExternalIds(tx, match.row.id, missingIds, knownKeys.size)
     }
+
+    if (match.row.coverFile === null && match.chapter.coverUrl) {
+      pendingAssets.push(toChapterCoverTask(match.row.id, match.chapter.coverUrl))
+    }
   }
 
   for (const { chapter, order } of inserts) {
-    insertComicChapterRow(tx, comicId, chapter, order)
+    const chapterId = insertComicChapterRow(tx, comicId, chapter, order)
+    if (chapter.coverUrl) {
+      pendingAssets.push(toChapterCoverTask(chapterId, chapter.coverUrl))
+    }
   }
+
+  return pendingAssets
+}
+
+function toChapterCoverTask(chapterId: string, url: string): PendingAssetTask {
+  return { table: 'comic_chapters', rowId: chapterId, field: 'coverFile', url }
 }
 
 /**
@@ -259,9 +276,7 @@ export function applyComicPlan(
       .run()
   }
 
-  if (plan.chapters) {
-    reconcileComicChapters(tx, comicId, plan.chapters)
-  }
+  const chapterAssets = plan.chapters ? reconcileComicChapters(tx, comicId, plan.chapters) : []
 
   const plannedMedia: Array<[string, string | undefined]> = [
     ['coverFile', plan.coverUrl],
@@ -271,6 +286,7 @@ export function applyComicPlan(
   const pendingAssets: PendingAssetTask[] = plannedMedia
     .filter(([, url]) => Boolean(url))
     .map(([field, url]) => ({ table: 'comics', rowId: comicId, field, url: url as string }))
+  pendingAssets.push(...chapterAssets)
 
   const relationGraph = plan.relationGraph
   const relations = relationGraph

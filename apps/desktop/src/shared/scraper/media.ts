@@ -41,6 +41,30 @@ export function normalizeMediaLookupFacts<TLookup extends MediaScraperLookup>(
   }
 }
 
+/**
+ * Layer a search result sits at, when the provider states one.
+ *
+ * Sources that publish a work and each of its volumes as separate searchable
+ * entries return them side by side, and only the work is a library entry. The
+ * fact is optional because a source with one grain has nothing to say here,
+ * and a silent result must not read as a volume.
+ */
+export const MEDIA_ENTRY_GRAINS = ['work', 'volume'] as const
+
+export type MediaEntryGrain = (typeof MEDIA_ENTRY_GRAINS)[number]
+
+/**
+ * Score a candidate's stated grain.
+ *
+ * A confirmed work outranks silence, which outranks a confirmed volume — the
+ * same three-way shape as `rankReleaseYear`, because a provider that states no
+ * grain is not evidence of either one.
+ */
+export function rankEntryGrain(grain: MediaEntryGrain | undefined): number {
+  if (grain === undefined) return 1
+  return grain === 'work' ? 2 : 0
+}
+
 /** The release-year facts a candidate and a lookup are compared on. */
 interface ReleaseYearFacts {
   releaseDate?: PartialDate

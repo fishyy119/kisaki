@@ -36,6 +36,18 @@ export const SCRAPER_MEDIA_TYPES = [
 
 export type ScraperMediaType = (typeof SCRAPER_MEDIA_TYPES)[number]
 
+/**
+ * Layer a search result sits at, when the provider states one.
+ *
+ * Sources that publish a work and each of its volumes as separate searchable
+ * entries return them side by side, and only the work is a library entry. Omit
+ * the fact when the source has one grain: a silent result must not read as a
+ * volume.
+ */
+export const MEDIA_ENTRY_GRAINS = ['work', 'volume'] as const
+
+export type MediaEntryGrain = (typeof MEDIA_ENTRY_GRAINS)[number]
+
 export const GAME_SCRAPER_SLOTS = [
   'info',
   'tags',
@@ -252,6 +264,8 @@ export interface ScrapedComicChapter {
   originalName?: string
   releaseDate?: PartialDate
   description?: string
+  /** Cover art of this installment (tankobon art), not a page render. */
+  coverUrl?: string
   externalIds?: readonly ExternalId[]
 }
 
@@ -280,6 +294,8 @@ export interface ScrapedNovelVolume {
   originalName?: string
   releaseDate?: PartialDate
   description?: string
+  /** Cover art of this volume, not a page render. */
+  coverUrl?: string
   externalIds?: readonly ExternalId[]
 }
 
@@ -589,6 +605,8 @@ export interface ComicSearchResult {
   originalName?: string
   releaseDate?: PartialDate
   format?: LibraryComicFormat
+  /** Layer this row sits at, for sources that list works and volumes together. */
+  grain?: MediaEntryGrain
   externalIds: readonly ExternalId[]
 }
 
@@ -598,6 +616,8 @@ export interface NovelSearchResult {
   originalName?: string
   releaseDate?: PartialDate
   format?: LibraryNovelFormat
+  /** Layer this row sits at, for sources that list works and volumes together. */
+  grain?: MediaEntryGrain
   externalIds: readonly ExternalId[]
 }
 

@@ -203,7 +203,7 @@ export class ComicIngestPersistHandler {
     const comicId = comicResult.comicId
     const pendingAssets: PendingAssetTask[] = [...comicResult.pendingAssets]
 
-    this.insertChapters(tx, comicId, graph.chapters)
+    this.insertChapters(tx, comicId, graph.chapters, pendingAssets)
 
     const personByIdentity = new Map(graph.persons.map((node) => [node.identityKey, node]))
     const companyByIdentity = new Map(graph.companies.map((node) => [node.identityKey, node]))
@@ -411,16 +411,27 @@ export class ComicIngestPersistHandler {
    *
    * Unit identity is stored on first write so the update flow's re-scrapes
    * realign rows by external id rather than by number, which sources revise.
+   * Unit covers are deferred like every other asset, because the row must be
+   * committed before its file can be attached.
    */
   private insertChapters(
     tx: DbContext,
     comicId: string,
-    chapters: ComicChapterInfo[] | undefined
+    chapters: ComicChapterInfo[] | undefined,
+    pendingAssets: PendingAssetTask[]
   ): void {
     if (!chapters?.length) return
 
     for (const [index, chapter] of chapters.entries()) {
-      insertComicChapterRow(tx, comicId, chapter, index)
+      const chapterId = insertComicChapterRow(tx, comicId, chapter, index)
+      if (chapter.coverUrl) {
+        pendingAssets.push({
+          table: 'comic_chapters',
+          rowId: chapterId,
+          field: 'coverFile',
+          url: chapter.coverUrl
+        })
+      }
     }
   }
 

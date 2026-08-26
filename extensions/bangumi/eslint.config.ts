@@ -42,7 +42,10 @@ export default defineConfig([
     ignores: [
       'src/shared/i18n/messages/**',
       // Parses CJK source data from the Bangumi API; not UI copy.
-      'src/host/media/format/**'
+      'src/host/media/format/**',
+      // Matches the CJK relation label and volume tokens Bangumi files book
+      // volumes under; not UI copy.
+      'src/host/media/book/units.ts'
     ],
     rules: {
       'no-restricted-syntax': ['error', ...noCjkLiteralRestrictions]

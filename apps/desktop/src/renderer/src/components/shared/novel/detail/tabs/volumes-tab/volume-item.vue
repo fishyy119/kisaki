@@ -8,6 +8,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import NovelReadButton from '../../../novel-read-button.vue'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { cn } from '@renderer/utils/cn'
 import { formatUnitNumber } from '@renderer/utils/format'
 import type { NovelVolumeEntry } from '@renderer/composables/use-novel'
@@ -45,6 +46,12 @@ const title = computed(() => {
 const resumePercent = computed(() =>
   props.volume.resumeProgress !== null ? Math.round(props.volume.resumeProgress * 100) : null
 )
+
+const coverUrl = computed(() =>
+  props.volume.coverFile
+    ? getAttachmentUrl('novel_volumes', props.volume.id, props.volume.coverFile, { width: 96 })
+    : null
+)
 </script>
 
 <template>
@@ -68,6 +75,13 @@ const resumePercent = computed(() =>
           :class="cn('size-4', isRead && 'text-success')"
         />
       </Button>
+
+      <img
+        v-if="coverUrl"
+        :src="coverUrl"
+        :alt="title"
+        class="h-12 w-9 shrink-0 rounded-sm border bg-muted object-cover"
+      />
 
       <div class="min-w-0">
         <div class="flex items-center gap-2">

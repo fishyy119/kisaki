@@ -2,6 +2,7 @@ import type {
   ContentLocale,
   ExternalId,
   IdResolvedTarget,
+  MediaEntryGrain,
   ScrapedEntityIdentity,
   ScraperLookup,
   ScraperProviderContext
@@ -20,6 +21,8 @@ interface SubjectSearchResult {
   id: string
   name: string
   originalName?: string
+  /** Stated only by scopes whose search spans works and their volumes. */
+  grain?: MediaEntryGrain
   externalIds: readonly ExternalId[]
 }
 
@@ -64,10 +67,14 @@ export abstract class BangumiSubjectProvider<TSearchResult extends SubjectSearch
       return this.createResolvedTarget(knownId, lookup.name)
     }
 
-    const first = (await this.search(lookup.name, ctx))[0]
-    return first
-      ? this.createResolvedTarget(first.id, first.originalName ?? first.name, {
-          externalIds: first.externalIds
+    // A book search lists a work beside every volume of it, and an automated
+    // resolve must land on the work: a volume would anchor the entry's identity
+    // to one installment. Scopes that state no grain keep provider order.
+    const results = await this.search(lookup.name, ctx)
+    const picked = results.find((result) => result.grain === 'work') ?? results[0]
+    return picked
+      ? this.createResolvedTarget(picked.id, picked.originalName ?? picked.name, {
+          externalIds: picked.externalIds
         })
       : null
   }

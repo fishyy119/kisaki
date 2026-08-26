@@ -31,9 +31,13 @@ import type {
   CharacterTagLink,
   GameCharacterLink,
   AnimeCharacterLink,
+  ComicCharacterLink,
+  NovelCharacterLink,
   CharacterPersonLink,
   Game,
   Anime,
+  Comic,
+  Novel,
   Person,
   Tag
 } from '@shared/db/schema'
@@ -51,6 +55,8 @@ interface CharacterData {
   tags: (CharacterTagLink & { tag: Tag | null })[]
   games: (GameCharacterLink & { game: Game | null })[]
   animes: (AnimeCharacterLink & { anime: Anime | null })[]
+  comics: (ComicCharacterLink & { comic: Comic | null })[]
+  novels: (NovelCharacterLink & { novel: Novel | null })[]
   persons: (CharacterPersonLink & { person: Person | null })[]
   cast: CharacterCastEntry[]
 }
@@ -74,6 +80,8 @@ export interface CharacterContext {
   tags: ComputedRef<(CharacterTagLink & { tag: Tag | null })[]>
   games: ComputedRef<(GameCharacterLink & { game: Game | null })[]>
   animes: ComputedRef<(AnimeCharacterLink & { anime: Anime | null })[]>
+  comics: ComputedRef<(ComicCharacterLink & { comic: Comic | null })[]>
+  novels: ComputedRef<(NovelCharacterLink & { novel: Novel | null })[]>
   persons: ComputedRef<(CharacterPersonLink & { person: Person | null })[]>
   /** Confirmed voice credits of this character, one row per entry and actor */
   cast: ComputedRef<CharacterCastEntry[]>
@@ -131,6 +139,18 @@ async function fetchCharacterData(
     showNsfw ? undefined : eq(schema.animes.isNsfw, false)
   )
 
+  const comicCharacterLinksWhere = and(
+    eq(schema.comicCharacterLinks.characterId, characterId),
+    spoilersRevealed ? undefined : eq(schema.comicCharacterLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.comics.isNsfw, false)
+  )
+
+  const novelCharacterLinksWhere = and(
+    eq(schema.novelCharacterLinks.characterId, characterId),
+    spoilersRevealed ? undefined : eq(schema.novelCharacterLinks.isSpoiler, false),
+    showNsfw ? undefined : eq(schema.novels.isNsfw, false)
+  )
+
   const characterPersonLinksWhere = and(
     eq(schema.characterPersonLinks.characterId, characterId),
     spoilersRevealed ? undefined : eq(schema.characterPersonLinks.isSpoiler, false),
@@ -151,7 +171,16 @@ async function fetchCharacterData(
   )
 
   // Parallel fetch all related data
-  const [tagLinks, gameLinks, animeLinks, personLinks, gameCast, animeCast] = await Promise.all([
+  const [
+    tagLinks,
+    gameLinks,
+    animeLinks,
+    comicLinks,
+    novelLinks,
+    personLinks,
+    gameCast,
+    animeCast
+  ] = await Promise.all([
     db
       .select()
       .from(schema.characterTagLinks)
@@ -170,6 +199,18 @@ async function fetchCharacterData(
       .leftJoin(schema.animes, eq(schema.animeCharacterLinks.animeId, schema.animes.id))
       .where(animeCharacterLinksWhere)
       .orderBy(asc(schema.animeCharacterLinks.orderInCharacter)),
+    db
+      .select()
+      .from(schema.comicCharacterLinks)
+      .leftJoin(schema.comics, eq(schema.comicCharacterLinks.comicId, schema.comics.id))
+      .where(comicCharacterLinksWhere)
+      .orderBy(asc(schema.comicCharacterLinks.orderInCharacter)),
+    db
+      .select()
+      .from(schema.novelCharacterLinks)
+      .leftJoin(schema.novels, eq(schema.novelCharacterLinks.novelId, schema.novels.id))
+      .where(novelCharacterLinksWhere)
+      .orderBy(asc(schema.novelCharacterLinks.orderInCharacter)),
     db
       .select()
       .from(schema.characterPersonLinks)
@@ -197,6 +238,8 @@ async function fetchCharacterData(
     tags: tagLinks.map((row) => ({ ...row.character_tag_links, tag: row.tags })),
     games: gameLinks.map((row) => ({ ...row.game_character_links, game: row.games })),
     animes: animeLinks.map((row) => ({ ...row.anime_character_links, anime: row.animes })),
+    comics: comicLinks.map((row) => ({ ...row.comic_character_links, comic: row.comics })),
+    novels: novelLinks.map((row) => ({ ...row.novel_character_links, novel: row.novels })),
     persons: personLinks.map((row) => ({ ...row.character_person_links, person: row.persons })),
     cast: [
       ...gameCast.map((row) => ({
@@ -254,6 +297,8 @@ function provideCharacterContext(source: CharacterDataSource): CharacterContext 
     tags: computed(() => source.data.value?.tags ?? []),
     games: computed(() => source.data.value?.games ?? []),
     animes: computed(() => source.data.value?.animes ?? []),
+    comics: computed(() => source.data.value?.comics ?? []),
+    novels: computed(() => source.data.value?.novels ?? []),
     persons: computed(() => source.data.value?.persons ?? []),
     cast: computed(() => source.data.value?.cast ?? []),
     isLoading: source.isLoading,
@@ -271,6 +316,8 @@ const CHARACTER_LINK_TABLES: readonly TableName[] = [
   'character_tag_links',
   'game_character_links',
   'anime_character_links',
+  'comic_character_links',
+  'novel_character_links',
   'game_cast_links',
   'anime_cast_links',
   'character_person_links'

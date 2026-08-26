@@ -7,11 +7,11 @@
  * only ever render as a card badge, so links keep their stored order.
  */
 
-import type { MediaType } from '@shared/common'
-import type { Anime, Game } from '@shared/db'
+import { MEDIA_TYPES, type MediaType } from '@shared/common'
+import type { Anime, Comic, Game, Novel } from '@shared/db'
 import type { LinkViewKey } from '../links'
 
-export type WorkMedia = Game | Anime
+export type WorkMedia = Game | Anime | Comic | Novel
 
 export interface WorkItem {
   /** Link row id (stable list key) */
@@ -27,6 +27,20 @@ export interface WorksBlock {
   roleLabels: Record<string, string>
   /** Links form view editing this media kind from the satellite side */
   linkView: LinkViewKey
+}
+
+/** What one media kind contributes to a satellite's credit list. */
+export type WorksBlockSpec = Omit<WorksBlock, 'mediaType'>
+
+/**
+ * Build a satellite's credit blocks from its per-media-kind specs.
+ *
+ * The specs are keyed by the media-type union, so adding a media type fails to
+ * compile here instead of silently dropping that kind's credits — which is how
+ * comic and novel credits went missing from these surfaces before.
+ */
+export function buildWorksBlocks(specs: Record<MediaType, WorksBlockSpec>): WorksBlock[] {
+  return MEDIA_TYPES.map((mediaType) => ({ mediaType, ...specs[mediaType] }))
 }
 
 /** One credited media row, with its role resolved to a badge label. */

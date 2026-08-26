@@ -9,6 +9,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import ComicReadButton from '../../../comic-read-button.vue'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { cn } from '@renderer/utils/cn'
 import { formatUnitNumber } from '@renderer/utils/format'
 import type { ComicChapterEntry } from '@renderer/composables/use-comic'
@@ -65,6 +66,12 @@ const title = computed(() => {
   }
   return m.value.common.emptyValue
 })
+
+const coverUrl = computed(() =>
+  props.chapter.coverFile
+    ? getAttachmentUrl('comic_chapters', props.chapter.id, props.chapter.coverFile, { width: 96 })
+    : null
+)
 </script>
 
 <template>
@@ -88,6 +95,13 @@ const title = computed(() => {
           :class="cn('size-4', isRead && 'text-success')"
         />
       </Button>
+
+      <img
+        v-if="coverUrl"
+        :src="coverUrl"
+        :alt="title"
+        class="h-12 w-9 shrink-0 rounded-sm border bg-muted object-cover"
+      />
 
       <div class="min-w-0">
         <div class="flex items-center gap-2">

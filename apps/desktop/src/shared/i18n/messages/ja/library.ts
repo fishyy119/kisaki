@@ -267,6 +267,11 @@ export const library = {
     vertical: '縦スクロール'
   },
 
+  mediaEntryGrain: {
+    work: 'シリーズ',
+    volume: '単行本'
+  },
+
   mediaRelation: {
     sequel: '続編',
     prequel: '前作',
@@ -276,6 +281,7 @@ export const library = {
     fullStory: '完全版',
     adaptation: 'メディア化作品',
     sourceMaterial: '原作',
+    mediaMix: 'メディアミックス',
     alternative: '別バージョン',
     other: 'その他'
   },
@@ -381,6 +387,7 @@ export const library = {
     columnDeath: '没年月日',
     columnFounded: '設立',
     columnReleaseDate: '発売日',
+    columnGrain: '階層',
     startHint: ({ label }: { label: string }) => `${label}名を入力して検索を開始`,
     noMatchTitle: '一致する結果がありません',
     noMatchDescription: '別のキーワードをお試しください',

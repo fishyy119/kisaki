@@ -7,7 +7,13 @@
 
 import { COMIC_FORMAT_VALUES, type ComicFormat, type PartialDate } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
-import { normalizeMediaLookupFacts, rankReleaseYear, type MediaScraperLookup } from './media'
+import {
+  normalizeMediaLookupFacts,
+  rankEntryGrain,
+  rankReleaseYear,
+  type MediaEntryGrain,
+  type MediaScraperLookup
+} from './media'
 import type { ScraperCapability } from './slot'
 
 // =============================================================================
@@ -64,20 +70,26 @@ export interface ComicSearchResult {
   originalName?: string
   releaseDate?: PartialDate
   format?: ComicFormat
+  /** Layer this row sits at, for sources that list works and volumes together. */
+  grain?: MediaEntryGrain
   externalIds: ExternalId[]
 }
+
+/** The candidate-side facts the selection ranks on. */
+type ComicSearchCandidate = ComicLookupFacts & { grain?: MediaEntryGrain }
 
 /**
  * Pick the search result an entry's own facts point at.
  *
- * A name search spans every entry of a work: the serialization plus its
- * doujinshi and spin-offs. The facts rank them instead of trusting provider
- * order — the format says which kind of entry to look for, the release date
+ * A name search spans every entry of a work: the serialization, its individual
+ * volumes, plus its doujinshi and spin-offs. The facts rank them instead of
+ * trusting provider order — the format says which kind of entry to look for,
+ * the grain says the work rather than one of its volumes, and the release date
  * says which one of that kind. Rows the facts cannot separate keep the order
  * the provider gave them, and doujinshi rank last unless asked for, so a
  * caller that states no facts lands on the provider's first original entry.
  */
-export function selectComicSearchResult<TResult extends ComicLookupFacts>(
+export function selectComicSearchResult<TResult extends ComicSearchCandidate>(
   results: readonly TResult[],
   facts: ComicLookupFacts
 ): TResult | null {
@@ -85,8 +97,13 @@ export function selectComicSearchResult<TResult extends ComicLookupFacts>(
   let bestRank = -1
 
   for (const result of results) {
-    // Format outranks date: the kind of entry narrows harder than the year.
-    const rank = rankComicFormat(result.format, facts.format) * 3 + rankReleaseYear(result, facts)
+    // Strict priority format > grain > date: each tier outweighs everything
+    // below it, because the kind of entry narrows harder than the layer, which
+    // narrows harder than the year.
+    const rank =
+      rankComicFormat(result.format, facts.format) * 9 +
+      rankEntryGrain(result.grain) * 3 +
+      rankReleaseYear(result, facts)
     if (rank > bestRank) {
       best = result
       bestRank = rank

@@ -95,6 +95,14 @@ export interface BangumiSubject {
   total_episodes?: number
   /** Volume count of a book subject, parsed server-side from the infobox. */
   volumes?: number
+  /**
+   * Whether a book subject is the series entry rather than one of its volumes.
+   *
+   * Bangumi files every collected volume as its own subject beside the work, so
+   * this is the only fact that tells the two apart. `false` covers both a
+   * volume and a genuinely single-release work, so it states less than `true`.
+   */
+  series?: boolean
   images?: BangumiImages | null
   infobox?: BangumiInfoboxItem[] | null
   tags?: BangumiTag[] | null

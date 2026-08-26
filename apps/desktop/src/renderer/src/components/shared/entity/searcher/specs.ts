@@ -20,6 +20,7 @@ import type {
   CompanySearchResult,
   GameScraperLookup,
   GameSearchResult,
+  MediaEntryGrain,
   NovelScraperLookup,
   NovelSearchResult,
   PersonSearchResult,
@@ -90,6 +91,21 @@ function originalNameColumn<TResult extends { originalName?: string }>(
   }
 }
 
+/**
+ * Layer column, for media whose sources list a work beside its volumes.
+ *
+ * Only the series side is ever stated, so an empty cell means the provider did
+ * not separate the two rather than "this is a volume".
+ */
+function grainColumn<TResult extends { grain?: MediaEntryGrain }>(): SearcherColumn<TResult> {
+  return {
+    width: '5rem',
+    header: (m) => m.library.searcher.columnGrain,
+    cell: (result, m) =>
+      result.grain ? m.library.mediaEntryGrain[result.grain] : m.common.emptyValue
+  }
+}
+
 export const SEARCHER_SPECS: EntitySearcherSpecs = {
   game: {
     search: (profileId, query) => ipcManager.invoke('scraper:search-game', profileId, query),
@@ -146,6 +162,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
         cell: (result, m) =>
           result.format ? m.library.comicFormat[result.format] : m.common.emptyValue
       },
+      grainColumn(),
       {
         width: '7.5rem',
         header: (m) => m.library.searcher.columnReleaseDate,
@@ -170,6 +187,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
         cell: (result, m) =>
           result.format ? m.library.novelFormat[result.format] : m.common.emptyValue
       },
+      grainColumn(),
       {
         width: '7.5rem',
         header: (m) => m.library.searcher.columnReleaseDate,

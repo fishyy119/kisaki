@@ -16,7 +16,13 @@ import path from 'node:path'
 
 import { createLogger } from '@main/log'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
-import { readFileStat, readPrimaryElection, SyncPassQueue, type FileStat } from '../reconcile'
+import {
+  readFileStat,
+  readPrimaryElection,
+  SyncPassQueue,
+  unnamedUnitGroupKey,
+  type FileStat
+} from '../reconcile'
 import {
   novelSessions,
   novelVolumeFiles,
@@ -62,16 +68,17 @@ function compareVolumes(a: NovelVolumeCandidate, b: NovelVolumeCandidate): numbe
 }
 
 /**
- * Identity of a candidate across sync runs.
+ * Identity of a candidate across sync runs, and across sibling versions of one
+ * volume within a run.
  *
  * Numbered files share their volume through the library-wide identity key;
- * unreadable filenames stay one volume per file, keyed by path, since two
- * unreadable names are not evidence of one volume.
+ * unnumbered ones group by directory and cleaned name, so an EPUB and its TXT
+ * source become two files of one volume.
  */
 function volumeCandidateKey(candidate: NovelVolumeCandidate): string {
   return isNumberedNovelVolume(candidate)
     ? novelUnitIdentityKey(candidate)
-    : `file:${candidate.path}`
+    : unnamedUnitGroupKey(candidate.path, candidate.name)
 }
 
 export class NovelFileSyncHandler {
@@ -257,8 +264,9 @@ export class NovelFileSyncHandler {
 
   /**
    * Map each recognized file onto a volume row, creating rows for numbers the
-   * scraped list is missing. Unnumbered existing rows are re-matched through
-   * the paths of the files they own, so re-syncs stay idempotent.
+   * scraped list is missing. Unnumbered existing rows are re-matched by their
+   * group key, then by the paths of the files they own, so a re-sync stays
+   * idempotent even after the row was renamed by hand.
    */
   private writeVolumes(
     tx: DbContext,
@@ -274,13 +282,17 @@ export class NovelFileSyncHandler {
         existingByKey.set(`volume:${volume.volumeNumber}`, volume)
       }
     }
-    // Unnumbered rows exist only because of their files, so any of their file
-    // paths identifies them across runs.
+    // Unnumbered rows exist only because of their files, so those files locate
+    // them again: their group key when the stored name still matches, and the
+    // path outright when a rename moved it out of reach.
+    const existingByFilePath = new Map<string, NovelVolume>()
     for (const file of existingFiles) {
       const volume = volumeById.get(file.volumeId)
-      if (volume && volume.volumeNumber === null) {
-        existingByKey.set(`file:${file.path}`, volume)
-      }
+      if (!volume || volume.volumeNumber !== null) continue
+
+      existingByFilePath.set(file.path, volume)
+      const groupKey = unnamedUnitGroupKey(file.path, volume.name ?? '')
+      if (!existingByKey.has(groupKey)) existingByKey.set(groupKey, volume)
     }
 
     const volumeIdByKey = new Map<string, string>()
@@ -291,7 +303,7 @@ export class NovelFileSyncHandler {
 
       if (volumeIdByKey.has(key)) continue
 
-      const match = existingByKey.get(key)
+      const match = existingByKey.get(key) ?? existingByFilePath.get(candidate.path)
       if (match) {
         volumeIdByKey.set(key, match.id)
         continue

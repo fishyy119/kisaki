@@ -17,9 +17,9 @@ import { omitUndefined } from '../../utils/object'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
 import { parseBangumiSubjectDate } from '../format/dates'
 import {
-  mapBangumiComicFormat,
-  mapBangumiNovelFormat,
-  resolveBangumiBookKind
+  resolveBangumiBookKind,
+  resolveBangumiComicFormat,
+  resolveBangumiNovelFormat
 } from '../format/formats'
 import { readChangeReasons } from '../local/adapter'
 import {
@@ -300,7 +300,10 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
           name: input.name,
           knownIds: [...input.knownIds],
           releaseDate: parseBangumiSubjectDate(input.facts?.date),
-          format: mapBangumiComicFormat(input.facts?.platform)
+          // An import row states only the platform label, which places the
+          // entry in a library but says little about its format; the scrape
+          // that follows reads the full subject and settles it.
+          format: resolveBangumiComicFormat({ platform: input.facts?.platform })
         })
       )
       return { localId: result.comicId, isNew: result.isNew }
@@ -312,7 +315,8 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
         name: input.name,
         knownIds: [...input.knownIds],
         releaseDate: parseBangumiSubjectDate(input.facts?.date),
-        format: mapBangumiNovelFormat(input.facts?.platform)
+        // Platform-only, as above.
+        format: resolveBangumiNovelFormat({ platform: input.facts?.platform })
       })
     )
     return { localId: result.novelId, isNew: result.isNew }

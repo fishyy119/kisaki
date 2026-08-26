@@ -39,6 +39,23 @@ export class SyncPassQueue<TResult> {
   }
 }
 
+/**
+ * Grouping key for a unit whose file states no number.
+ *
+ * Sibling versions of one unit are exactly the files that sit together and
+ * clean to the same name: an EPUB beside its TXT source, a raw scan beside a
+ * cleaned release. Both file layers are built to hold those together, so they
+ * share one unit rather than forking one row each.
+ *
+ * The name must match, not merely resemble: two unreadable names are no
+ * evidence of one unit, and only an identical one is. Directory scope keeps
+ * same-named installments in sibling folders apart. Casing is folded because
+ * it never distinguishes two releases.
+ */
+export function unnamedUnitGroupKey(filePath: string, cleanedName: string): string {
+  return `unnamed:${path.dirname(filePath)}\u0000${cleanedName.trim().toLowerCase()}`
+}
+
 /** The revision facts a file row stores, for telling changed files apart. */
 export interface FileStat {
   size: number

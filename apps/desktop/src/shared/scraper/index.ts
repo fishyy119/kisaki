@@ -104,7 +104,12 @@ export {
 } from './bundle'
 
 // Media lookup facts shared by every media type
-export { normalizeMediaLookupFacts, type MediaScraperLookup } from './media'
+export {
+  MEDIA_ENTRY_GRAINS,
+  normalizeMediaLookupFacts,
+  type MediaEntryGrain,
+  type MediaScraperLookup
+} from './media'
 
 // Game-specific types
 export { type GameScraperLookup, type GameScraperProviderInfo, type GameSearchResult } from './game'

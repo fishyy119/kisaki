@@ -10,8 +10,9 @@ import type { BangumiSubject } from '../../../api/types'
 import { omitUndefined } from '../../../utils/object'
 import { parseBangumiSubjectDate } from '../../format/dates'
 import {
-  mapBangumiComicFormat,
+  resolveBangumiBookGrain,
   resolveBangumiBookKind,
+  resolveBangumiComicFormat,
   type BangumiBookKind
 } from '../../format/formats'
 import { resolveLocalizedSubjectName } from '../../format/names'
@@ -29,6 +30,7 @@ export class BangumiComicProvider
     'search',
     'info',
     'tags',
+    'chapters',
     'characters',
     'persons',
     'companies',
@@ -75,7 +77,8 @@ export class BangumiComicProvider
       name,
       originalName,
       releaseDate: parseBangumiSubjectDate(subject.date),
-      format: mapBangumiComicFormat(subject.platform),
+      format: resolveBangumiComicFormat(subject),
+      grain: resolveBangumiBookGrain(subject.series),
       externalIds: this.buildSearchExternalIds(subject),
       bookKind: resolveBangumiBookKind(subject.platform)
     })

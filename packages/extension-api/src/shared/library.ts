@@ -147,6 +147,7 @@ export const LIBRARY_MEDIA_RELATION_TYPES = [
   'fullStory',
   'adaptation',
   'sourceMaterial',
+  'mediaMix',
   'alternative',
   'other'
 ] as const

@@ -4,6 +4,7 @@ import {
   COMIC_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
   GAME_SCRAPER_SLOTS,
+  MEDIA_ENTRY_GRAINS,
   NOVEL_SCRAPER_SLOTS,
   PERSON_SCRAPER_SLOTS,
   type AnimeScraperSlot,
@@ -81,6 +82,7 @@ const COMIC_SEARCH_RESULT_KEYS = new Set<string>([
   'originalName',
   'releaseDate',
   'format',
+  'grain',
   'externalIds'
 ])
 const NOVEL_SEARCH_RESULT_KEYS = new Set<string>([
@@ -89,6 +91,7 @@ const NOVEL_SEARCH_RESULT_KEYS = new Set<string>([
   'originalName',
   'releaseDate',
   'format',
+  'grain',
   'externalIds'
 ])
 const PERSON_SEARCH_RESULT_KEYS = new Set<string>([
@@ -159,6 +162,7 @@ const COMIC_CHAPTER_KEYS = new Set<string>([
   'originalName',
   'releaseDate',
   'description',
+  'coverUrl',
   'externalIds'
 ])
 const NOVEL_INFO_KEYS = new Set<string>([
@@ -177,6 +181,7 @@ const NOVEL_VOLUME_KEYS = new Set<string>([
   'originalName',
   'releaseDate',
   'description',
+  'coverUrl',
   'externalIds'
 ])
 const PERSON_INFO_KEYS = new Set<string>([
@@ -588,6 +593,12 @@ function validateComicSearchResult(value: unknown, path: string): ValidationIssu
       `${path}.format`,
       LIBRARY_COMIC_FORMATS,
       'format must be one of the supported comic formats.'
+    ),
+    ...validateOptionalEnumString(
+      result.grain,
+      `${path}.grain`,
+      MEDIA_ENTRY_GRAINS,
+      'grain must be one of the supported media entry grains.'
     )
   ]
 }
@@ -608,6 +619,12 @@ function validateNovelSearchResult(value: unknown, path: string): ValidationIssu
       `${path}.format`,
       LIBRARY_NOVEL_FORMATS,
       'format must be one of the supported novel formats.'
+    ),
+    ...validateOptionalEnumString(
+      result.grain,
+      `${path}.grain`,
+      MEDIA_ENTRY_GRAINS,
+      'grain must be one of the supported media entry grains.'
     )
   ]
 }
@@ -773,6 +790,7 @@ function validateComicChapter(value: unknown, path: string): ValidationIssue[] {
     ...validateOptionalString(chapter.originalName, `${path}.originalName`),
     ...validateOptionalPartialDate(chapter.releaseDate, `${path}.releaseDate`),
     ...validateOptionalString(chapter.description, `${path}.description`),
+    ...validateOptionalString(chapter.coverUrl, `${path}.coverUrl`),
     ...validateOptionalArrayOf(
       chapter.externalIds,
       `${path}.externalIds`,
@@ -831,6 +849,7 @@ function validateNovelVolume(value: unknown, path: string): ValidationIssue[] {
     ...validateOptionalString(volume.originalName, `${path}.originalName`),
     ...validateOptionalPartialDate(volume.releaseDate, `${path}.releaseDate`),
     ...validateOptionalString(volume.description, `${path}.description`),
+    ...validateOptionalString(volume.coverUrl, `${path}.coverUrl`),
     ...validateOptionalArrayOf(
       volume.externalIds,
       `${path}.externalIds`,

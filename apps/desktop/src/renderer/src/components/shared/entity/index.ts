@@ -28,6 +28,12 @@ export {
   type RoleLinkEntityType,
   type RoleLinkItem
 } from './role-links'
-export { EntityWorksSection, EntityWorksTab, type WorksBlock } from './works'
+export {
+  buildWorksBlocks,
+  EntityWorksSection,
+  EntityWorksTab,
+  type WorksBlock,
+  type WorksBlockSpec
+} from './works'
 export { EntitySearcher, type EntitySearcherSelection } from './searcher'
 export { ENTITY_SELECT_SPECS, type EntitySelectSpec } from './select-specs'
