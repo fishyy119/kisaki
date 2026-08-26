@@ -36,7 +36,6 @@ export const scraper = {
     manageTitle: '刮削配置管理',
     emptyProfiles: '暂无配置，点击下方按钮添加',
     unnamed: '（未命名）',
-    searchProviderValue: ({ label }: { label: string }) => `搜索：${label}`,
     addProfile: '添加配置',
     choosePreset: '选择预设',
     profileEntityLabel: '配置',

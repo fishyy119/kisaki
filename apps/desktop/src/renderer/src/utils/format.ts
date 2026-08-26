@@ -228,9 +228,9 @@ export function getSpoilerDisplay(
 
 const ENTITY_ICONS: Record<AllEntityType, string> = {
   game: 'icon-[mdi--gamepad-variant-outline]',
-  anime: 'icon-[mdi--television-classic]',
-  comic: 'icon-[mdi--book-open-page-variant-outline]',
-  novel: 'icon-[mdi--book-open-variant]',
+  anime: 'icon-[mdi--tv]',
+  comic: 'icon-[mdi--image-filter-hdr-outline]',
+  novel: 'icon-[mdi--book-open-blank-variant-outline]',
   character: 'icon-[mdi--ghost-outline]',
   person: 'icon-[mdi--account-circle-outline]',
   company: 'icon-[mdi--company]',

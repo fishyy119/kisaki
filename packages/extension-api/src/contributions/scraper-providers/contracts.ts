@@ -318,6 +318,8 @@ export interface ScrapedAnimeEpisode {
   airDate?: PartialDate
   description?: string
   durationMs?: number
+  /** Still frame of this episode from metadata, not a render of the local file. */
+  stillUrl?: string
   externalIds?: readonly ExternalId[]
 }
 

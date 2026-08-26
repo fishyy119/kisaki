@@ -36,7 +36,6 @@ export const scraper = {
     manageTitle: 'スクレイパープロファイル管理',
     emptyProfiles: 'プロファイルがありません。下のボタンから追加してください。',
     unnamed: '（名称未設定）',
-    searchProviderValue: ({ label }: { label: string }) => `検索：${label}`,
     addProfile: 'プロファイルを追加',
     choosePreset: 'プリセットを選択',
     profileEntityLabel: 'プロファイル',

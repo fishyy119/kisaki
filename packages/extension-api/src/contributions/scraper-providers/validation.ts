@@ -142,6 +142,7 @@ const ANIME_EPISODE_KEYS = new Set<string>([
   'airDate',
   'description',
   'durationMs',
+  'stillUrl',
   'externalIds'
 ])
 const COMIC_INFO_KEYS = new Set<string>([
@@ -743,6 +744,7 @@ function validateAnimeEpisode(value: unknown, path: string): ValidationIssue[] {
     ...validateOptionalPartialDate(episode.airDate, `${path}.airDate`),
     ...validateOptionalString(episode.description, `${path}.description`),
     ...validateOptionalFiniteNumber(episode.durationMs, `${path}.durationMs`),
+    ...validateOptionalString(episode.stillUrl, `${path}.stillUrl`),
     ...validateOptionalArrayOf(
       episode.externalIds,
       `${path}.externalIds`,

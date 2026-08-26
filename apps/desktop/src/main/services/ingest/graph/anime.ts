@@ -391,6 +391,7 @@ export function normalizeAnimeEpisodes(
       airDate: episode.airDate,
       description: normalizeOptionalString(episode.description),
       durationMs: episode.durationMs,
+      stillUrl: normalizeOptionalString(episode.stillUrl),
       externalIds: mergeExternalIds(undefined, episode.externalIds)
     }
     byKey.set(`${normalized.type}:${normalized.number}`, normalized)

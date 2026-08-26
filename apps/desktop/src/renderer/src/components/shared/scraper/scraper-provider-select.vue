@@ -19,11 +19,7 @@ import { cn } from '@renderer/utils/cn'
 import { cva } from 'class-variance-authority'
 import type { ScraperCapability } from '@shared/scraper'
 import type { ContentEntityType } from '@shared/common'
-import {
-  getScraperProviderDisplay,
-  resolveScraperProviderOwnerName,
-  type ScraperProviderInfo
-} from './provider-display'
+import { getScraperProviderDisplay, type ScraperProviderInfo } from './provider-display'
 
 interface Props {
   /** Which entity type this provider list is for (default: game) */
@@ -223,6 +219,9 @@ watch(model, (providerId) => {
       >
         <div class="flex min-w-0 items-center gap-1.5">
           <span class="truncate">{{ selectedFallbackProvider.label }}</span>
+          <span class="shrink-0 font-mono text-xs text-muted-foreground">
+            {{ selectedFallbackProvider.id }}
+          </span>
           <Badge
             v-if="selectedFallbackProvider.statusLabel"
             variant="warning"
@@ -245,10 +244,10 @@ watch(model, (providerId) => {
       >
         <div class="flex min-w-0 items-center gap-1.5">
           <span class="truncate">{{ provider.name }}</span>
-          <!-- Two extensions can cover the same source, so the owner is what
-               tells otherwise identical entries apart. -->
-          <span class="shrink-0 text-xs text-muted-foreground">
-            {{ resolveScraperProviderOwnerName(provider.id) }}
+          <!-- The raw provider id carries the extension namespace, so
+               same-named providers from different extensions stay apart. -->
+          <span class="shrink-0 font-mono text-xs text-muted-foreground">
+            {{ provider.id }}
           </span>
         </div>
       </SelectItem>

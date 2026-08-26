@@ -93,11 +93,11 @@ export function createSeriesSource(
     episodes: () => {
       switch (ref.kind) {
         case 'series':
-          return buildSeriesEpisodes(loaders)
+          return buildSeriesEpisodes(loaders, ctx.imageBaseUrl)
         case 'season':
-          return buildSeasonEpisodes(ref, loaders)
+          return buildSeasonEpisodes(ref, loaders, ctx.imageBaseUrl)
         case 'episodeGroup':
-          return buildEpisodeGroupEpisodes(ref, loaders)
+          return buildEpisodeGroupEpisodes(ref, loaders, ctx.imageBaseUrl)
       }
     },
     persons: async () => buildAnimePersonFacts(await loaders.getCredits(), ctx.imageBaseUrl),

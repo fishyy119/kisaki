@@ -10,6 +10,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAnimeWatch } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { cn } from '@renderer/utils/cn'
 import { formatUnitNumber } from '@renderer/utils/format'
 import type { AnimeEpisodeEntry } from '@renderer/composables/use-anime'
@@ -47,6 +48,12 @@ const resolution = computed(() => {
   return file?.width && file.height ? `${file.width}×${file.height}` : null
 })
 
+const stillUrl = computed(() =>
+  props.episode.stillFile
+    ? getAttachmentUrl('anime_episodes', props.episode.id, props.episode.stillFile, { width: 192 })
+    : null
+)
+
 // Live playback only reflects this episode being the currently-watched one.
 const {
   isWatching,
@@ -82,6 +89,13 @@ const {
           :class="cn('size-4', isWatched && 'text-success')"
         />
       </Button>
+
+      <img
+        v-if="stillUrl"
+        :src="stillUrl"
+        :alt="title"
+        class="h-12 w-20 shrink-0 rounded-sm border bg-muted object-cover"
+      />
 
       <div class="min-w-0">
         <div class="flex items-center gap-2">

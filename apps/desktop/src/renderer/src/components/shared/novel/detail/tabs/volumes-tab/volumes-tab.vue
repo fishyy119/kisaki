@@ -115,7 +115,7 @@ async function handleOpenFolder(path: string): Promise<void> {
       <StateView
         v-if="volumes.length === 0"
         state="empty"
-        icon="icon-[mdi--book-open-variant]"
+        icon="icon-[mdi--book-open-blank-variant-outline]"
         :title="m.novel.volumes.emptyTitle"
         :description="m.novel.volumes.emptyHint"
         class="py-10"

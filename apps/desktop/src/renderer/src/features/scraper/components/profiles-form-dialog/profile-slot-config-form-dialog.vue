@@ -331,13 +331,10 @@ function handleSubmit() {
                           {{ row.display.statusLabel }}
                         </Badge>
                       </div>
-                      <!-- Two extensions can cover the same source, so the
-                           owner is what tells otherwise identical rows apart. -->
-                      <div
-                        v-if="row.display.ownerName"
-                        class="truncate text-xs text-muted-foreground"
-                      >
-                        {{ row.display.ownerName }}
+                      <!-- The raw provider id carries the extension namespace, so
+                           same-named providers from different extensions stay apart. -->
+                      <div class="truncate font-mono text-xs text-muted-foreground">
+                        {{ row.display.id }}
                       </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-1.5">

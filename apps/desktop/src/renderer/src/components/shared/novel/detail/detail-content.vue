@@ -48,7 +48,7 @@ const activeTab = ref('overview')
         </TabsTrigger>
         <TabsTrigger value="volumes">
           <Icon
-            icon="icon-[mdi--book-open-variant]"
+            icon="icon-[mdi--book-open-blank-variant-outline]"
             class="size-3.5"
           />
           {{ m.novel.volumes.title }}

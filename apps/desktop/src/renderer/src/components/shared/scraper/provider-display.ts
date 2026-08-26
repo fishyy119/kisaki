@@ -10,7 +10,6 @@ import type {
   PersonScraperProviderInfo,
   ScraperCapability
 } from '@shared/scraper'
-import { extensionContributionStore } from '@renderer/core/extensions'
 import { messages } from '@renderer/core/i18n'
 
 export type ScraperProviderInfo =
@@ -27,12 +26,11 @@ export type ScraperProvidersByType = Record<ContentEntityType, ScraperProviderIn
 export type ScraperProviderAvailability = 'available' | 'unavailable' | 'unsupported'
 
 export interface ScraperProviderDisplay {
+  /** Raw provider id; carries the extension namespace, shown as the disambiguator. */
   id: string
   label: string
   status: ScraperProviderAvailability
   statusLabel: string | null
-  /** Extension that contributes this provider, for telling same-named ones apart. */
-  ownerName: string | null
   provider: ScraperProviderInfo | null
 }
 
@@ -52,27 +50,6 @@ export function formatScraperProviderFallbackName(providerId: string): string {
 }
 
 /**
- * Name of the extension a provider belongs to.
- *
- * Every provider is contributed by an extension, and two extensions may cover
- * the same source, so the owner is what tells otherwise identical entries
- * apart. The live contribution snapshot is authoritative; a provider missing
- * from it is not running, and the id's own extension segment stands in.
- */
-export function resolveScraperProviderOwnerName(providerId: string): string | null {
-  const parts = parseExtensionScraperProviderId(providerId)
-  if (!parts) {
-    return null
-  }
-
-  const registration = extensionContributionStore.scraperProviders.value.find(
-    (entry) => entry.extensionId === parts.extensionId && entry.provider.id === parts.providerId
-  )
-
-  return registration?.extensionName ?? parts.extensionId
-}
-
-/**
  * Resolves provider display state against the current runtime provider list.
  */
 export function getScraperProviderDisplay(
@@ -80,7 +57,6 @@ export function getScraperProviderDisplay(
   providers: readonly ScraperProviderInfo[],
   requiredCapabilities: readonly ScraperCapability[] = []
 ): ScraperProviderDisplay {
-  const ownerName = resolveScraperProviderOwnerName(providerId)
   const provider = providers.find((entry) => entry.id === providerId) ?? null
   if (!provider) {
     return {
@@ -88,7 +64,6 @@ export function getScraperProviderDisplay(
       label: formatScraperProviderFallbackName(providerId),
       status: 'unavailable',
       statusLabel: messages.value.scraper.providerSelect.unavailable,
-      ownerName,
       provider: null
     }
   }
@@ -104,7 +79,6 @@ export function getScraperProviderDisplay(
     statusLabel: supportsRequiredCapabilities
       ? null
       : messages.value.scraper.providerSelect.unsupported,
-    ownerName,
     provider
   }
 }

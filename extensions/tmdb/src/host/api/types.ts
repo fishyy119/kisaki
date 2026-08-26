@@ -161,6 +161,7 @@ export interface TmdbEpisode {
   episode_number?: number
   season_number?: number
   runtime?: number | null
+  still_path?: string | null
   show_id?: number
   order?: number
 }

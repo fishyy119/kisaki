@@ -233,7 +233,7 @@ export class AnimeIngestPersistHandler {
     const animeId = animeResult.animeId
     const pendingAssets: PendingAssetTask[] = [...animeResult.pendingAssets]
 
-    this.insertEpisodes(tx, animeId, graph.episodes)
+    this.insertEpisodes(tx, animeId, graph.episodes, pendingAssets)
 
     const personByIdentity = new Map(graph.persons.map((node) => [node.identityKey, node]))
     const companyByIdentity = new Map(graph.companies.map((node) => [node.identityKey, node]))
@@ -454,16 +454,27 @@ export class AnimeIngestPersistHandler {
    *
    * Episode identity is stored on first write so the update flow's re-scrapes
    * realign rows by external id rather than by number, which sources revise.
+   * Stills are deferred like every other asset, because the row must be
+   * committed before its file can be attached.
    */
   private insertEpisodes(
     tx: DbContext,
     animeId: string,
-    episodes: AnimeEpisodeInfo[] | undefined
+    episodes: AnimeEpisodeInfo[] | undefined,
+    pendingAssets: PendingAssetTask[]
   ): void {
     if (!episodes?.length) return
 
     for (const [index, episode] of episodes.entries()) {
-      insertAnimeEpisodeRow(tx, animeId, episode, index)
+      const episodeId = insertAnimeEpisodeRow(tx, animeId, episode, index)
+      if (episode.stillUrl) {
+        pendingAssets.push({
+          table: 'anime_episodes',
+          rowId: episodeId,
+          field: 'stillFile',
+          url: episode.stillUrl
+        })
+      }
     }
   }
 

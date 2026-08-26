@@ -52,7 +52,7 @@ interface EpisodeMatch {
   order: number
 }
 
-/** Scrape-owned metadata refresh; watch state and stills are never touched. */
+/** Scrape-owned metadata refresh; watch state is never touched. */
 function updateMatchedEpisode(tx: DbContext, match: EpisodeMatch): void {
   const { row, episode, order } = match
   const patch: Partial<AnimeEpisode> = {}
@@ -92,17 +92,20 @@ function updateMatchedEpisode(tx: DbContext, match: EpisodeMatch): void {
  * Incoming episodes claim stored rows by shared external id first, then by
  * (type, episodeNumber) for rows no id claimed; sources revise numbering, so
  * identity outranks position. Matched rows refresh scraped metadata but never
- * watch state (`watched`/`watchedAt`/`playCount`/`resumePositionMs`/`stillFile`).
+ * watch state (`watched`/`watchedAt`/`playCount`/`resumePositionMs`).
  * Unclaimed incoming episodes insert with their identity. Stored rows the
  * source no longer lists are deleted only under `replace` and only when
  * nothing user-owned hangs off them: not watched, no playable files, no
  * sessions. `merge` never deletes.
+ *
+ * Stills are filled, never replaced: a stored `stillFile` outranks any scrape,
+ * so the returned tasks only cover new rows and rows that still have none.
  */
 function reconcileAnimeEpisodes(
   tx: DbContext,
   animeId: string,
   plan: AnimeEpisodeUpdatePlan
-): void {
+): PendingAssetTask[] {
   const existing = tx.select().from(animeEpisodes).where(eq(animeEpisodes.animeId, animeId)).all()
   const existingIds = existing.map((row) => row.id)
   const idRows = existingIds.length
@@ -198,6 +201,8 @@ function reconcileAnimeEpisodes(
     }
   }
 
+  const pendingAssets: PendingAssetTask[] = []
+
   for (const match of matches) {
     updateMatchedEpisode(tx, match)
 
@@ -208,11 +213,24 @@ function reconcileAnimeEpisodes(
     if (missingIds.length > 0) {
       insertAnimeEpisodeExternalIds(tx, match.row.id, missingIds, knownKeys.size)
     }
+
+    if (match.row.stillFile === null && match.episode.stillUrl) {
+      pendingAssets.push(toEpisodeStillTask(match.row.id, match.episode.stillUrl))
+    }
   }
 
   for (const { episode, order } of inserts) {
-    insertAnimeEpisodeRow(tx, animeId, episode, order)
+    const episodeId = insertAnimeEpisodeRow(tx, animeId, episode, order)
+    if (episode.stillUrl) {
+      pendingAssets.push(toEpisodeStillTask(episodeId, episode.stillUrl))
+    }
   }
+
+  return pendingAssets
+}
+
+function toEpisodeStillTask(episodeId: string, url: string): PendingAssetTask {
+  return { table: 'anime_episodes', rowId: episodeId, field: 'stillFile', url }
 }
 
 export function applyAnimePlan(
@@ -237,9 +255,7 @@ export function applyAnimePlan(
       .run()
   }
 
-  if (plan.episodes) {
-    reconcileAnimeEpisodes(tx, animeId, plan.episodes)
-  }
+  const episodeAssets = plan.episodes ? reconcileAnimeEpisodes(tx, animeId, plan.episodes) : []
 
   const plannedMedia: Array<[string, string | undefined]> = [
     ['coverFile', plan.coverUrl],
@@ -249,6 +265,7 @@ export function applyAnimePlan(
   const pendingAssets: PendingAssetTask[] = plannedMedia
     .filter(([, url]) => Boolean(url))
     .map(([field, url]) => ({ table: 'animes', rowId: animeId, field, url: url as string }))
+  pendingAssets.push(...episodeAssets)
 
   const relationGraph = plan.relationGraph
   const relations = relationGraph

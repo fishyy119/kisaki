@@ -35,7 +35,6 @@ export const scraper = {
     manageTitle: 'Manage scraper profiles',
     emptyProfiles: 'No profiles yet. Use the button below to add one.',
     unnamed: '(Unnamed)',
-    searchProviderValue: ({ label }: { label: string }) => `Search: ${label}`,
     addProfile: 'Add profile',
     choosePreset: 'Choose preset',
     profileEntityLabel: 'Profile',

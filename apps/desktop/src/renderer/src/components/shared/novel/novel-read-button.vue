@@ -154,7 +154,7 @@ async function handleClick(e: Event) {
     />
     <Icon
       v-else
-      icon="icon-[mdi--book-open-variant]"
+      icon="icon-[mdi--book-open-blank-variant-outline]"
       :class="iconVariants({ size: props.size })"
     />
   </Button>
@@ -175,7 +175,7 @@ async function handleClick(e: Event) {
     />
     <Icon
       v-else
-      icon="icon-[mdi--book-open-variant]"
+      icon="icon-[mdi--book-open-blank-variant-outline]"
       class="size-4"
     />
     {{ label }}

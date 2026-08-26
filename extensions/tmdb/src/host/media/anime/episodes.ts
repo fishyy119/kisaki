@@ -5,6 +5,7 @@ import type { TmdbMovieLoaders, TmdbSeriesLoaders } from '../loaders'
 import { mapWithConcurrency, omitUndefined } from '../../utils/object'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
 import { parseTmdbDate, toDurationMs } from '../format/dates'
+import { buildImageUrl } from '../format/images'
 import { readMovieNames } from '../format/names'
 import { trimToUndefined } from '../format/text'
 import { findEpisodeGroupItem } from './episode-groups'
@@ -42,7 +43,8 @@ export async function buildMovieEpisodes(
  * own numbering and is marked as such.
  */
 export async function buildSeriesEpisodes(
-  loaders: TmdbSeriesLoaders
+  loaders: TmdbSeriesLoaders,
+  imageBaseUrl: string
 ): Promise<ScrapedAnimeEpisode[]> {
   const series = await loaders.getSeries()
   const seasonNumbers = [...(series.seasons ?? [])]
@@ -61,11 +63,13 @@ export async function buildSeriesEpisodes(
   for (const season of seasons) {
     for (const episode of season.episodes ?? []) {
       if (season.season_number === 0) {
-        specials.push(toEpisode(episode, episode.episode_number ?? specials.length + 1, 'special'))
+        specials.push(
+          toEpisode(episode, episode.episode_number ?? specials.length + 1, 'special', imageBaseUrl)
+        )
         continue
       }
 
-      regular.push(toEpisode(episode, regular.length + 1, 'regular'))
+      regular.push(toEpisode(episode, regular.length + 1, 'regular', imageBaseUrl))
     }
   }
 
@@ -74,13 +78,14 @@ export async function buildSeriesEpisodes(
 
 export async function buildSeasonEpisodes(
   ref: TmdbSeasonRef,
-  loaders: TmdbSeriesLoaders
+  loaders: TmdbSeriesLoaders,
+  imageBaseUrl: string
 ): Promise<ScrapedAnimeEpisode[]> {
   const season = await loaders.getSeason(ref.seasonNumber)
   const type: LibraryAnimeEpisodeType = ref.seasonNumber === 0 ? 'special' : 'regular'
 
   return (season.episodes ?? []).map((episode, index) =>
-    toEpisode(episode, episode.episode_number ?? index + 1, type)
+    toEpisode(episode, episode.episode_number ?? index + 1, type, imageBaseUrl)
   )
 }
 
@@ -93,7 +98,8 @@ export async function buildSeasonEpisodes(
  */
 export async function buildEpisodeGroupEpisodes(
   ref: TmdbEpisodeGroupRef,
-  loaders: TmdbSeriesLoaders
+  loaders: TmdbSeriesLoaders,
+  imageBaseUrl: string
 ): Promise<ScrapedAnimeEpisode[]> {
   const detail = await loaders.getEpisodeGroup(ref.setId)
   const { item } = findEpisodeGroupItem(detail, ref.groupId)
@@ -101,13 +107,14 @@ export async function buildEpisodeGroupEpisodes(
     (left, right) => (left.order ?? 0) - (right.order ?? 0)
   )
 
-  return episodes.map((episode, index) => toEpisode(episode, index + 1, 'regular'))
+  return episodes.map((episode, index) => toEpisode(episode, index + 1, 'regular', imageBaseUrl))
 }
 
 function toEpisode(
   episode: TmdbEpisode,
   number: number,
-  type: LibraryAnimeEpisodeType
+  type: LibraryAnimeEpisodeType,
+  imageBaseUrl: string
 ): ScrapedAnimeEpisode {
   return omitUndefined({
     number,
@@ -116,6 +123,7 @@ function toEpisode(
     airDate: parseTmdbDate(episode.air_date),
     description: trimToUndefined(episode.overview),
     durationMs: toDurationMs(episode.runtime),
+    stillUrl: buildImageUrl(imageBaseUrl, episode.still_path),
     // The episode id is stable across every ordering of the same show, so
     // switching between aired order and an episode group renumbers rows
     // instead of replacing them, and watch state survives.
