@@ -8,7 +8,9 @@ import { cva } from 'class-variance-authority'
  * - Minimal animations for professional feel
  */
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-1 focus-visible:ring-primary",
+  // aria-disabled is the tooltip'd disabled state: it looks disabled but keeps
+  // pointer events, so the tooltip can still say what the control does.
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-1 focus-visible:ring-primary",
   {
     variants: {
       variant: {
@@ -17,11 +19,12 @@ export const buttonVariants = cva(
         destructive:
           'bg-destructive text-destructive-foreground border border-destructive hover:bg-destructive/90 active:bg-destructive/80',
         outline:
-          'border border-border bg-transparent hover:bg-accent hover:text-accent-foreground active:bg-accent/80',
+          'border border-border bg-transparent hover:bg-accent hover:text-accent-foreground active:bg-accent/80 aria-disabled:hover:bg-transparent aria-disabled:active:bg-transparent',
         secondary:
           'bg-secondary text-secondary-foreground border border-border hover:bg-accent active:bg-accent/80',
         input: 'bg-input text-input-foreground border border-border active:bg-accent/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground active:bg-accent/80',
+        ghost:
+          'hover:bg-accent hover:text-accent-foreground active:bg-accent/80 aria-disabled:hover:bg-transparent aria-disabled:active:bg-transparent',
         link: 'text-primary hover:underline',
         text: 'text-muted-foreground hover:text-foreground'
       },

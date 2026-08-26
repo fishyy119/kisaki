@@ -1,6 +1,8 @@
 <!-- Comic reading shell: unit switching and layout controls around the page engine. -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import type { ComicBookmark } from '@shared/db'
 import type { ComicReadingDirection } from '@shared/db/contracts/enums'
 import type { ReaderComicBootstrap, ReaderComicUnit } from '@shared/reader'
 import { Button } from '@renderer/components/ui/button'
@@ -13,31 +15,53 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { useReaderChrome, type ReaderPanelTab } from '@renderer/composables/use-reader-chrome'
+import { useReadingClock } from '@renderer/composables/use-reading-clock'
 import { createLogger } from '@renderer/core/log'
-import { cn } from '@renderer/utils/cn'
+import { notify } from '@renderer/core/notify'
 import {
   closeReaderWindow,
   reportComicProgress,
   reportUnitOpened
 } from '@renderer/core/reader/bridge'
+import { buildComicFilter } from '@renderer/core/reader/display'
+import { isEditableTarget } from '@renderer/core/reader/keys'
+import {
+  deleteComicBookmark,
+  fetchComicBookmarks,
+  toggleComicBookmark,
+  updateComicBookmark
+} from '@renderer/core/reader/marks'
+import type { ReaderOutlineEntry } from '@renderer/core/reader/outline'
 import {
   createComicPdfPageSource,
   createContainerPageSource,
   type PageSource
 } from '@renderer/core/reader/page-source'
-import { useReaderToolbar } from '@renderer/composables/use-reader-toolbar'
+import { useReaderSettingsStore } from '@renderer/stores/reader-settings'
+import NavPanel from './chrome/nav-panel.vue'
+import ProgressFooter from './chrome/progress-footer.vue'
+import ReaderToolbar from './chrome/toolbar.vue'
+import type { ReaderNavUnit, ReaderProgress } from './chrome/types'
+import BookmarkList from './comic/bookmark-list.vue'
+import DisplayPopover from './comic/display-popover.vue'
+import ThumbnailGrid from './comic/thumbnail-grid.vue'
 import PageEngine from './page-engine.vue'
-import ReaderShortcuts from './reader-shortcuts.vue'
 
 const props = defineProps<{ bootstrap: ReaderComicBootstrap }>()
 
 const log = createLogger('Reader')
 const { m } = useI18n()
-const { toolbarVisible, wakeToolbar } = useReaderToolbar()
+const { fullScreen, panelOpen, panelTab, toggleFullScreen, exitFullScreen, togglePanel } =
+  useReaderChrome()
+const { elapsedMinutes } = useReadingClock()
+const { comicDisplay, autoCrop } = storeToRefs(useReaderSettingsStore())
 
 const ZOOM_MIN = 1
 const ZOOM_MAX = 4
 const ZOOM_STEP = 0.25
+
+const PANEL_TABS: ReaderPanelTab[] = ['outline', 'pages', 'marks']
 
 const engine = ref<InstanceType<typeof PageEngine> | null>(null)
 const currentUnitId = ref('')
@@ -49,6 +73,9 @@ const zoom = ref(1)
 const pageIndex = ref(0)
 const endReached = ref(false)
 const openError = ref(false)
+const outline = ref<ReaderOutlineEntry[]>([])
+const jumpOpen = ref(false)
+const bookmarks = ref<ComicBookmark[]>([])
 
 const source = shallowRef<PageSource | null>(null)
 let sourceToken = 0
@@ -60,9 +87,39 @@ const nextUnit = computed<ReaderComicUnit | null>(() => findReadable(1))
 const previousUnit = computed<ReaderComicUnit | null>(() => findReadable(-1))
 
 const pageCount = computed(() => source.value?.pageCount ?? unit.value?.pageCount ?? null)
-const pageTotalLabel = computed(() => (pageCount.value === null ? '?' : String(pageCount.value)))
 const readable = computed(() => Boolean(unit.value?.fileId))
 const isVertical = computed(() => flow.value === 'vertical')
+const isRtl = computed(() => flow.value === 'rtl')
+
+const navUnits = computed<ReaderNavUnit[]>(() =>
+  units.value.map((entry) => ({
+    id: entry.id,
+    label: entry.label,
+    read: entry.read,
+    readable: Boolean(entry.fileId)
+  }))
+)
+
+const progress = computed<ReaderProgress>(() => ({
+  kind: 'page',
+  pageIndex: pageIndex.value,
+  pageCount: pageCount.value,
+  rtl: isRtl.value
+}))
+
+const pageFilter = computed(() => buildComicFilter(comicDisplay.value))
+
+const unitLabels = computed<Record<string, string>>(() =>
+  Object.fromEntries(units.value.map((entry) => [entry.id, entry.label]))
+)
+
+/** Spreads mark their leading page, so the button reflects the page in hand. */
+const currentPageMarked = computed(() =>
+  bookmarks.value.some(
+    (bookmark) =>
+      bookmark.chapterId === currentUnitId.value && bookmark.pageIndex === pageIndex.value
+  )
+)
 
 const flowOptions = computed(() => [
   { value: 'rtl' as const, label: m.value.reader.comic.pageFlowRtl },
@@ -73,6 +130,7 @@ const flowOptions = computed(() => [
 onMounted(() => {
   flow.value = props.bootstrap.pageFlow
   void openUnit(props.bootstrap.startUnitId)
+  void loadBookmarks()
   window.addEventListener('keydown', handleKeydown)
 })
 
@@ -114,6 +172,7 @@ async function openUnit(unitId: string): Promise<void> {
   endReached.value = false
   openError.value = false
   zoom.value = 1
+  outline.value = []
   disposeSource()
   reportUnitOpened(unitId)
   updateWindowTitle()
@@ -127,6 +186,9 @@ async function openUnit(unitId: string): Promise<void> {
       return
     }
     source.value = next
+
+    const entries = await next.getOutline()
+    if (token === sourceToken) outline.value = entries
   } catch (error) {
     if (token !== sourceToken) return
     openError.value = true
@@ -174,8 +236,75 @@ function adjustZoom(delta: number): void {
   zoom.value = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Number((zoom.value + delta).toFixed(2))))
 }
 
+/** Comic outlines address pages, so every destination is a page index. */
+function goToOutline(target: string | number): void {
+  if (typeof target === 'number') engine.value?.setPage(target)
+}
+
+async function loadBookmarks(): Promise<void> {
+  try {
+    bookmarks.value = await fetchComicBookmarks(props.bootstrap.comicId)
+  } catch (error) {
+    log.warn('Failed to load comic bookmarks.', error)
+  }
+}
+
+/** Marking the page in hand, or clearing the mark it already carries. */
+async function toggleCurrentPageBookmark(): Promise<void> {
+  if (!currentUnitId.value) return
+
+  try {
+    const created = await toggleComicBookmark({
+      chapterId: currentUnitId.value,
+      pageIndex: pageIndex.value,
+      note: null
+    })
+    await loadBookmarks()
+    // In full screen the page itself shows nothing of this, so say it happened.
+    notify.success(
+      created ? m.value.reader.marks.bookmarkAdded : m.value.reader.marks.bookmarkRemoved
+    )
+  } catch (error) {
+    log.error('Failed to mark a comic page.', error)
+    notify.error(m.value.reader.marks.failed)
+  }
+}
+
+async function openBookmark(chapterId: string, page: number): Promise<void> {
+  if (chapterId !== currentUnitId.value) await openUnit(chapterId)
+  engine.value?.setPage(page)
+}
+
+async function editBookmarkNote(id: string, note: string | null): Promise<void> {
+  try {
+    await updateComicBookmark(id, { note })
+    await loadBookmarks()
+  } catch (error) {
+    log.error('Failed to update a comic bookmark.', error)
+    notify.error(m.value.reader.marks.failed)
+  }
+}
+
+async function removeBookmark(id: string): Promise<void> {
+  try {
+    await deleteComicBookmark(id)
+    await loadBookmarks()
+  } catch (error) {
+    log.error('Failed to remove a comic bookmark.', error)
+    notify.error(m.value.reader.marks.failed)
+  }
+}
+
+/**
+ * Full screen renders no chrome, so an action that lives there would otherwise
+ * do nothing at all; leaving full screen is the honest response.
+ */
+function revealChrome(): void {
+  if (fullScreen.value) exitFullScreen()
+}
+
 function handleKeydown(event: KeyboardEvent): void {
-  if (event.defaultPrevented) return
+  if (event.defaultPrevented || isEditableTarget(event.target)) return
 
   switch (event.key) {
     case 'ArrowLeft':
@@ -213,8 +342,34 @@ function handleKeydown(event: KeyboardEvent): void {
     case ']':
       openNextUnit()
       break
+    case 'g':
+    case 'G':
+      revealChrome()
+      jumpOpen.value = true
+      break
+    case 'b':
+    case 'B':
+      void toggleCurrentPageBookmark()
+      break
+    case 't':
+    case 'T':
+      if (fullScreen.value) {
+        revealChrome()
+        panelOpen.value = true
+      } else {
+        togglePanel()
+      }
+      break
+    case 'f':
+    case 'F':
+    case 'F11':
+      toggleFullScreen()
+      break
     case 'Escape':
-      closeReaderWindow()
+      // Full screen is a reading mode of its own, so leaving it comes before
+      // leaving the book.
+      if (fullScreen.value) exitFullScreen()
+      else closeReaderWindow()
       break
     default:
       return
@@ -229,62 +384,22 @@ function updateWindowTitle(): void {
 </script>
 
 <template>
-  <div
-    class="relative flex h-full flex-col overflow-hidden bg-background"
-    @mousemove="wakeToolbar"
-  >
-    <!-- Toolbar -->
-    <div
-      :class="
-        cn(
-          'absolute inset-x-0 top-0 z-20 flex items-center gap-2 border-b border-border',
-          'bg-surface px-3 py-2 transition-transform duration-200',
-          toolbarVisible ? 'translate-y-0' : '-translate-y-full'
-        )
-      "
+  <div class="flex h-full flex-col overflow-hidden bg-background">
+    <ReaderToolbar
+      v-if="!fullScreen"
+      :title="bootstrap.title"
+      :panel-open="panelOpen"
+      :has-previous-unit="Boolean(previousUnit)"
+      :has-next-unit="Boolean(nextUnit)"
+      paged
+      :zoomable="!isVertical"
+      :searchable="false"
+      @toggle-panel="togglePanel"
+      @previous-unit="openPreviousUnit"
+      @next-unit="openNextUnit"
+      @toggle-full-screen="toggleFullScreen"
     >
-      <span
-        class="truncate text-sm font-medium"
-        :title="bootstrap.title"
-      >
-        {{ bootstrap.title }}
-      </span>
-
-      <Select
-        :model-value="currentUnitId"
-        @update:model-value="(value) => typeof value === 'string' && openUnit(value)"
-      >
-        <SelectTrigger
-          size="sm"
-          class="ml-2 w-56 shrink-0"
-        >
-          <SelectValue :placeholder="m.reader.units.comicLabel" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem
-            v-for="entry in units"
-            :key="entry.id"
-            :value="entry.id"
-            :disabled="!entry.fileId"
-          >
-            <span class="flex items-center gap-2">
-              <span class="truncate">{{ entry.label }}</span>
-              <span
-                v-if="entry.read"
-                class="text-xs text-muted-foreground"
-              >
-                {{ m.reader.units.readBadge }}
-              </span>
-            </span>
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <div class="ml-auto flex items-center gap-1">
-        <span class="mr-2 text-xs tabular-nums text-muted-foreground">
-          {{ pageIndex + 1 }} / {{ pageTotalLabel }}
-        </span>
-
+      <template #controls>
         <Select
           :model-value="flow"
           @update:model-value="
@@ -376,114 +491,136 @@ function updateWindowTitle(): void {
           </Button>
         </template>
 
+        <DisplayPopover />
+
         <Button
-          variant="ghost"
+          :variant="currentPageMarked ? 'secondary' : 'ghost'"
           size="icon-sm"
-          :tooltip="m.reader.units.previous"
-          :disabled="!previousUnit"
-          @click="openPreviousUnit"
+          :tooltip="m.reader.marks.addBookmark"
+          :disabled="!readable"
+          @click="toggleCurrentPageBookmark"
         >
           <Icon
-            icon="icon-[mdi--skip-previous]"
+            :icon="currentPageMarked ? 'icon-[mdi--bookmark]' : 'icon-[mdi--bookmark-outline]'"
             class="size-4"
           />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          :tooltip="m.reader.units.next"
-          :disabled="!nextUnit"
-          @click="openNextUnit"
-        >
-          <Icon
-            icon="icon-[mdi--skip-next]"
-            class="size-4"
-          />
-        </Button>
-
-        <ReaderShortcuts :paged="!isVertical" />
-
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          :tooltip="m.reader.close"
-          @click="closeReaderWindow"
-        >
-          <Icon
-            icon="icon-[mdi--close]"
-            class="size-4"
-          />
-        </Button>
-      </div>
-    </div>
-
-    <!-- Unreadable unit -->
-    <div
-      v-if="!readable"
-      class="flex h-full items-center justify-center px-8 text-center text-sm text-muted-foreground"
-    >
-      {{ m.reader.units.noFile }}
-    </div>
-
-    <div
-      v-else-if="openError"
-      class="flex h-full items-center justify-center px-8 text-center text-sm text-muted-foreground"
-    >
-      {{ m.reader.comic.openFailed }}
-    </div>
-
-    <PageEngine
-      v-else
-      ref="engine"
-      :source="source"
-      :flow="flow"
-      :spread="spread"
-      :cover-alone="coverAlone"
-      :fit-width="fitWidth"
-      :zoom="zoom"
-      :start-page="startPage()"
-      @page-change="handlePageChange"
-      @end-reached="endReached = true"
-    >
-      <template #vertical-footer>
-        <div
-          v-if="nextUnit"
-          class="flex justify-center py-10"
-        >
-          <Button
-            variant="outline"
-            @click="openNextUnit"
-          >
-            {{ m.reader.units.next }}
-          </Button>
-        </div>
       </template>
-    </PageEngine>
+    </ReaderToolbar>
 
-    <!-- End-of-unit overlay -->
-    <div
-      v-if="endReached"
-      class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-background"
-    >
-      <span class="text-sm text-muted-foreground">
-        {{ nextUnit ? m.reader.comic.nextUnitHint : m.reader.units.lastUnit }}
-      </span>
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          @click="endReached = false"
+    <div class="flex min-h-0 flex-1">
+      <NavPanel
+        v-if="!fullScreen && panelOpen"
+        v-model:tab="panelTab"
+        :tabs="PANEL_TABS"
+        :units="navUnits"
+        :current-unit-id="currentUnitId"
+        :unit-label="m.reader.units.comicLabel"
+        :outline="outline"
+        @open-unit="openUnit"
+        @go-to-outline="goToOutline"
+      >
+        <template #pages>
+          <ThumbnailGrid
+            :source="source"
+            :current-page="pageIndex"
+            @select="(index) => engine?.setPage(index)"
+          />
+        </template>
+
+        <template #marks>
+          <BookmarkList
+            :bookmarks="bookmarks"
+            :source="source"
+            :current-unit-id="currentUnitId"
+            :unit-labels="unitLabels"
+            @open="openBookmark"
+            @update-note="editBookmarkNote"
+            @remove="removeBookmark"
+          />
+        </template>
+      </NavPanel>
+
+      <div class="relative min-w-0 flex-1 overflow-hidden">
+        <!-- Unreadable unit -->
+        <div
+          v-if="!readable"
+          class="flex h-full items-center justify-center px-8 text-center text-sm text-muted-foreground"
         >
-          {{ m.reader.units.endOfUnit }}
-        </Button>
-        <Button
-          v-if="nextUnit"
-          size="sm"
-          @click="openNextUnit"
+          {{ m.reader.units.noFile }}
+        </div>
+
+        <div
+          v-else-if="openError"
+          class="flex h-full items-center justify-center px-8 text-center text-sm text-muted-foreground"
         >
-          {{ m.reader.units.next }}
-        </Button>
+          {{ m.reader.comic.openFailed }}
+        </div>
+
+        <PageEngine
+          v-else
+          ref="engine"
+          :source="source"
+          :flow="flow"
+          :spread="spread"
+          :cover-alone="coverAlone"
+          :fit-width="fitWidth"
+          :zoom="zoom"
+          :start-page="startPage()"
+          :filter="pageFilter"
+          :auto-crop="autoCrop"
+          @page-change="handlePageChange"
+          @end-reached="endReached = true"
+        >
+          <template #vertical-footer>
+            <div
+              v-if="nextUnit"
+              class="flex justify-center py-10"
+            >
+              <Button
+                variant="outline"
+                @click="openNextUnit"
+              >
+                {{ m.reader.units.next }}
+              </Button>
+            </div>
+          </template>
+        </PageEngine>
+
+        <!-- End-of-unit overlay -->
+        <div
+          v-if="endReached"
+          class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-background"
+        >
+          <span class="text-sm text-muted-foreground">
+            {{ nextUnit ? m.reader.comic.nextUnitHint : m.reader.units.lastUnit }}
+          </span>
+          <div class="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              @click="endReached = false"
+            >
+              {{ m.reader.units.endOfUnit }}
+            </Button>
+            <Button
+              v-if="nextUnit"
+              size="sm"
+              @click="openNextUnit"
+            >
+              {{ m.reader.units.next }}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
+
+    <ProgressFooter
+      v-if="!fullScreen"
+      v-model:jump-open="jumpOpen"
+      :progress="progress"
+      :elapsed-minutes="elapsedMinutes"
+      @seek="(value) => engine?.setPage(value)"
+    />
   </div>
 </template>

@@ -1,5 +1,5 @@
 <!--
-ReaderShortcuts lists the reader's keyboard bindings in a popover.
+Lists the reader's keyboard bindings.
 Boundary: display only — the bindings themselves live in each engine's keydown
 handler, and this is the surface that makes them discoverable.
 -->
@@ -11,8 +11,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const props = defineProps<{
-  /** Zoom and page-edge jumps only exist in the fixed-layout engine. */
+  /** Page-grid bindings; reflowable text has no page to jump to. */
   paged: boolean
+  /** Zoom bindings; only the comic engine scales its pages. */
+  zoomable: boolean
+  /** Search binding; only a text layer can be searched. */
+  searchable: boolean
 }>()
 
 const { m } = useI18n()
@@ -22,10 +26,15 @@ const bindings = computed(() => [
   ...(props.paged
     ? [
         { label: m.value.reader.shortcuts.jumpEdges, keys: ['Home', 'End'] },
-        { label: m.value.reader.shortcuts.zoom, keys: ['+', '−', '0'] }
+        { label: m.value.reader.shortcuts.jumpToPage, keys: ['G'] }
       ]
     : []),
+  ...(props.zoomable ? [{ label: m.value.reader.shortcuts.zoom, keys: ['+', '−', '0'] }] : []),
+  ...(props.searchable ? [{ label: m.value.reader.shortcuts.search, keys: ['Ctrl', 'F'] }] : []),
   { label: m.value.reader.shortcuts.switchUnit, keys: ['[', ']'] },
+  { label: m.value.reader.shortcuts.bookmark, keys: ['B'] },
+  { label: m.value.reader.shortcuts.navigation, keys: ['T'] },
+  { label: m.value.reader.shortcuts.fullScreen, keys: ['F11', 'F'] },
   { label: m.value.reader.shortcuts.closeReader, keys: ['Esc'] }
 ])
 </script>

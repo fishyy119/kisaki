@@ -6,6 +6,98 @@ export const reader = {
   loadFailed: '無法開啟閱讀器',
   close: '關閉',
 
+  chrome: {
+    navigation: '導覽',
+    enterFullScreen: '全螢幕'
+  },
+
+  panel: {
+    outline: '目錄',
+    pages: '頁面',
+    marks: '標記',
+    search: '搜尋',
+    outlineHeading: '本單元內',
+    noPages: '該單元沒有可預覽的頁面'
+  },
+
+  display: {
+    open: '畫面顯示',
+    brightness: '亮度',
+    contrast: '對比',
+    autoCrop: '裁去頁面白邊',
+    reset: '重設顯示'
+  },
+
+  search: {
+    open: '書內搜尋',
+    placeholder: '書內搜尋',
+    noResults: '沒有相符結果',
+    unnamedSection: '未命名章節',
+    tooMany: ({ count }: { count: number }) => `僅顯示前 ${count} 筆相符——請縮小搜尋範圍`
+  },
+
+  footnote: {
+    title: '註釋'
+  },
+
+  marks: {
+    addBookmark: '書籤',
+    highlight: '螢光標記',
+    copy: '複製',
+    dismiss: '關閉',
+    edit: '編輯標記',
+    color: '螢光顏色',
+    notePlaceholder: '備註',
+    saveNote: '儲存',
+    remove: '刪除',
+    empty: '還沒有標記',
+    bookmarksHeading: '書籤',
+    highlightsHeading: '螢光標記',
+    page: ({ page }: { page: number }) => `第 ${page} 頁`,
+    bookmarkAdded: '已新增書籤',
+    bookmarkRemoved: '已移除書籤',
+    failed: '無法儲存該標記'
+  },
+
+  /** Bare setting readouts, shared by every reader surface that shows one. */
+  values: {
+    percent: ({ value }: { value: number }) => `${value}%`,
+    pixels: ({ value }: { value: number }) => `${value} px`,
+    ratio: ({ value }: { value: number }) => value.toFixed(1),
+    em: ({ value }: { value: number }) => `${value} em`
+  },
+
+  progress: {
+    pageOf: ({ page, total }: { page: number; total: number | null }) =>
+      total === null ? `${page} / ?` : `${page} / ${total}`,
+    jumpToPage: '跳至頁面',
+    jump: '跳轉',
+    elapsed: ({ minutes }: { minutes: number }) => `${minutes} 分鐘`
+  },
+
+  typography: {
+    open: '排版',
+    font: '字型',
+    fontBook: '書籍內建',
+    fontSerif: '襯線',
+    fontSans: '無襯線',
+    fontCustom: '自訂',
+    customFont: '字型名稱',
+    fontPick: '選擇字型',
+    fontSearch: '搜尋字型',
+    fontSize: '文字大小',
+    lineHeight: '行高',
+    paragraphSpacing: '段落間距',
+    textWidth: '欄寬',
+    twoColumns: '雙欄',
+    justify: '左右對齊',
+    tint: '頁面底色',
+    tintTheme: '跟隨主題',
+    tintPaper: '紙感',
+    tintSepia: '護眼',
+    reset: '重設排版'
+  },
+
   units: {
     comicLabel: '單元',
     novelLabel: '卷',
@@ -35,11 +127,6 @@ export const reader = {
   },
 
   novel: {
-    progress: ({ percent }: { percent: number }) => `${percent}%`,
-    toc: '目錄',
-    emptyToc: '沒有目錄',
-    fontSizeDecrease: '縮小文字',
-    fontSizeIncrease: '放大文字',
     openFailed: '無法開啟該卷'
   },
 
@@ -49,7 +136,12 @@ export const reader = {
     turnPage: '翻頁',
     switchUnit: '上一個或下一個單元',
     jumpEdges: '首頁或末頁',
+    jumpToPage: '跳至頁面',
     zoom: '放大、縮小或還原',
+    search: '書內搜尋',
+    bookmark: '為目前位置加書籤',
+    navigation: '開關導覽',
+    fullScreen: '開關全螢幕',
     closeReader: '關閉閱讀器'
   }
 } satisfies Messages['reader']

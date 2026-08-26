@@ -4,6 +4,8 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import type { ReaderBootstrap } from '@shared/reader'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { Toaster } from '@renderer/components/ui/toaster'
+import { TooltipProvider } from '@renderer/components/ui/tooltip'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 import {
@@ -44,34 +46,38 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="h-full bg-background text-foreground">
-    <ComicReader
-      v-if="bootstrap?.kind === 'comic'"
-      :bootstrap="bootstrap"
-    />
-    <NovelReader
-      v-else-if="bootstrap?.kind === 'novel'"
-      :bootstrap="bootstrap"
-    />
+  <TooltipProvider>
+    <div class="h-full bg-background text-foreground">
+      <ComicReader
+        v-if="bootstrap?.kind === 'comic'"
+        :bootstrap="bootstrap"
+      />
+      <NovelReader
+        v-else-if="bootstrap?.kind === 'novel'"
+        :bootstrap="bootstrap"
+      />
 
-    <div
-      v-else
-      class="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"
-    >
-      <template v-if="failed">
-        <span class="text-sm">{{ m.reader.loadFailed }}</span>
-        <Button
-          variant="outline"
-          size="sm"
-          @click="closeReaderWindow"
-        >
-          {{ m.reader.close }}
-        </Button>
-      </template>
-      <template v-else>
-        <Spinner class="size-5" />
-        <span class="text-sm">{{ m.reader.loading }}</span>
-      </template>
+      <div
+        v-else
+        class="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"
+      >
+        <template v-if="failed">
+          <span class="text-sm">{{ m.reader.loadFailed }}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            @click="closeReaderWindow"
+          >
+            {{ m.reader.close }}
+          </Button>
+        </template>
+        <template v-else>
+          <Spinner class="size-5" />
+          <span class="text-sm">{{ m.reader.loading }}</span>
+        </template>
+      </div>
     </div>
-  </div>
+
+    <Toaster />
+  </TooltipProvider>
 </template>

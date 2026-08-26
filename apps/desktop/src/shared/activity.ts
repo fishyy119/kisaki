@@ -6,7 +6,7 @@
  * describe them, letting a caller render an outcome with one catalog lookup.
  */
 
-import type { GameLauncherMode, GameMonitorMode } from './db/contracts/enums'
+import type { GameLauncherMode, GameMonitorMode, HighlightColor } from './db/contracts/enums'
 
 /** Push payload for game activity lifecycle events. */
 export interface GameActivityEvent {
@@ -139,4 +139,51 @@ export interface ComicReadingState {
 export interface NovelReadingState {
   novelId: string
   volumeId: string
+}
+
+/**
+ * Marks made while reading.
+ *
+ * Creation carries only what the reader knows about the place it marked; ids
+ * and timestamps belong to the rows. Updates carry the fields a reader can
+ * revise afterwards, and every list is taken per entry so a reader window can
+ * be checked against the entry it was opened for.
+ */
+export interface NovelBookmarkInput {
+  volumeId: string
+  /** Engine-scoped position: an EPUB CFI, or a fixed-layout page locator. */
+  locator: string
+  progress: number | null
+  excerpt: string | null
+  note: string | null
+}
+
+export interface NovelHighlightInput {
+  volumeId: string
+  /** EPUB CFI range covering the marked passage. */
+  locator: string
+  progress: number | null
+  excerpt: string
+  color: HighlightColor
+  note: string | null
+}
+
+export interface ComicBookmarkInput {
+  chapterId: string
+  /** Zero-based page index, as the reading engine addresses pages. */
+  pageIndex: number
+  note: string | null
+}
+
+export interface NovelBookmarkUpdate {
+  note?: string | null
+}
+
+export interface NovelHighlightUpdate {
+  note?: string | null
+  color?: HighlightColor
+}
+
+export interface ComicBookmarkUpdate {
+  note?: string | null
 }

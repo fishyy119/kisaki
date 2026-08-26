@@ -156,6 +156,7 @@ import type {
   AutomationRunStartedEvent,
   AutomationUpdateInput
 } from './automation'
+import type { ComicBookmark, NovelBookmark, NovelHighlight } from './db'
 import type { DbChangeSummary } from './db/changes'
 import type { LibraryEntityMergedEvent } from './library'
 import type { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
@@ -174,6 +175,8 @@ import type {
   AnimeStopResult,
   AnimeWatchingState,
   AnimeWatchResult,
+  ComicBookmarkInput,
+  ComicBookmarkUpdate,
   ComicReadingState,
   ComicReadResult,
   GameActivityEvent,
@@ -181,6 +184,10 @@ import type {
   GameMonitorPathConfig,
   GameRunningStatus,
   GameStopResult,
+  NovelBookmarkInput,
+  NovelBookmarkUpdate,
+  NovelHighlightInput,
+  NovelHighlightUpdate,
   NovelReadingState,
   NovelReadResult
 } from './activity'
@@ -579,11 +586,28 @@ export interface IpcMainHandlers {
   'activity:list-comic-reading': () => IpcResult<ComicReadingState[]>
   'activity:list-novel-reading': () => IpcResult<NovelReadingState[]>
 
+  // Reading marks (called from reader windows only, scoped to the entry the
+  // calling window was opened for)
+  'activity:list-novel-bookmarks': (novelId: string) => IpcResult<NovelBookmark[]>
+  'activity:create-novel-bookmark': (input: NovelBookmarkInput) => IpcResult<NovelBookmark>
+  'activity:update-novel-bookmark': (id: string, updates: NovelBookmarkUpdate) => IpcVoidResult
+  'activity:delete-novel-bookmark': (id: string) => IpcVoidResult
+  'activity:list-novel-highlights': (novelId: string) => IpcResult<NovelHighlight[]>
+  'activity:create-novel-highlight': (input: NovelHighlightInput) => IpcResult<NovelHighlight>
+  'activity:update-novel-highlight': (id: string, updates: NovelHighlightUpdate) => IpcVoidResult
+  'activity:delete-novel-highlight': (id: string) => IpcVoidResult
+  'activity:list-comic-bookmarks': (comicId: string) => IpcResult<ComicBookmark[]>
+  /** Marking a marked page unmarks it; null is the removal outcome. */
+  'activity:toggle-comic-bookmark': (input: ComicBookmarkInput) => IpcResult<ComicBookmark | null>
+  'activity:update-comic-bookmark': (id: string, updates: ComicBookmarkUpdate) => IpcVoidResult
+  'activity:delete-comic-bookmark': (id: string) => IpcVoidResult
+
   // Reader window bridge (called from reader windows only)
   'reader:bootstrap': () => IpcResult<ReaderBootstrap>
   'reader:comic-progress': (report: ReaderComicProgressReport) => IpcVoidResult
   'reader:novel-progress': (report: ReaderNovelProgressReport) => IpcVoidResult
   'reader:unit-opened': (report: ReaderUnitOpenedReport) => IpcVoidResult
+  'reader:set-fullscreen': (fullScreen: boolean) => IpcVoidResult
   'reader:close': () => IpcVoidResult
 
   // Video playback
@@ -749,6 +773,8 @@ export interface IpcRendererEvents {
   // Reader window push: a read request for an entry already open re-aims the
   // existing window instead of opening a second one.
   'reader:navigate': [bootstrap: ReaderBootstrap]
+  /** Real window state, so the reader never guesses whether it is full screen. */
+  'reader:fullscreen-changed': [fullScreen: boolean]
 
   // Db change feed (main -> renderer, batched)
   'db:changed': [changes: DbChangeSummary[]]

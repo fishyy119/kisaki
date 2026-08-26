@@ -31,6 +31,24 @@ export function onReaderNavigate(handler: (bootstrap: ReaderBootstrap) => void):
   })
 }
 
+/**
+ * Subscribes to the window's real full-screen state. The platform may enter or
+ * leave full screen on its own, so this push is the only truth the reader
+ * follows.
+ * @returns Unsubscribe function.
+ */
+export function onReaderFullScreenChanged(handler: (fullScreen: boolean) => void): () => void {
+  return ipcManager.on('reader:fullscreen-changed', (_event, fullScreen) => {
+    handler(fullScreen)
+  })
+}
+
+export function setReaderFullScreen(fullScreen: boolean): void {
+  void ipcManager.invoke('reader:set-fullscreen', fullScreen).catch((error) => {
+    log.warn('Failed to change the reader window full-screen state.', error)
+  })
+}
+
 export function reportComicProgress(report: ReaderComicProgressReport): void {
   void ipcManager.invoke('reader:comic-progress', report).catch((error) => {
     log.warn('Failed to report comic progress.', error)

@@ -232,6 +232,13 @@
       "when": 1787649880682,
       "tag": "0032_comic_unit_numbering",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1787737146017,
+      "tag": "0033_round_miracleman",
+      "breakpoints": true
     }
   ]
 }

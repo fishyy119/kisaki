@@ -16,7 +16,7 @@ import Titlebar from './titlebar.vue'
 </script>
 
 <template>
-  <TooltipProvider :delay-duration="0">
+  <TooltipProvider>
     <div class="relative h-screen flex flex-col overflow-hidden">
       <!-- Lightbox light + diffuser layers under everything -->
       <AmbientLight />

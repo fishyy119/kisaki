@@ -97,7 +97,8 @@ export {
 } from './use-novel'
 export { useNovelFileSync, type NovelFileSync } from './use-novel-file-sync'
 export { useNovelReading, type NovelReading } from './use-novel-reading'
-export { useReaderToolbar } from './use-reader-toolbar'
+export { useReaderChrome, type ReaderChrome, type ReaderPanelTab } from './use-reader-chrome'
+export { useReadingClock } from './use-reading-clock'
 export {
   CollectionKey,
   collectionDetailData,

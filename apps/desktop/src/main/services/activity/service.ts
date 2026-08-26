@@ -9,6 +9,7 @@
 
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import { ReadingAnnotations } from './annotations'
 import { AnimeActivityHandler } from './handlers/anime'
 import { ComicActivityHandler } from './handlers/comic'
 import { GameActivityHandler } from './handlers/game'
@@ -39,6 +40,7 @@ export class ActivityService implements IService<'activity'> {
   anime!: AnimeActivityHandler
   comic!: ComicActivityHandler
   novel!: NovelActivityHandler
+  annotations!: ReadingAnnotations
 
   private unregisterLaunchRoute?: () => void
 
@@ -61,6 +63,7 @@ export class ActivityService implements IService<'activity'> {
     this.anime = new AnimeActivityHandler(db, container.get('video'), ipc, this.hooks)
     this.comic = new ComicActivityHandler(db, reader, i18n, ipc, this.hooks)
     this.novel = new NovelActivityHandler(db, reader, i18n, ipc, this.hooks)
+    this.annotations = new ReadingAnnotations(db, reader)
 
     registerActivityIpc(this, ipc)
 

@@ -27,6 +27,12 @@ export function registerReaderIpc(service: ReaderService, ipc: IpcService): void
     })
   )
 
+  ipc.handle('reader:set-fullscreen', async (event, fullScreen) =>
+    wrapIpcVoid(() => {
+      service.windows.setFullScreen(senderWindowId(event), fullScreen)
+    })
+  )
+
   ipc.handle('reader:close', async (event) =>
     wrapIpcVoid(() => {
       service.windows.close(senderWindowId(event))

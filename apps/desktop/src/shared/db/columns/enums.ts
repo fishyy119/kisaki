@@ -39,6 +39,7 @@ import {
   GAME_COMPANY_ROLE_VALUES,
   GAME_PERSON_ROLE_VALUES,
   GAME_STATUS_VALUES,
+  HIGHLIGHT_COLOR_VALUES,
   NOVEL_CHARACTER_ROLE_VALUES,
   NOVEL_COMPANY_ROLE_VALUES,
   NOVEL_FORMAT_VALUES,
@@ -73,6 +74,7 @@ import type {
   GamePersonRole,
   GameStatus,
   Gender,
+  HighlightColor,
   MainWindowCloseAction,
   NovelCharacterRole,
   NovelCompanyRole,
@@ -223,6 +225,12 @@ export const novelCompanyRole = createEnumType<NovelCompanyRole>(
   NOVEL_COMPANY_ROLE_VALUES,
   'other',
   'novelCompanyRole'
+)
+
+export const highlightColor = createEnumType<HighlightColor>(
+  HIGHLIGHT_COLOR_VALUES,
+  'yellow',
+  'highlightColor'
 )
 
 const BLOOD_TYPE_VALUES = ['a', 'b', 'ab', 'o'] as const

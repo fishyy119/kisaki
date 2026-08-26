@@ -1,7 +1,7 @@
 import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { sql, type InferInsertModel, type InferSelectModel } from 'drizzle-orm'
 
-import { baseColumns, partialDate } from '../../columns'
+import { baseColumns, highlightColor, partialDate } from '../../columns'
 import { novels } from './content'
 
 /**
@@ -122,3 +122,62 @@ export const novelSessions = sqliteTable(
 
 export type NovelSession = InferSelectModel<typeof novelSessions>
 export type NewNovelSession = InferInsertModel<typeof novelSessions>
+
+/**
+ * Places in a volume the reader wants to come back to.
+ *
+ * Separate from the resume position: resuming is where reading stopped, a
+ * bookmark is somewhere worth returning to on purpose.
+ */
+export const novelBookmarks = sqliteTable(
+  'novel_bookmarks',
+  {
+    ...baseColumns,
+    volumeId: text('volume_id')
+      .notNull()
+      .references(() => novelVolumes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    /**
+     * Engine-scoped position: an EPUB CFI for reflowable text, a page locator
+     * for a fixed-layout volume. Opaque to the library, exactly like
+     * `novel_volumes.resume_locator`.
+     */
+    locator: text('locator').notNull(),
+    /** Read fraction in [0, 1], for ordering marks without resolving locators. */
+    progress: real('progress'),
+    /** Text found at the mark, kept so a list reads without opening the book. */
+    excerpt: text('excerpt'),
+    note: text('note')
+  },
+  (t) => [index('idx_novel_bookmarks_volume_id').on(t.volumeId)]
+)
+
+export type NovelBookmark = InferSelectModel<typeof novelBookmarks>
+export type NewNovelBookmark = InferInsertModel<typeof novelBookmarks>
+
+/**
+ * Passages marked in a volume's text.
+ *
+ * Only reflowable volumes can carry these: a highlight spans a text range, and
+ * a fixed-layout volume has no text layer to span.
+ */
+export const novelHighlights = sqliteTable(
+  'novel_highlights',
+  {
+    ...baseColumns,
+    volumeId: text('volume_id')
+      .notNull()
+      .references(() => novelVolumes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    /** EPUB CFI range covering the marked passage. */
+    locator: text('locator').notNull(),
+    /** Read fraction in [0, 1] of the range start, for ordering marks. */
+    progress: real('progress'),
+    /** The marked text itself. */
+    excerpt: text('excerpt').notNull(),
+    color: highlightColor('color').notNull().default('yellow'),
+    note: text('note')
+  },
+  (t) => [index('idx_novel_highlights_volume_id').on(t.volumeId)]
+)
+
+export type NovelHighlight = InferSelectModel<typeof novelHighlights>
+export type NewNovelHighlight = InferInsertModel<typeof novelHighlights>

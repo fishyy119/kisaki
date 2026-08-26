@@ -142,3 +142,30 @@ export const comicSessions = sqliteTable(
 
 export type ComicSession = InferSelectModel<typeof comicSessions>
 export type NewComicSession = InferInsertModel<typeof comicSessions>
+
+/**
+ * Pages of a comic unit the reader marked.
+ *
+ * A comic has no text layer, so a mark is a whole page rather than a passage:
+ * the spread worth coming back to, kept with the page preview that shows it.
+ */
+export const comicBookmarks = sqliteTable(
+  'comic_bookmarks',
+  {
+    ...baseColumns,
+    chapterId: text('chapter_id')
+      .notNull()
+      .references(() => comicChapters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    /** Zero-based page index, as the reading engine addresses pages. */
+    pageIndex: integer('page_index').notNull(),
+    note: text('note')
+  },
+  (t) => [
+    index('idx_comic_bookmarks_chapter_id').on(t.chapterId),
+    /** One page is either marked or not; marking it twice is the same mark. */
+    uniqueIndex('unique_comic_bookmarks_page').on(t.chapterId, t.pageIndex)
+  ]
+)
+
+export type ComicBookmark = InferSelectModel<typeof comicBookmarks>
+export type NewComicBookmark = InferInsertModel<typeof comicBookmarks>

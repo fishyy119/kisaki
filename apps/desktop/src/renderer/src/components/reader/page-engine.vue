@@ -10,6 +10,7 @@ import type { ComicReadingDirection } from '@shared/db/contracts/enums'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
+import { detectCropInsets, formatViewBox } from '@renderer/core/reader/crop'
 import { buildPageSlots, findSlotIndex } from '@renderer/core/reader/spreads'
 import type { PageSource } from '@renderer/core/reader/page-source'
 import { cn } from '@renderer/utils/cn'
@@ -24,6 +25,10 @@ const props = defineProps<{
   fitWidth: boolean
   zoom: number
   startPage: number
+  /** CSS filter correcting the scan; `none` leaves pages untouched. */
+  filter: string
+  /** Trim uniform scanner margins off each page. */
+  autoCrop: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,6 +51,8 @@ const pageUrls = ref(new Map<number, string>())
 const failedPages = ref(new Set<number>())
 const residentPages = ref(new Set<number>())
 const loading = ref(false)
+/** Measured trim boxes, keyed by page URL; a null entry needs no trimming. */
+const cropInsets = ref(new Map<string, string | null>())
 
 const isVertical = computed(() => props.flow === 'vertical')
 const isRtl = computed(() => props.flow === 'rtl')
@@ -100,6 +107,15 @@ watch(
   }
 )
 
+// Trimming is measured lazily, so turning it on has to catch up the pages that
+// are already on screen.
+watch(
+  () => props.autoCrop,
+  (enabled) => {
+    if (enabled) void ensureCropInsets([...pageUrls.value.values()])
+  }
+)
+
 onBeforeUnmount(() => {
   disconnectObservers()
   pageUrls.value.clear()
@@ -111,6 +127,7 @@ function resetForSource(): void {
   pageUrls.value = new Map()
   failedPages.value = new Set()
   residentPages.value = new Set()
+  resetCropInsets()
   visiblePages.clear()
 }
 
@@ -172,12 +189,14 @@ async function ensureVisiblePages(): Promise<void> {
 
   loading.value = currentPages.value.some((index) => !pageUrls.value.has(index))
 
+  const resolved: string[] = []
   await Promise.all(
     missing.map(async (index) => {
       try {
         const url = await source.getPageUrl(index)
         if (props.source !== source) return
         pageUrls.value = new Map(pageUrls.value).set(index, url)
+        resolved.push(url)
       } catch (error) {
         if (props.source !== source) return
         failedPages.value = new Set(failedPages.value).add(index)
@@ -186,7 +205,24 @@ async function ensureVisiblePages(): Promise<void> {
     })
   )
 
-  if (props.source === source) loading.value = false
+  if (props.source !== source) return
+  loading.value = false
+  if (props.autoCrop) void ensureCropInsets(resolved)
+}
+
+async function ensureCropInsets(urls: string[]): Promise<void> {
+  const wanted = urls.filter((url) => !cropInsets.value.has(url))
+  if (wanted.length === 0) return
+
+  const measured = await Promise.all(
+    wanted.map(async (url) => [url, await detectCropInsets(url)] as const)
+  )
+
+  const next = new Map(cropInsets.value)
+  for (const [url, insets] of measured) {
+    next.set(url, insets === null ? null : formatViewBox(insets))
+  }
+  cropInsets.value = next
 }
 
 /** Current slot plus the slots the reader is about to turn into. */
@@ -352,13 +388,26 @@ function endPan(event: PointerEvent): void {
 const isPanning = computed(() => panPointerId !== null)
 
 /** Zoom drives real layout size, so the viewport scrolls instead of clipping. */
-const pageSizeStyle = computed(() => {
+const pageSizeStyle = computed<Record<string, string>>(() => {
   const scale = `${Math.round(props.zoom * 100)}%`
   return props.fitWidth ? { width: scale, height: 'auto' } : { height: scale, width: 'auto' }
 })
 
 function urlOf(index: number): string | undefined {
   return pageUrls.value.get(index)
+}
+
+/** Display corrections ride on the image itself, never on the file. */
+function pageStyle(index: number, size: Record<string, string>): Record<string, string> {
+  const style: Record<string, string> = { ...size, filter: props.filter }
+  const url = urlOf(index)
+  const viewBox = props.autoCrop && url ? cropInsets.value.get(url) : null
+  if (viewBox) style['object-view-box'] = viewBox
+  return style
+}
+
+function resetCropInsets(): void {
+  cropInsets.value = new Map()
 }
 </script>
 
@@ -386,7 +435,8 @@ function urlOf(index: number): string | undefined {
         <img
           v-if="urlOf(index)"
           :src="urlOf(index)"
-          class="w-full select-none"
+          :style="pageStyle(index, { width: '100%', height: 'auto' })"
+          class="select-none"
           decoding="async"
           draggable="false"
           :alt="String(index + 1)"
@@ -433,7 +483,7 @@ function urlOf(index: number): string | undefined {
         <img
           v-if="urlOf(index)"
           :src="urlOf(index)"
-          :style="pageSizeStyle"
+          :style="pageStyle(index, pageSizeStyle)"
           class="max-w-full select-none object-contain"
           decoding="async"
           draggable="false"

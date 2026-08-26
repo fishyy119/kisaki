@@ -3,8 +3,8 @@
  *
  * The vendored library is untyped ESM; this module is the only place that
  * touches it, exposing exactly the surface the novel engine needs: element
- * creation, opening a volume file (with the TXT adapter), navigation, and
- * relocation facts.
+ * creation, opening a volume file (with the TXT adapter), navigation,
+ * relocation facts, in-book search, and footnote extraction.
  */
 
 import { buildNovelFileUrl } from '@shared/book'
@@ -23,10 +23,35 @@ export interface FoliateRelocation {
   fraction?: number
   cfi?: string
   tocItem?: { label?: string } | null
+  /** Text currently laid out, which a bookmark quotes to identify itself. */
+  range?: Range
+}
+
+/** Surrounding text of one search hit, already trimmed by the matcher. */
+export interface FoliateExcerpt {
+  pre: string
+  match: string
+  post: string
+}
+
+/**
+ * What `search` yields: a per-section progress tick, a section's hits, or the
+ * `'done'` sentinel that ends the run.
+ */
+export type FoliateSearchResult =
+  | 'done'
+  | { progress: number }
+  | { label: string; subitems: { cfi: string; excerpt: FoliateExcerpt }[] }
+
+/** The book behind the view; footnote resolution needs it alongside the view. */
+export interface FoliateBookHandle {
+  toc?: FoliateTocItem[]
+  dir?: string
+  metadata?: { title?: string }
 }
 
 export interface FoliateView extends HTMLElement {
-  book: { toc?: FoliateTocItem[]; dir?: string; metadata?: { title?: string } }
+  book: FoliateBookHandle
   lastLocation: FoliateRelocation | null
   renderer: HTMLElement & { setStyles?: (css: string) => void; next: () => Promise<void> }
   open(book: unknown): Promise<void>
@@ -36,6 +61,80 @@ export interface FoliateView extends HTMLElement {
   goToFraction(fraction: number): Promise<unknown>
   goLeft(): Promise<unknown>
   goRight(): Promise<unknown>
+  /** Section boundaries in [0, 1], for drawing chapter ticks on a progress track. */
+  getSectionFractions(): number[]
+  /** Walks the whole book, drawing each hit as it goes. */
+  search(options: {
+    query: string
+    /** Passed to the hit drawing; the vendored default outlines in red. */
+    drawOptions?: { color?: string; width?: number }
+  }): AsyncGenerator<FoliateSearchResult, void, undefined>
+  /** Drops every hit drawn by the last search. */
+  clearSearch(): void
+  /** Stable position of a range inside one section, as an EPUB CFI. */
+  getCFI(index: number, range: Range): string
+  /** Drops the reader's selection in every laid-out section. */
+  deselect(): void
+  /** Asks the view to draw a mark; the drawing itself answers `draw-annotation`. */
+  addAnnotation(annotation: FoliateAnnotation): Promise<unknown>
+  deleteAnnotation(annotation: FoliateAnnotation): Promise<unknown>
+}
+
+/** A mark the view can draw, addressed by the locator it was made at. */
+export interface FoliateAnnotation {
+  value: string
+}
+
+/** Turns the rectangles of a range into the shape drawn over it. */
+export type FoliateDraw = (rects: DOMRect[], options: { color?: string }) => Element
+
+/** What `draw-annotation` hands over: which mark, and how to draw it. */
+export interface FoliateDrawRequest {
+  draw: (drawFunction: FoliateDraw, options: { color?: string }) => void
+  annotation: FoliateAnnotation
+}
+
+/** Section document the view has just laid out. */
+export interface FoliateLoadDetail {
+  doc: Document
+  index: number
+}
+
+/** Which mark the reader clicked in the text. */
+export interface FoliateShowAnnotationDetail {
+  value: string
+}
+
+let highlightDraw: Promise<FoliateDraw> | null = null
+
+/** The vendored highlight drawing, loaded once per window. */
+export function loadHighlightDraw(): Promise<FoliateDraw> {
+  highlightDraw ??= import('../../../vendor/foliate-js/overlayer.js').then(
+    ({ Overlayer }) => Overlayer.highlight
+  )
+  return highlightDraw
+}
+
+/** Footnote fragment the handler extracted, rendered in its own view element. */
+export interface FoliateFootnoteRender {
+  view: HTMLElement
+  /** Referenced kind (`footnote`, `endnote`, `definition`, …), null when unclear. */
+  type: string | null
+}
+
+interface FoliateFootnoteHandler extends EventTarget {
+  handle(book: FoliateBookHandle, event: Event): Promise<void> | undefined
+}
+
+/**
+ * Handler that turns a footnote link into a rendered fragment.
+ *
+ * It is fed the view's cancelable `link` event and cancels the ones it claims,
+ * so a footnote reference opens a fragment instead of navigating the book.
+ */
+export async function createFootnoteHandler(): Promise<FoliateFootnoteHandler> {
+  const { FootnoteHandler } = await import('../../../vendor/foliate-js/footnotes.js')
+  return new FootnoteHandler() as FoliateFootnoteHandler
 }
 
 /** Resource-load fact the engine publishes before fetching a book resource. */
@@ -95,36 +194,4 @@ function rejectScriptResources(book: FoliateBook): void {
     const detail = (event as CustomEvent<FoliateResourceLoadDetail>).detail
     if (detail.isScript) detail.allow = false
   })
-}
-
-/** Content styles following the reader window's resolved theme tokens. */
-export function buildNovelContentStyles(fontSizePercent: number): string {
-  const rootStyles = getComputedStyle(document.documentElement)
-  const background = rootStyles.getPropertyValue('--color-background').trim() || '#ffffff'
-  const foreground = rootStyles.getPropertyValue('--color-foreground').trim() || '#111111'
-  const accent = rootStyles.getPropertyValue('--color-primary').trim() || '#3b82f6'
-
-  return `
-    @namespace epub "http://www.idpf.org/2007/ops";
-    html {
-      background: ${background};
-      color: ${foreground};
-      font-size: ${fontSizePercent}%;
-    }
-    a:link, a:visited {
-      color: ${accent};
-    }
-    p, li, blockquote, dd {
-      line-height: 1.6;
-      widows: 2;
-      orphans: 2;
-    }
-    /* Footnote popovers and asides stay out of the main flow. */
-    aside[epub|type~="endnote"],
-    aside[epub|type~="footnote"],
-    aside[epub|type~="note"],
-    aside[epub|type~="rearnote"] {
-      display: none;
-    }
-  `
 }

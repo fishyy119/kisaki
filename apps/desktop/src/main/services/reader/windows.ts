@@ -91,6 +91,17 @@ export class ReaderWindowManager {
       window.show()
     })
 
+    // Full screen is the reader's own chrome-free reading mode, and the platform
+    // can enter or leave it without us asking, so the window state is pushed
+    // rather than assumed by whoever requested the change.
+    window.on('enter-full-screen', () => {
+      window.webContents.send('reader:fullscreen-changed', true)
+    })
+
+    window.on('leave-full-screen', () => {
+      window.webContents.send('reader:fullscreen-changed', false)
+    })
+
     window.on('closed', () => {
       const windowId = window.id
       if (this.records.delete(windowId)) {
@@ -128,6 +139,13 @@ export class ReaderWindowManager {
 
   isReaderWindow(windowId: number): boolean {
     return this.records.has(windowId)
+  }
+
+  setFullScreen(windowId: number, fullScreen: boolean): void {
+    const record = this.records.get(windowId)
+    if (record && !record.window.isDestroyed()) {
+      record.window.setFullScreen(fullScreen)
+    }
   }
 
   close(windowId: number): void {

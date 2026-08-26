@@ -267,6 +267,23 @@ export const COMIC_READING_DIRECTION_VALUES = [
 ] as const satisfies readonly ComicReadingDirection[]
 
 /**
+ * Highlight color of a passage marked while reading.
+ *
+ * A named set rather than free colors: the reading surface resolves each name
+ * to a tint that stays legible under every app theme and page tint.
+ */
+export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink' | 'purple'
+
+/** Highlight color values in canonical display order. */
+export const HIGHLIGHT_COLOR_VALUES = [
+  'yellow',
+  'green',
+  'blue',
+  'pink',
+  'purple'
+] as const satisfies readonly HighlightColor[]
+
+/**
  * Comic-person link role.
  *
  * `author` is the single-credit form (story and art by one hand); split
