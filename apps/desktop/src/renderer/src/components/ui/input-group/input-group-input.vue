@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
   type: 'text'
 })
 
-const model = defineModel<string | number>()
+const model = defineModel<string>({ default: '' })
 </script>
 
 <template>

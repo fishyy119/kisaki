@@ -211,17 +211,17 @@ function handleCancel() {
 
 // Computed model for hours input (parse and clamp >= 0)
 const hoursModel = computed({
-  get: () => untrackedHours.value,
-  set: (v: string | number) => {
-    untrackedHours.value = Math.max(0, parseInt(String(v)) || 0)
+  get: () => String(untrackedHours.value),
+  set: (v: string) => {
+    untrackedHours.value = Math.max(0, parseInt(v, 10) || 0)
   }
 })
 
 // Computed model for minutes input (parse and clamp 0-59)
 const minutesModel = computed({
-  get: () => untrackedMinutes.value,
-  set: (v: string | number) => {
-    untrackedMinutes.value = Math.max(0, Math.min(59, parseInt(String(v)) || 0))
+  get: () => String(untrackedMinutes.value),
+  set: (v: string) => {
+    untrackedMinutes.value = Math.max(0, Math.min(59, parseInt(v, 10) || 0))
   }
 })
 </script>

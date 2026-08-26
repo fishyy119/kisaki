@@ -40,9 +40,9 @@ const monthInputId = computed(() => (props.id ? `${props.id}-month` : undefined)
 const dayInputId = computed(() => (props.id ? `${props.id}-day` : undefined))
 
 const isSyncing = ref(false)
-const rawYear = ref<string | number>('')
-const rawMonth = ref<string | number>('')
-const rawDay = ref<string | number>('')
+const rawYear = ref('')
+const rawMonth = ref('')
+const rawDay = ref('')
 
 function toRawFields(value: PartialDate | null | undefined) {
   return {
@@ -65,18 +65,12 @@ watch(
   { immediate: true }
 )
 
-function toTrimmedString(value: unknown): string {
-  if (typeof value === 'string') return value.trim()
-  if (value === null || value === undefined) return ''
-  return String(value).trim()
+function isBlank(value: string): boolean {
+  return value.trim().length === 0
 }
 
-function isBlank(value: unknown): boolean {
-  return toTrimmedString(value).length === 0
-}
-
-function parseIntegerField(value: unknown): number | undefined {
-  const trimmed = toTrimmedString(value)
+function parseIntegerField(value: string): number | undefined {
+  const trimmed = value.trim()
   if (!trimmed) return undefined
   const parsed = Number(trimmed)
   if (!Number.isInteger(parsed)) return undefined

@@ -1,11 +1,15 @@
+<!--
+  Input
+  Single-line text input. The model is always a string, including for
+  type="number"; numeric fields keep raw text in state and parse at their
+  submit boundary.
+-->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { useVModel } from '@vueuse/core'
+import { nextTick, ref, watch } from 'vue'
 import { cn } from '@renderer/utils/cn'
 
 const props = defineProps<{
-  defaultValue?: string | number
-  modelValue?: string | number
   type?: string
   placeholder?: string
   min?: string | number
@@ -16,18 +20,47 @@ const props = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-const emits = defineEmits<{
-  (e: 'update:modelValue', payload: string | number): void
-}>()
+// Native v-model would coerce type="number" values to numbers (Vue's built-in
+// cast), breaking the string contract. The DOM value is synced manually
+// instead, and IME composition sessions own the DOM value until they end.
+const model = defineModel<string>({ default: '' })
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  passive: true
-})
+const inputElement = ref<HTMLInputElement | null>(null)
+let isComposing = false
+
+watch(
+  [model, inputElement],
+  ([value, element]) => {
+    if (!element || isComposing) return
+    if (element.value !== value) element.value = value
+  },
+  { flush: 'post' }
+)
+
+async function handleInput(event: Event) {
+  if (isComposing) return
+  const element = event.target as HTMLInputElement
+  model.value = element.value
+  // A controlled parent may normalize or reject the emitted value without
+  // changing the prop; re-sync the DOM to whatever actually settled.
+  await nextTick()
+  if (!isComposing && element.value !== model.value) element.value = model.value
+}
+
+function handleCompositionStart() {
+  isComposing = true
+}
+
+function handleCompositionEnd(event: Event) {
+  if (!isComposing) return
+  isComposing = false
+  handleInput(event)
+}
 </script>
 
 <template>
   <input
-    v-model="modelValue"
+    ref="inputElement"
     :type="props.type ?? 'text'"
     :placeholder="props.placeholder"
     :min="props.min"
@@ -51,5 +84,8 @@ const modelValue = useVModel(props, 'modelValue', emits, {
       )
     "
     :spellcheck="false"
+    @input="handleInput"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   />
 </template>

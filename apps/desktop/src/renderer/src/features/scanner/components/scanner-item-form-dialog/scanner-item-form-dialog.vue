@@ -247,10 +247,10 @@ function handleRulesSave(rules: NameExtractionRule[]) {
 
 // Computed model for entity depth (parse string to number, clamp 0-5)
 const entityDepthModel = computed({
-  get: () => formData.value.entityDepth,
-  set: (value: string | number | undefined) => {
-    const num = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10)
-    formData.value.entityDepth = isNaN(num) ? 0 : Math.max(0, Math.min(5, num))
+  get: () => String(formData.value.entityDepth),
+  set: (value: string) => {
+    const num = parseInt(value, 10)
+    formData.value.entityDepth = Number.isNaN(num) ? 0 : Math.max(0, Math.min(5, num))
   }
 })
 

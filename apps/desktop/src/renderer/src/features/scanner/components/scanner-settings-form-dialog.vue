@@ -166,9 +166,9 @@ function handleKeyDown(e: KeyboardEvent) {
 }
 
 const parallelCountModel = computed({
-  get: () => formData.value.parallelCount,
-  set: (value: string | number | undefined) => {
-    const num = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10)
+  get: () => String(formData.value.parallelCount),
+  set: (value: string) => {
+    const num = parseInt(value, 10)
     formData.value.parallelCount = Number.isNaN(num)
       ? SCANNER_PARALLEL_COUNT_DEFAULT
       : Math.max(SCANNER_PARALLEL_COUNT_MIN, Math.min(SCANNER_PARALLEL_COUNT_MAX, num))
