@@ -21,7 +21,7 @@ import {
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
-import { db, queryEntityIds, insertCollectionLinks, COLLECTION_LINKS } from '@renderer/core/db'
+import { db, queryEntityIds, insertCollectionLinks, deleteCollectionLinks } from '@renderer/core/db'
 import { collections, type DynamicCollectionConfig } from '@shared/db'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
 import { createLogger } from '@renderer/core/log'
@@ -84,10 +84,8 @@ async function materializeDynamicCollection(config: DynamicCollectionConfig) {
   const collectionId = props.collectionId
 
   for (const entityType of CONTENT_ENTITY_TYPES) {
-    const link = COLLECTION_LINKS[entityType]
-
     // Clear existing links to avoid unique constraint issues.
-    await db.delete(link.table).where(eq(link.collectionIdColumn, collectionId))
+    await deleteCollectionLinks(entityType, collectionId)
 
     const entityConfig = config[entityType]
     if (!entityConfig.enabled) continue

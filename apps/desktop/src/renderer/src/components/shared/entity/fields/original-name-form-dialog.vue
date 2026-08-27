@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
-import { db, ENTITY_TABLES } from '@renderer/core/db'
+import { db, ENTITY_TABLES, updateEntityRows } from '@renderer/core/db'
 import { useAsyncData } from '@renderer/composables'
 import {
   Dialog,
@@ -68,10 +68,9 @@ watch(row, (data) => {
 async function handleSubmit() {
   isSaving.value = true
   try {
-    await db
-      .update(table.value)
-      .set({ originalName: originalName.value.trim() || null })
-      .where(eq(table.value.id, props.entityId))
+    await updateEntityRows(props.entityType, [props.entityId], {
+      originalName: originalName.value.trim() || null
+    })
     notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {

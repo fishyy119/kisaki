@@ -9,7 +9,7 @@ export { db } from './proxy'
 export { attachment } from './attachment'
 export { previewEntityDelete, deleteEntities } from './entity-delete'
 export { mergeEntities } from './entity-merge'
-export { ENTITY_TABLES, type EntityRowMap } from './entity-tables'
+export { ENTITY_TABLES, updateEntityRows, type EntityRowMap } from './entity-tables'
 export {
   COLLECTION_LINKS,
   deleteCollectionLinks,

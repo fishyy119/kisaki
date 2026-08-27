@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import { db, updateEntityRows } from '@renderer/core/db'
 import type { MediaType } from '@shared/common'
 import { useAsyncData } from '@renderer/composables'
 import { formatDatetimeLocalInput } from '@renderer/utils/datetime'
@@ -77,10 +77,9 @@ watch(row, (data) => {
 async function handleSubmit() {
   isSaving.value = true
   try {
-    await db
-      .update(table.value)
-      .set({ lastActiveAt: datetime.value ? new Date(datetime.value) : null })
-      .where(eq(table.value.id, props.entityId))
+    await updateEntityRows(props.mediaType, [props.entityId], {
+      lastActiveAt: datetime.value ? new Date(datetime.value) : null
+    })
 
     notify.success(m.value.common.saved)
     open.value = false

@@ -8,7 +8,7 @@ import { ref, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { db, ENTITY_TABLES } from '@renderer/core/db'
+import { db, ENTITY_TABLES, updateEntityRows } from '@renderer/core/db'
 import type { ExternalSite } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
 import {
@@ -98,10 +98,9 @@ async function handleSave() {
   isSaving.value = true
   try {
     const validSites = sites.value.filter((s) => s.label.trim() && s.url.trim())
-    await db
-      .update(table.value)
-      .set({ externalSites: validSites.length > 0 ? validSites : null })
-      .where(eq(table.value.id, props.entityId))
+    await updateEntityRows(props.entityType, [props.entityId], {
+      externalSites: validSites.length > 0 ? validSites : null
+    })
 
     notify.success(m.value.common.saved)
     open.value = false

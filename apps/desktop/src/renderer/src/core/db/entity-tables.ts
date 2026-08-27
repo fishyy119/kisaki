@@ -11,11 +11,12 @@
  * `satisfies` keeps that precision while still demanding one entry per entity
  * type, so a new entity type does not compile until it is listed here.
  */
-import { getTableName } from 'drizzle-orm'
+import { getTableName, inArray } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 
 import type { AllEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
+import { db } from './proxy'
 import {
   animes,
   characters,
@@ -123,3 +124,24 @@ export const ENTITY_TABLES = {
     isNsfwColumn: tags.isNsfw
   }
 } as const satisfies Record<AllEntityType, EntityTableDef>
+
+/**
+ * Updates entity core rows through the registry.
+ *
+ * The one dynamic write seam for entity-generic dialogs and menus: the
+ * direct-write guard cannot resolve a registry-driven table statically, so
+ * those writes funnel through here, where the registry binds each entity type
+ * to its concrete allowlisted table. The cast is this module's owned
+ * correlation between the entity type and its patch shape.
+ */
+export async function updateEntityRows<T extends AllEntityType>(
+  entityType: T,
+  entityIds: readonly string[],
+  patch: Partial<EntityRowMap[T]>
+): Promise<void> {
+  const def: EntityTableDef = ENTITY_TABLES[entityType]
+  await db
+    .update(def.table)
+    .set(patch as never)
+    .where(inArray(def.idColumn, [...entityIds]))
+}

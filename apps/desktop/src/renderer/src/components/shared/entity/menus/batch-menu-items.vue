@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
 import {
@@ -21,7 +21,7 @@ import {
 } from '@renderer/components/ui/context-menu'
 import { useAsyncData, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
-import { db, ENTITY_TABLES } from '@renderer/core/db'
+import { db, updateEntityRows } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
@@ -51,7 +51,6 @@ const emit = defineEmits<{
 }>()
 
 const spec = computed(() => MENU_SPECS[props.entityType])
-const table = computed(() => ENTITY_TABLES[props.entityType].table)
 
 const contextMenuComponents: MenuComponents = {
   Item: ContextMenuItem,
@@ -166,7 +165,7 @@ async function handleSetFavorite(isFavorite: boolean) {
   if (ids.length === 0) return
 
   try {
-    await db.update(table.value).set({ isFavorite }).where(inArray(table.value.id, ids))
+    await updateEntityRows(props.entityType, ids, { isFavorite })
     notify.success(
       isFavorite ? m.value.library.feedback.favoriteAdded : m.value.library.feedback.favoriteRemoved
     )

@@ -7,7 +7,7 @@
 import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
-import { db } from '@renderer/core/db'
+import { db, updateEntityRows } from '@renderer/core/db'
 import type { MediaType } from '@shared/common'
 import { useAsyncData } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -148,10 +148,7 @@ async function handleSave() {
   isSaving.value = true
   try {
     const newTotalDuration = sessionsDuration.value + untrackedMs.value
-    await db
-      .update(table.value)
-      .set({ totalDuration: newTotalDuration })
-      .where(eq(table.value.id, props.entityId))
+    await updateEntityRows(props.mediaType, [props.entityId], { totalDuration: newTotalDuration })
     notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {

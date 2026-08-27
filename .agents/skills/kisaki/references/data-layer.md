@@ -38,8 +38,11 @@ Renderer (sqlite-proxy) → IPC 'db:execute' → Main (better-sqlite3) → SQLit
 ### Renderer Direct-Write Allowlist
 
 Renderer direct SQL is the intended model for **user-curation state** — rows the UI edits in
-place. The allowlist is enforced by the `rendererDirectWriteGuard` ESLint rule in
-`apps/desktop/eslint.config.ts`; extending it is a reviewed decision, not a workaround.
+place. The allowlist is enforced by the `kisaki/renderer-direct-write` ESLint rule in
+`apps/desktop/eslint.config.ts`, which resolves the written table by import origin: the argument
+must be a `@shared/db` export (named or through a namespace import) whose exported name is on the
+list, so local aliases stay allowed and anything unresolvable fails closed. Extending the list is
+a reviewed decision, not a workaround.
 
 Allowed table families (see the rule for the exact list):
 
@@ -59,7 +62,7 @@ Writes that must go through the owning main-process workflow instead:
 - Task-run history, extension installations/repositories/trusts → their owning services
 
 Dynamic write machinery (`core/db/**`, `use-anime-file-records.ts`) is exempt from the
-identifier rule because its table sets are bound in typed specs.
+import-origin rule because its table sets are bound in typed specs.
 
 ## Schema Definition
 

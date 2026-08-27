@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { ref, watch, toRef, computed } from 'vue'
 import { eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import { db, updateEntityRows } from '@renderer/core/db'
 import type { MediaType } from '@shared/common'
 import { useAsyncData, useInlineAttachments } from '@renderer/composables'
 import {
@@ -98,10 +98,7 @@ async function handleSubmit() {
   isSaving.value = true
   try {
     const next = description.value.trim()
-    await db
-      .update(table.value)
-      .set({ description: next || null })
-      .where(eq(table.value.id, props.entityId))
+    await updateEntityRows(props.mediaType, [props.entityId], { description: next || null })
 
     await attachments.value.gcOnSave(next)
     didSave.value = true

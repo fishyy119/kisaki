@@ -13,7 +13,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
 import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
-import { db, ENTITY_TABLES } from '@renderer/core/db'
+import { db, ENTITY_TABLES, updateEntityRows } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -209,10 +209,9 @@ async function handleRemoveFromCollection(collectionId: string) {
 async function handleToggleFavorite() {
   if (!entry.value) return
   try {
-    await db
-      .update(table.value)
-      .set({ isFavorite: !entry.value.isFavorite })
-      .where(eq(table.value.id, props.entityId))
+    await updateEntityRows(props.entityType, [props.entityId], {
+      isFavorite: !entry.value.isFavorite
+    })
     notify.success(
       entry.value.isFavorite
         ? m.value.library.feedback.favoriteRemoved
@@ -226,10 +225,9 @@ async function handleToggleFavorite() {
 async function handleToggleNsfw() {
   if (!entry.value) return
   try {
-    await db
-      .update(table.value)
-      .set({ isNsfw: !entry.value.isNsfw })
-      .where(eq(table.value.id, props.entityId))
+    await updateEntityRows(props.entityType, [props.entityId], {
+      isNsfw: !entry.value.isNsfw
+    })
     notify.success(
       entry.value.isNsfw
         ? m.value.library.feedback.nsfwCleared
