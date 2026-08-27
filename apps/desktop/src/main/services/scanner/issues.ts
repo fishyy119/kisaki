@@ -6,7 +6,7 @@
  */
 
 import { ScrapeFailure } from '@main/services/scraper'
-import type { IngestWarning } from '@shared/ingest/common'
+import type { IngestWarning, IngestWarningCode } from '@shared/ingest/common'
 import type { EntityEntry, ScannerRunExisting } from '@shared/scanner'
 import type {
   ScannedEntity,
@@ -54,10 +54,19 @@ export function createError(type: ScannerEntityErrorType, reason: string): Scann
   return { type, reason }
 }
 
+/** Scanner issue type for each ingest warning code; total so a new code must decide. */
+const INGEST_WARNING_ISSUE_TYPES: Record<IngestWarningCode, ScannerEntityWarningType> = {
+  'asset-persist-failed': 'asset-persist-failed',
+  'collection-replace-degraded': 'collection-replace-degraded',
+  'related-entry-not-in-library': 'related-entry-not-in-library'
+}
+
 export function createIngestWarnings(
   warnings: readonly IngestWarning[] | undefined
 ): ScannerEntityWarning[] {
-  return (warnings ?? []).map((warning) => createWarning('asset-persist-failed', warning.message))
+  return (warnings ?? []).map((warning) =>
+    createWarning(INGEST_WARNING_ISSUE_TYPES[warning.code], warning.message)
+  )
 }
 
 export function createExisting(entity: EntityEntry, entityId: string): ScannerRunExisting {

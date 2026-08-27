@@ -71,9 +71,15 @@ const issueTypeOptions = computed<{ value: ScannerIssueTypeFilter; label: string
   { value: 'metadata-missing', label: getIssueTypeText('metadata-missing') },
   { value: 'scraper-unavailable', label: getIssueTypeText('scraper-unavailable') },
   { value: 'duplicate-external-id', label: getIssueTypeText('duplicate-external-id') },
+  {
+    value: 'related-entry-not-in-library',
+    label: getIssueTypeText('related-entry-not-in-library')
+  },
+  { value: 'collection-replace-degraded', label: getIssueTypeText('collection-replace-degraded') },
   { value: 'path-unavailable', label: getIssueTypeText('path-unavailable') },
   { value: 'unsupported-entry', label: getIssueTypeText('unsupported-entry') },
   { value: 'asset-persist-failed', label: getIssueTypeText('asset-persist-failed') },
+  { value: 'file-sync-failed', label: getIssueTypeText('file-sync-failed') },
   { value: 'unexpected-error', label: getIssueTypeText('unexpected-error') }
 ])
 

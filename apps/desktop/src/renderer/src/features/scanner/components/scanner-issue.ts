@@ -1,5 +1,6 @@
 import type { MediaType } from '@shared/common'
 import type { ScannerRunIssue, ScannerRunIssueType } from '@shared/scanner'
+import { assertNever } from '@shared/utils/exhaustive'
 import { messages } from '@renderer/core/i18n'
 
 export interface ScannerIssueRow {
@@ -22,6 +23,8 @@ export function getIssueTypeText(type: ScannerRunIssueType): string {
   switch (type) {
     case 'asset-persist-failed':
       return issueTypes.assetPersistFailed
+    case 'collection-replace-degraded':
+      return issueTypes.collectionReplaceDegraded
     case 'duplicate-external-id':
       return issueTypes.duplicateExternalId
     case 'file-sync-failed':
@@ -30,6 +33,8 @@ export function getIssueTypeText(type: ScannerRunIssueType): string {
       return issueTypes.metadataMissing
     case 'path-unavailable':
       return issueTypes.pathUnavailable
+    case 'related-entry-not-in-library':
+      return issueTypes.relatedEntryNotInLibrary
     case 'scraper-unavailable':
       return issueTypes.scraperUnavailable
     case 'unexpected-error':
@@ -37,7 +42,7 @@ export function getIssueTypeText(type: ScannerRunIssueType): string {
     case 'unsupported-entry':
       return issueTypes.unsupportedEntry
     default:
-      return type
+      return assertNever(type, 'scanner issue type')
   }
 }
 
@@ -45,6 +50,8 @@ export function getIssueIcon(type: ScannerRunIssueType): string {
   switch (type) {
     case 'asset-persist-failed':
       return 'icon-[mdi--image-broken-variant]'
+    case 'collection-replace-degraded':
+      return 'icon-[mdi--link-off]'
     case 'metadata-missing':
       return 'icon-[mdi--database-off-outline]'
     case 'file-sync-failed':
@@ -53,6 +60,8 @@ export function getIssueIcon(type: ScannerRunIssueType): string {
       return 'icon-[mdi--link-variant]'
     case 'path-unavailable':
       return 'icon-[mdi--folder-alert-outline]'
+    case 'related-entry-not-in-library':
+      return 'icon-[mdi--book-remove-outline]'
     case 'scraper-unavailable':
       return 'icon-[mdi--cloud-off-outline]'
     case 'unexpected-error':
@@ -60,7 +69,7 @@ export function getIssueIcon(type: ScannerRunIssueType): string {
     case 'unsupported-entry':
       return 'icon-[mdi--file-question-outline]'
     default:
-      return 'icon-[mdi--alert-outline]'
+      return assertNever(type, 'scanner issue type')
   }
 }
 

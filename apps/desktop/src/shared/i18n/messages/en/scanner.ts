@@ -47,10 +47,12 @@ export const scanner = {
 
   issueTypes: {
     assetPersistFailed: 'Asset save failed',
+    collectionReplaceDegraded: 'Partial link update',
     duplicateExternalId: 'Duplicate external ID',
     fileSyncFailed: 'File sync failed',
     metadataMissing: 'Missing metadata',
     pathUnavailable: 'Path unavailable',
+    relatedEntryNotInLibrary: 'Related entry not in library',
     scraperUnavailable: 'Scraper unavailable',
     unexpectedError: 'Unexpected error',
     unsupportedEntry: 'Unsupported entry'
@@ -232,8 +234,7 @@ export const scanner = {
         'The scrape configuration is unavailable. Added directly using the folder name.',
       noMetadataFallback: 'No usable metadata was found. Added directly using the folder name.',
       scrapeFailedFallback: 'Scraping failed. Added directly using the folder name.',
-      pathInaccessible: ({ message }: { message: string }) =>
-        `The path is inaccessible. Not added: ${message}`,
+      pathInaccessible: 'The path could not be accessed. Not added. See the log for details.',
       notScannableDirectory: 'The path is not a scannable directory. Not added.',
       externalIdLinked:
         'The external ID is already linked to an existing entry. This path was not added.',
@@ -244,8 +245,9 @@ export const scanner = {
       volumeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} book file(s) had no readable volume number and were added as unnumbered volumes`,
       fileSyncFailed:
-        'The entry was added but its video files could not be synced. See the log for details.',
-      unexpected: 'An unexpected error occurred while processing this entry. See the log for details.'
+        'The entry was added but its files could not be synced. See the log for details.',
+      unexpected:
+        'An unexpected error occurred while processing this entry. See the log for details.'
     }
   }
 }

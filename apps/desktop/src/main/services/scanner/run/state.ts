@@ -1,6 +1,7 @@
 import type { TaskRunHandle } from '@main/services/task-run'
 import type { Scanner } from '@shared/db'
 import type { ScannerRunIssue, ScannerRunState } from '@shared/scanner'
+import { assertNever } from '@shared/utils/exhaustive'
 import type {
   ScannedEntity,
   ScannerEntityError,
@@ -84,7 +85,7 @@ export class ScannerRunStateStore {
         )
         break
       default:
-        throw new Error(`Unknown scanner entity result kind: ${(result as { kind: string }).kind}`)
+        return assertNever(result, 'scanner entity result')
     }
 
     this.states.set(scannerId, next)
@@ -154,13 +155,22 @@ function toFailedIssue(
 
 function isIssueFixable(type: ScannerRunIssue['type']): boolean {
   switch (type) {
+    // A re-scrape through the fix dialog can complete these once the source
+    // answers or the missing entry is in the library.
+    case 'collection-replace-degraded':
+    case 'duplicate-external-id':
+    case 'metadata-missing':
+    case 'related-entry-not-in-library':
+    case 'scraper-unavailable':
+    case 'unexpected-error':
+      return true
     case 'asset-persist-failed':
     case 'file-sync-failed':
     case 'path-unavailable':
     case 'unsupported-entry':
       return false
     default:
-      return true
+      return assertNever(type, 'scanner issue type')
   }
 }
 

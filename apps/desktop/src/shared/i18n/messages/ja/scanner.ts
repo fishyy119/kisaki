@@ -49,10 +49,12 @@ export const scanner = {
 
   issueTypes: {
     assetPersistFailed: 'アセットの保存に失敗',
+    collectionReplaceDegraded: '関連の部分更新',
     duplicateExternalId: '外部 ID の重複',
     fileSyncFailed: 'ファイルの同期に失敗',
     metadataMissing: 'メタデータの欠落',
     pathUnavailable: 'パスにアクセス不可',
+    relatedEntryNotInLibrary: '関連項目がライブラリに未登録',
     scraperUnavailable: 'スクレイパーが利用不可',
     unexpectedError: '予期しないエラー',
     unsupportedEntry: '未対応のエントリ'
@@ -235,8 +237,8 @@ export const scanner = {
       noMetadataFallback:
         '利用できるメタデータが見つからないため、フォルダー名でそのまま追加しました',
       scrapeFailedFallback: 'スクレイプに失敗したため、フォルダー名でそのまま追加しました',
-      pathInaccessible: ({ message }: { message: string }) =>
-        `パスにアクセスできないため追加しませんでした：${message}`,
+      pathInaccessible:
+        'パスにアクセスできないため追加しませんでした。詳細はログを参照してください。',
       notScannableDirectory: 'パスはスキャン可能なディレクトリではないため追加しませんでした',
       externalIdLinked:
         '外部 ID が既存の項目に関連付けられているため、このパスは追加しませんでした',
@@ -247,7 +249,7 @@ export const scanner = {
       volumeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 件の書籍ファイルは巻数を判別できないため、番号なしの巻として追加しました`,
       fileSyncFailed:
-        '項目は追加しましたが、動画ファイルの同期に失敗しました。詳細はログを参照してください。',
+        '項目は追加しましたが、ファイルの同期に失敗しました。詳細はログを参照してください。',
       unexpected: 'この項目の処理中に予期しないエラーが発生しました。詳細はログを参照してください。'
     }
   }

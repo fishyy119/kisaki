@@ -272,9 +272,9 @@ export class ScanExecutor {
       log.info('Entity is not a directory.', { entityPath: entity.path })
       return createError('unsupported-entry', reasons.notScannableDirectory)
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      log.warn('Entity path is inaccessible.', { entityPath: entity.path, message })
-      return createError('path-unavailable', reasons.pathInaccessible({ message }))
+      // The raw filesystem error stays in the log; the issue row gets our wording.
+      log.warn('Entity path is inaccessible.', error, { entityPath: entity.path })
+      return createError('path-unavailable', reasons.pathInaccessible)
     }
   }
 

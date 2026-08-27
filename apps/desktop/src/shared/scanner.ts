@@ -21,10 +21,12 @@ export interface EntityEntry {
 
 export type ScannerRunIssueType =
   | 'asset-persist-failed'
+  | 'collection-replace-degraded'
   | 'duplicate-external-id'
   | 'file-sync-failed'
   | 'metadata-missing'
   | 'path-unavailable'
+  | 'related-entry-not-in-library'
   | 'scraper-unavailable'
   | 'unexpected-error'
   | 'unsupported-entry'

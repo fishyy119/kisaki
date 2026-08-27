@@ -11,7 +11,12 @@ import type { Scanner } from '@shared/db'
 import type { ScannerRunExisting, ScannerRunState } from '@shared/scanner'
 
 export type ScannerEntityWarningType =
-  'asset-persist-failed' | 'file-sync-failed' | 'metadata-missing' | 'scraper-unavailable'
+  | 'asset-persist-failed'
+  | 'collection-replace-degraded'
+  | 'file-sync-failed'
+  | 'metadata-missing'
+  | 'related-entry-not-in-library'
+  | 'scraper-unavailable'
 
 export type ScannerEntityErrorType =
   | 'duplicate-external-id'

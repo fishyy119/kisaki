@@ -49,10 +49,12 @@ export const scanner = {
 
   issueTypes: {
     assetPersistFailed: '資源儲存失敗',
+    collectionReplaceDegraded: '關聯部分更新',
     duplicateExternalId: '外部 ID 重複',
     fileSyncFailed: '檔案同步失敗',
     metadataMissing: '中繼資料缺失',
     pathUnavailable: '路徑無法存取',
+    relatedEntryNotInLibrary: '關聯項目不在庫中',
     scraperUnavailable: '刮削無法使用',
     unexpectedError: '意外錯誤',
     unsupportedEntry: '不支援的項目'
@@ -220,7 +222,7 @@ export const scanner = {
       scrapeUnavailableFallback: '刮削設定不可用，已使用目錄名直接新增',
       noMetadataFallback: '未找到可用中繼資料，已使用目錄名直接新增',
       scrapeFailedFallback: '刮削失敗，已使用目錄名直接新增',
-      pathInaccessible: ({ message }: { message: string }) => `路徑無法存取，未新增：${message}`,
+      pathInaccessible: '路徑無法存取，未新增，詳見日誌',
       notScannableDirectory: '路徑不是可掃描目錄，未新增',
       externalIdLinked: '外部 ID 已關聯到現有項目，目前路徑未新增',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
@@ -229,7 +231,7 @@ export const scanner = {
         `${count} 個檔案無法辨識卷號或話數，已作為未編號單元新增`,
       volumeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 個書籍檔案無法辨識卷號，已作為未編號卷新增`,
-      fileSyncFailed: '項目已新增，但影片檔案同步失敗，詳見日誌',
+      fileSyncFailed: '項目已新增，但檔案同步失敗，詳見日誌',
       unexpected: '處理此項目時發生意外錯誤，詳見日誌'
     }
   }

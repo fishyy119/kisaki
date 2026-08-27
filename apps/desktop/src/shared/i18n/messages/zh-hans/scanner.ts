@@ -49,10 +49,12 @@ export const scanner = {
 
   issueTypes: {
     assetPersistFailed: '资源保存失败',
+    collectionReplaceDegraded: '关联部分更新',
     duplicateExternalId: '外部 ID 重复',
     fileSyncFailed: '文件同步失败',
     metadataMissing: '元数据缺失',
     pathUnavailable: '路径不可访问',
+    relatedEntryNotInLibrary: '关联条目不在库中',
     scraperUnavailable: '刮削不可用',
     unexpectedError: '意外错误',
     unsupportedEntry: '不支持的条目'
@@ -220,7 +222,7 @@ export const scanner = {
       scrapeUnavailableFallback: '刮削配置不可用，已使用目录名直接添加',
       noMetadataFallback: '未找到可用元数据，已使用目录名直接添加',
       scrapeFailedFallback: '刮削失败，已使用目录名直接添加',
-      pathInaccessible: ({ message }: { message: string }) => `路径不可访问，未添加：${message}`,
+      pathInaccessible: '路径不可访问，未添加，详见日志',
       notScannableDirectory: '路径不是可扫描目录，未添加',
       externalIdLinked: '外部 ID 已关联到现有条目，当前路径未添加',
       episodeNumbersUnreadable: ({ count }: { count: number }) =>
@@ -229,7 +231,7 @@ export const scanner = {
         `${count} 个文件无法识别卷号或话数，已作为未编号单元添加`,
       volumeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 个书籍文件无法识别卷号，已作为未编号卷添加`,
-      fileSyncFailed: '条目已添加，但视频文件同步失败，详见日志',
+      fileSyncFailed: '条目已添加，但文件同步失败，详见日志',
       unexpected: '处理此条目时发生意外错误，详见日志'
     }
   }
