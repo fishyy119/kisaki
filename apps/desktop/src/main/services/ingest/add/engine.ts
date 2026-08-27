@@ -18,7 +18,8 @@ import { throwIfIngestAborted } from '../run/abort'
 import { reportIngestProgress } from '../run/progress'
 import { createIngestRun, toTaskRunWarnings } from '../run/task-run'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
-import { normalizeIngestLookupInput, normalizeLookup, requireScrapedBundle } from './common'
+import { normalizeLookup } from '../normalization'
+import { addEntityToCollection, normalizeIngestLookupInput, requireScrapedBundle } from './common'
 import type {
   IngestAddDeps,
   IngestAddLookup,
@@ -48,8 +49,9 @@ export interface EntityAddApi<T extends ContentEntityType> {
 }
 
 /** Media entries also add directly from seed facts, without a scraper. */
-export interface MediaEntityAddApi<T extends ContentEntityType & MediaType>
-  extends EntityAddApi<T> {
+export interface MediaEntityAddApi<
+  T extends ContentEntityType & MediaType
+> extends EntityAddApi<T> {
   startAddDirect(
     seed: IngestAddSeed<T>,
     options?: IngestAddOptions<T> & IngestTaskRunOptions
@@ -196,11 +198,11 @@ export class EntityAddEngine<T extends ContentEntityType> {
     knownIds: ExternalId[] | undefined,
     options: RunOptions<T> | undefined
   ): IngestAddResultOf<T> | undefined {
-    const dirPath = this.spec.dirPathOf(options)
+    const dirPath = this.spec.dirPathOf?.(options)
     if (dirPath) {
       const existingByPath = this.spec.findExisting(this.deps, { path: dirPath })
       if (existingByPath) {
-        this.spec.addToCollection(this.deps, existingByPath.id, options?.targetCollectionId)
+        this.addToCollection(existingByPath.id, options)
         return this.spec.toExistingResult(existingByPath.id, 'path')
       }
     }
@@ -208,12 +210,21 @@ export class EntityAddEngine<T extends ContentEntityType> {
     if (knownIds?.length) {
       const existingByExternalId = this.spec.findExisting(this.deps, { externalIds: knownIds })
       if (existingByExternalId) {
-        this.spec.addToCollection(this.deps, existingByExternalId.id, options?.targetCollectionId)
+        this.addToCollection(existingByExternalId.id, options)
         return this.spec.toExistingResult(existingByExternalId.id, 'externalId')
       }
     }
 
     return undefined
+  }
+
+  private addToCollection(entityId: string, options: RunOptions<T> | undefined): void {
+    addEntityToCollection(
+      this.deps.dbService,
+      this.entityType,
+      entityId,
+      options?.targetCollectionId
+    )
   }
 
   // ---------------------------------------------------------------------------

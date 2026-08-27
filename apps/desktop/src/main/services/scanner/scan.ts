@@ -419,7 +419,7 @@ export class ScanExecutor {
         .all()
       return profile ?? null
     } catch (error) {
-      log.error('Failed to get profile.', { profileId, error })
+      log.error('Failed to get profile.', error, { profileId })
       return null
     }
   }

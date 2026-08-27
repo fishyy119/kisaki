@@ -183,11 +183,16 @@ export type ScrapeSessionOf<T extends ScraperMediaType> = BaseScraperSession<
 >
 export type ScrapeProviderInfoOf<T extends ScraperMediaType> =
   ScraperHandlerTypeMap[T]['providerInfo']
+/** The info slot's payload; every entity's info names the entry (see conventions). */
+export type ScrapeInfoOf<T extends ScraperMediaType> = ScraperHandlerTypeMap[T]['resultMap']['info']
 
 export type ScrapeProviderOf<T extends ScraperMediaType> = ScraperHandlerTypeMap[T]['provider'] &
   RegisteredScraperProvider & {
     search?(query: string, ctx: ScraperProviderContext): Promise<ScrapeSearchResultOf<T>[]>
-    resolve(lookup: ScrapeLookupOf<T>, ctx: ScraperProviderContext): Promise<IdResolvedTarget | null>
+    resolve(
+      lookup: ScrapeLookupOf<T>,
+      ctx: ScraperProviderContext
+    ): Promise<IdResolvedTarget | null>
     openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<ScrapeSessionOf<T>>
   }
 
@@ -201,8 +206,11 @@ export type ScrapeImageResultOf<T extends ScraperMediaType> = {
 
 export interface ScraperHandlerSpec<T extends ScraperMediaType> {
   slots: readonly ScrapeSlotOf<T>[]
-  /** Total-parses hook-transformed lookup facts back into the contract. */
-  normalizeLookupFacts(lookup: ScrapeLookupOf<T>): ScrapeLookupOf<T>
+  /**
+   * Total-parses hook-transformed lookup facts back into the contract.
+   * Absent for entities whose lookup carries no facts beyond the base shape.
+   */
+  normalizeLookupFacts?(lookup: ScrapeLookupOf<T>): ScrapeLookupOf<T>
   mergeBundle(
     results: ScrapeResultOf<T>[],
     profile: ScraperProfile,
@@ -238,19 +246,16 @@ export const SCRAPER_HANDLER_SPECS = {
   },
   person: {
     slots: PERSON_SCRAPER_SLOTS,
-    normalizeLookupFacts: (lookup) => lookup,
     mergeBundle: mergePersonScraperBundle,
     mergeImages: mergePersonScraperImages
   },
   company: {
     slots: COMPANY_SCRAPER_SLOTS,
-    normalizeLookupFacts: (lookup) => lookup,
     mergeBundle: mergeCompanyScraperBundle,
     mergeImages: mergeCompanyScraperImages
   },
   character: {
     slots: CHARACTER_SCRAPER_SLOTS,
-    normalizeLookupFacts: (lookup) => lookup,
     mergeBundle: mergeCharacterScraperBundle,
     mergeImages: mergeCharacterScraperImages
   }

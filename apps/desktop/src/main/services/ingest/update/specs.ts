@@ -10,7 +10,7 @@
 
 import type { DbContext, DbService } from '@main/services/db'
 import type { ScraperService } from '@main/services/scraper'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType, MediaType } from '@shared/common'
 import type { IngestWarning } from '@shared/ingest'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import {
@@ -102,12 +102,18 @@ import {
   COMIC_LINK_TOPOLOGY,
   createLinkDegradeWarnings,
   GAME_LINK_TOPOLOGY,
-  NOVEL_LINK_TOPOLOGY
+  NOVEL_LINK_TOPOLOGY,
+  type LinkTopologySpec
 } from './link-topology'
 import { applyNovelPlan, buildNovelIncoming, buildNovelPlan, loadNovelCurrent } from './novel'
 import { resolveNovelUpdateLookup } from './novel/lookup'
 import { applyPersonPlan, buildPersonIncoming, buildPersonPlan, loadPersonCurrent } from './person'
 import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
+import type {
+  UpdateCurrentSelection,
+  UpdateLinkApplyResult,
+  UpdateResolvedSelection
+} from './types'
 
 /** Planning facts one entity carries from projection into its transaction. */
 type PlanningOf<TBuildPlan extends (args: never) => unknown> = Omit<
@@ -186,7 +192,7 @@ export interface IngestUpdateApplied {
 
 export interface IngestUpdateSpec<T extends ContentEntityType> {
   /** Task-run output names the updated entity with this key. */
-  outputIdKey: string
+  outputIdKey: `${T}Id`
   resolveLookup(deps: IngestUpdateDeps, request: IngestUpdateRequestOf<T>): IngestUpdateLookup<T>
   scrape(
     deps: IngestUpdateDeps,
@@ -215,171 +221,200 @@ export interface IngestUpdateSpec<T extends ContentEntityType> {
   ): IngestUpdateApplied
 }
 
+/**
+ * Media update entries share one plan/apply shape: resolve the selection over
+ * the media's surface constants, project incoming facts, build the relation
+ * graph when relation surfaces are selected, then load-plan-apply inside the
+ * transaction and report link degrades plus unresolved related entries. This
+ * factory states that shape once; each media entry passes only its facts, and
+ * the registry-level `satisfies` validates every produced spec concretely.
+ */
+function createMediaUpdateSpec<
+  T extends ContentEntityType & MediaType,
+  TSurface extends string,
+  TCoreSurface extends TSurface,
+  TMediaSurface extends TSurface,
+  TRelationSurface extends TSurface,
+  TFactSource extends string,
+  TLinkKind extends string,
+  TGraph,
+  TIncoming,
+  TCurrent,
+  TPlan extends { degradedLinks: TLinkKind[] }
+>(facts: {
+  type: T
+  resolveLookup: (
+    deps: IngestUpdateDeps,
+    request: IngestUpdateRequestOf<T>
+  ) => IngestUpdateLookup<T>
+  scrape: (
+    deps: IngestUpdateDeps,
+    profileId: string,
+    lookup: IngestUpdateLookup<T>,
+    signal: AbortSignal | undefined
+  ) => Promise<IngestUpdateBundle<T> | null>
+  surfaceKeys: readonly TSurface[]
+  coreSurfaces: readonly TCoreSurface[]
+  mediaSurfaces: readonly TMediaSurface[]
+  relationSurfaces: readonly TRelationSurface[]
+  buildIncoming: (bundle: IngestUpdateBundle<T> | null, lookup: IngestUpdateLookup<T>) => TIncoming
+  buildGraph: (bundle: IngestUpdateBundle<T>, lookup: IngestUpdateLookup<T>) => TGraph
+  buildDirectGraph: (lookup: IngestUpdateLookup<T>) => TGraph
+  loadCurrent: (
+    tx: DbContext,
+    rootId: string,
+    selection: UpdateCurrentSelection<TCoreSurface>
+  ) => TCurrent
+  buildPlan: (context: {
+    current: TCurrent
+    policy: IngestUpdatePolicy
+    selection: UpdateResolvedSelection<TSurface, TCoreSurface, TMediaSurface, TRelationSurface>
+    incoming: TIncoming
+    relationGraph: TGraph | undefined
+  }) => TPlan
+  applyPlan: (
+    tx: DbContext,
+    rootId: string,
+    plan: TPlan,
+    persist: IngestPersistHandlers
+  ) => UpdateLinkApplyResult<TLinkKind>
+  linkTopology: Record<TLinkKind, LinkTopologySpec<TRelationSurface, TFactSource>>
+}) {
+  return {
+    outputIdKey: `${facts.type}Id` as const,
+    resolveLookup: facts.resolveLookup,
+    scrape: facts.scrape,
+    plan: (
+      _deps: IngestUpdateDeps,
+      args: {
+        request: IngestUpdateRequestOf<T>
+        lookup: IngestUpdateLookup<T>
+        bundle: IngestUpdateBundle<T> | null
+      }
+    ) => {
+      const surfaces = normalizeSelection(args.request.selection.surfaces, facts.surfaceKeys)
+      const selection = resolveUpdateSelection({
+        surfaces,
+        coreSurfaces: facts.coreSurfaces,
+        mediaSurfaces: facts.mediaSurfaces,
+        relationSurfaces: facts.relationSurfaces
+      })
+      const incoming = facts.buildIncoming(args.bundle, args.lookup)
+      const relationGraph =
+        selection.relationSurfaces.length > 0
+          ? args.bundle
+            ? facts.buildGraph(args.bundle, args.lookup)
+            : facts.buildDirectGraph(args.lookup)
+          : undefined
+      return { surfaces, planning: { selection, incoming, relationGraph } }
+    },
+    apply: (
+      deps: IngestUpdateDeps,
+      tx: DbContext,
+      args: {
+        rootId: string
+        planning: {
+          selection: UpdateResolvedSelection<
+            TSurface,
+            TCoreSurface,
+            TMediaSurface,
+            TRelationSurface
+          >
+          incoming: TIncoming
+          relationGraph: TGraph | undefined
+        }
+        policy: IngestUpdatePolicy
+      }
+    ) => {
+      const current = facts.loadCurrent(tx, args.rootId, args.planning.selection)
+      const plan = facts.buildPlan({ current, policy: args.policy, ...args.planning })
+      const applyResult = facts.applyPlan(tx, args.rootId, plan, deps.persist)
+      return {
+        pendingAssets: applyResult.pendingAssets,
+        warnings: [
+          ...createLinkDegradeWarnings({
+            topology: facts.linkTopology,
+            degraded: plan.degradedLinks,
+            preservedRows: applyResult.preservedLinkRows
+          }),
+          ...(applyResult.unresolvedRelatedEntries
+            ? [createUnresolvedRelatedEntriesWarning(applyResult.unresolvedRelatedEntries)]
+            : [])
+        ]
+      }
+    }
+  }
+}
+
 export const INGEST_UPDATE_SPECS = {
-  game: {
-    outputIdKey: 'gameId',
+  game: createMediaUpdateSpec({
+    type: 'game',
     resolveLookup: (deps, request) => resolveGameUpdateLookup(deps.dbService, request),
     scrape: (deps, profileId, lookup, signal) =>
       deps.scraperService.game.scrape(profileId, lookup, { signal }),
-    plan: (_deps, { request, lookup, bundle }) => {
-      const surfaces = normalizeSelection(request.selection.surfaces, GAME_UPDATE_SURFACE_KEYS)
-      const selection = resolveUpdateSelection({
-        surfaces,
-        coreSurfaces: GAME_UPDATE_CORE_SURFACES,
-        mediaSurfaces: GAME_UPDATE_MEDIA_SURFACES,
-        relationSurfaces: GAME_UPDATE_RELATION_SURFACES
-      })
-      const incoming = buildGameIncoming(bundle, lookup)
-      const relationGraph =
-        selection.relationSurfaces.length > 0
-          ? bundle
-            ? buildGameGraph(bundle, lookup)
-            : buildDirectGameGraph(lookup)
-          : undefined
-      return { surfaces, planning: { selection, incoming, relationGraph } }
-    },
-    apply: (deps, tx, { rootId, planning, policy }) => {
-      const current = loadGameCurrent(tx, rootId, planning.selection)
-      const plan = buildGamePlan({ current, policy, ...planning })
-      const applyResult = applyGamePlan(tx, rootId, plan, deps.persist)
-      return {
-        pendingAssets: applyResult.pendingAssets,
-        warnings: [
-          ...createLinkDegradeWarnings({
-            topology: GAME_LINK_TOPOLOGY,
-            degraded: plan.degradedLinks,
-            preservedRows: applyResult.preservedLinkRows
-          }),
-          ...(applyResult.unresolvedRelatedEntries
-            ? [createUnresolvedRelatedEntriesWarning(applyResult.unresolvedRelatedEntries)]
-            : [])
-        ]
-      }
-    }
-  },
-  anime: {
-    outputIdKey: 'animeId',
+    surfaceKeys: GAME_UPDATE_SURFACE_KEYS,
+    coreSurfaces: GAME_UPDATE_CORE_SURFACES,
+    mediaSurfaces: GAME_UPDATE_MEDIA_SURFACES,
+    relationSurfaces: GAME_UPDATE_RELATION_SURFACES,
+    buildIncoming: buildGameIncoming,
+    buildGraph: buildGameGraph,
+    buildDirectGraph: buildDirectGameGraph,
+    loadCurrent: loadGameCurrent,
+    buildPlan: buildGamePlan,
+    applyPlan: applyGamePlan,
+    linkTopology: GAME_LINK_TOPOLOGY
+  }),
+  anime: createMediaUpdateSpec({
+    type: 'anime',
     resolveLookup: (deps, request) => resolveAnimeUpdateLookup(deps.dbService, request),
     scrape: (deps, profileId, lookup, signal) =>
       deps.scraperService.anime.scrape(profileId, lookup, { signal }),
-    plan: (_deps, { request, lookup, bundle }) => {
-      const surfaces = normalizeSelection(request.selection.surfaces, ANIME_UPDATE_SURFACE_KEYS)
-      const selection = resolveUpdateSelection({
-        surfaces,
-        coreSurfaces: ANIME_UPDATE_CORE_SURFACES,
-        mediaSurfaces: ANIME_UPDATE_MEDIA_SURFACES,
-        relationSurfaces: ANIME_UPDATE_RELATION_SURFACES
-      })
-      const incoming = buildAnimeIncoming(bundle, lookup)
-      const relationGraph =
-        selection.relationSurfaces.length > 0
-          ? bundle
-            ? buildAnimeGraph(bundle, lookup)
-            : buildDirectAnimeGraph(lookup)
-          : undefined
-      return { surfaces, planning: { selection, incoming, relationGraph } }
-    },
-    apply: (deps, tx, { rootId, planning, policy }) => {
-      const current = loadAnimeCurrent(tx, rootId, planning.selection)
-      const plan = buildAnimePlan({ current, policy, ...planning })
-      const applyResult = applyAnimePlan(tx, rootId, plan, deps.persist)
-      return {
-        pendingAssets: applyResult.pendingAssets,
-        warnings: [
-          ...createLinkDegradeWarnings({
-            topology: ANIME_LINK_TOPOLOGY,
-            degraded: plan.degradedLinks,
-            preservedRows: applyResult.preservedLinkRows
-          }),
-          ...(applyResult.unresolvedRelatedEntries
-            ? [createUnresolvedRelatedEntriesWarning(applyResult.unresolvedRelatedEntries)]
-            : [])
-        ]
-      }
-    }
-  },
-  comic: {
-    outputIdKey: 'comicId',
+    surfaceKeys: ANIME_UPDATE_SURFACE_KEYS,
+    coreSurfaces: ANIME_UPDATE_CORE_SURFACES,
+    mediaSurfaces: ANIME_UPDATE_MEDIA_SURFACES,
+    relationSurfaces: ANIME_UPDATE_RELATION_SURFACES,
+    buildIncoming: buildAnimeIncoming,
+    buildGraph: buildAnimeGraph,
+    buildDirectGraph: buildDirectAnimeGraph,
+    loadCurrent: loadAnimeCurrent,
+    buildPlan: buildAnimePlan,
+    applyPlan: applyAnimePlan,
+    linkTopology: ANIME_LINK_TOPOLOGY
+  }),
+  comic: createMediaUpdateSpec({
+    type: 'comic',
     resolveLookup: (deps, request) => resolveComicUpdateLookup(deps.dbService, request),
     scrape: (deps, profileId, lookup, signal) =>
       deps.scraperService.comic.scrape(profileId, lookup, { signal }),
-    plan: (_deps, { request, lookup, bundle }) => {
-      const surfaces = normalizeSelection(request.selection.surfaces, COMIC_UPDATE_SURFACE_KEYS)
-      const selection = resolveUpdateSelection({
-        surfaces,
-        coreSurfaces: COMIC_UPDATE_CORE_SURFACES,
-        mediaSurfaces: COMIC_UPDATE_MEDIA_SURFACES,
-        relationSurfaces: COMIC_UPDATE_RELATION_SURFACES
-      })
-      const incoming = buildComicIncoming(bundle, lookup)
-      const relationGraph =
-        selection.relationSurfaces.length > 0
-          ? bundle
-            ? buildComicGraph(bundle, lookup)
-            : buildDirectComicGraph(lookup)
-          : undefined
-      return { surfaces, planning: { selection, incoming, relationGraph } }
-    },
-    apply: (deps, tx, { rootId, planning, policy }) => {
-      const current = loadComicCurrent(tx, rootId, planning.selection)
-      const plan = buildComicPlan({ current, policy, ...planning })
-      const applyResult = applyComicPlan(tx, rootId, plan, deps.persist)
-      return {
-        pendingAssets: applyResult.pendingAssets,
-        warnings: [
-          ...createLinkDegradeWarnings({
-            topology: COMIC_LINK_TOPOLOGY,
-            degraded: plan.degradedLinks,
-            preservedRows: applyResult.preservedLinkRows
-          }),
-          ...(applyResult.unresolvedRelatedEntries
-            ? [createUnresolvedRelatedEntriesWarning(applyResult.unresolvedRelatedEntries)]
-            : [])
-        ]
-      }
-    }
-  },
-  novel: {
-    outputIdKey: 'novelId',
+    surfaceKeys: COMIC_UPDATE_SURFACE_KEYS,
+    coreSurfaces: COMIC_UPDATE_CORE_SURFACES,
+    mediaSurfaces: COMIC_UPDATE_MEDIA_SURFACES,
+    relationSurfaces: COMIC_UPDATE_RELATION_SURFACES,
+    buildIncoming: buildComicIncoming,
+    buildGraph: buildComicGraph,
+    buildDirectGraph: buildDirectComicGraph,
+    loadCurrent: loadComicCurrent,
+    buildPlan: buildComicPlan,
+    applyPlan: applyComicPlan,
+    linkTopology: COMIC_LINK_TOPOLOGY
+  }),
+  novel: createMediaUpdateSpec({
+    type: 'novel',
     resolveLookup: (deps, request) => resolveNovelUpdateLookup(deps.dbService, request),
     scrape: (deps, profileId, lookup, signal) =>
       deps.scraperService.novel.scrape(profileId, lookup, { signal }),
-    plan: (_deps, { request, lookup, bundle }) => {
-      const surfaces = normalizeSelection(request.selection.surfaces, NOVEL_UPDATE_SURFACE_KEYS)
-      const selection = resolveUpdateSelection({
-        surfaces,
-        coreSurfaces: NOVEL_UPDATE_CORE_SURFACES,
-        mediaSurfaces: NOVEL_UPDATE_MEDIA_SURFACES,
-        relationSurfaces: NOVEL_UPDATE_RELATION_SURFACES
-      })
-      const incoming = buildNovelIncoming(bundle, lookup)
-      const relationGraph =
-        selection.relationSurfaces.length > 0
-          ? bundle
-            ? buildNovelGraph(bundle, lookup)
-            : buildDirectNovelGraph(lookup)
-          : undefined
-      return { surfaces, planning: { selection, incoming, relationGraph } }
-    },
-    apply: (deps, tx, { rootId, planning, policy }) => {
-      const current = loadNovelCurrent(tx, rootId, planning.selection)
-      const plan = buildNovelPlan({ current, policy, ...planning })
-      const applyResult = applyNovelPlan(tx, rootId, plan, deps.persist)
-      return {
-        pendingAssets: applyResult.pendingAssets,
-        warnings: [
-          ...createLinkDegradeWarnings({
-            topology: NOVEL_LINK_TOPOLOGY,
-            degraded: plan.degradedLinks,
-            preservedRows: applyResult.preservedLinkRows
-          }),
-          ...(applyResult.unresolvedRelatedEntries
-            ? [createUnresolvedRelatedEntriesWarning(applyResult.unresolvedRelatedEntries)]
-            : [])
-        ]
-      }
-    }
-  },
+    surfaceKeys: NOVEL_UPDATE_SURFACE_KEYS,
+    coreSurfaces: NOVEL_UPDATE_CORE_SURFACES,
+    mediaSurfaces: NOVEL_UPDATE_MEDIA_SURFACES,
+    relationSurfaces: NOVEL_UPDATE_RELATION_SURFACES,
+    buildIncoming: buildNovelIncoming,
+    buildGraph: buildNovelGraph,
+    buildDirectGraph: buildDirectNovelGraph,
+    loadCurrent: loadNovelCurrent,
+    buildPlan: buildNovelPlan,
+    applyPlan: applyNovelPlan,
+    linkTopology: NOVEL_LINK_TOPOLOGY
+  }),
   person: {
     outputIdKey: 'personId',
     resolveLookup: (_deps, request) => normalizeLookup(request.lookup),

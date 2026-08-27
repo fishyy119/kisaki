@@ -71,15 +71,6 @@ import type {
 } from '../graph'
 import type { IngestPersistHandlers } from '../persist'
 import type { IngestOperationOptions } from '../types'
-import {
-  addAnimeToCollection,
-  addCharacterToCollection,
-  addComicToCollection,
-  addCompanyToCollection,
-  addGameToCollection,
-  addNovelToCollection,
-  addPersonToCollection
-} from './common'
 
 /**
  * Per-entity type correlation for the add flow.
@@ -192,13 +183,8 @@ export interface IngestAddSpec<T extends ContentEntityType> {
     deps: IngestAddDeps,
     params: { path?: string; externalIds?: ExternalId[] }
   ): { id: string } | undefined
-  /** Directory identity inside the options, for media whose entries claim one. */
-  dirPathOf(options: IngestAddOptions<T> | undefined): string | undefined
-  addToCollection(
-    deps: IngestAddDeps,
-    entityId: string,
-    targetCollectionId: string | undefined
-  ): void
+  /** Directory identity inside the options; absent for entities that claim none. */
+  dirPathOf?(options: IngestAddOptions<T> | undefined): string | undefined
 }
 
 export const INGEST_ADD_SPECS = {
@@ -211,9 +197,7 @@ export const INGEST_ADD_SPECS = {
     readEntityId: (result) => result.gameId,
     toExistingResult: (gameId, existingReason) => ({ gameId, isNew: false, existingReason }),
     findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('game', params),
-    dirPathOf: (options) => options?.gameDirPath,
-    addToCollection: (deps, entityId, targetCollectionId) =>
-      addGameToCollection(deps.dbService, entityId, targetCollectionId)
+    dirPathOf: (options) => options?.gameDirPath
   },
   anime: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -224,9 +208,7 @@ export const INGEST_ADD_SPECS = {
     readEntityId: (result) => result.animeId,
     toExistingResult: (animeId, existingReason) => ({ animeId, isNew: false, existingReason }),
     findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('anime', params),
-    dirPathOf: (options) => options?.animeDirPath,
-    addToCollection: (deps, entityId, targetCollectionId) =>
-      addAnimeToCollection(deps.dbService, entityId, targetCollectionId)
+    dirPathOf: (options) => options?.animeDirPath
   },
   comic: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -237,9 +219,7 @@ export const INGEST_ADD_SPECS = {
     readEntityId: (result) => result.comicId,
     toExistingResult: (comicId, existingReason) => ({ comicId, isNew: false, existingReason }),
     findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('comic', params),
-    dirPathOf: (options) => options?.comicDirPath,
-    addToCollection: (deps, entityId, targetCollectionId) =>
-      addComicToCollection(deps.dbService, entityId, targetCollectionId)
+    dirPathOf: (options) => options?.comicDirPath
   },
   novel: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -250,9 +230,7 @@ export const INGEST_ADD_SPECS = {
     readEntityId: (result) => result.novelId,
     toExistingResult: (novelId, existingReason) => ({ novelId, isNew: false, existingReason }),
     findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('novel', params),
-    dirPathOf: (options) => options?.novelDirPath,
-    addToCollection: (deps, entityId, targetCollectionId) =>
-      addNovelToCollection(deps.dbService, entityId, targetCollectionId)
+    dirPathOf: (options) => options?.novelDirPath
   },
   person: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -261,11 +239,7 @@ export const INGEST_ADD_SPECS = {
     persist: (deps, graph, options) => deps.persist.person.persistPersonGraph(graph, options),
     readEntityId: (result) => result.personId,
     toExistingResult: (personId, existingReason) => ({ personId, isNew: false, existingReason }),
-    findExisting: (deps, params) =>
-      deps.dbService.entityFinder.findExisting('person', { externalIds: params.externalIds }),
-    dirPathOf: () => undefined,
-    addToCollection: (deps, entityId, targetCollectionId) =>
-      addPersonToCollection(deps.dbService, entityId, targetCollectionId)
+    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('person', params)
   },
   company: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -274,28 +248,19 @@ export const INGEST_ADD_SPECS = {
     persist: (deps, graph, options) => deps.persist.company.persistCompanyGraph(graph, options),
     readEntityId: (result) => result.companyId,
     toExistingResult: (companyId, existingReason) => ({ companyId, isNew: false, existingReason }),
-    findExisting: (deps, params) =>
-      deps.dbService.entityFinder.findExisting('company', { externalIds: params.externalIds }),
-    dirPathOf: () => undefined,
-    addToCollection: (deps, entityId, targetCollectionId) =>
-      addCompanyToCollection(deps.dbService, entityId, targetCollectionId)
+    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('company', params)
   },
   character: {
     scrape: (deps, profileId, lookup, signal) =>
       deps.scraperService.character.scrape(profileId, lookup, { signal }),
     buildGraph: buildCharacterGraph,
-    persist: (deps, graph, options) =>
-      deps.persist.character.persistCharacterGraph(graph, options),
+    persist: (deps, graph, options) => deps.persist.character.persistCharacterGraph(graph, options),
     readEntityId: (result) => result.characterId,
     toExistingResult: (characterId, existingReason) => ({
       characterId,
       isNew: false,
       existingReason
     }),
-    findExisting: (deps, params) =>
-      deps.dbService.entityFinder.findExisting('character', { externalIds: params.externalIds }),
-    dirPathOf: () => undefined,
-    addToCollection: (deps, entityId, targetCollectionId) =>
-      addCharacterToCollection(deps.dbService, entityId, targetCollectionId)
+    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('character', params)
   }
 } as const satisfies { [T in ContentEntityType]: IngestAddSpec<T> }

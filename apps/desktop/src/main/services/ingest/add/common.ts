@@ -1,7 +1,6 @@
-import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import type { ScraperLookup } from '@shared/scraper'
 import { ScrapeFailure } from '@main/services/scraper'
 import type { DbService } from '@main/services/db'
+import type { ContentEntityType } from '@shared/common'
 import {
   collectionAnimeLinks,
   collectionCharacterLinks,
@@ -11,6 +10,8 @@ import {
   collectionNovelLinks,
   collectionPersonLinks
 } from '@shared/db'
+import type { ScraperLookup } from '@shared/scraper'
+import { normalizeLookup } from '../normalization'
 
 export interface NormalizedIngestLookupInput<TLookup extends ScraperLookup> {
   profileId: string
@@ -23,25 +24,6 @@ export function normalizeProfileId(profileId: string): string {
     throw new Error('profileId is required')
   }
   return normalized
-}
-
-export function normalizeKnownIds(knownIds: ExternalId[] | undefined): ExternalId[] {
-  return normalizeExternalIds(knownIds)
-}
-
-export function normalizeLookup<TLookup extends ScraperLookup>(lookup: TLookup): TLookup {
-  const name = lookup.name?.trim()
-  if (!name) {
-    throw new Error('lookup.name is required')
-  }
-
-  const knownIds = normalizeKnownIds(lookup.knownIds)
-
-  return {
-    ...lookup,
-    name,
-    knownIds: knownIds.length > 0 ? knownIds : undefined
-  }
 }
 
 export function normalizeIngestLookupInput<TLookup extends ScraperLookup>(
@@ -65,128 +47,69 @@ export function requireScrapedBundle<T>(bundle: T | null, entityType: string): T
   )
 }
 
-export function addGameToCollection(
-  dbService: DbService,
-  gameId: string,
-  targetCollectionId: string | undefined
-): void {
-  if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionGameLinks)
-    .values({
-      collectionId: targetCollectionId,
-      gameId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
+/** Membership insert per entity type; `addEntityToCollection` guards and runs them. */
+const COLLECTION_LINK_INSERTS: Record<
+  ContentEntityType,
+  (client: DbService['client'], collectionId: string, entityId: string) => void
+> = {
+  game: (client, collectionId, entityId) => {
+    client
+      .insert(collectionGameLinks)
+      .values({ collectionId, gameId: entityId, orderInCollection: 0 })
+      .onConflictDoNothing()
+      .run()
+  },
+  anime: (client, collectionId, entityId) => {
+    client
+      .insert(collectionAnimeLinks)
+      .values({ collectionId, animeId: entityId, orderInCollection: 0 })
+      .onConflictDoNothing()
+      .run()
+  },
+  comic: (client, collectionId, entityId) => {
+    client
+      .insert(collectionComicLinks)
+      .values({ collectionId, comicId: entityId, orderInCollection: 0 })
+      .onConflictDoNothing()
+      .run()
+  },
+  novel: (client, collectionId, entityId) => {
+    client
+      .insert(collectionNovelLinks)
+      .values({ collectionId, novelId: entityId, orderInCollection: 0 })
+      .onConflictDoNothing()
+      .run()
+  },
+  person: (client, collectionId, entityId) => {
+    client
+      .insert(collectionPersonLinks)
+      .values({ collectionId, personId: entityId, orderInCollection: 0 })
+      .onConflictDoNothing()
+      .run()
+  },
+  company: (client, collectionId, entityId) => {
+    client
+      .insert(collectionCompanyLinks)
+      .values({ collectionId, companyId: entityId, orderInCollection: 0 })
+      .onConflictDoNothing()
+      .run()
+  },
+  character: (client, collectionId, entityId) => {
+    client
+      .insert(collectionCharacterLinks)
+      .values({ collectionId, characterId: entityId, orderInCollection: 0 })
+      .onConflictDoNothing()
+      .run()
+  }
 }
 
-export function addAnimeToCollection(
+/** Adds an entity to the requested collection; no target means nothing to do. */
+export function addEntityToCollection(
   dbService: DbService,
-  animeId: string,
+  entityType: ContentEntityType,
+  entityId: string,
   targetCollectionId: string | undefined
 ): void {
   if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionAnimeLinks)
-    .values({
-      collectionId: targetCollectionId,
-      animeId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
-}
-
-export function addComicToCollection(
-  dbService: DbService,
-  comicId: string,
-  targetCollectionId: string | undefined
-): void {
-  if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionComicLinks)
-    .values({
-      collectionId: targetCollectionId,
-      comicId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
-}
-
-export function addNovelToCollection(
-  dbService: DbService,
-  novelId: string,
-  targetCollectionId: string | undefined
-): void {
-  if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionNovelLinks)
-    .values({
-      collectionId: targetCollectionId,
-      novelId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
-}
-
-export function addPersonToCollection(
-  dbService: DbService,
-  personId: string,
-  targetCollectionId: string | undefined
-): void {
-  if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionPersonLinks)
-    .values({
-      collectionId: targetCollectionId,
-      personId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
-}
-
-export function addCompanyToCollection(
-  dbService: DbService,
-  companyId: string,
-  targetCollectionId: string | undefined
-): void {
-  if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionCompanyLinks)
-    .values({
-      collectionId: targetCollectionId,
-      companyId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
-}
-
-export function addCharacterToCollection(
-  dbService: DbService,
-  characterId: string,
-  targetCollectionId: string | undefined
-): void {
-  if (!targetCollectionId) return
-
-  dbService.client
-    .insert(collectionCharacterLinks)
-    .values({
-      collectionId: targetCollectionId,
-      characterId,
-      orderInCollection: 0
-    })
-    .onConflictDoNothing()
-    .run()
+  COLLECTION_LINK_INSERTS[entityType](dbService.client, targetCollectionId, entityId)
 }

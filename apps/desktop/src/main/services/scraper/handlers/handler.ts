@@ -50,6 +50,7 @@ import type {
   ScrapeBundleOf,
   ScrapeImageResultOf,
   ScrapeImageSlotOf,
+  ScrapeInfoOf,
   ScrapeLookupOf,
   ScrapeProviderInfoOf,
   ScrapeProviderOf,
@@ -72,10 +73,7 @@ type PlannableSlotConfigs<TSlot extends string> = Record<
 /** The slice of a provider the plan executor needs; widening is owned here. */
 interface SessionProviderOf<T extends ScraperMediaType> {
   readonly capabilities: readonly string[]
-  openSession(
-    target: IdResolvedTarget,
-    ctx: ScraperProviderContext
-  ): Promise<ScrapeSessionOf<T>>
+  openSession(target: IdResolvedTarget, ctx: ScraperProviderContext): Promise<ScrapeSessionOf<T>>
 }
 
 export class EntityScraperHandler<T extends ScraperMediaType> {
@@ -142,7 +140,8 @@ export class EntityScraperHandler<T extends ScraperMediaType> {
   ): Promise<ScrapeBundleOf<T> | null> {
     // Hook taps re-enter the lookup as extension-supplied JSON, so its facts
     // are total-parsed back into the contract before providers rank on them.
-    const lookup = this.spec.normalizeLookupFacts(await this.hooks.lookup.transform(rawLookup))
+    const transformed = await this.hooks.lookup.transform(rawLookup)
+    const lookup = this.spec.normalizeLookupFacts?.(transformed) ?? transformed
     const profile = this.loadProfile(profileId)
 
     const runtimeSlotConfigs = prepareRuntimeSlotConfigs(
@@ -309,12 +308,12 @@ export class EntityScraperHandler<T extends ScraperMediaType> {
     data: ScrapeResultMapOf<T>[S]
   ): SlotResult<S, ScrapeResultMapOf<T>[S]> | null {
     if (entry.slot === 'info') {
-      // The info slot is the one object-shaped payload; a first-strategy info
-      // answer without a usable name is no answer.
-      const info = data as { name?: unknown }
+      // Every entity's info payload names the entry (the slot-system contract);
+      // a first-strategy info answer without a usable name is no answer. The
+      // narrowing from the generic slot payload is this handler's correlation.
+      const info = data as ScrapeInfoOf<T>
       const valid =
-        entry.strategy !== 'first' ||
-        (typeof info.name === 'string' && info.name.trim().length > 0)
+        entry.strategy !== 'first' || (typeof info.name === 'string' && info.name.trim().length > 0)
       return valid ? { slot: entry.slot, providerId, rank: entry.rank, data } : null
     }
 

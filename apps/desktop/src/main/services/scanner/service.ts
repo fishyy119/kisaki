@@ -130,7 +130,7 @@ export class ScannerService implements IService<'scanner'> {
   ): ScannerRunStartResult {
     const { start, completed } = this.coordinator.startScanner(scannerId, initiator)
     void completed.catch((error) => {
-      log.error('Scanner run failed after start.', { scannerId, error })
+      log.error('Scanner run failed after start.', error, { scannerId })
     })
     return start
   }
@@ -142,7 +142,7 @@ export class ScannerService implements IService<'scanner'> {
       try {
         starts.push(this.startScanner(scanner.id, initiator))
       } catch (error) {
-        log.error('Failed to start scanner.', { scannerName: scanner.name, error })
+        log.error('Failed to start scanner.', error, { scannerName: scanner.name })
       }
     }
 

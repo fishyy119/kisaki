@@ -35,7 +35,7 @@ import type { ComicLinkKind } from './comic/types'
 import type { GameLinkKind } from './game/types'
 import type { NovelLinkKind } from './novel/types'
 
-interface LinkTopologySpec<TSurface extends string, TFactSource extends string> {
+export interface LinkTopologySpec<TSurface extends string, TFactSource extends string> {
   /** Update surface that selects this link table. */
   surface: TSurface
   /** Stable English noun used when reporting a downgraded replace. */

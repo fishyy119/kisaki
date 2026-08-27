@@ -98,15 +98,16 @@ const NOVEL_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
   rowKey: volumeRowKey,
   fileGroupKey: (filePath, volume) => unnamedUnitGroupKey(filePath, volume.name ?? ''),
   insertUnit: (tx, novelId, candidate, _values, order) => {
+    const id = nanoid()
     const row: NewNovelVolume = {
-      id: nanoid(),
+      id,
       novelId,
       volumeNumber: candidate.volumeNumber ?? null,
       name: candidate.volumeNumber === undefined ? candidate.name : null,
       orderInNovel: order
     }
     tx.insert(novelVolumes).values(row).run()
-    return row.id as string
+    return id
   },
   deleteUnit: (tx, unitId) => {
     tx.delete(novelVolumes).where(eq(novelVolumes.id, unitId)).run()
@@ -317,7 +318,7 @@ export class NovelFileSyncHandler {
       if (depth > MAX_NOVEL_WALK_DEPTH) return
 
       const entries = await fs.readdir(current, { withFileTypes: true }).catch((error) => {
-        log.warn('Failed to read novel directory:', error)
+        log.warn('Failed to read novel directory.', error)
         return []
       })
 
@@ -337,5 +338,4 @@ export class NovelFileSyncHandler {
     await visit(dirPath, 0)
     return candidates
   }
-
 }

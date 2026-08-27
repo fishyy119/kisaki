@@ -145,8 +145,9 @@ const COMIC_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
     }
   },
   insertUnit: (tx, comicId, candidate, _values, order) => {
+    const id = nanoid()
     const row: NewComicChapter = {
-      id: nanoid(),
+      id,
       comicId,
       volumeNumber: candidate.volumeNumber ?? null,
       chapterNumber: candidate.chapterNumber ?? null,
@@ -154,7 +155,7 @@ const COMIC_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
       orderInComic: order
     }
     tx.insert(comicChapters).values(row).run()
-    return row.id as string
+    return id
   },
   deleteUnit: (tx, unitId) => {
     tx.delete(comicChapters).where(eq(comicChapters.id, unitId)).run()
@@ -427,7 +428,7 @@ export class ComicFileSyncHandler {
       if (depth > MAX_COMIC_WALK_DEPTH) return
 
       const entries = await fs.readdir(current, { withFileTypes: true }).catch((error) => {
-        log.warn('Failed to read comic directory:', error)
+        log.warn('Failed to read comic directory.', error)
         return []
       })
 
@@ -472,5 +473,4 @@ export class ComicFileSyncHandler {
 
     return candidates
   }
-
 }

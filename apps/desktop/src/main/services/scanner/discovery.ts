@@ -37,7 +37,7 @@ export class ScannerDiscovery {
           return { extractedName: match.groups.name.trim(), matchedRuleId: rule.id }
         }
       } catch (error) {
-        log.warn('Invalid regex pattern in rule.', { ruleId: rule.id, error: error })
+        log.warn('Invalid regex pattern in rule.', error, { ruleId: rule.id })
       }
     }
     return { extractedName: originalName, matchedRuleId: null }
@@ -89,7 +89,7 @@ export class ScannerDiscovery {
         })
         .filter((entity) => !ignoredNameSet.has(entity.extractedName.toLowerCase()))
     } catch (error) {
-      log.error('Failed to scan directory.', { rootPath: rootPath, error: error })
+      log.error('Failed to scan directory.', error, { rootPath })
       return []
     }
   }

@@ -99,15 +99,21 @@ export function normalizeTags(tagsInput: Tag[] | null | undefined): Tag[] | unde
   )
 }
 
+/**
+ * Canonical lookup form for every ingest flow: trimmed required name and
+ * deduplicated known ids, omitted entirely when the caller has none.
+ */
 export function normalizeLookup<TLookup extends ScraperLookup>(lookup: TLookup): TLookup {
   const name = normalizeOptionalString(lookup.name)
   if (!name) {
-    throw new Error('Update lookup name is required')
+    throw new Error('Lookup name is required')
   }
+
+  const knownIds = normalizeExternalIds(lookup.knownIds)
 
   return {
     ...lookup,
     name,
-    knownIds: normalizeExternalIds(lookup.knownIds)
+    knownIds: knownIds.length > 0 ? knownIds : undefined
   }
 }

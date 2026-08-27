@@ -186,8 +186,9 @@ const ANIME_EPISODE_RECONCILE_SPEC: UnitReconcileSpec<
     }
   },
   insertUnit: (tx, animeId, candidate, values, order) => {
+    const id = nanoid()
     const row: NewAnimeEpisode = {
-      id: nanoid(),
+      id,
       animeId,
       type: candidate.type,
       episodeNumber: candidate.number ?? null,
@@ -196,7 +197,7 @@ const ANIME_EPISODE_RECONCILE_SPEC: UnitReconcileSpec<
       orderInAnime: order
     }
     tx.insert(animeEpisodes).values(row).run()
-    return row.id as string
+    return id
   },
   deleteUnit: (tx, unitId) => {
     tx.delete(animeEpisodes).where(eq(animeEpisodes.id, unitId)).run()
@@ -631,7 +632,7 @@ export class AnimeFileSyncHandler {
       if (depth > MAX_WALK_DEPTH) return
 
       const entries = await fs.readdir(current, { withFileTypes: true }).catch((error) => {
-        log.warn('Failed to read anime directory:', error)
+        log.warn('Failed to read anime directory.', error)
         return []
       })
 
