@@ -11,7 +11,7 @@ export const anime = {
     title: '劇集',
     emptyTitle: '尚無劇集',
     emptyHint: '掃描動漫資料夾或抓取中繼資料後，劇集會出現在這裡',
-    unnamed: ({ number }: { number: string }) => `第 ${number} 話`,
+    unnamed: ({ number }: { number: string }) => `第${number}話`,
     entityLabel: '劇集',
     watched: '已看',
     unwatched: '未看',

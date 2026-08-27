@@ -8,7 +8,7 @@ export const novel = {
     title: '卷',
     emptyTitle: '還沒有卷',
     emptyHint: '掃描小說資料夾或擷取中繼資料以產生卷清單',
-    unnamed: ({ number }: { number: string }) => `第 ${number} 卷`,
+    unnamed: ({ number }: { number: string }) => `第${number}卷`,
     entityLabel: '卷',
     read: '已讀',
     unread: '未讀',

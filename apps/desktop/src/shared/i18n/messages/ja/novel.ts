@@ -8,7 +8,7 @@ export const novel = {
     title: '巻',
     emptyTitle: 'まだ巻がありません',
     emptyHint: '小説フォルダーをスキャンするかメタデータを取得して巻一覧を作成します',
-    unnamed: ({ number }: { number: string }) => `第 ${number} 巻`,
+    unnamed: ({ number }: { number: string }) => `第${number}巻`,
     entityLabel: '巻',
     read: '既読',
     unread: '未読',

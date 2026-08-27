@@ -11,7 +11,7 @@ export const anime = {
     title: '剧集',
     emptyTitle: '暂无剧集',
     emptyHint: '扫描动漫目录或刮削元数据后，剧集会出现在这里',
-    unnamed: ({ number }: { number: string }) => `第 ${number} 话`,
+    unnamed: ({ number }: { number: string }) => `第${number}话`,
     entityLabel: '剧集',
     watched: '已看',
     unwatched: '未看',
