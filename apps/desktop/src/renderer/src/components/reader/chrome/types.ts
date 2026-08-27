@@ -23,9 +23,9 @@ export type ReaderProgress =
   | {
       kind: 'page'
       pageIndex: number
-      /** Null while a container never revealed its page count. */
+      /** Null while the unit's source is still opening. */
       pageCount: number | null
-      /** Right-to-left comics run their slider the other way around. */
+      /** Right-to-left page flows run their slider the other way around. */
       rtl: boolean
     }
   | {
@@ -35,4 +35,6 @@ export type ReaderProgress =
       sectionFractions: number[]
       /** Current section name; empty when the book has no usable TOC. */
       section: string
+      /** Right-to-left books run their slider the other way around. */
+      rtl: boolean
     }

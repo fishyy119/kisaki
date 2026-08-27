@@ -21,12 +21,7 @@ import type {
 } from '@main/services/deeplink'
 import type { NotifyService } from '@main/services/notify'
 import type { I18nService } from '@main/services/i18n'
-import type {
-  AnimeWatchResult,
-  ComicReadResult,
-  GameLaunchResult,
-  NovelReadResult
-} from '@shared/activity'
+import type { AnimeWatchResult, GameLaunchResult, ReadingResult } from '@shared/activity'
 import type { ActivityService } from './service'
 
 const log = createLogger('Activity')
@@ -133,63 +128,47 @@ export class ActivityLaunchRoute implements DeeplinkRouteHandler<typeof LAUNCH_D
     comicId: string,
     deeplink: LaunchDeeplinkContext
   ): Promise<DeeplinkResult> {
-    const result = this.activity.comic.read(comicId, deeplink.query.chapter)
-
-    if (result.status === 'failed') {
-      this.notify.error(
-        this.i18n.messages.activity.readFailedTitle,
-        this.i18n.messages.activity.errors[result.reason]
-      )
-      log.warn('Comic read failed via deeplink.', { comicId, reason: result.reason })
-      return {
-        success: false,
-        path: deeplink.path,
-        pattern: deeplink.pattern,
-        message: `Read failed: ${comicId} (${result.reason})`,
-        data: { mediaType: 'comic', entityId: comicId, read: result }
-      }
-    }
-
-    log.info('Comic reader opened via deeplink.', { comicId, chapterId: result.chapterId })
-
-    return {
-      success: true,
-      path: deeplink.path,
-      pattern: deeplink.pattern,
-      message: getComicReadDeeplinkMessage(comicId, result),
-      data: { mediaType: 'comic', entityId: comicId, read: result }
-    }
+    return this.readEntry('comic', comicId, deeplink.query.chapter, deeplink)
   }
 
   private async readNovel(
     novelId: string,
     deeplink: LaunchDeeplinkContext
   ): Promise<DeeplinkResult> {
-    const result = this.activity.novel.read(novelId, deeplink.query.volume)
+    return this.readEntry('novel', novelId, deeplink.query.volume, deeplink)
+  }
+
+  private async readEntry(
+    media: 'comic' | 'novel',
+    entryId: string,
+    unitId: string | undefined,
+    deeplink: LaunchDeeplinkContext
+  ): Promise<DeeplinkResult> {
+    const result = this.activity.reading.read(media, entryId, unitId)
 
     if (result.status === 'failed') {
       this.notify.error(
         this.i18n.messages.activity.readFailedTitle,
         this.i18n.messages.activity.errors[result.reason]
       )
-      log.warn('Novel read failed via deeplink.', { novelId, reason: result.reason })
+      log.warn('Read failed via deeplink.', { media, entryId, reason: result.reason })
       return {
         success: false,
         path: deeplink.path,
         pattern: deeplink.pattern,
-        message: `Read failed: ${novelId} (${result.reason})`,
-        data: { mediaType: 'novel', entityId: novelId, read: result }
+        message: `Read failed: ${entryId} (${result.reason})`,
+        data: { mediaType: media, entityId: entryId, read: result }
       }
     }
 
-    log.info('Novel reader opened via deeplink.', { novelId, volumeId: result.volumeId })
+    log.info('Reader opened via deeplink.', { media, entryId, unitId: result.unitId })
 
     return {
       success: true,
       path: deeplink.path,
       pattern: deeplink.pattern,
-      message: getNovelReadDeeplinkMessage(novelId, result),
-      data: { mediaType: 'novel', entityId: novelId, read: result }
+      message: getReadDeeplinkMessage(entryId, result),
+      data: { mediaType: media, entityId: entryId, read: result }
     }
   }
 
@@ -218,25 +197,14 @@ function getWatchDeeplinkMessage(animeId: string, result: AnimeWatchResult): str
     : `Watch failed: ${animeId} (${result.reason})`
 }
 
-function getComicReadDeeplinkMessage(comicId: string, result: ComicReadResult): string {
+function getReadDeeplinkMessage(entryId: string, result: ReadingResult): string {
   switch (result.status) {
     case 'started':
-      return `Reading started: ${comicId} (${result.chapterId})`
+      return `Reading started: ${entryId} (${result.unitId})`
     case 'refocused':
-      return `Reader refocused: ${comicId} (${result.chapterId})`
+      return `Reader refocused: ${entryId} (${result.unitId})`
     case 'failed':
-      return `Read failed: ${comicId} (${result.reason})`
-  }
-}
-
-function getNovelReadDeeplinkMessage(novelId: string, result: NovelReadResult): string {
-  switch (result.status) {
-    case 'started':
-      return `Reading started: ${novelId} (${result.volumeId})`
-    case 'refocused':
-      return `Reader refocused: ${novelId} (${result.volumeId})`
-    case 'failed':
-      return `Read failed: ${novelId} (${result.reason})`
+      return `Read failed: ${entryId} (${result.reason})`
   }
 }
 

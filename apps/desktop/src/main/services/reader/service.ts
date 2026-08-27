@@ -5,17 +5,17 @@
  * owns the reading engines' runtime surface — container parsing and page access
  * (`books`), the `book://` content transport, the reader windows, and the
  * position facts they report — and republishes those facts as hooks. What a
- * position means for read state belongs to the activity handlers, never here,
- * and which rows own reading files belongs to holdings, which registers the
- * transport's file resolver.
+ * position means for read state belongs to the reading coordinator, never
+ * here, and which rows own reading files belongs to holdings, which registers
+ * the transport's file resolver.
  */
 
 import { createLogger } from '@main/log'
 import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import type {
   ReaderBootstrap,
-  ReaderComicProgressReport,
-  ReaderNovelProgressReport,
+  ReaderPageFlowReport,
+  ReaderProgressReport,
   ReaderUnitOpenedReport
 } from '@shared/reader'
 import { BookContainerReader } from './books'
@@ -65,18 +65,41 @@ export class ReaderService implements INonDomainService<'reader'> {
     return bootstrap
   }
 
-  reportComicProgress(windowId: number, report: ReaderComicProgressReport): void {
-    if (!this.windows.isReaderWindow(windowId)) return
-    this.hooks.comicProgress.dispatch({ windowId, report })
+  /**
+   * Authoritative page count of one unit file, probed from the file as it is
+   * on disk right now. The requesting window may only ask about unit files of
+   * the bootstrap prepared for it.
+   */
+  async probeUnitPages(windowId: number, fileId: string): Promise<number> {
+    const bootstrap = this.requireBootstrap(windowId)
+    if (!bootstrap.units.some((unit) => unit.fileId === fileId)) {
+      throw new Error(`Window ${windowId} does not own unit file ${fileId}.`)
+    }
+
+    const path = this.findUnitFilePath(bootstrap.media, fileId)
+    if (!path) {
+      throw new Error(`Unit file ${fileId} has no stored path.`)
+    }
+
+    const info = await this.books.probePagedContainer(path)
+    if (info?.pageCount == null) {
+      throw new Error(`Unit file ${fileId} did not reveal a page count.`)
+    }
+    return info.pageCount
   }
 
-  reportNovelProgress(windowId: number, report: ReaderNovelProgressReport): void {
+  reportProgress(windowId: number, report: ReaderProgressReport): void {
     if (!this.windows.isReaderWindow(windowId)) return
-    this.hooks.novelProgress.dispatch({ windowId, report })
+    this.hooks.progress.dispatch({ windowId, report })
   }
 
   reportUnitOpened(windowId: number, report: ReaderUnitOpenedReport): void {
     if (!this.windows.isReaderWindow(windowId)) return
     this.hooks.unitOpened.dispatch({ windowId, report })
+  }
+
+  reportPageFlow(windowId: number, report: ReaderPageFlowReport): void {
+    if (!this.windows.isReaderWindow(windowId)) return
+    this.hooks.pageFlowChanged.dispatch({ windowId, report })
   }
 }

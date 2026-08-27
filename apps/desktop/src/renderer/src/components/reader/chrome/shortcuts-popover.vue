@@ -29,7 +29,14 @@ const bindings = computed(() => [
         { label: m.value.reader.shortcuts.jumpToPage, keys: ['G'] }
       ]
     : []),
-  ...(props.zoomable ? [{ label: m.value.reader.shortcuts.zoom, keys: ['+', '−', '0'] }] : []),
+  ...(props.zoomable
+    ? [
+        {
+          label: m.value.reader.shortcuts.zoom,
+          keys: ['+', '−', '0', m.value.reader.shortcuts.ctrlWheel]
+        }
+      ]
+    : []),
   ...(props.searchable ? [{ label: m.value.reader.shortcuts.search, keys: ['Ctrl', 'F'] }] : []),
   { label: m.value.reader.shortcuts.switchUnit, keys: ['[', ']'] },
   { label: m.value.reader.shortcuts.bookmark, keys: ['B'] },

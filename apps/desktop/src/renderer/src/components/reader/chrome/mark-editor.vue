@@ -10,7 +10,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { HIGHLIGHT_COLORS, HIGHLIGHT_TINTS } from '@renderer/core/reader/highlight'
+import { HIGHLIGHT_COLORS, HIGHLIGHT_TINTS } from '@renderer/core/reader/text/highlight'
 import { cn } from '@renderer/utils/cn'
 import type { HighlightColor } from '@shared/db/contracts/enums'
 

@@ -8,12 +8,12 @@ a reader looks for one or the other.
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { HIGHLIGHT_TINTS } from '@renderer/core/reader/highlight'
-import { parsePageLocator } from '@renderer/core/reader/locators'
+import { HIGHLIGHT_TINTS } from '@renderer/core/reader/text/highlight'
 import { cn } from '@renderer/utils/cn'
 import type { HighlightColor } from '@shared/db/contracts/enums'
 import type { NovelBookmark, NovelHighlight } from '@shared/db'
-import MarkEditor from '../chrome/mark-editor.vue'
+import { parsePageLocator } from '@shared/reader'
+import MarkEditor from './chrome/mark-editor.vue'
 
 const props = defineProps<{
   bookmarks: NovelBookmark[]

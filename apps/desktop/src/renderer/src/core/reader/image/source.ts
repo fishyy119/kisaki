@@ -1,25 +1,33 @@
 /**
- * Page sources for the fixed-layout reading engine.
+ * Page sources for the image reading engine.
  *
  * A page source turns one unit file into addressable page images. Archive,
- * directory, and image containers already hold page entries and stream
- * straight from `book://`; PDF containers carry no images, so their pages are
- * rasterized here, in the renderer, where a canvas exists.
+ * directory, and image containers hold page entries and stream straight from
+ * `book://`, with the page count probed authoritatively from the file as it
+ * is on disk. PDF containers carry no images, so their pages are rasterized
+ * here, in the renderer, where a canvas exists — re-rasterized per scale
+ * bucket, so vector text stays sharp under zoom.
  *
- * Both shapes answer the same questions the engine asks: how many pages, where
- * page N is, and which named places the file offers. Fonts come from the file
- * itself — no CMap or standard font packs are bundled, so a PDF relying on
- * non-embedded CID fonts renders with substitutes.
+ * Both shapes answer the same questions the engine asks: how many pages,
+ * where page N is at a wanted width, and which named places the file offers.
+ * Fonts come from the file itself — no CMap or standard font packs are
+ * bundled, so a PDF relying on non-embedded CID fonts renders with
+ * substitutes.
  */
 
 import { buildComicFileUrl, buildComicPageUrl, buildNovelFileUrl } from '@shared/book'
 import { createLogger } from '@renderer/core/log'
-import type { ReaderOutlineEntry } from './outline'
+import { fetchUnitPageCount } from '../bridge'
+import type { ReaderOutlineEntry } from '../outline'
 
 const log = createLogger('Reader')
 
-/** Rasterized page width in device pixels; CSS scales the result to fit. */
-const PDF_RENDER_WIDTH = 1600
+/**
+ * Rasterization widths in device pixels. A page is rendered at the smallest
+ * bucket covering what the layout will actually display, so zooming in
+ * re-renders instead of upscaling; the cap bounds memory on absurd zooms.
+ */
+const PDF_SCALE_BUCKETS = [800, 1600, 2400, 3200] as const
 
 /** Preview width; a page grid never needs full reading resolution. */
 const PDF_THUMBNAIL_WIDTH = 240
@@ -31,10 +39,14 @@ const PDF_PAGE_CACHE_SIZE = 24
 const PDF_THUMBNAIL_CACHE_SIZE = 96
 
 export interface PageSource {
-  /** Total pages, or null when the container never revealed a count. */
-  readonly pageCount: number | null
-  /** Displayable URL of one zero-based page. */
-  getPageUrl(index: number): Promise<string>
+  /** Total pages, as probed from the file itself. */
+  readonly pageCount: number
+  /**
+   * Displayable URL of one zero-based page.
+   * @param targetWidth - Device-pixel width the page will be shown at; lets a
+   * rasterizing source pick its render scale. Streamed images ignore it.
+   */
+  getPageUrl(index: number, targetWidth?: number): Promise<string>
   /** Preview of one page; the page itself where a container holds images. */
   getThumbnailUrl(index: number): Promise<string>
   /** Named places in reading order; empty when the file carries no outline. */
@@ -46,10 +58,13 @@ export interface PageSource {
  * Pages served straight out of a container by the main process.
  *
  * Archives and image directories are ordered page images and nothing more, so
- * they have no outline to offer and previews reuse the page itself.
- * @param pageCount - Probed page count; null keeps the engine paging blind.
+ * they have no outline to offer and previews reuse the page itself. The page
+ * count is probed over IPC before the source exists, so the engine never
+ * pages blind.
  */
-export function createContainerPageSource(fileId: string, pageCount: number | null): PageSource {
+export async function createContainerPageSource(fileId: string): Promise<PageSource> {
+  const pageCount = await fetchUnitPageCount(fileId)
+
   const pageUrl = (index: number): Promise<string> =>
     Promise.resolve(buildComicPageUrl(fileId, index))
 
@@ -83,13 +98,13 @@ async function createPdfPageSource(fileUrl: string): Promise<PageSource> {
   const loadingTask = pdfjs.getDocument({ data: new Uint8Array(await response.arrayBuffer()) })
   const document = await loadingTask.promise
 
-  const pages = createRenderCache(document, PDF_RENDER_WIDTH, PDF_PAGE_CACHE_SIZE)
-  const thumbnails = createRenderCache(document, PDF_THUMBNAIL_WIDTH, PDF_THUMBNAIL_CACHE_SIZE)
+  const pages = createRenderCache(document, PDF_PAGE_CACHE_SIZE)
+  const thumbnails = createRenderCache(document, PDF_THUMBNAIL_CACHE_SIZE)
 
   return {
     pageCount: document.numPages,
-    getPageUrl: (index) => pages.get(index),
-    getThumbnailUrl: (index) => thumbnails.get(index),
+    getPageUrl: (index, targetWidth) => pages.get(index, bucketWidth(targetWidth)),
+    getThumbnailUrl: (index) => thumbnails.get(index, PDF_THUMBNAIL_WIDTH),
     getOutline: () => readPdfOutline(document),
 
     dispose() {
@@ -102,25 +117,31 @@ async function createPdfPageSource(fileUrl: string): Promise<PageSource> {
   }
 }
 
-/** Bounded store of rendered pages at one width, addressed by page index. */
+/** Smallest rasterization bucket covering the wanted width. */
+function bucketWidth(targetWidth: number | undefined): number {
+  const wanted = targetWidth ?? PDF_SCALE_BUCKETS[1]
+  return PDF_SCALE_BUCKETS.find((bucket) => bucket >= wanted) ?? PDF_SCALE_BUCKETS.at(-1)!
+}
+
+/** Bounded store of rendered pages, addressed by page index and render width. */
 function createRenderCache(
   pdfDocument: PdfDocument,
-  width: number,
   maxEntries: number
-): { get: (index: number) => Promise<string>; clear: () => void } {
-  const urls = new Map<number, string>()
+): { get: (index: number, width: number) => Promise<string>; clear: () => void } {
+  const urls = new Map<string, string>()
 
   return {
-    async get(index) {
-      const cached = urls.get(index)
+    async get(index, width) {
+      const key = `${index}@${width}`
+      const cached = urls.get(key)
       if (cached) return cached
 
       const url = await renderPageToUrl(pdfDocument, index, width)
-      urls.set(index, url)
+      urls.set(key, url)
       // Oldest first: the reader moves through a book, so the pages it has
       // left behind are the ones to release.
       while (urls.size > maxEntries) {
-        const oldest = urls.keys().next().value as number
+        const oldest = urls.keys().next().value as string
         URL.revokeObjectURL(urls.get(oldest) as string)
         urls.delete(oldest)
       }

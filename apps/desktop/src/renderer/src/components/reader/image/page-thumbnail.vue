@@ -7,14 +7,19 @@ ever pays for the rows on screen.
 import { onMounted, ref } from 'vue'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { createLogger } from '@renderer/core/log'
-import type { PageSource } from '@renderer/core/reader/page-source'
+import type { PageSource } from '@renderer/core/reader/image/source'
 import { cn } from '@renderer/utils/cn'
 
-const props = defineProps<{
-  source: PageSource
-  index: number
-  active: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    source: PageSource
+    index: number
+    active: boolean
+    /** Show the page number under the preview; off where the row names it. */
+    numbered?: boolean
+  }>(),
+  { numbered: true }
+)
 
 const emit = defineEmits<{
   select: [index: number]
@@ -60,6 +65,11 @@ onMounted(async () => {
         class="size-3 text-muted-foreground"
       />
     </span>
-    <span class="text-[10px] tabular-nums text-muted-foreground">{{ props.index + 1 }}</span>
+    <span
+      v-if="props.numbered"
+      class="text-[10px] tabular-nums text-muted-foreground"
+    >
+      {{ props.index + 1 }}
+    </span>
   </button>
 </template>

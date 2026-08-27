@@ -20,14 +20,6 @@ export const reader = {
     noPages: '该单元没有可预览的页面'
   },
 
-  display: {
-    open: '画面显示',
-    brightness: '亮度',
-    contrast: '对比度',
-    autoCrop: '裁去页面白边',
-    reset: '重置显示'
-  },
-
   search: {
     open: '书内搜索',
     placeholder: '书内搜索',
@@ -91,6 +83,10 @@ export const reader = {
     textWidth: '栏宽',
     twoColumns: '双栏',
     justify: '两端对齐',
+    writingMode: '排版方向',
+    writingModeBook: '跟随书籍',
+    writingModeVertical: '竖排',
+    writingModeHorizontal: '横排',
     tint: '页面底色',
     tintTheme: '跟随主题',
     tintPaper: '纸感',
@@ -106,28 +102,33 @@ export const reader = {
     endOfUnit: '本单元结束',
     lastUnit: '已是最后一个单元',
     readBadge: '已读',
-    noFile: '该单元没有可读取的文件'
-  },
-
-  comic: {
-    pageFlow: '翻页方向',
-    pageFlowRtl: '从右到左',
-    pageFlowLtr: '从左到右',
-    pageFlowVertical: '垂直滚动',
-    spread: '双页跨页',
-    coverAlone: '封面单独成页',
-    fitWidth: '适应宽度',
-    fitHeight: '适应高度',
-    zoomIn: '放大',
-    zoomOut: '缩小',
-    pageLoadFailed: '无法加载该页',
-    emptyPages: '该文件没有可读取的页面',
+    noFile: '该单元没有可读取的文件',
     openFailed: '无法打开该单元',
     nextUnitHint: '已到结尾——继续阅读下一单元'
   },
 
-  novel: {
-    openFailed: '无法打开该卷'
+  image: {
+    settingsOpen: '页面设置',
+    pageFlow: '翻页方向',
+    pageFlowRtl: '从右到左',
+    pageFlowLtr: '从左到右',
+    pageFlowVertical: '垂直滚动',
+    pageLayout: '页面布局',
+    layoutSingle: '单页',
+    layoutDouble: '双页',
+    coverAlone: '封面单独成页',
+    fit: '适应方式',
+    fitPage: '适应页面',
+    fitWidth: '适应宽度',
+    fitHeight: '适应高度',
+    zoomIn: '放大',
+    zoomOut: '缩小',
+    brightness: '亮度',
+    contrast: '对比度',
+    autoCrop: '裁去页面白边',
+    reset: '重置页面设置',
+    pageLoadFailed: '无法加载该页',
+    emptyPages: '该文件没有可读取的页面'
   },
 
   shortcuts: {
@@ -138,6 +139,7 @@ export const reader = {
     jumpEdges: '首页或末页',
     jumpToPage: '跳转到页',
     zoom: '放大、缩小或还原',
+    ctrlWheel: 'Ctrl+滚轮',
     search: '书内搜索',
     bookmark: '为当前位置加书签',
     navigation: '开关导航',

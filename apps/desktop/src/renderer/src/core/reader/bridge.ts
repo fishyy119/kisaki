@@ -2,17 +2,16 @@
  * Reader window bridge.
  *
  * The reader window's IPC surface: pull the prepared bootstrap once, then
- * report position facts. Reports are fire-and-forget; the activity handlers
- * own what they mean and the window must never block a page turn on them.
+ * report position facts. Reports are fire-and-forget; the reading coordinator
+ * owns what they mean and the window must never block a page turn on them.
+ * Only the page-count probe answers back — a page source cannot exist
+ * without it.
  */
 
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
-import type {
-  ReaderBootstrap,
-  ReaderComicProgressReport,
-  ReaderNovelProgressReport
-} from '@shared/reader'
+import type { ComicReadingDirection } from '@shared/db/contracts/enums'
+import type { ReaderBootstrap, ReaderProgressReport } from '@shared/reader'
 
 const log = createLogger('Reader')
 
@@ -49,21 +48,27 @@ export function setReaderFullScreen(fullScreen: boolean): void {
   })
 }
 
-export function reportComicProgress(report: ReaderComicProgressReport): void {
-  void ipcManager.invoke('reader:comic-progress', report).catch((error) => {
-    log.warn('Failed to report comic progress.', error)
-  })
-}
-
-export function reportNovelProgress(report: ReaderNovelProgressReport): void {
-  void ipcManager.invoke('reader:novel-progress', report).catch((error) => {
-    log.warn('Failed to report novel progress.', error)
+export function reportProgress(report: ReaderProgressReport): void {
+  void ipcManager.invoke('reader:progress', report).catch((error) => {
+    log.warn('Failed to report reading progress.', error)
   })
 }
 
 export function reportUnitOpened(unitId: string): void {
   void ipcManager.invoke('reader:unit-opened', { unitId }).catch((error) => {
     log.warn('Failed to report unit switch.', error)
+  })
+}
+
+/** Authoritative page count of one unit file, probed from the disk file. */
+export async function fetchUnitPageCount(fileId: string): Promise<number> {
+  return unwrapIpcData(await ipcManager.invoke('reader:probe-pages', fileId))
+}
+
+/** Persists the reader's page-flow choice as the comic entry override. */
+export function reportPageFlow(pageFlow: ComicReadingDirection): void {
+  void ipcManager.invoke('reader:set-page-flow', { pageFlow }).catch((error) => {
+    log.warn('Failed to persist the page flow choice.', error)
   })
 }
 

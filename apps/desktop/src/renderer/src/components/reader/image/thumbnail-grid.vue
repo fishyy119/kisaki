@@ -7,7 +7,7 @@ on screen.
 import { computed, ref } from 'vue'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { PageSource } from '@renderer/core/reader/page-source'
+import type { PageSource } from '@renderer/core/reader/image/source'
 import PageThumbnail from './page-thumbnail.vue'
 
 const props = defineProps<{
@@ -24,8 +24,7 @@ const { m } = useI18n()
 const scrollHost = ref<HTMLElement | null>(null)
 
 const pages = computed<number[]>(() => {
-  const total = props.source?.pageCount ?? null
-  if (total === null) return []
+  const total = props.source?.pageCount ?? 0
   return Array.from({ length: total }, (_, index) => index)
 })
 </script>

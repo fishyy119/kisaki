@@ -8,7 +8,7 @@
  */
 
 import { buildNovelFileUrl } from '@shared/book'
-import type { ReaderNovelUnit } from '@shared/reader'
+import type { ReaderUnit } from '@shared/reader'
 import { decodeTextFile } from './text-encoding'
 import { makeTxtBook } from './txt-book'
 
@@ -51,9 +51,15 @@ export interface FoliateBookHandle {
 }
 
 export interface FoliateView extends HTMLElement {
-  book: FoliateBookHandle
+  /** Assigned by `open`; a created-but-unopened view has no book yet. */
+  book?: FoliateBookHandle
   lastLocation: FoliateRelocation | null
-  renderer: HTMLElement & { setStyles?: (css: string) => void; next: () => Promise<void> }
+  /** Assigned by `open`; a created-but-unopened view has no renderer yet. */
+  renderer?: HTMLElement & {
+    setStyles?: (css: string) => void
+    next: () => Promise<void>
+    prev: () => Promise<void>
+  }
   open(book: unknown): Promise<void>
   close(): void
   init(options: { lastLocation?: string; showTextStart?: boolean }): Promise<void>
@@ -109,7 +115,7 @@ let highlightDraw: Promise<FoliateDraw> | null = null
 
 /** The vendored highlight drawing, loaded once per window. */
 export function loadHighlightDraw(): Promise<FoliateDraw> {
-  highlightDraw ??= import('../../../vendor/foliate-js/overlayer.js').then(
+  highlightDraw ??= import('../../../../vendor/foliate-js/overlayer.js').then(
     ({ Overlayer }) => Overlayer.highlight
   )
   return highlightDraw
@@ -133,7 +139,7 @@ interface FoliateFootnoteHandler extends EventTarget {
  * so a footnote reference opens a fragment instead of navigating the book.
  */
 export async function createFootnoteHandler(): Promise<FoliateFootnoteHandler> {
-  const { FootnoteHandler } = await import('../../../vendor/foliate-js/footnotes.js')
+  const { FootnoteHandler } = await import('../../../../vendor/foliate-js/footnotes.js')
   return new FootnoteHandler() as FoliateFootnoteHandler
 }
 
@@ -149,7 +155,7 @@ interface FoliateBook {
 }
 
 export async function createFoliateView(): Promise<FoliateView> {
-  await import('../../../vendor/foliate-js/view.js')
+  await import('../../../../vendor/foliate-js/view.js')
   return document.createElement('foliate-view') as FoliateView
 }
 
@@ -160,7 +166,7 @@ export async function createFoliateView(): Promise<FoliateView> {
  * The book is built here rather than inside `view.open` so its resource loader
  * can be tapped before any resource is fetched.
  */
-export async function openNovelVolume(view: FoliateView, unit: ReaderNovelUnit): Promise<void> {
+export async function openNovelVolume(view: FoliateView, unit: ReaderUnit): Promise<void> {
   if (!unit.fileId) {
     throw new Error('Novel unit has no readable file')
   }
@@ -175,7 +181,7 @@ export async function openNovelVolume(view: FoliateView, unit: ReaderNovelUnit):
     return
   }
 
-  const { makeBook } = await import('../../../vendor/foliate-js/view.js')
+  const { makeBook } = await import('../../../../vendor/foliate-js/view.js')
   const file = new File([await response.blob()], `volume.${unit.container ?? 'epub'}`)
   const book = (await makeBook(file)) as FoliateBook
   rejectScriptResources(book)

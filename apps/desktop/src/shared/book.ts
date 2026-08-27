@@ -104,3 +104,22 @@ export function parseDocumentContainer(value: string | null): DocumentContainer 
     ? (value as DocumentContainer)
     : null
 }
+
+// =============================================================================
+// Rendering
+// =============================================================================
+
+/** Engine that renders a unit: image containers page, text containers reflow. */
+export type UnitRendering = 'image' | 'text'
+
+/**
+ * Rendering of one container. PDF renders as pages whichever media carries
+ * it, so it lands on the image engine alongside the page-addressable
+ * containers; everything else is a document the text engine typesets.
+ */
+export function renderingOf(
+  container: PagedContainer | DocumentContainer | null
+): UnitRendering | null {
+  if (container === null) return null
+  return (PAGED_CONTAINERS as readonly string[]).includes(container) ? 'image' : 'text'
+}

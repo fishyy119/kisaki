@@ -5,10 +5,10 @@ unit each mark belongs to and what opening one does.
 -->
 <script setup lang="ts">
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { PageSource } from '@renderer/core/reader/page-source'
+import type { PageSource } from '@renderer/core/reader/image/source'
 import type { ComicBookmark } from '@shared/db'
-import MarkEditor from '../chrome/mark-editor.vue'
-import PageThumbnail from './page-thumbnail.vue'
+import MarkEditor from './chrome/mark-editor.vue'
+import PageThumbnail from './image/page-thumbnail.vue'
 
 const props = defineProps<{
   bookmarks: ComicBookmark[]
@@ -47,6 +47,7 @@ const { m } = useI18n()
           :source="props.source"
           :index="bookmark.pageIndex"
           :active="false"
+          :numbered="false"
           @select="emit('open', bookmark.chapterId, bookmark.pageIndex)"
         />
       </span>

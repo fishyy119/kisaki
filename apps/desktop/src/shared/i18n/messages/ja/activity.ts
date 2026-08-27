@@ -46,13 +46,9 @@ export const activity = {
     notWatching: '現在再生中のものはありません',
     stopFailed: '動画プレイヤーを停止できませんでした',
     notReading: '現在読書中のものはありません',
-    comicNotFound: 'マンガが存在しません',
-    chapterNotFound: 'ユニットが存在しません',
-    noReadableChapter: '読み込めるファイルを持つユニットがまだありません',
-    noChapterFile: 'このユニットには読み込めるファイルがありません',
-    novelNotFound: '小説が存在しません',
-    volumeNotFound: '巻が存在しません',
-    noReadableVolume: '読み込めるファイルを持つ巻がまだありません',
-    noVolumeFile: 'この巻には読み込めるファイルがありません'
+    entryNotFound: 'この作品は存在しません',
+    unitNotFound: 'ユニットが存在しません',
+    noReadableUnit: '読み込めるファイルを持つユニットがまだありません',
+    noUnitFile: 'このユニットには読み込めるファイルがありません'
   }
 } satisfies Messages['activity']

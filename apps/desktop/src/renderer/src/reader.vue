@@ -49,11 +49,11 @@ onBeforeUnmount(() => {
   <TooltipProvider>
     <div class="h-full bg-background text-foreground">
       <ComicReader
-        v-if="bootstrap?.kind === 'comic'"
+        v-if="bootstrap?.media === 'comic'"
         :bootstrap="bootstrap"
       />
       <NovelReader
-        v-else-if="bootstrap?.kind === 'novel'"
+        v-else-if="bootstrap?.media === 'novel'"
         :bootstrap="bootstrap"
       />
 

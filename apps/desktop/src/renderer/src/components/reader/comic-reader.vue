@@ -1,30 +1,27 @@
-<!-- Comic reading shell: unit switching and layout controls around the page engine. -->
+<!-- Comic reading shell: unit switching and the marks model around the image engine. -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import type { ComicBookmark } from '@shared/db'
 import type { ComicReadingDirection } from '@shared/db/contracts/enums'
-import type { ReaderComicBootstrap, ReaderComicUnit } from '@shared/reader'
+import type { ReaderBootstrap, ReaderUnit } from '@shared/reader'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@renderer/components/ui/select'
+import { Spinner } from '@renderer/components/ui/spinner'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useReaderChrome, type ReaderPanelTab } from '@renderer/composables/use-reader-chrome'
 import { useReadingClock } from '@renderer/composables/use-reading-clock'
+import { useReadingUnits } from '@renderer/composables/use-reading-units'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
+import { closeReaderWindow, reportPageFlow, reportProgress } from '@renderer/core/reader/bridge'
+import { buildPageFilter } from '@renderer/core/reader/image/display'
+import { clampZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from '@renderer/core/reader/image/layout'
 import {
-  closeReaderWindow,
-  reportComicProgress,
-  reportUnitOpened
-} from '@renderer/core/reader/bridge'
-import { buildComicFilter } from '@renderer/core/reader/display'
+  createComicPdfPageSource,
+  createContainerPageSource,
+  type PageSource
+} from '@renderer/core/reader/image/source'
 import { isEditableTarget } from '@renderer/core/reader/keys'
 import {
   deleteComicBookmark,
@@ -33,72 +30,73 @@ import {
   updateComicBookmark
 } from '@renderer/core/reader/marks'
 import type { ReaderOutlineEntry } from '@renderer/core/reader/outline'
-import {
-  createComicPdfPageSource,
-  createContainerPageSource,
-  type PageSource
-} from '@renderer/core/reader/page-source'
 import { useReaderSettingsStore } from '@renderer/stores/reader-settings'
 import NavPanel from './chrome/nav-panel.vue'
 import ProgressFooter from './chrome/progress-footer.vue'
 import ReaderToolbar from './chrome/toolbar.vue'
-import type { ReaderNavUnit, ReaderProgress } from './chrome/types'
-import BookmarkList from './comic/bookmark-list.vue'
-import DisplayPopover from './comic/display-popover.vue'
-import ThumbnailGrid from './comic/thumbnail-grid.vue'
-import PageEngine from './page-engine.vue'
+import type { ReaderProgress } from './chrome/types'
+import ComicBookmarkList from './comic-bookmark-list.vue'
+import PageEngine from './image/page-engine.vue'
+import SettingsPopover from './image/settings-popover.vue'
+import ThumbnailGrid from './image/thumbnail-grid.vue'
 
-const props = defineProps<{ bootstrap: ReaderComicBootstrap }>()
+const props = defineProps<{ bootstrap: ReaderBootstrap }>()
 
 const log = createLogger('Reader')
 const { m } = useI18n()
 const { fullScreen, panelOpen, panelTab, toggleFullScreen, exitFullScreen, togglePanel } =
   useReaderChrome()
 const { elapsedMinutes } = useReadingClock()
-const { comicDisplay, autoCrop } = storeToRefs(useReaderSettingsStore())
-
-const ZOOM_MIN = 1
-const ZOOM_MAX = 4
-const ZOOM_STEP = 0.25
+const { pageDisplay, pageLayout, pageFit, autoCrop } = storeToRefs(useReaderSettingsStore())
 
 const PANEL_TABS: ReaderPanelTab[] = ['outline', 'pages', 'marks']
 
 const engine = ref<InstanceType<typeof PageEngine> | null>(null)
-const currentUnitId = ref('')
-const flow = ref<ComicReadingDirection>('ltr')
-const spread = ref(false)
-const coverAlone = ref(true)
-const fitWidth = ref(false)
+const pageFlow = ref<ComicReadingDirection>('ltr')
 const zoom = ref(1)
 const pageIndex = ref(0)
 const endReached = ref(false)
-const openError = ref(false)
 const outline = ref<ReaderOutlineEntry[]>([])
 const jumpOpen = ref(false)
 const bookmarks = ref<ComicBookmark[]>([])
 
 const source = shallowRef<PageSource | null>(null)
-let sourceToken = 0
 
-const units = computed(() => props.bootstrap.units)
-const unit = computed(() => units.value.find((entry) => entry.id === currentUnitId.value) ?? null)
-const unitIndex = computed(() => units.value.findIndex((entry) => entry.id === currentUnitId.value))
-const nextUnit = computed<ReaderComicUnit | null>(() => findReadable(1))
-const previousUnit = computed<ReaderComicUnit | null>(() => findReadable(-1))
+const {
+  currentUnitId,
+  unit,
+  nextUnit,
+  previousUnit,
+  navUnits,
+  opening,
+  openError,
+  openUnit,
+  openNextUnit,
+  openPreviousUnit
+} = useReadingUnits(() => props.bootstrap, {
+  reset: () => {
+    endReached.value = false
+    zoom.value = 1
+    pageIndex.value = 0
+    outline.value = []
+    disposeSource()
+  },
+  open: async (target, isCurrent) => {
+    const next = await createPageSource(target)
+    if (!isCurrent()) {
+      next.dispose()
+      return
+    }
+    source.value = next
 
-const pageCount = computed(() => source.value?.pageCount ?? unit.value?.pageCount ?? null)
+    const entries = await next.getOutline()
+    if (isCurrent()) outline.value = entries
+  }
+})
+
+const pageCount = computed(() => source.value?.pageCount ?? null)
 const readable = computed(() => Boolean(unit.value?.fileId))
-const isVertical = computed(() => flow.value === 'vertical')
-const isRtl = computed(() => flow.value === 'rtl')
-
-const navUnits = computed<ReaderNavUnit[]>(() =>
-  units.value.map((entry) => ({
-    id: entry.id,
-    label: entry.label,
-    read: entry.read,
-    readable: Boolean(entry.fileId)
-  }))
-)
+const isRtl = computed(() => pageFlow.value === 'rtl')
 
 const progress = computed<ReaderProgress>(() => ({
   kind: 'page',
@@ -107,10 +105,10 @@ const progress = computed<ReaderProgress>(() => ({
   rtl: isRtl.value
 }))
 
-const pageFilter = computed(() => buildComicFilter(comicDisplay.value))
+const pageFilter = computed(() => buildPageFilter(pageDisplay.value))
 
 const unitLabels = computed<Record<string, string>>(() =>
-  Object.fromEntries(units.value.map((entry) => [entry.id, entry.label]))
+  Object.fromEntries(props.bootstrap.units.map((entry) => [entry.id, entry.label]))
 )
 
 /** Spreads mark their leading page, so the button reflects the page in hand. */
@@ -121,15 +119,17 @@ const currentPageMarked = computed(() =>
   )
 )
 
-const flowOptions = computed(() => [
-  { value: 'rtl' as const, label: m.value.reader.comic.pageFlowRtl },
-  { value: 'ltr' as const, label: m.value.reader.comic.pageFlowLtr },
-  { value: 'vertical' as const, label: m.value.reader.comic.pageFlowVertical }
-])
+// The effective flow arrives resolved with each bootstrap; a re-aim resolves
+// it again, so a persisted override comes back as itself.
+watch(
+  () => props.bootstrap,
+  (next) => {
+    pageFlow.value = next.pageFlow
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
-  flow.value = props.bootstrap.pageFlow
-  void openUnit(props.bootstrap.startUnitId)
   void loadBookmarks()
   window.addEventListener('keydown', handleKeydown)
 })
@@ -139,70 +139,13 @@ onBeforeUnmount(() => {
   disposeSource()
 })
 
-// A read request for an entry already open re-aims this window through a new
-// bootstrap; the reported unit keeps the reading session in step.
-watch(
-  () => props.bootstrap,
-  (next) => {
-    flow.value = next.pageFlow
-    void openUnit(next.startUnitId)
-  }
-)
-
-function findReadable(step: number): ReaderComicUnit | null {
-  for (
-    let index = unitIndex.value + step;
-    index >= 0 && index < units.value.length;
-    index += step
-  ) {
-    const candidate = units.value[index]
-    if (candidate.fileId) return candidate
-  }
-  return null
-}
-
-async function openUnit(unitId: string): Promise<void> {
-  const target = units.value.find((entry) => entry.id === unitId)
-  if (!target) return
-
-  // Invalidated first: a source still resolving must not replace this one.
-  const token = ++sourceToken
-
-  currentUnitId.value = unitId
-  endReached.value = false
-  openError.value = false
-  zoom.value = 1
-  outline.value = []
-  disposeSource()
-  reportUnitOpened(unitId)
-  updateWindowTitle()
-
-  if (!target.fileId) return
-
-  try {
-    const next = await createPageSource(target)
-    if (token !== sourceToken) {
-      next.dispose()
-      return
-    }
-    source.value = next
-
-    const entries = await next.getOutline()
-    if (token === sourceToken) outline.value = entries
-  } catch (error) {
-    if (token !== sourceToken) return
-    openError.value = true
-    log.error('Failed to open the comic unit.', error)
-  }
-}
-
-function createPageSource(target: ReaderComicUnit): Promise<PageSource> {
+function createPageSource(target: ReaderUnit): Promise<PageSource> {
   const fileId = target.fileId
   if (!fileId) throw new Error('Comic unit has no readable file')
 
   return target.container === 'pdf'
     ? createComicPdfPageSource(fileId)
-    : Promise.resolve(createContainerPageSource(fileId, target.pageCount))
+    : createContainerPageSource(fileId)
 }
 
 function disposeSource(): void {
@@ -214,26 +157,27 @@ function disposeSource(): void {
 function handlePageChange(index: number, total: number): void {
   pageIndex.value = index
   endReached.value = false
-  reportComicProgress({ chapterId: currentUnitId.value, pageIndex: index, pageCount: total })
-  updateWindowTitle()
+  reportProgress({
+    unitId: currentUnitId.value,
+    position: { kind: 'page', index },
+    extent: total
+  })
 }
 
 function startPage(): number {
   const target = unit.value
   if (!target || target.read) return 0
-  return target.resumePage ?? 0
+  return target.resume?.kind === 'page' ? target.resume.index : 0
 }
 
-function openNextUnit(): void {
-  if (nextUnit.value) void openUnit(nextUnit.value.id)
-}
-
-function openPreviousUnit(): void {
-  if (previousUnit.value) void openUnit(previousUnit.value.id)
+/** The chosen flow becomes the entry override, so it survives reopening. */
+function handlePageFlowChange(value: ComicReadingDirection): void {
+  pageFlow.value = value
+  reportPageFlow(value)
 }
 
 function adjustZoom(delta: number): void {
-  zoom.value = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Number((zoom.value + delta).toFixed(2))))
+  zoom.value = clampZoom(zoom.value + delta)
 }
 
 /** Comic outlines address pages, so every destination is a page index. */
@@ -243,7 +187,7 @@ function goToOutline(target: string | number): void {
 
 async function loadBookmarks(): Promise<void> {
   try {
-    bookmarks.value = await fetchComicBookmarks(props.bootstrap.comicId)
+    bookmarks.value = await fetchComicBookmarks(props.bootstrap.entryId)
   } catch (error) {
     log.warn('Failed to load comic bookmarks.', error)
   }
@@ -376,11 +320,6 @@ function handleKeydown(event: KeyboardEvent): void {
   }
   event.preventDefault()
 }
-
-function updateWindowTitle(): void {
-  const label = unit.value?.label
-  document.title = label ? `${props.bootstrap.title} · ${label}` : props.bootstrap.title
-}
 </script>
 
 <template>
@@ -392,7 +331,7 @@ function updateWindowTitle(): void {
       :has-previous-unit="Boolean(previousUnit)"
       :has-next-unit="Boolean(nextUnit)"
       paged
-      :zoomable="!isVertical"
+      zoomable
       :searchable="false"
       @toggle-panel="togglePanel"
       @previous-unit="openPreviousUnit"
@@ -400,98 +339,35 @@ function updateWindowTitle(): void {
       @toggle-full-screen="toggleFullScreen"
     >
       <template #controls>
-        <Select
-          :model-value="flow"
-          @update:model-value="
-            (value) => typeof value === 'string' && (flow = value as ComicReadingDirection)
-          "
+        <SettingsPopover
+          :page-flow="pageFlow"
+          @update:page-flow="handlePageFlowChange"
+        />
+
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          :tooltip="m.reader.image.zoomOut"
+          :disabled="zoom <= ZOOM_MIN"
+          @click="adjustZoom(-ZOOM_STEP)"
         >
-          <SelectTrigger
-            size="sm"
-            class="w-32"
-            :tooltip="m.reader.comic.pageFlow"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              v-for="option in flowOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-        <template v-if="!isVertical">
-          <Button
-            :variant="spread ? 'secondary' : 'ghost'"
-            size="icon-sm"
-            :tooltip="m.reader.comic.spread"
-            @click="spread = !spread"
-          >
-            <Icon
-              icon="icon-[mdi--book-open-page-variant-outline]"
-              class="size-4"
-            />
-          </Button>
-          <Button
-            v-if="spread"
-            :variant="coverAlone ? 'secondary' : 'ghost'"
-            size="icon-sm"
-            :tooltip="m.reader.comic.coverAlone"
-            @click="coverAlone = !coverAlone"
-          >
-            <Icon
-              icon="icon-[mdi--page-layout-sidebar-left]"
-              class="size-4"
-            />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :tooltip="fitWidth ? m.reader.comic.fitHeight : m.reader.comic.fitWidth"
-            @click="fitWidth = !fitWidth"
-          >
-            <Icon
-              :icon="
-                fitWidth
-                  ? 'icon-[mdi--arrow-expand-vertical]'
-                  : 'icon-[mdi--arrow-expand-horizontal]'
-              "
-              class="size-4"
-            />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :tooltip="m.reader.comic.zoomOut"
-            :disabled="zoom <= ZOOM_MIN"
-            @click="adjustZoom(-ZOOM_STEP)"
-          >
-            <Icon
-              icon="icon-[mdi--magnify-minus-outline]"
-              class="size-4"
-            />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :tooltip="m.reader.comic.zoomIn"
-            :disabled="zoom >= ZOOM_MAX"
-            @click="adjustZoom(ZOOM_STEP)"
-          >
-            <Icon
-              icon="icon-[mdi--magnify-plus-outline]"
-              class="size-4"
-            />
-          </Button>
-        </template>
-
-        <DisplayPopover />
+          <Icon
+            icon="icon-[mdi--magnify-minus-outline]"
+            class="size-4"
+          />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          :tooltip="m.reader.image.zoomIn"
+          :disabled="zoom >= ZOOM_MAX"
+          @click="adjustZoom(ZOOM_STEP)"
+        >
+          <Icon
+            icon="icon-[mdi--magnify-plus-outline]"
+            class="size-4"
+          />
+        </Button>
 
         <Button
           :variant="currentPageMarked ? 'secondary' : 'ghost'"
@@ -529,7 +405,7 @@ function updateWindowTitle(): void {
         </template>
 
         <template #marks>
-          <BookmarkList
+          <ComicBookmarkList
             :bookmarks="bookmarks"
             :source="source"
             :current-unit-id="currentUnitId"
@@ -554,38 +430,45 @@ function updateWindowTitle(): void {
           v-else-if="openError"
           class="flex h-full items-center justify-center px-8 text-center text-sm text-muted-foreground"
         >
-          {{ m.reader.comic.openFailed }}
+          {{ m.reader.units.openFailed }}
         </div>
 
-        <PageEngine
-          v-else
-          ref="engine"
-          :source="source"
-          :flow="flow"
-          :spread="spread"
-          :cover-alone="coverAlone"
-          :fit-width="fitWidth"
-          :zoom="zoom"
-          :start-page="startPage()"
-          :filter="pageFilter"
-          :auto-crop="autoCrop"
-          @page-change="handlePageChange"
-          @end-reached="endReached = true"
-        >
-          <template #vertical-footer>
-            <div
-              v-if="nextUnit"
-              class="flex justify-center py-10"
-            >
-              <Button
-                variant="outline"
-                @click="openNextUnit"
+        <template v-else>
+          <PageEngine
+            ref="engine"
+            v-model:zoom="zoom"
+            :source="source"
+            :page-flow="pageFlow"
+            :page-layout="pageLayout"
+            :fit="pageFit"
+            :start-page="startPage()"
+            :filter="pageFilter"
+            :auto-crop="autoCrop"
+            @page-change="handlePageChange"
+            @end-reached="endReached = true"
+          >
+            <template #vertical-footer>
+              <div
+                v-if="nextUnit"
+                class="flex justify-center py-10"
               >
-                {{ m.reader.units.next }}
-              </Button>
-            </div>
-          </template>
-        </PageEngine>
+                <Button
+                  variant="outline"
+                  @click="openNextUnit"
+                >
+                  {{ m.reader.units.next }}
+                </Button>
+              </div>
+            </template>
+          </PageEngine>
+
+          <div
+            v-if="opening"
+            class="absolute inset-0 z-10 flex items-center justify-center bg-background"
+          >
+            <Spinner class="size-5 text-muted-foreground" />
+          </div>
+        </template>
 
         <!-- End-of-unit overlay -->
         <div
@@ -593,7 +476,7 @@ function updateWindowTitle(): void {
           class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-background"
         >
           <span class="text-sm text-muted-foreground">
-            {{ nextUnit ? m.reader.comic.nextUnitHint : m.reader.units.lastUnit }}
+            {{ nextUnit ? m.reader.units.nextUnitHint : m.reader.units.lastUnit }}
           </span>
           <div class="flex items-center gap-2">
             <Button

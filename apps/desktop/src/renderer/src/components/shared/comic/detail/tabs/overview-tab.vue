@@ -191,10 +191,6 @@ const companyItems = computed<RoleLinkItem[]>(() =>
             <dd v-else>{{ m.common.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.format }}</dt>
             <dd>{{ m.library.comicFormat[comic.format] }}</dd>
-            <template v-if="comic.readingDirection">
-              <dt class="text-muted-foreground">{{ m.library.fields.readingDirection }}</dt>
-              <dd>{{ m.library.readingDirection[comic.readingDirection] }}</dd>
-            </template>
             <dt class="text-muted-foreground">{{ m.library.fields.totalVolumes }}</dt>
             <dd>{{ comic.totalVolumes ?? m.common.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.totalChapters }}</dt>

@@ -6,7 +6,7 @@
  * reader navigates both through this one shape.
  */
 
-import type { FoliateTocItem } from './foliate'
+import type { FoliateTocItem } from './text/foliate'
 
 export interface ReaderOutlineEntry {
   /** Engine-scoped destination: a TOC href, or a zero-based page index. */

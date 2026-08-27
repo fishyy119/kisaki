@@ -44,13 +44,9 @@ export const activity = {
     notWatching: 'Nothing is playing right now',
     stopFailed: 'Could not stop the video player',
     notReading: 'Nothing is being read right now',
-    comicNotFound: 'The comic does not exist',
-    chapterNotFound: 'The unit does not exist',
-    noReadableChapter: 'No unit has a readable file yet',
-    noChapterFile: 'The unit has no readable file yet',
-    novelNotFound: 'The novel does not exist',
-    volumeNotFound: 'The volume does not exist',
-    noReadableVolume: 'No volume has a readable file yet',
-    noVolumeFile: 'The volume has no readable file yet'
+    entryNotFound: 'The entry does not exist',
+    unitNotFound: 'The unit does not exist',
+    noReadableUnit: 'No unit has a readable file yet',
+    noUnitFile: 'The unit has no readable file yet'
   }
 }

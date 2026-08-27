@@ -111,33 +111,19 @@ export type AnimeExtraStopFailureReason = 'notPlaying' | 'stopFailed'
 export type AnimeExtraStopResult =
   { status: 'stopped' } | { status: 'failed'; reason: AnimeExtraStopFailureReason }
 
-export type ComicReadFailureReason =
-  'comicNotFound' | 'chapterNotFound' | 'noReadableChapter' | 'noChapterFile' | 'fileNotFound'
+export type ReadingFailureReason =
+  'entryNotFound' | 'unitNotFound' | 'noReadableUnit' | 'noUnitFile' | 'fileNotFound'
 
 /** `refocused` re-aims the entry's open reader window instead of opening a second one. */
-export type ComicReadResult =
-  | { status: 'started'; chapterId: string }
-  | { status: 'refocused'; chapterId: string }
-  | { status: 'failed'; reason: ComicReadFailureReason }
+export type ReadingResult =
+  | { status: 'started'; unitId: string }
+  | { status: 'refocused'; unitId: string }
+  | { status: 'failed'; reason: ReadingFailureReason }
 
-export type NovelReadFailureReason =
-  'novelNotFound' | 'volumeNotFound' | 'noReadableVolume' | 'noVolumeFile' | 'fileNotFound'
+export type ReadingStopFailureReason = 'notReading'
 
-/** `refocused` re-aims the entry's open reader window instead of opening a second one. */
-export type NovelReadResult =
-  | { status: 'started'; volumeId: string }
-  | { status: 'refocused'; volumeId: string }
-  | { status: 'failed'; reason: NovelReadFailureReason }
-
-export type ComicStopFailureReason = 'notReading'
-
-export type ComicStopResult =
-  { status: 'stopped' } | { status: 'failed'; reason: ComicStopFailureReason }
-
-export type NovelStopFailureReason = 'notReading'
-
-export type NovelStopResult =
-  { status: 'stopped' } | { status: 'failed'; reason: NovelStopFailureReason }
+export type ReadingStopResult =
+  { status: 'stopped' } | { status: 'failed'; reason: ReadingStopFailureReason }
 
 /** Live reading state of one comic, as tracked by the activity service. */
 export interface ComicReadingState {

@@ -3,14 +3,14 @@
  *
  * Owned by ReaderService and dispatched from reader windows' IPC reports and
  * window lifecycle. All are notify hooks: reading mechanics are not
- * negotiable, and the activity handlers only observe them to record read
- * state and sessions.
+ * negotiable, and the reading coordinator only observes them to record read
+ * state, sessions, and the page-flow override.
  */
 
 import { createNotifyHook, type NotifyHook } from '@main/hooks'
 import type {
-  ReaderComicProgressReport,
-  ReaderNovelProgressReport,
+  ReaderPageFlowReport,
+  ReaderProgressReport,
   ReaderUnitOpenedReport
 } from '@shared/reader'
 
@@ -18,30 +18,30 @@ export interface ReaderWindowEvent {
   windowId: number
 }
 
-export interface ReaderComicProgressEvent extends ReaderWindowEvent {
-  report: ReaderComicProgressReport
-}
-
-export interface ReaderNovelProgressEvent extends ReaderWindowEvent {
-  report: ReaderNovelProgressReport
+export interface ReaderProgressEvent extends ReaderWindowEvent {
+  report: ReaderProgressReport
 }
 
 export interface ReaderUnitOpenedEvent extends ReaderWindowEvent {
   report: ReaderUnitOpenedReport
 }
 
+export interface ReaderPageFlowEvent extends ReaderWindowEvent {
+  report: ReaderPageFlowReport
+}
+
 export interface ReaderHooks {
-  comicProgress: NotifyHook<ReaderComicProgressEvent>
-  novelProgress: NotifyHook<ReaderNovelProgressEvent>
+  progress: NotifyHook<ReaderProgressEvent>
   unitOpened: NotifyHook<ReaderUnitOpenedEvent>
+  pageFlowChanged: NotifyHook<ReaderPageFlowEvent>
   windowClosed: NotifyHook<ReaderWindowEvent>
 }
 
 export function createReaderHooks(): ReaderHooks {
   return {
-    comicProgress: createNotifyHook<ReaderComicProgressEvent>('reader.comic.progress'),
-    novelProgress: createNotifyHook<ReaderNovelProgressEvent>('reader.novel.progress'),
+    progress: createNotifyHook<ReaderProgressEvent>('reader.progress'),
     unitOpened: createNotifyHook<ReaderUnitOpenedEvent>('reader.unit.opened'),
+    pageFlowChanged: createNotifyHook<ReaderPageFlowEvent>('reader.page-flow.changed'),
     windowClosed: createNotifyHook<ReaderWindowEvent>('reader.window.closed')
   }
 }

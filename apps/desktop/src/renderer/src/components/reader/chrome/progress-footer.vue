@@ -78,6 +78,12 @@ function handleCommit(value: number[]): void {
   if (next !== undefined) emit('seek', next)
 }
 
+/** Chapter ticks sit at reading-order fractions, so an RTL track mirrors them. */
+function tickStyle(fraction: number): Record<string, string> {
+  const percent = `${fraction * 100}%`
+  return props.progress.rtl ? { right: percent } : { left: percent }
+}
+
 function submitJump(): void {
   const total = pageProgress.value?.pageCount
   const parsed = Number.parseInt(jumpInput.value, 10)
@@ -147,14 +153,14 @@ function submitJump(): void {
         v-for="fraction in fractionProgress?.sectionFractions ?? []"
         :key="fraction"
         class="pointer-events-none absolute top-1/2 h-2.5 w-px -translate-y-1/2 bg-border"
-        :style="{ left: `${fraction * 100}%` }"
+        :style="tickStyle(fraction)"
       />
       <Slider
         v-model="sliderValue"
         :min="0"
         :max="sliderMax"
         :step="sliderStep"
-        :dir="pageProgress?.rtl ? 'rtl' : 'ltr'"
+        :dir="props.progress.rtl ? 'rtl' : 'ltr'"
         :disabled="sliderDisabled"
         @value-commit="handleCommit"
       />

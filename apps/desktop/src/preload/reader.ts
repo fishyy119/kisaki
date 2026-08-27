@@ -14,9 +14,10 @@ import { exposeIpcBridge, type IpcChannelPolicy } from './bridge'
 const READER_CHANNEL_POLICY: IpcChannelPolicy = {
   invoke: [
     'reader:bootstrap',
-    'reader:comic-progress',
-    'reader:novel-progress',
+    'reader:progress',
     'reader:unit-opened',
+    'reader:probe-pages',
+    'reader:set-page-flow',
     'reader:set-fullscreen',
     'reader:close',
     'activity:list-novel-bookmarks',

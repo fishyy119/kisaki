@@ -33,7 +33,7 @@ import type {
 
 const log = createLogger('Activity')
 
-export class ReadingAnnotations {
+export class ReadingMarks {
   constructor(
     private readonly db: DbService,
     private readonly reader: ReaderService
@@ -189,28 +189,28 @@ export class ReadingAnnotations {
   /** A reader window may only mark units of the entry it was opened for. */
   private requireNovelUnit(windowId: number, volumeId: string): void {
     const bootstrap = this.reader.windows.getBootstrap(windowId)
-    if (bootstrap?.kind !== 'novel' || !bootstrap.units.some((unit) => unit.id === volumeId)) {
+    if (bootstrap?.media !== 'novel' || !bootstrap.units.some((unit) => unit.id === volumeId)) {
       throw new Error(`Window ${windowId} is not reading novel volume ${volumeId}.`)
     }
   }
 
   private requireComicUnit(windowId: number, chapterId: string): void {
     const bootstrap = this.reader.windows.getBootstrap(windowId)
-    if (bootstrap?.kind !== 'comic' || !bootstrap.units.some((unit) => unit.id === chapterId)) {
+    if (bootstrap?.media !== 'comic' || !bootstrap.units.some((unit) => unit.id === chapterId)) {
       throw new Error(`Window ${windowId} is not reading comic unit ${chapterId}.`)
     }
   }
 
   private requireNovelEntry(windowId: number, novelId: string): void {
     const bootstrap = this.reader.windows.getBootstrap(windowId)
-    if (bootstrap?.kind !== 'novel' || bootstrap.novelId !== novelId) {
+    if (bootstrap?.media !== 'novel' || bootstrap.entryId !== novelId) {
       throw new Error(`Window ${windowId} is not reading novel ${novelId}.`)
     }
   }
 
   private requireComicEntry(windowId: number, comicId: string): void {
     const bootstrap = this.reader.windows.getBootstrap(windowId)
-    if (bootstrap?.kind !== 'comic' || bootstrap.comicId !== comicId) {
+    if (bootstrap?.media !== 'comic' || bootstrap.entryId !== comicId) {
       throw new Error(`Window ${windowId} is not reading comic ${comicId}.`)
     }
   }

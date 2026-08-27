@@ -20,14 +20,6 @@ export const reader = {
     noPages: 'このユニットにはプレビューできるページがありません'
   },
 
-  display: {
-    open: 'ページ表示',
-    brightness: '明るさ',
-    contrast: 'コントラスト',
-    autoCrop: '余白を切り取る',
-    reset: '表示をリセット'
-  },
-
   search: {
     open: '本文を検索',
     placeholder: '本文を検索',
@@ -92,6 +84,10 @@ export const reader = {
     textWidth: '段の幅',
     twoColumns: '2段組み',
     justify: '両端揃え',
+    writingMode: '組み方向',
+    writingModeBook: '書籍に従う',
+    writingModeVertical: '縦書き',
+    writingModeHorizontal: '横書き',
     tint: 'ページの地色',
     tintTheme: 'テーマに従う',
     tintPaper: '紙',
@@ -107,28 +103,33 @@ export const reader = {
     endOfUnit: 'このユニットの終わり',
     lastUnit: 'これが最後のユニットです',
     readBadge: '既読',
-    noFile: 'このユニットには読み込めるファイルがありません'
-  },
-
-  comic: {
-    pageFlow: 'ページ送り',
-    pageFlowRtl: '右から左',
-    pageFlowLtr: '左から右',
-    pageFlowVertical: '縦スクロール',
-    spread: '見開き表示',
-    coverAlone: '表紙を単独で表示',
-    fitWidth: '幅に合わせる',
-    fitHeight: '高さに合わせる',
-    zoomIn: '拡大',
-    zoomOut: '縮小',
-    pageLoadFailed: 'このページを読み込めませんでした',
-    emptyPages: 'このファイルには読み込めるページがありません',
+    noFile: 'このユニットには読み込めるファイルがありません',
     openFailed: 'このユニットを開けませんでした',
     nextUnitHint: '最後に到達しました——次のユニットへ進む'
   },
 
-  novel: {
-    openFailed: 'この巻を開けませんでした'
+  image: {
+    settingsOpen: 'ページ設定',
+    pageFlow: 'ページ送り',
+    pageFlowRtl: '右から左',
+    pageFlowLtr: '左から右',
+    pageFlowVertical: '縦スクロール',
+    pageLayout: 'ページ構成',
+    layoutSingle: '単ページ',
+    layoutDouble: '見開き',
+    coverAlone: '表紙を単独で表示',
+    fit: 'フィット',
+    fitPage: 'ページに合わせる',
+    fitWidth: '幅に合わせる',
+    fitHeight: '高さに合わせる',
+    zoomIn: '拡大',
+    zoomOut: '縮小',
+    brightness: '明るさ',
+    contrast: 'コントラスト',
+    autoCrop: '余白を切り取る',
+    reset: 'ページ設定をリセット',
+    pageLoadFailed: 'このページを読み込めませんでした',
+    emptyPages: 'このファイルには読み込めるページがありません'
   },
 
   shortcuts: {
@@ -139,6 +140,7 @@ export const reader = {
     jumpEdges: '最初・最後のページ',
     jumpToPage: 'ページへ移動',
     zoom: '拡大・縮小・等倍',
+    ctrlWheel: 'Ctrl+ホイール',
     search: '本文を検索',
     bookmark: '現在の位置にしおり',
     navigation: 'ナビゲーションの切り替え',

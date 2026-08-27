@@ -9,7 +9,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Separator } from '@renderer/components/ui/separator'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { HIGHLIGHT_COLORS, HIGHLIGHT_TINTS } from '@renderer/core/reader/highlight'
+import { HIGHLIGHT_COLORS, HIGHLIGHT_TINTS } from '@renderer/core/reader/text/highlight'
 import type { HighlightColor } from '@shared/db/contracts/enums'
 
 const emit = defineEmits<{

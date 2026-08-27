@@ -12,7 +12,7 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
-import type { FoliateExcerpt, FoliateSearchResult } from '@renderer/core/reader/foliate'
+import type { FoliateExcerpt, FoliateSearchResult } from '@renderer/core/reader/text/foliate'
 
 const props = defineProps<{
   /** Runs a book-wide search; the panel renders only what it yields. */

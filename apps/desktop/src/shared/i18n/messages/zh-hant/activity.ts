@@ -46,13 +46,9 @@ export const activity = {
     notWatching: '目前沒有正在播放的內容',
     stopFailed: '停止影片播放器失敗',
     notReading: '目前沒有正在閱讀的內容',
-    comicNotFound: '漫畫不存在',
-    chapterNotFound: '單元不存在',
-    noReadableChapter: '還沒有單元擁有可讀取的檔案',
-    noChapterFile: '該單元尚無可讀取的檔案',
-    novelNotFound: '小說不存在',
-    volumeNotFound: '卷不存在',
-    noReadableVolume: '還沒有卷擁有可讀取的檔案',
-    noVolumeFile: '該卷尚無可讀取的檔案'
+    entryNotFound: '該條目不存在',
+    unitNotFound: '單元不存在',
+    noReadableUnit: '還沒有單元擁有可讀取的檔案',
+    noUnitFile: '該單元尚無可讀取的檔案'
   }
 } satisfies Messages['activity']

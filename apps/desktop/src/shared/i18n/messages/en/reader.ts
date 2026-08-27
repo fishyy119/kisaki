@@ -1,4 +1,4 @@
-/** Reader window: the comic pager and the novel text engine share one shell. */
+/** Reader window: the image pager and the reflowable text engine share one shell. */
 export const reader = {
   loading: 'Opening…',
   loadFailed: 'Could not open the reader',
@@ -16,14 +16,6 @@ export const reader = {
     search: 'Search',
     outlineHeading: 'In this unit',
     noPages: 'This unit has no pages to preview'
-  },
-
-  display: {
-    open: 'Page display',
-    brightness: 'Brightness',
-    contrast: 'Contrast',
-    autoCrop: 'Trim page margins',
-    reset: 'Reset display'
   },
 
   search: {
@@ -90,6 +82,10 @@ export const reader = {
     textWidth: 'Column width',
     twoColumns: 'Two columns',
     justify: 'Justify text',
+    writingMode: 'Text direction',
+    writingModeBook: 'Book',
+    writingModeVertical: 'Vertical',
+    writingModeHorizontal: 'Horizontal',
     tint: 'Page tint',
     tintTheme: 'Theme',
     tintPaper: 'Paper',
@@ -105,28 +101,33 @@ export const reader = {
     endOfUnit: 'End of this unit',
     lastUnit: 'This is the last unit',
     readBadge: 'Read',
-    noFile: 'This unit has no readable file'
-  },
-
-  comic: {
-    pageFlow: 'Page flow',
-    pageFlowRtl: 'Right to left',
-    pageFlowLtr: 'Left to right',
-    pageFlowVertical: 'Vertical scroll',
-    spread: 'Two-page spread',
-    coverAlone: 'Cover on its own',
-    fitWidth: 'Fit width',
-    fitHeight: 'Fit height',
-    zoomIn: 'Zoom in',
-    zoomOut: 'Zoom out',
-    pageLoadFailed: 'Could not load this page',
-    emptyPages: 'This file has no readable pages',
+    noFile: 'This unit has no readable file',
     openFailed: 'Could not open this unit',
     nextUnitHint: 'Reached the end — continue with the next unit'
   },
 
-  novel: {
-    openFailed: 'Could not open this volume'
+  image: {
+    settingsOpen: 'Page settings',
+    pageFlow: 'Page flow',
+    pageFlowRtl: 'Right to left',
+    pageFlowLtr: 'Left to right',
+    pageFlowVertical: 'Vertical scroll',
+    pageLayout: 'Page layout',
+    layoutSingle: 'Single',
+    layoutDouble: 'Double',
+    coverAlone: 'Cover on its own',
+    fit: 'Fit',
+    fitPage: 'Fit page',
+    fitWidth: 'Fit width',
+    fitHeight: 'Fit height',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    brightness: 'Brightness',
+    contrast: 'Contrast',
+    autoCrop: 'Trim page margins',
+    reset: 'Reset page settings',
+    pageLoadFailed: 'Could not load this page',
+    emptyPages: 'This file has no readable pages'
   },
 
   shortcuts: {
@@ -137,6 +138,7 @@ export const reader = {
     jumpEdges: 'First or last page',
     jumpToPage: 'Go to page',
     zoom: 'Zoom in, out, or reset',
+    ctrlWheel: 'Ctrl+Wheel',
     search: 'Search in book',
     bookmark: 'Bookmark this place',
     navigation: 'Toggle navigation',

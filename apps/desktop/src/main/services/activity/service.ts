@@ -4,19 +4,22 @@
  * Business owner of media consumption: which entity is being consumed right
  * now, how a consumption action starts and stops, and what a finished session
  * records. Technical mechanics live in the `process`, `video`, and `reader`
- * services; each media type keeps its own explicit handler here.
+ * services. Game and anime keep explicit per-media handlers; the two reading
+ * media share one coordinator over per-media table adapters, because reading
+ * is a closed pair with identical session mechanics.
  */
 
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import { ReadingAnnotations } from './annotations'
 import { AnimeActivityHandler } from './handlers/anime'
-import { ComicActivityHandler } from './handlers/comic'
 import { GameActivityHandler } from './handlers/game'
-import { NovelActivityHandler } from './handlers/novel'
 import { createActivityHooks } from './hooks'
 import { registerActivityIpc } from './ipc'
 import { ActivityLaunchRoute, LAUNCH_DEEPLINK_ROUTE } from './launch-route'
+import { ReadingMarks } from './marks'
+import { ComicReadingAdapter } from './reading/comic'
+import { ReadingCoordinator } from './reading/coordinator'
+import { NovelReadingAdapter } from './reading/novel'
 
 const log = createLogger('Activity')
 
@@ -38,9 +41,8 @@ export class ActivityService implements IService<'activity'> {
 
   game!: GameActivityHandler
   anime!: AnimeActivityHandler
-  comic!: ComicActivityHandler
-  novel!: NovelActivityHandler
-  annotations!: ReadingAnnotations
+  reading!: ReadingCoordinator
+  marks!: ReadingMarks
 
   private unregisterLaunchRoute?: () => void
 
@@ -61,9 +63,11 @@ export class ActivityService implements IService<'activity'> {
     )
 
     this.anime = new AnimeActivityHandler(db, container.get('video'), ipc, this.hooks)
-    this.comic = new ComicActivityHandler(db, reader, i18n, ipc, this.hooks)
-    this.novel = new NovelActivityHandler(db, reader, i18n, ipc, this.hooks)
-    this.annotations = new ReadingAnnotations(db, reader)
+    this.reading = new ReadingCoordinator(reader, {
+      comic: new ComicReadingAdapter(db, i18n, ipc, this.hooks),
+      novel: new NovelReadingAdapter(db, i18n, ipc, this.hooks)
+    })
+    this.marks = new ReadingMarks(db, reader)
 
     registerActivityIpc(this, ipc)
 
@@ -84,8 +88,7 @@ export class ActivityService implements IService<'activity'> {
     this.unregisterLaunchRoute = undefined
     await this.anime.dispose()
     await this.game.dispose()
-    this.comic.dispose()
-    this.novel.dispose()
+    this.reading.dispose()
     log.info('Disposed')
   }
 }

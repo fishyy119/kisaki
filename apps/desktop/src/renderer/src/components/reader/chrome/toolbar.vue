@@ -76,7 +76,7 @@ const { m } = useI18n()
         @click="emit('previousUnit')"
       >
         <Icon
-          icon="icon-[mdi--skip-previous]"
+          icon="icon-[mdi--skip-previous-outline]"
           class="size-4"
         />
       </Button>
@@ -88,7 +88,7 @@ const { m } = useI18n()
         @click="emit('nextUnit')"
       >
         <Icon
-          icon="icon-[mdi--skip-next]"
+          icon="icon-[mdi--skip-next-outline]"
           class="size-4"
         />
       </Button>

@@ -1,7 +1,7 @@
 /**
  * Reader Settings Store
  *
- * Device-level reading preferences: how text is set and how comic pages are
+ * Device-level reading preferences: how text is set and how image pages are
  * shown. These follow the reader across entries and windows, so they persist
  * here rather than in the library — a resume position is what the user read,
  * this is only how they like to read it.
@@ -15,9 +15,11 @@ import { computed, ref } from 'vue'
 import {
   DEFAULT_READER_TYPOGRAPHY,
   type ReaderPageTint,
-  type ReaderTypography
-} from '@renderer/core/reader/typography'
-import { DEFAULT_COMIC_DISPLAY, type ComicDisplay } from '@renderer/core/reader/display'
+  type ReaderTypography,
+  type ReaderWritingMode
+} from '@renderer/core/reader/text/typography'
+import { DEFAULT_PAGE_DISPLAY, type PageDisplay } from '@renderer/core/reader/image/display'
+import type { PageFitMode, PageLayoutMode } from '@renderer/core/reader/image/layout'
 
 export const useReaderSettingsStore = defineStore(
   'reader-settings',
@@ -30,10 +32,13 @@ export const useReaderSettingsStore = defineStore(
     const justify = ref(DEFAULT_READER_TYPOGRAPHY.justify)
     const columns = ref(DEFAULT_READER_TYPOGRAPHY.columns)
     const tint = ref<ReaderPageTint>(DEFAULT_READER_TYPOGRAPHY.tint)
+    const writingMode = ref<ReaderWritingMode>(DEFAULT_READER_TYPOGRAPHY.writingMode)
 
-    const brightness = ref(DEFAULT_COMIC_DISPLAY.brightness)
-    const contrast = ref(DEFAULT_COMIC_DISPLAY.contrast)
-    const autoCrop = ref(DEFAULT_COMIC_DISPLAY.autoCrop)
+    const brightness = ref(DEFAULT_PAGE_DISPLAY.brightness)
+    const contrast = ref(DEFAULT_PAGE_DISPLAY.contrast)
+    const autoCrop = ref(DEFAULT_PAGE_DISPLAY.autoCrop)
+    const pageLayout = ref<PageLayoutMode>('single')
+    const pageFit = ref<PageFitMode>('page')
 
     const typography = computed<ReaderTypography>(() => ({
       fontFamily: fontFamily.value,
@@ -43,10 +48,11 @@ export const useReaderSettingsStore = defineStore(
       textWidth: textWidth.value,
       justify: justify.value,
       columns: columns.value,
-      tint: tint.value
+      tint: tint.value,
+      writingMode: writingMode.value
     }))
 
-    const comicDisplay = computed<ComicDisplay>(() => ({
+    const pageDisplay = computed<PageDisplay>(() => ({
       brightness: brightness.value,
       contrast: contrast.value,
       autoCrop: autoCrop.value
@@ -61,12 +67,16 @@ export const useReaderSettingsStore = defineStore(
       justify.value = DEFAULT_READER_TYPOGRAPHY.justify
       columns.value = DEFAULT_READER_TYPOGRAPHY.columns
       tint.value = DEFAULT_READER_TYPOGRAPHY.tint
+      writingMode.value = DEFAULT_READER_TYPOGRAPHY.writingMode
     }
 
-    function resetComicDisplay(): void {
-      brightness.value = DEFAULT_COMIC_DISPLAY.brightness
-      contrast.value = DEFAULT_COMIC_DISPLAY.contrast
-      autoCrop.value = DEFAULT_COMIC_DISPLAY.autoCrop
+    /** Everything the page settings popover owns; page flow is the entry's. */
+    function resetPageSettings(): void {
+      brightness.value = DEFAULT_PAGE_DISPLAY.brightness
+      contrast.value = DEFAULT_PAGE_DISPLAY.contrast
+      autoCrop.value = DEFAULT_PAGE_DISPLAY.autoCrop
+      pageLayout.value = 'single'
+      pageFit.value = 'page'
     }
 
     return {
@@ -78,13 +88,16 @@ export const useReaderSettingsStore = defineStore(
       justify,
       columns,
       tint,
+      writingMode,
       brightness,
       contrast,
       autoCrop,
+      pageLayout,
+      pageFit,
       typography,
-      comicDisplay,
+      pageDisplay,
       resetTypography,
-      resetComicDisplay
+      resetPageSettings
     }
   },
   {
@@ -98,9 +111,12 @@ export const useReaderSettingsStore = defineStore(
         'justify',
         'columns',
         'tint',
+        'writingMode',
         'brightness',
         'contrast',
-        'autoCrop'
+        'autoCrop',
+        'pageLayout',
+        'pageFit'
       ]
     }
   }

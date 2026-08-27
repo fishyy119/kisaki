@@ -14,6 +14,13 @@ export type ReaderPageTint = 'theme' | 'paper' | 'sepia'
 /** Reading font presets; each is a CSS family list with CJK fallbacks. */
 export type ReaderFontPreset = 'book' | 'serif' | 'sans'
 
+/**
+ * Writing direction of the text: the book's own, or forced. Vertical is the
+ * native form of Japanese light novels, and TXT files carry no layout of
+ * their own to say so.
+ */
+export type ReaderWritingMode = 'book' | 'vertical' | 'horizontal'
+
 export interface ReaderTypography {
   /** CSS family list; empty keeps the book's own fonts. */
   fontFamily: string
@@ -27,7 +34,14 @@ export interface ReaderTypography {
   /** Columns a wide window may split the text into. */
   columns: number
   tint: ReaderPageTint
+  writingMode: ReaderWritingMode
 }
+
+export const READER_WRITING_MODES = [
+  'book',
+  'vertical',
+  'horizontal'
+] as const satisfies readonly ReaderWritingMode[]
 
 export interface ReaderPageColors {
   background: string
@@ -57,7 +71,8 @@ export const DEFAULT_READER_TYPOGRAPHY: ReaderTypography = {
   textWidth: 720,
   justify: false,
   columns: 2,
-  tint: 'theme'
+  tint: 'theme',
+  writingMode: 'book'
 }
 
 /**
@@ -95,6 +110,7 @@ export function buildNovelContentStyles(typography: ReaderTypography): string {
       color: ${foreground};
       font-size: ${typography.fontSizePercent}%;
       ${typography.fontFamily ? `font-family: ${typography.fontFamily};` : ''}
+      ${writingModeDeclaration(typography.writingMode)}
     }
     ${typography.fontFamily ? `body, p, li, blockquote, dd { font-family: inherit; }` : ''}
     a:link, a:visited {
@@ -110,6 +126,17 @@ export function buildNovelContentStyles(typography: ReaderTypography): string {
       margin-block-end: ${typography.paragraphSpacing}em;
     }
   `
+}
+
+/**
+ * Forced writing modes are injected; `book` leaves the book's own layout in
+ * charge. The paginator re-reads the direction per section document, so the
+ * injected declaration is all a forced mode needs.
+ */
+function writingModeDeclaration(mode: ReaderWritingMode): string {
+  if (mode === 'vertical') return 'writing-mode: vertical-rl;'
+  if (mode === 'horizontal') return 'writing-mode: horizontal-tb;'
+  return ''
 }
 
 /**

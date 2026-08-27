@@ -10,17 +10,20 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Input } from '@renderer/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
+import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { Separator } from '@renderer/components/ui/separator'
 import { Switch } from '@renderer/components/ui/switch'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { formatFontFamilyValue, listInstalledFontFamilies } from '@renderer/core/reader/fonts'
+import { formatFontFamilyValue, listInstalledFontFamilies } from '@renderer/core/reader/text/fonts'
 import {
   READER_FONT_FAMILIES,
   READER_TYPOGRAPHY_RANGES,
+  READER_WRITING_MODES,
   type ReaderFontPreset,
-  type ReaderPageTint
-} from '@renderer/core/reader/typography'
+  type ReaderPageTint,
+  type ReaderWritingMode
+} from '@renderer/core/reader/text/typography'
 import { useReaderSettingsStore } from '@renderer/stores/reader-settings'
 import SettingSlider from '../chrome/setting-slider.vue'
 
@@ -35,7 +38,8 @@ const {
   textWidth,
   justify,
   columns,
-  tint
+  tint,
+  writingMode
 } = storeToRefs(settings)
 
 /** The reading font is one of the presets, or a family named by the reader. */
@@ -55,6 +59,12 @@ const tintLabels = computed<Record<ReaderPageTint, string>>(() => ({
   theme: m.value.reader.typography.tintTheme,
   paper: m.value.reader.typography.tintPaper,
   sepia: m.value.reader.typography.tintSepia
+}))
+
+const writingModeLabels = computed<Record<ReaderWritingMode, string>>(() => ({
+  book: m.value.reader.typography.writingModeBook,
+  vertical: m.value.reader.typography.writingModeVertical,
+  horizontal: m.value.reader.typography.writingModeHorizontal
 }))
 
 const open = ref(false)
@@ -120,6 +130,22 @@ function selectFont(ids: string[]): void {
   fontFamily.value = family ? formatFontFamilyValue(family) : ''
 }
 
+function handleFontChoice(value: string | undefined): void {
+  if (value === 'book' || value === 'serif' || value === 'sans' || value === 'custom') {
+    selectFontChoice(value)
+  }
+}
+
+function handleWritingModeChange(value: string | undefined): void {
+  if (value === 'book' || value === 'vertical' || value === 'horizontal') {
+    writingMode.value = value
+  }
+}
+
+function handleTintChange(value: string | undefined): void {
+  if (value === 'theme' || value === 'paper' || value === 'sepia') tint.value = value
+}
+
 const twoColumns = computed<boolean>({
   get: () => columns.value > 1,
   set: (value) => {
@@ -148,18 +174,20 @@ const twoColumns = computed<boolean>({
     >
       <div class="space-y-1.5">
         <span class="text-xs text-muted-foreground">{{ m.reader.typography.font }}</span>
-        <div class="grid grid-cols-4 gap-1">
-          <Button
+        <SegmentedControl
+          :model-value="activeFontChoice"
+          class="w-full"
+          @update:model-value="handleFontChoice"
+        >
+          <SegmentedControlItem
             v-for="choice in FONT_CHOICES"
             :key="choice"
-            :variant="activeFontChoice === choice ? 'secondary' : 'ghost'"
-            size="sm"
-            class="min-w-0 px-1"
-            @click="selectFontChoice(choice)"
+            :value="choice"
+            class="min-w-0 flex-1"
           >
             <span class="truncate">{{ fontChoiceLabels[choice] }}</span>
-          </Button>
-        </div>
+          </SegmentedControlItem>
+        </SegmentedControl>
 
         <template v-if="activeFontChoice === 'custom'">
           <VirtualizedCombobox
@@ -225,19 +253,39 @@ const twoColumns = computed<boolean>({
       <Separator />
 
       <div class="space-y-1.5">
+        <span class="text-xs text-muted-foreground">{{ m.reader.typography.writingMode }}</span>
+        <SegmentedControl
+          :model-value="writingMode"
+          class="w-full"
+          @update:model-value="handleWritingModeChange"
+        >
+          <SegmentedControlItem
+            v-for="option in READER_WRITING_MODES"
+            :key="option"
+            :value="option"
+            class="flex-1"
+          >
+            {{ writingModeLabels[option] }}
+          </SegmentedControlItem>
+        </SegmentedControl>
+      </div>
+
+      <div class="space-y-1.5">
         <span class="text-xs text-muted-foreground">{{ m.reader.typography.tint }}</span>
-        <div class="flex items-center gap-1">
-          <Button
+        <SegmentedControl
+          :model-value="tint"
+          class="w-full"
+          @update:model-value="handleTintChange"
+        >
+          <SegmentedControlItem
             v-for="option in TINTS"
             :key="option"
-            :variant="tint === option ? 'secondary' : 'ghost'"
-            size="sm"
+            :value="option"
             class="flex-1"
-            @click="tint = option"
           >
             {{ tintLabels[option] }}
-          </Button>
-        </div>
+          </SegmentedControlItem>
+        </SegmentedControl>
       </div>
 
       <Button

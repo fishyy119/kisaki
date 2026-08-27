@@ -178,8 +178,6 @@ import type {
   ComicBookmarkInput,
   ComicBookmarkUpdate,
   ComicReadingState,
-  ComicReadResult,
-  ComicStopResult,
   GameActivityEvent,
   GameLaunchResult,
   GameMonitorPathConfig,
@@ -190,14 +188,14 @@ import type {
   NovelHighlightInput,
   NovelHighlightUpdate,
   NovelReadingState,
-  NovelReadResult,
-  NovelStopResult
+  ReadingResult,
+  ReadingStopResult
 } from './activity'
 import type { PlaybackEndReport, PlaybackProgress, PlaybackSessionState } from './video'
 import type {
   ReaderBootstrap,
-  ReaderComicProgressReport,
-  ReaderNovelProgressReport,
+  ReaderPageFlowReport,
+  ReaderProgressReport,
   ReaderUnitOpenedReport
 } from './reader'
 
@@ -579,14 +577,14 @@ export interface IpcMainHandlers {
     comicId: string,
     chapterId?: string,
     fileId?: string
-  ) => IpcResult<ComicReadResult>
-  'activity:stop-comic': (comicId: string) => IpcResult<ComicStopResult>
+  ) => IpcResult<ReadingResult>
+  'activity:stop-comic': (comicId: string) => IpcResult<ReadingStopResult>
   'activity:read-novel': (
     novelId: string,
     volumeId?: string,
     fileId?: string
-  ) => IpcResult<NovelReadResult>
-  'activity:stop-novel': (novelId: string) => IpcResult<NovelStopResult>
+  ) => IpcResult<ReadingResult>
+  'activity:stop-novel': (novelId: string) => IpcResult<ReadingStopResult>
   'activity:list-comic-reading': () => IpcResult<ComicReadingState[]>
   'activity:list-novel-reading': () => IpcResult<NovelReadingState[]>
 
@@ -608,9 +606,11 @@ export interface IpcMainHandlers {
 
   // Reader window bridge (called from reader windows only)
   'reader:bootstrap': () => IpcResult<ReaderBootstrap>
-  'reader:comic-progress': (report: ReaderComicProgressReport) => IpcVoidResult
-  'reader:novel-progress': (report: ReaderNovelProgressReport) => IpcVoidResult
+  'reader:progress': (report: ReaderProgressReport) => IpcVoidResult
   'reader:unit-opened': (report: ReaderUnitOpenedReport) => IpcVoidResult
+  /** Authoritative page count of one image-rendered unit file of this window. */
+  'reader:probe-pages': (fileId: string) => IpcResult<number>
+  'reader:set-page-flow': (report: ReaderPageFlowReport) => IpcVoidResult
   'reader:set-fullscreen': (fullScreen: boolean) => IpcVoidResult
   'reader:close': () => IpcVoidResult
 
