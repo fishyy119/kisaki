@@ -415,7 +415,7 @@ scanner.finished
 
 - `setTotal()` -> `context.report({ phase, work: { current, total, unit: 'entity' }, counters, warnings })`
 - `recordEntityResult()` -> 更新 bounded counters/warnings，并随同 `work.current/work.total/work.unit` 一起 report。
-- `processItemsWithConcurrency()` 在调度边界调用 `await context.checkpoint()`。
+- `processItems()` 在调度边界调用 `await context.checkpoint()`，实体许可来自应用级信号量预算。
 
 Scanner-specific result 进入 `TaskRunResult.counters` 和 `TaskRunResult.output` 的摘要。
 

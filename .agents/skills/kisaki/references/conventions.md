@@ -399,9 +399,14 @@ Tests for a technical abstraction:
 - Opt-in: a media type that does not fit simply does not call the helper. If adding a media type
   requires distorting it (fake fields, empty stub steps) to satisfy the generic interface, the
   abstraction is business-level — dismantle it instead of patching it.
-- Flow ownership stays explicit: workflow ordering and step selection live in per-entity
-  coordinators; shared helpers implement individual steps. Do not move flow into template-method
-  base classes or a generic handler that enumerates everyone's steps.
+- Flow ownership is earned, never assumed: workflow ordering may move into a shared engine only
+  after every shipped sample proved the flow invariant — the scanner scan pipeline, the ingest
+  add/update engines, the scraper handler, and the holdings unit-file reconcile are the precedents.
+  Such an engine stays parameterized by schema facts and injected functions, keeps entity unions as
+  data-registry keys, owns its few documented correlation casts, tolerates at most two
+  single-consumer injection points, and leaves the typed public facades unchanged. Flow that has
+  not proved invariance stays in explicit per-entity coordinators, with shared helpers implementing
+  individual steps.
 - Closed entity unions (`AllEntityType`) appear as data-registry keys only, never in generic engine
   signatures or branches.
 
@@ -413,17 +418,24 @@ Distinguish the two growth axes:
 - Root media types grow one exemplar at a time (game, anime, comic, and novel are shipped; the rest
   of the taxonomy above is planned). Never extract a generic root-media flow, engine, or entity spec
   from a single sample — with one sample you cannot tell invariants from media-specific accidents.
-  Extract only what the shipped samples proved invariant (the scanner's shared media-handler
-  mechanics and the feed's media projection descriptors are the original game+anime precedents;
-  comic and novel widened them rather than forking them); every further media type re-earns its
-  place in a shared mechanism the same way. Four samples is still not a licence to generalize a
+  Extract only what the shipped samples proved invariant (the scanner's media-spec registry over
+  one scan pipeline and the feed's media projection descriptors are the original game+anime
+  precedents; comic and novel widened them rather than forking them); every further media type
+  re-earns its place in a shared mechanism the same way. Four samples is still not a licence to generalize a
   surface only one type needs — the reader's page engine is shared by comic and novel because both
   page through images, while their unit lists and catch-up flows stay mirrored per type.
-- What three samples proved invariant is extracted, not forked. `holdings` keeps one
+- What the shipped samples proved invariant is extracted, not forked. `holdings` keeps one
   `AutoSyncCoordinator` driven by a per-type `AutoSyncSpec` (directory query, file predicate, watch
-  depth, sync call) and one `reconcile.ts` of pass mechanics (pass serialization, file revision,
-  probe freshness, primary election). What a unit is, how candidates claim rows, and when a row may
-  be deleted stay in each type's own sync coordinator, because those are domain meaning.
+  depth, sync call), one `reconcile.ts` of pass mechanics (pass serialization, file revision,
+  probe freshness, primary election), and one `unit-reconcile.ts` holding the unit-file reconcile
+  algorithm, instantiated per unit table (comic chapters, novel volumes, anime episodes). Claim
+  strategies, orphan-deletion protection, and matched-row backfills are spec-declared facts on that
+  engine (`claimFallback`, `onMatched`, protection predicates — inside the injection budget). What
+  a unit is, directory walking, recognition, normalize passes, anime extras, and manual attach stay
+  in each type's own sync coordinator, because those are domain meaning.
+- The scraper slot vocabulary carries one cross-entity contract: every entity's `info` slot payload
+  names the entry, so a first-strategy info answer without a usable `name` is no answer. The shared
+  handler enforces this once; per-entity specs never restate it.
 
 Keep registries per consumer (merge config, feed projection, delete config, query spec). Each
 consumer declares only the schema facts it needs. Do not merge them into one grand all-consumer
@@ -666,7 +678,8 @@ const result = await db.select().from(table).all()
 
 - No Chinese or mixed-language comments.
 - No ASCII art or diagram-style comments in code comments.
-- No decorative separator comments.
+- Plain section banners (`// ===== Types =====`) are allowed to delimit the major regions of a
+  long module; any other decorative separator adds no information and stays out.
 
 ### Vue Component Comments
 

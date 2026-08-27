@@ -57,6 +57,13 @@ Rules:
 
 ### Entity Detail Providers (Dual Surface)
 
+The provider/consumer shell is owned once by `composables/entity-context.ts`:
+`createEntityDetailContext(spec)` builds the route loader (with cross-entry spoiler reset), the
+dialog provider, the computed projection over the spec's `empty` shape, db-change invalidation,
+and the injected consumer. A `use-<entity>.ts` file declares only the spec — fetch function,
+empty projection, owned tables, entity table, route param — and re-exports the factory's typed
+entries. Add a new entity detail surface by writing that spec, never by re-implementing the shell.
+
 Entity detail composables (`use-game`, `use-character`, ...) expose two provider entries over
 one shared fetcher, context assembly, and db-event sync:
 
