@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 import semver from 'semver'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { resolveExtensionText } from '@renderer/core/extensions'
+import { formatBytes } from '@renderer/utils/format'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
@@ -128,20 +129,11 @@ function formatDate(value: string | null | undefined): string {
   return f.value.date(date)
 }
 
-function formatBytes(value: number | undefined): string {
+function formatSizeLabel(value: number | undefined): string {
   if (!value || value <= 0) {
     return m.value.extension.discover.unknownSize
   }
-
-  const units = ['B', 'KB', 'MB', 'GB']
-  let size = value
-  let unitIndex = 0
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024
-    unitIndex += 1
-  }
-
-  return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+  return formatBytes(value)
 }
 
 function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string {
@@ -294,7 +286,9 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
                   </div>
                   <div>
                     {{
-                      m.extension.discover.sizeLine({ value: formatBytes(release.artifact?.size) })
+                      m.extension.discover.sizeLine({
+                        value: formatSizeLabel(release.artifact?.size)
+                      })
                     }}
                   </div>
                 </div>

@@ -17,7 +17,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { scanners } = useScannerProvider()
 
-const SCANNER_TABLE_COLUMNS = ['', '6rem', '8rem', '7rem', '7rem', '5rem', '11rem']
+const SCANNER_TABLE_COLUMNS = ['', '5rem', '13%', '13%', '10rem', '7rem', '10rem']
 
 const { m } = useI18n()
 </script>

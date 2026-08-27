@@ -15,6 +15,14 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@renderer/components/ui/table'
 import type { Automation, AutomationRunHistoryRecord } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
 import {
@@ -44,6 +52,8 @@ const props = withDefaults(defineProps<Props>(), {
 const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
+
+const HISTORY_TABLE_COLUMNS = ['8rem', '6rem', '9rem', '6rem', '']
 
 const commandTitle = computed(() => props.command?.title ?? props.automation.commandId)
 const sourceLabel = computed(() =>
@@ -225,57 +235,74 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             v-else
             class="overflow-hidden rounded-md border border-border"
           >
-            <div
-              class="grid h-8 grid-cols-[116px_96px_132px_80px_minmax(160px,1fr)] items-center gap-3 border-b border-border bg-muted/40 px-3 text-xs font-medium text-muted-foreground"
+            <Table
+              fixed-header
+              :columns="HISTORY_TABLE_COLUMNS"
+              body-class="max-h-80"
             >
-              <div>{{ m.automation.details.historyRun }}</div>
-              <div>{{ m.automation.details.historyTrigger }}</div>
-              <div>{{ m.automation.details.historyStartedAt }}</div>
-              <div>{{ m.automation.details.historyDuration }}</div>
-              <div>{{ m.automation.details.historyResult }}</div>
-            </div>
-            <div class="max-h-80 divide-y divide-border/60 overflow-auto">
-              <div
-                v-for="row in historyRows"
-                :key="row.record.id"
-                class="grid min-h-10 grid-cols-[116px_96px_132px_80px_minmax(160px,1fr)] items-center gap-3 px-3 py-2 text-xs"
-              >
-                <div class="flex min-w-0 items-center gap-2">
-                  <span class="w-8 shrink-0 tabular-nums text-muted-foreground"
-                    >#{{ row.sequence }}</span
-                  >
-                  <Badge
-                    :variant="getRunStatusVariant(row.record.invocationStatus)"
-                    class="h-5"
-                  >
-                    {{ getRunStatusLabel(row.record.invocationStatus) }}
-                  </Badge>
-                </div>
-                <div class="text-muted-foreground">{{ getTriggerLabel(row.record.trigger) }}</div>
-                <div class="text-muted-foreground">
-                  {{ formatAutomationTimestamp(row.record.startedAt) }}
-                </div>
-                <div class="text-muted-foreground">{{ formatRunDuration(row.record) }}</div>
-                <div class="flex min-w-0 items-center gap-1.5">
-                  <div class="min-w-0 flex-1 truncate text-muted-foreground">
-                    {{ formatRunResultPreview(row.record) }}
-                  </div>
-                  <Button
-                    v-if="hasRunResult(row.record)"
-                    size="icon-xs"
-                    variant="ghost"
-                    class="shrink-0"
-                    :tooltip="m.automation.details.viewFullResult"
-                    @click="openRunResult(row.record)"
-                  >
-                    <Icon
-                      icon="icon-[mdi--text-box-search-outline]"
-                      class="size-3.5"
-                    />
-                  </Button>
-                </div>
-              </div>
-            </div>
+              <template #header>
+                <TableHeader>
+                  <TableRow class="h-8">
+                    <TableHead>{{ m.automation.details.historyRun }}</TableHead>
+                    <TableHead>{{ m.automation.details.historyTrigger }}</TableHead>
+                    <TableHead>{{ m.automation.details.historyStartedAt }}</TableHead>
+                    <TableHead>{{ m.automation.details.historyDuration }}</TableHead>
+                    <TableHead>{{ m.automation.details.historyResult }}</TableHead>
+                  </TableRow>
+                </TableHeader>
+              </template>
+
+              <TableBody>
+                <TableRow
+                  v-for="row in historyRows"
+                  :key="row.record.id"
+                  class="h-10 border-border/60"
+                >
+                  <TableCell>
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="w-8 shrink-0 tabular-nums text-muted-foreground"
+                        >#{{ row.sequence }}</span
+                      >
+                      <Badge
+                        :variant="getRunStatusVariant(row.record.invocationStatus)"
+                        class="h-5"
+                      >
+                        {{ getRunStatusLabel(row.record.invocationStatus) }}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell class="text-muted-foreground">
+                    {{ getTriggerLabel(row.record.trigger) }}
+                  </TableCell>
+                  <TableCell class="text-muted-foreground">
+                    {{ formatAutomationTimestamp(row.record.startedAt) }}
+                  </TableCell>
+                  <TableCell class="text-muted-foreground">
+                    {{ formatRunDuration(row.record) }}
+                  </TableCell>
+                  <TableCell>
+                    <div class="flex min-w-0 items-center gap-1.5">
+                      <div class="min-w-0 flex-1 truncate text-muted-foreground">
+                        {{ formatRunResultPreview(row.record) }}
+                      </div>
+                      <Button
+                        v-if="hasRunResult(row.record)"
+                        size="icon-xs"
+                        variant="ghost"
+                        class="shrink-0"
+                        :tooltip="m.automation.details.viewFullResult"
+                        @click="openRunResult(row.record)"
+                      >
+                        <Icon
+                          icon="icon-[mdi--text-box-search-outline]"
+                          class="size-3.5"
+                        />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
         </section>
       </DialogBody>

@@ -33,6 +33,7 @@ import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { useTaskRunStore } from '@renderer/stores'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { resolveExtensionText } from '@renderer/core/extensions'
+import { formatBytes } from '@renderer/utils/format'
 import type {
   ExtensionApplyReleaseRequest,
   ExtensionCreateReleasePlanRequest,
@@ -326,20 +327,11 @@ function releaseKindLabel(value: ExtensionReleasePlan['package']['releaseKind'])
     : m.value.extension.release.kindPreview
 }
 
-function formatBytes(value: number | undefined): string {
+function formatSizeLabel(value: number | undefined): string {
   if (!value || value <= 0) {
     return m.value.extension.release.unknownSize
   }
-
-  const units = ['B', 'KB', 'MB', 'GB']
-  let size = value
-  let unitIndex = 0
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024
-    unitIndex += 1
-  }
-
-  return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+  return formatBytes(value)
 }
 </script>
 
@@ -396,7 +388,7 @@ function formatBytes(value: number | undefined): string {
                   <template v-else>
                     {{
                       m.extension.release.localFileLine({
-                        size: formatBytes(plan.localFile?.size)
+                        size: formatSizeLabel(plan.localFile?.size)
                       })
                     }}
                   </template>
@@ -421,7 +413,7 @@ function formatBytes(value: number | undefined): string {
               </div>
               <div class="min-w-0">
                 <dt class="text-muted-foreground">{{ m.extension.release.artifactSize }}</dt>
-                <dd>{{ formatBytes(plan.artifact?.size ?? plan.localFile?.size) }}</dd>
+                <dd>{{ formatSizeLabel(plan.artifact?.size ?? plan.localFile?.size) }}</dd>
               </div>
             </dl>
           </section>

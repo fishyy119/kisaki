@@ -6,6 +6,7 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { formatBytes } from '@renderer/utils/format'
 
 interface Props {
   note: string
@@ -23,18 +24,6 @@ const emit = defineEmits<{
 }>()
 
 const { m, f } = useI18n()
-
-function formatSize(bytes?: number): string {
-  if (!bytes) return ''
-  const units = ['B', 'KB', 'MB', 'GB']
-  let size = bytes
-  let unitIndex = 0
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024
-    unitIndex++
-  }
-  return `${size.toFixed(1)} ${units[unitIndex]}`
-}
 </script>
 
 <template>
@@ -59,7 +48,7 @@ function formatSize(bytes?: number): string {
         </div>
         <div class="flex items-center gap-x-3 text-xs text-muted-foreground">
           <span>{{ f.dateTime(new Date(props.backupAt)) }}</span>
-          <span v-if="props.sizeBytes">{{ formatSize(props.sizeBytes) }}</span>
+          <span v-if="props.sizeBytes">{{ formatBytes(props.sizeBytes) }}</span>
         </div>
       </div>
     </div>
