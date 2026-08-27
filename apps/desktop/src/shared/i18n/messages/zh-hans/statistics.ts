@@ -48,7 +48,13 @@ export const statistics = {
     entitiesValue: ({ count }: { count: number }) => `${count}部`,
     activeDaysValue: ({ active, total }: { active: number; total: number }) =>
       `${active}/${total}天`,
-    daysValue: ({ count }: { count: number }) => `${count}天`
+    daysValue: ({ count }: { count: number }) => `${count}天`,
+
+    units: {
+      anime: { label: '看完话数', value: ({ count }: { count: number }) => `${count}话` },
+      comic: { label: '读完单元', value: ({ count }: { count: number }) => `${count}个` },
+      novel: { label: '读完卷数', value: ({ count }: { count: number }) => `${count}卷` }
+    }
   },
 
   ranking: {
@@ -61,6 +67,7 @@ export const statistics = {
   charts: {
     heatmapTitle: '活动热力图',
     trendTitle: '活动趋势',
-    distributionTitle: '时段分布'
+    distributionTitle: '时段分布',
+    dayOfMonthLabel: ({ day }: { day: number }) => `${day}日`
   }
 } satisfies Messages['statistics']

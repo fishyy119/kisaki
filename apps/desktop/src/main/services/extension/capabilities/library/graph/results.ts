@@ -112,8 +112,8 @@ function createCounters(
   for (const node of result.nodes) {
     increment(counters, `nodes.${toResultActionName(node.action)}`)
     increment(counters, `${node.kind}.${toResultActionName(node.action)}`)
-    if (node.mediaType === 'game') {
-      increment(counters, `games.${toResultActionName(node.action)}`)
+    if (node.mediaType) {
+      increment(counters, `${node.mediaType}s.${toResultActionName(node.action)}`)
     }
   }
 

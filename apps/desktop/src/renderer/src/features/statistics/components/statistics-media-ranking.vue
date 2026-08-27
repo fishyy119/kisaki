@@ -72,7 +72,7 @@ const items = computed<RankingListItem[]>(() =>
               height: 64
             })
           : undefined,
-      icon: getEntityIcon(entity?.mediaType ?? 'game')
+      icon: entity ? getEntityIcon(entity.mediaType) : undefined
     }
   })
 )

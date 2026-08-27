@@ -46,7 +46,23 @@ export const statistics = {
     entitiesValue: ({ count }: { count: number }) => (count === 1 ? '1 title' : `${count} titles`),
     activeDaysValue: ({ active, total }: { active: number; total: number }) =>
       `${active}/${total} days`,
-    daysValue: ({ count }: { count: number }) => (count === 1 ? '1 day' : `${count} days`)
+    daysValue: ({ count }: { count: number }) => (count === 1 ? '1 day' : `${count} days`),
+
+    /** Completed-unit facts, keyed by unit-bearing media type. */
+    units: {
+      anime: {
+        label: 'Episodes watched',
+        value: ({ count }: { count: number }) => (count === 1 ? '1 episode' : `${count} episodes`)
+      },
+      comic: {
+        label: 'Units read',
+        value: ({ count }: { count: number }) => (count === 1 ? '1 unit' : `${count} units`)
+      },
+      novel: {
+        label: 'Volumes read',
+        value: ({ count }: { count: number }) => (count === 1 ? '1 volume' : `${count} volumes`)
+      }
+    }
   },
 
   ranking: {
@@ -59,6 +75,7 @@ export const statistics = {
   charts: {
     heatmapTitle: 'Activity heatmap',
     trendTitle: 'Activity trend',
-    distributionTitle: 'Time distribution'
+    distributionTitle: 'Time distribution',
+    dayOfMonthLabel: ({ day }: { day: number }) => `Day ${day}`
   }
 }

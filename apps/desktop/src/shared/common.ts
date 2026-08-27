@@ -94,6 +94,17 @@ export type CastMediaType = 'game' | 'anime'
 
 export const CAST_MEDIA_TYPES: readonly CastMediaType[] = ['game', 'anime']
 
+/**
+ * Media types whose consumption units are enumerable rows (episodes,
+ * chapters, volumes) carrying dated completion facts.
+ *
+ * Game has no entry: its consumption unit is the play session itself, so
+ * session records already carry the whole consumption fact.
+ */
+export type UnitMediaType = 'anime' | 'comic' | 'novel'
+
+export const UNIT_MEDIA_TYPES: readonly UnitMediaType[] = ['anime', 'comic', 'novel']
+
 export const METADATA_TYPES: readonly MetadataType[] = ['character', 'person', 'company']
 
 export const ORGANIZER_TYPES: readonly OrganizerType[] = ['collection', 'tag']

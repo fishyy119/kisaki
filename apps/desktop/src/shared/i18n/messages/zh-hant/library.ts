@@ -842,14 +842,36 @@ export const library = {
     },
 
     presets: {
-      recentlyPlayed: { name: '最近遊玩', description: '依最後活躍時間排序的遊戲' },
-      topRated: { name: '高分遊戲', description: '依評分排序的遊戲' },
-      recentlyAdded: { name: '最新加入', description: '依加入時間排序的遊戲' },
-      allGames: { name: '全部遊戲', description: '庫中的全部遊戲' },
-      favoriteGames: { name: '喜歡的遊戲', description: '已加紅心的遊戲' },
-      recentlyWatched: { name: '最近觀看', description: '依最近觀看時間排序的動漫' },
-      topRatedAnime: { name: '高分動漫', description: '依評分排序的動漫' },
-      recentlyAddedAnime: { name: '最新加入的動漫', description: '依加入時間排序的動漫' },
+      media: {
+        game: {
+          recentlyActive: { name: '最近遊玩', description: '依最後活躍時間排序的遊戲' },
+          topRated: { name: '高分遊戲', description: '依評分排序的遊戲' },
+          recentlyAdded: { name: '最新加入的遊戲', description: '依加入時間排序的遊戲' },
+          favorites: { name: '喜歡的遊戲', description: '已加紅心的遊戲' },
+          all: { name: '全部遊戲', description: '庫中的全部遊戲' }
+        },
+        anime: {
+          recentlyActive: { name: '最近觀看', description: '依最近觀看時間排序的動漫' },
+          topRated: { name: '高分動漫', description: '依評分排序的動漫' },
+          recentlyAdded: { name: '最新加入的動漫', description: '依加入時間排序的動漫' },
+          favorites: { name: '喜歡的動漫', description: '已加紅心的動漫' },
+          all: { name: '全部動漫', description: '庫中的全部動漫' }
+        },
+        comic: {
+          recentlyActive: { name: '最近閱讀的漫畫', description: '依最近閱讀時間排序的漫畫' },
+          topRated: { name: '高分漫畫', description: '依評分排序的漫畫' },
+          recentlyAdded: { name: '最新加入的漫畫', description: '依加入時間排序的漫畫' },
+          favorites: { name: '喜歡的漫畫', description: '已加紅心的漫畫' },
+          all: { name: '全部漫畫', description: '庫中的全部漫畫' }
+        },
+        novel: {
+          recentlyActive: { name: '最近閱讀的小說', description: '依最近閱讀時間排序的小說' },
+          topRated: { name: '高分小說', description: '依評分排序的小說' },
+          recentlyAdded: { name: '最新加入的小說', description: '依加入時間排序的小說' },
+          favorites: { name: '喜歡的小說', description: '已加紅心的小說' },
+          all: { name: '全部小說', description: '庫中的全部小說' }
+        }
+      },
       favoriteCharacters: { name: '喜歡的角色', description: '已加紅心的角色' },
       favoritePersons: { name: '喜歡的人物', description: '已加紅心的人物' },
       favoriteCompanies: { name: '喜歡的公司', description: '已加紅心的公司' },

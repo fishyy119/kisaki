@@ -4,38 +4,44 @@
   Report headline band. Right side anchors the height with the period's most
   played entry as a large cover; the left column distributes three layers
   across that height: total activity time with delta, a composition strip
-  (top entries' share, GitHub-language-bar idiom) with legend, and a fact row
-  spread across the width. No internal rules - facts separate by spacing;
-  all grid lines belong to the page. Every layer renders a placeholder
-  without data so the band frame never collapses.
+  (GitHub-language-bar idiom) with legend, and a fact row spread across the
+  width. The strip follows the media scope: the all-media view splits by
+  media type, a single-media scope shows its top entries. No internal rules -
+  facts separate by spacing; all grid lines belong to the page. Every layer
+  renders a placeholder without data so the band frame never collapses.
 -->
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { useStatistics } from '../composables'
+import { mediaTypeOfEntityKey, useStatistics } from '../composables'
 import { getPreviousPeriodLabel } from '../period'
 import {
   computeEntityRanking,
   countActiveDays,
   getMostActiveMonth,
   getMostActiveWeek,
-  getMostActiveWeekdayMondayFirst
+  getMostActiveWeekdayMondayFirst,
+  sessionDurationMs
 } from '@renderer/utils/statistics'
 import { parseLocalDateKey } from '@renderer/utils/datetime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
+import { UNIT_MEDIA_TYPES, type MediaType } from '@shared/common'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 
 const {
   reportType,
   currentPeriod,
   dateRange,
+  mediaFilter,
   sessions,
   stats,
   previousSessions,
   allTimeSessions,
   allTimeStats,
+  unitCounts,
+  allTimeUnitCounts,
   entities
 } = useStatistics()
 
@@ -80,7 +86,7 @@ const delta = computed(() => {
 })
 
 // =============================================================================
-// Composition strip (top entries' share of the period total)
+// Composition strip (where the period's time went, at the scope's level)
 // =============================================================================
 
 // Chart ink: strip segments step down the chart ink density ladder by rank;
@@ -93,6 +99,13 @@ const SEGMENT_FILLS = [
   'color-mix(in oklch, var(--chart) 20%, transparent)'
 ] as const
 
+interface CompositionSlice {
+  id: string
+  name: string
+  fill: string
+  duration: number
+}
+
 interface CompositionSegment {
   id: string
   name: string
@@ -102,10 +115,43 @@ interface CompositionSegment {
   durationText: string
 }
 
-const composition = computed<CompositionSegment[] | null>(() => {
-  const total = effectiveStats.value.totalDuration
-  if (total <= 0) return null
+function toSegments(slices: CompositionSlice[], total: number): CompositionSegment[] {
+  return slices.map((slice) => {
+    const share = slice.duration / total
+    return {
+      id: slice.id,
+      name: slice.name,
+      fill: slice.fill,
+      width: `${(share * 100).toFixed(2)}%`,
+      shareText: `${(share * 100).toFixed(1)}%`,
+      durationText: f.value.duration(slice.duration)
+    }
+  })
+}
 
+/** Media types' share of the period total; segments cover it exactly. */
+function buildMediaComposition(total: number): CompositionSegment[] {
+  const durations = new Map<MediaType, number>()
+  for (const session of effectiveSessions.value) {
+    const mediaType = mediaTypeOfEntityKey(session.entityKey)
+    if (!mediaType) continue
+    durations.set(mediaType, (durations.get(mediaType) ?? 0) + sessionDurationMs(session))
+  }
+
+  const ranked = [...durations.entries()].sort(([, left], [, right]) => right - left)
+  return toSegments(
+    ranked.map(([mediaType, duration], index) => ({
+      id: mediaType,
+      name: m.value.library.entities[mediaType],
+      fill: SEGMENT_FILLS[index],
+      duration
+    })),
+    total
+  )
+}
+
+/** Top entries' share of the period total; the rest folds into "other". */
+function buildEntityComposition(total: number): CompositionSegment[] {
   const ranking = computeEntityRanking(
     effectiveSessions.value,
     (session) => session.entityKey,
@@ -114,18 +160,16 @@ const composition = computed<CompositionSegment[] | null>(() => {
   )
   const top = ranking.slice(0, SEGMENT_FILLS.length)
 
-  const segments: Array<{ id: string; name: string; fill: string; duration: number }> = top.map(
-    (item, index) => ({
-      id: item.id,
-      name: item.name,
-      fill: SEGMENT_FILLS[index],
-      duration: item.totalDuration
-    })
-  )
+  const slices: CompositionSlice[] = top.map((item, index) => ({
+    id: item.id,
+    name: item.name,
+    fill: SEGMENT_FILLS[index],
+    duration: item.totalDuration
+  }))
 
-  const otherDuration = total - segments.reduce((sum, segment) => sum + segment.duration, 0)
+  const otherDuration = total - slices.reduce((sum, slice) => sum + slice.duration, 0)
   if (otherDuration > 0) {
-    segments.push({
+    slices.push({
       id: '__other',
       name: m.value.statistics.hero.other,
       fill: 'var(--color-muted)',
@@ -133,17 +177,14 @@ const composition = computed<CompositionSegment[] | null>(() => {
     })
   }
 
-  return segments.map((segment) => {
-    const share = segment.duration / total
-    return {
-      id: segment.id,
-      name: segment.name,
-      fill: segment.fill,
-      width: `${(share * 100).toFixed(2)}%`,
-      shareText: `${(share * 100).toFixed(1)}%`,
-      durationText: f.value.duration(segment.duration)
-    }
-  })
+  return toSegments(slices, total)
+}
+
+const composition = computed<CompositionSegment[] | null>(() => {
+  const total = effectiveStats.value.totalDuration
+  if (total <= 0) return null
+
+  return mediaFilter.value === 'all' ? buildMediaComposition(total) : buildEntityComposition(total)
 })
 
 // =============================================================================
@@ -211,7 +252,23 @@ function countWeeksInRange(start: Date, end: Date): number {
   return count
 }
 
-const facts = computed<HeroFact[]>(() => {
+// Completed-unit facts for the unit-bearing media in scope. Zero counts stay
+// silent so the row only states what happened; game has no unit fact — its
+// consumption already reads as the session count.
+const unitFacts = computed<HeroFact[]>(() => {
+  const effectiveUnitCounts =
+    reportType.value === 'overview' ? allTimeUnitCounts.value : unitCounts.value
+
+  return UNIT_MEDIA_TYPES.flatMap((mediaType) => {
+    if (mediaFilter.value !== 'all' && mediaFilter.value !== mediaType) return []
+    const unitCount = effectiveUnitCounts[mediaType]
+    if (unitCount === 0) return []
+    const copy = m.value.statistics.hero.units[mediaType]
+    return [{ label: copy.label, value: copy.value({ count: unitCount }) }]
+  })
+})
+
+const reportFacts = computed<HeroFact[]>(() => {
   const current = effectiveStats.value
   const activeDays = countActiveDays(effectiveSessions.value)
 
@@ -293,6 +350,8 @@ const facts = computed<HeroFact[]>(() => {
       ]
   }
 })
+
+const facts = computed<HeroFact[]>(() => [...reportFacts.value, ...unitFacts.value])
 </script>
 
 <template>

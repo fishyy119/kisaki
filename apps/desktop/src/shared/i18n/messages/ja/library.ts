@@ -857,17 +857,45 @@ export const library = {
     },
 
     presets: {
-      recentlyPlayed: {
-        name: '最近プレイ',
-        description: '最終アクティブ日時で並べたゲーム'
+      media: {
+        game: {
+          recentlyActive: {
+            name: '最近プレイ',
+            description: '最終アクティブ日時で並べたゲーム'
+          },
+          topRated: { name: '高評価ゲーム', description: 'スコアで並べたゲーム' },
+          recentlyAdded: { name: '最近追加のゲーム', description: '追加日時で並べたゲーム' },
+          favorites: { name: 'お気に入りのゲーム', description: 'お気に入りにしたゲーム' },
+          all: { name: 'すべてのゲーム', description: 'ライブラリ内のすべてのゲーム' }
+        },
+        anime: {
+          recentlyActive: { name: '最近視聴', description: '最終視聴日時で並べたアニメ' },
+          topRated: { name: '高評価アニメ', description: 'スコアで並べたアニメ' },
+          recentlyAdded: { name: '最近追加のアニメ', description: '追加日時で並べたアニメ' },
+          favorites: { name: 'お気に入りのアニメ', description: 'お気に入りにしたアニメ' },
+          all: { name: 'すべてのアニメ', description: 'ライブラリ内のすべてのアニメ' }
+        },
+        comic: {
+          recentlyActive: {
+            name: '最近読んだマンガ',
+            description: '最終閲覧日時で並べたマンガ'
+          },
+          topRated: { name: '高評価マンガ', description: 'スコアで並べたマンガ' },
+          recentlyAdded: { name: '最近追加のマンガ', description: '追加日時で並べたマンガ' },
+          favorites: { name: 'お気に入りのマンガ', description: 'お気に入りにしたマンガ' },
+          all: { name: 'すべてのマンガ', description: 'ライブラリ内のすべてのマンガ' }
+        },
+        novel: {
+          recentlyActive: {
+            name: '最近読んだ小説',
+            description: '最終閲覧日時で並べた小説'
+          },
+          topRated: { name: '高評価小説', description: 'スコアで並べた小説' },
+          recentlyAdded: { name: '最近追加の小説', description: '追加日時で並べた小説' },
+          favorites: { name: 'お気に入りの小説', description: 'お気に入りにした小説' },
+          all: { name: 'すべての小説', description: 'ライブラリ内のすべての小説' }
+        }
       },
-      topRated: { name: '高評価ゲーム', description: 'スコアで並べたゲーム' },
-      recentlyAdded: { name: '最近追加', description: '追加日時で並べたゲーム' },
-      allGames: { name: 'すべてのゲーム', description: 'ライブラリ内のすべてのゲーム' },
-      favoriteGames: { name: 'お気に入りのゲーム', description: 'お気に入りにしたゲーム' },
-      recentlyWatched: { name: '最近視聴', description: '最終視聴日時で並べたアニメ' },
-      topRatedAnime: { name: '高評価アニメ', description: 'スコアで並べたアニメ' },
-      recentlyAddedAnime: { name: '最近追加のアニメ', description: '追加日時で並べたアニメ' },
       favoriteCharacters: {
         name: 'お気に入りのキャラクター',
         description: 'お気に入りにしたキャラクター'

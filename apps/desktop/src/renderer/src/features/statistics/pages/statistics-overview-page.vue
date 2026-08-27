@@ -3,7 +3,7 @@
 
   All-time retrospective. Full-bleed partitioned surface built from
   horizontal bands: hero, past-year heatmap, charts band (trend | time of
-  day), rankings band (games | collections). Every divider spans the full
+  day), rankings band (titles | collections). Every divider spans the full
   row, so lines always close; cells inside a band share one height.
 -->
 

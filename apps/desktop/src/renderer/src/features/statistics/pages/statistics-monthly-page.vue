@@ -3,7 +3,7 @@
 
   One month in review. Full-bleed partitioned surface built from horizontal
   bands: hero, day calendar, charts band (trend | time of day), and a
-  full-width game ranking flowing in two columns. Every divider spans the
+  full-width title ranking flowing in two columns. Every divider spans the
   full row.
 -->
 
@@ -63,7 +63,7 @@ const { error } = useStatistics()
       </div>
     </div>
 
-    <!-- Rankings band: full-width game ranking, rows flowing in two columns -->
+    <!-- Rankings band: full-width title ranking, rows flowing in two columns -->
     <div class="p-4">
       <StatisticsMediaRanking
         :title="m.statistics.ranking.mediaTitle"

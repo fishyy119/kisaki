@@ -3,7 +3,7 @@
 
   One year in review. Full-bleed partitioned surface built from horizontal
   bands: hero, year activity calendar, charts band (seasonality trend |
-  time of day), rankings band (games | collections). Every divider spans
+  time of day), rankings band (titles | collections). Every divider spans
   the full row, so lines always close.
 -->
 

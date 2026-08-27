@@ -20,23 +20,23 @@ export function registerAttachmentIpc(service: AttachmentService, ipc: IpcServic
     wrapIpc(() => service.images.readPreviewDataUrl(input as AttachmentInput))
   )
 
-  ipc.handle('attachment:create-game-backup', async (_, gameId, note) =>
+  ipc.handle('attachment:create-game-save-backup', async (_, gameId, note) =>
     wrapIpc(() => service.game.createBackup(gameId, note))
   )
 
-  ipc.handle('attachment:delete-game-backup', async (_, gameId, backupAt) =>
+  ipc.handle('attachment:delete-game-save-backup', async (_, gameId, backupAt) =>
     wrapIpcVoid(() => service.game.deleteBackup(gameId, backupAt))
   )
 
-  ipc.handle('attachment:restore-game-backup', async (_, gameId, backupAt) =>
+  ipc.handle('attachment:restore-game-save-backup', async (_, gameId, backupAt) =>
     wrapIpcVoid(() => service.game.restoreBackup(gameId, backupAt))
   )
 
-  ipc.handle('attachment:update-game-backup', async (_, gameId, backupAt, updates) =>
+  ipc.handle('attachment:update-game-save-backup', async (_, gameId, backupAt, updates) =>
     wrapIpcVoid(() => service.game.updateBackup(gameId, backupAt, updates))
   )
 
-  ipc.handle('attachment:open-backup-folder', async (_, gameId) =>
+  ipc.handle('attachment:open-save-backup-folder', async (_, gameId) =>
     wrapIpcVoid(() => service.game.openBackupFolder(gameId))
   )
 

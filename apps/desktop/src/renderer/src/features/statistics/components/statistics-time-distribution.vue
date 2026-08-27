@@ -64,7 +64,7 @@ const chartData = computed(() => {
       const values = aggregateByLocalDayOfMonth(effectiveSessions.value)
       return values.map((value, i) => ({
         key: i + 1,
-        label: m.value.game.activity.dayOfMonthLabel({ day: i + 1 }),
+        label: m.value.statistics.charts.dayOfMonthLabel({ day: i + 1 }),
         value
       }))
     }

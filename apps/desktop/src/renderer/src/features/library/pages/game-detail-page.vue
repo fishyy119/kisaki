@@ -288,8 +288,6 @@ const canOpenGameDir = computed(() => {
           />
         </Button>
 
-        <!-- TODO: Extension detail actions - requires itemComponent prop -->
-
         <Separator
           orientation="vertical"
           class="h-4"

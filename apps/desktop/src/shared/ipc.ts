@@ -649,15 +649,15 @@ export interface IpcMainHandlers {
   'attachment:read-image-preview': (input: AttachmentInput) => IpcResult<string>
 
   // Save backup
-  'attachment:create-game-backup': (gameId: string, note?: string) => IpcResult<SaveBackup>
-  'attachment:delete-game-backup': (gameId: string, backupAt: number) => IpcVoidResult
-  'attachment:restore-game-backup': (gameId: string, backupAt: number) => IpcVoidResult
-  'attachment:update-game-backup': (
+  'attachment:create-game-save-backup': (gameId: string, note?: string) => IpcResult<SaveBackup>
+  'attachment:delete-game-save-backup': (gameId: string, backupAt: number) => IpcVoidResult
+  'attachment:restore-game-save-backup': (gameId: string, backupAt: number) => IpcVoidResult
+  'attachment:update-game-save-backup': (
     gameId: string,
     backupAt: number,
     updates: Partial<Pick<SaveBackup, 'note' | 'locked'>>
   ) => IpcVoidResult
-  'attachment:open-backup-folder': (gameId: string) => IpcVoidResult
+  'attachment:open-save-backup-folder': (gameId: string) => IpcVoidResult
   'attachment:open-save-folder': (gameId: string) => IpcVoidResult
 
   // Portable mode

@@ -11,6 +11,8 @@
  * Sessions from every media type merge into one entity-keyed stream: each
  * session carries an `entityKey` (`<mediaType>:<id>`) that resolves through
  * the `entities` map, so charts, rankings, and stats stay media-agnostic.
+ * A media filter scopes every derived stream in memory; the loaded snapshot
+ * always holds all media, so switching scope never refetches.
  */
 
 import {
@@ -23,13 +25,19 @@ import {
   type ComputedRef,
   type Ref
 } from 'vue'
-import { gte, lte, and, inArray, eq, type SQL } from 'drizzle-orm'
+import { gte, lte, and, count, inArray, eq, type SQL } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useDbChanges } from '@renderer/composables/use-db-changes'
-import { MEDIA_TYPES, type MediaType } from '@shared/common'
+import {
+  MEDIA_TYPES,
+  UNIT_MEDIA_TYPES,
+  isMediaType,
+  type MediaType,
+  type UnitMediaType
+} from '@shared/common'
 import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
@@ -67,6 +75,24 @@ function buildEntityKey(mediaType: MediaType, id: string): string {
   return `${mediaType}:${id}`
 }
 
+/** Media type segment of an entity key; this module owns the key format. */
+export function mediaTypeOfEntityKey(entityKey: string): MediaType | null {
+  const prefix = entityKey.slice(0, entityKey.indexOf(':'))
+  return isMediaType(prefix) ? prefix : null
+}
+
+/** Media scope of a report; `all` merges every media type. */
+export type StatisticsMediaFilter = MediaType | 'all'
+
+function filterSessionsByMedia(
+  sessions: StatisticsSessionEntry[],
+  filter: StatisticsMediaFilter
+): StatisticsSessionEntry[] {
+  if (filter === 'all') return sessions
+  const prefix = `${filter}:`
+  return sessions.filter((session) => session.entityKey.startsWith(prefix))
+}
+
 // =============================================================================
 // Context Type
 // =============================================================================
@@ -80,10 +106,13 @@ export interface StatisticsContext {
   setCurrentPeriod: (period: Period) => void
   periodDisplay: ComputedRef<PeriodDisplay>
 
+  // Media scope; writable, applied in memory over the loaded snapshot
+  mediaFilter: Ref<StatisticsMediaFilter>
+
   // Computed date range based on report type and period (overview: past year)
   dateRange: ComputedRef<{ start: Date; end: Date }>
 
-  // Data - filtered by dateRange
+  // Data - filtered by dateRange and media scope
   sessions: ComputedRef<StatisticsSessionEntry[]>
   entities: ComputedRef<Map<string, StatisticsEntity>>
   collections: ComputedRef<Map<string, Collection>>
@@ -95,6 +124,10 @@ export interface StatisticsContext {
   // For overview: all-time data for stats/distributions/rankings
   allTimeSessions: ComputedRef<StatisticsSessionEntry[]>
   allTimeStats: ComputedRef<GlobalStatisticsStats>
+
+  // Completed units per unit-bearing media (period-dated / all-time state)
+  unitCounts: ComputedRef<Record<UnitMediaType, number>>
+  allTimeUnitCounts: ComputedRef<Record<UnitMediaType, number>>
 
   // Link data for local computation, entity side keyed like sessions
   entityCollectionLinks: ComputedRef<{ entityId: string; collectionId: string }[]>
@@ -134,6 +167,7 @@ interface FetchedData {
   entities: StatisticsEntity[]
   collections: Collection[]
   entityCollectionLinks: { entityId: string; collectionId: string }[]
+  unitCounts: Record<UnitMediaType, number>
 }
 
 /**
@@ -207,6 +241,96 @@ const SESSION_TABLES = new Set<string>(
 const MEDIA_TABLES = new Set<string>(
   MEDIA_TYPES.map((mediaType) => MEDIA_STATISTICS_SOURCES[mediaType].entityTable)
 )
+
+/**
+ * Per-media wiring for unit-consumption facts: which unit table carries the
+ * completion columns and which media table gates NSFW. Game has no entry —
+ * its consumption unit is the session itself, already counted above.
+ */
+interface UnitStatisticsSource {
+  units: SQLiteTable
+  unitEntityId: SQLiteColumn
+  completed: SQLiteColumn
+  completedAt: SQLiteColumn
+  entities: SQLiteTable & { id: SQLiteColumn; isNsfw: SQLiteColumn }
+  /** Unit table name as reported by database change events */
+  unitTable: string
+}
+
+const UNIT_STATISTICS_SOURCES = {
+  anime: {
+    units: schema.animeEpisodes,
+    unitEntityId: schema.animeEpisodes.animeId,
+    completed: schema.animeEpisodes.watched,
+    completedAt: schema.animeEpisodes.watchedAt,
+    entities: schema.animes,
+    unitTable: 'anime_episodes'
+  },
+  comic: {
+    units: schema.comicChapters,
+    unitEntityId: schema.comicChapters.comicId,
+    completed: schema.comicChapters.read,
+    completedAt: schema.comicChapters.readAt,
+    entities: schema.comics,
+    unitTable: 'comic_chapters'
+  },
+  novel: {
+    units: schema.novelVolumes,
+    unitEntityId: schema.novelVolumes.novelId,
+    completed: schema.novelVolumes.read,
+    completedAt: schema.novelVolumes.readAt,
+    entities: schema.novels,
+    unitTable: 'novel_volumes'
+  }
+} as const satisfies Record<UnitMediaType, UnitStatisticsSource>
+
+const UNIT_TABLES = new Set<string>(
+  UNIT_MEDIA_TYPES.map((mediaType) => UNIT_STATISTICS_SOURCES[mediaType].unitTable)
+)
+
+function emptyUnitCounts(): Record<UnitMediaType, number> {
+  return Object.fromEntries(UNIT_MEDIA_TYPES.map((mediaType) => [mediaType, 0])) as Record<
+    UnitMediaType,
+    number
+  >
+}
+
+/**
+ * Count completed units per unit-bearing media type.
+ *
+ * Period ranges count completions whose timestamp falls inside the range;
+ * catch-up and imported marks carry no timestamp, so they belong to no
+ * period. The all-time query (null range) counts the completion state alone,
+ * so undated marks still count in the overview.
+ */
+async function fetchUnitCounts(
+  dateRange: { start: Date; end: Date } | null,
+  showNsfw: boolean
+): Promise<Record<UnitMediaType, number>> {
+  const perType = await Promise.all(
+    UNIT_MEDIA_TYPES.map(async (mediaType) => {
+      const source: UnitStatisticsSource = UNIT_STATISTICS_SOURCES[mediaType]
+      const conditions: (SQL | undefined)[] = [eq(source.completed, true)]
+      if (dateRange) {
+        conditions.push(
+          gte(source.completedAt, dateRange.start),
+          lte(source.completedAt, dateRange.end)
+        )
+      }
+      if (!showNsfw) conditions.push(eq(source.entities.isNsfw, false))
+
+      const rows = await db
+        .select({ value: count() })
+        .from(source.units)
+        .innerJoin(source.entities, eq(source.unitEntityId, source.entities.id))
+        .where(and(...conditions))
+
+      return [mediaType, rows[0]?.value ?? 0] as const
+    })
+  )
+
+  return Object.fromEntries(perType) as Record<UnitMediaType, number>
+}
 
 async function fetchMediaSessionsInRange(
   mediaType: MediaType,
@@ -323,14 +447,20 @@ async function fetchStatisticsData(
   dateRange: { start: Date; end: Date } | null,
   showNsfw: boolean
 ): Promise<FetchedData> {
-  const sessions = await fetchSessionsInRange(dateRange, showNsfw)
+  // Unit completions are facts of their own: marking paths date units without
+  // creating sessions, so the counts never derive from the session stream.
+  const [sessions, unitCounts] = await Promise.all([
+    fetchSessionsInRange(dateRange, showNsfw),
+    fetchUnitCounts(dateRange, showNsfw)
+  ])
 
   if (sessions.length === 0) {
     return {
       sessions: [],
       entities: [],
       collections: [],
-      entityCollectionLinks: []
+      entityCollectionLinks: [],
+      unitCounts
     }
   }
 
@@ -360,7 +490,8 @@ async function fetchStatisticsData(
     sessions,
     entities: entityGroups.flat(),
     collections,
-    entityCollectionLinks: linkGroups.flat()
+    entityCollectionLinks: linkGroups.flat(),
+    unitCounts
   }
 }
 
@@ -380,6 +511,10 @@ interface StatisticsData {
 // fetch reads a consistent value; it resets whenever the report type changes.
 let lastReportType: ReportType | null = null
 const selectedPeriod = ref<Period>(getCurrentPeriod('overview'))
+
+// Media scope persists across report types and navigations; it filters the
+// loaded snapshot in memory, so changing it never refetches.
+const selectedMediaFilter = ref<StatisticsMediaFilter>('all')
 
 export const statisticsData = defineRouteData(async (route): Promise<StatisticsData> => {
   const reportType = getReportTypeFromRoute(route.name)
@@ -435,8 +570,10 @@ export function useStatisticsProvider(): StatisticsContext {
     void refetch()
   }
 
-  // Computed data maps
-  const sessions = computed(() => data.value?.current.sessions ?? [])
+  // Computed data maps, scoped by the media filter
+  const sessions = computed(() =>
+    filterSessionsByMedia(data.value?.current.sessions ?? [], selectedMediaFilter.value)
+  )
 
   const entities = computed(() => {
     const map = new Map<string, StatisticsEntity>()
@@ -474,18 +611,26 @@ export function useStatisticsProvider(): StatisticsContext {
     computeStats(sessions.value, (session) => session.entityKey, getEntityName)
   )
 
-  const previousSessions = computed(() => data.value?.previousSessions ?? null)
+  const previousSessions = computed(() => {
+    const previous = data.value?.previousSessions ?? null
+    return previous === null ? null : filterSessionsByMedia(previous, selectedMediaFilter.value)
+  })
 
   // All-time data for overview
-  const allTimeSessions = computed(() => data.value?.allTime?.sessions ?? [])
+  const allTimeSessions = computed(() =>
+    filterSessionsByMedia(data.value?.allTime?.sessions ?? [], selectedMediaFilter.value)
+  )
   const allTimeStats = computed(() =>
     computeStats(allTimeSessions.value, (session) => session.entityKey, getEntityName)
   )
 
+  // Unit counts stay per-media; consumers pick the entries the scope shows
+  const unitCounts = computed(() => data.value?.current.unitCounts ?? emptyUnitCounts())
+  const allTimeUnitCounts = computed(() => data.value?.allTime?.unitCounts ?? emptyUnitCounts())
+
   // Event listeners for auto-refresh
   useDbChanges(({ operation, table }) => {
-    const isSessionTable = SESSION_TABLES.has(table)
-    if (isSessionTable) {
+    if (SESSION_TABLES.has(table) || UNIT_TABLES.has(table)) {
       void refetch()
       return
     }
@@ -497,6 +642,7 @@ export function useStatisticsProvider(): StatisticsContext {
     currentPeriod,
     setCurrentPeriod,
     periodDisplay,
+    mediaFilter: selectedMediaFilter,
     dateRange,
     sessions,
     entities,
@@ -505,6 +651,8 @@ export function useStatisticsProvider(): StatisticsContext {
     previousSessions,
     allTimeSessions,
     allTimeStats,
+    unitCounts,
+    allTimeUnitCounts,
     entityCollectionLinks,
     isFetching,
     error,

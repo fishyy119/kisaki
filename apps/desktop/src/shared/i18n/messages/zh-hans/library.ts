@@ -842,14 +842,36 @@ export const library = {
     },
 
     presets: {
-      recentlyPlayed: { name: '最近游玩', description: '按最后活跃时间排序的游戏' },
-      topRated: { name: '高分游戏', description: '按评分排序的游戏' },
-      recentlyAdded: { name: '最新添加', description: '按添加时间排序的游戏' },
-      allGames: { name: '全部游戏', description: '库中的全部游戏' },
-      favoriteGames: { name: '喜欢的游戏', description: '已红心的游戏' },
-      recentlyWatched: { name: '最近观看', description: '按最近观看时间排序的动漫' },
-      topRatedAnime: { name: '高分动漫', description: '按评分排序的动漫' },
-      recentlyAddedAnime: { name: '最新添加的动漫', description: '按添加时间排序的动漫' },
+      media: {
+        game: {
+          recentlyActive: { name: '最近游玩', description: '按最后活跃时间排序的游戏' },
+          topRated: { name: '高分游戏', description: '按评分排序的游戏' },
+          recentlyAdded: { name: '最新添加的游戏', description: '按添加时间排序的游戏' },
+          favorites: { name: '喜欢的游戏', description: '已红心的游戏' },
+          all: { name: '全部游戏', description: '库中的全部游戏' }
+        },
+        anime: {
+          recentlyActive: { name: '最近观看', description: '按最近观看时间排序的动漫' },
+          topRated: { name: '高分动漫', description: '按评分排序的动漫' },
+          recentlyAdded: { name: '最新添加的动漫', description: '按添加时间排序的动漫' },
+          favorites: { name: '喜欢的动漫', description: '已红心的动漫' },
+          all: { name: '全部动漫', description: '库中的全部动漫' }
+        },
+        comic: {
+          recentlyActive: { name: '最近阅读的漫画', description: '按最近阅读时间排序的漫画' },
+          topRated: { name: '高分漫画', description: '按评分排序的漫画' },
+          recentlyAdded: { name: '最新添加的漫画', description: '按添加时间排序的漫画' },
+          favorites: { name: '喜欢的漫画', description: '已红心的漫画' },
+          all: { name: '全部漫画', description: '库中的全部漫画' }
+        },
+        novel: {
+          recentlyActive: { name: '最近阅读的小说', description: '按最近阅读时间排序的小说' },
+          topRated: { name: '高分小说', description: '按评分排序的小说' },
+          recentlyAdded: { name: '最新添加的小说', description: '按添加时间排序的小说' },
+          favorites: { name: '喜欢的小说', description: '已红心的小说' },
+          all: { name: '全部小说', description: '库中的全部小说' }
+        }
+      },
       favoriteCharacters: { name: '喜欢的角色', description: '已红心的角色' },
       favoritePersons: { name: '喜欢的人物', description: '已红心的人物' },
       favoriteCompanies: { name: '喜欢的公司', description: '已红心的公司' },

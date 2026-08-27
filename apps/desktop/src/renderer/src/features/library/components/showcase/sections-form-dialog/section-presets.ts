@@ -1,13 +1,15 @@
 /**
  * Showcase Section Presets
  *
- * Predefined section configurations for quick showcase setup.
- * Names and descriptions resolve from the active message catalog.
+ * Predefined section configurations for quick showcase setup. Every media
+ * type offers the same five presets, generated from one shape list; satellite
+ * and organizer presets stay hand-written. Names and descriptions resolve
+ * from the active message catalog.
  */
 
 import { messages } from '@renderer/core/i18n'
 import type { Messages } from '@shared/i18n'
-import type { AllEntityType } from '@shared/common'
+import { MEDIA_TYPES, type AllEntityType, type MediaType } from '@shared/common'
 import type { FilterState } from '@shared/filter'
 import { createEmptyFilter } from '@shared/filter'
 import type { SectionLayout, SectionItemSize } from '@shared/db'
@@ -29,180 +31,166 @@ export interface ShowcaseSectionPreset {
   sortDirection: 'asc' | 'desc'
 }
 
-type PresetCopyKey = keyof Messages['library']['showcase']['presets']
+type MediaPresetCopyKey = keyof Messages['library']['showcase']['presets']['media'][MediaType]
 
-type PresetDefinition = Omit<ShowcaseSectionPreset, 'name' | 'description'> & {
-  copyKey: PresetCopyKey
+type SatellitePresetCopyKey = Exclude<keyof Messages['library']['showcase']['presets'], 'media'>
+
+type PresetShape = Omit<ShowcaseSectionPreset, 'id' | 'name' | 'description' | 'entityType'>
+
+function createFavoritesFilter(): FilterState {
+  return { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] }
 }
 
 // =============================================================================
-// Presets
+// Media presets (uniform five per media type)
 // =============================================================================
 
-const PRESET_DEFINITIONS: PresetDefinition[] = [
-  // Game presets
-  {
-    id: 'recently-played',
-    copyKey: 'recentlyPlayed',
-    entityType: 'game',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: 20,
-    filter: createEmptyFilter(),
-    sortField: 'lastActiveAt',
-    sortDirection: 'desc'
-  },
-  {
-    id: 'top-rated',
-    copyKey: 'topRated',
-    entityType: 'game',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: 20,
-    filter: createEmptyFilter(),
-    sortField: 'score',
-    sortDirection: 'desc'
-  },
-  {
-    id: 'recently-added',
-    copyKey: 'recentlyAdded',
-    entityType: 'game',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: 20,
-    filter: createEmptyFilter(),
-    sortField: 'createdAt',
-    sortDirection: 'desc'
-  },
-  {
-    id: 'all-games',
-    copyKey: 'allGames',
-    entityType: 'game',
-    layout: 'grid',
-    itemSize: 'md',
-    limit: null,
-    filter: createEmptyFilter(),
-    sortField: 'name',
-    sortDirection: 'asc'
-  },
-  {
-    id: 'favorite-games',
-    copyKey: 'favoriteGames',
-    entityType: 'game',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: null,
-    filter: { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] },
-    sortField: 'name',
-    sortDirection: 'asc'
-  },
-
-  // Anime presets
-  {
-    id: 'recently-watched',
-    copyKey: 'recentlyWatched',
-    entityType: 'anime',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: 20,
-    filter: createEmptyFilter(),
-    sortField: 'lastActiveAt',
-    sortDirection: 'desc'
-  },
-  {
-    id: 'top-rated-anime',
-    copyKey: 'topRatedAnime',
-    entityType: 'anime',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: 20,
-    filter: createEmptyFilter(),
-    sortField: 'score',
-    sortDirection: 'desc'
-  },
-  {
-    id: 'recently-added-anime',
-    copyKey: 'recentlyAddedAnime',
-    entityType: 'anime',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: 20,
-    filter: createEmptyFilter(),
-    sortField: 'createdAt',
-    sortDirection: 'desc'
-  },
-
-  // Character presets
-  {
-    id: 'favorite-characters',
-    copyKey: 'favoriteCharacters',
-    entityType: 'character',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: null,
-    filter: { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] },
-    sortField: 'name',
-    sortDirection: 'asc'
-  },
-
-  // Person presets
-  {
-    id: 'favorite-persons',
-    copyKey: 'favoritePersons',
-    entityType: 'person',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: null,
-    filter: { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] },
-    sortField: 'name',
-    sortDirection: 'asc'
-  },
-
-  // Company presets
-  {
-    id: 'favorite-companies',
-    copyKey: 'favoriteCompanies',
-    entityType: 'company',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: null,
-    filter: { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] },
-    sortField: 'name',
-    sortDirection: 'asc'
-  },
-
-  // Collection presets
-  {
-    id: 'all-collections',
-    copyKey: 'allCollections',
-    entityType: 'collection',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: 20,
-    filter: createEmptyFilter(),
-    sortField: 'order',
-    sortDirection: 'asc'
-  },
-
-  // Tag presets
-  {
-    id: 'all-tags',
-    copyKey: 'allTags',
-    entityType: 'tag',
-    layout: 'horizontal',
-    itemSize: 'md',
-    limit: 20,
-    filter: createEmptyFilter(),
-    sortField: 'name',
-    sortDirection: 'asc'
+/** The five preset shapes every media type offers, keyed by copy entry. */
+function buildMediaPresetShapes(): Record<MediaPresetCopyKey, PresetShape> {
+  return {
+    recentlyActive: {
+      layout: 'horizontal',
+      itemSize: 'md',
+      limit: 20,
+      filter: createEmptyFilter(),
+      sortField: 'lastActiveAt',
+      sortDirection: 'desc'
+    },
+    topRated: {
+      layout: 'horizontal',
+      itemSize: 'md',
+      limit: 20,
+      filter: createEmptyFilter(),
+      sortField: 'score',
+      sortDirection: 'desc'
+    },
+    recentlyAdded: {
+      layout: 'horizontal',
+      itemSize: 'md',
+      limit: 20,
+      filter: createEmptyFilter(),
+      sortField: 'createdAt',
+      sortDirection: 'desc'
+    },
+    favorites: {
+      layout: 'horizontal',
+      itemSize: 'md',
+      limit: null,
+      filter: createFavoritesFilter(),
+      sortField: 'name',
+      sortDirection: 'asc'
+    },
+    all: {
+      layout: 'grid',
+      itemSize: 'md',
+      limit: null,
+      filter: createEmptyFilter(),
+      sortField: 'name',
+      sortDirection: 'asc'
+    }
   }
-]
+}
+
+function buildMediaPresets(
+  presetCopy: Messages['library']['showcase']['presets'],
+  mediaType: MediaType
+): ShowcaseSectionPreset[] {
+  const shapes = buildMediaPresetShapes()
+  const copy = presetCopy.media[mediaType]
+
+  return (Object.keys(shapes) as MediaPresetCopyKey[]).map((copyKey) => ({
+    id: `${mediaType}-${copyKey}`,
+    name: copy[copyKey].name,
+    description: copy[copyKey].description,
+    entityType: mediaType,
+    ...shapes[copyKey]
+  }))
+}
+
+// =============================================================================
+// Satellite and organizer presets
+// =============================================================================
+
+interface SatellitePresetDefinition {
+  id: string
+  copyKey: SatellitePresetCopyKey
+  entityType: AllEntityType
+  shape: PresetShape
+}
+
+function buildSatellitePresetDefinitions(): SatellitePresetDefinition[] {
+  const favoritesShape = (): PresetShape => ({
+    layout: 'horizontal',
+    itemSize: 'md',
+    limit: null,
+    filter: createFavoritesFilter(),
+    sortField: 'name',
+    sortDirection: 'asc'
+  })
+
+  return [
+    {
+      id: 'favorite-characters',
+      copyKey: 'favoriteCharacters',
+      entityType: 'character',
+      shape: favoritesShape()
+    },
+    {
+      id: 'favorite-persons',
+      copyKey: 'favoritePersons',
+      entityType: 'person',
+      shape: favoritesShape()
+    },
+    {
+      id: 'favorite-companies',
+      copyKey: 'favoriteCompanies',
+      entityType: 'company',
+      shape: favoritesShape()
+    },
+    {
+      id: 'all-collections',
+      copyKey: 'allCollections',
+      entityType: 'collection',
+      shape: {
+        layout: 'horizontal',
+        itemSize: 'md',
+        limit: 20,
+        filter: createEmptyFilter(),
+        sortField: 'order',
+        sortDirection: 'asc'
+      }
+    },
+    {
+      id: 'all-tags',
+      copyKey: 'allTags',
+      entityType: 'tag',
+      shape: {
+        layout: 'horizontal',
+        itemSize: 'md',
+        limit: 20,
+        filter: createEmptyFilter(),
+        sortField: 'name',
+        sortDirection: 'asc'
+      }
+    }
+  ]
+}
+
+// =============================================================================
+// Public API
+// =============================================================================
 
 export function getShowcaseSectionPresets(): ShowcaseSectionPreset[] {
   const presetCopy = messages.value.library.showcase.presets
-  return PRESET_DEFINITIONS.map(({ copyKey, ...preset }) => ({
-    ...preset,
-    name: presetCopy[copyKey].name,
-    description: presetCopy[copyKey].description
-  }))
+
+  return [
+    ...MEDIA_TYPES.flatMap((mediaType) => buildMediaPresets(presetCopy, mediaType)),
+    ...buildSatellitePresetDefinitions().map(({ id, copyKey, entityType, shape }) => ({
+      id,
+      name: presetCopy[copyKey].name,
+      description: presetCopy[copyKey].description,
+      entityType,
+      ...shape
+    }))
+  ]
 }

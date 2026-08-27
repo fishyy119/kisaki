@@ -2,7 +2,13 @@ export {
   StatisticsKey,
   statisticsData,
   useStatisticsProvider,
-  useStatistics
+  useStatistics,
+  mediaTypeOfEntityKey
 } from './use-statistics'
 
-export type { StatisticsContext, StatisticsEntity, StatisticsSessionEntry } from './use-statistics'
+export type {
+  StatisticsContext,
+  StatisticsEntity,
+  StatisticsMediaFilter,
+  StatisticsSessionEntry
+} from './use-statistics'

@@ -64,8 +64,7 @@ async function handleCreate() {
   if (!game.value) return
   isCreating.value = true
   try {
-    // TODO: Rename 'attachment:create-game-backup' to 'attachment:create-game-save-backup'
-    const result = await ipcManager.invoke('attachment:create-game-backup', game.value.id)
+    const result = await ipcManager.invoke('attachment:create-game-save-backup', game.value.id)
     if (result.success) {
       notify.success(m.value.game.saves.backupCreated)
       refetch()
@@ -79,7 +78,11 @@ async function handleCreate() {
 
 async function handleRestore(backupAt: number) {
   if (!game.value) return
-  const result = await ipcManager.invoke('attachment:restore-game-backup', game.value.id, backupAt)
+  const result = await ipcManager.invoke(
+    'attachment:restore-game-save-backup',
+    game.value.id,
+    backupAt
+  )
   if (result.success) {
     notify.success(m.value.game.saves.restored)
     refetch()
@@ -91,7 +94,11 @@ async function handleRestore(backupAt: number) {
 
 async function handleDelete(backupAt: number) {
   if (!game.value) return
-  const result = await ipcManager.invoke('attachment:delete-game-backup', game.value.id, backupAt)
+  const result = await ipcManager.invoke(
+    'attachment:delete-game-save-backup',
+    game.value.id,
+    backupAt
+  )
   if (result.success) {
     notify.success(m.value.game.saves.backupDeleted)
     refetch()
@@ -103,7 +110,7 @@ async function handleDelete(backupAt: number) {
 
 async function handleOpenBackupFolder() {
   if (!game.value) return
-  await ipcManager.invoke('attachment:open-backup-folder', game.value.id)
+  await ipcManager.invoke('attachment:open-save-backup-folder', game.value.id)
 }
 
 async function handleOpenSaveFolder() {
@@ -120,7 +127,7 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
   if (!game.value || !editTarget.value) return
   try {
     const result = await ipcManager.invoke(
-      'attachment:update-game-backup',
+      'attachment:update-game-save-backup',
       game.value.id,
       editTarget.value.backupAt,
       data

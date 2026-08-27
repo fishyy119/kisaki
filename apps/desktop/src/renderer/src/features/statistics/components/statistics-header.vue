@@ -5,15 +5,16 @@
   - Title and icon
   - Report type navigation (RouterLinks styled as ghost buttons)
   - Period navigator (prev/next buttons with label) - hidden for overview
-  - Media type selector
+  - Media scope filter (all media or one media type)
 -->
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useStatistics } from '../composables'
 import { isPeriodBeforeCurrent, shiftPeriod } from '../period'
 import { getEntityIcon } from '@renderer/utils/format'
+import { MEDIA_TYPES } from '@shared/common'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -26,10 +27,7 @@ import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/
 
 const { m } = useI18n()
 
-const { reportType, currentPeriod, setCurrentPeriod, periodDisplay } = useStatistics()
-
-// Media type (currently only game, future expansion)
-const mediaType = ref<'game'>('game')
+const { reportType, currentPeriod, setCurrentPeriod, periodDisplay, mediaFilter } = useStatistics()
 
 // Report type navigation items
 const reportNavItems = computed<PageHeaderNavItem[]>(() => [
@@ -96,15 +94,28 @@ const canNavigateNext = computed(() => {
         </Button>
       </div>
 
-      <!-- Media Type Selector -->
-      <SegmentedControl v-model="mediaType">
-        <SegmentedControlItem value="game">
+      <!-- Media scope filter -->
+      <SegmentedControl v-model="mediaFilter">
+        <SegmentedControlItem value="all">
           <div class="flex items-center gap-1.5">
             <Icon
-              :icon="getEntityIcon('game')"
+              icon="icon-[mdi--view-grid-outline]"
               class="size-4"
             />
-            <span>{{ m.library.entities.game }}</span>
+            <span>{{ m.common.all }}</span>
+          </div>
+        </SegmentedControlItem>
+        <SegmentedControlItem
+          v-for="type in MEDIA_TYPES"
+          :key="type"
+          :value="type"
+        >
+          <div class="flex items-center gap-1.5">
+            <Icon
+              :icon="getEntityIcon(type)"
+              class="size-4"
+            />
+            <span>{{ m.library.entities[type] }}</span>
           </div>
         </SegmentedControlItem>
       </SegmentedControl>

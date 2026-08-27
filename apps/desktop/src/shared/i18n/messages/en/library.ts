@@ -886,16 +886,48 @@ export const library = {
     },
 
     presets: {
-      recentlyPlayed: { name: 'Recently played', description: 'Games sorted by last activity' },
-      topRated: { name: 'Top rated', description: 'Games sorted by score' },
-      recentlyAdded: { name: 'Recently added', description: 'Games sorted by date added' },
-      allGames: { name: 'All games', description: 'Every game in the library' },
-      favoriteGames: { name: 'Favorite games', description: 'Games you favorited' },
-      recentlyWatched: { name: 'Recently watched', description: 'Anime sorted by last watched' },
-      topRatedAnime: { name: 'Top rated anime', description: 'Anime sorted by score' },
-      recentlyAddedAnime: {
-        name: 'Recently added anime',
-        description: 'Anime sorted by date added'
+      /** Per-media preset copy; every media type offers the same five. */
+      media: {
+        game: {
+          recentlyActive: { name: 'Recently played', description: 'Games sorted by last activity' },
+          topRated: { name: 'Top rated games', description: 'Games sorted by score' },
+          recentlyAdded: { name: 'Recently added games', description: 'Games sorted by date added' },
+          favorites: { name: 'Favorite games', description: 'Games you favorited' },
+          all: { name: 'All games', description: 'Every game in the library' }
+        },
+        anime: {
+          recentlyActive: { name: 'Recently watched', description: 'Anime sorted by last watched' },
+          topRated: { name: 'Top rated anime', description: 'Anime sorted by score' },
+          recentlyAdded: { name: 'Recently added anime', description: 'Anime sorted by date added' },
+          favorites: { name: 'Favorite anime', description: 'Anime you favorited' },
+          all: { name: 'All anime', description: 'Every anime in the library' }
+        },
+        comic: {
+          recentlyActive: {
+            name: 'Recently read comics',
+            description: 'Comics sorted by last read'
+          },
+          topRated: { name: 'Top rated comics', description: 'Comics sorted by score' },
+          recentlyAdded: {
+            name: 'Recently added comics',
+            description: 'Comics sorted by date added'
+          },
+          favorites: { name: 'Favorite comics', description: 'Comics you favorited' },
+          all: { name: 'All comics', description: 'Every comic in the library' }
+        },
+        novel: {
+          recentlyActive: {
+            name: 'Recently read novels',
+            description: 'Novels sorted by last read'
+          },
+          topRated: { name: 'Top rated novels', description: 'Novels sorted by score' },
+          recentlyAdded: {
+            name: 'Recently added novels',
+            description: 'Novels sorted by date added'
+          },
+          favorites: { name: 'Favorite novels', description: 'Novels you favorited' },
+          all: { name: 'All novels', description: 'Every novel in the library' }
+        }
       },
       favoriteCharacters: { name: 'Favorite characters', description: 'Characters you favorited' },
       favoritePersons: { name: 'Favorite people', description: 'People you favorited' },
