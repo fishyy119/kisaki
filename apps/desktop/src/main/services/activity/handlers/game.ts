@@ -130,7 +130,7 @@ export class GameActivityHandler {
       return { status: 'unconfirmed', reason: 'processNotDetected' }
     }
 
-    this.markNotStartedAsInProgress(game)
+    this.markPlannedAsActive(game)
 
     log.info('Game launch confirmed.', { gameId: game.id, processPid: running.pid })
     return running.pid === undefined
@@ -328,18 +328,20 @@ export class GameActivityHandler {
     })
   }
 
-  private markNotStartedAsInProgress(game: Game): void {
-    if (game.status !== 'notStarted') {
+  // Starting to play is the only status transition playing infers, guarded so
+  // a user edit is never clobbered. Completion stays a user declaration.
+  private markPlannedAsActive(game: Game): void {
+    if (game.status !== 'planned') {
       return
     }
 
     this.db.client
       .update(games)
-      .set({ status: 'inProgress' })
-      .where(and(eq(games.id, game.id), eq(games.status, 'notStarted')))
+      .set({ status: 'active' })
+      .where(and(eq(games.id, game.id), eq(games.status, 'planned')))
       .run()
 
-    log.info('Game status advanced to in progress.', { gameId: game.id })
+    log.info('Game status advanced to active.', { gameId: game.id })
   }
 
   private async selectLauncherPath(game: Game): Promise<string | null> {

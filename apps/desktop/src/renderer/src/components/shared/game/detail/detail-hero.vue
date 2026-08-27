@@ -12,7 +12,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { formatGameStatus, getEntityIcon } from '@renderer/utils/format'
+import { formatMediaStatus, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import {
@@ -147,9 +147,11 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
                   class="size-4 absolute inset-0 opacity-0 transition-opacity group-hover/icon:opacity-100"
                 />
               </button>
-              <span class="text-xs">{{ m.library.menu.playStatus }}</span>
+              <span class="text-xs">{{ m.library.status.label.game }}</span>
             </span>
-            <span class="font-medium truncate text-xs">{{ formatGameStatus(game.status) }}</span>
+            <span class="font-medium truncate text-xs">{{
+              formatMediaStatus('game', game.status)
+            }}</span>
           </div>
 
           <!-- Total Duration -->

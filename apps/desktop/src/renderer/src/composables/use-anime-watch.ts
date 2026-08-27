@@ -25,7 +25,7 @@ import {
   animeEpisodes,
   type AnimeEpisode,
   type AnimeEpisodeType,
-  type AnimeStatus
+  type MediaStatus
 } from '@shared/db'
 import { useI18n } from './use-i18n'
 import { usePlayerControls } from './use-player-controls'
@@ -199,7 +199,7 @@ export async function readUnwatchedEpisodeCounts(animeId: string): Promise<Unwat
  */
 export async function shouldOfferWatchCatchUp(
   animeId: string,
-  status: AnimeStatus
+  status: MediaStatus
 ): Promise<boolean> {
   if (status !== 'completed') return false
 

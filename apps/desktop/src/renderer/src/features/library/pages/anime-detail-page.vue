@@ -36,9 +36,14 @@ import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
-import { animes, type AnimeStatus } from '@shared/db'
+import { animes, type MediaStatus } from '@shared/db'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
-import { formatAnimeStatus, getAnimeStatusVariant, getEntityIcon } from '@renderer/utils/format'
+import {
+  formatMediaStatus,
+  getEntityIcon,
+  getMediaStatusOptions,
+  getMediaStatusVariant
+} from '@renderer/utils/format'
 
 const log = createLogger('Anime')
 
@@ -48,13 +53,7 @@ const { m } = useI18n()
 // Constants
 // =============================================================================
 
-const STATUS_OPTIONS = computed<{ value: AnimeStatus; label: string }[]>(() => [
-  { value: 'planned', label: m.value.library.animeStatus.planned },
-  { value: 'watching', label: m.value.library.animeStatus.watching },
-  { value: 'completed', label: m.value.library.animeStatus.completed },
-  { value: 'onHold', label: m.value.library.animeStatus.onHold },
-  { value: 'dropped', label: m.value.library.animeStatus.dropped }
-])
+const STATUS_OPTIONS = computed(() => getMediaStatusOptions('anime'))
 
 // =============================================================================
 // Route & Navigation
@@ -126,7 +125,7 @@ function handleRevealSpoilersConfirm() {
 
 const selectedStatus = computed({
   get: () => anime.value?.status,
-  set: async (status: AnimeStatus | undefined) => {
+  set: async (status: MediaStatus | undefined) => {
     if (isPendingStatus.value || !anime.value || !status) return
     const current = anime.value
     isPendingStatus.value = true
@@ -208,14 +207,14 @@ async function handleOpenAnimeDir() {
           <TooltipTrigger as-child>
             <DropdownMenuTrigger as-child>
               <Badge
-                :variant="getAnimeStatusVariant(anime.status)"
+                :variant="getMediaStatusVariant(anime.status)"
                 class="shrink-0 cursor-pointer"
               >
-                {{ formatAnimeStatus(anime.status) }}
+                {{ formatMediaStatus('anime', anime.status) }}
               </Badge>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>{{ m.anime.detail.watchStatus }}</TooltipContent>
+          <TooltipContent>{{ m.library.status.label.anime }}</TooltipContent>
 
           <DropdownMenuContent
             align="end"

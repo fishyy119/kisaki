@@ -32,29 +32,13 @@ export const DEFAULT_BANGUMI_SETTINGS: BangumiSettingsV1 = {
     clearRemoteScoreWhenEmpty: false,
     debounceMs: 3000,
     notifyErrors: true,
+    // One-to-one against Bangumi's wish/collect/do/on-hold/dropped types.
     statusToBangumi: {
-      game: {
-        notStarted: 1,
-        inProgress: 3,
-        partial: 3,
-        completed: 2,
-        multiple: 2,
-        shelved: 4
-      },
-      anime: {
-        planned: 1,
-        watching: 3,
-        completed: 2,
-        onHold: 4,
-        dropped: 5
-      },
-      book: {
-        planned: 1,
-        reading: 3,
-        completed: 2,
-        onHold: 4,
-        dropped: 5
-      }
+      planned: 1,
+      active: 3,
+      completed: 2,
+      onHold: 4,
+      dropped: 5
     }
   },
   client: {

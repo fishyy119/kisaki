@@ -123,8 +123,7 @@ export const anime = {
 
   detail: {
     openAnimeDir: '開啟動漫資料夾',
-    animeDirNotSet: '尚未設定動漫資料夾',
-    watchStatus: '觀看狀態'
+    animeDirNotSet: '尚未設定動漫資料夾'
   },
 
   filesConfig: {
@@ -137,12 +136,6 @@ export const anime = {
     offsetLabel: '檔案集數偏移',
     offsetHint: '檔案集數 − 偏移 = 中繼資料集數，用於對齊絕對集數命名的檔案',
     offsetInvalid: '偏移必須為整數'
-  },
-
-  statusDialog: {
-    title: '編輯觀看狀態',
-    label: '觀看狀態',
-    selectStatus: '選擇狀態'
   },
 
   lastActiveDialog: {

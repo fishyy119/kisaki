@@ -92,37 +92,50 @@ export const library = {
     lastReadAt: '最後閱讀'
   },
 
-  gameStatus: {
-    notStarted: '未開始',
-    inProgress: '進行中',
-    partial: '部分完成',
-    completed: '已完成',
-    multiple: '多周目',
-    shelved: '已擱置'
-  },
-
-  animeStatus: {
-    planned: '想看',
-    watching: '在看',
-    completed: '已看完',
-    onHold: '擱置',
-    dropped: '棄番'
-  },
-
-  comicStatus: {
-    planned: '想讀',
-    reading: '在讀',
-    completed: '已讀完',
-    onHold: '擱置',
-    dropped: '棄坑'
-  },
-
-  novelStatus: {
-    planned: '想讀',
-    reading: '在讀',
-    completed: '已讀完',
-    onHold: '擱置',
-    dropped: '棄坑'
+  status: {
+    label: {
+      game: '遊玩狀態',
+      anime: '觀看狀態',
+      comic: '閱讀狀態',
+      novel: '閱讀狀態'
+    },
+    editTitle: {
+      game: '編輯遊玩狀態',
+      anime: '編輯觀看狀態',
+      comic: '編輯閱讀狀態',
+      novel: '編輯閱讀狀態'
+    },
+    selectPlaceholder: '選擇狀態',
+    values: {
+      game: {
+        planned: '想玩',
+        active: '在玩',
+        completed: '玩過',
+        onHold: '擱置',
+        dropped: '拋棄'
+      },
+      anime: {
+        planned: '想看',
+        active: '在看',
+        completed: '看過',
+        onHold: '擱置',
+        dropped: '拋棄'
+      },
+      comic: {
+        planned: '想讀',
+        active: '在讀',
+        completed: '讀過',
+        onHold: '擱置',
+        dropped: '拋棄'
+      },
+      novel: {
+        planned: '想讀',
+        active: '在讀',
+        completed: '讀過',
+        onHold: '擱置',
+        dropped: '拋棄'
+      }
+    }
   },
 
   gender: {
@@ -329,7 +342,6 @@ export const library = {
     removeFromCollection: '從合集中移除',
     noCollections: '無可用合集',
     newCollection: '新增合集…',
-    playStatus: '遊玩狀態',
     editScore: '修改評分',
     favorite: '喜歡',
     setFavorite: '設為喜歡',
@@ -758,8 +770,7 @@ export const library = {
     favoritesEmpty: ({ label }: { label: string }) => `暫無喜歡的${label}`,
     uncategorizedTitle: ({ label }: { label: string }) => `未分類${label}`,
     uncategorizedEmpty: ({ label }: { label: string }) => `所有${label}都已分類`,
-    dynamicCollection: '動態合集',
-    playStatus: '遊玩狀態'
+    dynamicCollection: '動態合集'
   },
 
   explorer: {

@@ -84,16 +84,13 @@ Fingerprint 输入：
 
 ## 状态同步
 
-当前只有 game adapter 提供本地 status mapping。默认 mapping 见 [01-scope-and-api-facts.md](01-scope-and-api-facts.md)。
+所有 status-bearing scope（game / anime / book）共用一张 status mapping。默认 mapping 见 [01-scope-and-api-facts.md](01-scope-and-api-facts.md)。
 
 同步规则：
 
 - status disabled 时不写 `type`。
 - status 映射为 `skip` 时不写 `type`。
-- `notStarted` 默认写 Bangumi `1`。
-- `partial` 和 `inProgress` 默认写 Bangumi `3`。
-- `multiple` 和 `completed` 默认写 Bangumi `2`。
-- `shelved` 默认写 Bangumi `4`。
+- 默认映射与 Bangumi 一一对应：`planned→1`、`active→3`、`completed→2`、`onHold→4`、`dropped→5`。
 
 ## 评分同步
 

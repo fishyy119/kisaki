@@ -81,8 +81,7 @@ export const comic = {
 
   detail: {
     openComicDir: 'Open comic folder',
-    comicDirNotSet: 'The comic folder is not set',
-    readStatus: 'Read status'
+    comicDirNotSet: 'The comic folder is not set'
   },
 
   filesConfig: {
@@ -92,12 +91,6 @@ export const comic = {
     selectDir: 'Select folder',
     comicDirHint:
       'File sync scans this folder to match unit files; leave it empty for fully manual file management. Saving a change re-syncs files.'
-  },
-
-  statusDialog: {
-    title: 'Edit read status',
-    label: 'Read status',
-    selectStatus: 'Select status'
   },
 
   lastActiveDialog: {

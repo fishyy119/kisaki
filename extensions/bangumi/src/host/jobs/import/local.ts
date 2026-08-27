@@ -1,3 +1,4 @@
+import type { LibraryMediaStatus } from '@kisaki3/extension-sdk'
 import type { BangumiIndexSubject, BangumiUserCollection } from '../../api/types'
 import type { BangumiCollectionType } from '../../config/schema'
 import type { ImportExecutor } from '../../import/executor'
@@ -167,13 +168,13 @@ export async function buildCollectionLocalUpdatePlan({
   let resolvedTargetCollection: LocalCollectionTarget | undefined
 
   if (fields.status) {
-    const targetStatus = mapCollectionTypeToLocalStatus(item.scope, collection.type)
+    const targetStatus = mapCollectionTypeToLocalStatus(collection.type)
     if (item.status !== targetStatus) {
       patch.status = targetStatus
       rows.push({
         label: m().jobs.preview.status,
-        before: formatLocalStatus(item.scope, item.status),
-        after: formatLocalStatus(item.scope, targetStatus),
+        before: formatLocalStatus(item.status),
+        after: formatLocalStatus(targetStatus),
         tone: 'info'
       })
     }
@@ -329,97 +330,22 @@ export function formatCollectionTags(tags: readonly string[] | undefined): strin
   return normalized.length > 0 ? normalized.join(m().common.listSeparator) : m().common.none
 }
 
-export function formatLocalStatus(scope: BangumiMediaScope, value: string | undefined): string {
-  if (scope === 'anime') {
-    const labels = m().jobs.animeStatus
-    switch (value) {
-      case 'planned':
-        return labels.planned
-      case 'watching':
-        return labels.watching
-      case 'completed':
-        return labels.completed
-      case 'onHold':
-        return labels.onHold
-      case 'dropped':
-        return labels.dropped
-      default:
-        return labels.unset
-    }
-  }
-
-  if (scope === 'book') {
-    const labels = m().jobs.bookStatus
-    switch (value) {
-      case 'planned':
-        return labels.planned
-      case 'reading':
-        return labels.reading
-      case 'completed':
-        return labels.completed
-      case 'onHold':
-        return labels.onHold
-      case 'dropped':
-        return labels.dropped
-      default:
-        return labels.unset
-    }
-  }
-
-  const labels = m().jobs.gameStatus
-  switch (value) {
-    case 'notStarted':
-      return labels.notStarted
-    case 'inProgress':
-      return labels.inProgress
-    case 'partial':
-      return labels.partial
-    case 'completed':
-      return labels.completed
-    case 'multiple':
-      return labels.multiple
-    case 'shelved':
-      return labels.shelved
-    default:
-      return labels.unset
-  }
+export function formatLocalStatus(value: LibraryMediaStatus | undefined): string {
+  const labels = m().jobs.status
+  return value === undefined ? labels.unset : labels[value]
 }
 
-const GAME_STATUS_BY_COLLECTION_TYPE: Record<BangumiCollectionType, string> = {
-  1: 'notStarted',
-  2: 'completed',
-  3: 'inProgress',
-  4: 'shelved',
-  5: 'shelved'
-}
-
-const ANIME_STATUS_BY_COLLECTION_TYPE: Record<BangumiCollectionType, string> = {
+/** One-to-one against Bangumi's wish/collect/do/on-hold/dropped types. */
+const STATUS_BY_COLLECTION_TYPE: Record<BangumiCollectionType, LibraryMediaStatus> = {
   1: 'planned',
   2: 'completed',
-  3: 'watching',
+  3: 'active',
   4: 'onHold',
   5: 'dropped'
 }
 
-const BOOK_STATUS_BY_COLLECTION_TYPE: Record<BangumiCollectionType, string> = {
-  1: 'planned',
-  2: 'completed',
-  3: 'reading',
-  4: 'onHold',
-  5: 'dropped'
-}
-
-export function mapCollectionTypeToLocalStatus(
-  scope: BangumiMediaScope,
-  type: BangumiCollectionType
-): string {
-  if (scope === 'anime') {
-    return ANIME_STATUS_BY_COLLECTION_TYPE[type]
-  }
-  if (scope === 'book') {
-    return BOOK_STATUS_BY_COLLECTION_TYPE[type]
-  }
-  return GAME_STATUS_BY_COLLECTION_TYPE[type]
+export function mapCollectionTypeToLocalStatus(type: BangumiCollectionType): LibraryMediaStatus {
+  return STATUS_BY_COLLECTION_TYPE[type]
 }
 
 function normalizeBangumiRate(value: unknown): number | undefined {

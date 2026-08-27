@@ -89,7 +89,6 @@ export const ja = {
     localWriteUnsupportedGeneric:
       'このメディア種別はまだローカルライブラリへの書き込みに対応していません',
 
-    localMediaStatusUnknown: 'ローカル項目のステータスを認識できませんでした',
     localMediaMissing: 'ローカル項目が存在しません',
     bookKindUnresolved: 'この書籍がマンガか小説か Bangumi が示していないため、取り込みませんでした',
     localItemMissing: 'ローカルエントリが存在しません',
@@ -265,31 +264,12 @@ export const ja = {
       remotePreview: 'リモートプレビュー'
     },
 
-    gameStatus: {
-      notStarted: 'プレイしたい',
-      inProgress: 'プレイ中',
-      partial: '一部クリア',
-      completed: 'プレイ済み',
-      multiple: '周回プレイ',
-      shelved: '保留',
-      unset: '未設定'
-    },
-
-    animeStatus: {
-      planned: '見たい',
-      watching: '視聴中',
-      completed: '視聴済み',
-      onHold: '保留',
-      dropped: '中断',
-      unset: '未設定'
-    },
-
-    bookStatus: {
-      planned: '読みたい',
-      reading: '読書中',
-      completed: '読了',
-      onHold: '保留',
-      dropped: '中断',
+    status: {
+      planned: '予定',
+      active: '進行中',
+      completed: '完了',
+      onHold: '中断',
+      dropped: '断念',
       unset: '未設定'
     }
   },

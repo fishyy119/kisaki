@@ -92,7 +92,6 @@ export const zhHans = {
     localWriteUnsupported: ({ scope }: { scope: Scope }) => `${SCOPES[scope]}暂不支持写入本地库`,
     localWriteUnsupportedGeneric: '该媒体类型暂不支持写入本地库',
 
-    localMediaStatusUnknown: '无法识别本地条目状态',
     localMediaMissing: '本地条目不存在',
     bookKindUnresolved: 'Bangumi 未说明该书籍是漫画还是小说，因此未导入',
     localItemMissing: '本地条目不存在',
@@ -255,29 +254,10 @@ export const zhHans = {
       remotePreview: '远端预览'
     },
 
-    gameStatus: {
-      notStarted: '想玩',
-      inProgress: '在玩',
-      partial: '部分完成',
-      completed: '玩过',
-      multiple: '多周目',
-      shelved: '搁置',
-      unset: '未设置'
-    },
-
-    animeStatus: {
-      planned: '想看',
-      watching: '在看',
-      completed: '看过',
-      onHold: '搁置',
-      dropped: '抛弃',
-      unset: '未设置'
-    },
-
-    bookStatus: {
-      planned: '想读',
-      reading: '在读',
-      completed: '读过',
+    status: {
+      planned: '计划中',
+      active: '进行中',
+      completed: '已完成',
       onHold: '搁置',
       dropped: '抛弃',
       unset: '未设置'

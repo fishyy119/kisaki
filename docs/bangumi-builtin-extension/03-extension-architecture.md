@@ -212,17 +212,16 @@ interface BangumiSettingsV1 {
       localSyncEnabled: boolean
     }
   >
-  game: {
-    autoSync: {
-      enabled: boolean
-      syncOnCreate: boolean
-      playStatusEnabled: boolean
-      scoreEnabled: boolean
-      clearRemoteScoreWhenEmpty: boolean
-      debounceMs: number
-      notifyErrors: boolean
-      statusToBangumi: Record<LibraryGameStatus, BangumiCollectionType | 'skip'>
-    }
+  autoSync: {
+    enabled: boolean
+    syncOnCreate: boolean
+    playStatusEnabled: boolean
+    scoreEnabled: boolean
+    unitProgressEnabled: boolean
+    clearRemoteScoreWhenEmpty: boolean
+    debounceMs: number
+    notifyErrors: boolean
+    statusToBangumi: Record<LibraryMediaStatus, BangumiCollectionType | 'skip'>
   }
   client: {
     rateLimit: {

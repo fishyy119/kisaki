@@ -36,9 +36,14 @@ import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
-import { NOVEL_STATUS_VALUES, novels, type NovelStatus } from '@shared/db'
+import { novels, type MediaStatus } from '@shared/db'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
-import { formatNovelStatus, getNovelStatusVariant, getEntityIcon } from '@renderer/utils/format'
+import {
+  formatMediaStatus,
+  getEntityIcon,
+  getMediaStatusOptions,
+  getMediaStatusVariant
+} from '@renderer/utils/format'
 
 const log = createLogger('Novel')
 
@@ -48,9 +53,7 @@ const { m } = useI18n()
 // Constants
 // =============================================================================
 
-const STATUS_OPTIONS = computed<{ value: NovelStatus; label: string }[]>(() =>
-  NOVEL_STATUS_VALUES.map((value) => ({ value, label: m.value.library.novelStatus[value] }))
-)
+const STATUS_OPTIONS = computed(() => getMediaStatusOptions('novel'))
 
 // =============================================================================
 // Route & Navigation
@@ -122,7 +125,7 @@ function handleRevealSpoilersConfirm() {
 
 const selectedStatus = computed({
   get: () => novel.value?.status,
-  set: async (status: NovelStatus | undefined) => {
+  set: async (status: MediaStatus | undefined) => {
     if (isPendingStatus.value || !novel.value || !status) return
     const current = novel.value
     isPendingStatus.value = true
@@ -204,14 +207,14 @@ async function handleOpenNovelDir() {
           <TooltipTrigger as-child>
             <DropdownMenuTrigger as-child>
               <Badge
-                :variant="getNovelStatusVariant(novel.status)"
+                :variant="getMediaStatusVariant(novel.status)"
                 class="shrink-0 cursor-pointer"
               >
-                {{ formatNovelStatus(novel.status) }}
+                {{ formatMediaStatus('novel', novel.status) }}
               </Badge>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>{{ m.novel.detail.readStatus }}</TooltipContent>
+          <TooltipContent>{{ m.library.status.label.novel }}</TooltipContent>
 
           <DropdownMenuContent
             align="end"

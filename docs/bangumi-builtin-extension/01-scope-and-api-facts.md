@@ -137,20 +137,19 @@ Bangumi collection type 是 scope 通用枚举，文案按 scope 显示：
 |    4 | 搁置 | 搁置 | 搁置  | 搁置  |
 |    5 | 抛弃 | 抛弃 | 抛弃  | 抛弃  |
 
-`game` local adapter 的默认映射：
+Kisaki 的 `MediaStatus` 是全媒体统一的五态词汇，与 Bangumi collection type 一一对应：
 
-| Kisaki status | 默认 Bangumi type | 游戏文案 |
-| ------------- | ----------------: | -------- |
-| `notStarted`  |                 1 | 想玩     |
-| `inProgress`  |                 3 | 在玩     |
-| `partial`     |                 3 | 在玩     |
-| `completed`   |                 2 | 玩过     |
-| `multiple`    |                 2 | 玩过     |
-| `shelved`     |                 4 | 搁置     |
+| Kisaki status | 默认 Bangumi type |
+| ------------- | ----------------: |
+| `planned`     |                 1 |
+| `active`      |                 3 |
+| `completed`   |                 2 |
+| `onHold`      |                 4 |
+| `dropped`     |                 5 |
 
 规则：
 
-- 每个可本地同步的 scope 都可以有自己的 status mapping；当前只有 game mapping 生效。
+- 所有可本地同步的 scope 共用同一张 status mapping（`statusToBangumi`），每个值可覆盖为其他 type 或 `skip`。
 - Kisaki `score` 按主应用约定以 0-100 整数存储，并显示为 0-10 一位小数；Bangumi `rate` 是 1-10 整数。
 - 从 Kisaki 同步到 Bangumi 时，本地 `score` 先转换为显示分数，再写入最接近的 Bangumi `rate`。
 - Bangumi `type=1` 不能保留评分；同步到 `type=1` 时必须写 `rate=0` 清除远端评分。

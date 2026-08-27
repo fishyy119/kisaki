@@ -34,31 +34,6 @@ export function getGenderOptions(): { value: string; label: string }[] {
   ]
 }
 
-/** Localized game completion status options for the current UI locale. */
-export function getGameStatusOptions(): { value: string; label: string }[] {
-  const status = messages.value.library.gameStatus
-  return [
-    { value: 'notStarted', label: status.notStarted },
-    { value: 'inProgress', label: status.inProgress },
-    { value: 'partial', label: status.partial },
-    { value: 'completed', label: status.completed },
-    { value: 'multiple', label: status.multiple },
-    { value: 'shelved', label: status.shelved }
-  ]
-}
-
-/** Localized anime watch status options for the current UI locale. */
-export function getAnimeStatusOptions(): { value: string; label: string }[] {
-  const status = messages.value.library.animeStatus
-  return [
-    { value: 'planned', label: status.planned },
-    { value: 'watching', label: status.watching },
-    { value: 'completed', label: status.completed },
-    { value: 'onHold', label: status.onHold },
-    { value: 'dropped', label: status.dropped }
-  ]
-}
-
 /** Localized anime format options for the current UI locale. */
 export function getAnimeFormatOptions(): { value: string; label: string }[] {
   const format = messages.value.library.animeFormat
@@ -72,18 +47,6 @@ export function getAnimeFormatOptions(): { value: string; label: string }[] {
   ]
 }
 
-/** Localized comic read status options for the current UI locale. */
-export function getComicStatusOptions(): { value: string; label: string }[] {
-  const status = messages.value.library.comicStatus
-  return [
-    { value: 'planned', label: status.planned },
-    { value: 'reading', label: status.reading },
-    { value: 'completed', label: status.completed },
-    { value: 'onHold', label: status.onHold },
-    { value: 'dropped', label: status.dropped }
-  ]
-}
-
 /** Localized comic format options for the current UI locale. */
 export function getComicFormatOptions(): { value: string; label: string }[] {
   const format = messages.value.library.comicFormat
@@ -94,18 +57,6 @@ export function getComicFormatOptions(): { value: string; label: string }[] {
     { value: 'webtoon', label: format.webtoon },
     { value: 'doujinshi', label: format.doujinshi },
     { value: 'other', label: format.other }
-  ]
-}
-
-/** Localized novel read status options for the current UI locale. */
-export function getNovelStatusOptions(): { value: string; label: string }[] {
-  const status = messages.value.library.novelStatus
-  return [
-    { value: 'planned', label: status.planned },
-    { value: 'reading', label: status.reading },
-    { value: 'completed', label: status.completed },
-    { value: 'onHold', label: status.onHold },
-    { value: 'dropped', label: status.dropped }
   ]
 }
 

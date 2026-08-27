@@ -3,19 +3,16 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 import {
   animeFormat,
-  animeStatus,
   baseColumns,
   bloodType,
   comicFormat,
   comicReadingDirection,
-  comicStatus,
   cupSize,
   gameLauncherMode,
   gameMonitorMode,
-  gameStatus,
   gender,
+  mediaStatus,
   novelFormat,
-  novelStatus,
   partialDate,
   externalSites,
   saveBackups,
@@ -40,7 +37,7 @@ export const games = sqliteTable(
     releaseDate: partialDate('release_date'),
     description: text('description'),
     externalSites: externalSites('external_sites'),
-    status: gameStatus('status').notNull().default('notStarted'),
+    status: mediaStatus('status').notNull().default('planned'),
     lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
     totalDuration: integer('total_duration').notNull().default(0),
     savePath: text('save_path'),
@@ -108,7 +105,7 @@ export const animes = sqliteTable(
     releaseDate: partialDate('release_date'),
     description: text('description'),
     externalSites: externalSites('external_sites'),
-    status: animeStatus('status').notNull().default('planned'),
+    status: mediaStatus('status').notNull().default('planned'),
     format: animeFormat('format').notNull().default('tv'),
     /** Episode count declared by metadata; the episode rows remain authoritative. */
     totalEpisodes: integer('total_episodes'),
@@ -178,7 +175,7 @@ export const comics = sqliteTable(
     releaseDate: partialDate('release_date'),
     description: text('description'),
     externalSites: externalSites('external_sites'),
-    status: comicStatus('status').notNull().default('planned'),
+    status: mediaStatus('status').notNull().default('planned'),
     format: comicFormat('format').notNull().default('manga'),
     /**
      * Per-entry layout override; null follows the format default (`webtoon`
@@ -250,7 +247,7 @@ export const novels = sqliteTable(
     releaseDate: partialDate('release_date'),
     description: text('description'),
     externalSites: externalSites('external_sites'),
-    status: novelStatus('status').notNull().default('planned'),
+    status: mediaStatus('status').notNull().default('planned'),
     format: novelFormat('format').notNull().default('lightNovel'),
     /** Volume count declared by metadata; the unit rows remain authoritative. */
     totalVolumes: integer('total_volumes'),

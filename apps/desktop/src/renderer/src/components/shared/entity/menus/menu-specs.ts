@@ -16,10 +16,7 @@ import { db } from '@renderer/core/db'
 import type { Messages } from '@shared/i18n'
 import type { TableName } from '@shared/db/table-names'
 import {
-  ANIME_STATUS_VALUES,
-  COMIC_STATUS_VALUES,
-  GAME_STATUS_VALUES,
-  NOVEL_STATUS_VALUES,
+  MEDIA_STATUS_VALUES,
   animes,
   collectionAnimeLinks,
   collectionCharacterLinks,
@@ -31,12 +28,9 @@ import {
   comics,
   games,
   novels,
-  type AnimeStatus,
-  type ComicStatus,
-  type GameStatus,
-  type NovelStatus
+  type MediaStatus
 } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType, MediaType } from '@shared/common'
 
 /*
  * Media-specific dialog components load lazily: the entity domain must not
@@ -84,16 +78,27 @@ interface CollectionLinkStore {
 interface MenuStatusFollowUp {
   component: Component
   buildProps: (entityId: string) => Record<string, unknown>
-  shouldOffer: (entityId: string, status: string) => Promise<boolean>
+  shouldOffer: (entityId: string, status: MediaStatus) => Promise<boolean>
 }
 
 /** Media-only menu extensions. */
 export interface MenuStatusSection {
   label: (m: Messages) => string
-  options: (m: Messages) => { value: string; label: string }[]
-  read: (entityId: string) => Promise<string | null>
-  write: (entityId: string, status: string) => Promise<void>
+  options: (m: Messages) => { value: MediaStatus; label: string }[]
+  read: (entityId: string) => Promise<MediaStatus | null>
+  write: (entityId: string, status: MediaStatus) => Promise<void>
   followUp?: MenuStatusFollowUp
+}
+
+/** Status options for one media type, labeled from the given catalog. */
+function buildStatusOptions(
+  m: Messages,
+  mediaType: MediaType
+): { value: MediaStatus; label: string }[] {
+  return MEDIA_STATUS_VALUES.map((value) => ({
+    value,
+    label: m.library.status.values[mediaType][value]
+  }))
 }
 
 interface MenuDirSection {
@@ -168,9 +173,8 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
       }
     },
     status: {
-      label: (m) => m.library.menu.playStatus,
-      options: (m) =>
-        GAME_STATUS_VALUES.map((value) => ({ value, label: m.library.gameStatus[value] })),
+      label: (m) => m.library.status.label.game,
+      options: (m) => buildStatusOptions(m, 'game'),
       read: async (entityId) => {
         const rows = await db
           .select({ status: games.status })
@@ -180,10 +184,7 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
         return rows[0]?.status ?? null
       },
       write: async (entityId, status) => {
-        await db
-          .update(games)
-          .set({ status: status as GameStatus })
-          .where(eq(games.id, entityId))
+        await db.update(games).set({ status }).where(eq(games.id, entityId))
       }
     },
     dir: {
@@ -254,9 +255,8 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
       }
     },
     status: {
-      label: (m) => m.anime.detail.watchStatus,
-      options: (m) =>
-        ANIME_STATUS_VALUES.map((value) => ({ value, label: m.library.animeStatus[value] })),
+      label: (m) => m.library.status.label.anime,
+      options: (m) => buildStatusOptions(m, 'anime'),
       read: async (entityId) => {
         const rows = await db
           .select({ status: animes.status })
@@ -266,15 +266,12 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
         return rows[0]?.status ?? null
       },
       write: async (entityId, status) => {
-        await db
-          .update(animes)
-          .set({ status: status as AnimeStatus })
-          .where(eq(animes.id, entityId))
+        await db.update(animes).set({ status }).where(eq(animes.id, entityId))
       },
       followUp: {
         component: AnimeWatchCatchUpDialog,
         buildProps: (entityId) => ({ animeId: entityId }),
-        shouldOffer: (entityId, status) => shouldOfferWatchCatchUp(entityId, status as AnimeStatus)
+        shouldOffer: (entityId, status) => shouldOfferWatchCatchUp(entityId, status)
       }
     },
     dir: {
@@ -342,9 +339,8 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
       }
     },
     status: {
-      label: (m) => m.comic.detail.readStatus,
-      options: (m) =>
-        COMIC_STATUS_VALUES.map((value) => ({ value, label: m.library.comicStatus[value] })),
+      label: (m) => m.library.status.label.comic,
+      options: (m) => buildStatusOptions(m, 'comic'),
       read: async (entityId) => {
         const rows = await db
           .select({ status: comics.status })
@@ -354,16 +350,12 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
         return rows[0]?.status ?? null
       },
       write: async (entityId, status) => {
-        await db
-          .update(comics)
-          .set({ status: status as ComicStatus })
-          .where(eq(comics.id, entityId))
+        await db.update(comics).set({ status }).where(eq(comics.id, entityId))
       },
       followUp: {
         component: ComicReadCatchUpDialog,
         buildProps: (entityId) => ({ comicId: entityId }),
-        shouldOffer: (entityId, status) =>
-          shouldOfferComicReadCatchUp(entityId, status as ComicStatus)
+        shouldOffer: (entityId, status) => shouldOfferComicReadCatchUp(entityId, status)
       }
     },
     dir: {
@@ -431,9 +423,8 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
       }
     },
     status: {
-      label: (m) => m.novel.detail.readStatus,
-      options: (m) =>
-        NOVEL_STATUS_VALUES.map((value) => ({ value, label: m.library.novelStatus[value] })),
+      label: (m) => m.library.status.label.novel,
+      options: (m) => buildStatusOptions(m, 'novel'),
       read: async (entityId) => {
         const rows = await db
           .select({ status: novels.status })
@@ -443,16 +434,12 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
         return rows[0]?.status ?? null
       },
       write: async (entityId, status) => {
-        await db
-          .update(novels)
-          .set({ status: status as NovelStatus })
-          .where(eq(novels.id, entityId))
+        await db.update(novels).set({ status }).where(eq(novels.id, entityId))
       },
       followUp: {
         component: NovelReadCatchUpDialog,
         buildProps: (entityId) => ({ novelId: entityId }),
-        shouldOffer: (entityId, status) =>
-          shouldOfferNovelReadCatchUp(entityId, status as NovelStatus)
+        shouldOffer: (entityId, status) => shouldOfferNovelReadCatchUp(entityId, status)
       }
     },
     dir: {

@@ -75,8 +75,7 @@ export const comic = {
 
   detail: {
     openComicDir: 'マンガフォルダーを開く',
-    comicDirNotSet: 'マンガフォルダーが設定されていません',
-    readStatus: '閲覧状況'
+    comicDirNotSet: 'マンガフォルダーが設定されていません'
   },
 
   filesConfig: {
@@ -86,12 +85,6 @@ export const comic = {
     selectDir: 'フォルダーを選択',
     comicDirHint:
       'ファイル同期はこのフォルダーをスキャンしてユニットファイルを照合します。空のままにすると完全に手動管理になります。変更を保存するとファイルを再同期します。'
-  },
-
-  statusDialog: {
-    title: '閲覧状況を編集',
-    label: '閲覧状況',
-    selectStatus: '状態を選択'
   },
 
   lastActiveDialog: {

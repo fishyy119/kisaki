@@ -14,7 +14,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useComic } from '@renderer/composables/use-comic'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
-import { formatComicStatus, getEntityIcon } from '@renderer/utils/format'
+import { formatMediaStatus, getEntityIcon } from '@renderer/utils/format'
 import {
   EntityNameFormDialog,
   EntityOriginalNameFormDialog,
@@ -27,7 +27,7 @@ import {
 } from '@renderer/components/shared/media'
 import { createLogger } from '@renderer/core/log'
 import { shouldOfferReadCatchUp } from '@renderer/composables/use-comic-read'
-import type { ComicStatus } from '@shared/db'
+import type { MediaStatus } from '@shared/db'
 import ComicReadCatchUpDialog from '../comic-read-catch-up-dialog.vue'
 
 const log = createLogger('Comic')
@@ -52,12 +52,12 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
 /** Catch-up prompt lives beside the status dialog so it survives its close. */
 const catchUpOpen = ref(false)
 
-async function handleStatusSaved(status: string): Promise<void> {
+async function handleStatusSaved(status: MediaStatus): Promise<void> {
   const entry = comic.value
   if (!entry) return
 
   try {
-    catchUpOpen.value = await shouldOfferReadCatchUp(entry.id, status as ComicStatus)
+    catchUpOpen.value = await shouldOfferReadCatchUp(entry.id, status)
   } catch (error) {
     // The status change already succeeded; a missed offer is not worth a notice.
     log.warn('Unit catch-up offer check failed:', error)
@@ -159,9 +159,11 @@ const coverUrl = computed(() =>
                 class="size-4 absolute inset-0 opacity-0 transition-opacity group-hover/icon:opacity-100"
               />
             </button>
-            <span class="text-xs">{{ m.comic.detail.readStatus }}</span>
+            <span class="text-xs">{{ m.library.status.label.comic }}</span>
           </span>
-          <span class="font-medium truncate text-xs">{{ formatComicStatus(comic.status) }}</span>
+          <span class="font-medium truncate text-xs">{{
+            formatMediaStatus('comic', comic.status)
+          }}</span>
         </div>
 
         <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">

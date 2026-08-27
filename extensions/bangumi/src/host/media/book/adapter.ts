@@ -1,11 +1,10 @@
 import {
   kisaki,
-  LIBRARY_COMIC_STATUSES,
   type Disposable,
   type ExternalId,
   type HooksRegistrar,
   type LibraryComic,
-  type LibraryComicStatus,
+  type LibraryMediaStatus,
   type LibraryNovel,
   type ScraperMediaType,
   type ScraperProfileSummary
@@ -44,15 +43,12 @@ import type {
   LocalUnitProgress
 } from '../types'
 
-/** Comics and novels share the reading-status vocabulary; one alias keeps that explicit. */
-type BookStatus = LibraryComicStatus
-
 type BookTarget = 'comic' | 'novel'
 
 interface BookEntity {
   id: string
   name: string
-  status: BookStatus
+  status: LibraryMediaStatus
   score?: number | null
   externalIds: readonly ExternalId[]
 }
@@ -69,7 +65,10 @@ interface BookHalf {
   readonly collectionLinkKind: 'collection-comic' | 'collection-novel'
   listAll(includeNsfw: boolean): Promise<readonly BookEntity[]>
   get(localId: string): Promise<BookEntity | null>
-  update(localId: string, patch: { status?: BookStatus; score?: number | null }): Promise<void>
+  update(
+    localId: string,
+    patch: { status?: LibraryMediaStatus; score?: number | null }
+  ): Promise<void>
   readUnitProgress(localId: string): Promise<LocalUnitProgress>
   readUnitCapacity(localId: string): Promise<LocalUnitCapacity>
   applyUnitProgress(localId: string, progress: LocalUnitProgress): Promise<void>
@@ -324,12 +323,9 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
 
   async patchUserFields(localId: string, patch: LocalMediaUserPatch): Promise<LocalMediaItem> {
     const owned = await this.requireHalf(localId)
-    const entityPatch: { status?: BookStatus; score?: number | null } = {}
+    const entityPatch: { status?: LibraryMediaStatus; score?: number | null } = {}
 
     if (patch.status !== undefined) {
-      if (!isBookStatus(patch.status)) {
-        throw new BangumiExtensionError('bangumi_validation', m().errors.localMediaStatusUnknown)
-      }
       entityPatch.status = patch.status
     }
 
@@ -534,10 +530,6 @@ function toBookEntity(entity: LibraryComic | LibraryNovel): BookEntity {
 
 function toBookEntities(entities: readonly (LibraryComic | LibraryNovel)[]): BookEntity[] {
   return entities.map(toBookEntity)
-}
-
-function isBookStatus(value: string): value is BookStatus {
-  return (LIBRARY_COMIC_STATUSES as readonly string[]).includes(value)
 }
 
 /** First `count` units in reading order that are not read yet. */

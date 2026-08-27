@@ -6,6 +6,7 @@ import {
   type LibraryEntityChangeSummary,
   type LibraryEntityType,
   type LibraryLinkKind,
+  type LibraryMediaStatus,
   type ScraperMediaType
 } from '@kisaki3/extension-sdk'
 import { m } from '../../i18n'
@@ -36,16 +37,16 @@ import {
 const SUBJECT_LOOKUP_PAGE_SIZE = 500
 
 /** Library row shape every synced media entity shares. */
-interface LocalMediaEntity<TStatus extends string> {
+interface LocalMediaEntity {
   id: string
   name: string
-  status?: TStatus
+  status?: LibraryMediaStatus
   score?: number | null
   externalIds: readonly ExternalId[]
 }
 
-interface LocalMediaEntityPatch<TStatus extends string> {
-  status?: TStatus
+interface LocalMediaEntityPatch {
+  status?: LibraryMediaStatus
   score?: number | null
 }
 
@@ -53,12 +54,10 @@ interface LocalMediaEntityPatch<TStatus extends string> {
  * Sync-facing view of one local media type.
  *
  * Everything the sync engine needs is media-neutral except the library
- * namespace, ingest entry point, relation kinds, and the status vocabulary,
- * so subclasses only declare those.
+ * namespace, ingest entry point, and relation kinds, so subclasses only
+ * declare those.
  */
-export abstract class BangumiLocalMediaAdapter<
-  TStatus extends string = string
-> implements LocalMediaAdapter {
+export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   readonly supportsScraperProfile = true
   readonly supportsAutoSync = true
   readonly supportsImportWrite = true
@@ -69,8 +68,6 @@ export abstract class BangumiLocalMediaAdapter<
   protected abstract readonly entityType: LibraryEntityType
   protected abstract readonly tagLinkKind: LibraryLinkKind
   protected abstract readonly collectionLinkKind: LibraryLinkKind
-  /** Status values this media type accepts; import writes are validated against it. */
-  protected abstract readonly statusValues: readonly TStatus[]
 
   constructor(private readonly hooks: HooksRegistrar) {}
 
@@ -141,12 +138,9 @@ export abstract class BangumiLocalMediaAdapter<
   }
 
   async patchUserFields(localId: string, patch: LocalMediaUserPatch): Promise<LocalMediaItem> {
-    const entityPatch: LocalMediaEntityPatch<TStatus> = {}
+    const entityPatch: LocalMediaEntityPatch = {}
 
     if (patch.status !== undefined) {
-      if (!this.isStatusValue(patch.status)) {
-        throw new BangumiExtensionError('bangumi_validation', m().errors.localMediaStatusUnknown)
-      }
       entityPatch.status = patch.status
     }
 
@@ -229,20 +223,11 @@ export abstract class BangumiLocalMediaAdapter<
 
   abstract addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult>
 
-  protected abstract listEntities(
-    query: LocalMediaListQuery
-  ): Promise<readonly LocalMediaEntity<TStatus>[]>
-  protected abstract getEntity(localId: string): Promise<LocalMediaEntity<TStatus> | null>
-  protected abstract updateEntity(
-    localId: string,
-    patch: LocalMediaEntityPatch<TStatus>
-  ): Promise<void>
+  protected abstract listEntities(query: LocalMediaListQuery): Promise<readonly LocalMediaEntity[]>
+  protected abstract getEntity(localId: string): Promise<LocalMediaEntity | null>
+  protected abstract updateEntity(localId: string, patch: LocalMediaEntityPatch): Promise<void>
   protected abstract createTagLink(localId: string, tagId: string): Promise<void>
   protected abstract createCollectionLink(collectionId: string, localId: string): Promise<void>
-
-  private isStatusValue(value: string): value is TStatus {
-    return (this.statusValues as readonly string[]).includes(value)
-  }
 
   private async hasCollectionLink(localId: string, collectionId: string): Promise<boolean> {
     const links = await kisaki.library.links.list({
@@ -253,7 +238,7 @@ export abstract class BangumiLocalMediaAdapter<
     return links.length > 0
   }
 
-  private toLocalItem(entity: LocalMediaEntity<TStatus>): LocalMediaItem {
+  private toLocalItem(entity: LocalMediaEntity): LocalMediaItem {
     return omitUndefined({
       scope: this.scope,
       localId: entity.id,

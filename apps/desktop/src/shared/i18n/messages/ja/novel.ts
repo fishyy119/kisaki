@@ -72,8 +72,7 @@ export const novel = {
 
   detail: {
     openNovelDir: '小説フォルダーを開く',
-    novelDirNotSet: '小説フォルダーが設定されていません',
-    readStatus: '閲覧状況'
+    novelDirNotSet: '小説フォルダーが設定されていません'
   },
 
   filesConfig: {
@@ -83,12 +82,6 @@ export const novel = {
     selectDir: 'フォルダーを選択',
     novelDirHint:
       'ファイル同期はこのフォルダーをスキャンして巻ファイルを照合します。空のままにすると完全に手動管理になります。変更を保存するとファイルを再同期します。'
-  },
-
-  statusDialog: {
-    title: '閲覧状況を編集',
-    label: '閲覧状況',
-    selectStatus: '状態を選択'
   },
 
   lastActiveDialog: {

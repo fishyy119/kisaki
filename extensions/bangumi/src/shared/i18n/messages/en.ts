@@ -91,7 +91,6 @@ export const en = {
     localWriteUnsupportedGeneric:
       'This media type does not support writing to the local library yet',
 
-    localMediaStatusUnknown: 'Could not recognize the local entry status',
     localMediaMissing: 'The local entry does not exist',
     bookKindUnresolved:
       'Bangumi does not say whether this book is a comic or a novel, so it was not imported',
@@ -263,29 +262,10 @@ export const en = {
       remotePreview: 'Remote preview'
     },
 
-    gameStatus: {
-      notStarted: 'Wish to play',
-      inProgress: 'Playing',
-      partial: 'Partially completed',
-      completed: 'Played',
-      multiple: 'Multiple playthroughs',
-      shelved: 'On hold',
-      unset: 'Not set'
-    },
-
-    animeStatus: {
-      planned: 'Plan to watch',
-      watching: 'Watching',
-      completed: 'Watched',
-      onHold: 'On hold',
-      dropped: 'Dropped',
-      unset: 'Not set'
-    },
-
-    bookStatus: {
-      planned: 'Plan to read',
-      reading: 'Reading',
-      completed: 'Read',
+    status: {
+      planned: 'Planned',
+      active: 'Active',
+      completed: 'Completed',
       onHold: 'On hold',
       dropped: 'Dropped',
       unset: 'Not set'

@@ -124,8 +124,7 @@ export const anime = {
 
   detail: {
     openAnimeDir: 'アニメフォルダーを開く',
-    animeDirNotSet: 'アニメフォルダーが設定されていません',
-    watchStatus: '視聴ステータス'
+    animeDirNotSet: 'アニメフォルダーが設定されていません'
   },
 
   filesConfig: {
@@ -138,12 +137,6 @@ export const anime = {
     offsetLabel: 'ファイル話数オフセット',
     offsetHint: 'ファイル話数 − オフセット = メタデータ話数。通し番号のファイルを揃えます。',
     offsetInvalid: 'オフセットは整数で入力してください'
-  },
-
-  statusDialog: {
-    title: '視聴ステータスを編集',
-    label: '視聴ステータス',
-    selectStatus: 'ステータスを選択'
   },
 
   lastActiveDialog: {

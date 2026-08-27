@@ -38,13 +38,10 @@ import type {
   SortDirection
 } from '../entities'
 import {
-  LIBRARY_ANIME_STATUSES,
   LIBRARY_COMIC_READING_DIRECTIONS,
-  LIBRARY_COMIC_STATUSES,
   LIBRARY_GAME_LAUNCHER_MODES,
   LIBRARY_GAME_MONITOR_MODES,
-  LIBRARY_GAME_STATUSES,
-  LIBRARY_NOVEL_STATUSES
+  LIBRARY_MEDIA_STATUSES
 } from '../entities'
 import {
   LIBRARY_ANIME_EPISODE_TYPES,
@@ -634,8 +631,8 @@ export function validateLibraryGameQuery(value: unknown): ValidationIssue[] {
     ...validateOptionalEnumArray(
       query.statuses,
       '$.statuses',
-      LIBRARY_GAME_STATUSES,
-      'statuses must be an array of supported game statuses.'
+      LIBRARY_MEDIA_STATUSES,
+      'statuses must be an array of supported media statuses.'
     ),
     ...validateOptionalBoolean(query.favoritesOnly, '$.favoritesOnly'),
     ...validateOptionalBoolean(query.includeNsfw, '$.includeNsfw'),
@@ -657,8 +654,8 @@ export function validateLibraryAnimeQuery(value: unknown): ValidationIssue[] {
     ...validateOptionalEnumArray(
       query.statuses,
       '$.statuses',
-      LIBRARY_ANIME_STATUSES,
-      'statuses must be an array of supported anime statuses.'
+      LIBRARY_MEDIA_STATUSES,
+      'statuses must be an array of supported media statuses.'
     ),
     ...validateOptionalEnumArray(
       query.formats,
@@ -686,8 +683,8 @@ export function validateLibraryComicQuery(value: unknown): ValidationIssue[] {
     ...validateOptionalEnumArray(
       query.statuses,
       '$.statuses',
-      LIBRARY_COMIC_STATUSES,
-      'statuses must be an array of supported comic statuses.'
+      LIBRARY_MEDIA_STATUSES,
+      'statuses must be an array of supported media statuses.'
     ),
     ...validateOptionalEnumArray(
       query.formats,
@@ -715,8 +712,8 @@ export function validateLibraryNovelQuery(value: unknown): ValidationIssue[] {
     ...validateOptionalEnumArray(
       query.statuses,
       '$.statuses',
-      LIBRARY_NOVEL_STATUSES,
-      'statuses must be an array of supported novel statuses.'
+      LIBRARY_MEDIA_STATUSES,
+      'statuses must be an array of supported media statuses.'
     ),
     ...validateOptionalEnumArray(
       query.formats,
@@ -1082,8 +1079,8 @@ function validateGameWriteInput(value: unknown, path: string, create: boolean): 
     ...validateOptionalEnumString(
       input.status,
       `${path}.status`,
-      LIBRARY_GAME_STATUSES,
-      'status must be one of the supported game statuses.'
+      LIBRARY_MEDIA_STATUSES,
+      'status must be one of the supported media statuses.'
     ),
     ...validateOptionalString(input.savePath, `${path}.savePath`),
     ...validateOptionalSaveBackups(input.saveBackups, `${path}.saveBackups`),
@@ -1133,8 +1130,8 @@ function validateAnimeWriteInput(value: unknown, path: string, create: boolean):
     ...validateOptionalEnumString(
       input.status,
       `${path}.status`,
-      LIBRARY_ANIME_STATUSES,
-      'status must be one of the supported anime statuses.'
+      LIBRARY_MEDIA_STATUSES,
+      'status must be one of the supported media statuses.'
     ),
     ...validateOptionalEnumString(
       input.format,
@@ -1204,8 +1201,8 @@ function validateComicWriteInput(value: unknown, path: string, create: boolean):
     ...validateOptionalEnumString(
       input.status,
       `${path}.status`,
-      LIBRARY_COMIC_STATUSES,
-      'status must be one of the supported comic statuses.'
+      LIBRARY_MEDIA_STATUSES,
+      'status must be one of the supported media statuses.'
     ),
     ...validateOptionalEnumString(
       input.format,
@@ -1276,8 +1273,8 @@ function validateNovelWriteInput(value: unknown, path: string, create: boolean):
     ...validateOptionalEnumString(
       input.status,
       `${path}.status`,
-      LIBRARY_NOVEL_STATUSES,
-      'status must be one of the supported novel statuses.'
+      LIBRARY_MEDIA_STATUSES,
+      'status must be one of the supported media statuses.'
     ),
     ...validateOptionalEnumString(
       input.format,

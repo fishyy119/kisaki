@@ -123,8 +123,7 @@ export const anime = {
 
   detail: {
     openAnimeDir: '打开动漫目录',
-    animeDirNotSet: '尚未设置动漫目录',
-    watchStatus: '观看状态'
+    animeDirNotSet: '尚未设置动漫目录'
   },
 
   filesConfig: {
@@ -137,12 +136,6 @@ export const anime = {
     offsetLabel: '文件集数偏移',
     offsetHint: '文件集数 − 偏移 = 元数据集数，用于对齐绝对集数命名的文件',
     offsetInvalid: '偏移必须为整数'
-  },
-
-  statusDialog: {
-    title: '编辑观看状态',
-    label: '观看状态',
-    selectStatus: '选择状态'
   },
 
   lastActiveDialog: {

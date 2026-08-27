@@ -18,7 +18,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
-import { collections } from '@shared/db'
+import { collections, type MediaStatus } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
 import type { ContentEntityType } from '@shared/common'
 import { MENU_SPECS, type MenuStatusSection } from './menu-specs'
@@ -158,17 +158,19 @@ const displayScore = computed(() => {
 
 const statusOptions = computed(() => spec.value.status?.options(m.value) ?? [])
 
-// Computed model for the media status radio group
+// Computed model for the media status radio group; the radio options are
+// built from MEDIA_STATUS_VALUES, so the string model always carries a valid
+// status value.
 const statusModel = computed({
   get: () => entry.value?.status ?? undefined,
   set: (status: string | undefined) => {
     const section = spec.value.status
     if (!status || !section) return
-    void writeStatus(section, status)
+    void writeStatus(section, status as MediaStatus)
   }
 })
 
-async function writeStatus(section: MenuStatusSection, status: string): Promise<void> {
+async function writeStatus(section: MenuStatusSection, status: MediaStatus): Promise<void> {
   try {
     await section.write(props.entityId, status)
     notify.success(m.value.library.feedback.statusUpdated)

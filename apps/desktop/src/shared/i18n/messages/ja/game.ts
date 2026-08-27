@@ -6,12 +6,6 @@ export const game = {
   launching: '起動中',
   stopping: '停止中',
 
-  statusDialog: {
-    title: 'プレイ状況を編集',
-    label: 'プレイ状況',
-    selectStatus: 'ステータスを選択'
-  },
-
   lastActiveDialog: {
     title: '最終プレイ時刻を編集',
     label: '最終プレイ時刻',

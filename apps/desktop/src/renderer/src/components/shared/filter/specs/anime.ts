@@ -2,7 +2,8 @@ import { computed, type ComputedRef } from 'vue'
 import { messages } from '@renderer/core/i18n'
 import { animeFilterQuerySpec } from '@shared/filter'
 import type { FilterUiSpec } from './types'
-import { getAnimeFormatOptions, getAnimeStatusOptions } from './shared-options'
+import { getMediaStatusOptions } from '@renderer/utils/format'
+import { getAnimeFormatOptions } from './shared-options'
 
 export const animeFilterUiSpec: ComputedRef<FilterUiSpec<typeof animeFilterQuerySpec>> = computed(
   () => {
@@ -18,7 +19,7 @@ export const animeFilterUiSpec: ComputedRef<FilterUiSpec<typeof animeFilterQuery
           key: 'status',
           label: m.library.fields.status,
           kind: 'enum',
-          options: getAnimeStatusOptions()
+          options: getMediaStatusOptions('anime')
         },
         {
           key: 'format',

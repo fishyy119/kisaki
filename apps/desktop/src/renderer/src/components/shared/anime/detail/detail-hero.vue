@@ -16,7 +16,7 @@ import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
-import { formatAnimeStatus, getEntityIcon } from '@renderer/utils/format'
+import { formatMediaStatus, getEntityIcon } from '@renderer/utils/format'
 import {
   EntityNameFormDialog,
   EntityOriginalNameFormDialog,
@@ -27,7 +27,7 @@ import {
   MediaLastActiveFormDialog,
   MediaStatusFormDialog
 } from '@renderer/components/shared/media'
-import type { AnimeStatus } from '@shared/db'
+import type { MediaStatus } from '@shared/db'
 import AnimeWatchCatchUpDialog from '../anime-watch-catch-up-dialog.vue'
 
 const log = createLogger('Anime')
@@ -52,12 +52,12 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
 /** Catch-up prompt lives beside the status dialog so it survives its close. */
 const catchUpOpen = ref(false)
 
-async function handleStatusSaved(status: string): Promise<void> {
+async function handleStatusSaved(status: MediaStatus): Promise<void> {
   const entry = anime.value
   if (!entry) return
 
   try {
-    catchUpOpen.value = await shouldOfferWatchCatchUp(entry.id, status as AnimeStatus)
+    catchUpOpen.value = await shouldOfferWatchCatchUp(entry.id, status)
   } catch (error) {
     // The status change already succeeded; a missed offer is not worth a notice.
     log.warn('Episode catch-up offer check failed:', error)
@@ -159,9 +159,11 @@ const coverUrl = computed(() =>
                 class="size-4 absolute inset-0 opacity-0 transition-opacity group-hover/icon:opacity-100"
               />
             </button>
-            <span class="text-xs">{{ m.anime.detail.watchStatus }}</span>
+            <span class="text-xs">{{ m.library.status.label.anime }}</span>
           </span>
-          <span class="font-medium truncate text-xs">{{ formatAnimeStatus(anime.status) }}</span>
+          <span class="font-medium truncate text-xs">{{
+            formatMediaStatus('anime', anime.status)
+          }}</span>
         </div>
 
         <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">

@@ -2,7 +2,8 @@ import { computed, type ComputedRef } from 'vue'
 import { messages } from '@renderer/core/i18n'
 import { comicFilterQuerySpec } from '@shared/filter'
 import type { FilterUiSpec } from './types'
-import { getComicFormatOptions, getComicStatusOptions } from './shared-options'
+import { getMediaStatusOptions } from '@renderer/utils/format'
+import { getComicFormatOptions } from './shared-options'
 
 export const comicFilterUiSpec: ComputedRef<FilterUiSpec<typeof comicFilterQuerySpec>> = computed(
   () => {
@@ -18,7 +19,7 @@ export const comicFilterUiSpec: ComputedRef<FilterUiSpec<typeof comicFilterQuery
           key: 'status',
           label: m.library.fields.status,
           kind: 'enum',
-          options: getComicStatusOptions()
+          options: getMediaStatusOptions('comic')
         },
         {
           key: 'format',

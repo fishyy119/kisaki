@@ -8,7 +8,7 @@
 import { and, count, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
-import { novelVolumes, type NovelStatus, type NovelVolume } from '@shared/db'
+import { novelVolumes, type MediaStatus, type NovelVolume } from '@shared/db'
 import { useI18n } from './use-i18n'
 
 export async function toggleVolumeRead(volume: Pick<NovelVolume, 'id' | 'read'>): Promise<void> {
@@ -45,7 +45,7 @@ export async function readUnreadVolumeCount(novelId: string): Promise<number> {
  */
 export async function shouldOfferReadCatchUp(
   novelId: string,
-  status: NovelStatus
+  status: MediaStatus
 ): Promise<boolean> {
   if (status !== 'completed') return false
   return (await readUnreadVolumeCount(novelId)) > 0

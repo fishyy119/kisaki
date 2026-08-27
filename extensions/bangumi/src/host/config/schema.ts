@@ -1,11 +1,4 @@
-import {
-  LIBRARY_ANIME_STATUSES,
-  LIBRARY_COMIC_STATUSES,
-  LIBRARY_GAME_STATUSES,
-  type LibraryAnimeStatus,
-  type LibraryComicStatus,
-  type LibraryGameStatus
-} from '@kisaki3/extension-sdk'
+import { LIBRARY_MEDIA_STATUSES, type LibraryMediaStatus } from '@kisaki3/extension-sdk'
 import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
 import { BANGUMI_MEDIA_SCOPES, type BangumiMediaScope } from '../../shared/scopes'
 
@@ -13,15 +6,10 @@ export type BangumiCollectionType = 1 | 2 | 3 | 4 | 5
 export type BangumiStatusMappingValue = BangumiCollectionType | 'skip'
 
 /**
- * Local status to Bangumi collection type tables, one per status-bearing
- * scope. Comics and novels share one reading-status vocabulary, so the book
- * scope owns a single table for both.
+ * Local status to Bangumi collection type table. Every media type shares one
+ * status vocabulary, so one table serves every status-bearing scope.
  */
-export interface BangumiStatusToBangumiMapping {
-  game: Record<LibraryGameStatus, BangumiStatusMappingValue>
-  anime: Record<LibraryAnimeStatus, BangumiStatusMappingValue>
-  book: Record<LibraryComicStatus, BangumiStatusMappingValue>
-}
+export type BangumiStatusToBangumiMapping = Record<LibraryMediaStatus, BangumiStatusMappingValue>
 
 export interface BangumiSettingsV1 {
   version: 1
@@ -183,22 +171,9 @@ function normalizeStatusToBangumi(
   defaults: BangumiStatusToBangumiMapping
 ): BangumiStatusToBangumiMapping {
   const input = asRecord(value)
-
-  return {
-    game: normalizeStatusTable(LIBRARY_GAME_STATUSES, asRecord(input?.game), defaults.game),
-    anime: normalizeStatusTable(LIBRARY_ANIME_STATUSES, asRecord(input?.anime), defaults.anime),
-    book: normalizeStatusTable(LIBRARY_COMIC_STATUSES, asRecord(input?.book), defaults.book)
-  }
-}
-
-function normalizeStatusTable<TStatus extends string>(
-  statuses: readonly TStatus[],
-  input: Record<string, unknown> | undefined,
-  defaults: Record<TStatus, BangumiStatusMappingValue>
-): Record<TStatus, BangumiStatusMappingValue> {
   const output = { ...defaults }
 
-  for (const status of statuses) {
+  for (const status of LIBRARY_MEDIA_STATUSES) {
     output[status] = normalizeStatusMappingValue(input?.[status], defaults[status])
   }
 

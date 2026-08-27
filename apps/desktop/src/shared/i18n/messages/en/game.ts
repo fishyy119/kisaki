@@ -8,12 +8,6 @@ export const game = {
   launching: 'Starting',
   stopping: 'Stopping',
 
-  statusDialog: {
-    title: 'Edit play status',
-    label: 'Play status',
-    selectStatus: 'Select status'
-  },
-
   lastActiveDialog: {
     title: 'Edit last played time',
     label: 'Last played time',

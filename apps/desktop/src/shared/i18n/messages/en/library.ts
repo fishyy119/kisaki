@@ -3,6 +3,17 @@
  * (game/anime/comic/novel/character/person/company/collection/tag) across
  * menus, searchers, selects, detail views, and form dialogs.
  */
+import type { MediaType } from '../../../common'
+import type { MediaStatus } from '../../../db/contracts/enums'
+
+/** All media-status copy in one media-indexed shape for generic lookups. */
+interface MediaStatusMessages {
+  label: Record<MediaType, string>
+  editTitle: Record<MediaType, string>
+  selectPlaceholder: string
+  values: Record<MediaType, Record<MediaStatus, string>>
+}
+
 export const library = {
   entities: {
     game: 'Game',
@@ -95,38 +106,51 @@ export const library = {
     lastReadAt: 'Last read'
   },
 
-  gameStatus: {
-    notStarted: 'Not started',
-    inProgress: 'In progress',
-    partial: 'Partially completed',
-    completed: 'Completed',
-    multiple: 'Multiple playthroughs',
-    shelved: 'Shelved'
-  },
-
-  animeStatus: {
-    planned: 'Plan to watch',
-    watching: 'Watching',
-    completed: 'Completed',
-    onHold: 'On hold',
-    dropped: 'Dropped'
-  },
-
-  comicStatus: {
-    planned: 'Plan to read',
-    reading: 'Reading',
-    completed: 'Completed',
-    onHold: 'On hold',
-    dropped: 'Dropped'
-  },
-
-  novelStatus: {
-    planned: 'Plan to read',
-    reading: 'Reading',
-    completed: 'Completed',
-    onHold: 'On hold',
-    dropped: 'Dropped'
-  },
+  status: {
+    label: {
+      game: 'Play status',
+      anime: 'Watch status',
+      comic: 'Read status',
+      novel: 'Read status'
+    },
+    editTitle: {
+      game: 'Edit play status',
+      anime: 'Edit watch status',
+      comic: 'Edit read status',
+      novel: 'Edit read status'
+    },
+    selectPlaceholder: 'Select status',
+    values: {
+      game: {
+        planned: 'Plan to play',
+        active: 'Playing',
+        completed: 'Completed',
+        onHold: 'On hold',
+        dropped: 'Dropped'
+      },
+      anime: {
+        planned: 'Plan to watch',
+        active: 'Watching',
+        completed: 'Completed',
+        onHold: 'On hold',
+        dropped: 'Dropped'
+      },
+      comic: {
+        planned: 'Plan to read',
+        active: 'Reading',
+        completed: 'Completed',
+        onHold: 'On hold',
+        dropped: 'Dropped'
+      },
+      novel: {
+        planned: 'Plan to read',
+        active: 'Reading',
+        completed: 'Completed',
+        onHold: 'On hold',
+        dropped: 'Dropped'
+      }
+    }
+  } satisfies MediaStatusMessages,
 
   gender: {
     male: 'Male',
@@ -334,7 +358,6 @@ export const library = {
     removeFromCollection: 'Remove from collection',
     noCollections: 'No collections available',
     newCollection: 'New collection…',
-    playStatus: 'Play status',
     editScore: 'Edit score',
     favorite: 'Favorite',
     setFavorite: 'Set favorite',
@@ -800,8 +823,7 @@ export const library = {
     uncategorizedTitle: ({ label }: { label: string }) => `Uncategorized ${label.toLowerCase()}s`,
     uncategorizedEmpty: ({ label }: { label: string }) =>
       `All ${label.toLowerCase()}s are categorized`,
-    dynamicCollection: 'Dynamic collection',
-    playStatus: 'Play status'
+    dynamicCollection: 'Dynamic collection'
   },
 
   explorer: {

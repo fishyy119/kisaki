@@ -70,7 +70,7 @@ export class NovelReadingAdapter implements ReadingAdapter {
     // a user edit is never clobbered. Completion stays a user declaration.
     this.db.client
       .update(novels)
-      .set({ status: 'reading' })
+      .set({ status: 'active' })
       .where(and(eq(novels.id, entryId), eq(novels.status, 'planned')))
       .run()
   }

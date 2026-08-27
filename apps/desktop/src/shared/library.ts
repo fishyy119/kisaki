@@ -7,16 +7,13 @@
 
 import type {
   AnimeFormat,
-  AnimeStatus,
   BloodType,
   ComicFormat,
   ComicReadingDirection,
-  ComicStatus,
   CupSize,
-  GameStatus,
   Gender,
-  NovelFormat,
-  NovelStatus
+  MediaStatus,
+  NovelFormat
 } from './db/contracts/enums'
 import type { DynamicCollectionConfig, PartialDate, ExternalSite } from './db/contracts/json'
 import type { MediaRelationType } from './db/contracts/media-relations'
@@ -135,8 +132,8 @@ export interface LibraryMediaRelationsSnapshot {
 
 export type LibraryStatusChange = {
   facet: 'status'
-  before: { status: GameStatus | AnimeStatus | ComicStatus | NovelStatus }
-  after: { status: GameStatus | AnimeStatus | ComicStatus | NovelStatus }
+  before: { status: MediaStatus }
+  after: { status: MediaStatus }
   fields?: ['status']
 }
 

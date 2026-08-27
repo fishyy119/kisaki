@@ -135,8 +135,7 @@ export const anime = {
 
   detail: {
     openAnimeDir: 'Open anime folder',
-    animeDirNotSet: 'The anime folder is not set',
-    watchStatus: 'Watch status'
+    animeDirNotSet: 'The anime folder is not set'
   },
 
   filesConfig: {
@@ -149,12 +148,6 @@ export const anime = {
     offsetLabel: 'File number offset',
     offsetHint: 'File number − offset = metadata episode number; aligns absolutely numbered files',
     offsetInvalid: 'The offset must be an integer'
-  },
-
-  statusDialog: {
-    title: 'Edit watch status',
-    label: 'Watch status',
-    selectStatus: 'Select status'
   },
 
   lastActiveDialog: {

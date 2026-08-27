@@ -6,12 +6,6 @@ export const game = {
   launching: '正在啟動',
   stopping: '正在停止',
 
-  statusDialog: {
-    title: '編輯遊玩狀態',
-    label: '遊玩狀態',
-    selectStatus: '選擇狀態'
-  },
-
   lastActiveDialog: {
     title: '編輯最近執行時間',
     label: '最近執行時間',

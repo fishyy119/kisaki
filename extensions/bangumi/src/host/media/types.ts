@@ -1,4 +1,8 @@
-import type { Disposable, ScraperProfileSummary } from '@kisaki3/extension-sdk'
+import type {
+  Disposable,
+  LibraryMediaStatus,
+  ScraperProfileSummary
+} from '@kisaki3/extension-sdk'
 import type { BangumiMediaScope, BangumiSupportedSubjectType } from '../../shared/scopes'
 
 export interface ExternalIdRef {
@@ -34,7 +38,7 @@ export interface LocalMediaItem {
   scope: BangumiMediaScope
   localId: string
   name: string
-  status?: string
+  status?: LibraryMediaStatus
   score?: number | null
   externalIds: readonly ExternalIdRef[]
   /** Present for scopes that push unit progress with the collection payload. */
@@ -83,7 +87,7 @@ export interface LocalMediaAddResult {
 }
 
 export interface LocalMediaUserPatch {
-  status?: string
+  status?: LibraryMediaStatus
   score?: number | null
 }
 

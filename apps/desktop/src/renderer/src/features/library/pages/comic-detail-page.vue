@@ -36,9 +36,14 @@ import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
-import { COMIC_STATUS_VALUES, comics, type ComicStatus } from '@shared/db'
+import { comics, type MediaStatus } from '@shared/db'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
-import { formatComicStatus, getComicStatusVariant, getEntityIcon } from '@renderer/utils/format'
+import {
+  formatMediaStatus,
+  getEntityIcon,
+  getMediaStatusOptions,
+  getMediaStatusVariant
+} from '@renderer/utils/format'
 
 const log = createLogger('Comic')
 
@@ -48,9 +53,7 @@ const { m } = useI18n()
 // Constants
 // =============================================================================
 
-const STATUS_OPTIONS = computed<{ value: ComicStatus; label: string }[]>(() =>
-  COMIC_STATUS_VALUES.map((value) => ({ value, label: m.value.library.comicStatus[value] }))
-)
+const STATUS_OPTIONS = computed(() => getMediaStatusOptions('comic'))
 
 // =============================================================================
 // Route & Navigation
@@ -122,7 +125,7 @@ function handleRevealSpoilersConfirm() {
 
 const selectedStatus = computed({
   get: () => comic.value?.status,
-  set: async (status: ComicStatus | undefined) => {
+  set: async (status: MediaStatus | undefined) => {
     if (isPendingStatus.value || !comic.value || !status) return
     const current = comic.value
     isPendingStatus.value = true
@@ -204,14 +207,14 @@ async function handleOpenComicDir() {
           <TooltipTrigger as-child>
             <DropdownMenuTrigger as-child>
               <Badge
-                :variant="getComicStatusVariant(comic.status)"
+                :variant="getMediaStatusVariant(comic.status)"
                 class="shrink-0 cursor-pointer"
               >
-                {{ formatComicStatus(comic.status) }}
+                {{ formatMediaStatus('comic', comic.status) }}
               </Badge>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>{{ m.comic.detail.readStatus }}</TooltipContent>
+          <TooltipContent>{{ m.library.status.label.comic }}</TooltipContent>
 
           <DropdownMenuContent
             align="end"

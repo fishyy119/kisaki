@@ -23,14 +23,12 @@ import {
   ANIME_EXTRA_TYPE_VALUES,
   ANIME_FORMAT_VALUES,
   ANIME_PERSON_ROLE_VALUES,
-  ANIME_STATUS_VALUES,
   CHARACTER_PERSON_ROLE_VALUES,
   COMIC_CHARACTER_ROLE_VALUES,
   COMIC_COMPANY_ROLE_VALUES,
   COMIC_FORMAT_VALUES,
   COMIC_PERSON_ROLE_VALUES,
   COMIC_READING_DIRECTION_VALUES,
-  COMIC_STATUS_VALUES,
   EXTENSION_INSTALL_REASON_VALUES,
   EXTENSION_REPOSITORY_STATE_VALUES,
   EXTENSION_SIGNER_ALGORITHM_VALUES,
@@ -38,13 +36,12 @@ import {
   GAME_CHARACTER_ROLE_VALUES,
   GAME_COMPANY_ROLE_VALUES,
   GAME_PERSON_ROLE_VALUES,
-  GAME_STATUS_VALUES,
   HIGHLIGHT_COLOR_VALUES,
+  MEDIA_STATUS_VALUES,
   NOVEL_CHARACTER_ROLE_VALUES,
   NOVEL_COMPANY_ROLE_VALUES,
   NOVEL_FORMAT_VALUES,
-  NOVEL_PERSON_ROLE_VALUES,
-  NOVEL_STATUS_VALUES
+  NOVEL_PERSON_ROLE_VALUES
 } from '../contracts/enums'
 import type {
   AnimeCharacterRole,
@@ -53,7 +50,6 @@ import type {
   AnimeExtraType,
   AnimeFormat,
   AnimePersonRole,
-  AnimeStatus,
   BloodType,
   CharacterPersonRole,
   ComicCharacterRole,
@@ -61,7 +57,6 @@ import type {
   ComicFormat,
   ComicPersonRole,
   ComicReadingDirection,
-  ComicStatus,
   CupSize,
   ExtensionInstallReason,
   ExtensionRepositoryState,
@@ -72,37 +67,22 @@ import type {
   GameLauncherMode,
   GameMonitorMode,
   GamePersonRole,
-  GameStatus,
   Gender,
   HighlightColor,
   MainWindowCloseAction,
+  MediaStatus,
   NovelCharacterRole,
   NovelCompanyRole,
   NovelFormat,
   NovelPersonRole,
-  NovelStatus,
   ScannerIngestMode
 } from '../contracts/enums'
 import { createBoundedIntegerType, createEnumType, createNullableEnumType } from './factories'
 
-export const gameStatus = createEnumType<GameStatus>(GAME_STATUS_VALUES, 'notStarted', 'gameStatus')
-
-export const animeStatus = createEnumType<AnimeStatus>(
-  ANIME_STATUS_VALUES,
+export const mediaStatus = createEnumType<MediaStatus>(
+  MEDIA_STATUS_VALUES,
   'planned',
-  'animeStatus'
-)
-
-export const comicStatus = createEnumType<ComicStatus>(
-  COMIC_STATUS_VALUES,
-  'planned',
-  'comicStatus'
-)
-
-export const novelStatus = createEnumType<NovelStatus>(
-  NOVEL_STATUS_VALUES,
-  'planned',
-  'novelStatus'
+  'mediaStatus'
 )
 
 const GAME_LAUNCHER_MODE_VALUES = ['file', 'url', 'exec'] as const

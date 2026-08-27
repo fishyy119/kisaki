@@ -30,9 +30,14 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { games, type GameStatus } from '@shared/db'
+import { games, type MediaStatus } from '@shared/db'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
-import { formatGameStatus, getGameStatusVariant, getEntityIcon } from '@renderer/utils/format'
+import {
+  formatMediaStatus,
+  getEntityIcon,
+  getMediaStatusOptions,
+  getMediaStatusVariant
+} from '@renderer/utils/format'
 
 const { m } = useI18n()
 
@@ -40,14 +45,7 @@ const { m } = useI18n()
 // Constants
 // =============================================================================
 
-const STATUS_OPTIONS = computed<{ value: GameStatus; label: string }[]>(() => [
-  { value: 'notStarted', label: m.value.library.gameStatus.notStarted },
-  { value: 'inProgress', label: m.value.library.gameStatus.inProgress },
-  { value: 'partial', label: m.value.library.gameStatus.partial },
-  { value: 'completed', label: m.value.library.gameStatus.completed },
-  { value: 'multiple', label: m.value.library.gameStatus.multiple },
-  { value: 'shelved', label: m.value.library.gameStatus.shelved }
-])
+const STATUS_OPTIONS = computed(() => getMediaStatusOptions('game'))
 
 // =============================================================================
 // Route & Navigation
@@ -116,7 +114,7 @@ function handleRevealSpoilersConfirm() {
 // Status as a computed to track dropdown value
 const selectedStatus = computed({
   get: () => game.value?.status,
-  set: async (status: GameStatus | undefined) => {
+  set: async (status: MediaStatus | undefined) => {
     if (isPendingStatus.value || !game.value || !status) return
     const current = game.value
     isPendingStatus.value = true
@@ -197,14 +195,14 @@ const canOpenGameDir = computed(() => {
           <TooltipTrigger as-child>
             <DropdownMenuTrigger as-child>
               <Badge
-                :variant="getGameStatusVariant(game.status)"
+                :variant="getMediaStatusVariant(game.status)"
                 class="shrink-0 cursor-pointer"
               >
-                {{ formatGameStatus(game.status) }}
+                {{ formatMediaStatus('game', game.status) }}
               </Badge>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>{{ m.library.pages.playStatus }}</TooltipContent>
+          <TooltipContent>{{ m.library.status.label.game }}</TooltipContent>
 
           <DropdownMenuContent
             align="end"

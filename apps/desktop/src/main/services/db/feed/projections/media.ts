@@ -9,7 +9,7 @@
 import type Database from 'better-sqlite3'
 import { getTableName } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
-import type { AnimeStatus, ComicStatus, GameStatus, NovelStatus } from '@shared/db/contracts/enums'
+import type { MediaStatus } from '@shared/db/contracts/enums'
 import type { RawDbChange } from '@shared/db/changes'
 import {
   animeCastLinks,
@@ -76,8 +76,6 @@ import {
   uniqueStrings
 } from '../normalization'
 import { createPartialSnapshot, sameJson } from '../snapshot'
-
-type MediaStatus = GameStatus | AnimeStatus | ComicStatus | NovelStatus
 
 const GAME_PROJECTION: MediaFeedProjection = {
   entity: 'game',

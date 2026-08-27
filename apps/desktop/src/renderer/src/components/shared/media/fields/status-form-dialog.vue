@@ -1,9 +1,9 @@
 <!--
   MediaStatusFormDialog
-  Dialog for editing a media entry's consumption status. Each media type keeps
-  its own status vocabulary, so options and the write path come from per-media
-  registries. The saved status is emitted so media-specific hosts can offer
-  their own follow-up; this dialog stays unaware of what a status implies.
+  Dialog for editing a media entry's consumption status. The status vocabulary
+  is shared by every media type; only the display verbs differ per media. The
+  saved status is emitted so media-specific hosts can offer their own
+  follow-up; this dialog stays unaware of what a status implies.
 -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
@@ -33,13 +33,7 @@ import {
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { Messages } from '@shared/i18n'
-import {
-  ANIME_STATUS_VALUES,
-  COMIC_STATUS_VALUES,
-  GAME_STATUS_VALUES,
-  NOVEL_STATUS_VALUES
-} from '@shared/db'
+import { MEDIA_STATUS_VALUES, type MediaStatus } from '@shared/db'
 import { MEDIA_STATUS_WRITERS, MEDIA_TABLES } from '../media-tables'
 
 const { m } = useI18n()
@@ -57,29 +51,19 @@ const open = defineModel<boolean>('open', { required: true })
 
 const emit = defineEmits<{
   /** Fires only when the write succeeded, carrying the stored status value. */
-  saved: [status: string]
+  saved: [status: MediaStatus]
 }>()
 
 const table = computed(() => MEDIA_TABLES[props.mediaType])
-const labels = computed(() => m.value[props.mediaType].statusDialog)
 
-const STATUS_OPTIONS: Record<
-  MediaType,
-  (messages: Messages) => { value: string; label: string }[]
-> = {
-  game: (messages) =>
-    GAME_STATUS_VALUES.map((value) => ({ value, label: messages.library.gameStatus[value] })),
-  anime: (messages) =>
-    ANIME_STATUS_VALUES.map((value) => ({ value, label: messages.library.animeStatus[value] })),
-  comic: (messages) =>
-    COMIC_STATUS_VALUES.map((value) => ({ value, label: messages.library.comicStatus[value] })),
-  novel: (messages) =>
-    NOVEL_STATUS_VALUES.map((value) => ({ value, label: messages.library.novelStatus[value] }))
-}
+const options = computed(() =>
+  MEDIA_STATUS_VALUES.map((value) => ({
+    value,
+    label: m.value.library.status.values[props.mediaType][value]
+  }))
+)
 
-const options = computed(() => STATUS_OPTIONS[props.mediaType](m.value))
-
-const status = ref('')
+const status = ref<MediaStatus>('planned')
 const isSaving = ref(false)
 
 const { data: row, isLoading } = useAsyncData(
@@ -135,17 +119,17 @@ async function handleSubmit() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>{{ labels.title }}</DialogTitle>
+          <DialogTitle>{{ m.library.status.editTitle[mediaType] }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <FieldGroup>
               <Field>
-                <FieldLabel>{{ labels.label }}</FieldLabel>
+                <FieldLabel>{{ m.library.status.label[mediaType] }}</FieldLabel>
                 <FieldContent>
                   <Select v-model="status">
                     <SelectTrigger>
-                      <SelectValue :placeholder="labels.selectStatus" />
+                      <SelectValue :placeholder="m.library.status.selectPlaceholder" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem

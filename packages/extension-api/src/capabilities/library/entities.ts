@@ -110,50 +110,20 @@ export const LIBRARY_ORGANIZER_ENTITY_TYPES = ['collection', 'tag'] as const
 
 export type LibraryOrganizerEntityType = (typeof LIBRARY_ORGANIZER_ENTITY_TYPES)[number]
 
-/** Game completion status. */
-export const LIBRARY_GAME_STATUSES = [
-  'notStarted',
-  'inProgress',
-  'partial',
-  'completed',
-  'multiple',
-  'shelved'
-] as const
-
-export type LibraryGameStatus = (typeof LIBRARY_GAME_STATUSES)[number]
-
-/** Anime watch status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
-export const LIBRARY_ANIME_STATUSES = [
+/**
+ * Consumption status shared by every media type; mirrors the
+ * wish/doing/done/on-hold/dropped collection vocabulary. Media-specific verbs
+ * (playing, watching, reading) are display concerns, never separate enums.
+ */
+export const LIBRARY_MEDIA_STATUSES = [
   'planned',
-  'watching',
+  'active',
   'completed',
   'onHold',
   'dropped'
 ] as const
 
-export type LibraryAnimeStatus = (typeof LIBRARY_ANIME_STATUSES)[number]
-
-/** Comic reading status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
-export const LIBRARY_COMIC_STATUSES = [
-  'planned',
-  'reading',
-  'completed',
-  'onHold',
-  'dropped'
-] as const
-
-export type LibraryComicStatus = (typeof LIBRARY_COMIC_STATUSES)[number]
-
-/** Novel reading status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
-export const LIBRARY_NOVEL_STATUSES = [
-  'planned',
-  'reading',
-  'completed',
-  'onHold',
-  'dropped'
-] as const
-
-export type LibraryNovelStatus = (typeof LIBRARY_NOVEL_STATUSES)[number]
+export type LibraryMediaStatus = (typeof LIBRARY_MEDIA_STATUSES)[number]
 
 export const LIBRARY_GAME_LAUNCHER_MODES = ['file', 'url', 'exec'] as const
 
@@ -207,7 +177,7 @@ export interface LibraryGame extends LibraryRankedEntityBase {
   /** Other titles this entry is known by, such as localized names and abbreviations. */
   aliases?: readonly string[]
   releaseDate?: PartialDate
-  status: LibraryGameStatus
+  status: LibraryMediaStatus
   lastActiveAt?: number | null
   totalDuration: number
   savePath?: string
@@ -229,7 +199,7 @@ export interface LibraryAnime extends LibraryRankedEntityBase {
   /** Other titles this entry is known by, such as localized names and abbreviations. */
   aliases?: readonly string[]
   releaseDate?: PartialDate
-  status: LibraryAnimeStatus
+  status: LibraryMediaStatus
   format: LibraryAnimeFormat
   totalEpisodes?: number | null
   lastActiveAt?: number | null
@@ -309,7 +279,7 @@ export interface LibraryComic extends LibraryRankedEntityBase {
   /** Other titles this entry is known by, such as localized names and abbreviations. */
   aliases?: readonly string[]
   releaseDate?: PartialDate
-  status: LibraryComicStatus
+  status: LibraryMediaStatus
   format: LibraryComicFormat
   /** Per-entry layout override; absent follows the format default. */
   readingDirection?: LibraryComicReadingDirection
@@ -392,7 +362,7 @@ export interface LibraryNovel extends LibraryRankedEntityBase {
   /** Other titles this entry is known by, such as localized names and abbreviations. */
   aliases?: readonly string[]
   releaseDate?: PartialDate
-  status: LibraryNovelStatus
+  status: LibraryMediaStatus
   format: LibraryNovelFormat
   totalVolumes?: number | null
   lastActiveAt?: number | null
@@ -533,7 +503,7 @@ export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
   iconFile?: string
   aliases?: readonly string[]
   releaseDate?: PartialDate
-  status?: LibraryGameStatus
+  status?: LibraryMediaStatus
   lastActiveAt?: number | null
   totalDuration?: number
   savePath?: string
@@ -561,7 +531,7 @@ export interface LibraryAnimeCreateInput extends LibraryRankedEntityInputBase {
   logoFile?: string
   aliases?: readonly string[]
   releaseDate?: PartialDate
-  status?: LibraryAnimeStatus
+  status?: LibraryMediaStatus
   format?: LibraryAnimeFormat
   totalEpisodes?: number | null
   lastActiveAt?: number | null
@@ -586,7 +556,7 @@ export interface LibraryComicCreateInput extends LibraryRankedEntityInputBase {
   logoFile?: string
   aliases?: readonly string[]
   releaseDate?: PartialDate
-  status?: LibraryComicStatus
+  status?: LibraryMediaStatus
   format?: LibraryComicFormat
   readingDirection?: LibraryComicReadingDirection | null
   totalVolumes?: number | null
@@ -613,7 +583,7 @@ export interface LibraryNovelCreateInput extends LibraryRankedEntityInputBase {
   logoFile?: string
   aliases?: readonly string[]
   releaseDate?: PartialDate
-  status?: LibraryNovelStatus
+  status?: LibraryMediaStatus
   format?: LibraryNovelFormat
   totalVolumes?: number | null
   lastActiveAt?: number | null
@@ -700,7 +670,7 @@ export interface LibraryTagCreateInput extends LibraryEntityInputBase {
 export type LibraryTagPatch = Partial<Omit<LibraryTagCreateInput, 'createdAt' | 'updatedAt'>>
 
 export interface LibraryGameQuery extends LibraryListQuery {
-  statuses?: readonly LibraryGameStatus[]
+  statuses?: readonly LibraryMediaStatus[]
   favoritesOnly?: boolean
   includeNsfw?: boolean
   collectionIds?: readonly string[]
@@ -708,7 +678,7 @@ export interface LibraryGameQuery extends LibraryListQuery {
 }
 
 export interface LibraryAnimeQuery extends LibraryListQuery {
-  statuses?: readonly LibraryAnimeStatus[]
+  statuses?: readonly LibraryMediaStatus[]
   formats?: readonly LibraryAnimeFormat[]
   favoritesOnly?: boolean
   includeNsfw?: boolean
@@ -717,7 +687,7 @@ export interface LibraryAnimeQuery extends LibraryListQuery {
 }
 
 export interface LibraryComicQuery extends LibraryListQuery {
-  statuses?: readonly LibraryComicStatus[]
+  statuses?: readonly LibraryMediaStatus[]
   formats?: readonly LibraryComicFormat[]
   favoritesOnly?: boolean
   includeNsfw?: boolean
@@ -726,7 +696,7 @@ export interface LibraryComicQuery extends LibraryListQuery {
 }
 
 export interface LibraryNovelQuery extends LibraryListQuery {
-  statuses?: readonly LibraryNovelStatus[]
+  statuses?: readonly LibraryMediaStatus[]
   formats?: readonly LibraryNovelFormat[]
   favoritesOnly?: boolean
   includeNsfw?: boolean

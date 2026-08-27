@@ -1,11 +1,8 @@
 import type {
   DynamicCollectionConfig,
-  LibraryAnimeStatus,
   LibraryComicReadingDirection,
-  LibraryComicStatus,
-  LibraryGameStatus,
-  LibraryMediaType,
-  LibraryNovelStatus
+  LibraryMediaStatus,
+  LibraryMediaType
 } from '../../../capabilities/library'
 import type {
   ExternalId,
@@ -282,12 +279,8 @@ export type LibraryDynamicConfigChange = {
 
 export type LibraryStatusChange = {
   facet: 'status'
-  before: {
-    status: LibraryGameStatus | LibraryAnimeStatus | LibraryComicStatus | LibraryNovelStatus
-  }
-  after: {
-    status: LibraryGameStatus | LibraryAnimeStatus | LibraryComicStatus | LibraryNovelStatus
-  }
+  before: { status: LibraryMediaStatus }
+  after: { status: LibraryMediaStatus }
   fields?: readonly ['status']
 }
 

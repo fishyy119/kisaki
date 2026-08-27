@@ -67,7 +67,7 @@ export class ComicReadingAdapter implements ReadingAdapter {
     // a user edit is never clobbered. Completion stays a user declaration.
     this.db.client
       .update(comics)
-      .set({ status: 'reading' })
+      .set({ status: 'active' })
       .where(and(eq(comics.id, entryId), eq(comics.status, 'planned')))
       .run()
   }

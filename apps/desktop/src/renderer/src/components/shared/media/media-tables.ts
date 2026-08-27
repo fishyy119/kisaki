@@ -2,8 +2,7 @@
  * Media tables and per-media writers the media field dialogs use.
  *
  * Values stay concrete table references so shared-column reads type-check;
- * the status writer is a registry because the status enum differs per media
- * type and the caller's option list is the source of valid values.
+ * the status writer is a registry because each write targets its own table.
  */
 
 import { desc, eq } from 'drizzle-orm'
@@ -18,10 +17,7 @@ import {
   games,
   novelSessions,
   novels,
-  type AnimeStatus,
-  type ComicStatus,
-  type GameStatus,
-  type NovelStatus
+  type MediaStatus
 } from '@shared/db'
 
 export const MEDIA_TABLES = {
@@ -31,34 +27,22 @@ export const MEDIA_TABLES = {
   novel: novels
 } as const
 
-/** Status writers keyed per media type; the option list guarantees the value. */
+/** Status writers keyed per media type; the status vocabulary is shared. */
 export const MEDIA_STATUS_WRITERS: Record<
   MediaType,
-  (entityId: string, status: string) => Promise<void>
+  (entityId: string, status: MediaStatus) => Promise<void>
 > = {
   game: async (entityId, status) => {
-    await db
-      .update(games)
-      .set({ status: status as GameStatus })
-      .where(eq(games.id, entityId))
+    await db.update(games).set({ status }).where(eq(games.id, entityId))
   },
   anime: async (entityId, status) => {
-    await db
-      .update(animes)
-      .set({ status: status as AnimeStatus })
-      .where(eq(animes.id, entityId))
+    await db.update(animes).set({ status }).where(eq(animes.id, entityId))
   },
   comic: async (entityId, status) => {
-    await db
-      .update(comics)
-      .set({ status: status as ComicStatus })
-      .where(eq(comics.id, entityId))
+    await db.update(comics).set({ status }).where(eq(comics.id, entityId))
   },
   novel: async (entityId, status) => {
-    await db
-      .update(novels)
-      .set({ status: status as NovelStatus })
-      .where(eq(novels.id, entityId))
+    await db.update(novels).set({ status }).where(eq(novels.id, entityId))
   }
 }
 

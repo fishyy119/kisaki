@@ -134,7 +134,7 @@ export class AnimeActivityHandler {
     // fully scraped, which never holds while a show is still airing.
     this.db.client
       .update(animes)
-      .set({ status: 'watching' })
+      .set({ status: 'active' })
       .where(and(eq(animes.id, animeId), eq(animes.status, 'planned')))
       .run()
 

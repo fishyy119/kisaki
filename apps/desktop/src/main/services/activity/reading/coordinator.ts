@@ -80,7 +80,7 @@ export interface ReadingAdapter {
   readEntry(entryId: string): ReadingEntry | null
   /** Ordered reader units of the entry, with per-unit elected files. */
   readUnits(entryId: string, requestedFileId?: string): ReadingUnitList
-  /** Stamps activity and infers the guarded planned→reading transition. */
+  /** Stamps activity and infers the guarded planned→active transition. */
   markEntryActive(entryId: string, at: Date): void
   /** Persists one reported position as the unit's resume point. */
   writeResume(report: ReaderProgressReport): void

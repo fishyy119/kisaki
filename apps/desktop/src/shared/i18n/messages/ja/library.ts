@@ -92,37 +92,50 @@ export const library = {
     lastReadAt: '最終閲覧'
   },
 
-  gameStatus: {
-    notStarted: '未プレイ',
-    inProgress: 'プレイ中',
-    partial: '一部クリア',
-    completed: 'クリア済み',
-    multiple: '周回プレイ',
-    shelved: '積みゲー'
-  },
-
-  animeStatus: {
-    planned: '見たい',
-    watching: '視聴中',
-    completed: '視聴済み',
-    onHold: '保留',
-    dropped: '中断'
-  },
-
-  comicStatus: {
-    planned: '読みたい',
-    reading: '読書中',
-    completed: '読了',
-    onHold: '保留',
-    dropped: '中断'
-  },
-
-  novelStatus: {
-    planned: '読みたい',
-    reading: '読書中',
-    completed: '読了',
-    onHold: '保留',
-    dropped: '中断'
+  status: {
+    label: {
+      game: 'プレイ状況',
+      anime: '視聴状況',
+      comic: '読書状況',
+      novel: '読書状況'
+    },
+    editTitle: {
+      game: 'プレイ状況を編集',
+      anime: '視聴状況を編集',
+      comic: '読書状況を編集',
+      novel: '読書状況を編集'
+    },
+    selectPlaceholder: '状況を選択',
+    values: {
+      game: {
+        planned: 'プレイしたい',
+        active: 'プレイ中',
+        completed: 'プレイ済み',
+        onHold: '中断',
+        dropped: '断念'
+      },
+      anime: {
+        planned: '見たい',
+        active: '視聴中',
+        completed: '視聴済み',
+        onHold: '中断',
+        dropped: '断念'
+      },
+      comic: {
+        planned: '読みたい',
+        active: '読書中',
+        completed: '読了',
+        onHold: '中断',
+        dropped: '断念'
+      },
+      novel: {
+        planned: '読みたい',
+        active: '読書中',
+        completed: '読了',
+        onHold: '中断',
+        dropped: '断念'
+      }
+    }
   },
 
   gender: {
@@ -329,7 +342,6 @@ export const library = {
     removeFromCollection: 'コレクションから削除',
     noCollections: '利用可能なコレクションがありません',
     newCollection: '新しいコレクション…',
-    playStatus: 'プレイ状況',
     editScore: 'スコアを編集',
     favorite: 'お気に入り',
     setFavorite: 'お気に入りに設定',
@@ -773,8 +785,7 @@ export const library = {
     favoritesEmpty: ({ label }: { label: string }) => `お気に入りの${label}はまだありません`,
     uncategorizedTitle: ({ label }: { label: string }) => `未分類の${label}`,
     uncategorizedEmpty: ({ label }: { label: string }) => `すべての${label}が分類済みです`,
-    dynamicCollection: 'ダイナミックコレクション',
-    playStatus: 'プレイ状況'
+    dynamicCollection: 'ダイナミックコレクション'
   },
 
   explorer: {

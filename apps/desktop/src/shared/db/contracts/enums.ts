@@ -7,55 +7,24 @@
 
 import { SCANNER_INGEST_MODE_VALUES } from './constants'
 
-/** Game completion status */
-export type GameStatus =
-  'notStarted' | 'inProgress' | 'partial' | 'completed' | 'multiple' | 'shelved'
+/**
+ * Consumption status of a media entry, shared by every media type.
+ *
+ * One engagement axis — future, present, past, plus the two interrupted
+ * branches — mirroring the wish/doing/done/on-hold/dropped collection
+ * vocabulary. Media-specific verbs (playing, watching, reading) are display
+ * concerns owned by i18n, never separate enums.
+ */
+export type MediaStatus = 'planned' | 'active' | 'completed' | 'onHold' | 'dropped'
 
-/** Game status values in canonical display order. */
-export const GAME_STATUS_VALUES = [
-  'notStarted',
-  'inProgress',
-  'partial',
-  'completed',
-  'multiple',
-  'shelved'
-] as const satisfies readonly GameStatus[]
-
-/** Anime watch status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
-export type AnimeStatus = 'planned' | 'watching' | 'completed' | 'onHold' | 'dropped'
-
-/** Anime status values in canonical display order. */
-export const ANIME_STATUS_VALUES = [
+/** Media status values in canonical display order. */
+export const MEDIA_STATUS_VALUES = [
   'planned',
-  'watching',
+  'active',
   'completed',
   'onHold',
   'dropped'
-] as const satisfies readonly AnimeStatus[]
-
-/** Comic reading status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
-export type ComicStatus = 'planned' | 'reading' | 'completed' | 'onHold' | 'dropped'
-
-/** Comic status values in canonical display order. */
-export const COMIC_STATUS_VALUES = [
-  'planned',
-  'reading',
-  'completed',
-  'onHold',
-  'dropped'
-] as const satisfies readonly ComicStatus[]
-
-/** Novel reading status; mirrors the wish/doing/done/on-hold/dropped collection vocabulary. */
-export type NovelStatus = 'planned' | 'reading' | 'completed' | 'onHold' | 'dropped'
-
-/** Novel status values in canonical display order. */
-export const NOVEL_STATUS_VALUES = [
-  'planned',
-  'reading',
-  'completed',
-  'onHold',
-  'dropped'
-] as const satisfies readonly NovelStatus[]
+] as const satisfies readonly MediaStatus[]
 
 /** Game launcher mode */
 export type GameLauncherMode = 'file' | 'url' | 'exec'

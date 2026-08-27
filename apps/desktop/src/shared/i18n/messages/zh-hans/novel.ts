@@ -71,8 +71,7 @@ export const novel = {
 
   detail: {
     openNovelDir: '打开小说文件夹',
-    novelDirNotSet: '未设置小说文件夹',
-    readStatus: '阅读状态'
+    novelDirNotSet: '未设置小说文件夹'
   },
 
   filesConfig: {
@@ -82,12 +81,6 @@ export const novel = {
     selectDir: '选择文件夹',
     novelDirHint:
       '文件同步会扫描该文件夹以匹配卷文件；留空则完全手动管理文件。保存修改后会重新同步文件。'
-  },
-
-  statusDialog: {
-    title: '编辑阅读状态',
-    label: '阅读状态',
-    selectStatus: '选择状态'
   },
 
   lastActiveDialog: {

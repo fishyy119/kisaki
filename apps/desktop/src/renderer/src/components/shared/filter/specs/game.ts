@@ -1,8 +1,8 @@
 import { computed, type ComputedRef } from 'vue'
 import { messages } from '@renderer/core/i18n'
 import { gameFilterQuerySpec } from '@shared/filter'
+import { getMediaStatusOptions } from '@renderer/utils/format'
 import type { FilterUiSpec } from './types'
-import { getGameStatusOptions } from './shared-options'
 
 export const gameFilterUiSpec: ComputedRef<FilterUiSpec<typeof gameFilterQuerySpec>> = computed(
   () => {
@@ -18,7 +18,7 @@ export const gameFilterUiSpec: ComputedRef<FilterUiSpec<typeof gameFilterQuerySp
           key: 'status',
           label: m.library.fields.status,
           kind: 'enum',
-          options: getGameStatusOptions()
+          options: getMediaStatusOptions('game')
         },
 
         { key: 'score', label: m.library.fields.score, kind: 'number', min: 0, max: 100, step: 1 },

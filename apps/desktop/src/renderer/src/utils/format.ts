@@ -4,8 +4,8 @@
  * Time-related formatting functions are in datetime.ts
  */
 
-import type { AnimeStatus, ComicStatus, GameStatus, Gender, NovelStatus } from '@shared/db'
-import type { AllEntityType } from '@shared/common'
+import { MEDIA_STATUS_VALUES, type Gender, type MediaStatus } from '@shared/db'
+import type { AllEntityType, MediaType } from '@shared/common'
 import { messages } from '@renderer/core/i18n'
 
 // =============================================================================
@@ -15,93 +15,33 @@ import { messages } from '@renderer/core/i18n'
 /** Badge variant type for status display */
 export type StatusVariant = 'default' | 'secondary' | 'success' | 'warning' | 'destructive'
 
-const GAME_STATUS_VARIANTS: Record<GameStatus, StatusVariant> = {
-  notStarted: 'secondary',
-  inProgress: 'default',
-  partial: 'warning',
-  completed: 'success',
-  multiple: 'success',
-  shelved: 'destructive'
-}
-
-const ANIME_STATUS_VARIANTS: Record<AnimeStatus, StatusVariant> = {
+/** One shared status-to-variant mapping; status colors are media-independent. */
+const MEDIA_STATUS_VARIANTS: Record<MediaStatus, StatusVariant> = {
   planned: 'secondary',
-  watching: 'default',
+  active: 'default',
   completed: 'success',
   onHold: 'warning',
   dropped: 'destructive'
 }
 
-/**
- * Format game status to a localized label
- */
-export function formatGameStatus(status: GameStatus): string {
-  return messages.value.library.gameStatus[status]
+/** Format a media status to the media type's localized verb label. */
+export function formatMediaStatus(mediaType: MediaType, status: MediaStatus): string {
+  return messages.value.library.status.values[mediaType][status]
 }
 
-/**
- * Map game status to badge variant for UI display
- */
-export function getGameStatusVariant(status: GameStatus): StatusVariant {
-  return GAME_STATUS_VARIANTS[status] ?? 'secondary'
+/** Map a media status to its badge variant for UI display. */
+export function getMediaStatusVariant(status: MediaStatus): StatusVariant {
+  return MEDIA_STATUS_VARIANTS[status] ?? 'secondary'
 }
 
-/**
- * Format anime watch status to a localized label
- */
-export function formatAnimeStatus(status: AnimeStatus): string {
-  return messages.value.library.animeStatus[status]
-}
-
-/**
- * Map anime watch status to badge variant for UI display
- */
-export function getAnimeStatusVariant(status: AnimeStatus): StatusVariant {
-  return ANIME_STATUS_VARIANTS[status] ?? 'secondary'
-}
-
-const COMIC_STATUS_VARIANTS: Record<ComicStatus, StatusVariant> = {
-  planned: 'secondary',
-  reading: 'default',
-  completed: 'success',
-  onHold: 'warning',
-  dropped: 'destructive'
-}
-
-const NOVEL_STATUS_VARIANTS: Record<NovelStatus, StatusVariant> = {
-  planned: 'secondary',
-  reading: 'default',
-  completed: 'success',
-  onHold: 'warning',
-  dropped: 'destructive'
-}
-
-/**
- * Format comic read status to a localized label
- */
-export function formatComicStatus(status: ComicStatus): string {
-  return messages.value.library.comicStatus[status]
-}
-
-/**
- * Map comic read status to badge variant for UI display
- */
-export function getComicStatusVariant(status: ComicStatus): StatusVariant {
-  return COMIC_STATUS_VARIANTS[status] ?? 'secondary'
-}
-
-/**
- * Format novel read status to a localized label
- */
-export function formatNovelStatus(status: NovelStatus): string {
-  return messages.value.library.novelStatus[status]
-}
-
-/**
- * Map novel read status to badge variant for UI display
- */
-export function getNovelStatusVariant(status: NovelStatus): StatusVariant {
-  return NOVEL_STATUS_VARIANTS[status] ?? 'secondary'
+/** Localized status options in canonical order, verbs per media type. */
+export function getMediaStatusOptions(
+  mediaType: MediaType
+): { value: MediaStatus; label: string }[] {
+  return MEDIA_STATUS_VALUES.map((value) => ({
+    value,
+    label: formatMediaStatus(mediaType, value)
+  }))
 }
 
 /**

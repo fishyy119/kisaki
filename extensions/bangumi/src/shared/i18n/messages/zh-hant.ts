@@ -93,7 +93,6 @@ export const zhHant = {
       `${SCOPES[scope]}暫不支援寫入本機媒體庫`,
     localWriteUnsupportedGeneric: '該媒體類型暫不支援寫入本機媒體庫',
 
-    localMediaStatusUnknown: '無法識別本機條目狀態',
     localMediaMissing: '本機條目不存在',
     bookKindUnresolved: 'Bangumi 未說明該書籍是漫畫還是小說，因此未匯入',
     localItemMissing: '本機條目不存在',
@@ -256,29 +255,10 @@ export const zhHant = {
       remotePreview: '遠端預覽'
     },
 
-    gameStatus: {
-      notStarted: '想玩',
-      inProgress: '在玩',
-      partial: '部分完成',
-      completed: '玩過',
-      multiple: '多周目',
-      shelved: '擱置',
-      unset: '未設定'
-    },
-
-    animeStatus: {
-      planned: '想看',
-      watching: '在看',
-      completed: '看過',
-      onHold: '擱置',
-      dropped: '拋棄',
-      unset: '未設定'
-    },
-
-    bookStatus: {
-      planned: '想讀',
-      reading: '在讀',
-      completed: '讀過',
+    status: {
+      planned: '計劃中',
+      active: '進行中',
+      completed: '已完成',
       onHold: '擱置',
       dropped: '拋棄',
       unset: '未設定'

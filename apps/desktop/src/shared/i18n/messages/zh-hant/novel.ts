@@ -71,8 +71,7 @@ export const novel = {
 
   detail: {
     openNovelDir: '開啟小說資料夾',
-    novelDirNotSet: '未設定小說資料夾',
-    readStatus: '閱讀狀態'
+    novelDirNotSet: '未設定小說資料夾'
   },
 
   filesConfig: {
@@ -82,12 +81,6 @@ export const novel = {
     selectDir: '選擇資料夾',
     novelDirHint:
       '檔案同步會掃描該資料夾以匹配卷檔案；留空則完全手動管理檔案。儲存修改後會重新同步檔案。'
-  },
-
-  statusDialog: {
-    title: '編輯閱讀狀態',
-    label: '閱讀狀態',
-    selectStatus: '選擇狀態'
   },
 
   lastActiveDialog: {

@@ -74,8 +74,7 @@ export const comic = {
 
   detail: {
     openComicDir: '打开漫画文件夹',
-    comicDirNotSet: '未设置漫画文件夹',
-    readStatus: '阅读状态'
+    comicDirNotSet: '未设置漫画文件夹'
   },
 
   filesConfig: {
@@ -85,12 +84,6 @@ export const comic = {
     selectDir: '选择文件夹',
     comicDirHint:
       '文件同步会扫描该文件夹以匹配单元文件；留空则完全手动管理文件。保存修改后会重新同步文件。'
-  },
-
-  statusDialog: {
-    title: '编辑阅读状态',
-    label: '阅读状态',
-    selectStatus: '选择状态'
   },
 
   lastActiveDialog: {

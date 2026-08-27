@@ -78,8 +78,7 @@ export const novel = {
 
   detail: {
     openNovelDir: 'Open novel folder',
-    novelDirNotSet: 'The novel folder is not set',
-    readStatus: 'Read status'
+    novelDirNotSet: 'The novel folder is not set'
   },
 
   filesConfig: {
@@ -89,12 +88,6 @@ export const novel = {
     selectDir: 'Select folder',
     novelDirHint:
       'File sync scans this folder to match volume files; leave it empty for fully manual file management. Saving a change re-syncs files.'
-  },
-
-  statusDialog: {
-    title: 'Edit read status',
-    label: 'Read status',
-    selectStatus: 'Select status'
   },
 
   lastActiveDialog: {
