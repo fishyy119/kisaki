@@ -32,9 +32,9 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
-import { settings } from '@shared/db'
 import { MEDIA_TYPES, type MediaType } from '@shared/common'
 import type { ScannerRunIssueType } from '@shared/scanner'
+import { addScannerIgnoredName } from '../ignored-names'
 import ScannerResultFixDialog from './scanner-result-fix-dialog.vue'
 import {
   getIssueIcon,
@@ -42,7 +42,7 @@ import {
   toIssueFixTarget,
   type ScannerFixTarget,
   type ScannerIssueRow
-} from './scanner-problem'
+} from './scanner-issue'
 
 const log = createLogger('Scanner')
 
@@ -208,24 +208,15 @@ function handleFixIssue(row: ScannerIssueRow) {
 }
 
 async function handleAddToExclusion(row: ScannerIssueRow) {
-  const extractedName = row.issue.extractedName.trim()
-  if (!extractedName) return
-
   try {
-    const currentSettings = await db.query.settings.findFirst()
-    const currentIgnoredNames = currentSettings?.scannerIgnoredNames ?? []
-    if (currentIgnoredNames.includes(extractedName)) {
-      notify.success(m.value.scanner.issues.alreadyExcluded)
-      return
-    }
+    const result = await addScannerIgnoredName(row.issue.extractedName)
+    if (result === 'empty') return
 
-    await db
-      .update(settings)
-      .set({ scannerIgnoredNames: [...currentIgnoredNames, extractedName] })
-      .where(eq(settings.id, 0))
-      .run()
-
-    notify.success(m.value.scanner.issues.addedToExclusion)
+    notify.success(
+      result === 'exists'
+        ? m.value.scanner.issues.alreadyExcluded
+        : m.value.scanner.issues.addedToExclusion
+    )
   } catch (error) {
     notify.error(
       m.value.scanner.issues.excludeFailed,

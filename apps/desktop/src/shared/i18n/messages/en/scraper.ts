@@ -8,7 +8,8 @@ export const scraper = {
   },
   profileSelect: {
     placeholder: 'Select a scraper profile',
-    empty: 'No profiles'
+    empty: 'No profiles',
+    none: 'No scraper profile'
   },
   presetDialog: {
     title: 'Choose preset profiles',
@@ -38,6 +39,10 @@ export const scraper = {
     addProfile: 'Add profile',
     choosePreset: 'Choose preset',
     profileEntityLabel: 'Profile',
+    deleteUsedByScanners: ({ count }: { count: number }) =>
+      count === 1
+        ? '1 scanner uses this profile; after deletion it will import directly without scraping.'
+        : `${count} scanners use this profile; after deletion they will import directly without scraping.`,
     newTitleMediaType: 'Choose a media type',
     newTitleProvider: 'Choose the primary provider',
     newMediaTypeHint: 'Choose the media type for the new profile',

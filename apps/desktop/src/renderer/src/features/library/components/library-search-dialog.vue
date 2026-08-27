@@ -78,7 +78,7 @@ const query = ref('')
 const { results, isLoading, hasResults, query: debouncedQuery } = useLibrarySearch(query)
 const state = useRenderState(isLoading, null, results)
 const focusedIndex = ref(-1)
-const inputRef = ref<HTMLInputElement>()
+const inputRef = ref<InstanceType<typeof Input>>()
 const contentRef = ref<HTMLDivElement>()
 const prevDebouncedQuery = ref('')
 

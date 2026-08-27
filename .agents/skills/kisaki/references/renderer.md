@@ -121,6 +121,12 @@ HMR degrades to full page reloads and route-level code splitting is defeated.
    components statically in `core/router.ts`.
 3. Feature root `index.ts` exports the feature's static contract only (route data loaders and
    similar); it must not re-export page components.
+4. Root `src/pages/` charter: system-owned route surfaces only. A page belongs there if and
+   only if a core-level subsystem owns it, it imports no `features/*` code, and no feature code
+   references it (two-way zero coupling). Current members: `not-found-page.vue` (owner: router)
+   and `extension-webview-page.vue` (owner: `core/extensions` webview runtime; its
+   `/extension-page/...` route path and name are the webview navigation contract). Every other
+   page lives in its feature's `pages/` folder.
 
 ## Vue 3 SFC Patterns
 

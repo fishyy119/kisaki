@@ -1,17 +1,17 @@
 import type { TaskRunHandle } from '@main/services/task-run'
+import type { Scanner } from '@shared/db'
 import type { ScannerRunIssue, ScannerRunState } from '@shared/scanner'
 import type {
   ScannedEntity,
   ScannerEntityError,
   ScannerEntityProcessResult,
-  ScannerEntityWarning,
-  ScannerRunMetadata
+  ScannerEntityWarning
 } from './types'
 
 type NewScannerEntityProcessResult = Extract<ScannerEntityProcessResult, { kind: 'new' }>
 type FailedScannerEntityProcessResult = Extract<ScannerEntityProcessResult, { kind: 'failed' }>
 
-export class ScannerRunStateStore<TScanner extends ScannerRunMetadata> {
+export class ScannerRunStateStore {
   private readonly states = new Map<string, ScannerRunState>()
 
   list(): ScannerRunState[] {
@@ -20,7 +20,7 @@ export class ScannerRunStateStore<TScanner extends ScannerRunMetadata> {
       .sort((left, right) => right.updatedAt - left.updatedAt)
   }
 
-  create(scanner: TScanner, run: TaskRunHandle): ScannerRunState {
+  create(scanner: Scanner, run: TaskRunHandle): ScannerRunState {
     const state: ScannerRunState = {
       runId: run.id,
       scannerId: scanner.id,

@@ -1,31 +1,13 @@
 /**
  * Character data composable
  *
- * Provides character data with all related entities using Provider/Consumer pattern.
- * Two provider surfaces share one fetcher, context assembly, and db sync:
- * route pages consume the navigation-time loader, dialogs fetch after mount.
+ * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * from the entity detail context factory; this module owns what a character
+ * detail surface fetches and shows.
  */
 
-import {
-  provide,
-  inject,
-  ref,
-  toRef,
-  toValue,
-  computed,
-  watch,
-  type InjectionKey,
-  type Ref,
-  type MaybeRefOrGetter,
-  type ComputedRef
-} from 'vue'
-import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import { eq, asc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { defineRouteData } from '@renderer/core/route-data'
-import { useAsyncData } from './use-async-data'
-import { usePreferencesStore } from '@renderer/stores'
 import type {
   Character,
   CharacterTagLink,
@@ -42,16 +24,19 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
-import type { TableName } from '@shared/db/table-names'
 import type { MediaType } from '@shared/common'
-import { useDbChanges } from './use-db-changes'
+import {
+  createEntityDetailContext,
+  type EntityDetailContext,
+  type EntityDetailProviderReturn
+} from './entity-context'
 
 // =============================================================================
 // Types
 // =============================================================================
 
-interface CharacterData {
-  character: Character
+export interface CharacterData {
+  character: Character | null
   tags: (CharacterTagLink & { tag: Tag | null })[]
   games: (GameCharacterLink & { game: Game | null })[]
   animes: (AnimeCharacterLink & { anime: Anime | null })[]
@@ -75,32 +60,8 @@ export interface CharacterCastEntry {
   person: Person | null
 }
 
-export interface CharacterContext {
-  character: ComputedRef<Character | null>
-  tags: ComputedRef<(CharacterTagLink & { tag: Tag | null })[]>
-  games: ComputedRef<(GameCharacterLink & { game: Game | null })[]>
-  animes: ComputedRef<(AnimeCharacterLink & { anime: Anime | null })[]>
-  comics: ComputedRef<(ComicCharacterLink & { comic: Comic | null })[]>
-  novels: ComputedRef<(NovelCharacterLink & { novel: Novel | null })[]>
-  persons: ComputedRef<(CharacterPersonLink & { person: Person | null })[]>
-  /** Confirmed voice credits of this character, one row per entry and actor */
-  cast: ComputedRef<CharacterCastEntry[]>
-  isLoading: Ref<boolean>
-  isFetching: Ref<boolean>
-  error: Ref<string | null>
-  refetch: () => Promise<void>
-}
-
-export interface CharacterProviderReturn extends CharacterContext {
-  /** Spoiler reveal state owned by the provider; toggling refetches (SWR) */
-  spoilersRevealed: Ref<boolean>
-}
-
-// =============================================================================
-// Injection Key
-// =============================================================================
-
-export const CharacterKey: InjectionKey<CharacterContext> = Symbol('character')
+export type CharacterContext = EntityDetailContext<CharacterData>
+export type CharacterProviderReturn = EntityDetailProviderReturn<CharacterData>
 
 // =============================================================================
 // Data Fetcher
@@ -261,58 +222,10 @@ async function fetchCharacterData(
 }
 
 // =============================================================================
-// Route Loader
+// Context Wiring
 // =============================================================================
 
-// Route-surface spoiler state lives beside the loader so the navigation-time
-// fetch reads a consistent value; it resets whenever a different entity loads.
-let lastRouteCharacterId: string | null = null
-const routeSpoilersRevealed = ref(false)
-
-export const characterDetailData = defineRouteData((route) => {
-  const characterId = route.params.characterId as string
-  if (characterId !== lastRouteCharacterId) {
-    lastRouteCharacterId = characterId
-    routeSpoilersRevealed.value = false
-  }
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  return fetchCharacterData(characterId, routeSpoilersRevealed.value, showNsfw.value)
-})
-
-// =============================================================================
-// Shared Internals
-// =============================================================================
-
-interface CharacterDataSource {
-  data: Readonly<Ref<CharacterData | null | undefined>>
-  isLoading: Ref<boolean>
-  isFetching: Ref<boolean>
-  error: Ref<string | null>
-  refetch: () => Promise<void>
-}
-
-function provideCharacterContext(source: CharacterDataSource): CharacterContext {
-  const context: CharacterContext = {
-    character: computed(() => source.data.value?.character ?? null),
-    tags: computed(() => source.data.value?.tags ?? []),
-    games: computed(() => source.data.value?.games ?? []),
-    animes: computed(() => source.data.value?.animes ?? []),
-    comics: computed(() => source.data.value?.comics ?? []),
-    novels: computed(() => source.data.value?.novels ?? []),
-    persons: computed(() => source.data.value?.persons ?? []),
-    cast: computed(() => source.data.value?.cast ?? []),
-    isLoading: source.isLoading,
-    isFetching: source.isFetching,
-    error: source.error,
-    refetch: source.refetch
-  }
-
-  provide(CharacterKey, context)
-
-  return context
-}
-
-const CHARACTER_LINK_TABLES: readonly TableName[] = [
+const CHARACTER_LINK_TABLES = [
   'character_tag_links',
   'game_character_links',
   'anime_character_links',
@@ -323,87 +236,25 @@ const CHARACTER_LINK_TABLES: readonly TableName[] = [
   'character_person_links'
 ]
 
-function useCharacterDbSync(
-  characterId: MaybeRefOrGetter<string>,
-  refetch: () => Promise<void>
-): void {
-  useDbChanges(({ operation, table, id: entityId }) => {
-    if (CHARACTER_LINK_TABLES.includes(table)) {
-      refetch()
-      return
-    }
-    if (table === 'characters' && entityId === toValue(characterId) && operation !== 'inserted') {
-      refetch()
-    }
-  })
-}
+const characterDetail = createEntityDetailContext<CharacterData>({
+  entityLabel: 'character',
+  routeParam: 'characterId',
+  empty: {
+    character: null,
+    tags: [],
+    games: [],
+    animes: [],
+    comics: [],
+    novels: [],
+    persons: [],
+    cast: []
+  },
+  fetch: (id, view) => fetchCharacterData(id, view.spoilersRevealed, view.showNsfw),
+  ownedTables: CHARACTER_LINK_TABLES,
+  entityTable: 'characters'
+})
 
-// =============================================================================
-// Provider Composables
-// =============================================================================
-
-/**
- * Provide character data on the route surface (data settled during navigation).
- */
-export function useCharacterRouteProvider(): CharacterProviderReturn {
-  const route = useRoute()
-  const characterId = computed(() => route.params.characterId as string)
-  const { data, error, isFetching, refetch } = characterDetailData()
-
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  watch(showNsfw, () => void refetch())
-
-  const spoilersRevealed = computed({
-    get: () => routeSpoilersRevealed.value,
-    set: (value) => {
-      routeSpoilersRevealed.value = value
-      void refetch()
-    }
-  })
-
-  const context = provideCharacterContext({
-    data,
-    isLoading: ref(false),
-    isFetching,
-    error,
-    refetch
-  })
-  useCharacterDbSync(characterId, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-/**
- * Provide character data on the dialog surface (fetches after mount).
- */
-export function useCharacterDialogProvider(
-  characterId: MaybeRefOrGetter<string>
-): CharacterProviderReturn {
-  const id = toRef(characterId)
-  const spoilersRevealed = ref(false)
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchCharacterData(toValue(id), spoilersRevealed.value, showNsfw.value),
-    { watch: [id, spoilersRevealed, showNsfw] }
-  )
-
-  const context = provideCharacterContext({ data, isLoading, isFetching, error, refetch })
-  useCharacterDbSync(id, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-// =============================================================================
-// Consumer Composable
-// =============================================================================
-
-export function useCharacter(): CharacterContext {
-  const context = inject(CharacterKey)
-  if (!context) {
-    throw new Error(
-      'useCharacter() must be used within a component that provided the character context'
-    )
-  }
-  return context
-}
+export const characterDetailData = characterDetail.detailData
+export const useCharacterRouteProvider = characterDetail.useRouteProvider
+export const useCharacterDialogProvider = characterDetail.useDialogProvider
+export const useCharacter = characterDetail.useContext

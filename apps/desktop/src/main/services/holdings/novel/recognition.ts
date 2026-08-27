@@ -9,6 +9,13 @@
  */
 
 import path from 'node:path'
+import {
+  cleanDisplayName,
+  isPlausibleYearToken,
+  parseNumberToken,
+  stripReleaseTags,
+  stripRevisionMarkers
+} from '../release-naming'
 
 const BOOK_EXTENSIONS = new Set(['.epub', '.mobi', '.azw3', '.azw', '.fb2', '.txt', '.pdf'])
 
@@ -39,44 +46,6 @@ export function isNovelBookFile(fileName: string): boolean {
   return BOOK_EXTENSIONS.has(path.extname(fileName).toLowerCase())
 }
 
-function parseNumber(value: string | undefined): number | undefined {
-  if (value === undefined) return undefined
-  const parsed = Number.parseFloat(value)
-  return Number.isFinite(parsed) ? parsed : undefined
-}
-
-/** Bracketed release-group and quality tags carry no volume identity. */
-function stripReleaseTags(name: string): string {
-  return name
-    .replace(/\[[^\]]*\]/g, ' ')
-    .replace(/\([^)]*\)/g, ' ')
-    .replace(/【[^】]*】/g, ' ')
-}
-
-function cleanDisplayName(baseName: string): string {
-  const cleaned = stripReleaseTags(baseName)
-    .replace(/[\s._-]+/g, ' ')
-    .trim()
-  return cleaned || baseName
-}
-
-/**
- * Drops release-revision markers.
- *
- * A re-release appends `v2` to an installment it already numbered, which reads
- * exactly like the volume shorthand. A single-letter `v` that follows another
- * number is the revision; the full words `vol` and `volume` always mean the
- * volume.
- */
-function stripRevisionMarkers(name: string): string {
-  return name.replace(/(\d)([\s._-]*)v\d{1,2}(?![a-z0-9])/gi, '$1')
-}
-
-/** Integer tokens inside the plausible release-year range (1900-2100). */
-function isPlausibleYearToken(value: number): boolean {
-  return Number.isInteger(value) && value >= 1900 && value <= 2100
-}
-
 /** Recognize one book file as a volume candidate. */
 export function recognizeNovelVolume(filePath: string): NovelVolumeCandidate {
   const fileName = path.basename(filePath)
@@ -85,11 +54,11 @@ export function recognizeNovelVolume(filePath: string): NovelVolumeCandidate {
 
   let volumeNumber = undefined as number | undefined
   for (const pattern of VOLUME_PATTERNS) {
-    volumeNumber = parseNumber(searchable.match(pattern)?.[1])
+    volumeNumber = parseNumberToken(searchable.match(pattern)?.[1])
     if (volumeNumber !== undefined) break
   }
   if (volumeNumber === undefined) {
-    const bare = parseNumber(searchable.match(BARE_NUMBER_PATTERN)?.[1])
+    const bare = parseNumberToken(searchable.match(BARE_NUMBER_PATTERN)?.[1])
     // A leading year is a title ("1984"), not a volume number.
     if (bare !== undefined && !isPlausibleYearToken(bare)) volumeNumber = bare
   }

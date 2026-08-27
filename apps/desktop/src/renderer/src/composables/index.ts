@@ -36,7 +36,13 @@ export {
 
 // Entity data composables (Provider/Consumer pattern)
 export {
-  GameKey,
+  createEntityDetailContext,
+  type EntityDetailContext,
+  type EntityDetailProviderReturn,
+  type EntityDetailSpec,
+  type EntityDetailView
+} from './entity-context'
+export {
   gameDetailData,
   useGame,
   useGameDialogProvider,
@@ -46,7 +52,6 @@ export {
   type GameProviderReturn
 } from './use-game'
 export {
-  AnimeKey,
   animeDetailData,
   useAnime,
   useAnimeDialogProvider,
@@ -74,7 +79,6 @@ export {
   type UnwatchedEpisodeCounts
 } from './use-anime-watch'
 export {
-  ComicKey,
   comicDetailData,
   useComic,
   useComicDialogProvider,
@@ -86,7 +90,6 @@ export {
 export { useComicFileSync, type ComicFileSync } from './use-comic-file-sync'
 export { useComicReading, type ComicReading } from './use-comic-reading'
 export {
-  NovelKey,
   novelDetailData,
   useNovel,
   useNovelDialogProvider,
@@ -108,7 +111,6 @@ export {
   type CollectionContext
 } from './use-collection'
 export {
-  PersonKey,
   personDetailData,
   usePerson,
   usePersonDialogProvider,
@@ -118,7 +120,6 @@ export {
   type PersonProviderReturn
 } from './use-person'
 export {
-  CharacterKey,
   characterDetailData,
   useCharacter,
   useCharacterDialogProvider,
@@ -128,7 +129,6 @@ export {
   type CharacterProviderReturn
 } from './use-character'
 export {
-  CompanyKey,
   companyDetailData,
   useCompany,
   useCompanyDialogProvider,

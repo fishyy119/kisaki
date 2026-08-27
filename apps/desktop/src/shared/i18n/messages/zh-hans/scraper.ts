@@ -9,7 +9,8 @@ export const scraper = {
   },
   profileSelect: {
     placeholder: '选择刮削配置',
-    empty: '暂无配置'
+    empty: '暂无配置',
+    none: '不使用刮削配置'
   },
   presetDialog: {
     title: '选择预设配置',
@@ -39,6 +40,8 @@ export const scraper = {
     addProfile: '添加配置',
     choosePreset: '选择预设',
     profileEntityLabel: '配置',
+    deleteUsedByScanners: ({ count }: { count: number }) =>
+      `${count} 个扫描器正在使用该配置，删除后它们将不再刮削、直接导入。`,
     newTitleMediaType: '选择媒体类型',
     newTitleProvider: '选择主要提供者',
     newMediaTypeHint: '选择要创建配置的媒体类型',

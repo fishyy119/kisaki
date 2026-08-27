@@ -2,20 +2,16 @@
 /**
  * Scanner Page
  *
- * Main scanner management page.
- * Provides scanner context and displays list of scanners.
+ * Main scanner management page listing all configured scanners.
  */
 
-import { useScannerProvider } from '../composables'
+import { useScanners } from '../composables'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { ScannerHeader, ScannerEmptyState, ScannerItem } from '../components'
 import { useI18n } from '@renderer/composables/use-i18n'
 
-// =============================================================================
-// Context Provider (data settled during navigation by the route loader)
-// =============================================================================
-
-const { scanners } = useScannerProvider()
+// Data settled during navigation by the route loader
+const { scanners } = useScanners()
 
 const SCANNER_TABLE_COLUMNS = ['', '5rem', '13%', '13%', '10rem', '7rem', '10rem']
 

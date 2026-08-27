@@ -1,7 +1,6 @@
 /**
- * Novel scraper handler exports
+ * Novel scraper contract exports
  */
 
-export { NovelScraperHandler } from './handler'
 export type { NovelScraperProvider } from './provider'
 export type { NovelScraperResult, NovelScraperImageResult } from './types'

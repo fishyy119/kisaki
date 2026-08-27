@@ -56,6 +56,13 @@ function handleCompositionEnd(event: Event) {
   isComposing = false
   handleInput(event)
 }
+
+// The input is this component's whole surface, so focus is its one imperative
+// affordance; parents holding a template ref reach it without knowing the
+// internal element.
+defineExpose({
+  focus: (): void => inputElement.value?.focus()
+})
 </script>
 
 <template>

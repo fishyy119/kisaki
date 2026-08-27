@@ -1,7 +1,6 @@
 /**
- * Game scraper handler exports
+ * Game scraper contract exports
  */
 
-export { GameScraperHandler } from './handler'
 export type { GameScraperProvider } from './provider'
 export type { GameScraperResult, GameScraperImageResult } from './types'

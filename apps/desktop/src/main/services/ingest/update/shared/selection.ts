@@ -1,11 +1,11 @@
 import type { UpdateResolvedSelection } from '../types'
 
 export function normalizeSelection<T extends string>(
-  selection: readonly T[] | null | undefined,
+  selection: readonly string[] | null | undefined,
   allowed: readonly T[]
 ): T[] {
-  const allowedSet = new Set(allowed)
-  return [...new Set((selection ?? []).filter((item): item is T => allowedSet.has(item as T)))]
+  const allowedSet: ReadonlySet<string> = new Set(allowed)
+  return [...new Set((selection ?? []).filter((item): item is T => allowedSet.has(item)))]
 }
 
 export function resolveUpdateSelection<

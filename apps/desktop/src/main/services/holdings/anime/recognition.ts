@@ -10,6 +10,7 @@
 
 import path from 'node:path'
 import type { AnimeEpisodeType, AnimeExtraType } from '@shared/db'
+import { isPlausibleYearToken } from '../release-naming'
 
 /** Containers mpv plays and ffprobe understands. */
 const VIDEO_EXTENSIONS = new Set([
@@ -156,11 +157,6 @@ function readExtraType(fileName: string): AnimeExtraType | undefined {
     }
   }
   return undefined
-}
-
-/** Integer tokens inside the plausible release-year range (1900-2100). */
-function isPlausibleYearToken(value: number): boolean {
-  return Number.isInteger(value) && value >= 1900 && value <= 2100
 }
 
 function readEpisodeNumber(cleaned: string): number | undefined {

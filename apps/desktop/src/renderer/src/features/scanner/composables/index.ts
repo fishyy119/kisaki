@@ -1,1 +1,1 @@
-export { useScannerProvider, useScanner, scannersData, type ScannerContext } from './use-scanner'
+export { useScanners, scannersData, type ScannersView } from './use-scanners'

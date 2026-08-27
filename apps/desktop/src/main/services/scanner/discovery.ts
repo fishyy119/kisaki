@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { createLogger } from '@main/log'
+import { normalizeLibraryDirPath } from '@main/utils/fs'
 import type { DbService } from '@main/services/db'
 import type { NameExtractionRule } from '@shared/db'
 import type { EntityEntry, ExtractionTestResult } from '@shared/scanner'
@@ -44,10 +45,12 @@ export class ScannerDiscovery {
 
   /**
    * Generic entity scanner - works for all media types.
-   * Returns scannable directory entries at the specified depth level.
+   * Returns scannable directory entries at the specified depth level, with
+   * extraction applied first and the ignore list matched on extracted names.
    */
-  async scanForEntities(rootPath: string, options: ScanOptions): Promise<EntityEntry[]> {
+  async scanForEntities(scanRootPath: string, options: ScanOptions): Promise<EntityEntry[]> {
     const { entityDepth, ignoredNames, nameExtractionRules } = options
+    const rootPath = normalizeLibraryDirPath(scanRootPath)
 
     try {
       const entries = await fs.readdir(rootPath, { withFileTypes: true })
@@ -73,15 +76,13 @@ export class ScannerDiscovery {
       return entityEntries
         .map((entry) => {
           const originalName = entry.name
-          const originalBaseName = originalName
           const { extractedName, matchedRuleId } = this.extractEntityName(
-            originalBaseName,
+            originalName,
             nameExtractionRules
           )
           return {
             path: path.join(rootPath, entry.name),
             originalName,
-            originalBaseName,
             extractedName,
             matchedRuleId
           }
@@ -93,6 +94,10 @@ export class ScannerDiscovery {
     }
   }
 
+  /**
+   * Preview extraction with the exact pipeline a real scan runs: rules are
+   * applied first and the ignore list then filters on extracted names.
+   */
   async testExtractionRules(
     scannerPath: string,
     entityDepth: number,
@@ -102,19 +107,13 @@ export class ScannerDiscovery {
     const entities = await this.scanForEntities(scannerPath, {
       entityDepth,
       ignoredNames: settingsData.scannerIgnoredNames,
-      nameExtractionRules: []
+      nameExtractionRules: rules
     })
 
-    return entities.map((entity) => {
-      const { extractedName, matchedRuleId } = this.extractEntityName(
-        entity.originalBaseName,
-        rules
-      )
-      return {
-        originalName: entity.originalName,
-        extractedName,
-        matchedRuleId
-      }
-    })
+    return entities.map((entity) => ({
+      originalName: entity.originalName,
+      extractedName: entity.extractedName,
+      matchedRuleId: entity.matchedRuleId
+    }))
   }
 }

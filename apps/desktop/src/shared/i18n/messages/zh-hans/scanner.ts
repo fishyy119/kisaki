@@ -103,7 +103,7 @@ export const scanner = {
     ingestDirectOnly: '仅直接入库',
     ingestDirectOnlyDescription: '跳过刮削，直接按识别结果创建游戏',
     parallelCount: '并行处理数',
-    parallelCountDescription: '控制单个扫描器同时处理的条目数，1 表示串行处理',
+    parallelCountDescription: '所有进行中的扫描共享的同时处理条目总数，1 表示串行处理',
     ignoredNames: '忽略名称列表',
     ignoredNamesDescription: '扫描器会跳过这些提取后的实体名称',
     ignoredNamePlaceholder: '输入要忽略的名称…',
@@ -113,7 +113,7 @@ export const scanner = {
   form: {
     createTitle: '创建扫描器',
     editTitle: '编辑扫描器',
-    requiredFields: '请填写必填字段',
+    requiredFields: '请填写名称和扫描路径',
     updated: '扫描器已更新',
     created: '扫描器已创建',
     updateFailed: '更新失败，请重试',
@@ -128,7 +128,8 @@ export const scanner = {
     entityDepthHelp:
       '指定媒体实体在目录结构中的层级深度。0 表示扫描路径的直接子项就是实体，1 表示子目录下的项目是实体，以此类推。',
     scraperProfile: '刮削配置',
-    scraperProfileHelp: '选择用于获取元数据的刮削配置。配置决定了从哪些数据源获取哪些字段的数据。',
+    scraperProfileHelp:
+      '选择用于获取元数据的刮削配置。配置决定了从哪些数据源获取哪些字段的数据。不选择时，此扫描器直接按文件夹名导入条目。',
     targetCollection: '目标合集',
     watchEnabled: '监控变更',
     watchEnabledDescription: '出现新的实体目录时自动扫描，并在启动时扫描一次。关闭后仅能手动扫描。',
@@ -228,7 +229,8 @@ export const scanner = {
         `${count} 个文件无法识别卷号或话数，已作为未编号单元添加`,
       volumeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 个书籍文件无法识别卷号，已作为未编号卷添加`,
-      fileSyncFailed: '条目已添加，但视频文件同步失败，详见日志'
+      fileSyncFailed: '条目已添加，但视频文件同步失败，详见日志',
+      unexpected: '处理此条目时发生意外错误，详见日志'
     }
   }
 } satisfies Messages['scanner']

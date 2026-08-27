@@ -5,7 +5,7 @@ import type { TaskRunService } from '@main/services/task-run'
 import type { CharacterBatchUpdateRequest } from '@shared/ingest/update'
 import type { TaskRunStartResult } from '@shared/task-run'
 import { characters } from '@shared/db'
-import type { CharacterUpdateHandler } from '../update'
+import type { EntityUpdateApi } from '../update'
 import { IngestBatchUpdateRunner } from './runner'
 import { loadIngestBatchRows } from './rows'
 
@@ -15,7 +15,7 @@ export class CharacterBatchHandler {
   constructor(
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
-    private readonly updateHandler: CharacterUpdateHandler,
+    private readonly updateHandler: EntityUpdateApi<'character'>,
     taskRunService: TaskRunService,
     i18nService: I18nService
   ) {

@@ -1,1 +1,5 @@
-export { GameUpdateHandler } from './update'
+export { applyGamePlan } from './apply'
+export { loadGameCurrent } from './current'
+export { buildGameIncoming } from './incoming'
+export { resolveGameUpdateLookup } from './lookup'
+export { buildGamePlan } from './plan'

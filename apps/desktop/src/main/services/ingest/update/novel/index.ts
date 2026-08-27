@@ -1,1 +1,5 @@
-export { NovelUpdateHandler } from './update'
+export { applyNovelPlan } from './apply'
+export { loadNovelCurrent } from './current'
+export { buildNovelIncoming } from './incoming'
+export { resolveNovelUpdateLookup } from './lookup'
+export { buildNovelPlan } from './plan'

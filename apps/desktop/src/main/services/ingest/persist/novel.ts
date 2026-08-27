@@ -1,5 +1,6 @@
 import { resolveTagId, type DbContext, type DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
+import { normalizeLibraryDirPath } from '@main/utils/fs'
 import type {
   IngestAddNovelFromScraperOptions,
   IngestAddNovelFromScraperResult
@@ -351,6 +352,8 @@ export class NovelIngestPersistHandler {
       description: core.description,
       externalSites: core.externalSites || [],
       novelDirPath: options?.novelDirPath
+        ? normalizeLibraryDirPath(options.novelDirPath)
+        : undefined
     }
     if (core.format) {
       newNovel.format = core.format
@@ -380,7 +383,8 @@ export class NovelIngestPersistHandler {
     tx: DbContext
   ): { novelId: string; existingReason: 'path' | 'externalId' } | undefined {
     if (options?.novelDirPath) {
-      const existingByPath = this.dbService.entityFinder.findExistingNovel(
+      const existingByPath = this.dbService.entityFinder.findExisting(
+        'novel',
         { path: options.novelDirPath },
         tx
       )
@@ -391,7 +395,8 @@ export class NovelIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExistingNovel(
+      const existingByExternalId = this.dbService.entityFinder.findExisting(
+        'novel',
         { externalIds },
         tx
       )

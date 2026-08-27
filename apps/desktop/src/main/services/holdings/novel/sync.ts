@@ -16,13 +16,8 @@ import path from 'node:path'
 
 import { createLogger } from '@main/log'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
-import {
-  readFileStat,
-  readPrimaryElection,
-  SyncPassQueue,
-  unnamedUnitGroupKey,
-  type FileStat
-} from '../reconcile'
+import { readFileStat, SyncPassQueue, unnamedUnitGroupKey } from '../reconcile'
+import { reconcileUnitFiles, type UnitReconcileSpec } from '../unit-reconcile'
 import {
   novelSessions,
   novelVolumeFiles,
@@ -53,10 +48,16 @@ export interface NovelFileSyncOptions extends NovelFileSyncParams {
   signal?: AbortSignal
 }
 
-interface StattedVolumeFile {
-  candidate: NovelVolumeCandidate
-  stat: FileStat
+/** Column values a volume file row carries from one stat pass. */
+interface ProbedVolumeValues {
+  fileSize: number
+  fileMtime: Date
   container: string | null
+}
+
+interface ProbedVolumeFile {
+  candidate: NovelVolumeCandidate
+  values: ProbedVolumeValues
 }
 
 /** Sort key that keeps numbered volumes ascending and unnumbered ones last. */
@@ -79,6 +80,71 @@ function volumeCandidateKey(candidate: NovelVolumeCandidate): string {
   return isNumberedNovelVolume(candidate)
     ? novelUnitIdentityKey(candidate)
     : unnamedUnitGroupKey(candidate.path, candidate.name)
+}
+
+/** Identity key of a stored row; null keys the row by the files it owns. */
+function volumeRowKey(volume: NovelVolume): string | null {
+  return isNumberedNovelVolume(volume) ? novelUnitIdentityKey(volume) : null
+}
+
+const NOVEL_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
+  NovelVolume,
+  NovelVolumeFile,
+  NovelVolumeCandidate,
+  ProbedVolumeValues
+> = {
+  candidateKey: volumeCandidateKey,
+  candidatePath: (candidate) => candidate.path,
+  rowKey: volumeRowKey,
+  fileGroupKey: (filePath, volume) => unnamedUnitGroupKey(filePath, volume.name ?? ''),
+  insertUnit: (tx, novelId, candidate, _values, order) => {
+    const row: NewNovelVolume = {
+      id: nanoid(),
+      novelId,
+      volumeNumber: candidate.volumeNumber ?? null,
+      name: candidate.volumeNumber === undefined ? candidate.name : null,
+      orderInNovel: order
+    }
+    tx.insert(novelVolumes).values(row).run()
+    return row.id as string
+  },
+  deleteUnit: (tx, unitId) => {
+    tx.delete(novelVolumes).where(eq(novelVolumes.id, unitId)).run()
+  },
+  fileUnitId: (file) => file.volumeId,
+  insertFile: (tx, unitId, candidate, values, isPrimary) => {
+    const fileValues = {
+      volumeId: unitId,
+      path: candidate.path,
+      ...values,
+      isPrimary
+    } satisfies Omit<NewNovelVolumeFile, 'id'>
+    tx.insert(novelVolumeFiles)
+      .values({ id: nanoid(), ...fileValues })
+      .run()
+  },
+  updateFile: (tx, fileId, unitId, candidate, values, isPrimary) => {
+    const fileValues = {
+      volumeId: unitId,
+      path: candidate.path,
+      ...values,
+      isPrimary
+    } satisfies Omit<NewNovelVolumeFile, 'id'>
+    tx.update(novelVolumeFiles).set(fileValues).where(eq(novelVolumeFiles.id, fileId)).run()
+  },
+  deleteFile: (tx, fileId) => {
+    tx.delete(novelVolumeFiles).where(eq(novelVolumeFiles.id, fileId)).run()
+  },
+  isUnitProtected: (volume) => volume.read,
+  readSessionReferencedUnitIds: (tx, unitIds) =>
+    new Set(
+      (tx as DbQueryContext)
+        .select({ volumeId: novelSessions.volumeId })
+        .from(novelSessions)
+        .where(inArray(novelSessions.volumeId, [...unitIds]))
+        .all()
+        .flatMap((row) => (row.volumeId ? [row.volumeId] : []))
+    )
 }
 
 export class NovelFileSyncHandler {
@@ -106,12 +172,19 @@ export class NovelFileSyncHandler {
     const walkable = candidates.filter((candidate) => !manualPaths.has(candidate.path))
     walkable.sort(compareVolumes)
 
-    const statted: StattedVolumeFile[] = []
+    const probed: ProbedVolumeFile[] = []
     for (const candidate of walkable) {
       signal?.throwIfAborted()
       const stat = await readFileStat(candidate.path)
       if (!stat) continue
-      statted.push({ candidate, stat, container: resolveDocumentContainer(candidate.path) })
+      probed.push({
+        candidate,
+        values: {
+          fileSize: stat.size,
+          fileMtime: new Date(stat.mtimeMs),
+          container: resolveDocumentContainer(candidate.path)
+        }
+      })
     }
 
     return this.dbService.client.transaction((tx) => {
@@ -129,14 +202,17 @@ export class NovelFileSyncHandler {
             .all()
         : []
 
-      const volumeIdByKey = this.writeVolumes(tx, novelId, statted, existingVolumes, existingFiles)
-      const fileCount = this.writeVolumeFiles(tx, statted, volumeIdByKey, existingFiles)
-      this.deleteOrphanedFileBornVolumes(tx, existingVolumes, existingFiles, statted, volumeIdByKey)
+      const reconciled = reconcileUnitFiles(tx, NOVEL_UNIT_RECONCILE_SPEC, {
+        ownerId: novelId,
+        probed,
+        existingUnits: existingVolumes,
+        existingFiles
+      })
 
       return {
-        volumeCount: volumeIdByKey.size,
-        fileCount,
-        unrecognizedFiles: statted
+        volumeCount: reconciled.unitIdByKey.size,
+        fileCount: reconciled.fileCount,
+        unrecognizedFiles: probed
           .filter(({ candidate }) => candidate.volumeNumber === undefined)
           .map(({ candidate }) => candidate.path)
       }
@@ -262,173 +338,4 @@ export class NovelFileSyncHandler {
     return candidates
   }
 
-  /**
-   * Map each recognized file onto a volume row, creating rows for numbers the
-   * scraped list is missing. Unnumbered existing rows are re-matched by their
-   * group key, then by the paths of the files they own, so a re-sync stays
-   * idempotent even after the row was renamed by hand.
-   */
-  private writeVolumes(
-    tx: DbContext,
-    novelId: string,
-    statted: StattedVolumeFile[],
-    existingVolumes: NovelVolume[],
-    existingFiles: NovelVolumeFile[]
-  ): Map<string, string> {
-    const volumeById = new Map(existingVolumes.map((volume) => [volume.id, volume]))
-    const existingByKey = new Map<string, NovelVolume>()
-    for (const volume of existingVolumes) {
-      if (volume.volumeNumber !== null) {
-        existingByKey.set(`volume:${volume.volumeNumber}`, volume)
-      }
-    }
-    // Unnumbered rows exist only because of their files, so those files locate
-    // them again: their group key when the stored name still matches, and the
-    // path outright when a rename moved it out of reach.
-    const existingByFilePath = new Map<string, NovelVolume>()
-    for (const file of existingFiles) {
-      const volume = volumeById.get(file.volumeId)
-      if (!volume || volume.volumeNumber !== null) continue
-
-      existingByFilePath.set(file.path, volume)
-      const groupKey = unnamedUnitGroupKey(file.path, volume.name ?? '')
-      if (!existingByKey.has(groupKey)) existingByKey.set(groupKey, volume)
-    }
-
-    const volumeIdByKey = new Map<string, string>()
-    let nextOrder = existingVolumes.length
-
-    for (const { candidate } of statted) {
-      const key = volumeCandidateKey(candidate)
-
-      if (volumeIdByKey.has(key)) continue
-
-      const match = existingByKey.get(key) ?? existingByFilePath.get(candidate.path)
-      if (match) {
-        volumeIdByKey.set(key, match.id)
-        continue
-      }
-
-      const row: NewNovelVolume = {
-        id: nanoid(),
-        novelId,
-        volumeNumber: candidate.volumeNumber ?? null,
-        name: candidate.volumeNumber === undefined ? candidate.name : null,
-        orderInNovel: nextOrder++
-      }
-
-      tx.insert(novelVolumes).values(row).run()
-      volumeIdByKey.set(key, row.id as string)
-    }
-
-    return volumeIdByKey
-  }
-
-  private writeVolumeFiles(
-    tx: DbContext,
-    statted: StattedVolumeFile[],
-    volumeIdByKey: Map<string, string>,
-    existingFiles: NovelVolumeFile[]
-  ): number {
-    const knownIdByPath = new Map(existingFiles.map((file) => [file.path, file.id]))
-    const primaries = readPrimaryElection(existingFiles, (file) => file.volumeId)
-
-    const stattedByVolumeId = new Map<string, StattedVolumeFile[]>()
-    for (const item of statted) {
-      const volumeId = volumeIdByKey.get(volumeCandidateKey(item.candidate))
-      if (!volumeId) continue
-      const group = stattedByVolumeId.get(volumeId) ?? []
-      group.push(item)
-      stattedByVolumeId.set(volumeId, group)
-    }
-
-    let count = 0
-
-    // Sync-owned files that vanished from disk must not stay readable. Manual
-    // rows are user-owned and may live outside the walked directory, so they
-    // stay. Deletion runs first so the partial primary index never sees two
-    // rows.
-    const livePaths = new Set(statted.map(({ candidate }) => candidate.path))
-    for (const file of existingFiles) {
-      if (file.isManual || livePaths.has(file.path)) continue
-      tx.delete(novelVolumeFiles).where(eq(novelVolumeFiles.id, file.id)).run()
-    }
-
-    for (const [volumeId, group] of stattedByVolumeId) {
-      const primaryPath = primaries.elect(
-        volumeId,
-        group.map(({ candidate }) => candidate.path)
-      )
-
-      for (const { candidate, stat, container } of group) {
-        const values = {
-          volumeId,
-          path: candidate.path,
-          fileSize: stat.size,
-          fileMtime: new Date(stat.mtimeMs),
-          container,
-          isPrimary: candidate.path === primaryPath
-        } satisfies Omit<NewNovelVolumeFile, 'id'>
-
-        const knownId = knownIdByPath.get(candidate.path)
-        if (knownId) {
-          tx.update(novelVolumeFiles).set(values).where(eq(novelVolumeFiles.id, knownId)).run()
-        } else {
-          tx.insert(novelVolumeFiles)
-            .values({ id: nanoid(), ...values })
-            .run()
-        }
-
-        count++
-      }
-    }
-
-    return count
-  }
-
-  /**
-   * Unnumbered rows only existed because a file proved them. Once the last
-   * file is gone they carry nothing, unless the user read them, attached a
-   * manual file, or a session still points at them.
-   */
-  private deleteOrphanedFileBornVolumes(
-    tx: DbContext,
-    existingVolumes: NovelVolume[],
-    existingFiles: NovelVolumeFile[],
-    statted: StattedVolumeFile[],
-    volumeIdByKey: Map<string, string>
-  ): void {
-    const retainedIds = new Set<string>()
-    for (const { candidate } of statted) {
-      const volumeId = volumeIdByKey.get(volumeCandidateKey(candidate))
-      if (volumeId) retainedIds.add(volumeId)
-    }
-    for (const file of existingFiles) {
-      if (file.isManual) retainedIds.add(file.volumeId)
-    }
-
-    const candidates = existingVolumes.filter(
-      (volume) => volume.volumeNumber === null && !volume.read && !retainedIds.has(volume.id)
-    )
-    if (candidates.length === 0) return
-
-    const referencedIds = new Set(
-      (tx as DbQueryContext)
-        .select({ volumeId: novelSessions.volumeId })
-        .from(novelSessions)
-        .where(
-          inArray(
-            novelSessions.volumeId,
-            candidates.map((volume) => volume.id)
-          )
-        )
-        .all()
-        .flatMap((row) => (row.volumeId ? [row.volumeId] : []))
-    )
-
-    for (const volume of candidates) {
-      if (referencedIds.has(volume.id)) continue
-      tx.delete(novelVolumes).where(eq(novelVolumes.id, volume.id)).run()
-    }
-  }
 }

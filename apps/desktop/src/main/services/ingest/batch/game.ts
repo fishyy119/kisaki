@@ -5,7 +5,7 @@ import type { TaskRunService } from '@main/services/task-run'
 import type { GameBatchUpdateRequest } from '@shared/ingest/update'
 import type { TaskRunStartResult } from '@shared/task-run'
 import { games } from '@shared/db'
-import type { GameUpdateHandler } from '../update'
+import type { EntityUpdateApi } from '../update'
 import { IngestBatchUpdateRunner } from './runner'
 import { loadIngestBatchRows } from './rows'
 
@@ -15,7 +15,7 @@ export class GameBatchHandler {
   constructor(
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
-    private readonly updateHandler: GameUpdateHandler,
+    private readonly updateHandler: EntityUpdateApi<'game'>,
     taskRunService: TaskRunService,
     i18nService: I18nService
   ) {

@@ -105,7 +105,7 @@ export const scanner = {
     ingestDirectOnlyDescription: 'Skip the scraper and create games from the identified results',
     parallelCount: 'Parallel processing',
     parallelCountDescription:
-      'Number of entries one scanner processes at a time; 1 means serial processing',
+      'Total entries processed at a time across all running scans; 1 means serial processing',
     ignoredNames: 'Ignored names',
     ignoredNamesDescription: 'The scanner skips these extracted entity names',
     ignoredNamePlaceholder: 'Enter a name to ignore…',
@@ -115,7 +115,7 @@ export const scanner = {
   form: {
     createTitle: 'Create scanner',
     editTitle: 'Edit scanner',
-    requiredFields: 'Fill in the required fields',
+    requiredFields: 'Fill in the name and scan path',
     updated: 'Scanner updated',
     created: 'Scanner created',
     updateFailed: 'Update failed. Try again.',
@@ -131,7 +131,7 @@ export const scanner = {
       'The depth of media entities within the directory structure. 0 means direct children of the scan path are entities, 1 means items inside subdirectories are entities, and so on.',
     scraperProfile: 'Scraper profile',
     scraperProfileHelp:
-      'The scraper profile used to fetch metadata. The profile decides which fields come from which data sources.',
+      'The scraper profile used to fetch metadata. The profile decides which fields come from which data sources. Without one, this scanner imports entries directly from folder names.',
     targetCollection: 'Target collection',
     watchEnabled: 'Watch for changes',
     watchEnabledDescription:
@@ -244,7 +244,8 @@ export const scanner = {
       volumeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} book file(s) had no readable volume number and were added as unnumbered volumes`,
       fileSyncFailed:
-        'The entry was added but its video files could not be synced. See the log for details.'
+        'The entry was added but its video files could not be synced. See the log for details.',
+      unexpected: 'An unexpected error occurred while processing this entry. See the log for details.'
     }
   }
 }

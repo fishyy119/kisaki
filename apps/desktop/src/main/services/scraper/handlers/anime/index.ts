@@ -1,7 +1,6 @@
 /**
- * Anime scraper handler exports
+ * Anime scraper contract exports
  */
 
-export { AnimeScraperHandler } from './handler'
 export type { AnimeScraperProvider } from './provider'
 export type { AnimeScraperResult, AnimeScraperImageResult } from './types'

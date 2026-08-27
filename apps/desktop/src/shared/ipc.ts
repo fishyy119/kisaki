@@ -135,7 +135,7 @@ import type {
 } from './extension'
 import type { NotifyOptions } from './notify'
 import type { UiLocale, UiLocaleState } from './i18n'
-import type { AppTheme, MediaType } from './common'
+import type { AppTheme } from './common'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type {
   TaskRun,
@@ -721,7 +721,7 @@ export interface IpcMainHandlers {
 
   // Scanner
   'scanner:start-scan': (scannerId: string) => IpcResult<ScannerRunStartResult>
-  'scanner:start-all-scans': (mediaType?: MediaType) => IpcResult<ScannerRunStartResult[]>
+  'scanner:start-all-scans': () => IpcResult<ScannerRunStartResult[]>
   'scanner:list-run-states': () => IpcResult<ScannerRunState[]>
   'scanner:pause-scan': (scannerId: string) => IpcResult<boolean>
   'scanner:resume-scan': (scannerId: string) => IpcResult<boolean>

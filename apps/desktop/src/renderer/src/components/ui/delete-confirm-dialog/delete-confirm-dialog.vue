@@ -28,11 +28,14 @@ interface Props {
    * When true, shows a spinner instead of content.
    */
   loading?: boolean
+  /** Extra line describing what the deletion will affect. */
+  consequence?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'delete',
-  loading: false
+  loading: false,
+  consequence: undefined
 })
 
 const open = defineModel<boolean>('open', { required: true })
@@ -108,6 +111,12 @@ async function handleConfirm() {
         <AlertDialogDescription>
           <div class="space-y-4">
             <p>{{ descriptionText }}</p>
+            <p
+              v-if="props.consequence"
+              class="text-warning"
+            >
+              {{ props.consequence }}
+            </p>
             <slot />
           </div>
         </AlertDialogDescription>

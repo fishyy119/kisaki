@@ -7,7 +7,7 @@ import type { NovelBatchUpdateRequest } from '@shared/ingest/update'
 import { selectNovelSearchResult, type NovelLookupFacts } from '@shared/scraper'
 import type { TaskRunStartResult } from '@shared/task-run'
 import { novels } from '@shared/db'
-import type { NovelUpdateHandler } from '../update'
+import type { EntityUpdateApi } from '../update'
 import { IngestBatchUpdateRunner } from './runner'
 import { loadIngestBatchRows } from './rows'
 
@@ -17,7 +17,7 @@ export class NovelBatchHandler {
   constructor(
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
-    private readonly updateHandler: NovelUpdateHandler,
+    private readonly updateHandler: EntityUpdateApi<'novel'>,
     taskRunService: TaskRunService,
     i18nService: I18nService
   ) {

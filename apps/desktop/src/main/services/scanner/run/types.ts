@@ -1,21 +1,14 @@
 /**
- * Run vocabulary shared by the run engine and the media handlers that feed it.
+ * Run vocabulary shared by the run engine and the scan pipeline that feeds it.
  *
- * A handler reports one `ScannerEntityProcessResult` per discovered directory;
- * the run state store turns those into the issue and existing lists the
- * renderer shows.
+ * The pipeline reports one `ScannerEntityProcessResult` per discovered
+ * directory; the run state store turns those into the issue and existing
+ * lists the renderer shows.
  */
 
 import type { TaskRunHandle } from '@main/services/task-run'
-import type { MediaType } from '@shared/common'
+import type { Scanner } from '@shared/db'
 import type { ScannerRunExisting, ScannerRunState } from '@shared/scanner'
-
-export interface ScannerRunMetadata {
-  id: string
-  name: string
-  type: MediaType
-  path: string
-}
 
 export type ScannerEntityWarningType =
   'asset-persist-failed' | 'file-sync-failed' | 'metadata-missing' | 'scraper-unavailable'
@@ -56,8 +49,8 @@ export type ScannerEntityProcessResult =
       errors: ScannerEntityError[]
     })
 
-export interface ActiveScannerRun<TScanner extends ScannerRunMetadata> {
-  scanner: TScanner
+export interface ActiveScannerRun {
+  scanner: Scanner
   taskRun: TaskRunHandle
   state: ScannerRunState
 }

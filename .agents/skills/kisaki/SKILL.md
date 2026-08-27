@@ -55,7 +55,7 @@ Load the relevant reference based on your task:
 | Build & Release           | [build-release.md](references/build-release.md)       | Building, packaging, NSIS, monorepo scripts                                                            |
 | Changelog                 | [changelog.md](references/changelog.md)               | Release changelog file structure, section classification, writing rules, and entry wording             |
 | i18n                      | [i18n.md](references/i18n.md)                         | Message catalogs, UiLocale/ContentLocale, formatters, copy style guide, four-language glossary         |
-| Coding Conventions        | [conventions.md](references/conventions.md)           | Async patterns, error handling, comments, i18n                                                         |
+| Coding Conventions        | [conventions.md](references/conventions.md)           | Async patterns, error handling, comments, i18n, git commit messages                                    |
 
 ## Quick Search
 

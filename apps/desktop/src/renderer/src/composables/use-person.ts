@@ -1,31 +1,13 @@
 /**
  * Person data composable
  *
- * Provides person data with all related entities using Provider/Consumer pattern.
- * Two provider surfaces share one fetcher, context assembly, and db sync:
- * route pages consume the navigation-time loader, dialogs fetch after mount.
+ * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * from the entity detail context factory; this module owns what a person
+ * detail surface fetches and shows.
  */
 
-import {
-  provide,
-  inject,
-  ref,
-  toRef,
-  toValue,
-  computed,
-  watch,
-  type InjectionKey,
-  type Ref,
-  type MaybeRefOrGetter,
-  type ComputedRef
-} from 'vue'
-import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import { eq, asc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { defineRouteData } from '@renderer/core/route-data'
-import { useAsyncData } from './use-async-data'
-import { usePreferencesStore } from '@renderer/stores'
 import type {
   Person,
   GamePersonLink,
@@ -42,16 +24,19 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
-import type { TableName } from '@shared/db/table-names'
 import type { MediaType } from '@shared/common'
-import { useDbChanges } from './use-db-changes'
+import {
+  createEntityDetailContext,
+  type EntityDetailContext,
+  type EntityDetailProviderReturn
+} from './entity-context'
 
 // =============================================================================
 // Types
 // =============================================================================
 
-interface PersonData {
-  person: Person
+export interface PersonData {
+  person: Person | null
   tags: (PersonTagLink & { tag: Tag | null })[]
   games: (GamePersonLink & { game: Game | null })[]
   animes: (AnimePersonLink & { anime: Anime | null })[]
@@ -76,32 +61,8 @@ export interface PersonCastEntry {
   character: Character | null
 }
 
-export interface PersonContext {
-  person: ComputedRef<Person | null>
-  tags: ComputedRef<(PersonTagLink & { tag: Tag | null })[]>
-  games: ComputedRef<(GamePersonLink & { game: Game | null })[]>
-  animes: ComputedRef<(AnimePersonLink & { anime: Anime | null })[]>
-  comics: ComputedRef<(ComicPersonLink & { comic: Comic | null })[]>
-  novels: ComputedRef<(NovelPersonLink & { novel: Novel | null })[]>
-  characters: ComputedRef<(CharacterPersonLink & { character: Character | null })[]>
-  /** Confirmed voice credits of this person, one row per entry and character */
-  cast: ComputedRef<PersonCastEntry[]>
-  isLoading: Ref<boolean>
-  isFetching: Ref<boolean>
-  error: Ref<string | null>
-  refetch: () => Promise<void>
-}
-
-export interface PersonProviderReturn extends PersonContext {
-  /** Spoiler reveal state owned by the provider; toggling refetches (SWR) */
-  spoilersRevealed: Ref<boolean>
-}
-
-// =============================================================================
-// Injection Key
-// =============================================================================
-
-export const PersonKey: InjectionKey<PersonContext> = Symbol('person')
+export type PersonContext = EntityDetailContext<PersonData>
+export type PersonProviderReturn = EntityDetailProviderReturn<PersonData>
 
 // =============================================================================
 // Data Fetcher
@@ -260,58 +221,10 @@ async function fetchPersonData(
 }
 
 // =============================================================================
-// Route Loader
+// Context Wiring
 // =============================================================================
 
-// Route-surface spoiler state lives beside the loader so the navigation-time
-// fetch reads a consistent value; it resets whenever a different entity loads.
-let lastRoutePersonId: string | null = null
-const routeSpoilersRevealed = ref(false)
-
-export const personDetailData = defineRouteData((route) => {
-  const personId = route.params.personId as string
-  if (personId !== lastRoutePersonId) {
-    lastRoutePersonId = personId
-    routeSpoilersRevealed.value = false
-  }
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  return fetchPersonData(personId, routeSpoilersRevealed.value, showNsfw.value)
-})
-
-// =============================================================================
-// Shared Internals
-// =============================================================================
-
-interface PersonDataSource {
-  data: Readonly<Ref<PersonData | null | undefined>>
-  isLoading: Ref<boolean>
-  isFetching: Ref<boolean>
-  error: Ref<string | null>
-  refetch: () => Promise<void>
-}
-
-function providePersonContext(source: PersonDataSource): PersonContext {
-  const context: PersonContext = {
-    person: computed(() => source.data.value?.person ?? null),
-    tags: computed(() => source.data.value?.tags ?? []),
-    games: computed(() => source.data.value?.games ?? []),
-    animes: computed(() => source.data.value?.animes ?? []),
-    comics: computed(() => source.data.value?.comics ?? []),
-    novels: computed(() => source.data.value?.novels ?? []),
-    characters: computed(() => source.data.value?.characters ?? []),
-    cast: computed(() => source.data.value?.cast ?? []),
-    isLoading: source.isLoading,
-    isFetching: source.isFetching,
-    error: source.error,
-    refetch: source.refetch
-  }
-
-  provide(PersonKey, context)
-
-  return context
-}
-
-const PERSON_LINK_TABLES: readonly TableName[] = [
+const PERSON_LINK_TABLES = [
   'person_tag_links',
   'game_person_links',
   'anime_person_links',
@@ -322,80 +235,25 @@ const PERSON_LINK_TABLES: readonly TableName[] = [
   'character_person_links'
 ]
 
-function usePersonDbSync(personId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
-  useDbChanges(({ operation, table, id: entityId }) => {
-    if (PERSON_LINK_TABLES.includes(table)) {
-      refetch()
-      return
-    }
-    if (table === 'persons' && entityId === toValue(personId) && operation !== 'inserted') {
-      refetch()
-    }
-  })
-}
+const personDetail = createEntityDetailContext<PersonData>({
+  entityLabel: 'person',
+  routeParam: 'personId',
+  empty: {
+    person: null,
+    tags: [],
+    games: [],
+    animes: [],
+    comics: [],
+    novels: [],
+    characters: [],
+    cast: []
+  },
+  fetch: (id, view) => fetchPersonData(id, view.spoilersRevealed, view.showNsfw),
+  ownedTables: PERSON_LINK_TABLES,
+  entityTable: 'persons'
+})
 
-// =============================================================================
-// Provider Composables
-// =============================================================================
-
-/**
- * Provide person data on the route surface (data settled during navigation).
- */
-export function usePersonRouteProvider(): PersonProviderReturn {
-  const route = useRoute()
-  const personId = computed(() => route.params.personId as string)
-  const { data, error, isFetching, refetch } = personDetailData()
-
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  watch(showNsfw, () => void refetch())
-
-  const spoilersRevealed = computed({
-    get: () => routeSpoilersRevealed.value,
-    set: (value) => {
-      routeSpoilersRevealed.value = value
-      void refetch()
-    }
-  })
-
-  const context = providePersonContext({
-    data,
-    isLoading: ref(false),
-    isFetching,
-    error,
-    refetch
-  })
-  usePersonDbSync(personId, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-/**
- * Provide person data on the dialog surface (fetches after mount).
- */
-export function usePersonDialogProvider(personId: MaybeRefOrGetter<string>): PersonProviderReturn {
-  const id = toRef(personId)
-  const spoilersRevealed = ref(false)
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchPersonData(toValue(id), spoilersRevealed.value, showNsfw.value),
-    { watch: [id, spoilersRevealed, showNsfw] }
-  )
-
-  const context = providePersonContext({ data, isLoading, isFetching, error, refetch })
-  usePersonDbSync(id, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-// =============================================================================
-// Consumer Composable
-// =============================================================================
-
-export function usePerson(): PersonContext {
-  const context = inject(PersonKey)
-  if (!context) {
-    throw new Error('usePerson() must be used within a component that provided the person context')
-  }
-  return context
-}
+export const personDetailData = personDetail.detailData
+export const usePersonRouteProvider = personDetail.useRouteProvider
+export const usePersonDialogProvider = personDetail.useDialogProvider
+export const usePerson = personDetail.useContext

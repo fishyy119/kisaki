@@ -1,7 +1,6 @@
-export { AnimeUpdateHandler } from './anime'
-export { CharacterUpdateHandler } from './character'
-export { ComicUpdateHandler } from './comic'
-export { CompanyUpdateHandler } from './company'
-export { GameUpdateHandler } from './game'
-export { NovelUpdateHandler } from './novel'
-export { PersonUpdateHandler } from './person'
+export {
+  EntityUpdateEngine,
+  type EntityUpdateApi,
+  type EntityUpdateEngineDeps
+} from './engine'
+export { INGEST_UPDATE_SPECS } from './specs'

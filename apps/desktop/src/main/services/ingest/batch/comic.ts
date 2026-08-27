@@ -7,7 +7,7 @@ import type { ComicBatchUpdateRequest } from '@shared/ingest/update'
 import { selectComicSearchResult, type ComicLookupFacts } from '@shared/scraper'
 import type { TaskRunStartResult } from '@shared/task-run'
 import { comics } from '@shared/db'
-import type { ComicUpdateHandler } from '../update'
+import type { EntityUpdateApi } from '../update'
 import { IngestBatchUpdateRunner } from './runner'
 import { loadIngestBatchRows } from './rows'
 
@@ -17,7 +17,7 @@ export class ComicBatchHandler {
   constructor(
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
-    private readonly updateHandler: ComicUpdateHandler,
+    private readonly updateHandler: EntityUpdateApi<'comic'>,
     taskRunService: TaskRunService,
     i18nService: I18nService
   ) {

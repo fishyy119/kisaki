@@ -1,6 +1,9 @@
 <!--
   NotFoundPage
-  404 page for unmatched routes.
+  404 page for unmatched routes, owned by the router.
+  Root `pages/` charter: this directory holds system-owned route surfaces
+  only — pages owned by core-level subsystems, importing no `features/*` code
+  and referenced by none.
 -->
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'

@@ -1,1 +1,5 @@
-export { ComicUpdateHandler } from './update'
+export { applyComicPlan } from './apply'
+export { loadComicCurrent } from './current'
+export { buildComicIncoming } from './incoming'
+export { resolveComicUpdateLookup } from './lookup'
+export { buildComicPlan } from './plan'

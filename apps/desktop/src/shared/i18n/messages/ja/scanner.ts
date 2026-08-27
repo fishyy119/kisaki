@@ -106,7 +106,7 @@ export const scanner = {
     ingestDirectOnlyDescription: 'スクレイパーを使わず、認識結果からそのままゲームを作成します',
     parallelCount: '並列処理数',
     parallelCountDescription:
-      '1 つのスキャナーが同時に処理するエントリ数。1 は逐次処理を意味します。',
+      '実行中のすべてのスキャンで共有される同時処理エントリ数の合計。1 は逐次処理を意味します。',
     ignoredNames: '無視する名前',
     ignoredNamesDescription: 'スキャナーは抽出後のこれらのエンティティ名をスキップします',
     ignoredNamePlaceholder: '無視する名前を入力…',
@@ -116,7 +116,7 @@ export const scanner = {
   form: {
     createTitle: 'スキャナーを作成',
     editTitle: 'スキャナーを編集',
-    requiredFields: '必須項目を入力してください',
+    requiredFields: '名前とスキャンパスを入力してください',
     updated: 'スキャナーを更新しました',
     created: 'スキャナーを作成しました',
     updateFailed: '更新に失敗しました。もう一度お試しください。',
@@ -132,7 +132,7 @@ export const scanner = {
       'ディレクトリ構造内でメディアエンティティが位置する階層の深さです。0 はスキャンパスの直下がエンティティ、1 はサブディレクトリ内の項目がエンティティ、以降同様です。',
     scraperProfile: 'スクレイパープロファイル',
     scraperProfileHelp:
-      'メタデータの取得に使うスクレイパープロファイルです。どのデータソースからどのフィールドを取得するかを決めます。',
+      'メタデータの取得に使うスクレイパープロファイルです。どのデータソースからどのフィールドを取得するかを決めます。未選択の場合、このスキャナーはフォルダー名からそのまま取り込みます。',
     targetCollection: '対象コレクション',
     watchEnabled: '変更を監視',
     watchEnabledDescription:
@@ -247,7 +247,8 @@ export const scanner = {
       volumeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 件の書籍ファイルは巻数を判別できないため、番号なしの巻として追加しました`,
       fileSyncFailed:
-        '項目は追加しましたが、動画ファイルの同期に失敗しました。詳細はログを参照してください。'
+        '項目は追加しましたが、動画ファイルの同期に失敗しました。詳細はログを参照してください。',
+      unexpected: 'この項目の処理中に予期しないエラーが発生しました。詳細はログを参照してください。'
     }
   }
 } satisfies Messages['scanner']

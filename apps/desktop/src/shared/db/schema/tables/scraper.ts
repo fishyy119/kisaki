@@ -37,12 +37,14 @@ export const scanners = sqliteTable(
   'scanners',
   {
     ...baseColumns,
-    name: text('name').notNull().default('unknown scanner'),
+    name: text('name').notNull(),
     path: text('path').notNull(),
     type: mediaType('type').notNull(),
-    scraperProfileId: text('scraper_profile_id')
-      .notNull()
-      .references(() => scraperProfiles.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+    /** Optional scrape policy; a scanner without one ingests directly. */
+    scraperProfileId: text('scraper_profile_id').references(() => scraperProfiles.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade'
+    }),
     targetCollectionId: text('target_collection_id').references(() => collections.id, {
       onDelete: 'set null',
       onUpdate: 'cascade'

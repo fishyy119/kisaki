@@ -10,7 +10,7 @@ import { ref } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { StateView } from '@renderer/components/ui/state-view'
-import { ScannerItemFormDialog } from './scanner-item-form-dialog'
+import { ScannerFormDialog } from './scanner-form-dialog'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 // =============================================================================
@@ -41,7 +41,7 @@ const { m } = useI18n()
     </template>
   </StateView>
 
-  <ScannerItemFormDialog
+  <ScannerFormDialog
     v-if="isCreateDialogOpen"
     v-model:open="isCreateDialogOpen"
   />

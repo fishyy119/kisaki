@@ -799,6 +799,40 @@ notify.loading('Title', 'Optional message')
 - `native` - System notification
 - `auto` - Toast if focused, native if not
 
+## Git Commit Messages
+
+Format: `type(scope): subject`, then for changes spanning more than one concern a blank line and
+a grouped bullet body. Small single-concern changes stay subject-only.
+
+### Subject
+
+- English, lowercase after the colon, no trailing period.
+- Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `chore`, `build`, `release`.
+- One scope, the surface a reader would look at first. Prefer the coarse stable set — `services`
+  (main-process), `renderer`, `ui` (design system), `library` (product features), `extension`,
+  `db`, `i18n`, `build` — or a package/extension name (`extension-api`, `bangumi`) when the change
+  lives there. Do not invent a new fine-grained scope when a coarse one fits.
+- Say what the change does in domain language, not which files moved: "collapse the per-media
+  scanner handlers into a spec registry", "stop cancellations reporting as entity failures".
+  Never "update code", "misc fixes", or a bare issue id.
+
+### Body
+
+- Blank line after the subject; bullets, wrapped at ~100 columns.
+- Group bullets under short headings (`Main process:`, `Renderer:`, `Fixes:`, `Guards:` or
+  per-domain names) when the change spans areas; ungrouped bullets are fine for narrow changes.
+- One fact per bullet, in the same voice as the subject. State behavior changes, schema
+  migrations, contract changes, and renames explicitly; name mechanisms (`media-specs.ts`,
+  `unit-reconcile.ts`) rather than enumerating file paths.
+- Do not restate the subject as the first bullet, and do not pad with process notes
+  (typecheck passed, reviewed by).
+
+### Boundaries
+
+- One commit per coherent change; do not mix an unrelated drive-by fix into a refactor commit —
+  split it out with its own `fix(...)` subject.
+- Revert commits keep the default `revert:` subject plus a body line saying why.
+
 ## Search Patterns
 
 - Async: `async function`, `await `, `.then(`, `.catch(`

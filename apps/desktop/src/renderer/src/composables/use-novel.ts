@@ -1,33 +1,13 @@
 /**
  * Novel data composable
  *
- * Provides novel data with all related entities using Provider/Consumer pattern.
- * Two provider surfaces share one fetcher, context assembly, and db sync:
- * - Route page: `novelDetailData` loads during navigation (beforeResolve), the
- *   page consumes the settled store via `useNovelRouteProvider()`.
- * - Dialog: `useNovelDialogProvider()` fetches on demand after mount.
+ * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * from the entity detail context factory; this module owns what a novel
+ * detail surface fetches and shows.
  */
 
-import {
-  provide,
-  inject,
-  ref,
-  toRef,
-  toValue,
-  computed,
-  watch,
-  type InjectionKey,
-  type Ref,
-  type MaybeRefOrGetter,
-  type ComputedRef
-} from 'vue'
-import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import { eq, asc, desc, and, inArray } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { defineRouteData } from '@renderer/core/route-data'
-import { useAsyncData } from './use-async-data'
-import { usePreferencesStore } from '@renderer/stores'
 import type {
   Novel,
   NovelVolume,
@@ -45,7 +25,11 @@ import type {
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
-import { useDbChanges } from './use-db-changes'
+import {
+  createEntityDetailContext,
+  type EntityDetailContext,
+  type EntityDetailProviderReturn
+} from './entity-context'
 
 // =============================================================================
 // Types
@@ -56,7 +40,7 @@ export interface NovelVolumeEntry extends NovelVolume {
   files: NovelVolumeFile[]
 }
 
-interface NovelData {
+export interface NovelData {
   novel: Novel | null
   volumes: NovelVolumeEntry[]
   notes: NovelNote[]
@@ -68,45 +52,8 @@ interface NovelData {
   sessions: NovelSession[]
 }
 
-export interface NovelContext {
-  /** Novel data */
-  novel: ComputedRef<Novel | null>
-  /** Volumes in display order, each with its readable files */
-  volumes: ComputedRef<NovelVolumeEntry[]>
-  /** Novel notes (from novelNotes) */
-  notes: ComputedRef<NovelNote[]>
-  /** Novel tags (from novelTagLinks) */
-  tags: ComputedRef<(NovelTagLink & { tag: Tag | null })[]>
-  /** Character links with character data */
-  characters: ComputedRef<(NovelCharacterLink & { character: Character | null })[]>
-  /** Person links with person data */
-  persons: ComputedRef<(NovelPersonLink & { person: Person | null })[]>
-  /** Company links with company data */
-  companies: ComputedRef<(NovelCompanyLink & { company: Company | null })[]>
-  /** Entry-to-entry relations merged from both edge directions */
-  relations: ComputedRef<MediaRelationEntry[]>
-  /** Novel sessions (reading history) */
-  sessions: ComputedRef<NovelSession[]>
-  /** Initial loading state (always false on the route surface after mount) */
-  isLoading: Ref<boolean>
-  /** Background refetching state */
-  isFetching: Ref<boolean>
-  /** Error if any */
-  error: Ref<string | null>
-  /** Manually refetch data */
-  refetch: () => Promise<void>
-}
-
-export interface NovelProviderReturn extends NovelContext {
-  /** Spoiler reveal state owned by the provider; toggling refetches (SWR) */
-  spoilersRevealed: Ref<boolean>
-}
-
-// =============================================================================
-// Injection Key
-// =============================================================================
-
-export const NovelKey: InjectionKey<NovelContext> = Symbol('novel')
+export type NovelContext = EntityDetailContext<NovelData>
+export type NovelProviderReturn = EntityDetailProviderReturn<NovelData>
 
 // =============================================================================
 // Data Fetcher
@@ -246,57 +193,8 @@ async function attachVolumeFiles(volumes: NovelVolume[]): Promise<NovelVolumeEnt
 }
 
 // =============================================================================
-// Route Loader
+// Context Wiring
 // =============================================================================
-
-// Route-surface spoiler state lives beside the loader so the navigation-time
-// fetch reads a consistent value; it resets whenever a different novel loads.
-let lastRouteNovelId: string | null = null
-const routeSpoilersRevealed = ref(false)
-
-export const novelDetailData = defineRouteData((route) => {
-  const novelId = route.params.novelId as string
-  if (novelId !== lastRouteNovelId) {
-    lastRouteNovelId = novelId
-    routeSpoilersRevealed.value = false
-  }
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  return fetchNovelData(novelId, routeSpoilersRevealed.value, showNsfw.value)
-})
-
-// =============================================================================
-// Shared Internals
-// =============================================================================
-
-interface NovelDataSource {
-  data: Readonly<Ref<NovelData | null | undefined>>
-  isLoading: Ref<boolean>
-  isFetching: Ref<boolean>
-  error: Ref<string | null>
-  refetch: () => Promise<void>
-}
-
-function provideNovelContext(source: NovelDataSource): NovelContext {
-  const context: NovelContext = {
-    novel: computed(() => source.data.value?.novel ?? null),
-    volumes: computed(() => source.data.value?.volumes ?? []),
-    notes: computed(() => source.data.value?.notes ?? []),
-    tags: computed(() => source.data.value?.tags ?? []),
-    characters: computed(() => source.data.value?.characters ?? []),
-    persons: computed(() => source.data.value?.persons ?? []),
-    companies: computed(() => source.data.value?.companies ?? []),
-    relations: computed(() => source.data.value?.relations ?? []),
-    sessions: computed(() => source.data.value?.sessions ?? []),
-    isLoading: source.isLoading,
-    isFetching: source.isFetching,
-    error: source.error,
-    refetch: source.refetch
-  }
-
-  provide(NovelKey, context)
-
-  return context
-}
 
 const NOVEL_OWNED_TABLES = [
   'novel_volumes',
@@ -310,93 +208,26 @@ const NOVEL_OWNED_TABLES = [
   'media_relations'
 ]
 
-function useNovelDbSync(novelId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
-  useDbChanges(({ operation, table, id: entityId }) => {
-    if (NOVEL_OWNED_TABLES.includes(table)) {
-      refetch()
-      return
-    }
-    if (table === 'novels' && entityId === toValue(novelId) && operation !== 'inserted') {
-      refetch()
-    }
-  })
-}
+const novelDetail = createEntityDetailContext<NovelData>({
+  entityLabel: 'novel',
+  routeParam: 'novelId',
+  empty: {
+    novel: null,
+    volumes: [],
+    notes: [],
+    tags: [],
+    characters: [],
+    persons: [],
+    companies: [],
+    relations: [],
+    sessions: []
+  },
+  fetch: (id, view) => fetchNovelData(id, view.spoilersRevealed, view.showNsfw),
+  ownedTables: NOVEL_OWNED_TABLES,
+  entityTable: 'novels'
+})
 
-// =============================================================================
-// Provider Composables
-// =============================================================================
-
-/**
- * Provide novel data on the route surface.
- *
- * Data is loaded by `novelDetailData` during navigation, so it is already
- * settled when the page mounts. In-page input changes (spoilers, NSFW
- * preference) trigger a non-blocking SWR refetch.
- */
-export function useNovelRouteProvider(): NovelProviderReturn {
-  const route = useRoute()
-  const novelId = computed(() => route.params.novelId as string)
-  const { data, error, isFetching, refetch } = novelDetailData()
-
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  watch(showNsfw, () => void refetch())
-
-  // Explicit setter (not a watcher on the module ref) so the loader's
-  // cross-navigation spoiler reset does not trigger a duplicate fetch.
-  const spoilersRevealed = computed({
-    get: () => routeSpoilersRevealed.value,
-    set: (value) => {
-      routeSpoilersRevealed.value = value
-      void refetch()
-    }
-  })
-
-  const context = provideNovelContext({
-    data,
-    isLoading: ref(false),
-    isFetching,
-    error,
-    refetch
-  })
-  useNovelDbSync(novelId, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-/**
- * Provide novel data on the dialog surface (fetches after mount).
- *
- * Spoiler state is instance-local and resets when the dialog unmounts.
- */
-export function useNovelDialogProvider(novelId: MaybeRefOrGetter<string>): NovelProviderReturn {
-  const id = toRef(novelId)
-  const spoilersRevealed = ref(false)
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchNovelData(toValue(id), spoilersRevealed.value, showNsfw.value),
-    { watch: [id, spoilersRevealed, showNsfw] }
-  )
-
-  const context = provideNovelContext({ data, isLoading, isFetching, error, refetch })
-  useNovelDbSync(id, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-// =============================================================================
-// Consumer Composable
-// =============================================================================
-
-/**
- * Consume novel data context
- *
- * Call this in child components to access novel data.
- */
-export function useNovel(): NovelContext {
-  const context = inject(NovelKey)
-  if (!context) {
-    throw new Error('useNovel() must be used within a component that provided the novel context')
-  }
-  return context
-}
+export const novelDetailData = novelDetail.detailData
+export const useNovelRouteProvider = novelDetail.useRouteProvider
+export const useNovelDialogProvider = novelDetail.useDialogProvider
+export const useNovel = novelDetail.useContext

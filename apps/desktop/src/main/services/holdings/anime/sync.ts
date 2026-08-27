@@ -16,13 +16,8 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 import { createLogger } from '@main/log'
-import {
-  isProbeCurrent,
-  readFileStat,
-  readPrimaryElection,
-  SyncPassQueue,
-  type FileStat
-} from '../reconcile'
+import { isProbeCurrent, readFileStat, SyncPassQueue, type FileStat } from '../reconcile'
+import { reconcileUnitFiles, type UnitReconcileSpec } from '../unit-reconcile'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
 import type { VideoProbe } from '@main/services/video'
 import {
@@ -162,6 +157,86 @@ function claimFilmEpisodeCandidates(candidates: AnimeEpisodeCandidate[]): void {
   }
 }
 
+/** Identity key of a stored row; null keys the row by the files it owns. */
+function episodeRowKey(episode: AnimeEpisode): string | null {
+  return episode.episodeNumber !== null
+    ? animeUnitIdentityKey({ type: episode.type, episodeNumber: episode.episodeNumber })
+    : null
+}
+
+const ANIME_EPISODE_RECONCILE_SPEC: UnitReconcileSpec<
+  AnimeEpisode,
+  AnimeEpisodeFile,
+  AnimeEpisodeCandidate,
+  ProbedFileValues
+> = {
+  candidateKey: episodeCandidateKey,
+  candidatePath: (candidate) => candidate.path,
+  rowKey: episodeRowKey,
+  // Unnumbered candidates already key by file path, so the group key is the
+  // same construction and a stored row is found through any of its files.
+  fileGroupKey: (filePath) => `file:${filePath}`,
+  onMatched: (tx, episode, _candidate, values) => {
+    // A scraped episode rarely carries a runtime; the file always does.
+    if (episode.durationMs === null && values.durationMs) {
+      tx.update(animeEpisodes)
+        .set({ durationMs: values.durationMs })
+        .where(eq(animeEpisodes.id, episode.id))
+        .run()
+    }
+  },
+  insertUnit: (tx, animeId, candidate, values, order) => {
+    const row: NewAnimeEpisode = {
+      id: nanoid(),
+      animeId,
+      type: candidate.type,
+      episodeNumber: candidate.number ?? null,
+      name: candidate.number === undefined ? candidate.name : null,
+      durationMs: values.durationMs,
+      orderInAnime: order
+    }
+    tx.insert(animeEpisodes).values(row).run()
+    return row.id as string
+  },
+  deleteUnit: (tx, unitId) => {
+    tx.delete(animeEpisodes).where(eq(animeEpisodes.id, unitId)).run()
+  },
+  fileUnitId: (file) => file.episodeId,
+  insertFile: (tx, unitId, candidate, values, isPrimary) => {
+    const fileValues = {
+      episodeId: unitId,
+      path: candidate.path,
+      ...values,
+      isPrimary
+    } satisfies Omit<NewAnimeEpisodeFile, 'id'>
+    tx.insert(animeEpisodeFiles)
+      .values({ id: nanoid(), ...fileValues })
+      .run()
+  },
+  updateFile: (tx, fileId, unitId, candidate, values, isPrimary) => {
+    const fileValues = {
+      episodeId: unitId,
+      path: candidate.path,
+      ...values,
+      isPrimary
+    } satisfies Omit<NewAnimeEpisodeFile, 'id'>
+    tx.update(animeEpisodeFiles).set(fileValues).where(eq(animeEpisodeFiles.id, fileId)).run()
+  },
+  deleteFile: (tx, fileId) => {
+    tx.delete(animeEpisodeFiles).where(eq(animeEpisodeFiles.id, fileId)).run()
+  },
+  isUnitProtected: (episode) => episode.watched,
+  readSessionReferencedUnitIds: (tx, unitIds) =>
+    new Set(
+      (tx as DbQueryContext)
+        .select({ episodeId: animeSessions.episodeId })
+        .from(animeSessions)
+        .where(inArray(animeSessions.episodeId, [...unitIds]))
+        .all()
+        .flatMap((row) => (row.episodeId ? [row.episodeId] : []))
+    )
+}
+
 /** File-row column values derived from one probe pass. */
 function toProbedFileValues(stat: FileStat, info: VideoFileInfo | null): ProbedFileValues {
   return {
@@ -262,26 +337,17 @@ export class AnimeFileSyncHandler {
             .all()
         : []
 
-      const episodeIdByKey = this.writeEpisodes(
-        tx,
-        animeId,
-        probedEpisodes,
-        existingEpisodes,
+      const reconciled = reconcileUnitFiles(tx, ANIME_EPISODE_RECONCILE_SPEC, {
+        ownerId: animeId,
+        probed: probedEpisodes,
+        existingUnits: existingEpisodes,
         existingFiles
-      )
-      const fileCount = this.writeEpisodeFiles(tx, probedEpisodes, episodeIdByKey, existingFiles)
-      this.deleteOrphanedFileBornEpisodes(
-        tx,
-        existingEpisodes,
-        existingFiles,
-        probedEpisodes,
-        episodeIdByKey
-      )
+      })
       const extraCount = this.writeExtras(tx, animeId, probedExtras)
 
       return {
-        episodeCount: episodeIdByKey.size,
-        fileCount,
+        episodeCount: reconciled.unitIdByKey.size,
+        fileCount: reconciled.fileCount,
         extraCount,
         unrecognizedFiles: probedEpisodes
           .filter(({ candidate }) => candidate.number === undefined)
@@ -590,183 +656,6 @@ export class AnimeFileSyncHandler {
 
     await visit(dirPath, 0, false)
     return result
-  }
-
-  /**
-   * Map each recognized file onto an episode row, creating rows for numbers the
-   * scraped list is missing. Unnumbered existing rows are re-matched through
-   * the paths of the files they own, so re-syncs stay idempotent instead of
-   * duplicating them.
-   */
-  private writeEpisodes(
-    tx: DbContext,
-    animeId: string,
-    probed: ProbedEpisodeFile[],
-    existingEpisodes: AnimeEpisode[],
-    existingFiles: AnimeEpisodeFile[]
-  ): Map<string, string> {
-    const episodeById = new Map(existingEpisodes.map((episode) => [episode.id, episode]))
-    const existingByKey = new Map<string, AnimeEpisode>()
-    for (const episode of existingEpisodes) {
-      if (episode.episodeNumber !== null) {
-        existingByKey.set(
-          animeUnitIdentityKey({ type: episode.type, episodeNumber: episode.episodeNumber }),
-          episode
-        )
-      }
-    }
-    // Unnumbered rows exist only because of their files, so any of their file
-    // paths identifies them across runs.
-    for (const file of existingFiles) {
-      const episode = episodeById.get(file.episodeId)
-      if (episode && episode.episodeNumber === null) {
-        existingByKey.set(`file:${file.path}`, episode)
-      }
-    }
-
-    const episodeIdByKey = new Map<string, string>()
-    let nextOrder = existingEpisodes.length
-
-    for (const { candidate, values } of probed) {
-      const key = episodeCandidateKey(candidate)
-
-      if (episodeIdByKey.has(key)) continue
-
-      const match = existingByKey.get(key)
-      if (match) {
-        episodeIdByKey.set(key, match.id)
-        // A scraped episode rarely carries a runtime; the file always does.
-        if (match.durationMs === null && values.durationMs) {
-          tx.update(animeEpisodes)
-            .set({ durationMs: values.durationMs })
-            .where(eq(animeEpisodes.id, match.id))
-            .run()
-        }
-        continue
-      }
-
-      const row: NewAnimeEpisode = {
-        id: nanoid(),
-        animeId,
-        type: candidate.type,
-        episodeNumber: candidate.number ?? null,
-        name: candidate.number === undefined ? candidate.name : null,
-        durationMs: values.durationMs,
-        orderInAnime: nextOrder++
-      }
-
-      tx.insert(animeEpisodes).values(row).run()
-      episodeIdByKey.set(key, row.id as string)
-    }
-
-    return episodeIdByKey
-  }
-
-  private writeEpisodeFiles(
-    tx: DbContext,
-    probed: ProbedEpisodeFile[],
-    episodeIdByKey: Map<string, string>,
-    existingFiles: AnimeEpisodeFile[]
-  ): number {
-    const knownIdByPath = new Map(existingFiles.map((file) => [file.path, file.id]))
-    const primaries = readPrimaryElection(existingFiles, (file) => file.episodeId)
-
-    const probedByEpisodeId = new Map<string, ProbedEpisodeFile[]>()
-    for (const item of probed) {
-      const episodeId = episodeIdByKey.get(episodeCandidateKey(item.candidate))
-      if (!episodeId) continue
-      const group = probedByEpisodeId.get(episodeId) ?? []
-      group.push(item)
-      probedByEpisodeId.set(episodeId, group)
-    }
-
-    let count = 0
-
-    // Sync-owned files that vanished from disk must not stay playable,
-    // including files of episodes no candidate matched this run. Manual rows
-    // are user-owned and may live outside the walked directory, so they stay.
-    // Deletion runs first so the partial primary index never sees two rows.
-    const livePaths = new Set(probed.map(({ candidate }) => candidate.path))
-    for (const file of existingFiles) {
-      if (file.isManual || livePaths.has(file.path)) continue
-      tx.delete(animeEpisodeFiles).where(eq(animeEpisodeFiles.id, file.id)).run()
-    }
-
-    for (const [episodeId, group] of probedByEpisodeId) {
-      const primaryPath = primaries.elect(
-        episodeId,
-        group.map(({ candidate }) => candidate.path)
-      )
-
-      for (const { candidate, values: probedValues } of group) {
-        const values = {
-          episodeId,
-          path: candidate.path,
-          ...probedValues,
-          isPrimary: candidate.path === primaryPath
-        } satisfies Omit<NewAnimeEpisodeFile, 'id'>
-
-        const knownId = knownIdByPath.get(candidate.path)
-        if (knownId) {
-          tx.update(animeEpisodeFiles).set(values).where(eq(animeEpisodeFiles.id, knownId)).run()
-        } else {
-          tx.insert(animeEpisodeFiles)
-            .values({ id: nanoid(), ...values })
-            .run()
-        }
-
-        count++
-      }
-    }
-
-    return count
-  }
-
-  /**
-   * Unnumbered rows only existed because a file proved them. Once the last
-   * file is gone they carry nothing, unless the user watched them, attached a
-   * manual file, or a session still points at them.
-   */
-  private deleteOrphanedFileBornEpisodes(
-    tx: DbContext,
-    existingEpisodes: AnimeEpisode[],
-    existingFiles: AnimeEpisodeFile[],
-    probed: ProbedEpisodeFile[],
-    episodeIdByKey: Map<string, string>
-  ): void {
-    const retainedIds = new Set<string>()
-    for (const { candidate } of probed) {
-      const episodeId = episodeIdByKey.get(episodeCandidateKey(candidate))
-      if (episodeId) retainedIds.add(episodeId)
-    }
-    for (const file of existingFiles) {
-      if (file.isManual) retainedIds.add(file.episodeId)
-    }
-
-    const candidates = existingEpisodes.filter(
-      (episode) =>
-        episode.episodeNumber === null && !episode.watched && !retainedIds.has(episode.id)
-    )
-    if (candidates.length === 0) return
-
-    const referencedIds = new Set(
-      (tx as DbQueryContext)
-        .select({ episodeId: animeSessions.episodeId })
-        .from(animeSessions)
-        .where(
-          inArray(
-            animeSessions.episodeId,
-            candidates.map((episode) => episode.id)
-          )
-        )
-        .all()
-        .flatMap((row) => (row.episodeId ? [row.episodeId] : []))
-    )
-
-    for (const episode of candidates) {
-      if (referencedIds.has(episode.id)) continue
-      tx.delete(animeEpisodes).where(eq(animeEpisodes.id, episode.id)).run()
-    }
   }
 
   /**

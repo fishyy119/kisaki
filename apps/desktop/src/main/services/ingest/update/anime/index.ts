@@ -1,1 +1,5 @@
-export { AnimeUpdateHandler } from './update'
+export { applyAnimePlan } from './apply'
+export { loadAnimeCurrent } from './current'
+export { buildAnimeIncoming } from './incoming'
+export { resolveAnimeUpdateLookup } from './lookup'
+export { buildAnimePlan } from './plan'

@@ -1,7 +1,6 @@
 /**
- * Character scraper handler exports
+ * Character scraper contract exports
  */
 
-export { CharacterScraperHandler } from './handler'
 export type { CharacterScraperProvider } from './provider'
 export type { CharacterScraperResult } from './types'

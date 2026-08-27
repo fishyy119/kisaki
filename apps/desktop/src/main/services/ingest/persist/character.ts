@@ -250,7 +250,8 @@ export class CharacterIngestPersistHandler {
     const core = node.core
 
     if (core.externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExistingCharacter(
+      const existingByExternalId = this.dbService.entityFinder.findExisting(
+        'character',
         { externalIds: core.externalIds },
         tx
       )

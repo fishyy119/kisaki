@@ -18,13 +18,8 @@ import path from 'node:path'
 import { createLogger } from '@main/log'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
 import type { BookContainerReader } from '@main/services/reader'
-import {
-  isProbeCurrent,
-  readFileStat,
-  readPrimaryElection,
-  SyncPassQueue,
-  unnamedUnitGroupKey
-} from '../reconcile'
+import { isProbeCurrent, readFileStat, SyncPassQueue, unnamedUnitGroupKey } from '../reconcile'
+import { reconcileUnitFiles, type UnitReconcileSpec } from '../unit-reconcile'
 import {
   comicChapterFiles,
   comicChapters,
@@ -117,13 +112,87 @@ function rowNumberKey(row: ComicChapter): string | null {
  */
 function claimUnitAcrossVolumeKnowledge(
   candidate: ComicUnitCandidate,
-  existingUnits: ComicChapter[],
+  existingUnits: readonly ComicChapter[],
   claimedUnitIds: ReadonlySet<string>
 ): ComicChapter | undefined {
   const matches = existingUnits.filter(
     (unit) => !claimedUnitIds.has(unit.id) && isSameChapterAcrossVolumeKnowledge(candidate, unit)
   )
   return matches.length === 1 ? matches[0] : undefined
+}
+
+const COMIC_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
+  ComicChapter,
+  ComicChapterFile,
+  ComicUnitCandidate,
+  ProbedUnitValues
+> = {
+  candidateKey: unitCandidateKey,
+  candidatePath: (candidate) => candidate.path,
+  rowKey: rowNumberKey,
+  fileGroupKey: (filePath, unit) => unnamedUnitGroupKey(filePath, unit.name ?? ''),
+  // Exact identity first, then the same volume-knowledge pass ingest uses:
+  // renaming `Ch.5.cbz` to `Vol.1 Ch.5.cbz` must move the unit, not fork it.
+  claimFallback: claimUnitAcrossVolumeKnowledge,
+  onMatched: (tx, unit, candidate) => {
+    // A learned volume number is a fact about the same unit; record it so
+    // the row's identity matches its files from now on.
+    if ((unit.volumeNumber ?? null) !== (candidate.volumeNumber ?? null)) {
+      tx.update(comicChapters)
+        .set({ volumeNumber: candidate.volumeNumber ?? null })
+        .where(eq(comicChapters.id, unit.id))
+        .run()
+    }
+  },
+  insertUnit: (tx, comicId, candidate, _values, order) => {
+    const row: NewComicChapter = {
+      id: nanoid(),
+      comicId,
+      volumeNumber: candidate.volumeNumber ?? null,
+      chapterNumber: candidate.chapterNumber ?? null,
+      name: isNumberedComicUnit(candidate) ? null : candidate.name,
+      orderInComic: order
+    }
+    tx.insert(comicChapters).values(row).run()
+    return row.id as string
+  },
+  deleteUnit: (tx, unitId) => {
+    tx.delete(comicChapters).where(eq(comicChapters.id, unitId)).run()
+  },
+  fileUnitId: (file) => file.chapterId,
+  insertFile: (tx, unitId, candidate, values, isPrimary) => {
+    const fileValues = {
+      chapterId: unitId,
+      path: candidate.path,
+      ...values,
+      isPrimary
+    } satisfies Omit<NewComicChapterFile, 'id'>
+    tx.insert(comicChapterFiles)
+      .values({ id: nanoid(), ...fileValues })
+      .run()
+  },
+  updateFile: (tx, fileId, unitId, candidate, values, isPrimary) => {
+    const fileValues = {
+      chapterId: unitId,
+      path: candidate.path,
+      ...values,
+      isPrimary
+    } satisfies Omit<NewComicChapterFile, 'id'>
+    tx.update(comicChapterFiles).set(fileValues).where(eq(comicChapterFiles.id, fileId)).run()
+  },
+  deleteFile: (tx, fileId) => {
+    tx.delete(comicChapterFiles).where(eq(comicChapterFiles.id, fileId)).run()
+  },
+  isUnitProtected: (unit) => unit.read,
+  readSessionReferencedUnitIds: (tx, unitIds) =>
+    new Set(
+      (tx as DbQueryContext)
+        .select({ chapterId: comicSessions.chapterId })
+        .from(comicSessions)
+        .where(inArray(comicSessions.chapterId, [...unitIds]))
+        .all()
+        .flatMap((row) => (row.chapterId ? [row.chapterId] : []))
+    )
 }
 
 export class ComicFileSyncHandler {
@@ -186,13 +255,16 @@ export class ComicFileSyncHandler {
             .all()
         : []
 
-      const unitIdByKey = this.writeUnits(tx, comicId, probed, existingUnits, existingFiles)
-      const fileCount = this.writeUnitFiles(tx, probed, unitIdByKey, existingFiles)
-      this.deleteOrphanedFileBornUnits(tx, existingUnits, existingFiles, probed, unitIdByKey)
+      const reconciled = reconcileUnitFiles(tx, COMIC_UNIT_RECONCILE_SPEC, {
+        ownerId: comicId,
+        probed,
+        existingUnits,
+        existingFiles
+      })
 
       return {
-        chapterCount: unitIdByKey.size,
-        fileCount,
+        chapterCount: reconciled.unitIdByKey.size,
+        fileCount: reconciled.fileCount,
         unrecognizedFiles: probed
           .filter(({ candidate }) => !isNumberedComicUnit(candidate))
           .map(({ candidate }) => candidate.path)
@@ -401,187 +473,4 @@ export class ComicFileSyncHandler {
     return candidates
   }
 
-  /**
-   * Map each recognized container onto a unit row, creating rows for numbers
-   * the scraped list is missing. Unnumbered existing rows are re-matched by
-   * their group key, then by the paths of the files they own, so a re-sync
-   * stays idempotent even after the row was renamed by hand.
-   */
-  private writeUnits(
-    tx: DbContext,
-    comicId: string,
-    probed: ProbedUnitFile[],
-    existingUnits: ComicChapter[],
-    existingFiles: ComicChapterFile[]
-  ): Map<string, string> {
-    const unitById = new Map(existingUnits.map((unit) => [unit.id, unit]))
-    const existingByKey = new Map<string, ComicChapter>()
-    for (const unit of existingUnits) {
-      const key = rowNumberKey(unit)
-      if (key) existingByKey.set(key, unit)
-    }
-    // Unnumbered rows exist only because of their files, so those files locate
-    // them again: their group key when the stored name still matches, and the
-    // path outright when a rename moved it out of reach.
-    const existingByFilePath = new Map<string, ComicChapter>()
-    for (const file of existingFiles) {
-      const unit = unitById.get(file.chapterId)
-      if (!unit || rowNumberKey(unit) !== null) continue
-
-      existingByFilePath.set(file.path, unit)
-      const groupKey = unnamedUnitGroupKey(file.path, unit.name ?? '')
-      if (!existingByKey.has(groupKey)) existingByKey.set(groupKey, unit)
-    }
-
-    const unitIdByKey = new Map<string, string>()
-    const claimedUnitIds = new Set<string>()
-    let nextOrder = existingUnits.length
-
-    for (const { candidate } of probed) {
-      const key = unitCandidateKey(candidate)
-
-      if (unitIdByKey.has(key)) continue
-
-      // Exact identity first, then the same volume-knowledge pass ingest uses:
-      // renaming `Ch.5.cbz` to `Vol.1 Ch.5.cbz` must move the unit, not fork it.
-      const match =
-        existingByKey.get(key) ??
-        existingByFilePath.get(candidate.path) ??
-        claimUnitAcrossVolumeKnowledge(candidate, existingUnits, claimedUnitIds)
-      if (match) {
-        claimedUnitIds.add(match.id)
-        unitIdByKey.set(key, match.id)
-        // A learned volume number is a fact about the same unit; record it so
-        // the row's identity matches its files from now on.
-        if ((match.volumeNumber ?? null) !== (candidate.volumeNumber ?? null)) {
-          tx.update(comicChapters)
-            .set({ volumeNumber: candidate.volumeNumber ?? null })
-            .where(eq(comicChapters.id, match.id))
-            .run()
-        }
-        continue
-      }
-
-      const row: NewComicChapter = {
-        id: nanoid(),
-        comicId,
-        volumeNumber: candidate.volumeNumber ?? null,
-        chapterNumber: candidate.chapterNumber ?? null,
-        name: isNumberedComicUnit(candidate) ? null : candidate.name,
-        orderInComic: nextOrder++
-      }
-
-      tx.insert(comicChapters).values(row).run()
-      claimedUnitIds.add(row.id as string)
-      unitIdByKey.set(key, row.id as string)
-    }
-
-    return unitIdByKey
-  }
-
-  private writeUnitFiles(
-    tx: DbContext,
-    probed: ProbedUnitFile[],
-    unitIdByKey: Map<string, string>,
-    existingFiles: ComicChapterFile[]
-  ): number {
-    const knownIdByPath = new Map(existingFiles.map((file) => [file.path, file.id]))
-    const primaries = readPrimaryElection(existingFiles, (file) => file.chapterId)
-
-    const probedByUnitId = new Map<string, ProbedUnitFile[]>()
-    for (const item of probed) {
-      const unitId = unitIdByKey.get(unitCandidateKey(item.candidate))
-      if (!unitId) continue
-      const group = probedByUnitId.get(unitId) ?? []
-      group.push(item)
-      probedByUnitId.set(unitId, group)
-    }
-
-    let count = 0
-
-    // Sync-owned files that vanished from disk must not stay readable. Manual
-    // rows are user-owned and may live outside the walked directory, so they
-    // stay. Deletion runs first so the partial primary index never sees two
-    // rows.
-    const livePaths = new Set(probed.map(({ candidate }) => candidate.path))
-    for (const file of existingFiles) {
-      if (file.isManual || livePaths.has(file.path)) continue
-      tx.delete(comicChapterFiles).where(eq(comicChapterFiles.id, file.id)).run()
-    }
-
-    for (const [unitId, group] of probedByUnitId) {
-      const primaryPath = primaries.elect(
-        unitId,
-        group.map(({ candidate }) => candidate.path)
-      )
-
-      for (const { candidate, values: probedValues } of group) {
-        const values = {
-          chapterId: unitId,
-          path: candidate.path,
-          ...probedValues,
-          isPrimary: candidate.path === primaryPath
-        } satisfies Omit<NewComicChapterFile, 'id'>
-
-        const knownId = knownIdByPath.get(candidate.path)
-        if (knownId) {
-          tx.update(comicChapterFiles).set(values).where(eq(comicChapterFiles.id, knownId)).run()
-        } else {
-          tx.insert(comicChapterFiles)
-            .values({ id: nanoid(), ...values })
-            .run()
-        }
-
-        count++
-      }
-    }
-
-    return count
-  }
-
-  /**
-   * Unnumbered rows only existed because a file proved them. Once the last
-   * file is gone they carry nothing, unless the user read them, attached a
-   * manual file, or a session still points at them.
-   */
-  private deleteOrphanedFileBornUnits(
-    tx: DbContext,
-    existingUnits: ComicChapter[],
-    existingFiles: ComicChapterFile[],
-    probed: ProbedUnitFile[],
-    unitIdByKey: Map<string, string>
-  ): void {
-    const retainedIds = new Set<string>()
-    for (const { candidate } of probed) {
-      const unitId = unitIdByKey.get(unitCandidateKey(candidate))
-      if (unitId) retainedIds.add(unitId)
-    }
-    for (const file of existingFiles) {
-      if (file.isManual) retainedIds.add(file.chapterId)
-    }
-
-    const candidates = existingUnits.filter(
-      (unit) => rowNumberKey(unit) === null && !unit.read && !retainedIds.has(unit.id)
-    )
-    if (candidates.length === 0) return
-
-    const referencedIds = new Set(
-      (tx as DbQueryContext)
-        .select({ chapterId: comicSessions.chapterId })
-        .from(comicSessions)
-        .where(
-          inArray(
-            comicSessions.chapterId,
-            candidates.map((unit) => unit.id)
-          )
-        )
-        .all()
-        .flatMap((row) => (row.chapterId ? [row.chapterId] : []))
-    )
-
-    for (const unit of candidates) {
-      if (referencedIds.has(unit.id)) continue
-      tx.delete(comicChapters).where(eq(comicChapters.id, unit.id)).run()
-    }
-  }
 }

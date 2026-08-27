@@ -2,18 +2,22 @@
   ScannerResultFixDialog
   Re-runs ingest for one scanner issue after the user picks the right entry by
   hand: an issue that already resolved to an entry updates it, otherwise the
-  scanned directory is added afresh. The searcher and the ingest call are
-  chosen by the issue's media type.
+  scanned directory is added afresh. Both paths are media-neutral — the update
+  request builds on METADATA_UPDATE_SPECS and the re-add submit comes from
+  SCANNER_FIX_ADD_SPECS — so every scanned media type shares this one dialog.
 -->
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { EntitySearcher, type EntitySearcherSelection } from '@renderer/components/shared/entity'
+import {
+  EntitySearcher,
+  METADATA_UPDATE_SPECS,
+  type EntitySearcherSelection
+} from '@renderer/components/shared/entity'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Form } from '@renderer/components/ui/form'
@@ -27,15 +31,9 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { scanners as scannersTable } from '@shared/db'
-import {
-  ANIME_UPDATE_SURFACE_KEYS,
-  GAME_UPDATE_SURFACE_KEYS,
-  type AnimeUpdateRequest,
-  type GameUpdateRequest
-} from '@shared/ingest/update'
-import type { AnimeScraperLookup, GameScraperLookup, ScraperLookup } from '@shared/scraper'
-import { assertNever } from '@shared/utils/exhaustive'
-import type { ScannerFixTarget } from './scanner-problem'
+import type { ScraperLookup } from '@shared/scraper'
+import { SCANNER_FIX_ADD_SPECS } from './fix-specs'
+import type { ScannerFixTarget } from './scanner-issue'
 
 interface Props {
   problem: ScannerFixTarget
@@ -46,19 +44,8 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-/**
- * The chosen entry, tagged with the media type that produced it.
- *
- * The tag travels with the selection rather than being read back off the
- * issue, which is what keeps each lookup paired with the ingest call that
- * accepts it.
- */
-type FixSelection =
-  | { mediaType: 'game'; selection: EntitySearcherSelection<GameScraperLookup> }
-  | { mediaType: 'anime'; selection: EntitySearcherSelection<AnimeScraperLookup> }
-
 const isSubmitting = ref(false)
-const selection = shallowRef<FixSelection | null>(null)
+const selection = shallowRef<EntitySearcherSelection<ScraperLookup> | null>(null)
 
 const { data: scanner } = useAsyncData(
   async () => {
@@ -80,72 +67,39 @@ const isUpdateMode = computed(() => !!props.problem.entityId)
 const actionText = computed(() =>
   isUpdateMode.value ? m.value.scanner.fix.updateExisting : m.value.scanner.fix.readd
 )
-const canSubmit = computed(() => !!selection.value?.selection.canSubmit && !isSubmitting.value)
+const canSubmit = computed(() => !!selection.value?.canSubmit && !isSubmitting.value)
 
 const targetCollectionId = computed(() => scanner.value?.targetCollectionId || undefined)
 
 /** The scanned name is the better fallback here, so it replaces an empty one. */
-function resolveLookup<TLookup extends ScraperLookup>(lookup: TLookup): TLookup {
+function resolveLookup(lookup: ScraperLookup): ScraperLookup {
   return { ...lookup, name: lookup.name || props.problem.extractedName.trim() }
 }
 
-async function submitGame(chosen: EntitySearcherSelection<GameScraperLookup>): Promise<void> {
+async function startIngest(chosen: EntitySearcherSelection<ScraperLookup>): Promise<void> {
+  const mediaType = props.problem.mediaType
   const lookup = resolveLookup(chosen.lookup)
   const entityId = props.problem.entityId
 
   if (entityId) {
-    const request: GameUpdateRequest = {
+    const spec = METADATA_UPDATE_SPECS[mediaType]
+    const outcome = await spec.submit({
       rootId: entityId,
       profileId: chosen.profileId,
       lookup,
-      selection: { surfaces: [...GAME_UPDATE_SURFACE_KEYS] },
+      selection: { surfaces: [...spec.surfaceKeys] },
       policy: { singularUpdate: 'overwrite', collectionUpdate: 'replace' }
+    })
+    if (!outcome.success) {
+      throw new Error(outcome.error ?? m.value.scanner.fix.unknownError)
     }
-    await ipcManager.invoke('ingest:update-game-from-scraper', request).then(unwrapIpcData)
     return
   }
 
-  await ipcManager
-    .invoke('ingest:add-game-from-scraper', chosen.profileId, lookup, {
-      gameDirPath: props.problem.path,
-      targetCollectionId: targetCollectionId.value
-    })
-    .then(unwrapIpcData)
-}
-
-async function submitAnime(chosen: EntitySearcherSelection<AnimeScraperLookup>): Promise<void> {
-  const lookup = resolveLookup(chosen.lookup)
-  const entityId = props.problem.entityId
-
-  if (entityId) {
-    const request: AnimeUpdateRequest = {
-      rootId: entityId,
-      profileId: chosen.profileId,
-      lookup,
-      selection: { surfaces: [...ANIME_UPDATE_SURFACE_KEYS] },
-      policy: { singularUpdate: 'overwrite', collectionUpdate: 'replace' }
-    }
-    await ipcManager.invoke('ingest:update-anime-from-scraper', request).then(unwrapIpcData)
-    return
-  }
-
-  await ipcManager
-    .invoke('ingest:add-anime-from-scraper', chosen.profileId, lookup, {
-      animeDirPath: props.problem.path,
-      targetCollectionId: targetCollectionId.value
-    })
-    .then(unwrapIpcData)
-}
-
-function startIngest(chosen: FixSelection): Promise<void> {
-  switch (chosen.mediaType) {
-    case 'game':
-      return submitGame(chosen.selection)
-    case 'anime':
-      return submitAnime(chosen.selection)
-    default:
-      return assertNever(chosen, 'scanner fix media type')
-  }
+  await SCANNER_FIX_ADD_SPECS[mediaType](chosen.profileId, lookup, {
+    dirPath: props.problem.path,
+    targetCollectionId: targetCollectionId.value
+  })
 }
 
 async function handleSubmit() {
@@ -215,20 +169,11 @@ watch(
           </div>
 
           <EntitySearcher
-            v-if="props.problem.mediaType === 'game'"
-            entity-type="game"
+            :entity-type="props.problem.mediaType"
             :default-profile-id="defaultProfileId"
             :default-search-query="defaultSearchQuery"
             :is-submitting="isSubmitting"
-            @selection-change="selection = { mediaType: 'game', selection: $event }"
-          />
-          <EntitySearcher
-            v-else
-            entity-type="anime"
-            :default-profile-id="defaultProfileId"
-            :default-search-query="defaultSearchQuery"
-            :is-submitting="isSubmitting"
-            @selection-change="selection = { mediaType: 'anime', selection: $event }"
+            @selection-change="selection = $event"
           />
         </DialogBody>
 

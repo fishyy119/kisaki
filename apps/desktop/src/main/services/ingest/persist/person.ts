@@ -157,7 +157,8 @@ export class PersonIngestPersistHandler {
     const core = node.core
 
     if (core.externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExistingPerson(
+      const existingByExternalId = this.dbService.entityFinder.findExisting(
+        'person',
         { externalIds: core.externalIds },
         tx
       )

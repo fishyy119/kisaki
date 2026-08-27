@@ -1,5 +1,6 @@
 import type { I18nService } from '@main/services/i18n'
 import type { TaskRunContext } from '@main/services/task-run'
+import type { Semaphore } from '@main/utils/async'
 import {
   isActiveScannerRunStatus,
   type ScannerRunState,
@@ -8,18 +9,18 @@ import {
 import type { TaskRunStatus } from '@shared/task-run'
 import { toTaskRunProgressUpdate } from './projection'
 import type { ScannerRunStateStore } from './state'
-import type { ActiveScannerRun, ScannerEntityProcessResult, ScannerRunMetadata } from './types'
+import type { ActiveScannerRun, ScannerEntityProcessResult } from './types'
 
-export class ScannerRunSession<TScanner extends ScannerRunMetadata> {
+export class ScannerRunSession {
   private indeterminate = true
 
   constructor(
-    private readonly record: ActiveScannerRun<TScanner>,
-    private readonly states: ScannerRunStateStore<TScanner>,
+    private readonly record: ActiveScannerRun,
+    private readonly states: ScannerRunStateStore,
     private readonly context: TaskRunContext,
     private readonly options: {
       i18n: I18nService
-      publish: (record: ActiveScannerRun<TScanner>) => void
+      publish: (record: ActiveScannerRun) => void
       readTaskRunStatus: (runId: string) => TaskRunStatus | null
     }
   ) {}
@@ -34,15 +35,6 @@ export class ScannerRunSession<TScanner extends ScannerRunMetadata> {
 
   get signal(): AbortSignal {
     return this.context.signal
-  }
-
-  setScanner(scanner: TScanner): void {
-    this.record.scanner = scanner
-    this.updateState({
-      scannerName: scanner.name,
-      mediaType: scanner.type,
-      path: scanner.path
-    })
   }
 
   start(): void {
@@ -80,39 +72,26 @@ export class ScannerRunSession<TScanner extends ScannerRunMetadata> {
     await this.pauseOrCancelAtBoundary()
   }
 
-  async processItemsWithConcurrency<T>(
+  /**
+   * Process items with pause/cancel checkpoints at entity boundaries.
+   *
+   * The limiter is the application-wide entity budget shared by every scan
+   * run: each item acquires one permit before it starts, so concurrent runs
+   * split the same total instead of multiplying it. While the acquire waits,
+   * in-flight items keep running and a cancellation aborts the wait.
+   */
+  async processItems<T>(
     items: readonly T[],
-    concurrency: number,
+    limiter: Semaphore,
     worker: (item: T) => Promise<void>
   ): Promise<void> {
-    const workerCount = Math.min(items.length, Math.max(1, concurrency))
-    if (workerCount === 0) {
-      await this.pauseOrCancelAtBoundary()
-      return
-    }
-
     const activeTasks = new Set<Promise<void>>()
     let nextIndex = 0
-
-    const scheduleTasks = async (): Promise<void> => {
-      while (
-        nextIndex < items.length &&
-        activeTasks.size < workerCount &&
-        !this.hasPauseRequest() &&
-        !this.hasCancelRequest()
-      ) {
-        await this.context.checkpoint()
-        const currentItem = items[nextIndex]
-        nextIndex++
-
-        const task = worker(currentItem).finally(() => {
-          activeTasks.delete(task)
-        })
-        activeTasks.add(task)
-      }
-    }
+    let pendingError: { error: unknown } | null = null
 
     while (nextIndex < items.length || activeTasks.size > 0) {
+      if (pendingError) break
+
       if (this.hasCancelRequest()) {
         this.setStatus('cancelling')
         if (activeTasks.size > 0) {
@@ -132,13 +111,41 @@ export class ScannerRunSession<TScanner extends ScannerRunMetadata> {
         continue
       }
 
-      await scheduleTasks()
-
-      if (activeTasks.size === 0) {
+      if (nextIndex >= items.length) {
+        await Promise.race(activeTasks)
         continue
       }
 
+      try {
+        await limiter.acquire(this.signal)
+      } catch (error) {
+        pendingError = { error }
+        break
+      }
+
+      const currentItem = items[nextIndex]
+      nextIndex++
+
+      // Worker failures (cancellation rethrows) are captured instead of
+      // rejecting the task, so sibling entities always drain before the
+      // error surfaces and no rejection goes unobserved.
+      const task = worker(currentItem)
+        .catch((error: unknown) => {
+          pendingError ??= { error }
+        })
+        .finally(() => {
+          limiter.release()
+          activeTasks.delete(task)
+        })
+      activeTasks.add(task)
+    }
+
+    while (activeTasks.size > 0) {
       await Promise.race(activeTasks)
+    }
+
+    if (pendingError) {
+      throw pendingError.error
     }
 
     await this.pauseOrCancelAtBoundary()

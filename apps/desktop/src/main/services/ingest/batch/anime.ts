@@ -7,7 +7,7 @@ import type { AnimeBatchUpdateRequest } from '@shared/ingest/update'
 import { selectAnimeSearchResult, type AnimeLookupFacts } from '@shared/scraper'
 import type { TaskRunStartResult } from '@shared/task-run'
 import { animes } from '@shared/db'
-import type { AnimeUpdateHandler } from '../update'
+import type { EntityUpdateApi } from '../update'
 import { IngestBatchUpdateRunner } from './runner'
 import { loadIngestBatchRows } from './rows'
 
@@ -17,7 +17,7 @@ export class AnimeBatchHandler {
   constructor(
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
-    private readonly updateHandler: AnimeUpdateHandler,
+    private readonly updateHandler: EntityUpdateApi<'anime'>,
     taskRunService: TaskRunService,
     i18nService: I18nService
   ) {

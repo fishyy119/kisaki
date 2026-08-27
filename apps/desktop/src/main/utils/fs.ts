@@ -5,6 +5,22 @@
 import { access, cp, mkdir, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 
+/**
+ * Canonical form for library directory paths.
+ *
+ * Path identity (scanner discovery, `findExisting*` by path, persisted
+ * `*DirPath` columns) compares by exact string, so every producer and reader
+ * funnels through this: absolute, platform separators, and an uppercased
+ * drive letter on Windows, where `f:\` and `F:\` name the same directory.
+ */
+export function normalizeLibraryDirPath(dirPath: string): string {
+  const resolved = path.resolve(dirPath)
+  if (process.platform === 'win32' && /^[a-z]:/.test(resolved)) {
+    return resolved[0].toUpperCase() + resolved.slice(1)
+  }
+  return resolved
+}
+
 /** Returns whether a filesystem path exists. */
 export async function pathExists(targetPath: string): Promise<boolean> {
   try {

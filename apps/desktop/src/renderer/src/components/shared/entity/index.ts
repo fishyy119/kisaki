@@ -10,7 +10,12 @@ export {
   EntityBatchContextMenu,
   EntityBatchMenuItems
 } from './menus'
-export { EntityMetadataUpdateFormDialog, EntityBatchMetadataUpdateFormDialog } from './metadata'
+export {
+  EntityMetadataUpdateFormDialog,
+  EntityBatchMetadataUpdateFormDialog,
+  METADATA_UPDATE_SPECS,
+  type MetadataUpdateSpec
+} from './metadata'
 export {
   EntityNameFormDialog,
   EntityOriginalNameFormDialog,

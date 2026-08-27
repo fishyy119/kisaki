@@ -1,7 +1,6 @@
 /**
- * Comic scraper handler exports
+ * Comic scraper contract exports
  */
 
-export { ComicScraperHandler } from './handler'
 export type { ComicScraperProvider } from './provider'
 export type { ComicScraperResult, ComicScraperImageResult } from './types'

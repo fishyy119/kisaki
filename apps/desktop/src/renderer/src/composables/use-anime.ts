@@ -1,33 +1,13 @@
 /**
  * Anime data composable
  *
- * Provides anime data with all related entities using Provider/Consumer pattern.
- * Two provider surfaces share one fetcher, context assembly, and db sync:
- * - Route page: `animeDetailData` loads during navigation (beforeResolve), the
- *   page consumes the settled store via `useAnimeRouteProvider()`.
- * - Dialog: `useAnimeDialogProvider()` fetches on demand after mount.
+ * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * from the entity detail context factory; this module owns what an anime
+ * detail surface fetches and shows.
  */
 
-import {
-  provide,
-  inject,
-  ref,
-  toRef,
-  toValue,
-  computed,
-  watch,
-  type InjectionKey,
-  type Ref,
-  type MaybeRefOrGetter,
-  type ComputedRef
-} from 'vue'
-import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import { eq, asc, desc, and, inArray } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { defineRouteData } from '@renderer/core/route-data'
-import { useAsyncData } from './use-async-data'
-import { usePreferencesStore } from '@renderer/stores'
 import type {
   Anime,
   AnimeEpisode,
@@ -48,7 +28,11 @@ import type {
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
-import { useDbChanges } from './use-db-changes'
+import {
+  createEntityDetailContext,
+  type EntityDetailContext,
+  type EntityDetailProviderReturn
+} from './entity-context'
 
 // =============================================================================
 // Types
@@ -64,7 +48,7 @@ export interface AnimeExtraEntry extends AnimeExtra {
   files: AnimeExtraFile[]
 }
 
-interface AnimeData {
+export interface AnimeData {
   anime: Anime | null
   episodes: AnimeEpisodeEntry[]
   extras: AnimeExtraEntry[]
@@ -89,49 +73,8 @@ export interface AnimeCastEntry extends AnimeCastLink {
   person: Person | null
 }
 
-export interface AnimeContext {
-  /** Anime data */
-  anime: ComputedRef<Anime | null>
-  /** Episodes in display order, each with its playable files */
-  episodes: ComputedRef<AnimeEpisodeEntry[]>
-  /** Supplementary assets (trailers, creditless openings), each with its files */
-  extras: ComputedRef<AnimeExtraEntry[]>
-  /** Anime notes (from animeNotes) */
-  notes: ComputedRef<AnimeNote[]>
-  /** Anime tags (from animeTagLinks) */
-  tags: ComputedRef<(AnimeTagLink & { tag: Tag | null })[]>
-  /** Character links with character data */
-  characters: ComputedRef<(AnimeCharacterLink & { character: Character | null })[]>
-  /** Person links with person data */
-  persons: ComputedRef<(AnimePersonLink & { person: Person | null })[]>
-  /** Voice credits of this entry, each naming both its character and person */
-  cast: ComputedRef<AnimeCastEntry[]>
-  /** Company links with company data */
-  companies: ComputedRef<(AnimeCompanyLink & { company: Company | null })[]>
-  /** Entry-to-entry relations merged from both edge directions */
-  relations: ComputedRef<MediaRelationEntry[]>
-  /** Anime sessions (watch history) */
-  sessions: ComputedRef<AnimeSession[]>
-  /** Initial loading state (always false on the route surface after mount) */
-  isLoading: Ref<boolean>
-  /** Background refetching state */
-  isFetching: Ref<boolean>
-  /** Error if any */
-  error: Ref<string | null>
-  /** Manually refetch data */
-  refetch: () => Promise<void>
-}
-
-export interface AnimeProviderReturn extends AnimeContext {
-  /** Spoiler reveal state owned by the provider; toggling refetches (SWR) */
-  spoilersRevealed: Ref<boolean>
-}
-
-// =============================================================================
-// Injection Key
-// =============================================================================
-
-export const AnimeKey: InjectionKey<AnimeContext> = Symbol('anime')
+export type AnimeContext = EntityDetailContext<AnimeData>
+export type AnimeProviderReturn = EntityDetailProviderReturn<AnimeData>
 
 // =============================================================================
 // Data Fetcher
@@ -330,59 +273,8 @@ async function attachExtraFiles(extras: AnimeExtra[]): Promise<AnimeExtraEntry[]
 }
 
 // =============================================================================
-// Route Loader
+// Context Wiring
 // =============================================================================
-
-// Route-surface spoiler state lives beside the loader so the navigation-time
-// fetch reads a consistent value; it resets whenever a different anime loads.
-let lastRouteAnimeId: string | null = null
-const routeSpoilersRevealed = ref(false)
-
-export const animeDetailData = defineRouteData((route) => {
-  const animeId = route.params.animeId as string
-  if (animeId !== lastRouteAnimeId) {
-    lastRouteAnimeId = animeId
-    routeSpoilersRevealed.value = false
-  }
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  return fetchAnimeData(animeId, routeSpoilersRevealed.value, showNsfw.value)
-})
-
-// =============================================================================
-// Shared Internals
-// =============================================================================
-
-interface AnimeDataSource {
-  data: Readonly<Ref<AnimeData | null | undefined>>
-  isLoading: Ref<boolean>
-  isFetching: Ref<boolean>
-  error: Ref<string | null>
-  refetch: () => Promise<void>
-}
-
-function provideAnimeContext(source: AnimeDataSource): AnimeContext {
-  const context: AnimeContext = {
-    anime: computed(() => source.data.value?.anime ?? null),
-    episodes: computed(() => source.data.value?.episodes ?? []),
-    extras: computed(() => source.data.value?.extras ?? []),
-    notes: computed(() => source.data.value?.notes ?? []),
-    tags: computed(() => source.data.value?.tags ?? []),
-    characters: computed(() => source.data.value?.characters ?? []),
-    persons: computed(() => source.data.value?.persons ?? []),
-    cast: computed(() => source.data.value?.cast ?? []),
-    companies: computed(() => source.data.value?.companies ?? []),
-    relations: computed(() => source.data.value?.relations ?? []),
-    sessions: computed(() => source.data.value?.sessions ?? []),
-    isLoading: source.isLoading,
-    isFetching: source.isFetching,
-    error: source.error,
-    refetch: source.refetch
-  }
-
-  provide(AnimeKey, context)
-
-  return context
-}
 
 const ANIME_OWNED_TABLES = [
   'anime_episodes',
@@ -399,93 +291,28 @@ const ANIME_OWNED_TABLES = [
   'media_relations'
 ]
 
-function useAnimeDbSync(animeId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
-  useDbChanges(({ operation, table, id: entityId }) => {
-    if (ANIME_OWNED_TABLES.includes(table)) {
-      refetch()
-      return
-    }
-    if (table === 'animes' && entityId === toValue(animeId) && operation !== 'inserted') {
-      refetch()
-    }
-  })
-}
+const animeDetail = createEntityDetailContext<AnimeData>({
+  entityLabel: 'anime',
+  routeParam: 'animeId',
+  empty: {
+    anime: null,
+    episodes: [],
+    extras: [],
+    notes: [],
+    tags: [],
+    characters: [],
+    persons: [],
+    cast: [],
+    companies: [],
+    relations: [],
+    sessions: []
+  },
+  fetch: (id, view) => fetchAnimeData(id, view.spoilersRevealed, view.showNsfw),
+  ownedTables: ANIME_OWNED_TABLES,
+  entityTable: 'animes'
+})
 
-// =============================================================================
-// Provider Composables
-// =============================================================================
-
-/**
- * Provide anime data on the route surface.
- *
- * Data is loaded by `animeDetailData` during navigation, so it is already
- * settled when the page mounts. In-page input changes (spoilers, NSFW
- * preference) trigger a non-blocking SWR refetch.
- */
-export function useAnimeRouteProvider(): AnimeProviderReturn {
-  const route = useRoute()
-  const animeId = computed(() => route.params.animeId as string)
-  const { data, error, isFetching, refetch } = animeDetailData()
-
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  watch(showNsfw, () => void refetch())
-
-  // Explicit setter (not a watcher on the module ref) so the loader's
-  // cross-navigation spoiler reset does not trigger a duplicate fetch.
-  const spoilersRevealed = computed({
-    get: () => routeSpoilersRevealed.value,
-    set: (value) => {
-      routeSpoilersRevealed.value = value
-      void refetch()
-    }
-  })
-
-  const context = provideAnimeContext({
-    data,
-    isLoading: ref(false),
-    isFetching,
-    error,
-    refetch
-  })
-  useAnimeDbSync(animeId, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-/**
- * Provide anime data on the dialog surface (fetches after mount).
- *
- * Spoiler state is instance-local and resets when the dialog unmounts.
- */
-export function useAnimeDialogProvider(animeId: MaybeRefOrGetter<string>): AnimeProviderReturn {
-  const id = toRef(animeId)
-  const spoilersRevealed = ref(false)
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchAnimeData(toValue(id), spoilersRevealed.value, showNsfw.value),
-    { watch: [id, spoilersRevealed, showNsfw] }
-  )
-
-  const context = provideAnimeContext({ data, isLoading, isFetching, error, refetch })
-  useAnimeDbSync(id, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-// =============================================================================
-// Consumer Composable
-// =============================================================================
-
-/**
- * Consume anime data context
- *
- * Call this in child components to access anime data.
- */
-export function useAnime(): AnimeContext {
-  const context = inject(AnimeKey)
-  if (!context) {
-    throw new Error('useAnime() must be used within a component that provided the anime context')
-  }
-  return context
-}
+export const animeDetailData = animeDetail.detailData
+export const useAnimeRouteProvider = animeDetail.useRouteProvider
+export const useAnimeDialogProvider = animeDetail.useDialogProvider
+export const useAnime = animeDetail.useContext

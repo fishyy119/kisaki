@@ -1,5 +1,6 @@
 import { resolveTagId, type DbContext, type DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
+import { normalizeLibraryDirPath } from '@main/utils/fs'
 import type {
   IngestAddGameFromScraperOptions,
   IngestAddGameFromScraperResult
@@ -397,7 +398,7 @@ export class GameIngestPersistHandler {
       releaseDate: gameCore.releaseDate,
       description: gameCore.description,
       externalSites: gameCore.externalSites || [],
-      gameDirPath: options?.gameDirPath,
+      gameDirPath: options?.gameDirPath ? normalizeLibraryDirPath(options.gameDirPath) : undefined,
       launcherPath: options?.gameFilePath
     }
 
@@ -422,7 +423,8 @@ export class GameIngestPersistHandler {
     tx: DbContext
   ): { gameId: string; existingReason: 'path' | 'externalId' } | undefined {
     if (options?.gameDirPath) {
-      const existingByPath = this.dbService.entityFinder.findExistingGame(
+      const existingByPath = this.dbService.entityFinder.findExisting(
+        'game',
         { path: options.gameDirPath },
         tx
       )
@@ -433,7 +435,11 @@ export class GameIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExistingGame({ externalIds }, tx)
+      const existingByExternalId = this.dbService.entityFinder.findExisting(
+        'game',
+        { externalIds },
+        tx
+      )
       if (existingByExternalId) {
         return { gameId: existingByExternalId.id, existingReason: 'externalId' }
       }

@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
-import { ScannerItemFormDialog } from './scanner-item-form-dialog'
+import { ScannerFormDialog } from './scanner-form-dialog'
 import ScannerIssuesDialog from './scanner-issues-dialog.vue'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { TableCell, TableRow } from '@renderer/components/ui/table'
@@ -319,7 +319,7 @@ async function handleOpenPath() {
     <!-- Profile column -->
     <TableCell class="relative text-center">
       <span class="block truncate text-sm text-muted-foreground">
-        {{ profileName || props.scanner.scraperProfileId }}
+        {{ profileName || '-' }}
       </span>
     </TableCell>
 
@@ -473,7 +473,7 @@ async function handleOpenPath() {
     v-model:open="isIssuesDialogOpen"
     :scanner-id="props.scanner.id"
   />
-  <ScannerItemFormDialog
+  <ScannerFormDialog
     v-if="isEditDialogOpen"
     v-model:open="isEditDialogOpen"
     :scanner-id="props.scanner.id"

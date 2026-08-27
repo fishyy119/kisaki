@@ -57,6 +57,90 @@ const rendererRouterSingletonPatterns = [
   }
 ]
 
+const exportAllRestriction = {
+  selector: 'ExportAllDeclaration',
+  message: 'Use explicit named exports instead of export *.'
+}
+
+// Tables the renderer may write directly: user-curation state the UI edits in
+// place. Everything else — scraped ingest graphs, holdings sync-owned file
+// rows, activity marks, extension state — must go through the owning
+// main-process workflow. See .agents/skills/kisaki data-layer reference.
+const rendererDirectWriteTables = [
+  // Entity core rows and organizer rows (user field edits)
+  'games',
+  'animes',
+  'comics',
+  'novels',
+  'characters',
+  'persons',
+  'companies',
+  'tags',
+  'collections',
+  'showcaseSections',
+  'scanners',
+  'scannersTable',
+  'scraperProfiles',
+  'settings',
+  // Consumption units and their user-managed files
+  'animeEpisodes',
+  'animeExtras',
+  'comicChapters',
+  'novelVolumes',
+  'comicChapterFiles',
+  'novelVolumeFiles',
+  // Notes and sessions
+  'gameNotes',
+  'animeNotes',
+  'comicNotes',
+  'novelNotes',
+  'gameSessions',
+  'animeSessions',
+  'comicSessions',
+  'novelSessions',
+  // Relation and link rows (user curation)
+  'mediaRelations',
+  'companyRelations',
+  'characterPersonLinks',
+  'gameCharacterLinks',
+  'gamePersonLinks',
+  'gameCompanyLinks',
+  'gameCastLinks',
+  'animeCharacterLinks',
+  'animePersonLinks',
+  'animeCompanyLinks',
+  'animeCastLinks',
+  'comicCharacterLinks',
+  'comicPersonLinks',
+  'comicCompanyLinks',
+  'novelCharacterLinks',
+  'novelPersonLinks',
+  'novelCompanyLinks',
+  'collectionGameLinks',
+  'collectionAnimeLinks',
+  'collectionComicLinks',
+  'collectionNovelLinks',
+  'collectionCharacterLinks',
+  'collectionPersonLinks',
+  'collectionCompanyLinks',
+  // External identity rows (user curation)
+  'gameExternalIds',
+  'animeExternalIds',
+  'comicExternalIds',
+  'novelExternalIds',
+  'characterExternalIds',
+  'personExternalIds',
+  'companyExternalIds'
+]
+
+const rendererDirectWriteGuard = {
+  selector:
+    `CallExpression[callee.object.name='db'][callee.property.name=/^(insert|update|delete)$/]` +
+    `[arguments.0.type='Identifier']:not([arguments.0.name=/^(${rendererDirectWriteTables.join('|')})$/])`,
+  message:
+    'This table is not on the renderer direct-write allowlist. Route the write through the owning main-process workflow, or extend the allowlist with review (see the kisaki data-layer reference).'
+}
+
 /**
  * ESLint configuration for the desktop Electron app.
  * Extends base config with Vue-specific settings for this app.
@@ -146,10 +230,8 @@ export default defineConfig([
     rules: {
       'no-restricted-syntax': [
         'error',
-        {
-          selector: 'ExportAllDeclaration',
-          message: 'Use explicit named exports instead of export *.'
-        },
+        exportAllRestriction,
+        rendererDirectWriteGuard,
         ...noCjkLiteralRestrictions
       ],
       'no-restricted-imports': [
@@ -158,6 +240,18 @@ export default defineConfig([
           patterns: [...rendererImportBoundaryPatterns, ...rendererRouterSingletonPatterns]
         }
       ]
+    }
+  },
+  // Sanctioned dynamic write machinery: these modules write through
+  // spec-typed table parameters, so the identifier allowlist cannot see the
+  // concrete table. Their table sets are bound in their own typed specs.
+  {
+    files: [
+      'src/renderer/src/core/db/**/*.ts',
+      'src/renderer/src/composables/use-anime-file-records.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': ['error', exportAllRestriction, ...noCjkLiteralRestrictions]
     }
   },
   // The app entry is the composition root: it alone imports the router

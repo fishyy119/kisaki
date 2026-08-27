@@ -1,7 +1,7 @@
-export { AnimeAddHandler } from './anime'
-export { CharacterAddHandler } from './character'
-export { ComicAddHandler } from './comic'
-export { CompanyAddHandler } from './company'
-export { GameAddHandler } from './game'
-export { NovelAddHandler } from './novel'
-export { PersonAddHandler } from './person'
+export {
+  EntityAddEngine,
+  type EntityAddApi,
+  type EntityAddEngineDeps,
+  type MediaEntityAddApi
+} from './engine'
+export { INGEST_ADD_SPECS } from './specs'

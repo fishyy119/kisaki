@@ -1,7 +1,6 @@
 /**
- * Person scraper handler exports
+ * Person scraper contract exports
  */
 
-export { PersonScraperHandler } from './handler'
 export type { PersonScraperProvider } from './provider'
 export type { PersonScraperResult } from './types'

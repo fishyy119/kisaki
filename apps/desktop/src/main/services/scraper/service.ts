@@ -12,13 +12,8 @@
 
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import { GameScraperHandler } from './handlers/game'
-import { AnimeScraperHandler } from './handlers/anime'
-import { ComicScraperHandler } from './handlers/comic'
-import { NovelScraperHandler } from './handlers/novel'
-import { PersonScraperHandler } from './handlers/person'
-import { CompanyScraperHandler } from './handlers/company'
-import { CharacterScraperHandler } from './handlers/character'
+import { EntityScraperHandler } from './handlers/handler'
+import { SCRAPER_HANDLER_SPECS } from './handlers/specs'
 import { registerScraperIpc } from './ipc'
 import { createScraperHooks } from './hooks'
 import { ScraperProfileCatalog } from './profiles'
@@ -31,13 +26,13 @@ export class ScraperService implements IService<'scraper'> {
   readonly hooks = createScraperHooks()
 
   profiles!: ScraperProfileCatalog
-  game!: GameScraperHandler
-  anime!: AnimeScraperHandler
-  comic!: ComicScraperHandler
-  novel!: NovelScraperHandler
-  person!: PersonScraperHandler
-  company!: CompanyScraperHandler
-  character!: CharacterScraperHandler
+  game!: EntityScraperHandler<'game'>
+  anime!: EntityScraperHandler<'anime'>
+  comic!: EntityScraperHandler<'comic'>
+  novel!: EntityScraperHandler<'novel'>
+  person!: EntityScraperHandler<'person'>
+  company!: EntityScraperHandler<'company'>
+  character!: EntityScraperHandler<'character'>
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const db = container.get('db').client
@@ -45,13 +40,49 @@ export class ScraperService implements IService<'scraper'> {
     const ipcService = container.get('ipc')
 
     this.profiles = new ScraperProfileCatalog(db)
-    this.game = new GameScraperHandler(db, i18n, this.hooks.game)
-    this.anime = new AnimeScraperHandler(db, i18n, this.hooks.anime)
-    this.comic = new ComicScraperHandler(db, i18n, this.hooks.comic)
-    this.novel = new NovelScraperHandler(db, i18n, this.hooks.novel)
-    this.person = new PersonScraperHandler(db, i18n, this.hooks.person)
-    this.company = new CompanyScraperHandler(db, i18n, this.hooks.company)
-    this.character = new CharacterScraperHandler(db, i18n, this.hooks.character)
+    this.game = new EntityScraperHandler('game', SCRAPER_HANDLER_SPECS.game, db, i18n, this.hooks.game)
+    this.anime = new EntityScraperHandler(
+      'anime',
+      SCRAPER_HANDLER_SPECS.anime,
+      db,
+      i18n,
+      this.hooks.anime
+    )
+    this.comic = new EntityScraperHandler(
+      'comic',
+      SCRAPER_HANDLER_SPECS.comic,
+      db,
+      i18n,
+      this.hooks.comic
+    )
+    this.novel = new EntityScraperHandler(
+      'novel',
+      SCRAPER_HANDLER_SPECS.novel,
+      db,
+      i18n,
+      this.hooks.novel
+    )
+    this.person = new EntityScraperHandler(
+      'person',
+      SCRAPER_HANDLER_SPECS.person,
+      db,
+      i18n,
+      this.hooks.person
+    )
+    this.company = new EntityScraperHandler(
+      'company',
+      SCRAPER_HANDLER_SPECS.company,
+      db,
+      i18n,
+      this.hooks.company
+    )
+    this.character = new EntityScraperHandler(
+      'character',
+      SCRAPER_HANDLER_SPECS.character,
+      db,
+      i18n,
+      this.hooks.character
+    )
     registerScraperIpc(this, ipcService)
 
     log.info('Initialized')

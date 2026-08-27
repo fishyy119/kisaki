@@ -35,6 +35,32 @@
 Renderer (sqlite-proxy) → IPC 'db:execute' → Main (better-sqlite3) → SQLite
 ```
 
+### Renderer Direct-Write Allowlist
+
+Renderer direct SQL is the intended model for **user-curation state** — rows the UI edits in
+place. The allowlist is enforced by the `rendererDirectWriteGuard` ESLint rule in
+`apps/desktop/eslint.config.ts`; extending it is a reviewed decision, not a workaround.
+
+Allowed table families (see the rule for the exact list):
+
+- Entity core rows and organizer rows: `games`/`animes`/… , `tags`, `collections`,
+  `showcase_sections`, `scanners`, `scraper_profiles`, `settings`
+- Consumption units and user-managed unit files: episodes/extras/chapters/volumes and the
+  chapter/volume file rows (anime file rows go through the spec-typed
+  `use-anime-file-records` writer)
+- Notes, sessions, link rows, relation rows, external-id rows
+
+Writes that must go through the owning main-process workflow instead:
+
+- Scraped metadata graphs → ingest (`ingest:add-*` / `ingest:update-*`)
+- Sync-owned unit file rows (create/delete from disk walks) → holdings (`holdings:sync-*`)
+- App-owned asset bytes → attachment service
+- Reading marks written during playback/reading → activity service
+- Task-run history, extension installations/repositories/trusts → their owning services
+
+Dynamic write machinery (`core/db/**`, `use-anime-file-records.ts`) is exempt from the
+identifier rule because its table sets are bound in typed specs.
+
 ## Schema Definition
 
 ```typescript

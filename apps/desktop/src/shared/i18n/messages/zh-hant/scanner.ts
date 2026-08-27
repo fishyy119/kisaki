@@ -103,7 +103,7 @@ export const scanner = {
     ingestDirectOnly: '僅直接入庫',
     ingestDirectOnlyDescription: '跳過刮削，直接依辨識結果建立遊戲',
     parallelCount: '並行處理數',
-    parallelCountDescription: '控制單一掃描器同時處理的項目數，1 表示序列處理',
+    parallelCountDescription: '所有進行中的掃描共享的同時處理項目總數，1 表示序列處理',
     ignoredNames: '忽略名稱清單',
     ignoredNamesDescription: '掃描器會跳過這些提取後的實體名稱',
     ignoredNamePlaceholder: '輸入要忽略的名稱…',
@@ -113,7 +113,7 @@ export const scanner = {
   form: {
     createTitle: '建立掃描器',
     editTitle: '編輯掃描器',
-    requiredFields: '請填寫必填欄位',
+    requiredFields: '請填寫名稱與掃描路徑',
     updated: '掃描器已更新',
     created: '掃描器已建立',
     updateFailed: '更新失敗，請重試',
@@ -129,7 +129,7 @@ export const scanner = {
       '指定媒體實體在目錄結構中的層級深度。0 表示掃描路徑的直接子項就是實體，1 表示子目錄下的項目是實體，以此類推。',
     scraperProfile: '刮削設定檔',
     scraperProfileHelp:
-      '選擇用於取得中繼資料的刮削設定檔。設定檔決定從哪些資料來源取得哪些欄位的資料。',
+      '選擇用於取得中繼資料的刮削設定檔。設定檔決定從哪些資料來源取得哪些欄位的資料。未選擇時，此掃描器會直接依資料夾名稱匯入項目。',
     targetCollection: '目標合集',
     watchEnabled: '監控變更',
     watchEnabledDescription: '出現新的實體目錄時自動掃描，並在啟動時掃描一次。關閉後僅能手動掃描。',
@@ -229,7 +229,8 @@ export const scanner = {
         `${count} 個檔案無法辨識卷號或話數，已作為未編號單元新增`,
       volumeNumbersUnreadable: ({ count }: { count: number }) =>
         `${count} 個書籍檔案無法辨識卷號，已作為未編號卷新增`,
-      fileSyncFailed: '項目已新增，但影片檔案同步失敗，詳見日誌'
+      fileSyncFailed: '項目已新增，但影片檔案同步失敗，詳見日誌',
+      unexpected: '處理此項目時發生意外錯誤，詳見日誌'
     }
   }
 } satisfies Messages['scanner']

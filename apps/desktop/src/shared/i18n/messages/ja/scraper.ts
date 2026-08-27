@@ -9,7 +9,8 @@ export const scraper = {
   },
   profileSelect: {
     placeholder: 'スクレイパープロファイルを選択',
-    empty: 'プロファイルがありません'
+    empty: 'プロファイルがありません',
+    none: 'プロファイルを使用しない'
   },
   presetDialog: {
     title: 'プリセットを選択',
@@ -39,6 +40,8 @@ export const scraper = {
     addProfile: 'プロファイルを追加',
     choosePreset: 'プリセットを選択',
     profileEntityLabel: 'プロファイル',
+    deleteUsedByScanners: ({ count }: { count: number }) =>
+      `${count} 件のスキャナーがこのプロファイルを使用しています。削除するとスクレイピングせずに直接取り込みます。`,
     newTitleMediaType: 'メディアタイプを選択',
     newTitleProvider: 'メインプロバイダーを選択',
     newMediaTypeHint: '新しいプロファイルのメディアタイプを選択します',

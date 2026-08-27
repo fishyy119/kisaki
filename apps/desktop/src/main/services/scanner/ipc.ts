@@ -4,29 +4,23 @@ import type { ScannerService } from './service'
 
 export function registerScannerIpc(service: ScannerService, ipc: IpcService): void {
   ipc.handle('scanner:start-scan', async (_, scannerId) =>
-    wrapIpc(() => service.resolveHandler(scannerId).startScanner(scannerId))
+    wrapIpc(() => service.startScanner(scannerId))
   )
 
-  ipc.handle('scanner:start-all-scans', async (_, mediaType) =>
-    wrapIpc(() =>
-      mediaType
-        ? service.resolveMediaHandler(mediaType).startAllScanners()
-        : service.startAllScanners()
-    )
-  )
+  ipc.handle('scanner:start-all-scans', async () => wrapIpc(() => service.startAllScanners()))
 
   ipc.handle('scanner:list-run-states', async () => wrapIpc(() => service.listRunStates()))
 
   ipc.handle('scanner:pause-scan', async (_, scannerId) =>
-    wrapIpc(() => service.resolveHandler(scannerId).pauseScanner(scannerId))
+    wrapIpc(() => service.pauseScanner(scannerId))
   )
 
   ipc.handle('scanner:resume-scan', async (_, scannerId) =>
-    wrapIpc(() => service.resolveHandler(scannerId).resumeScanner(scannerId))
+    wrapIpc(() => service.resumeScanner(scannerId))
   )
 
   ipc.handle('scanner:cancel-scan', async (_, scannerId) =>
-    wrapIpc(() => service.resolveHandler(scannerId).cancelScanner(scannerId))
+    wrapIpc(() => service.cancelScanner(scannerId))
   )
 
   ipc.handle('scanner:test-extraction-rules', async (_, scannerPath, entityDepth, rules) =>

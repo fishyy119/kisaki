@@ -2,7 +2,7 @@
  * Scanner run engine exports
  */
 
-export { ScannerRunCoordinator } from './coordinator'
+export { ScannerRunCoordinator, type ScannerRunStart } from './coordinator'
 export { ScannerRunSession } from './session'
 export type {
   ScannedEntity,
@@ -10,6 +10,5 @@ export type {
   ScannerEntityErrorType,
   ScannerEntityProcessResult,
   ScannerEntityWarning,
-  ScannerEntityWarningType,
-  ScannerRunMetadata
+  ScannerEntityWarningType
 } from './types'

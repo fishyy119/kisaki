@@ -176,6 +176,16 @@ replaces its session, reopening a dialog adopts it), and session wiring happens 
 pages project into the contribution snapshot and render in the app sidebar under the stable
 `/extension-page/:extensionId/:pageId` route.
 
+**Webview isolation invariant** (verified; keep true): the full-surface `window.kisaki` preload
+bridge loads only in app-owned windows (main and tray); reader windows load the restricted
+`preload/reader.ts` with an explicit `IpcChannelPolicy` that has no `db:execute`. Extension
+documents render in sandboxed iframes (`webview-frame.vue`) that receive no preload at all —
+Electron injects preloads into top frames only and `nodeIntegrationInSubFrames` stays off — so an
+extension document can reach neither `ipcRenderer` nor `db:execute`. Its only channel is the
+origin-pinned postMessage relay, validated in main before entering the extension host link. Any
+future window kind that renders foreign content must declare a restricted `IpcChannelPolicy`
+instead of the full bridge.
+
 Contribution `icon` fields use the shared `ContributionIcon` contract: `mdi:<name>` for the MDI set
 bundled with the app, or a `./`-prefixed package-relative image file. Main resolves both forms to
 the renderer DTO `ExtensionIconInfo` (registration-time path confinement for files), and the

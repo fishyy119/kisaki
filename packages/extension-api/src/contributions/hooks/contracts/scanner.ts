@@ -8,8 +8,6 @@ export interface ScannerEntry {
   path: string
   /** Original filesystem directory name. */
   originalName: string
-  /** Original name used as extraction input. */
-  originalBaseName: string
   /** Extracted entity name after applying name extraction rules. */
   extractedName: string
   /** Rule id that matched during extraction (null if none). */

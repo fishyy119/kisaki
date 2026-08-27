@@ -1,5 +1,6 @@
 import { resolveTagId, type DbContext, type DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
+import { normalizeLibraryDirPath } from '@main/utils/fs'
 import type {
   IngestAddComicFromScraperOptions,
   IngestAddComicFromScraperResult
@@ -351,6 +352,8 @@ export class ComicIngestPersistHandler {
       description: core.description,
       externalSites: core.externalSites || [],
       comicDirPath: options?.comicDirPath
+        ? normalizeLibraryDirPath(options.comicDirPath)
+        : undefined
     }
     if (core.format) {
       newComic.format = core.format
@@ -383,7 +386,8 @@ export class ComicIngestPersistHandler {
     tx: DbContext
   ): { comicId: string; existingReason: 'path' | 'externalId' } | undefined {
     if (options?.comicDirPath) {
-      const existingByPath = this.dbService.entityFinder.findExistingComic(
+      const existingByPath = this.dbService.entityFinder.findExisting(
+        'comic',
         { path: options.comicDirPath },
         tx
       )
@@ -394,7 +398,8 @@ export class ComicIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExistingComic(
+      const existingByExternalId = this.dbService.entityFinder.findExisting(
+        'comic',
         { externalIds },
         tx
       )

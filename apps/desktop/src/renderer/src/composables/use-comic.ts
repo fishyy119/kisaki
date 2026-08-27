@@ -1,33 +1,13 @@
 /**
  * Comic data composable
  *
- * Provides comic data with all related entities using Provider/Consumer pattern.
- * Two provider surfaces share one fetcher, context assembly, and db sync:
- * - Route page: `comicDetailData` loads during navigation (beforeResolve), the
- *   page consumes the settled store via `useComicRouteProvider()`.
- * - Dialog: `useComicDialogProvider()` fetches on demand after mount.
+ * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * from the entity detail context factory; this module owns what a comic
+ * detail surface fetches and shows.
  */
 
-import {
-  provide,
-  inject,
-  ref,
-  toRef,
-  toValue,
-  computed,
-  watch,
-  type InjectionKey,
-  type Ref,
-  type MaybeRefOrGetter,
-  type ComputedRef
-} from 'vue'
-import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import { eq, asc, desc, and, inArray } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { defineRouteData } from '@renderer/core/route-data'
-import { useAsyncData } from './use-async-data'
-import { usePreferencesStore } from '@renderer/stores'
 import type {
   Comic,
   ComicChapter,
@@ -45,7 +25,11 @@ import type {
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
-import { useDbChanges } from './use-db-changes'
+import {
+  createEntityDetailContext,
+  type EntityDetailContext,
+  type EntityDetailProviderReturn
+} from './entity-context'
 
 // =============================================================================
 // Types
@@ -56,7 +40,7 @@ export interface ComicChapterEntry extends ComicChapter {
   files: ComicChapterFile[]
 }
 
-interface ComicData {
+export interface ComicData {
   comic: Comic | null
   chapters: ComicChapterEntry[]
   notes: ComicNote[]
@@ -68,45 +52,8 @@ interface ComicData {
   sessions: ComicSession[]
 }
 
-export interface ComicContext {
-  /** Comic data */
-  comic: ComputedRef<Comic | null>
-  /** Units in display order, each with its readable files */
-  chapters: ComputedRef<ComicChapterEntry[]>
-  /** Comic notes (from comicNotes) */
-  notes: ComputedRef<ComicNote[]>
-  /** Comic tags (from comicTagLinks) */
-  tags: ComputedRef<(ComicTagLink & { tag: Tag | null })[]>
-  /** Character links with character data */
-  characters: ComputedRef<(ComicCharacterLink & { character: Character | null })[]>
-  /** Person links with person data */
-  persons: ComputedRef<(ComicPersonLink & { person: Person | null })[]>
-  /** Company links with company data */
-  companies: ComputedRef<(ComicCompanyLink & { company: Company | null })[]>
-  /** Entry-to-entry relations merged from both edge directions */
-  relations: ComputedRef<MediaRelationEntry[]>
-  /** Comic sessions (reading history) */
-  sessions: ComputedRef<ComicSession[]>
-  /** Initial loading state (always false on the route surface after mount) */
-  isLoading: Ref<boolean>
-  /** Background refetching state */
-  isFetching: Ref<boolean>
-  /** Error if any */
-  error: Ref<string | null>
-  /** Manually refetch data */
-  refetch: () => Promise<void>
-}
-
-export interface ComicProviderReturn extends ComicContext {
-  /** Spoiler reveal state owned by the provider; toggling refetches (SWR) */
-  spoilersRevealed: Ref<boolean>
-}
-
-// =============================================================================
-// Injection Key
-// =============================================================================
-
-export const ComicKey: InjectionKey<ComicContext> = Symbol('comic')
+export type ComicContext = EntityDetailContext<ComicData>
+export type ComicProviderReturn = EntityDetailProviderReturn<ComicData>
 
 // =============================================================================
 // Data Fetcher
@@ -250,57 +197,8 @@ async function attachChapterFiles(chapters: ComicChapter[]): Promise<ComicChapte
 }
 
 // =============================================================================
-// Route Loader
+// Context Wiring
 // =============================================================================
-
-// Route-surface spoiler state lives beside the loader so the navigation-time
-// fetch reads a consistent value; it resets whenever a different comic loads.
-let lastRouteComicId: string | null = null
-const routeSpoilersRevealed = ref(false)
-
-export const comicDetailData = defineRouteData((route) => {
-  const comicId = route.params.comicId as string
-  if (comicId !== lastRouteComicId) {
-    lastRouteComicId = comicId
-    routeSpoilersRevealed.value = false
-  }
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  return fetchComicData(comicId, routeSpoilersRevealed.value, showNsfw.value)
-})
-
-// =============================================================================
-// Shared Internals
-// =============================================================================
-
-interface ComicDataSource {
-  data: Readonly<Ref<ComicData | null | undefined>>
-  isLoading: Ref<boolean>
-  isFetching: Ref<boolean>
-  error: Ref<string | null>
-  refetch: () => Promise<void>
-}
-
-function provideComicContext(source: ComicDataSource): ComicContext {
-  const context: ComicContext = {
-    comic: computed(() => source.data.value?.comic ?? null),
-    chapters: computed(() => source.data.value?.chapters ?? []),
-    notes: computed(() => source.data.value?.notes ?? []),
-    tags: computed(() => source.data.value?.tags ?? []),
-    characters: computed(() => source.data.value?.characters ?? []),
-    persons: computed(() => source.data.value?.persons ?? []),
-    companies: computed(() => source.data.value?.companies ?? []),
-    relations: computed(() => source.data.value?.relations ?? []),
-    sessions: computed(() => source.data.value?.sessions ?? []),
-    isLoading: source.isLoading,
-    isFetching: source.isFetching,
-    error: source.error,
-    refetch: source.refetch
-  }
-
-  provide(ComicKey, context)
-
-  return context
-}
 
 const COMIC_OWNED_TABLES = [
   'comic_chapters',
@@ -314,93 +212,26 @@ const COMIC_OWNED_TABLES = [
   'media_relations'
 ]
 
-function useComicDbSync(comicId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
-  useDbChanges(({ operation, table, id: entityId }) => {
-    if (COMIC_OWNED_TABLES.includes(table)) {
-      refetch()
-      return
-    }
-    if (table === 'comics' && entityId === toValue(comicId) && operation !== 'inserted') {
-      refetch()
-    }
-  })
-}
+const comicDetail = createEntityDetailContext<ComicData>({
+  entityLabel: 'comic',
+  routeParam: 'comicId',
+  empty: {
+    comic: null,
+    chapters: [],
+    notes: [],
+    tags: [],
+    characters: [],
+    persons: [],
+    companies: [],
+    relations: [],
+    sessions: []
+  },
+  fetch: (id, view) => fetchComicData(id, view.spoilersRevealed, view.showNsfw),
+  ownedTables: COMIC_OWNED_TABLES,
+  entityTable: 'comics'
+})
 
-// =============================================================================
-// Provider Composables
-// =============================================================================
-
-/**
- * Provide comic data on the route surface.
- *
- * Data is loaded by `comicDetailData` during navigation, so it is already
- * settled when the page mounts. In-page input changes (spoilers, NSFW
- * preference) trigger a non-blocking SWR refetch.
- */
-export function useComicRouteProvider(): ComicProviderReturn {
-  const route = useRoute()
-  const comicId = computed(() => route.params.comicId as string)
-  const { data, error, isFetching, refetch } = comicDetailData()
-
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  watch(showNsfw, () => void refetch())
-
-  // Explicit setter (not a watcher on the module ref) so the loader's
-  // cross-navigation spoiler reset does not trigger a duplicate fetch.
-  const spoilersRevealed = computed({
-    get: () => routeSpoilersRevealed.value,
-    set: (value) => {
-      routeSpoilersRevealed.value = value
-      void refetch()
-    }
-  })
-
-  const context = provideComicContext({
-    data,
-    isLoading: ref(false),
-    isFetching,
-    error,
-    refetch
-  })
-  useComicDbSync(comicId, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-/**
- * Provide comic data on the dialog surface (fetches after mount).
- *
- * Spoiler state is instance-local and resets when the dialog unmounts.
- */
-export function useComicDialogProvider(comicId: MaybeRefOrGetter<string>): ComicProviderReturn {
-  const id = toRef(comicId)
-  const spoilersRevealed = ref(false)
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchComicData(toValue(id), spoilersRevealed.value, showNsfw.value),
-    { watch: [id, spoilersRevealed, showNsfw] }
-  )
-
-  const context = provideComicContext({ data, isLoading, isFetching, error, refetch })
-  useComicDbSync(id, refetch)
-
-  return { ...context, spoilersRevealed }
-}
-
-// =============================================================================
-// Consumer Composable
-// =============================================================================
-
-/**
- * Consume comic data context
- *
- * Call this in child components to access comic data.
- */
-export function useComic(): ComicContext {
-  const context = inject(ComicKey)
-  if (!context) {
-    throw new Error('useComic() must be used within a component that provided the comic context')
-  }
-  return context
-}
+export const comicDetailData = comicDetail.detailData
+export const useComicRouteProvider = comicDetail.useRouteProvider
+export const useComicDialogProvider = comicDetail.useDialogProvider
+export const useComic = comicDetail.useContext

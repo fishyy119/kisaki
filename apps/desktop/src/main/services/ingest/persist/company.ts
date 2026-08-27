@@ -154,7 +154,8 @@ export class CompanyIngestPersistHandler {
     const core = node.core
 
     if (core.externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExistingCompany(
+      const existingByExternalId = this.dbService.entityFinder.findExisting(
+        'company',
         { externalIds: core.externalIds },
         tx
       )

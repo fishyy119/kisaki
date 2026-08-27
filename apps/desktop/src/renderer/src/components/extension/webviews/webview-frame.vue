@@ -2,6 +2,12 @@
 Extension Webview Frame hosts one webview session document in an iframe.
 Boundary: bootstrap injection, ready handshake, appearance and UI locale push,
 and message relay between the iframe document and main.
+Security invariant: the extension document runs in a sandboxed subframe and
+never receives a preload — Electron injects preloads into top frames only and
+`nodeIntegrationInSubFrames` stays off — so it can reach neither the
+`window.kisaki` bridge nor any IPC channel (including `db:execute`). Its only
+channel is the origin-pinned postMessage relay below, and main validates every
+relayed value before it enters the extension host link.
 -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'

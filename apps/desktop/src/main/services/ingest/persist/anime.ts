@@ -1,5 +1,6 @@
 import { resolveTagId, type DbContext, type DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
+import { normalizeLibraryDirPath } from '@main/utils/fs'
 import type {
   IngestAddAnimeFromScraperOptions,
   IngestAddAnimeFromScraperResult
@@ -397,6 +398,8 @@ export class AnimeIngestPersistHandler {
       description: core.description,
       externalSites: core.externalSites || [],
       animeDirPath: options?.animeDirPath
+        ? normalizeLibraryDirPath(options.animeDirPath)
+        : undefined
     }
     if (core.format) {
       newAnime.format = core.format
@@ -426,7 +429,8 @@ export class AnimeIngestPersistHandler {
     tx: DbContext
   ): { animeId: string; existingReason: 'path' | 'externalId' } | undefined {
     if (options?.animeDirPath) {
-      const existingByPath = this.dbService.entityFinder.findExistingAnime(
+      const existingByPath = this.dbService.entityFinder.findExisting(
+        'anime',
         { path: options.animeDirPath },
         tx
       )
@@ -437,7 +441,8 @@ export class AnimeIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExistingAnime(
+      const existingByExternalId = this.dbService.entityFinder.findExisting(
+        'anime',
         { externalIds },
         tx
       )

@@ -25,6 +25,9 @@ import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils/cn'
 import { ScraperPresetFormDialog } from './forms'
 
+/** Sentinel item value for the explicit "no profile" choice. */
+const NONE_VALUE = '#none'
+
 interface Props {
   /** Filter by media type */
   mediaType?: ContentEntityType
@@ -35,6 +38,8 @@ interface Props {
   showMediaType?: boolean
   /** Auto-select first profile when value is empty (default: true) */
   autoSelectFirst?: boolean
+  /** Offer an explicit "no profile" item; an empty model means none. */
+  allowNone?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -42,7 +47,8 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: undefined,
   disabled: false,
   showMediaType: false,
-  autoSelectFirst: true
+  autoSelectFirst: true,
+  allowNone: false
 })
 
 const model = defineModel<string>()
@@ -51,6 +57,15 @@ const { m } = useI18n()
 const placeholderText = computed(
   () => props.placeholder ?? m.value.scraper.profileSelect.placeholder
 )
+
+// The select needs a non-empty item value, so "none" travels as a sentinel
+// and the public model keeps '' for it.
+const selectModel = computed({
+  get: () => (props.allowNone && !model.value ? NONE_VALUE : model.value),
+  set: (value) => {
+    model.value = value === NONE_VALUE ? '' : (value ?? '')
+  }
+})
 
 const emit = defineEmits<{
   change: [profileId: string]
@@ -79,12 +94,14 @@ useDbChanges((payload) => {
   if (payload.table === 'scraper_profiles') refetch()
 })
 
-// Auto-select first profile when value is empty and loading is complete
+// Auto-select first profile when value is empty and loading is complete.
+// With allowNone the empty value is a deliberate choice, so it stays.
 watch(
   [() => isLoading.value, () => profiles.value, () => model.value],
   () => {
     if (
       props.autoSelectFirst &&
+      !props.allowNone &&
       !isLoading.value &&
       !model.value &&
       (profiles.value?.length ?? 0) > 0
@@ -173,13 +190,19 @@ void handleAddPresets
   <!-- Normal select -->
   <Select
     v-else
-    v-model="model"
+    v-model="selectModel"
     :disabled="disabled"
   >
     <SelectTrigger :class="cn('w-full', props.class)">
       <SelectValue :placeholder="placeholderText" />
     </SelectTrigger>
     <SelectContent>
+      <SelectItem
+        v-if="props.allowNone"
+        :value="NONE_VALUE"
+      >
+        <span class="text-muted-foreground">{{ m.scraper.profileSelect.none }}</span>
+      </SelectItem>
       <SelectItem
         v-for="profile in profiles"
         :key="profile.id"

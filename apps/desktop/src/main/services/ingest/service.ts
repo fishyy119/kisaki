@@ -9,22 +9,17 @@ import type { IService, ServiceInitContainer, ServiceName } from '@main/containe
 import type { ContentEntityType } from '@shared/common'
 import { IngestPersistHandlers } from './persist'
 import {
-  AnimeAddHandler,
-  CharacterAddHandler,
-  ComicAddHandler,
-  CompanyAddHandler,
-  GameAddHandler,
-  NovelAddHandler,
-  PersonAddHandler
+  EntityAddEngine,
+  INGEST_ADD_SPECS,
+  type EntityAddApi,
+  type EntityAddEngineDeps,
+  type MediaEntityAddApi
 } from './add'
 import {
-  AnimeUpdateHandler,
-  CharacterUpdateHandler,
-  ComicUpdateHandler,
-  CompanyUpdateHandler,
-  GameUpdateHandler,
-  NovelUpdateHandler,
-  PersonUpdateHandler
+  EntityUpdateEngine,
+  INGEST_UPDATE_SPECS,
+  type EntityUpdateApi,
+  type EntityUpdateEngineDeps
 } from './update'
 import {
   AnimeBatchHandler,
@@ -48,23 +43,23 @@ const log = createLogger('Ingest')
 type IngestHandlersByContent<THandlers extends Record<ContentEntityType, object>> = THandlers
 
 type IngestAddHandlers = IngestHandlersByContent<{
-  game: GameAddHandler
-  anime: AnimeAddHandler
-  comic: ComicAddHandler
-  novel: NovelAddHandler
-  person: PersonAddHandler
-  company: CompanyAddHandler
-  character: CharacterAddHandler
+  game: MediaEntityAddApi<'game'>
+  anime: MediaEntityAddApi<'anime'>
+  comic: MediaEntityAddApi<'comic'>
+  novel: MediaEntityAddApi<'novel'>
+  person: EntityAddApi<'person'>
+  company: EntityAddApi<'company'>
+  character: EntityAddApi<'character'>
 }>
 
 type IngestUpdateHandlers = IngestHandlersByContent<{
-  game: GameUpdateHandler
-  anime: AnimeUpdateHandler
-  comic: ComicUpdateHandler
-  novel: NovelUpdateHandler
-  person: PersonUpdateHandler
-  company: CompanyUpdateHandler
-  character: CharacterUpdateHandler
+  game: EntityUpdateApi<'game'>
+  anime: EntityUpdateApi<'anime'>
+  comic: EntityUpdateApi<'comic'>
+  novel: EntityUpdateApi<'novel'>
+  person: EntityUpdateApi<'person'>
+  company: EntityUpdateApi<'company'>
+  character: EntityUpdateApi<'character'>
 }>
 
 type IngestBatchHandlers = IngestHandlersByContent<{
@@ -100,117 +95,85 @@ export class IngestService implements IService<'ingest'> {
     const i18nService = container.get('i18n')
     const persist = new IngestPersistHandlers(dbService, i18nService)
 
+    const addEngineDeps: EntityAddEngineDeps = {
+      dbService,
+      scraperService,
+      persist,
+      taskRunService,
+      i18nService
+    }
     this.add = {
-      game: new GameAddHandler(
-        dbService,
-        scraperService,
-        persist.game,
-        taskRunService,
-        i18nService,
-        this.hooks.game
-      ),
-      anime: new AnimeAddHandler(
-        dbService,
-        scraperService,
-        persist.anime,
-        taskRunService,
-        i18nService,
-        this.hooks.anime
-      ),
-      comic: new ComicAddHandler(
-        dbService,
-        scraperService,
-        persist.comic,
-        taskRunService,
-        i18nService,
-        this.hooks.comic
-      ),
-      novel: new NovelAddHandler(
-        dbService,
-        scraperService,
-        persist.novel,
-        taskRunService,
-        i18nService,
-        this.hooks.novel
-      ),
-      person: new PersonAddHandler(
-        dbService,
-        scraperService,
-        persist.person,
-        taskRunService,
-        i18nService,
+      game: new EntityAddEngine('game', INGEST_ADD_SPECS.game, addEngineDeps, this.hooks.game),
+      anime: new EntityAddEngine('anime', INGEST_ADD_SPECS.anime, addEngineDeps, this.hooks.anime),
+      comic: new EntityAddEngine('comic', INGEST_ADD_SPECS.comic, addEngineDeps, this.hooks.comic),
+      novel: new EntityAddEngine('novel', INGEST_ADD_SPECS.novel, addEngineDeps, this.hooks.novel),
+      person: new EntityAddEngine(
+        'person',
+        INGEST_ADD_SPECS.person,
+        addEngineDeps,
         this.hooks.person
       ),
-      company: new CompanyAddHandler(
-        dbService,
-        scraperService,
-        persist.company,
-        taskRunService,
-        i18nService,
+      company: new EntityAddEngine(
+        'company',
+        INGEST_ADD_SPECS.company,
+        addEngineDeps,
         this.hooks.company
       ),
-      character: new CharacterAddHandler(
-        dbService,
-        scraperService,
-        persist.character,
-        taskRunService,
-        i18nService,
+      character: new EntityAddEngine(
+        'character',
+        INGEST_ADD_SPECS.character,
+        addEngineDeps,
         this.hooks.character
       )
     }
+    const updateEngineDeps: EntityUpdateEngineDeps = {
+      dbService,
+      scraperService,
+      persist,
+      taskRunService,
+      i18nService
+    }
     this.update = {
-      game: new GameUpdateHandler(
-        dbService,
-        scraperService,
-        persist,
-        taskRunService,
-        i18nService,
+      game: new EntityUpdateEngine(
+        'game',
+        INGEST_UPDATE_SPECS.game,
+        updateEngineDeps,
         this.hooks.game
       ),
-      anime: new AnimeUpdateHandler(
-        dbService,
-        scraperService,
-        persist,
-        taskRunService,
-        i18nService,
+      anime: new EntityUpdateEngine(
+        'anime',
+        INGEST_UPDATE_SPECS.anime,
+        updateEngineDeps,
         this.hooks.anime
       ),
-      comic: new ComicUpdateHandler(
-        dbService,
-        scraperService,
-        persist,
-        taskRunService,
-        i18nService,
+      comic: new EntityUpdateEngine(
+        'comic',
+        INGEST_UPDATE_SPECS.comic,
+        updateEngineDeps,
         this.hooks.comic
       ),
-      novel: new NovelUpdateHandler(
-        dbService,
-        scraperService,
-        persist,
-        taskRunService,
-        i18nService,
+      novel: new EntityUpdateEngine(
+        'novel',
+        INGEST_UPDATE_SPECS.novel,
+        updateEngineDeps,
         this.hooks.novel
       ),
-      person: new PersonUpdateHandler(
-        dbService,
-        scraperService,
-        taskRunService,
-        i18nService,
+      person: new EntityUpdateEngine(
+        'person',
+        INGEST_UPDATE_SPECS.person,
+        updateEngineDeps,
         this.hooks.person
       ),
-      company: new CompanyUpdateHandler(
-        dbService,
-        scraperService,
-        taskRunService,
-        i18nService,
+      company: new EntityUpdateEngine(
+        'company',
+        INGEST_UPDATE_SPECS.company,
+        updateEngineDeps,
         this.hooks.company
       ),
-      character: new CharacterUpdateHandler(
-        dbService,
-        scraperService,
-        persist,
-        taskRunService,
-        i18nService,
+      character: new EntityUpdateEngine(
+        'character',
+        INGEST_UPDATE_SPECS.character,
+        updateEngineDeps,
         this.hooks.character
       )
     }

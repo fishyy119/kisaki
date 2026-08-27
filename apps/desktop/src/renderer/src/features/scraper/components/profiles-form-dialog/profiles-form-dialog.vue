@@ -19,7 +19,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { ipcManager } from '@renderer/core/ipc'
-import { scraperProfiles } from '@shared/db'
+import { scanners, scraperProfiles } from '@shared/db'
 import { createSlotConfigs } from '@shared/scraper'
 import {
   Dialog,
@@ -154,6 +154,27 @@ const deleteProfileName = computed(() => {
   if (!deleteProfileId.value) return undefined
   const profile = profiles.value.find((p) => p.id === deleteProfileId.value)
   return profile?.name || undefined
+})
+
+// Deleting a profile unbinds scanners (FK set null), so the confirm dialog
+// names how many scanners will fall back to direct import.
+const { data: deleteAffectedScannerCount } = useAsyncData(
+  async () => {
+    if (!deleteProfileId.value) return 0
+    const rows = await db
+      .select({ id: scanners.id })
+      .from(scanners)
+      .where(eq(scanners.scraperProfileId, deleteProfileId.value))
+    return rows.length
+  },
+  { watch: [deleteProfileId] }
+)
+
+const deleteConsequence = computed(() => {
+  const affected = deleteAffectedScannerCount.value ?? 0
+  return affected > 0
+    ? m.value.scraper.profiles.deleteUsedByScanners({ count: affected })
+    : undefined
 })
 
 function handleAddNew() {
@@ -444,6 +465,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
     v-model:open="deleteDialogOpen"
     :entity-label="m.scraper.profiles.profileEntityLabel"
     :entity-name="deleteProfileName"
+    :consequence="deleteConsequence"
     mode="remove"
     @confirm="handleDeleteConfirm"
   />

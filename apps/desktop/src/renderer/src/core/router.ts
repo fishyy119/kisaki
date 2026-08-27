@@ -226,7 +226,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/extension-page/:extensionId/:pageId',
     name: 'extension-page',
-    component: () => import('@renderer/pages/extension-page.vue'),
+    component: () => import('@renderer/pages/extension-webview-page.vue'),
     props: true
   },
   // Catch-all 404

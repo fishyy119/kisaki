@@ -2,7 +2,7 @@ import type { I18nService } from '@main/services/i18n'
 import type { IpcService } from '@main/services/ipc'
 import type { TaskRunService } from '@main/services/task-run'
 import { isCancellation } from '@main/services/task-run'
-import type { ScannerHooks } from '../hooks'
+import type { Scanner } from '@shared/db'
 import type {
   ScanCompletedData,
   ScannerRunFinishedStatus,
@@ -11,38 +11,34 @@ import type {
   ScannerRunStatus
 } from '@shared/scanner'
 import type { TaskRunInitiator } from '@shared/task-run'
+import type { ScannerHooks } from '../hooks'
 import { toScanCompletedData, toScannerStats } from './projection'
 import { ScannerRunSession } from './session'
 import { cloneScannerRunState, ScannerRunStateStore } from './state'
 import { ScannerTaskRunBridge } from './task-run'
-import type { ActiveScannerRun, ScannerRunMetadata } from './types'
+import type { ActiveScannerRun } from './types'
 
-type Awaitable<T> = T | Promise<T>
-
-export interface ScannerRunCoordinatorOptions<TScanner extends ScannerRunMetadata> {
+export interface ScannerRunCoordinatorOptions {
   ipc: IpcService
   taskRun: TaskRunService
   hooks: ScannerHooks
   i18n: I18nService
-  loadScanner: (scannerId: string) => Awaitable<TScanner>
-  runScan: (scanner: TScanner, session: ScannerRunSession<TScanner>) => Awaitable<void>
+  loadScanner: (scannerId: string) => Scanner
+  runScan: (scanner: Scanner, session: ScannerRunSession) => Promise<void>
 }
 
-interface ScannerRunQueueItem {
-  scannerId: string
-  resolve: (value: ScanCompletedData) => void
-  reject: (reason: unknown) => void
+export interface ScannerRunStart {
+  start: ScannerRunStartResult
+  completed: Promise<ScanCompletedData>
 }
 
-export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
-  private readonly activeRuns = new Map<string, ActiveScannerRun<TScanner>>()
-  private readonly queue: ScannerRunQueueItem[] = []
-  private readonly states = new ScannerRunStateStore<TScanner>()
-  private readonly taskRuns: ScannerTaskRunBridge<TScanner>
+export class ScannerRunCoordinator {
+  private readonly activeRuns = new Map<string, ActiveScannerRun>()
+  private readonly states = new ScannerRunStateStore()
+  private readonly taskRuns: ScannerTaskRunBridge
   private readonly unsubscribeCancel: () => void
-  private isProcessingQueue = false
 
-  constructor(private readonly options: ScannerRunCoordinatorOptions<TScanner>) {
+  constructor(private readonly options: ScannerRunCoordinatorOptions) {
     this.taskRuns = new ScannerTaskRunBridge(options.taskRun, options.i18n)
     this.unsubscribeCancel = this.taskRuns.onCancelRequested((runId) => {
       this.handleTaskRunCancelRequested(runId)
@@ -53,17 +49,25 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
     return this.states.list()
   }
 
-  async startScanner(
+  /**
+   * Creates the run and starts executing immediately.
+   *
+   * Runs are not queued: the global entity semaphore is the only throttle, so
+   * `queued` exists only for the instant between creation and start. The
+   * synchronous load-and-register leaves no await between the duplicate check
+   * and the reservation.
+   */
+  startScanner(
     scannerId: string,
     initiator: TaskRunInitiator = { type: 'user' }
-  ): Promise<{ start: ScannerRunStartResult; completed: Promise<ScanCompletedData> }> {
+  ): ScannerRunStart {
     if (this.activeRuns.has(scannerId)) {
-      throw new Error(`Scanner ${scannerId} is already queued or running`)
+      throw new Error(`Scanner ${scannerId} is already running`)
     }
 
-    const scanner = await this.options.loadScanner(scannerId)
+    const scanner = this.options.loadScanner(scannerId)
     const taskRun = this.taskRuns.create(scanner, initiator)
-    const record: ActiveScannerRun<TScanner> = {
+    const record: ActiveScannerRun = {
       scanner,
       taskRun,
       state: this.states.create(scanner, taskRun)
@@ -72,23 +76,10 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
     this.activeRuns.set(scanner.id, record)
     this.publishStateChanged(record)
 
-    const completed = new Promise<ScanCompletedData>((resolve, reject) => {
-      this.queue.push({ scannerId: scanner.id, resolve, reject })
-      void this.processQueue()
-    })
-
     return {
       start: { runId: taskRun.id, createdAt: taskRun.createdAt },
-      completed
+      completed: this.executeScan(record)
     }
-  }
-
-  async runScanner(
-    scannerId: string,
-    initiator: TaskRunInitiator = { type: 'user' }
-  ): Promise<ScanCompletedData> {
-    const { completed } = await this.startScanner(scannerId, initiator)
-    return completed
   }
 
   pauseScanner(scannerId: string): boolean {
@@ -123,45 +114,14 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
   }
 
   cleanup(): void {
-    const activeRuns = [...this.activeRuns.values()]
-    for (const record of activeRuns) {
+    for (const record of [...this.activeRuns.values()]) {
       this.taskRuns.requestCancel(record)
     }
 
     this.unsubscribeCancel()
   }
 
-  private async processQueue(): Promise<void> {
-    if (this.isProcessingQueue || this.queue.length === 0) {
-      return
-    }
-
-    this.isProcessingQueue = true
-
-    try {
-      while (this.queue.length > 0) {
-        const item = this.queue.shift()
-        if (!item) break
-
-        try {
-          const result = await this.executeQueuedScan(item)
-          item.resolve(result)
-        } catch (error) {
-          item.reject(error)
-        }
-      }
-    } finally {
-      this.isProcessingQueue = false
-
-      if (this.queue.length > 0) {
-        void this.processQueue()
-      }
-    }
-  }
-
-  private async executeQueuedScan(item: ScannerRunQueueItem): Promise<ScanCompletedData> {
-    const record = this.requireActiveRun(item.scannerId)
-
+  private async executeScan(record: ActiveScannerRun): Promise<ScanCompletedData> {
     try {
       this.taskRuns.start(record)
       const session = new ScannerRunSession(record, this.states, record.taskRun.context, {
@@ -171,13 +131,11 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
       })
       session.start()
 
-      const scanner = await this.options.loadScanner(item.scannerId)
-      session.setScanner(scanner)
       this.options.hooks.runStarted.dispatch({
-        scannerId: scanner.id,
-        scannerName: scanner.name
+        scannerId: record.scanner.id,
+        scannerName: record.scanner.name
       })
-      await this.options.runScan(scanner, session)
+      await this.options.runScan(record.scanner, session)
       session.reportPhase('finished', this.options.i18n.messages.scanner.run.finished)
 
       const result = this.finishRecord(record, 'completed')
@@ -206,27 +164,14 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
   }
 
   private handleTaskRunCancelRequested(runId: string): void {
-    const record = this.findActiveRunByTaskRunId(runId)
-    if (!record) {
-      return
-    }
-
-    const queuedIndex = this.queue.findIndex((item) => item.scannerId === record.state.scannerId)
-    if (queuedIndex >= 0) {
-      const [item] = this.queue.splice(queuedIndex, 1)
-      const result = this.finishRecord(record, 'cancelled')
-      this.emitFinished(record, 'cancelled', result)
-      item.resolve(result)
-      return
-    }
-
-    if (record.state.status !== 'cancelling') {
+    const record = [...this.activeRuns.values()].find((candidate) => candidate.taskRun.id === runId)
+    if (record && record.state.status !== 'cancelling') {
       this.updateState(record, { status: 'cancelling' })
     }
   }
 
   private finishRecord(
-    record: ActiveScannerRun<TScanner>,
+    record: ActiveScannerRun,
     status: Extract<ScannerRunStatus, 'completed' | 'failed' | 'cancelled'>
   ): ScanCompletedData {
     this.updateState(record, {
@@ -238,7 +183,7 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
   }
 
   private emitFinished(
-    record: ActiveScannerRun<TScanner>,
+    record: ActiveScannerRun,
     status: ScannerRunFinishedStatus,
     result: ScanCompletedData
   ): void {
@@ -250,24 +195,12 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
     })
   }
 
-  private requireActiveRun(scannerId: string): ActiveScannerRun<TScanner> {
-    const record = this.activeRuns.get(scannerId)
-    if (!record) {
-      throw new Error(`Scanner ${scannerId} is not active`)
-    }
-    return record
-  }
-
-  private findActiveRunByTaskRunId(runId: string): ActiveScannerRun<TScanner> | undefined {
-    return [...this.activeRuns.values()].find((record) => record.taskRun.id === runId)
-  }
-
-  private updateState(record: ActiveScannerRun<TScanner>, patch: Partial<ScannerRunState>): void {
+  private updateState(record: ActiveScannerRun, patch: Partial<ScannerRunState>): void {
     record.state = this.states.patch(record.state.scannerId, patch)
     this.publishStateChanged(record)
   }
 
-  private publishStateChanged(record: ActiveScannerRun<TScanner>): void {
+  private publishStateChanged(record: ActiveScannerRun): void {
     this.options.ipc.send('scanner:run-state-changed', cloneScannerRunState(record.state))
   }
 }

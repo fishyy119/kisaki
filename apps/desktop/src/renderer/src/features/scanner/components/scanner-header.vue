@@ -15,7 +15,7 @@ import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useDbChanges } from '@renderer/composables/use-db-changes'
 import { useScannerStore } from '@renderer/stores'
 import { Button } from '@renderer/components/ui/button'
-import { ScannerItemFormDialog } from './scanner-item-form-dialog'
+import { ScannerFormDialog } from './scanner-form-dialog'
 import ScannerSettingsFormDialog from './scanner-settings-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -134,7 +134,7 @@ async function handleCancelAll() {
     v-if="isSettingsDialogOpen"
     v-model:open="isSettingsDialogOpen"
   />
-  <ScannerItemFormDialog
+  <ScannerFormDialog
     v-if="isCreateDialogOpen"
     v-model:open="isCreateDialogOpen"
   />

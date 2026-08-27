@@ -10,6 +10,13 @@
  */
 
 import path from 'node:path'
+import {
+  cleanDisplayName,
+  isPlausibleYearToken,
+  parseNumberToken,
+  stripReleaseTags,
+  stripRevisionMarkers
+} from '../release-naming'
 
 const ARCHIVE_EXTENSIONS = new Set(['.cbz', '.zip', '.cbr', '.rar', '.pdf'])
 
@@ -62,51 +69,13 @@ export function isComicPageFile(fileName: string): boolean {
   return IMAGE_EXTENSIONS.has(path.extname(fileName).toLowerCase())
 }
 
-function parseNumber(value: string | undefined): number | undefined {
-  if (value === undefined) return undefined
-  const parsed = Number.parseFloat(value)
-  return Number.isFinite(parsed) ? parsed : undefined
-}
-
 function matchFirst(name: string, patterns: ReadonlyArray<RegExp>): number | undefined {
   for (const pattern of patterns) {
     const match = name.match(pattern)
-    const parsed = parseNumber(match?.[1])
+    const parsed = parseNumberToken(match?.[1])
     if (parsed !== undefined) return parsed
   }
   return undefined
-}
-
-/**
- * Drops scan-revision markers.
- *
- * Releases append `v2` to a re-scan of an installment they already numbered
- * ("One Piece 1044 v2"), which reads exactly like the volume shorthand. A
- * single-letter `v` that follows another number is the revision; the full
- * words `vol` and `volume` always mean the volume.
- */
-function stripRevisionMarkers(name: string): string {
-  return name.replace(/(\d)([\s._-]*)v\d{1,2}(?![a-z0-9])/gi, '$1')
-}
-
-/** Integer tokens inside the plausible release-year range (1900-2100). */
-function isPlausibleYearToken(value: number): boolean {
-  return Number.isInteger(value) && value >= 1900 && value <= 2100
-}
-
-/** Bracketed release-group and quality tags carry no unit identity. */
-function stripReleaseTags(name: string): string {
-  return name
-    .replace(/\[[^\]]*\]/g, ' ')
-    .replace(/\([^)]*\)/g, ' ')
-    .replace(/【[^】]*】/g, ' ')
-}
-
-function cleanDisplayName(baseName: string): string {
-  const cleaned = stripReleaseTags(baseName)
-    .replace(/[\s._-]+/g, ' ')
-    .trim()
-  return cleaned || baseName
 }
 
 /**
@@ -141,7 +110,7 @@ export function recognizeComicUnit(
   if (volumeNumber !== undefined) candidate.volumeNumber = volumeNumber
 
   if (chapterNumber === undefined && volumeNumber === undefined) {
-    const bare = parseNumber(searchable.match(BARE_NUMBER_PATTERN)?.[1])
+    const bare = parseNumberToken(searchable.match(BARE_NUMBER_PATTERN)?.[1])
     // A leading year is a title ("1984", "2001 Nights"), not a unit number.
     if (bare !== undefined && !isPlausibleYearToken(bare)) {
       if (form === 'archive') {
