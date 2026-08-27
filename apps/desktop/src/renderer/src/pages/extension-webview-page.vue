@@ -47,7 +47,7 @@ watch(
     }
 
     void openExtensionWebviewPage(extensionId, pageId).catch((error) => {
-      log.error('Failed to open webview page session:', error)
+      log.error('Failed to open webview page session.', error)
     })
   },
   { immediate: true }
@@ -70,7 +70,7 @@ function closeCurrentSession(): void {
   }
 
   void closeWebview(current.webviewId).catch((error) => {
-    log.error('Failed to close webview session:', error)
+    log.error('Failed to close webview session.', error)
   })
 }
 </script>

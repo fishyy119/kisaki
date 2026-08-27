@@ -6,9 +6,7 @@
  */
 
 import { ipcManager } from '@renderer/core/ipc'
-import { createFileSyncComposable, type FileSyncComposable } from './use-file-sync'
-
-export type ComicFileSync = FileSyncComposable
+import { createFileSyncComposable } from './use-file-sync'
 
 export const useComicFileSync = createFileSyncComposable({
   logDomain: 'Comic',

@@ -55,7 +55,7 @@ export function createFileSyncComposable<TResult extends { unrecognizedFiles: st
           notify.warning(texts.unrecognized(result.data.unrecognizedFiles.length))
         }
       } catch (error) {
-        log.error('File sync failed:', error)
+        log.error('File sync failed.', error)
         notify.error(spec.texts(m.value).failed)
       } finally {
         isSyncing.value = false

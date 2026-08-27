@@ -68,7 +68,7 @@ export {
   type AnimeFileRecords,
   type AnimeFileRecordsOptions
 } from './use-anime-file-records'
-export { useAnimeFileSync, type AnimeFileSync } from './use-anime-file-sync'
+export { useAnimeFileSync } from './use-anime-file-sync'
 export {
   markEpisodesWatched,
   readUnwatchedEpisodeCounts,
@@ -87,7 +87,7 @@ export {
   type ComicContext,
   type ComicProviderReturn
 } from './use-comic'
-export { useComicFileSync, type ComicFileSync } from './use-comic-file-sync'
+export { useComicFileSync } from './use-comic-file-sync'
 export { useComicReading, type ComicReading } from './use-comic-reading'
 export {
   novelDetailData,
@@ -98,7 +98,7 @@ export {
   type NovelProviderReturn,
   type NovelVolumeEntry
 } from './use-novel'
-export { useNovelFileSync, type NovelFileSync } from './use-novel-file-sync'
+export { useNovelFileSync } from './use-novel-file-sync'
 export { useNovelReading, type NovelReading } from './use-novel-reading'
 export { useReaderChrome, type ReaderChrome, type ReaderPanelTab } from './use-reader-chrome'
 export { useReadingClock } from './use-reading-clock'
