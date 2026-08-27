@@ -59,7 +59,7 @@ export interface RouteDataLoader<T> extends RouteDataHandle {
  *
  * The returned value is both a composable (call inside the page/provider to
  * read the settled data) and a guard handle (`load` is invoked by the global
- * beforeResolve for routes that declare it in `meta.loaders`).
+ * beforeResolve for routes that declare it in `meta.dataLoaders`).
  *
  * `refetch` re-runs the fetcher against the last loaded route without
  * clearing current data (SWR), for db-event invalidation and in-page

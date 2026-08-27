@@ -9,7 +9,7 @@
 
 import { buildNovelFileUrl } from '@shared/book'
 import type { ReaderUnit } from '@shared/reader'
-import { decodeTextFile } from './text-encoding'
+import { decodeTextFile } from './encoding'
 import { makeTxtBook } from './txt-book'
 
 export interface FoliateTocItem {
