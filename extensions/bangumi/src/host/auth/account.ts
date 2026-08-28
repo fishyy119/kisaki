@@ -2,7 +2,7 @@ import type { ExtensionStorage } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import type { BangumiMe } from '../api/types'
 import { BANGUMI_STORAGE_KEYS } from '../utils/ids'
-import type { OAuthRelayTokenStatus } from './relay-client'
+import type { OAuthRelayTokenStatus } from '@kisaki3/extension-sdk'
 import type { TokenService } from './token-service'
 import { omitUndefined } from '../utils/object'
 

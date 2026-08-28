@@ -31,6 +31,7 @@ export class IgdbGameProvider implements GameScraperProvider {
     'tags',
     'characters',
     'companies',
+    'relatedEntries',
     'covers',
     'backdrops'
   ] as const

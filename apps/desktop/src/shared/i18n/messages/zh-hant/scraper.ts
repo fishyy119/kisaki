@@ -12,25 +12,71 @@ export const scraper = {
     empty: '暫無設定',
     none: '不使用刮削設定'
   },
-  presetDialog: {
-    title: '選擇預設設定',
-    empty: '暫無可用預設',
-    searchProvider: ({ id }: { id: string }) => `搜尋：${id}`,
-    addWithCount: ({ count }: { count: number }) => `新增（${count}）`
-  },
-  presets: {
-    visualNovel: {
+  recipes: {
+    gameVisualNovel: {
       name: '視覺小說',
-      description: '適合取得視覺小說的中文中繼資料'
+      description: '以 VNDB 目錄為主幹，中文事實與美術圍繞補齊'
     },
-    videoGame: {
+    gameVideoGame: {
       name: '電子遊戲',
-      description: '適合電子遊戲的通用預設'
+      description: '覆蓋面最廣的遊戲中繼資料，全部美術欄位由 SteamGridDB 領跑'
     },
     anime: {
-      name: '動漫',
-      description: '以 Bangumi 元資料為主，由 TMDB 補齊圖片（TMDB 需自備 API Key）'
+      name: '動畫',
+      description: '按季拆分的動畫條目，包含劇集、聲優與完整美術'
+    },
+    comic: {
+      name: '漫畫',
+      description: '漫畫中繼資料，逐卷封面來自 MangaDex'
+    },
+    novelLightNovel: {
+      name: '輕小說',
+      description: '輕小說中繼資料，包含分卷、角色與封面'
+    },
+    novelFiction: {
+      name: '通俗小說',
+      description: '通用書目資料，自帶跨來源識別碼並按 ISBN 對齊'
+    },
+    person: {
+      name: '人物',
+      description: '工作人員、作者與聲優，含肖像'
+    },
+    company: {
+      name: '公司',
+      description: '工作室、出版社與品牌，含 Logo'
+    },
+    character: {
+      name: '角色',
+      description: '角色資料，含立繪與聲優出演'
     }
+  },
+  newProfile: {
+    pathTitle: '建立設定',
+    confirmTitle: '確認新設定',
+    paths: {
+      recipes: '推薦場景',
+      provider: '單一資料來源',
+      blank: '空白'
+    },
+    recipesHint: '按場景策展的推薦組合，提供者與排序隨所選內容語言變化',
+    blankHint: '選擇搜尋來源，所有欄位從空白開始',
+    providerMissing: '未安裝',
+    recipeUnavailable: '該場景目前沒有可用的搜尋來源',
+    noRecipes: '該媒體類型暫無推薦場景',
+    previewTitle: '產生的欄位',
+    previewEmpty: '目前的提供者無法填充任何欄位'
+  },
+  recipeUpdate: {
+    badge: '有更新建議',
+    title: '推薦設定已變化',
+    hint: '該場景的目前推薦與此設定不同。套用後將覆蓋搜尋來源、語言與欄位設定。',
+    beforeLabel: '目前',
+    afterLabel: '建議',
+    apply: '套用建議',
+    dismiss: '忽略此建議',
+    emptySlot: '（空）',
+    systemLocale: '系統語言',
+    ignoredNotice: '在推薦再次變化前保持忽略'
   },
 
   profiles: {
@@ -38,7 +84,6 @@ export const scraper = {
     emptyProfiles: '暫無設定，點選下方按鈕新增',
     unnamed: '（未命名）',
     addProfile: '新增設定',
-    choosePreset: '選擇預設',
     profileEntityLabel: '設定',
     deleteUsedByScanners: ({ count }: { count: number }) =>
       `${count} 個掃描器正在使用該設定，刪除後它們將不再刮削、直接匯入。`,

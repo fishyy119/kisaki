@@ -11,7 +11,27 @@ export const zhHant: VndbMessages = {
     networkFailed: 'VNDB 介面網路請求失敗',
     operationCancelled: '操作已取消',
     baseUrlInvalid: '請輸入 http 或 https 位址',
-    idInvalid: ({ value }) => `「${value}」不是有效的 VNDB ID`
+    idInvalid: ({ value }) => `「${value}」不是有效的 VNDB ID`,
+    listPermissionMissing:
+      '該 VNDB 權杖無法讀取你的清單，請建立帶 listread 與 listwrite 權限的權杖',
+    operationRunning: '已有 VNDB 清單操作正在執行，請等待其完成'
+  },
+
+  sync: {
+    autoSyncFailedTitle: 'VNDB 同步失敗',
+    autoSyncFailedFallback: '該變更未能推送到 VNDB',
+    pushTaskTitle: '推送庫到 VNDB 清單',
+    pushSummary: ({ pushed, skipped, failed }) =>
+      `已推送 ${pushed}，跳過 ${skipped}，失敗 ${failed}`
+  },
+
+  import: {
+    taskTitle: '匯入 VNDB 清單',
+    phaseRead: '正在讀取 VNDB 清單',
+    phaseApply: '正在套用清單條目',
+    itemFailed: ({ id }) => `匯入 ${id} 失敗`,
+    summary: ({ created, updated, unchanged, skipped, failed }) =>
+      `新建 ${created}，更新 ${updated}，無變化 ${unchanged}，跳過 ${skipped}，失敗 ${failed}`
   },
 
   settings: {
@@ -70,6 +90,37 @@ export const zhHant: VndbMessages = {
       reset: '還原預設設定',
       resetDescription: '位址與偏好還原預設，權杖保留',
       resetSucceeded: '已還原預設設定'
+    },
+
+    integration: {
+      title: '清單整合',
+      description:
+        '連接你的 VNDB 清單：匯入到庫中，並將本機狀態與評分的變更推送回去。需要帶 listread 與 listwrite 權限的權杖。',
+      verify: '驗證帳號',
+      verifiedAs: ({ username }) => `已登入為 ${username}`,
+      permissionsLabel: '清單權限',
+      listRead: '讀取',
+      listWrite: '寫入',
+      permissionGranted: '已授權',
+      permissionMissing: '缺失',
+      syncEnabledLabel: '自動推送變更',
+      syncEnabledDescription: '帶 VNDB ID 的條目的狀態與評分修改會推送到你的清單',
+      pushScoreLabel: '包含評分',
+      pushScoreDescription: '將本機評分寫入為 VNDB 投票；本機評分為空時不會清除遠端投票',
+      pushAll: '立即全量推送',
+      importTitle: '匯入清單',
+      importDescription: '將清單狀態與投票寫入相符的條目。新建缺失條目時透過所選設定檔刮削。',
+      profileLabel: '刮削設定檔',
+      profilePlaceholder: '選擇設定檔',
+      updateExistingLabel: '更新既有條目',
+      createMissingLabel: '新建缺失條目',
+      startImport: '匯入',
+      taskProgress: ({ current, total }) => `${current} / ${total}`,
+      taskRunning: '執行中',
+      taskCompleted: '已完成',
+      taskFailed: '已失敗',
+      taskCancelled: '已取消',
+      cancelTask: '取消'
     }
   }
 }

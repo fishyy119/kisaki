@@ -17,11 +17,7 @@ import {
 } from './installations'
 import { ExtensionInstallerManager } from './installer'
 import { registerExtensionIpc } from './ipc'
-import {
-  ExtensionIconManager,
-  ExtensionUiAssetServer,
-  ExtensionWebviewFontServer
-} from './assets'
+import { ExtensionIconManager, ExtensionUiAssetServer, ExtensionWebviewFontServer } from './assets'
 import {
   ExtensionPackageArchiveStore,
   ExtensionPackageCommitter,

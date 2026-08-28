@@ -1,24 +1,28 @@
 import {
   createCancellationError,
+  delay,
   isCancellationError,
+  RateLimiter,
+  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
 import { IgdbApiError, normalizeIgdbApiError } from './errors'
-import { delay, IgdbRateLimiter } from './limiter'
 import type { IgdbTokenResponse } from './types'
 import type { CredentialStore } from '../auth/credentials'
 import type { IgdbSettingsV1 } from '../config/schema'
 import { m } from '../i18n'
 import { IGDB_ID_CHUNK_SIZE, IGDB_QUERY_LIMIT, IGDB_USER_AGENT } from '../utils/constants'
-import { IgdbExtensionError, throwIfAborted } from '../utils/errors'
+import { IgdbExtensionError } from '../utils/errors'
 import { chunk, omitUndefined } from '../utils/object'
 
 /** Official limits: 4 requests per second, at most 8 open requests. */
-const RATE_LIMIT_MAX_REQUESTS = 4
-const RATE_LIMIT_WINDOW_MS = 1_000
-const MAX_CONCURRENT_REQUESTS = 8
+const RATE_LIMIT: { maxRequests: number; windowMs: number; maxConcurrent: number } = {
+  maxRequests: 4,
+  windowMs: 1_000,
+  maxConcurrent: 8
+}
 
 /** Refresh a little before expiry so a request never races the deadline. */
 const TOKEN_REFRESH_MARGIN_MS = 60_000
@@ -28,11 +32,7 @@ export interface IgdbRequestOptions {
 }
 
 export class IgdbClient {
-  private readonly limiter = new IgdbRateLimiter(
-    RATE_LIMIT_MAX_REQUESTS,
-    RATE_LIMIT_WINDOW_MS,
-    MAX_CONCURRENT_REQUESTS
-  )
+  private readonly limiter = new RateLimiter(RATE_LIMIT)
   private accessToken: string | null = null
   private tokenExpiry = 0
   /** Client the cached token was issued for; a credential change invalidates it. */

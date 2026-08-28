@@ -1,5 +1,3 @@
-import { createCancellationError } from '@kisaki3/extension-sdk'
-
 export type IgdbErrorCode =
   | 'credential_missing'
   | 'credential_invalid'
@@ -18,17 +16,6 @@ export class IgdbExtensionError extends Error {
   ) {
     super(message, options)
     this.name = 'IgdbExtensionError'
-  }
-}
-
-/**
- * Cancellations must carry the host's shared `cancelled` code: these errors
- * cross the RPC boundary, and the host only recognizes coded cancellations
- * when deciding to abandon (rather than fail) the surrounding operation.
- */
-export function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw createCancellationError('The operation was cancelled.')
   }
 }
 

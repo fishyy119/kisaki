@@ -94,11 +94,7 @@ export class NovelReadingAdapter implements ReadingAdapter {
             resumeProgress: clampFraction(position.fraction)
           }
 
-    this.db.client
-      .update(novelVolumes)
-      .set(values)
-      .where(eq(novelVolumes.id, report.unitId))
-      .run()
+    this.db.client.update(novelVolumes).set(values).where(eq(novelVolumes.id, report.unitId)).run()
   }
 
   markUnitRead(unitId: string): void {

@@ -1,8 +1,11 @@
-import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import type {
+  ExtensionLogger,
+  OAuthRelayClient,
+  OAuthRelayTokenStatus
+} from '@kisaki3/extension-sdk'
 import { m } from '../i18n'
 import { BangumiExtensionError } from '../utils/errors'
 import { omitUndefined } from '../utils/object'
-import type { OAuthRelayClient, OAuthRelayTokenStatus } from './relay-client'
 import type { BangumiTokenSecretV1 } from './token-store'
 import { TokenStore } from './token-store'
 

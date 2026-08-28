@@ -34,7 +34,10 @@ import type {
   IngestGamePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
-import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../persist/media-relations'
+import {
+  applyMediaRelationFacts,
+  createUnresolvedRelatedEntriesWarning
+} from '../persist/media-relations'
 import {
   requireOwnerIdentity,
   requirePersistedId,

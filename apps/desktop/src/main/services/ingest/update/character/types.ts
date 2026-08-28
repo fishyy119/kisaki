@@ -10,7 +10,12 @@ import type { ScrapedCharacterRelationFacts } from '@shared/scraper'
 import type { CoreCharacterMetadata, Tag } from '@shared/metadata'
 import type { Character } from '@shared/db'
 import type { IngestCharacterGraph } from '../../graph'
-import type { CollectionUpdateMode, UpdateIncomingBuildResult, UpdateIncomingRelationAvailability, UpdateResolvedSelection } from '../types'
+import type {
+  CollectionUpdateMode,
+  UpdateIncomingBuildResult,
+  UpdateIncomingRelationAvailability,
+  UpdateResolvedSelection
+} from '../types'
 
 /** Link tables a character update can write; the graph carries a single set. */
 export type CharacterLinkKind = 'characterPerson'

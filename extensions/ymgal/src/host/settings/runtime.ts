@@ -1,10 +1,10 @@
-import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import type { ExtensionLogger, SettingsStore } from '@kisaki3/extension-sdk'
 import type { YmgalClient } from '../api/client'
 import type { CredentialStore } from '../auth/credentials'
-import type { SettingsStore } from '../config/store'
+import type { YmgalSettingsV1 } from '../config/schema'
 
 export interface YmgalSettingsRuntime {
-  settingsStore: SettingsStore
+  settingsStore: SettingsStore<YmgalSettingsV1>
   credentials: CredentialStore
   client: YmgalClient
   logger: ExtensionLogger

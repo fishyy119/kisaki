@@ -1,0 +1,19 @@
+import type { UiLocale } from '@kisaki3/extension-sdk'
+import { en } from './messages/en'
+import { ja } from './messages/ja'
+import { zhHans } from './messages/zh-hans'
+import { zhHant } from './messages/zh-hant'
+
+/** The English catalog is the schema every locale must satisfy. */
+export type SgdbMessages = typeof en
+
+const catalogs: Record<UiLocale, SgdbMessages> = {
+  en,
+  ja,
+  'zh-Hans': zhHans,
+  'zh-Hant': zhHant
+}
+
+export function getSgdbMessages(locale: UiLocale): SgdbMessages {
+  return catalogs[locale] ?? en
+}

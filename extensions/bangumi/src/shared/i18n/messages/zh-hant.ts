@@ -63,16 +63,11 @@ export const zhHant = {
     tokenSaveFailed: 'Bangumi 憑證儲存失敗',
 
     loginNotReady: 'Bangumi 登入尚未就緒',
-    loginCallbackMissingParams: 'Bangumi 登入回呼缺少必要參數',
     loginSessionExpired: 'Bangumi 登入工作階段已過期，請重新登入',
     loginCallbackInvalid: 'Bangumi 登入回呼驗證失敗，請重新登入',
     noPendingLogin: '沒有等待完成的 Bangumi 登入',
 
-    relayUnreachable: '無法連線 Kisaki OAuth 中繼',
     relayUnavailable: 'Kisaki OAuth 中繼暫時無法使用，請稍後再試',
-    relayAvailable: 'OAuth 中繼可用',
-    relayInvalidSession: 'OAuth 中繼回傳了無法識別的登入工作階段',
-    relayNoToken: 'OAuth 中繼未回傳存取憑證',
 
     apiNotFound: 'Bangumi 條目不存在',
     apiRateLimited: 'Bangumi API 請求過於頻繁，請稍後再試',

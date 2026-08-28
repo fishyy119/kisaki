@@ -1,4 +1,4 @@
-/** Shared scraper widgets: provider select, profile select, and preset picker. */
+/** Shared scraper widgets: provider select, profile select, and recipe creation. */
 export const scraper = {
   providerSelect: {
     placeholder: 'Select a provider…',
@@ -11,25 +11,71 @@ export const scraper = {
     empty: 'No profiles',
     none: 'No scraper profile'
   },
-  presetDialog: {
-    title: 'Choose preset profiles',
-    empty: 'No presets available',
-    searchProvider: ({ id }: { id: string }) => `Search: ${id}`,
-    addWithCount: ({ count }: { count: number }) => `Add (${count})`
-  },
-  presets: {
-    visualNovel: {
+  recipes: {
+    gameVisualNovel: {
       name: 'Visual novels',
-      description: 'Best for Chinese metadata of visual novels'
+      description: 'VNDB leads the catalogue; localized facts and artwork fill in around it'
     },
-    videoGame: {
+    gameVideoGame: {
       name: 'Video games',
-      description: 'A general-purpose preset for video games'
+      description: 'Broad game metadata with SteamGridDB leading every artwork slot'
     },
     anime: {
       name: 'Anime',
-      description: 'Bangumi metadata, with TMDB artwork filling the gaps (TMDB needs an API key)'
+      description: 'Season-shaped anime entries with episodes, cast, and full artwork'
+    },
+    comic: {
+      name: 'Comics',
+      description: 'Manga metadata with per-volume covers from MangaDex'
+    },
+    novelLightNovel: {
+      name: 'Light novels',
+      description: 'Light-novel metadata with volumes, cast, and covers'
+    },
+    novelFiction: {
+      name: 'Fiction & books',
+      description: 'General bibliography with cross-source identifiers and ISBN alignment'
+    },
+    person: {
+      name: 'People',
+      description: 'Staff, authors, and voice actors with portraits'
+    },
+    company: {
+      name: 'Companies',
+      description: 'Studios, publishers, and brands with logos'
+    },
+    character: {
+      name: 'Characters',
+      description: 'Character profiles with portraits and cast credits'
     }
+  },
+  newProfile: {
+    pathTitle: 'Create a profile',
+    confirmTitle: 'Confirm the new profile',
+    paths: {
+      recipes: 'Recommended',
+      provider: 'Single provider',
+      blank: 'Blank'
+    },
+    recipesHint: 'Curated scenes; providers and ordering follow the chosen content language',
+    blankHint: 'Choose the search provider; every slot starts empty',
+    providerMissing: 'not installed',
+    recipeUnavailable: 'No search source of this scene is currently available',
+    noRecipes: 'No recommended scenes for this media type',
+    previewTitle: 'Generated slots',
+    previewEmpty: 'No slots can be filled with the current providers'
+  },
+  recipeUpdate: {
+    badge: 'Update suggested',
+    title: 'Recommended configuration changed',
+    hint: 'The current recommendation for this scene differs from the profile configuration. Applying overwrites the search source, language, and slots.',
+    beforeLabel: 'Current',
+    afterLabel: 'Suggested',
+    apply: 'Apply suggestion',
+    dismiss: 'Ignore this suggestion',
+    emptySlot: '(empty)',
+    systemLocale: 'System language',
+    ignoredNotice: 'Ignored until the recommendation changes again'
   },
 
   profiles: {
@@ -37,7 +83,6 @@ export const scraper = {
     emptyProfiles: 'No profiles yet. Use the button below to add one.',
     unnamed: '(Unnamed)',
     addProfile: 'Add profile',
-    choosePreset: 'Choose preset',
     profileEntityLabel: 'Profile',
     deleteUsedByScanners: ({ count }: { count: number }) =>
       count === 1

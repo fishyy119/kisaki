@@ -12,6 +12,10 @@ export const DEFAULT_VNDB_SETTINGS: VndbSettingsV1 = {
   client: {
     timeoutMs: 20_000,
     retryCount: 2
+  },
+  sync: {
+    enabled: false,
+    pushScore: true
   }
 }
 

@@ -23,7 +23,7 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils/cn'
-import { ScraperPresetFormDialog } from './forms'
+import ScraperNewProfileDialog from './presets/new-profile-dialog.vue'
 
 /** Sentinel item value for the explicit "no profile" choice. */
 const NONE_VALUE = '#none'
@@ -71,7 +71,7 @@ const emit = defineEmits<{
   change: [profileId: string]
 }>()
 
-const isPresetDialogOpen = ref(false)
+const isCreateDialogOpen = ref(false)
 
 const {
   data: profiles,
@@ -114,25 +114,20 @@ watch(
   { immediate: true }
 )
 
-async function handleAddPresets(newProfiles: ScraperProfile[]) {
-  // Get current max order
+/** Quick creation writes straight to the store and selects the new profile. */
+async function handleProfileCreated(profile: ScraperProfile) {
   const currentProfiles = profiles.value ?? []
   const maxOrder =
     currentProfiles.length > 0 ? Math.max(...currentProfiles.map((p) => p.order)) : -1
 
-  // Save to DB directly
-  for (let i = 0; i < newProfiles.length; i++) {
-    const profile = newProfiles[i]
-    await db.insert(scraperProfiles).values({
-      ...profile,
-      order: maxOrder + 1 + i
-    })
-  }
+  await db.insert(scraperProfiles).values({
+    ...profile,
+    order: maxOrder + 1
+  })
 
-  // Auto-select the first added profile if no value is set
-  if (!model.value && newProfiles.length > 0) {
-    model.value = newProfiles[0].id
-    emit('change', newProfiles[0].id)
+  if (!model.value) {
+    model.value = profile.id
+    emit('change', profile.id)
   }
 }
 
@@ -142,9 +137,6 @@ watch(model, (profileId) => {
     emit('change', profileId)
   }
 })
-
-// Expose for later use
-void handleAddPresets
 </script>
 
 <template>
@@ -172,18 +164,19 @@ void handleAddPresets
       variant="outline"
       size="icon"
       class="shrink-0"
-      @click="isPresetDialogOpen = true"
+      @click="isCreateDialogOpen = true"
     >
       <Icon
         icon="icon-[mdi--plus]"
         class="size-4"
       />
     </Button>
-    <ScraperPresetFormDialog
-      v-if="isPresetDialogOpen"
-      v-model:open="isPresetDialogOpen"
+    <ScraperNewProfileDialog
+      v-if="isCreateDialogOpen"
+      v-model:open="isCreateDialogOpen"
+      mode="recipes"
       :media-type="props.mediaType"
-      :on-add="handleAddPresets"
+      @create="handleProfileCreated"
     />
   </div>
 

@@ -913,14 +913,20 @@ export const library = {
         game: {
           recentlyActive: { name: 'Recently played', description: 'Games sorted by last activity' },
           topRated: { name: 'Top rated games', description: 'Games sorted by score' },
-          recentlyAdded: { name: 'Recently added games', description: 'Games sorted by date added' },
+          recentlyAdded: {
+            name: 'Recently added games',
+            description: 'Games sorted by date added'
+          },
           favorites: { name: 'Favorite games', description: 'Games you favorited' },
           all: { name: 'All games', description: 'Every game in the library' }
         },
         anime: {
           recentlyActive: { name: 'Recently watched', description: 'Anime sorted by last watched' },
           topRated: { name: 'Top rated anime', description: 'Anime sorted by score' },
-          recentlyAdded: { name: 'Recently added anime', description: 'Anime sorted by date added' },
+          recentlyAdded: {
+            name: 'Recently added anime',
+            description: 'Anime sorted by date added'
+          },
           favorites: { name: 'Favorite anime', description: 'Anime you favorited' },
           all: { name: 'All anime', description: 'Every anime in the library' }
         },

@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@kisaki3/extension-api/schemas/extension-manifest.schema.json",
+  "id": "builtin.neodb",
+  "name": "NeoDB",
+  "version": "0.0.1",
+  "categories": ["scraper", "integration"],
+  "entry": "./dist/index.mjs",
+  "ui": "./dist/ui",
+  "description": {
+    "en": "Built-in NeoDB integration and book metadata scraper for Kisaki, with Chinese-first bibliographic data, cross-source identifiers, and reading-status import and sync on any NeoDB instance.",
+    "ja": "Kisaki 内蔵の NeoDB 連携。中国語圏に強い書誌データとクロスソース識別子に対応した書籍スクレイパーと、任意の NeoDB インスタンスでの読書ステータスのインポート・同期。",
+    "zh-Hans": "Kisaki 内置的 NeoDB 集成与书目元数据刮削器：中文书目、跨源标识符，支持在任意 NeoDB 实例上导入与同步阅读状态。",
+    "zh-Hant": "Kisaki 內建的 NeoDB 整合與書目中繼資料刮削器：中文書目、跨來源識別碼，支援在任意 NeoDB 站台上匯入與同步閱讀狀態。"
+  },
+  "author": "Kisaki",
+  "homepage": "https://neodb.social",
+  "keywords": ["neodb", "scraper", "book", "novel", "sync"],
+  "engines": {
+    "kisakiExtensionApi": "=0.0.14"
+  }
+}

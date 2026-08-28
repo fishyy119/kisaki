@@ -23,8 +23,16 @@ import type {
   ReadingResult,
   ReadingStopResult
 } from '@shared/activity'
-import { COMIC_READING_DIRECTION_VALUES, type ComicReadingDirection } from '@shared/db/contracts/enums'
-import type { ReaderBootstrap, ReaderProgressReport, ReaderUnit, ReadingMedia } from '@shared/reader'
+import {
+  COMIC_READING_DIRECTION_VALUES,
+  type ComicReadingDirection
+} from '@shared/db/contracts/enums'
+import type {
+  ReaderBootstrap,
+  ReaderProgressReport,
+  ReaderUnit,
+  ReadingMedia
+} from '@shared/reader'
 
 const log = createLogger('Activity')
 

@@ -60,16 +60,11 @@ export const en = {
     tokenSaveFailed: 'The Bangumi credentials could not be saved',
 
     loginNotReady: 'Bangumi sign-in is not ready yet',
-    loginCallbackMissingParams: 'The Bangumi sign-in callback is missing required parameters',
     loginSessionExpired: 'The Bangumi sign-in session has expired. Sign in again.',
     loginCallbackInvalid: 'The Bangumi sign-in callback failed validation. Sign in again.',
     noPendingLogin: 'No Bangumi sign-in is waiting to be completed',
 
-    relayUnreachable: 'Could not reach the Kisaki OAuth relay',
     relayUnavailable: 'The Kisaki OAuth relay is temporarily unavailable. Try again later.',
-    relayAvailable: 'The OAuth relay is available',
-    relayInvalidSession: 'The OAuth relay returned an unrecognized sign-in session',
-    relayNoToken: 'The OAuth relay did not return access credentials',
 
     apiNotFound: 'The Bangumi entry does not exist',
     apiRateLimited: 'Too many Bangumi API requests. Try again later.',

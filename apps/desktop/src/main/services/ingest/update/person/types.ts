@@ -8,7 +8,11 @@ import type {
 import type { ExternalId } from '@shared/identity'
 import type { CorePersonMetadata, Tag } from '@shared/metadata'
 import type { Person } from '@shared/db'
-import type { UpdateIncomingAvailability, UpdateIncomingBuildResult, UpdateResolvedSelection } from '../types'
+import type {
+  UpdateIncomingAvailability,
+  UpdateIncomingBuildResult,
+  UpdateResolvedSelection
+} from '../types'
 
 export interface PersonIncomingMediaCandidates {
   photoUrls?: string[]

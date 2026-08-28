@@ -385,7 +385,109 @@ importers:
         specifier: 'catalog:'
         version: 3.3.7(typescript@6.0.3)
 
+  extensions/anilist:
+    devDependencies:
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      '@iconify/tailwind4':
+        specifier: 'catalog:'
+        version: 1.2.3(tailwindcss@4.3.3)
+      '@kisaki3/extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
+      '@kisaki3/extension-sdk':
+        specifier: workspace:*
+        version: link:../../packages/extension-sdk
+      '@kisaki3/extension-ui-vue':
+        specifier: workspace:*
+        version: link:../../packages/extension-ui-vue
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.8(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3))
+      eslint-plugin-vue:
+        specifier: 'catalog:'
+        version: 10.9.2(@typescript-eslint/parser@8.63.0(eslint@10.6.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.6.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.6.0(jiti@2.7.0)))
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.39(typescript@6.0.3)
+      vue-eslint-parser:
+        specifier: 'catalog:'
+        version: 10.4.1(eslint@10.6.0(jiti@2.7.0))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.7(typescript@6.0.3)
+
   extensions/bangumi:
+    devDependencies:
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      '@iconify/tailwind4':
+        specifier: 'catalog:'
+        version: 1.2.3(tailwindcss@4.3.3)
+      '@kisaki3/extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
+      '@kisaki3/extension-sdk':
+        specifier: workspace:*
+        version: link:../../packages/extension-sdk
+      '@kisaki3/extension-ui-vue':
+        specifier: workspace:*
+        version: link:../../packages/extension-ui-vue
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.8(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3))
+      eslint-plugin-vue:
+        specifier: 'catalog:'
+        version: 10.9.2(@typescript-eslint/parser@8.63.0(eslint@10.6.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.6.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.6.0(jiti@2.7.0)))
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.39(typescript@6.0.3)
+      vue-eslint-parser:
+        specifier: 'catalog:'
+        version: 10.4.1(eslint@10.6.0(jiti@2.7.0))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.7(typescript@6.0.3)
+
+  extensions/googlebooks:
     devDependencies:
       '@iconify-json/mdi':
         specifier: ^1.2.3
@@ -487,6 +589,159 @@ importers:
         specifier: 'catalog:'
         version: 3.3.7(typescript@6.0.3)
 
+  extensions/mal:
+    devDependencies:
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      '@iconify/tailwind4':
+        specifier: 'catalog:'
+        version: 1.2.3(tailwindcss@4.3.3)
+      '@kisaki3/extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
+      '@kisaki3/extension-sdk':
+        specifier: workspace:*
+        version: link:../../packages/extension-sdk
+      '@kisaki3/extension-ui-vue':
+        specifier: workspace:*
+        version: link:../../packages/extension-ui-vue
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.8(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3))
+      eslint-plugin-vue:
+        specifier: 'catalog:'
+        version: 10.9.2(@typescript-eslint/parser@8.63.0(eslint@10.6.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.6.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.6.0(jiti@2.7.0)))
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.39(typescript@6.0.3)
+      vue-eslint-parser:
+        specifier: 'catalog:'
+        version: 10.4.1(eslint@10.6.0(jiti@2.7.0))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.7(typescript@6.0.3)
+
+  extensions/mangadex:
+    devDependencies:
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      '@iconify/tailwind4':
+        specifier: 'catalog:'
+        version: 1.2.3(tailwindcss@4.3.3)
+      '@kisaki3/extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
+      '@kisaki3/extension-sdk':
+        specifier: workspace:*
+        version: link:../../packages/extension-sdk
+      '@kisaki3/extension-ui-vue':
+        specifier: workspace:*
+        version: link:../../packages/extension-ui-vue
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.8(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3))
+      eslint-plugin-vue:
+        specifier: 'catalog:'
+        version: 10.9.2(@typescript-eslint/parser@8.63.0(eslint@10.6.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.6.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.6.0(jiti@2.7.0)))
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.39(typescript@6.0.3)
+      vue-eslint-parser:
+        specifier: 'catalog:'
+        version: 10.4.1(eslint@10.6.0(jiti@2.7.0))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.7(typescript@6.0.3)
+
+  extensions/neodb:
+    devDependencies:
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      '@iconify/tailwind4':
+        specifier: 'catalog:'
+        version: 1.2.3(tailwindcss@4.3.3)
+      '@kisaki3/extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
+      '@kisaki3/extension-sdk':
+        specifier: workspace:*
+        version: link:../../packages/extension-sdk
+      '@kisaki3/extension-ui-vue':
+        specifier: workspace:*
+        version: link:../../packages/extension-ui-vue
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.8(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3))
+      eslint-plugin-vue:
+        specifier: 'catalog:'
+        version: 10.9.2(@typescript-eslint/parser@8.63.0(eslint@10.6.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.6.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.6.0(jiti@2.7.0)))
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.39(typescript@6.0.3)
+      vue-eslint-parser:
+        specifier: 'catalog:'
+        version: 10.4.1(eslint@10.6.0(jiti@2.7.0))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.7(typescript@6.0.3)
+
   extensions/phash-match:
     devDependencies:
       '@kisaki3/extension-api':
@@ -513,6 +768,108 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  extensions/steam:
+    devDependencies:
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      '@iconify/tailwind4':
+        specifier: 'catalog:'
+        version: 1.2.3(tailwindcss@4.3.3)
+      '@kisaki3/extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
+      '@kisaki3/extension-sdk':
+        specifier: workspace:*
+        version: link:../../packages/extension-sdk
+      '@kisaki3/extension-ui-vue':
+        specifier: workspace:*
+        version: link:../../packages/extension-ui-vue
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.8(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3))
+      eslint-plugin-vue:
+        specifier: 'catalog:'
+        version: 10.9.2(@typescript-eslint/parser@8.63.0(eslint@10.6.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.6.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.6.0(jiti@2.7.0)))
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.39(typescript@6.0.3)
+      vue-eslint-parser:
+        specifier: 'catalog:'
+        version: 10.4.1(eslint@10.6.0(jiti@2.7.0))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.7(typescript@6.0.3)
+
+  extensions/steamgriddb:
+    devDependencies:
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      '@iconify/tailwind4':
+        specifier: 'catalog:'
+        version: 1.2.3(tailwindcss@4.3.3)
+      '@kisaki3/extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
+      '@kisaki3/extension-sdk':
+        specifier: workspace:*
+        version: link:../../packages/extension-sdk
+      '@kisaki3/extension-ui-vue':
+        specifier: workspace:*
+        version: link:../../packages/extension-ui-vue
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.8(vite@8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3))
+      eslint-plugin-vue:
+        specifier: 'catalog:'
+        version: 10.9.2(@typescript-eslint/parser@8.63.0(eslint@10.6.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.6.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.6.0(jiti@2.7.0)))
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.0(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.39(typescript@6.0.3)
+      vue-eslint-parser:
+        specifier: 'catalog:'
+        version: 10.4.1(eslint@10.6.0(jiti@2.7.0))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.7(typescript@6.0.3)
 
   extensions/tmdb:
     devDependencies:
@@ -699,7 +1056,7 @@ importers:
         version: 6.1.3
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.4(tsx@4.23.0)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@2.0.0-alpha.3)(@emnapi/runtime@2.0.0-alpha.3))(vue-tsc@3.3.7(typescript@6.0.3))
+        version: 0.22.4(tsx@4.23.0)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1))(vue-tsc@3.3.7(typescript@6.0.3))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -721,7 +1078,7 @@ importers:
         version: 6.1.3
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.4(tsx@4.23.0)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1))(vue-tsc@3.3.7(typescript@6.0.3))
+        version: 0.22.4(tsx@4.23.0)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@2.0.0-alpha.3)(@emnapi/runtime@2.0.0-alpha.3))(vue-tsc@3.3.7(typescript@6.0.3))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

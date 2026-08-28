@@ -18,7 +18,13 @@ export const scraperProfiles = sqliteTable(
     name: text('name').notNull(),
     description: text('description'),
     mediaType: contentEntityType('media_type').notNull().default('game'),
-    sourcePresetId: text('source_preset_id'),
+    /** Recipe this profile was created from; null for provider or blank creations. */
+    recipeId: text('recipe_id'),
+    /**
+     * Recommendation fingerprint the user chose to ignore; update suggestions
+     * stay hidden until the recommendation changes again.
+     */
+    dismissedRecipeFingerprint: text('dismissed_recipe_fingerprint'),
     defaultLocale: contentLocale('default_locale'),
     searchProviderId: text('search_provider_id').notNull(),
     slotConfigs: scraperSlotConfigs('slot_configs').notNull(),

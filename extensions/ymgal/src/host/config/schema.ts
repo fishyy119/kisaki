@@ -52,10 +52,6 @@ export function normalizeYmgalSettings(value: unknown): YmgalSettingsV1 {
   }
 }
 
-export function isYmgalSettingsV1(value: unknown): value is YmgalSettingsV1 {
-  return JSON.stringify(value) === JSON.stringify(normalizeYmgalSettings(value))
-}
-
 function normalizeHttpUrl(value: unknown, fallback: string): string {
   if (typeof value !== 'string') {
     return fallback

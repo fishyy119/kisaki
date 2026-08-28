@@ -1,13 +1,16 @@
 import {
   createCancellationError,
+  delay,
   isCancellationError,
+  RateLimiter,
+  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
 import { normalizeVndbApiError, VndbApiError } from './errors'
-import { delay, VndbRateLimiter } from './limiter'
 import type {
+  VndbAuthInfo,
   VndbCharacter,
   VndbKanaSchema,
   VndbProducer,
@@ -17,6 +20,8 @@ import type {
   VndbStaff,
   VndbTag,
   VndbTrait,
+  VndbUserListItem,
+  VndbUserListPatch,
   VndbVn
 } from './types'
 import type { TokenStore } from '../auth/token'
@@ -28,21 +33,28 @@ import {
   VNDB_QUERY_PAGE_SIZE,
   VNDB_USER_AGENT
 } from '../utils/constants'
-import { VndbExtensionError, throwIfAborted } from '../utils/errors'
+import { VndbExtensionError } from '../utils/errors'
 import { chunk, omitUndefined } from '../utils/object'
 
-/** Official limit is 200 requests per 5 minutes; stay under it. */
-const RATE_LIMIT_MAX_REQUESTS = 180
-const RATE_LIMIT_WINDOW_MS = 300_000
+/**
+ * Official limit is 200 requests per 5 minutes; stay under it. One scrape
+ * fans out into character, staff, producer, tag, and trait reads, so
+ * requests are paced instead of relying on 429 retries alone.
+ */
+const RATE_LIMIT: { maxRequests: number; windowMs: number } = {
+  maxRequests: 180,
+  windowMs: 300_000
+}
 
-export type VndbEndpoint = 'vn' | 'release' | 'producer' | 'character' | 'staff' | 'tag' | 'trait'
+export type VndbEndpoint =
+  'vn' | 'release' | 'producer' | 'character' | 'staff' | 'tag' | 'trait' | 'ulist'
 
 export interface VndbRequestOptions {
   signal?: AbortSignal | undefined
 }
 
 export class VndbClient {
-  private readonly limiter = new VndbRateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS)
+  private readonly limiter = new RateLimiter(RATE_LIMIT)
   /** The enum schema is immutable, so it is resolved once per app run. */
   private schema: VndbKanaSchema | null = null
 
@@ -56,6 +68,41 @@ export class VndbClient {
   /** Cheapest read; used by the settings connection test. */
   async verifyConnection(signal?: AbortSignal): Promise<void> {
     await this.request<VndbKanaSchema>('GET', '/schema', undefined, { signal })
+  }
+
+  /** Validates the stored token and reports its account and permissions. */
+  async getAuthInfo(options: VndbRequestOptions = {}): Promise<VndbAuthInfo> {
+    if (!(await this.tokens.get())) {
+      throw new VndbExtensionError('token_required', m().errors.tokenRequired)
+    }
+
+    return this.request<VndbAuthInfo>('GET', '/authinfo', undefined, options)
+  }
+
+  /** Reads a user's full visual novel list; private labels need `listread`. */
+  async getUserList(
+    userId: string,
+    fields: string,
+    options: VndbRequestOptions = {}
+  ): Promise<VndbUserListItem[]> {
+    return this.queryAll<VndbUserListItem>(
+      'ulist',
+      { user: userId, fields, sort: 'id' },
+      options
+    )
+  }
+
+  /** Adds or updates one visual novel on the user's list; needs `listwrite`. */
+  async patchUserListEntry(
+    vnId: string,
+    patch: VndbUserListPatch,
+    options: VndbRequestOptions = {}
+  ): Promise<void> {
+    if (!(await this.tokens.get())) {
+      throw new VndbExtensionError('token_required', m().errors.tokenRequired)
+    }
+
+    await this.request<void>('PATCH', `/ulist/${encodeURIComponent(vnId)}`, patch, options)
   }
 
   /**
@@ -295,7 +342,7 @@ export class VndbClient {
   }
 
   private async request<T>(
-    method: 'GET' | 'POST',
+    method: 'GET' | 'POST' | 'PATCH',
     pathname: string,
     body: unknown,
     options: VndbRequestOptions
@@ -306,7 +353,7 @@ export class VndbClient {
       Accept: 'application/json',
       'User-Agent': VNDB_USER_AGENT
     }
-    if (method === 'POST') {
+    if (body !== undefined) {
       headers['Content-Type'] = 'application/json'
     }
     if (token) {

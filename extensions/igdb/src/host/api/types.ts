@@ -48,6 +48,16 @@ export interface IgdbGame {
   platforms?: number[] | null
   language_supports?: number[] | null
   cover?: number | null
+  parent_game?: number | null
+  version_parent?: number | null
+  dlcs?: number[] | null
+  expansions?: number[] | null
+  standalone_expansions?: number[] | null
+  expanded_games?: number[] | null
+  remakes?: number[] | null
+  remasters?: number[] | null
+  ports?: number[] | null
+  forks?: number[] | null
 }
 
 export interface IgdbGameSearchItem {

@@ -9,7 +9,9 @@ export const settingsForm = reactive<VndbSettingsFormState>({
   apiBaseUrl: '',
   preferRomanizedTitles: false,
   timeoutSeconds: 20,
-  retryCount: 2
+  retryCount: 2,
+  syncEnabled: false,
+  syncPushScore: true
 })
 
 export function applySettingsForm(next: VndbSettingsFormState): void {
@@ -23,7 +25,9 @@ export function snapshotSettingsForm(
     apiBaseUrl: source.apiBaseUrl,
     preferRomanizedTitles: source.preferRomanizedTitles,
     timeoutSeconds: source.timeoutSeconds,
-    retryCount: source.retryCount
+    retryCount: source.retryCount,
+    syncEnabled: source.syncEnabled,
+    syncPushScore: source.syncPushScore
   }
 }
 
@@ -35,6 +39,8 @@ export function settingsFormsEqual(
     first.apiBaseUrl === second.apiBaseUrl &&
     first.preferRomanizedTitles === second.preferRomanizedTitles &&
     first.timeoutSeconds === second.timeoutSeconds &&
-    first.retryCount === second.retryCount
+    first.retryCount === second.retryCount &&
+    first.syncEnabled === second.syncEnabled &&
+    first.syncPushScore === second.syncPushScore
   )
 }

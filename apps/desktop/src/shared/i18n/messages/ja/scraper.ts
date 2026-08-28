@@ -12,25 +12,72 @@ export const scraper = {
     empty: 'プロファイルがありません',
     none: 'プロファイルを使用しない'
   },
-  presetDialog: {
-    title: 'プリセットを選択',
-    empty: '利用可能なプリセットがありません',
-    searchProvider: ({ id }: { id: string }) => `検索：${id}`,
-    addWithCount: ({ count }: { count: number }) => `追加（${count}）`
-  },
-  presets: {
-    visualNovel: {
+  recipes: {
+    gameVisualNovel: {
       name: 'ビジュアルノベル',
-      description: 'ビジュアルノベルの中国語メタデータの取得に最適'
+      description: 'VNDB のカタログを軸に、ローカライズ情報とアートを周辺で補完'
     },
-    videoGame: {
+    gameVideoGame: {
       name: 'ビデオゲーム',
-      description: 'ビデオゲーム向けの汎用プリセット'
+      description: '最も広いゲームメタデータ。アート全スロットを SteamGridDB がリード'
     },
     anime: {
       name: 'アニメ',
-      description: 'Bangumi を主軸に、TMDB が画像を補完（TMDB は API キーが必要）'
+      description: 'シーズン単位のアニメエントリ。エピソード・キャスト・フルアート対応'
+    },
+    comic: {
+      name: 'コミック',
+      description: 'マンガメタデータ。巻ごとのカバーは MangaDex から'
+    },
+    novelLightNovel: {
+      name: 'ライトノベル',
+      description: 'ライトノベルのメタデータ。巻・キャラクター・カバー対応'
+    },
+    novelFiction: {
+      name: '一般書籍',
+      description: '汎用書誌データ。クロスソース識別子と ISBN で整合'
+    },
+    person: {
+      name: '人物',
+      description: 'スタッフ・作者・声優。ポートレート付き'
+    },
+    company: {
+      name: '会社',
+      description: 'スタジオ・出版社・ブランド。ロゴ付き'
+    },
+    character: {
+      name: 'キャラクター',
+      description: 'キャラクター情報。ポートレートとキャスト出演付き'
     }
+  },
+  newProfile: {
+    pathTitle: 'プロファイルを作成',
+    confirmTitle: '新しいプロファイルの確認',
+    paths: {
+      recipes: 'おすすめ',
+      provider: '単一ソース',
+      blank: '空白'
+    },
+    recipesHint:
+      'シーン別のキュレーション構成。プロバイダーと順序は選択したコンテンツ言語に従います',
+    blankHint: '検索ソースを選択します。すべてのスロットは空から始まります',
+    providerMissing: '未インストール',
+    recipeUnavailable: 'このシーンで利用可能な検索ソースが現在ありません',
+    noRecipes: 'このメディアタイプにはおすすめシーンがありません',
+    previewTitle: '生成されるスロット',
+    previewEmpty: '現在のプロバイダーではスロットを埋められません'
+  },
+  recipeUpdate: {
+    badge: '更新の提案',
+    title: '推奨構成が変わりました',
+    hint: 'このシーンの現在の推奨がプロファイル構成と異なります。適用すると検索ソース・言語・スロット設定を上書きします。',
+    beforeLabel: '現在',
+    afterLabel: '提案',
+    apply: '提案を適用',
+    dismiss: 'この提案を無視',
+    emptySlot: '（空）',
+    systemLocale: 'システム言語',
+    ignoredNotice: '推奨が再び変わるまで無視されます'
   },
 
   profiles: {
@@ -38,7 +85,6 @@ export const scraper = {
     emptyProfiles: 'プロファイルがありません。下のボタンから追加してください。',
     unnamed: '（名称未設定）',
     addProfile: 'プロファイルを追加',
-    choosePreset: 'プリセットを選択',
     profileEntityLabel: 'プロファイル',
     deleteUsedByScanners: ({ count }: { count: number }) =>
       `${count} 件のスキャナーがこのプロファイルを使用しています。削除するとスクレイピングせずに直接取り込みます。`,

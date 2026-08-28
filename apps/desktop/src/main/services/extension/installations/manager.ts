@@ -12,7 +12,11 @@ import type {
   ExtensionPurgeDataRequest,
   ExtensionUpdatePolicyRequest
 } from '@shared/extension'
-import type { ExtensionRuntimeChangeCause, ExtensionRuntimeState, ExtensionRuntimeManager } from '../runtime'
+import type {
+  ExtensionRuntimeChangeCause,
+  ExtensionRuntimeState,
+  ExtensionRuntimeManager
+} from '../runtime'
 import type { ExtensionContributionRegistry } from '../contributions'
 import type {
   ExtensionDevelopmentWatcher,

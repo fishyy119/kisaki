@@ -10,7 +10,13 @@ import type { ScrapedAnimeRelationFacts } from '@shared/scraper'
 import type { AnimeEpisodeInfo, CoreAnimeMetadata, Tag } from '@shared/metadata'
 import type { Anime } from '@shared/db'
 import type { IngestAnimeGraph, IngestAnimeGraphLinks } from '../../graph'
-import type { CollectionUpdateMode, RelatedEntriesUpdatePlan, UpdateIncomingBuildResult, UpdateIncomingRelationAvailability, UpdateResolvedSelection } from '../types'
+import type {
+  CollectionUpdateMode,
+  RelatedEntriesUpdatePlan,
+  UpdateIncomingBuildResult,
+  UpdateIncomingRelationAvailability,
+  UpdateResolvedSelection
+} from '../types'
 
 /**
  * Link tables an anime update can write.
@@ -26,13 +32,12 @@ export interface AnimeIncomingMediaCandidates {
   logoUrls?: string[]
 }
 
-export interface AnimeIncomingBuildResult
-  extends UpdateIncomingBuildResult<
-    UpdateIncomingRelationAvailability<AnimeUpdateSurface, AnimeLinkKind>,
-    CoreAnimeMetadata,
-    ScrapedAnimeRelationFacts,
-    AnimeIncomingMediaCandidates
-  > {
+export interface AnimeIncomingBuildResult extends UpdateIncomingBuildResult<
+  UpdateIncomingRelationAvailability<AnimeUpdateSurface, AnimeLinkKind>,
+  CoreAnimeMetadata,
+  ScrapedAnimeRelationFacts,
+  AnimeIncomingMediaCandidates
+> {
   /** Absent means the scrape could not answer episodes; an empty array means none exist. */
   episodes?: AnimeEpisodeInfo[]
 }

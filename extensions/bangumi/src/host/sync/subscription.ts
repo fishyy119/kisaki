@@ -4,7 +4,7 @@ import {
   type Disposable,
   type ExtensionLogger
 } from '@kisaki3/extension-sdk'
-import type { SettingsStore } from '../config/store'
+import type { BangumiSettingsStore } from '../config/schema'
 import type { BangumiMediaScope } from '../../shared/scopes'
 import type { LocalMediaChangeEvent } from '../media/types'
 import type { MediaRegistry } from '../media/registry'
@@ -15,7 +15,7 @@ import type { EpisodeSyncEngine, EpisodeSyncResult } from './episodes'
 import type { SyncQueueStore } from './queue'
 
 export interface SyncSubscriptionDependencies {
-  settingsStore: SettingsStore
+  settingsStore: BangumiSettingsStore
   engine: SyncEngine
   episodeEngine: EpisodeSyncEngine
   mediaRegistry: MediaRegistry

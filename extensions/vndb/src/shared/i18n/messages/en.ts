@@ -14,7 +14,39 @@ export const en = {
     networkFailed: 'The VNDB API network request failed',
     operationCancelled: 'The operation was cancelled',
     baseUrlInvalid: 'Enter an http or https address',
-    idInvalid: ({ value }: { value: string }) => `"${value}" is not a VNDB id`
+    idInvalid: ({ value }: { value: string }) => `"${value}" is not a VNDB id`,
+    listPermissionMissing:
+      'The VNDB token cannot read your list. Create one with the listread and listwrite permissions.',
+    operationRunning: 'A VNDB list operation is already running. Wait for it to finish.'
+  },
+
+  sync: {
+    autoSyncFailedTitle: 'VNDB sync failed',
+    autoSyncFailedFallback: 'The change could not be pushed to VNDB',
+    pushTaskTitle: 'Push library to VNDB list',
+    pushSummary: ({ pushed, skipped, failed }: { pushed: number; skipped: number; failed: number }) =>
+      `Pushed ${pushed}, skipped ${skipped}, failed ${failed}`
+  },
+
+  import: {
+    taskTitle: 'Import VNDB list',
+    phaseRead: 'Reading the VNDB list',
+    phaseApply: 'Applying list entries',
+    itemFailed: ({ id }: { id: string }) => `Importing ${id} failed`,
+    summary: ({
+      created,
+      updated,
+      unchanged,
+      skipped,
+      failed
+    }: {
+      created: number
+      updated: number
+      unchanged: number
+      skipped: number
+      failed: number
+    }) =>
+      `Created ${created}, updated ${updated}, unchanged ${unchanged}, skipped ${skipped}, failed ${failed}`
   },
 
   settings: {
@@ -75,6 +107,40 @@ export const en = {
       reset: 'Restore default settings',
       resetDescription: 'Endpoint and preferences return to their defaults. The token is kept.',
       resetSucceeded: 'Default settings restored'
+    },
+
+    integration: {
+      title: 'List integration',
+      description:
+        'Connects your VNDB list: import it into the library and push local status and score changes back. Requires a token with listread and listwrite.',
+      verify: 'Verify account',
+      verifiedAs: ({ username }: { username: string }) => `Signed in as ${username}`,
+      permissionsLabel: 'List permissions',
+      listRead: 'Read',
+      listWrite: 'Write',
+      permissionGranted: 'Granted',
+      permissionMissing: 'Missing',
+      syncEnabledLabel: 'Push changes automatically',
+      syncEnabledDescription:
+        'Status and score edits on entries with a VNDB id are pushed to your list',
+      pushScoreLabel: 'Include the score',
+      pushScoreDescription: 'Writes the local score as a VNDB vote; an empty score never clears it',
+      pushAll: 'Push all now',
+      importTitle: 'Import list',
+      importDescription:
+        'Writes list status and votes onto matching entries. Creating missing entries scrapes them through the selected profile.',
+      profileLabel: 'Scraper profile',
+      profilePlaceholder: 'Select a profile',
+      updateExistingLabel: 'Update existing entries',
+      createMissingLabel: 'Create missing entries',
+      startImport: 'Import',
+      taskProgress: ({ current, total }: { current: number; total: number }) =>
+        `${current} / ${total}`,
+      taskRunning: 'Running',
+      taskCompleted: 'Completed',
+      taskFailed: 'Failed',
+      taskCancelled: 'Cancelled',
+      cancelTask: 'Cancel'
     }
   }
 }

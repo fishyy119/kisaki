@@ -8,7 +8,11 @@ import type {
 import type { ExternalId } from '@shared/identity'
 import type { CoreCompanyMetadata, Tag } from '@shared/metadata'
 import type { Company } from '@shared/db'
-import type { UpdateIncomingAvailability, UpdateIncomingBuildResult, UpdateResolvedSelection } from '../types'
+import type {
+  UpdateIncomingAvailability,
+  UpdateIncomingBuildResult,
+  UpdateResolvedSelection
+} from '../types'
 
 export interface CompanyIncomingMediaCandidates {
   logoUrls?: string[]

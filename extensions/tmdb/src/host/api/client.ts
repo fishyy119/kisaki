@@ -1,12 +1,14 @@
 import {
   createCancellationError,
+  delay,
   isCancellationError,
+  RateLimiter,
+  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
 import { normalizeTmdbApiError, readRetryAfterMs, TmdbApiError } from './errors'
-import { delay, TmdbRateLimiter } from './limiter'
 import type {
   TmdbCollectionDetail,
   TmdbCompanyDetail,
@@ -32,12 +34,14 @@ import type {
 import type { ApiKeyStore } from '../auth/api-key'
 import type { TmdbSettingsV1 } from '../config/schema'
 import { m } from '../i18n'
-import { TmdbExtensionError, throwIfAborted } from '../utils/errors'
+import { TmdbExtensionError } from '../utils/errors'
 import { omitUndefined } from '../utils/object'
 
 /** Paced well below the burst rate TMDB tolerates for a single client. */
-const RATE_LIMIT_MAX_REQUESTS = 30
-const RATE_LIMIT_WINDOW_MS = 1_000
+const RATE_LIMIT: { maxRequests: number; windowMs: number } = {
+  maxRequests: 30,
+  windowMs: 1_000
+}
 
 type QueryValue = string | number | boolean | undefined
 
@@ -58,7 +62,7 @@ export interface TmdbImageOptions extends TmdbRequestOptions {
 }
 
 export class TmdbClient {
-  private readonly limiter = new TmdbRateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS)
+  private readonly limiter = new RateLimiter(RATE_LIMIT)
 
   constructor(
     private readonly network: NetworkCapability,

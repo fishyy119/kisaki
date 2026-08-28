@@ -10,7 +10,13 @@ import type { ScrapedNovelRelationFacts } from '@shared/scraper'
 import type { CoreNovelMetadata, NovelVolumeInfo, Tag } from '@shared/metadata'
 import type { Novel } from '@shared/db'
 import type { IngestNovelGraph, IngestNovelGraphLinks } from '../../graph'
-import type { CollectionUpdateMode, RelatedEntriesUpdatePlan, UpdateIncomingBuildResult, UpdateIncomingRelationAvailability, UpdateResolvedSelection } from '../types'
+import type {
+  CollectionUpdateMode,
+  RelatedEntriesUpdatePlan,
+  UpdateIncomingBuildResult,
+  UpdateIncomingRelationAvailability,
+  UpdateResolvedSelection
+} from '../types'
 
 /**
  * Link tables a novel update can write.
@@ -26,13 +32,12 @@ export interface NovelIncomingMediaCandidates {
   logoUrls?: string[]
 }
 
-export interface NovelIncomingBuildResult
-  extends UpdateIncomingBuildResult<
-    UpdateIncomingRelationAvailability<NovelUpdateSurface, NovelLinkKind>,
-    CoreNovelMetadata,
-    ScrapedNovelRelationFacts,
-    NovelIncomingMediaCandidates
-  > {
+export interface NovelIncomingBuildResult extends UpdateIncomingBuildResult<
+  UpdateIncomingRelationAvailability<NovelUpdateSurface, NovelLinkKind>,
+  CoreNovelMetadata,
+  ScrapedNovelRelationFacts,
+  NovelIncomingMediaCandidates
+> {
   /** Absent means the scrape could not answer volumes; an empty array means none exist. */
   volumes?: NovelVolumeInfo[]
 }

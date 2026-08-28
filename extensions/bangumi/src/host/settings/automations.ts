@@ -1,7 +1,7 @@
 import { kisaki } from '@kisaki3/extension-sdk'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../jobs/commands'
 import { m } from '../i18n'
-import type { SettingsStore } from '../config/store'
+import type { BangumiSettingsStore } from '../config/schema'
 import type { BangumiAutomationKind, BangumiAutomationState } from '../../shared/settings'
 
 const AUTOMATION_FAILURE_POLICY = {
@@ -32,7 +32,7 @@ export async function resolveAutomationStates(): Promise<readonly BangumiAutomat
 }
 
 export async function createBangumiAutomation(
-  settingsStore: SettingsStore,
+  settingsStore: BangumiSettingsStore,
   kind: BangumiAutomationKind
 ): Promise<void> {
   if (kind === 'auth-refresh') {

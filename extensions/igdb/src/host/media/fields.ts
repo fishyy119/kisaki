@@ -7,7 +7,7 @@
  */
 
 export const GAME_CORE_FIELDS =
-  'id,name,first_release_date,summary,storyline,url,game_type.type,game_status.status,websites,external_games,videos,release_dates,genres,themes,keywords,game_modes,player_perspectives,platforms,language_supports,cover'
+  'id,name,first_release_date,summary,storyline,url,game_type.type,game_status.status,websites,external_games,videos,release_dates,genres,themes,keywords,game_modes,player_perspectives,platforms,language_supports,cover,parent_game,version_parent,dlcs,expansions,standalone_expansions,expanded_games,remakes,remasters,ports,forks'
 
 export const GAME_SEARCH_FIELDS = 'id,name,first_release_date'
 

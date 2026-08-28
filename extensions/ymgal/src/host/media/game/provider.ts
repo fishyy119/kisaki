@@ -23,6 +23,12 @@ export class YmgalGameProvider implements GameScraperProvider {
   public readonly id = YMGAL_SOURCE_ID
   public readonly name = 'YMGal'
   public readonly externalIdSource = YMGAL_SOURCE_ID
+  /**
+   * The open-api game archive carries no tag vocabulary and no related-work
+   * links (verified against the live API: the archive exposes staff,
+   * characters, releases, and websites only), so `tags` and `relatedEntries`
+   * stay undeclared rather than answering empty.
+   */
   public readonly capabilities = [
     'search',
     'info',

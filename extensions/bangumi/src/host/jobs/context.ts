@@ -11,7 +11,7 @@ import {
 import type { BangumiClient } from '../api/client'
 import type { AccountService } from '../auth/account'
 import type { TokenService } from '../auth/token-service'
-import type { SettingsStore } from '../config/store'
+import type { BangumiSettingsStore } from '../config/schema'
 import type { MediaRegistry } from '../media/registry'
 import type { SyncEngine } from '../sync/engine'
 import type { EpisodeSyncEngine } from '../sync/episodes'
@@ -35,7 +35,7 @@ import { m } from '../i18n'
 const RESULT_WARNING_LIMIT = 10
 
 export interface JobRunnerDependencies {
-  settingsStore: SettingsStore
+  settingsStore: BangumiSettingsStore
   client: BangumiClient
   tokenService: TokenService
   accountService: AccountService

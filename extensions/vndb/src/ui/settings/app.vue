@@ -16,6 +16,7 @@ import { m } from './i18n'
 import { host, toErrorMessage } from './rpc'
 import CredentialsSection from './sections/credentials-section.vue'
 import EndpointSection from './sections/endpoint-section.vue'
+import IntegrationSection from './sections/integration-section.vue'
 import PreferencesSection from './sections/preferences-section.vue'
 
 const overview = ref<VndbSettingsOverview | null>(null)
@@ -93,6 +94,8 @@ function reportError(message: string): void {
         @refresh="() => void reload({ keepDraft: isDirty })"
         @error="reportError"
       />
+
+      <IntegrationSection @error="reportError" />
 
       <EndpointSection />
 

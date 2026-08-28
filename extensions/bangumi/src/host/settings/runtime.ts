@@ -1,8 +1,7 @@
-import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import type { ExtensionLogger, OAuthRelayFlow } from '@kisaki3/extension-sdk'
 import type { AccountService } from '../auth/account'
-import type { OAuthFlow } from '../auth/oauth-flow'
 import type { TokenService } from '../auth/token-service'
-import type { SettingsStore } from '../config/store'
+import type { BangumiSettingsStore } from '../config/schema'
 import type { BangumiJobEvents } from '../jobs/events'
 import type { JobRunner } from '../jobs/runner'
 import type { MediaRegistry } from '../media/registry'
@@ -11,9 +10,9 @@ import type { SyncStateStore } from '../sync/fingerprint'
 import type { SyncQueueStore } from '../sync/queue'
 
 export interface BangumiSettingsRuntime {
-  settingsStore: SettingsStore
+  settingsStore: BangumiSettingsStore
   accountService: AccountService
-  oauthFlow: OAuthFlow
+  oauthFlow: OAuthRelayFlow
   tokenService: TokenService
   jobRunner: JobRunner
   jobEvents: BangumiJobEvents

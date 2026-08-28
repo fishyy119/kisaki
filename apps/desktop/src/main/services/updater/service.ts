@@ -15,13 +15,7 @@ const log = createLogger('Updater')
 
 export class UpdaterService implements INonDomainService<'updater'> {
   readonly id = 'updater'
-  readonly deps = [
-    'db',
-    'i18n',
-    'ipc',
-    'network',
-    'task-run'
-  ] as const
+  readonly deps = ['db', 'i18n', 'ipc', 'network', 'task-run'] as const
 
   updates!: AppUpdateManager
   changelog!: UpdaterChangelogProvider

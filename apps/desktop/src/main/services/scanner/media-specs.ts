@@ -56,10 +56,7 @@ export interface ScannerHoldingsSyncSpec {
 
 export interface ScannerMediaSpec {
   /** Existing entry already claiming this directory, if any. */
-  findExistingByPath(
-    deps: ScannerMediaDeps,
-    path: string
-  ): { id: string; name: string } | undefined
+  findExistingByPath(deps: ScannerMediaDeps, path: string): { id: string; name: string } | undefined
   addDirect(
     deps: ScannerMediaDeps,
     match: ScannerEntityMatch,
@@ -103,8 +100,7 @@ export const SCANNER_MEDIA_SPECS = {
     }
   },
   anime: {
-    findExistingByPath: (deps, path) =>
-      deps.dbService.entityFinder.findExisting('anime', { path }),
+    findExistingByPath: (deps, path) => deps.dbService.entityFinder.findExisting('anime', { path }),
     addDirect: async (deps, match, options) => {
       const result = await deps.ingestService.add.anime.addDirect(toSeed(match), {
         animeDirPath: options.entityPath,
@@ -129,8 +125,7 @@ export const SCANNER_MEDIA_SPECS = {
     }
   },
   comic: {
-    findExistingByPath: (deps, path) =>
-      deps.dbService.entityFinder.findExisting('comic', { path }),
+    findExistingByPath: (deps, path) => deps.dbService.entityFinder.findExisting('comic', { path }),
     addDirect: async (deps, match, options) => {
       const result = await deps.ingestService.add.comic.addDirect(toSeed(match), {
         comicDirPath: options.entityPath,
@@ -155,8 +150,7 @@ export const SCANNER_MEDIA_SPECS = {
     }
   },
   novel: {
-    findExistingByPath: (deps, path) =>
-      deps.dbService.entityFinder.findExisting('novel', { path }),
+    findExistingByPath: (deps, path) => deps.dbService.entityFinder.findExisting('novel', { path }),
     addDirect: async (deps, match, options) => {
       const result = await deps.ingestService.add.novel.addDirect(toSeed(match), {
         novelDirPath: options.entityPath,

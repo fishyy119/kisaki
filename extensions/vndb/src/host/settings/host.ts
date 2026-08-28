@@ -1,9 +1,13 @@
 import { kisaki } from '@kisaki3/extension-sdk'
 import type {
+  VndbAccountVerification,
   VndbCredentialState,
+  VndbGameProfileOption,
+  VndbImportRequest,
   VndbSettingsFormState,
   VndbSettingsHostFunctions,
-  VndbSettingsOverview
+  VndbSettingsOverview,
+  VndbTaskStateView
 } from '../../shared/settings'
 import { m } from '../i18n'
 import { VndbExtensionError, toSafeErrorLog } from '../utils/errors'
@@ -61,6 +65,47 @@ export function createVndbSettingsHostFunctions(
       }
 
       await notifySuccess(runtime, m().ui.credentials.testSucceeded)
+    },
+
+    async verifyAccount(): Promise<VndbAccountVerification> {
+      try {
+        const auth = await runtime.client.getAuthInfo({ signal: runtime.abortSignal })
+        const permissions = auth.permissions ?? []
+        return {
+          userId: auth.id,
+          username: auth.username,
+          listRead: permissions.includes('listread'),
+          listWrite: permissions.includes('listwrite')
+        }
+      } catch (error) {
+        runtime.logger.warn('VNDB account verification failed.', toSafeErrorLog(error))
+        throw error
+      }
+    },
+
+    async listGameProfiles(): Promise<VndbGameProfileOption[]> {
+      const profiles = await kisaki.scrapers.profiles.list({ mediaType: 'game' })
+      return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
+    },
+
+    async startImport(request: VndbImportRequest): Promise<{ runId: string }> {
+      return runtime.tasks.startImport({
+        updateExisting: request.updateExisting,
+        createMissing: request.createMissing,
+        ...(request.profileId ? { profileId: request.profileId } : {})
+      })
+    },
+
+    async startPushAll(): Promise<{ runId: string }> {
+      return runtime.tasks.startPushAll()
+    },
+
+    async getTaskState(runId: string): Promise<VndbTaskStateView | null> {
+      return runtime.tasks.getTaskState(runId)
+    },
+
+    async cancelTask(runId: string): Promise<boolean> {
+      return runtime.tasks.cancelTask(runId)
     },
 
     async resetSettings(): Promise<void> {

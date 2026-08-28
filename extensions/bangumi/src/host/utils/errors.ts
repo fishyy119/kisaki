@@ -1,4 +1,5 @@
-import { createCancellationError } from '@kisaki3/extension-sdk'
+import type { OAuthRelayFailure } from '@kisaki3/extension-sdk'
+import { m } from '../i18n'
 
 export type BangumiErrorCode =
   | 'auth_required'
@@ -25,13 +26,16 @@ export class BangumiExtensionError extends Error {
   }
 }
 
-/**
- * Cancellations must carry the host's shared `cancelled` code: these errors
- * cross the RPC boundary, and the host only recognizes coded cancellations
- * when deciding to abandon (rather than fail) the surrounding operation.
- */
-export function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw createCancellationError('The operation was cancelled.')
+/** Maps relay OAuth failures onto Bangumi error codes and localized copy. */
+export function createRelayError(failure: OAuthRelayFailure): BangumiExtensionError {
+  switch (failure) {
+    case 'relay_unavailable':
+      return new BangumiExtensionError('relay_unavailable', m().errors.relayUnavailable)
+    case 'session_expired':
+      return new BangumiExtensionError('auth_expired', m().errors.loginSessionExpired)
+    case 'callback_invalid':
+      return new BangumiExtensionError('auth_cancelled', m().errors.loginCallbackInvalid)
+    case 'no_pending_login':
+      return new BangumiExtensionError('auth_cancelled', m().errors.noPendingLogin)
   }
 }

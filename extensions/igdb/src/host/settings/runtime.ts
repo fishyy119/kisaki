@@ -1,10 +1,10 @@
-import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import type { ExtensionLogger, SettingsStore } from '@kisaki3/extension-sdk'
 import type { IgdbClient } from '../api/client'
 import type { CredentialStore } from '../auth/credentials'
-import type { SettingsStore } from '../config/store'
+import type { IgdbSettingsV1 } from '../config/schema'
 
 export interface IgdbSettingsRuntime {
-  settingsStore: SettingsStore
+  settingsStore: SettingsStore<IgdbSettingsV1>
   credentials: CredentialStore
   client: IgdbClient
   logger: ExtensionLogger

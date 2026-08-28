@@ -1,7 +1,8 @@
-import { defineExtension, kisaki } from '@kisaki3/extension-sdk'
+import { defineExtension, kisaki, SettingsStore } from '@kisaki3/extension-sdk'
 import { VndbClient } from './api/client'
 import { TokenStore } from './auth/token'
-import { SettingsStore } from './config/store'
+import { createDefaultVndbSettings } from './config/defaults'
+import { normalizeVndbSettings } from './config/schema'
 import { setHostUiLocale } from './i18n'
 import { VndbCharacterProvider } from './media/character/provider'
 import { VndbCompanyProvider } from './media/company/provider'
@@ -9,6 +10,12 @@ import { VndbGameProvider } from './media/game/provider'
 import { VndbPersonProvider } from './media/person/provider'
 import type { VndbRuntime } from './media/runtime'
 import { registerVndbSettingsUi } from './settings'
+import { SyncEngine } from './sync/engine'
+import { SyncStateStore } from './sync/state'
+import { SyncSubscription } from './sync/subscription'
+import { SyncSuppressor } from './sync/suppressor'
+import { VndbTasks } from './tasks'
+import { VNDB_STORAGE_KEYS } from './utils/ids'
 
 export default defineExtension({
   async activate(context) {
@@ -17,12 +24,31 @@ export default defineExtension({
       setHostUiLocale(effective)
     })
 
-    const settingsStore = new SettingsStore(context.storage)
+    const settingsStore = new SettingsStore(context.storage, VNDB_STORAGE_KEYS.settings, {
+      normalize: normalizeVndbSettings,
+      createDefault: createDefaultVndbSettings
+    })
     const tokens = new TokenStore(context.secrets)
     await settingsStore.get()
 
     const client = new VndbClient(kisaki.network, tokens, () => settingsStore.get(), context.logger)
     const runtime: VndbRuntime = { client, getSettings: () => settingsStore.get() }
+
+    const syncStateStore = new SyncStateStore(context.storage)
+    const syncSuppressor = new SyncSuppressor()
+    const syncEngine = new SyncEngine({
+      settingsStore,
+      client,
+      stateStore: syncStateStore,
+      suppressor: syncSuppressor,
+      logger: context.logger
+    })
+    const tasks = new VndbTasks({
+      client,
+      engine: syncEngine,
+      suppressor: syncSuppressor,
+      logger: context.logger
+    })
 
     context.subscriptions.add(
       context.contributions.scraperProviders.game.register(new VndbGameProvider(runtime))
@@ -36,11 +62,20 @@ export default defineExtension({
     context.subscriptions.add(
       context.contributions.scraperProviders.company.register(new VndbCompanyProvider(runtime))
     )
+    context.subscriptions.add(
+      new SyncSubscription({
+        hooks: context.hooks,
+        settingsStore,
+        engine: syncEngine,
+        logger: context.logger
+      }).start()
+    )
 
     registerVndbSettingsUi(context, {
       settingsStore,
       tokens,
       client,
+      tasks,
       logger: context.logger,
       abortSignal: context.abortSignal
     })

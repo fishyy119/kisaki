@@ -6,11 +6,7 @@ import type {
   LibraryScoreChange
 } from '@shared/library'
 import type { EntityProjection } from '../types'
-import {
-  normalizeEntityValue,
-  normalizeNullableString,
-  nullableNumber
-} from '../normalization'
+import { normalizeEntityValue, normalizeNullableString, nullableNumber } from '../normalization'
 import { createPartialSnapshot } from '../snapshot'
 
 export function projectEntityChanges(

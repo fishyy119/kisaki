@@ -12,6 +12,40 @@ export interface VndbQueryRequest {
   reverse?: boolean
   results?: number
   page?: number
+  /** User id (`u...`); required by `POST /ulist`. */
+  user?: string
+}
+
+export interface VndbAuthInfo {
+  id: string
+  username: string
+  permissions?: string[] | null
+}
+
+export interface VndbUserListLabel {
+  id: number
+  label: string
+}
+
+export interface VndbUserListItem {
+  id: string
+  vote?: number | null
+  notes?: string | null
+  started?: string | null
+  finished?: string | null
+  labels?: VndbUserListLabel[] | null
+  vn?: {
+    title?: string | null
+    alttitle?: string | null
+    released?: string | null
+  } | null
+}
+
+/** PATCH /ulist body; explicit `null` clears the remote value. */
+export interface VndbUserListPatch {
+  vote?: number | null
+  labels_set?: number[]
+  labels_unset?: number[]
 }
 
 export interface VndbQueryResponse<T> {

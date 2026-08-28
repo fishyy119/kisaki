@@ -10,7 +10,13 @@ import type { ScrapedComicRelationFacts } from '@shared/scraper'
 import type { ComicChapterInfo, CoreComicMetadata, Tag } from '@shared/metadata'
 import type { Comic } from '@shared/db'
 import type { IngestComicGraph, IngestComicGraphLinks } from '../../graph'
-import type { CollectionUpdateMode, RelatedEntriesUpdatePlan, UpdateIncomingBuildResult, UpdateIncomingRelationAvailability, UpdateResolvedSelection } from '../types'
+import type {
+  CollectionUpdateMode,
+  RelatedEntriesUpdatePlan,
+  UpdateIncomingBuildResult,
+  UpdateIncomingRelationAvailability,
+  UpdateResolvedSelection
+} from '../types'
 
 /**
  * Link tables a comic update can write.
@@ -26,13 +32,12 @@ export interface ComicIncomingMediaCandidates {
   logoUrls?: string[]
 }
 
-export interface ComicIncomingBuildResult
-  extends UpdateIncomingBuildResult<
-    UpdateIncomingRelationAvailability<ComicUpdateSurface, ComicLinkKind>,
-    CoreComicMetadata,
-    ScrapedComicRelationFacts,
-    ComicIncomingMediaCandidates
-  > {
+export interface ComicIncomingBuildResult extends UpdateIncomingBuildResult<
+  UpdateIncomingRelationAvailability<ComicUpdateSurface, ComicLinkKind>,
+  CoreComicMetadata,
+  ScrapedComicRelationFacts,
+  ComicIncomingMediaCandidates
+> {
   /** Absent means the scrape could not answer units; an empty array means none exist. */
   chapters?: ComicChapterInfo[]
 }

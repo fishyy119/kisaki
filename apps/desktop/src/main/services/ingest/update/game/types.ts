@@ -10,7 +10,13 @@ import type { ScrapedGameRelationFacts } from '@shared/scraper'
 import type { CoreGameMetadata, Tag } from '@shared/metadata'
 import type { Game } from '@shared/db'
 import type { IngestGameGraph, IngestGameGraphLinks } from '../../graph'
-import type { CollectionUpdateMode, RelatedEntriesUpdatePlan, UpdateIncomingBuildResult, UpdateIncomingRelationAvailability, UpdateResolvedSelection } from '../types'
+import type {
+  CollectionUpdateMode,
+  RelatedEntriesUpdatePlan,
+  UpdateIncomingBuildResult,
+  UpdateIncomingRelationAvailability,
+  UpdateResolvedSelection
+} from '../types'
 
 /**
  * Link tables a game update can write.

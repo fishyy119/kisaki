@@ -1,6 +1,13 @@
-import { LIBRARY_MEDIA_STATUSES, type LibraryMediaStatus } from '@kisaki3/extension-sdk'
+import {
+  LIBRARY_MEDIA_STATUSES,
+  type LibraryMediaStatus,
+  type SettingsStore
+} from '@kisaki3/extension-sdk'
 import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
 import { BANGUMI_MEDIA_SCOPES, type BangumiMediaScope } from '../../shared/scopes'
+
+/** Store shape every Bangumi submodule reads settings through. */
+export type BangumiSettingsStore = SettingsStore<BangumiSettingsV1>
 
 export type BangumiCollectionType = 1 | 2 | 3 | 4 | 5
 export type BangumiStatusMappingValue = BangumiCollectionType | 'skip'
@@ -62,10 +69,6 @@ export function normalizeBangumiSettings(value: unknown): BangumiSettingsV1 {
     autoSync: normalizeAutoSyncSettings(input?.autoSync, defaults.autoSync),
     client: normalizeClientSettings(input?.client, defaults.client)
   }
-}
-
-export function isBangumiSettingsV1(value: unknown): value is BangumiSettingsV1 {
-  return settingsEqual(value, normalizeBangumiSettings(value))
 }
 
 function normalizeAuthSettings(
@@ -214,10 +217,6 @@ function normalizeNumber(
   }
 
   return Math.min(options.max, Math.max(options.min, value))
-}
-
-function settingsEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right)
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {

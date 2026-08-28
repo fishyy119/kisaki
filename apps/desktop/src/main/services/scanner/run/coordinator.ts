@@ -57,10 +57,7 @@ export class ScannerRunCoordinator {
    * synchronous load-and-register leaves no await between the duplicate check
    * and the reservation.
    */
-  startScanner(
-    scannerId: string,
-    initiator: TaskRunInitiator = { type: 'user' }
-  ): ScannerRunStart {
+  startScanner(scannerId: string, initiator: TaskRunInitiator = { type: 'user' }): ScannerRunStart {
     if (this.activeRuns.has(scannerId)) {
       throw new Error(`Scanner ${scannerId} is already running`)
     }

@@ -1,18 +1,17 @@
 <!--
   ScraperProfilesFormDialog
   Dialog for managing all scraper profiles.
-  Follows name-extraction-rules-dialog pattern:
-  - Local state array for profiles
-  - Edit dialog for each profile
-  - Footer: Add + Preset (left), Cancel + Save (right)
+  - Local state array for profiles, saved as one batch
+  - Unified creation dialog (recommended scene / single provider / blank)
+  - Recipe update suggestions: profiles created from a recipe show a badge
+    when the current recommendation differs from their configuration
 -->
 <script setup lang="ts">
 import type { ScraperProfile } from '@shared/db'
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES } from '@shared/common'
 
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -20,7 +19,6 @@ import { db } from '@renderer/core/db'
 import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { ipcManager } from '@renderer/core/ipc'
 import { scanners, scraperProfiles } from '@shared/db'
-import { createSlotConfigs } from '@shared/scraper'
 import {
   Dialog,
   DialogContent,
@@ -36,12 +34,17 @@ import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dial
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { getEntityIcon } from '@renderer/utils/format'
 import {
-  ScraperPresetFormDialog,
+  computeRecipeFingerprint,
+  getRecipeById,
   getScraperProviderDisplay,
+  materializeRecipe,
+  resolveRecipeLanguageGroup,
+  ScraperNewProfileDialog,
+  type MaterializedRecipe,
   type ScraperProvidersByType
 } from '@renderer/components/shared/scraper'
 import ScraperProfilesItemFormDialog from './profile-item-form-dialog.vue'
-import ScraperNewProfileDialog from './new-profile-dialog.vue'
+import ScraperRecipeUpdateDialog from './recipe-update-dialog.vue'
 
 const open = defineModel<boolean>('open', { required: true })
 
@@ -101,11 +104,14 @@ const profiles = ref<ScraperProfile[]>([])
 const initialProfilesRef = ref<ScraperProfile[]>([])
 const editingProfile = ref<ScraperProfile | null>(null)
 const isAddMode = ref(false)
-const isPresetDialogOpen = ref(false)
-const isProviderSelectOpen = ref(false)
+const isCreateDialogOpen = ref(false)
 const deleteProfileId = ref<string | null>(null)
 const isSaving = ref(false)
 const editDialogOpen = ref(false)
+const updateCandidate = ref<{ profile: ScraperProfile; recommendation: MaterializedRecipe } | null>(
+  null
+)
+const updateDialogOpen = ref(false)
 
 const providersByType = computed<ScraperProvidersByType>(() => {
   return (
@@ -132,6 +138,45 @@ watch(
   },
   { immediate: true }
 )
+
+/**
+ * Current recommendation per recipe-created profile, when it differs from the
+ * profile's configuration and the user has not dismissed this exact
+ * recommendation. Manual edits count as differences on purpose: the badge
+ * then offers the way back to the curated ranking.
+ */
+const updateSuggestions = computed(() => {
+  const suggestions = new Map<string, MaterializedRecipe>()
+
+  for (const profile of profiles.value) {
+    if (!profile.recipeId) continue
+    const recipe = getRecipeById(profile.recipeId)
+    if (!recipe) continue
+
+    const group = resolveRecipeLanguageGroup(profile.defaultLocale ?? 'en')
+    const recommendation = materializeRecipe(
+      recipe,
+      group,
+      providersByType.value[profile.mediaType]
+    )
+    if (!recommendation) continue
+
+    const currentFingerprint = computeRecipeFingerprint({
+      searchProviderId: profile.searchProviderId,
+      defaultLocale: profile.defaultLocale,
+      slotConfigs: profile.slotConfigs
+    })
+
+    if (
+      recommendation.fingerprint !== currentFingerprint &&
+      recommendation.fingerprint !== profile.dismissedRecipeFingerprint
+    ) {
+      suggestions.set(profile.id, recommendation)
+    }
+  }
+
+  return suggestions
+})
 
 // Profiles grouped into media-type sections, in registry order; empty types are dropped.
 const profileGroups = computed(() =>
@@ -177,30 +222,15 @@ const deleteConsequence = computed(() => {
     : undefined
 })
 
-function handleAddNew() {
-  isProviderSelectOpen.value = true
-}
-
-function handleProviderSelected(mediaType: ContentEntityType, providerId: string) {
-  // Find the provider to get its capabilities
-  const provider = data.value?.providersByType[mediaType].find((p) => p.id === providerId)
-  const capabilities = provider?.capabilities ?? []
-  const newProfile: ScraperProfile = {
-    id: nanoid(),
-    name: '',
-    description: null,
-    mediaType,
-    sourcePresetId: null,
-    searchProviderId: providerId,
-    defaultLocale: null,
-    slotConfigs: createSlotConfigs(mediaType, providerId, capabilities),
-    order: profiles.value.length,
-    createdAt: new Date(),
-    updatedAt: new Date()
+function handleProfileCreated(profile: ScraperProfile, openEditor: boolean) {
+  const positioned = { ...profile, order: profiles.value.length }
+  if (openEditor) {
+    editingProfile.value = positioned
+    isAddMode.value = true
+    editDialogOpen.value = true
+    return
   }
-  editingProfile.value = newProfile
-  isAddMode.value = true
-  editDialogOpen.value = true
+  profiles.value = [...profiles.value, positioned]
 }
 
 function handleEdit(profile: ScraperProfile) {
@@ -231,6 +261,57 @@ watch(
   }
 )
 
+watch(
+  () => updateDialogOpen.value,
+  (isOpen) => {
+    if (!isOpen) {
+      updateCandidate.value = null
+    }
+  }
+)
+
+function handleShowUpdate(profile: ScraperProfile) {
+  const recommendation = updateSuggestions.value.get(profile.id)
+  if (!recommendation) return
+  updateCandidate.value = { profile, recommendation }
+  updateDialogOpen.value = true
+}
+
+/** Applies the recommendation onto the profile; the batch save persists it. */
+function handleApplyUpdate() {
+  const candidate = updateCandidate.value
+  if (!candidate) return
+
+  profiles.value = profiles.value.map((profile) =>
+    profile.id === candidate.profile.id
+      ? {
+          ...profile,
+          searchProviderId: candidate.recommendation.searchProviderId,
+          defaultLocale: candidate.recommendation.defaultLocale,
+          slotConfigs: candidate.recommendation.slotConfigs,
+          dismissedRecipeFingerprint: null,
+          updatedAt: new Date()
+        }
+      : profile
+  )
+}
+
+/** Hides this exact recommendation; a changed one will surface again. */
+function handleDismissUpdate() {
+  const candidate = updateCandidate.value
+  if (!candidate) return
+
+  profiles.value = profiles.value.map((profile) =>
+    profile.id === candidate.profile.id
+      ? {
+          ...profile,
+          dismissedRecipeFingerprint: candidate.recommendation.fingerprint,
+          updatedAt: new Date()
+        }
+      : profile
+  )
+}
+
 function handleDeleteRequest(profileId: string) {
   deleteProfileId.value = profileId
 }
@@ -253,10 +334,6 @@ function handleMoveDown(index: number) {
   const newProfiles = [...profiles.value]
   ;[newProfiles[index], newProfiles[index + 1]] = [newProfiles[index + 1], newProfiles[index]]
   profiles.value = newProfiles
-}
-
-function handleAddPresets(presetProfiles: ScraperProfile[]) {
-  profiles.value = [...profiles.value, ...presetProfiles]
 }
 
 async function handleSave() {
@@ -288,6 +365,8 @@ async function handleSave() {
             name: profile.name,
             description: profile.description,
             mediaType: profile.mediaType,
+            recipeId: profile.recipeId,
+            dismissedRecipeFingerprint: profile.dismissedRecipeFingerprint,
             searchProviderId: profile.searchProviderId,
             defaultLocale: profile.defaultLocale,
             slotConfigs: profile.slotConfigs,
@@ -365,8 +444,27 @@ function withProviderDisplay(list: ScraperProfile[]) {
                   :key="profile.id"
                   :icon="getEntityIcon(profile.mediaType)"
                 >
-                  <div class="text-sm font-medium truncate">
-                    {{ profile.name || m.scraper.profiles.unnamed }}
+                  <div class="flex min-w-0 items-center gap-1.5">
+                    <span class="text-sm font-medium truncate">
+                      {{ profile.name || m.scraper.profiles.unnamed }}
+                    </span>
+                    <button
+                      v-if="updateSuggestions.has(profile.id)"
+                      type="button"
+                      class="shrink-0"
+                      @click="handleShowUpdate(profile)"
+                    >
+                      <Badge
+                        variant="secondary"
+                        class="px-1 py-0 cursor-pointer"
+                      >
+                        <Icon
+                          icon="icon-[mdi--lightbulb-outline]"
+                          class="size-3 mr-0.5"
+                        />
+                        {{ m.scraper.recipeUpdate.badge }}
+                      </Badge>
+                    </button>
                   </div>
                   <div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                     <!-- The raw provider id carries the extension namespace, so
@@ -397,30 +495,17 @@ function withProviderDisplay(list: ScraperProfile[]) {
           </div>
         </DialogBody>
         <DialogFooter class="flex justify-between">
-          <div class="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              @click="handleAddNew"
-            >
-              <Icon
-                icon="icon-[mdi--plus]"
-                class="size-4 mr-1"
-              />
-              {{ m.scraper.profiles.addProfile }}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              @click="isPresetDialogOpen = true"
-            >
-              <Icon
-                icon="icon-[mdi--flash-outline]"
-                class="size-4 mr-1"
-              />
-              {{ m.scraper.profiles.choosePreset }}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            @click="isCreateDialogOpen = true"
+          >
+            <Icon
+              icon="icon-[mdi--plus]"
+              class="size-4 mr-1"
+            />
+            {{ m.scraper.profiles.addProfile }}
+          </Button>
           <div class="flex gap-2">
             <Button
               type="button"
@@ -452,11 +537,22 @@ function withProviderDisplay(list: ScraperProfile[]) {
     :on-save="handleProfileSave"
   />
 
-  <!-- Preset Dialog -->
-  <ScraperPresetFormDialog
-    v-if="isPresetDialogOpen"
-    v-model:open="isPresetDialogOpen"
-    :on-add="handleAddPresets"
+  <!-- Unified creation dialog -->
+  <ScraperNewProfileDialog
+    v-if="isCreateDialogOpen"
+    v-model:open="isCreateDialogOpen"
+    @create="handleProfileCreated"
+  />
+
+  <!-- Recipe update suggestion -->
+  <ScraperRecipeUpdateDialog
+    v-if="updateCandidate"
+    v-model:open="updateDialogOpen"
+    :profile="updateCandidate.profile"
+    :recommendation="updateCandidate.recommendation"
+    :providers="providersByType[updateCandidate.profile.mediaType]"
+    @apply="handleApplyUpdate"
+    @dismiss="handleDismissUpdate"
   />
 
   <!-- Delete Confirmation Dialog -->
@@ -468,13 +564,5 @@ function withProviderDisplay(list: ScraperProfile[]) {
     :consequence="deleteConsequence"
     mode="remove"
     @confirm="handleDeleteConfirm"
-  />
-
-  <!-- New Profile Dialog -->
-  <ScraperNewProfileDialog
-    v-if="isProviderSelectOpen"
-    v-model:open="isProviderSelectOpen"
-    :providers-by-type="providersByType"
-    @select="handleProviderSelected"
   />
 </template>

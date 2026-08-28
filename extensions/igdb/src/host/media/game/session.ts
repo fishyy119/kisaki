@@ -4,14 +4,21 @@ import type {
   GameScraperSession,
   GameScraperSlot,
   GameSessionResultMap,
+  LibraryMediaRelationType,
   ScrapedEntityIdentity,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGameInfo,
+  ScrapedRelatedEntryFact,
   ScrapedTag
 } from '@kisaki3/extension-sdk'
 import type { IgdbClient } from '../../api/client'
-import { IGDB_BACKDROP_LIMIT, IGDB_COVER_LIMIT, IGDB_KEYWORD_LIMIT } from '../../utils/constants'
+import {
+  IGDB_BACKDROP_LIMIT,
+  IGDB_COVER_LIMIT,
+  IGDB_KEYWORD_LIMIT,
+  IGDB_SOURCE_ID
+} from '../../utils/constants'
 import { omitUndefined } from '../../utils/object'
 import { buildCompanyFacts, toCompanyMetadata } from '../satellites'
 import { resolveReleaseDate } from '../format/dates'
@@ -64,8 +71,8 @@ export function createIgdbGameSession(
 
 /**
  * Slots IGDB cannot answer are omitted rather than returned empty: the source
- * models no staff credits, no game-to-game relations, and no logos or icons,
- * so an empty answer would let the host clear what another provider supplied.
+ * models no staff credits and no logos or icons, so an empty answer would let
+ * the host clear what another provider supplied.
  */
 function loadSlot(slot: GameScraperSlot, loaders: IgdbGameLoaders): Promise<unknown> {
   switch (slot) {
@@ -77,12 +84,13 @@ function loadSlot(slot: GameScraperSlot, loaders: IgdbGameLoaders): Promise<unkn
       return buildCharacters(loaders)
     case 'companies':
       return buildCompanies(loaders)
+    case 'relatedEntries':
+      return buildRelatedEntries(loaders)
     case 'covers':
       return buildCovers(loaders)
     case 'backdrops':
       return buildBackdrops(loaders)
     case 'persons':
-    case 'relatedEntries':
     case 'logos':
     case 'icons':
       return Promise.resolve(undefined)
@@ -311,6 +319,44 @@ function mapCompanyRelations(entry: {
   }
 
   return relations.length > 0 ? relations : [{ role: 'other' }]
+}
+
+/**
+ * Direct pairwise relations only. `similar_games` is an algorithmic
+ * recommendation and franchise/collection membership is a grouping, not a
+ * relation fact between two entries, so neither is contributed.
+ */
+async function buildRelatedEntries(loaders: IgdbGameLoaders): Promise<ScrapedRelatedEntryFact[]> {
+  const game = await loaders.getGame()
+
+  const facts: ScrapedRelatedEntryFact[] = []
+  const push = (
+    ids: readonly (number | null | undefined)[] | number | null | undefined,
+    type: LibraryMediaRelationType,
+    note?: string
+  ): void => {
+    const list = typeof ids === 'number' ? [ids] : (ids ?? [])
+    for (const id of list) {
+      if (typeof id === 'number' && id !== game.id) {
+        facts.push(
+          omitUndefined({ mediaType: 'game' as const, source: IGDB_SOURCE_ID, externalId: String(id), type, note })
+        )
+      }
+    }
+  }
+
+  push(game.parent_game, 'parentStory')
+  push(game.expanded_games, 'parentStory', 'Expands')
+  push(game.version_parent, 'alternative', 'Edition of')
+  push(game.dlcs, 'sideStory', 'DLC')
+  push(game.expansions, 'sideStory', 'Expansion')
+  push(game.standalone_expansions, 'sideStory', 'Standalone expansion')
+  push(game.remakes, 'alternative', 'Remake')
+  push(game.remasters, 'alternative', 'Remaster')
+  push(game.ports, 'alternative', 'Port')
+  push(game.forks, 'alternative', 'Fork')
+
+  return facts
 }
 
 async function buildCovers(loaders: IgdbGameLoaders): Promise<string[]> {

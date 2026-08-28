@@ -1,7 +1,8 @@
-import { defineExtension, kisaki } from '@kisaki3/extension-sdk'
+import { defineExtension, kisaki, SettingsStore } from '@kisaki3/extension-sdk'
 import { YmgalClient } from './api/client'
 import { CredentialStore } from './auth/credentials'
-import { SettingsStore } from './config/store'
+import { createDefaultYmgalSettings } from './config/defaults'
+import { normalizeYmgalSettings } from './config/schema'
 import { setHostUiLocale } from './i18n'
 import { YmgalCharacterProvider } from './media/character/provider'
 import { YmgalCompanyProvider } from './media/company/provider'
@@ -9,6 +10,7 @@ import { YmgalGameProvider } from './media/game/provider'
 import { YmgalPersonProvider } from './media/person/provider'
 import type { YmgalRuntime } from './media/runtime'
 import { registerYmgalSettingsUi } from './settings'
+import { YMGAL_STORAGE_KEYS } from './utils/ids'
 
 export default defineExtension({
   async activate(context) {
@@ -17,7 +19,10 @@ export default defineExtension({
       setHostUiLocale(effective)
     })
 
-    const settingsStore = new SettingsStore(context.storage)
+    const settingsStore = new SettingsStore(context.storage, YMGAL_STORAGE_KEYS.settings, {
+      normalize: normalizeYmgalSettings,
+      createDefault: createDefaultYmgalSettings
+    })
     const credentials = new CredentialStore(context.secrets)
     await settingsStore.get()
 

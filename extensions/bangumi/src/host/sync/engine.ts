@@ -5,7 +5,7 @@ import type { BangumiCollectionPatch, BangumiUserCollection } from '../api/types
 import type { BangumiMediaScope } from '../../shared/scopes'
 import type { LocalMediaItem } from '../media/types'
 import type { MediaRegistry } from '../media/registry'
-import type { SettingsStore } from '../config/store'
+import type { BangumiSettingsStore } from '../config/schema'
 import {
   createBangumiSubjectRef,
   readBangumiSubjectIdFromExternalIds
@@ -57,7 +57,7 @@ export interface SyncItemOptions extends SyncMappingOverrides {
 }
 
 export interface SyncEngineDependencies {
-  settingsStore: SettingsStore
+  settingsStore: BangumiSettingsStore
   client: BangumiClient
   mediaRegistry: MediaRegistry
   stateStore: SyncStateStore

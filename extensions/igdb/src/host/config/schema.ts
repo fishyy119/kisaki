@@ -44,10 +44,6 @@ export function normalizeIgdbSettings(value: unknown): IgdbSettingsV1 {
   }
 }
 
-export function isIgdbSettingsV1(value: unknown): value is IgdbSettingsV1 {
-  return JSON.stringify(value) === JSON.stringify(normalizeIgdbSettings(value))
-}
-
 function normalizeHttpUrl(value: unknown, fallback: string): string {
   if (typeof value !== 'string') {
     return fallback

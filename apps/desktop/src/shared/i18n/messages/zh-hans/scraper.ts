@@ -12,25 +12,71 @@ export const scraper = {
     empty: '暂无配置',
     none: '不使用刮削配置'
   },
-  presetDialog: {
-    title: '选择预设配置',
-    empty: '暂无可用预设',
-    searchProvider: ({ id }: { id: string }) => `搜索：${id}`,
-    addWithCount: ({ count }: { count: number }) => `添加（${count}）`
-  },
-  presets: {
-    visualNovel: {
+  recipes: {
+    gameVisualNovel: {
       name: '视觉小说',
-      description: '适合获取视觉小说的中文元数据'
+      description: '以 VNDB 目录为主干，中文事实与美术围绕补齐'
     },
-    videoGame: {
+    gameVideoGame: {
       name: '电子游戏',
-      description: '适合电子游戏的通用预设'
+      description: '覆盖面最广的游戏元数据，全部美术槽位由 SteamGridDB 领跑'
     },
     anime: {
-      name: '动漫',
-      description: '以 Bangumi 元数据为主，由 TMDB 补齐图片（TMDB 需自备 API Key）'
+      name: '动画',
+      description: '按季拆分的动画条目，包含剧集、声优与完整美术'
+    },
+    comic: {
+      name: '漫画',
+      description: '漫画元数据，逐卷封面来自 MangaDex'
+    },
+    novelLightNovel: {
+      name: '轻小说',
+      description: '轻小说元数据，包含分卷、角色与封面'
+    },
+    novelFiction: {
+      name: '通俗小说',
+      description: '通用书目数据，自带跨源标识并按 ISBN 对齐'
+    },
+    person: {
+      name: '人物',
+      description: '工作人员、作者与声优，含肖像'
+    },
+    company: {
+      name: '公司',
+      description: '工作室、出版社与品牌，含 Logo'
+    },
+    character: {
+      name: '角色',
+      description: '角色资料，含立绘与声优出演'
     }
+  },
+  newProfile: {
+    pathTitle: '创建配置',
+    confirmTitle: '确认新配置',
+    paths: {
+      recipes: '推荐场景',
+      provider: '单一数据源',
+      blank: '空白'
+    },
+    recipesHint: '按场景策展的推荐组合，提供者与排序随所选内容语言变化',
+    blankHint: '选择搜索源，所有槽位从空白开始',
+    providerMissing: '未安装',
+    recipeUnavailable: '该场景当前没有可用的搜索源',
+    noRecipes: '该媒体类型暂无推荐场景',
+    previewTitle: '生成的槽位',
+    previewEmpty: '当前提供者无法填充任何槽位'
+  },
+  recipeUpdate: {
+    badge: '有更新建议',
+    title: '推荐配置已变化',
+    hint: '该场景的当前推荐与此配置不同。应用后将覆盖搜索源、语言与槽位设置。',
+    beforeLabel: '当前',
+    afterLabel: '建议',
+    apply: '应用建议',
+    dismiss: '忽略此建议',
+    emptySlot: '（空）',
+    systemLocale: '系统语言',
+    ignoredNotice: '在推荐再次变化前保持忽略'
   },
 
   profiles: {
@@ -38,7 +84,6 @@ export const scraper = {
     emptyProfiles: '暂无配置，点击下方按钮添加',
     unnamed: '（未命名）',
     addProfile: '添加配置',
-    choosePreset: '选择预设',
     profileEntityLabel: '配置',
     deleteUsedByScanners: ({ count }: { count: number }) =>
       `${count} 个扫描器正在使用该配置，删除后它们将不再刮削、直接导入。`,

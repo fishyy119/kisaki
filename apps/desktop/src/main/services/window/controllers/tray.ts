@@ -99,9 +99,11 @@ export class TrayController implements TrayApi {
         log.error('Failed to load tray menu window URL:', error)
       })
     } else {
-      menuWindow.loadFile(join(import.meta.dirname, '../renderer/tray-menu.html')).catch((error) => {
-        log.error('Failed to load tray menu window file:', error)
-      })
+      menuWindow
+        .loadFile(join(import.meta.dirname, '../renderer/tray-menu.html'))
+        .catch((error) => {
+          log.error('Failed to load tray menu window file:', error)
+        })
     }
 
     log.info('Tray menu window created')

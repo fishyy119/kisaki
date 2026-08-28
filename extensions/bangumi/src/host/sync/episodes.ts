@@ -10,7 +10,7 @@ import type { ExtensionLogger } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { BangumiApiError } from '../api/errors'
 import type { BangumiMediaScope } from '../../shared/scopes'
-import type { SettingsStore } from '../config/store'
+import type { BangumiSettingsStore } from '../config/schema'
 import {
   createBangumiSubjectRef,
   readBangumiSubjectIdFromExternalIds
@@ -49,7 +49,7 @@ export interface EpisodeSyncOptions {
 }
 
 export interface EpisodeSyncEngineDependencies {
-  settingsStore: SettingsStore
+  settingsStore: BangumiSettingsStore
   client: BangumiClient
   mediaRegistry: MediaRegistry
   stateStore: EpisodeSyncStateStore

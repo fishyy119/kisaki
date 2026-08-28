@@ -35,7 +35,10 @@ import type {
   IngestAnimePersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
-import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../persist/media-relations'
+import {
+  applyMediaRelationFacts,
+  createUnresolvedRelatedEntriesWarning
+} from '../persist/media-relations'
 import { insertAnimeEpisodeRow } from './episodes'
 import {
   requireOwnerIdentity,

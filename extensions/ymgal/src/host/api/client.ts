@@ -1,6 +1,9 @@
 import {
   createCancellationError,
+  delay,
   isCancellationError,
+  RateLimiter,
+  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
@@ -11,7 +14,6 @@ import {
   normalizeYmgalHttpError,
   YmgalApiError
 } from './errors'
-import { delay, YmgalRateLimiter } from './limiter'
 import type {
   YmgalCharacter,
   YmgalCharacterArchiveData,
@@ -33,12 +35,14 @@ import {
   YMGAL_SEARCH_PAGE_SIZE,
   YMGAL_TOKEN_SCOPE
 } from '../utils/constants'
-import { YmgalExtensionError, throwIfAborted } from '../utils/errors'
+import { YmgalExtensionError } from '../utils/errors'
 import { omitUndefined } from '../utils/object'
 
 /** The developer notes ask clients not to burst; pace well under that. */
-const RATE_LIMIT_MAX_REQUESTS = 3
-const RATE_LIMIT_WINDOW_MS = 1_000
+const RATE_LIMIT: { maxRequests: number; windowMs: number } = {
+  maxRequests: 3,
+  windowMs: 1_000
+}
 
 /** Refresh a little before expiry so a request never races the deadline. */
 const TOKEN_REFRESH_MARGIN_MS = 30_000
@@ -51,7 +55,7 @@ export interface YmgalRequestOptions {
 }
 
 export class YmgalClient {
-  private readonly limiter = new YmgalRateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS)
+  private readonly limiter = new RateLimiter(RATE_LIMIT)
   private accessToken: string | null = null
   private tokenExpiry = 0
   /** Client the cached token was issued for; a credential change invalidates it. */

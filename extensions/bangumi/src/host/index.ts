@@ -1,13 +1,19 @@
-import { defineExtension, kisaki, type ExtensionLogger } from '@kisaki3/extension-sdk'
+import {
+  defineExtension,
+  kisaki,
+  OAuthRelayClient,
+  OAuthRelayFlow,
+  SettingsStore,
+  type ExtensionLogger
+} from '@kisaki3/extension-sdk'
 import { m, setHostUiLocale } from './i18n'
 import { BangumiClient } from './api/client'
 import { createBangumiUserAgent } from './api/user-agent'
 import { AccountService } from './auth/account'
-import { OAuthFlow } from './auth/oauth-flow'
-import { OAuthRelayClient } from './auth/relay-client'
 import { TokenService } from './auth/token-service'
 import { TokenStore } from './auth/token-store'
-import { SettingsStore } from './config/store'
+import { createDefaultBangumiSettings } from './config/defaults'
+import { normalizeBangumiSettings } from './config/schema'
 import { registerBangumiJobCommands } from './jobs/commands'
 import { BangumiJobEvents } from './jobs/events'
 import { JobRunner } from './jobs/runner'
@@ -24,7 +30,9 @@ import { createMusicMediaDescriptor } from './media/music/scope'
 import { BangumiPersonProvider } from './media/person/provider'
 import { MediaRegistry } from './media/registry'
 import { registerBangumiSettingsUi, type BangumiSettingsUiHandle } from './settings'
-import { BangumiExtensionError } from './utils/errors'
+import { BANGUMI_OAUTH_RELAY_BASE_URL } from './utils/constants'
+import { BangumiExtensionError, createRelayError } from './utils/errors'
+import { BANGUMI_STORAGE_KEYS } from './utils/ids'
 import { SyncEngine } from './sync/engine'
 import { EpisodeSyncStateStore } from './sync/episode-state'
 import { EpisodeSyncEngine } from './sync/episodes'
@@ -40,14 +48,19 @@ export default defineExtension({
       setHostUiLocale(effective)
     })
 
-    const settingsStore = new SettingsStore(context.storage)
+    const settingsStore = new SettingsStore(context.storage, BANGUMI_STORAGE_KEYS.settings, {
+      normalize: normalizeBangumiSettings,
+      createDefault: createDefaultBangumiSettings
+    })
     const tokenStore = new TokenStore(context.secrets)
     await settingsStore.get()
 
-    const relayClient = new OAuthRelayClient(
-      kisaki.network,
-      async () => (await settingsStore.get()).client.timeoutMs
-    )
+    const relayClient = new OAuthRelayClient({
+      network: kisaki.network,
+      getBaseUrl: async () => BANGUMI_OAUTH_RELAY_BASE_URL,
+      getTimeoutMs: async () => (await settingsStore.get()).client.timeoutMs,
+      createError: createRelayError
+    })
     const tokenService = new TokenService(tokenStore, relayClient, context.logger)
     const client = new BangumiClient(
       kisaki.network,
@@ -107,7 +120,7 @@ export default defineExtension({
     })
     const jobEvents = new BangumiJobEvents()
 
-    const oauthFlowRef: { current?: OAuthFlow } = {}
+    const oauthFlowRef: { current?: OAuthRelayFlow } = {}
     const settingsUiRef: { current?: BangumiSettingsUiHandle } = {}
 
     const deeplinkRegistration = context.contributions.deeplinkRoutes.register({
@@ -142,12 +155,13 @@ export default defineExtension({
       }
     })
 
-    const oauthFlow = new OAuthFlow({
+    const oauthFlow = new OAuthRelayFlow({
+      client: relayClient,
+      store: tokenStore,
       callbackUrl: deeplinkRegistration.urlPattern,
-      relayClient,
-      tokenStore,
       openExternal: (url) => kisaki.runtime.openExternal(url),
       getLoginTimeoutMs: async () => (await settingsStore.get()).auth.loginTimeoutMs,
+      createError: createRelayError,
       logger: context.logger
     })
     oauthFlowRef.current = oauthFlow

@@ -8,7 +8,9 @@ export function toFormState(settings: VndbSettingsV1): VndbSettingsFormState {
     apiBaseUrl: settings.endpoints.apiBaseUrl,
     preferRomanizedTitles: settings.naming.preferRomanizedTitles,
     timeoutSeconds: settings.client.timeoutMs / MS_PER_SECOND,
-    retryCount: settings.client.retryCount
+    retryCount: settings.client.retryCount,
+    syncEnabled: settings.sync.enabled,
+    syncPushScore: settings.sync.pushScore
   }
 }
 
@@ -32,6 +34,10 @@ export function applyFormState(
     client: {
       timeoutMs: Math.round(form.timeoutSeconds * MS_PER_SECOND),
       retryCount: form.retryCount
+    },
+    sync: {
+      enabled: form.syncEnabled,
+      pushScore: form.syncPushScore
     }
   })
 }

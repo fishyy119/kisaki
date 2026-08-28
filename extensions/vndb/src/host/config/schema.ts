@@ -1,5 +1,9 @@
+import type { SettingsStore } from '@kisaki3/extension-sdk'
 import { matchesHttpUrlFormat } from '../../shared/settings'
 import { DEFAULT_VNDB_SETTINGS } from './defaults'
+
+/** Store shape every VNDB submodule reads settings through. */
+export type VndbSettingsStore = SettingsStore<VndbSettingsV1>
 
 export interface VndbSettingsV1 {
   version: 1
@@ -15,6 +19,12 @@ export interface VndbSettingsV1 {
     timeoutMs: number
     retryCount: number
   }
+  sync: {
+    /** Push local status and score changes to the VNDB list automatically. */
+    enabled: boolean
+    /** Include the local score as a VNDB vote when pushing. */
+    pushScore: boolean
+  }
 }
 
 /**
@@ -27,6 +37,7 @@ export function normalizeVndbSettings(value: unknown): VndbSettingsV1 {
   const endpoints = asRecord(input?.endpoints)
   const naming = asRecord(input?.naming)
   const client = asRecord(input?.client)
+  const sync = asRecord(input?.sync)
 
   return {
     version: 1,
@@ -48,12 +59,12 @@ export function normalizeVndbSettings(value: unknown): VndbSettingsV1 {
         min: 0,
         max: 10
       })
+    },
+    sync: {
+      enabled: normalizeBoolean(sync?.enabled, defaults.sync.enabled),
+      pushScore: normalizeBoolean(sync?.pushScore, defaults.sync.pushScore)
     }
   }
-}
-
-export function isVndbSettingsV1(value: unknown): value is VndbSettingsV1 {
-  return JSON.stringify(value) === JSON.stringify(normalizeVndbSettings(value))
 }
 
 function normalizeHttpUrl(value: unknown, fallback: string): string {

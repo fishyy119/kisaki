@@ -112,8 +112,9 @@ export type NonDomainServiceName = Exclude<ServiceName, DomainServiceName>
  * services fails to compile; the fix is to invert the dependency (let the domain
  * service register itself with the platform one) rather than widen this type.
  */
-export interface INonDomainService<K extends NonDomainServiceName = NonDomainServiceName>
-  extends IService<K> {
+export interface INonDomainService<
+  K extends NonDomainServiceName = NonDomainServiceName
+> extends IService<K> {
   readonly deps: readonly NonDomainServiceName[]
 }
 

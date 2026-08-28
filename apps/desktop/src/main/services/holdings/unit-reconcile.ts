@@ -283,8 +283,7 @@ function deleteOrphanedFileBornUnits<
   }
 
   const candidates = existingUnits.filter(
-    (unit) =>
-      spec.rowKey(unit) === null && !spec.isUnitProtected(unit) && !retainedIds.has(unit.id)
+    (unit) => spec.rowKey(unit) === null && !spec.isUnitProtected(unit) && !retainedIds.has(unit.id)
   )
   if (candidates.length === 0) return
 

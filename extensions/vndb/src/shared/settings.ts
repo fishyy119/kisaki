@@ -28,19 +28,64 @@ export interface VndbSettingsFormState {
   preferRomanizedTitles: boolean
   timeoutSeconds: number
   retryCount: number
+  /** Push local status and score changes to the VNDB list automatically. */
+  syncEnabled: boolean
+  /** Include the local score as a VNDB vote when pushing. */
+  syncPushScore: boolean
 }
 
 /**
- * The Kana API is open, so a token is an optional upgrade rather than a
- * prerequisite: it raises the caller's rate limit.
+ * The Kana API is open, so a token is an optional upgrade for scraping; the
+ * list integration is what actually requires one.
  */
 export interface VndbCredentialState {
   configured: boolean
 }
 
+/** What `GET /authinfo` reports about the stored token. */
+export interface VndbAccountVerification {
+  userId: string
+  username: string
+  listRead: boolean
+  listWrite: boolean
+}
+
 export interface VndbSettingsOverview {
   form: VndbSettingsFormState
   credential: VndbCredentialState
+}
+
+export interface VndbGameProfileOption {
+  id: string
+  name: string
+}
+
+export interface VndbImportRequest {
+  /** Write list status and vote onto entries the library already has. */
+  updateExisting: boolean
+  /** Create entries for list rows the library does not know. */
+  createMissing: boolean
+  /** Game scraper profile used to create missing entries. */
+  profileId?: string
+}
+
+/** Task-run projection the settings webview polls while an operation runs. */
+export interface VndbTaskStateView {
+  runId: string
+  status:
+    | 'queued'
+    | 'running'
+    | 'pausing'
+    | 'paused'
+    | 'cancelling'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+  current?: number
+  total?: number
+  counters?: Record<string, number>
+  summary?: string
+  error?: string
 }
 
 /** Functions the extension host exposes to the settings webview. */
@@ -51,6 +96,13 @@ export interface VndbSettingsHostFunctions {
   clearToken(): Promise<VndbCredentialState>
   /** Calls the cheapest endpoint; rejects with a safe message. */
   testConnection(): Promise<void>
+  /** Validates the token against `/authinfo` and reports its permissions. */
+  verifyAccount(): Promise<VndbAccountVerification>
+  listGameProfiles(): Promise<VndbGameProfileOption[]>
+  startImport(request: VndbImportRequest): Promise<{ runId: string }>
+  startPushAll(): Promise<{ runId: string }>
+  getTaskState(runId: string): Promise<VndbTaskStateView | null>
+  cancelTask(runId: string): Promise<boolean>
   resetSettings(): Promise<void>
   openExternal(url: string): Promise<void>
 }

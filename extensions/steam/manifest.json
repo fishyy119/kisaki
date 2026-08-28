@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@kisaki3/extension-api/schemas/extension-manifest.schema.json",
+  "id": "builtin.steam",
+  "name": "Steam",
+  "version": "0.0.1",
+  "categories": ["scraper", "integration"],
+  "entry": "./dist/index.mjs",
+  "ui": "./dist/ui",
+  "description": {
+    "en": "Built-in Steam integration and game metadata scraper for Kisaki, with localized store metadata, library artwork, and owned-games import.",
+    "ja": "Kisaki 内蔵の Steam 連携。ローカライズされたストアメタデータとライブラリアートに対応したゲームスクレイパーと、所有ゲームのインポート。",
+    "zh-Hans": "Kisaki 内置的 Steam 集成与游戏元数据刮削器，支持本地化商店元数据、库封面美术以及已拥有游戏导入。",
+    "zh-Hant": "Kisaki 內建的 Steam 整合與遊戲中繼資料刮削器，支援本地化商店中繼資料、庫封面美術以及已擁有遊戲匯入。"
+  },
+  "author": "Kisaki",
+  "homepage": "https://store.steampowered.com",
+  "keywords": ["steam", "scraper", "game", "library-import"],
+  "engines": {
+    "kisakiExtensionApi": "=0.0.14"
+  }
+}

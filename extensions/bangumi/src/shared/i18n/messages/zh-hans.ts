@@ -63,16 +63,11 @@ export const zhHans = {
     tokenSaveFailed: 'Bangumi 凭据保存失败',
 
     loginNotReady: 'Bangumi 登录尚未就绪',
-    loginCallbackMissingParams: 'Bangumi 登录回调缺少必要参数',
     loginSessionExpired: 'Bangumi 登录会话已过期，请重新登录',
     loginCallbackInvalid: 'Bangumi 登录回调校验失败，请重新登录',
     noPendingLogin: '没有等待完成的 Bangumi 登录',
 
-    relayUnreachable: '无法连接 Kisaki OAuth 中继',
     relayUnavailable: 'Kisaki OAuth 中继暂时不可用，请稍后再试',
-    relayAvailable: 'OAuth 中继可用',
-    relayInvalidSession: 'OAuth 中继返回了无法识别的登录会话',
-    relayNoToken: 'OAuth 中继未返回访问凭据',
 
     apiNotFound: 'Bangumi 条目不存在',
     apiRateLimited: 'Bangumi API 请求过于频繁，请稍后再试',

@@ -1,13 +1,15 @@
-import { defineExtension, kisaki } from '@kisaki3/extension-sdk'
+import { defineExtension, kisaki, SettingsStore } from '@kisaki3/extension-sdk'
 import { TmdbClient } from './api/client'
 import { ApiKeyStore } from './auth/api-key'
-import { SettingsStore } from './config/store'
+import { createDefaultTmdbSettings } from './config/defaults'
+import { normalizeTmdbSettings } from './config/schema'
 import { setHostUiLocale } from './i18n'
 import { TmdbAnimeProvider } from './media/anime/provider'
 import { TmdbCompanyProvider } from './media/company/provider'
 import { TmdbPersonProvider } from './media/person/provider'
 import type { TmdbRuntime } from './media/runtime'
 import { registerTmdbSettingsUi } from './settings'
+import { TMDB_STORAGE_KEYS } from './utils/ids'
 
 export default defineExtension({
   async activate(context) {
@@ -16,7 +18,10 @@ export default defineExtension({
       setHostUiLocale(effective)
     })
 
-    const settingsStore = new SettingsStore(context.storage)
+    const settingsStore = new SettingsStore(context.storage, TMDB_STORAGE_KEYS.settings, {
+      normalize: normalizeTmdbSettings,
+      createDefault: createDefaultTmdbSettings
+    })
     const apiKeys = new ApiKeyStore(context.secrets)
     await settingsStore.get()
 

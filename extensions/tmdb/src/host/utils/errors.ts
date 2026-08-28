@@ -1,5 +1,3 @@
-import { createCancellationError } from '@kisaki3/extension-sdk'
-
 export type TmdbErrorCode =
   | 'api_key_missing'
   | 'api_key_invalid'
@@ -17,17 +15,6 @@ export class TmdbExtensionError extends Error {
   ) {
     super(message, options)
     this.name = 'TmdbExtensionError'
-  }
-}
-
-/**
- * Cancellations must carry the host's shared `cancelled` code: these errors
- * cross the RPC boundary, and the host only recognizes coded cancellations
- * when deciding to abandon (rather than fail) the surrounding operation.
- */
-export function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw createCancellationError('The operation was cancelled.')
   }
 }
 

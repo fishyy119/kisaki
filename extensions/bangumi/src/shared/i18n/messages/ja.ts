@@ -55,18 +55,13 @@ export const ja = {
     tokenSaveFailed: 'Bangumi 資格情報を保存できませんでした',
 
     loginNotReady: 'Bangumi サインインはまだ準備できていません',
-    loginCallbackMissingParams: 'Bangumi サインインのコールバックに必要なパラメータがありません',
     loginSessionExpired:
       'Bangumi サインインセッションの有効期限が切れました。再度サインインしてください。',
     loginCallbackInvalid:
       'Bangumi サインインのコールバック検証に失敗しました。再度サインインしてください。',
     noPendingLogin: '完了待ちの Bangumi サインインはありません',
 
-    relayUnreachable: 'Kisaki OAuth リレーに接続できませんでした',
     relayUnavailable: 'Kisaki OAuth リレーは一時的に利用できません。後でもう一度お試しください。',
-    relayAvailable: 'OAuth リレーは利用可能です',
-    relayInvalidSession: 'OAuth リレーが認識できないサインインセッションを返しました',
-    relayNoToken: 'OAuth リレーがアクセス資格情報を返しませんでした',
 
     apiNotFound: 'Bangumi エントリが存在しません',
     apiRateLimited: 'Bangumi API リクエストが多すぎます。後でもう一度お試しください。',

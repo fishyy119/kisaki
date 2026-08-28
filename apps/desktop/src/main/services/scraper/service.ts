@@ -40,7 +40,13 @@ export class ScraperService implements IService<'scraper'> {
     const ipcService = container.get('ipc')
 
     this.profiles = new ScraperProfileCatalog(db)
-    this.game = new EntityScraperHandler('game', SCRAPER_HANDLER_SPECS.game, db, i18n, this.hooks.game)
+    this.game = new EntityScraperHandler(
+      'game',
+      SCRAPER_HANDLER_SPECS.game,
+      db,
+      i18n,
+      this.hooks.game
+    )
     this.anime = new EntityScraperHandler(
       'anime',
       SCRAPER_HANDLER_SPECS.anime,

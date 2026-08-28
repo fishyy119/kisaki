@@ -51,10 +51,6 @@ export function normalizeTmdbSettings(value: unknown): TmdbSettingsV1 {
   }
 }
 
-export function isTmdbSettingsV1(value: unknown): value is TmdbSettingsV1 {
-  return JSON.stringify(value) === JSON.stringify(normalizeTmdbSettings(value))
-}
-
 function normalizeHttpUrl(value: unknown, fallback: string): string {
   if (typeof value !== 'string') {
     return fallback

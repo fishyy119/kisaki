@@ -32,7 +32,10 @@ import type {
   IngestNovelPersonLink
 } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
-import { applyMediaRelationFacts, createUnresolvedRelatedEntriesWarning } from '../persist/media-relations'
+import {
+  applyMediaRelationFacts,
+  createUnresolvedRelatedEntriesWarning
+} from '../persist/media-relations'
 import { insertNovelVolumeRow } from './volumes'
 import {
   requireOwnerIdentity,

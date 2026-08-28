@@ -1,6 +1,9 @@
 import {
   createCancellationError,
+  delay,
   isCancellationError,
+  RateLimiter,
+  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkMethod,
@@ -9,7 +12,6 @@ import {
   type JsonValue
 } from '@kisaki3/extension-sdk'
 import { BangumiApiError, normalizeBangumiApiError, readRetryAfterMs } from './errors'
-import { BangumiRateLimiter, delay, normalizeRateLimitConfig } from './limiter'
 import { normalizePageQuery, toPage, type Page, type PageQuery } from './pagination'
 import type {
   BangumiCharacter,
@@ -39,7 +41,7 @@ import type {
 } from './types'
 import type { BangumiSettingsV1 } from '../config/schema'
 import { BANGUMI_API_BASE_URL, BANGUMI_EPISODE_PAGE_LIMIT } from '../utils/constants'
-import { BangumiExtensionError, throwIfAborted } from '../utils/errors'
+import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 import type { TokenService } from '../auth/token-service'
@@ -74,7 +76,7 @@ export class BangumiClient {
   private readonly baseUrl: string
   private readonly userAgent: string
   private readonly logger?: ExtensionLogger
-  private readonly limiter: BangumiRateLimiter
+  private readonly limiter: RateLimiter
 
   constructor(
     private readonly network: NetworkCapability,
@@ -87,9 +89,7 @@ export class BangumiClient {
     if (options.logger !== undefined) {
       this.logger = options.logger
     }
-    this.limiter = new BangumiRateLimiter(async () =>
-      normalizeRateLimitConfig((await this.getClientSettings()).rateLimit)
-    )
+    this.limiter = new RateLimiter(async () => (await this.getClientSettings()).rateLimit)
   }
 
   async getMe(options: Pick<RequestOptions, 'signal'> = {}): Promise<BangumiMe> {
