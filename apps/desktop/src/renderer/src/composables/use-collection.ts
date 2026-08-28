@@ -31,6 +31,7 @@ import {
   ENTITY_TABLES
 } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
+import { entityRouteParam } from '@renderer/utils/entity-routes'
 import { useAsyncData } from './use-async-data'
 import { usePreferencesStore } from '@renderer/stores'
 import { getFilterRelevantTables } from '@shared/filter'
@@ -267,7 +268,7 @@ let lastRouteCollectionId: string | null = null
 const routeSelectedType = ref<ContentEntityType | null>(null)
 
 export const collectionDetailData = defineRouteData((route) => {
-  const collectionId = route.params.collectionId as string
+  const collectionId = route.params[entityRouteParam('collection')] as string
   if (collectionId !== lastRouteCollectionId) {
     lastRouteCollectionId = collectionId
     routeSelectedType.value = null
@@ -352,7 +353,7 @@ function useCollectionDbSync(
  */
 export function useCollectionRouteProvider(): CollectionContext {
   const route = useRoute()
-  const collectionId = computed(() => route.params.collectionId as string)
+  const collectionId = computed(() => route.params[entityRouteParam('collection')] as string)
   const { data, error, isFetching, refetch } = collectionDetailData()
 
   const { showNsfw } = storeToRefs(usePreferencesStore())

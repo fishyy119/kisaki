@@ -29,6 +29,7 @@ import {
   queryTaggedEntities
 } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
+import { entityRouteParam } from '@renderer/utils/entity-routes'
 import { useAsyncData } from './use-async-data'
 import { usePreferencesStore } from '@renderer/stores'
 import type { Tag } from '@shared/db/schema'
@@ -131,7 +132,7 @@ let lastRouteTagId: string | null = null
 const routeSelectedType = ref<ContentEntityType | null>(null)
 
 export const tagDetailData = defineRouteData((route) => {
-  const tagId = route.params.tagId as string
+  const tagId = route.params[entityRouteParam('tag')] as string
   if (tagId !== lastRouteTagId) {
     lastRouteTagId = tagId
     routeSelectedType.value = null
@@ -198,7 +199,7 @@ function useTagDbSync(
  */
 export function useTagRouteProvider(): TagContext {
   const route = useRoute()
-  const tagId = computed(() => route.params.tagId as string)
+  const tagId = computed(() => route.params[entityRouteParam('tag')] as string)
   const { data, error, isFetching, refetch } = tagDetailData()
 
   const { showNsfw } = storeToRefs(usePreferencesStore())

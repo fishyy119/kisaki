@@ -237,8 +237,7 @@ const CHARACTER_LINK_TABLES = [
 ]
 
 const characterDetail = createEntityDetailContext<CharacterData>({
-  entityLabel: 'character',
-  routeParam: 'characterId',
+  entityType: 'character',
   empty: {
     character: null,
     tags: [],

@@ -15,6 +15,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { CollectionInfoFormDialog, CollectionCard } from '@renderer/components/shared/collection'
 import { getEntityIcon } from '@renderer/utils/format'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { useCollectionsList } from '../composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 
@@ -49,10 +50,7 @@ const showCreateDialog = ref(false)
 // =============================================================================
 
 function handleCollectionClick(collectionId: string) {
-  router.push({
-    name: 'collection-detail',
-    params: { collectionId }
-  })
+  router.push(getEntityDetailPath('collection', collectionId))
 }
 </script>
 

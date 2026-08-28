@@ -46,18 +46,6 @@ const mainToExtensionHostBoundaryPatterns = [
   }
 ]
 
-// The router singleton may only be imported by the app entry (composition
-// root). Anything reachable from the shared composable/store graph that
-// imports it creates renderer-wide circular imports and breaks HMR.
-// Components use useRouter(); setup modules accept an injected Router.
-const rendererRouterSingletonPatterns = [
-  {
-    group: ['@renderer/core/router', '**/core/router', './router'],
-    message:
-      'Only the app entry imports the router singleton. Use useRouter() in components or accept an injected Router in setup modules.'
-  }
-]
-
 const exportAllRestriction = {
   selector: 'ExportAllDeclaration',
   message: 'Use explicit named exports instead of export *.'
@@ -334,7 +322,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          patterns: [...rendererImportBoundaryPatterns, ...rendererRouterSingletonPatterns]
+          patterns: rendererImportBoundaryPatterns
         }
       ]
     }
@@ -349,19 +337,6 @@ export default defineConfig([
     ],
     rules: {
       'kisaki/renderer-direct-write': 'off'
-    }
-  },
-  // The app entry is the composition root: it alone imports the router
-  // singleton and injects it into setup modules.
-  {
-    files: ['src/renderer/src/main.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: rendererImportBoundaryPatterns
-        }
-      ]
     }
   },
   // Prevent shared/ui components from being route-aware (routing belongs to pages/features)
@@ -389,7 +364,7 @@ export default defineConfig([
                 'Do not use vue-router composables in components/shared or components/ui. Emit events and handle routing in pages/features.'
             }
           ],
-          patterns: [...rendererImportBoundaryPatterns, ...rendererRouterSingletonPatterns]
+          patterns: rendererImportBoundaryPatterns
         }
       ]
     }

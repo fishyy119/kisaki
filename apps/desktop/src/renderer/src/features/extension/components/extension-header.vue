@@ -13,6 +13,7 @@ import {
   type PageHeaderNavItem
 } from '@renderer/components/ui/page-header'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { EXTENSION_ROUTE_NAMES } from '../routes'
 
 interface Props {
   reloadingExtensionHost?: boolean
@@ -43,22 +44,22 @@ const reloadButtonTitle = computed(() =>
 
 const navItems = computed<PageHeaderNavItem[]>(() => [
   {
-    routeName: 'extension-discover',
+    routeName: EXTENSION_ROUTE_NAMES.discover,
     label: m.value.extension.nav.discover,
     icon: 'icon-[mdi--storefront-outline]'
   },
   {
-    routeName: 'extension-installed',
+    routeName: EXTENSION_ROUTE_NAMES.installed,
     label: m.value.extension.nav.installed,
     icon: 'icon-[mdi--check-circle-outline]'
   },
   {
-    routeName: 'extension-repositories',
+    routeName: EXTENSION_ROUTE_NAMES.repositories,
     label: m.value.extension.nav.repositories,
     icon: 'icon-[mdi--source-branch]'
   },
   {
-    routeName: 'extension-signers',
+    routeName: EXTENSION_ROUTE_NAMES.signers,
     label: m.value.extension.nav.signers,
     icon: 'icon-[mdi--shield-key-outline]'
   }

@@ -10,7 +10,12 @@ export {
 } from './development'
 export { resolveExtensionText } from './localized-text'
 export { refreshExtensionThemes, setupExtensionThemeSync, syncExtensionThemes } from './themes'
-export { setupExtensionWebviewNavigation } from './webview-navigation'
+export {
+  EXTENSION_PAGE_ROUTE_NAME,
+  EXTENSION_PAGE_ROUTE_PATTERN,
+  getExtensionPagePath,
+  setupExtensionWebviewNavigation
+} from './webview-navigation'
 export {
   closeWebview,
   extensionWebviewStore,

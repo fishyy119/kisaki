@@ -1,10 +1,13 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+import { createRouter, createWebHashHistory, type Router } from 'vue-router'
 import Main from './main.vue'
-import { router } from './core/router'
+import { installRouteData } from './core/route-data'
 import { initI18n } from './core/i18n'
 import {
+  EXTENSION_PAGE_ROUTE_NAME,
+  EXTENSION_PAGE_ROUTE_PATTERN,
   refreshExtensionContributionSnapshot,
   setupExtensionContributionStore,
   setupExtensionDevelopmentStore,
@@ -12,6 +15,12 @@ import {
   setupExtensionWebviewStore
 } from './core/extensions'
 import { setupDeeplinkHandlers } from './core/deeplink'
+import { libraryRoutes, libraryFromAutofillGuard } from './features/library/routes'
+import { statisticsRoutes } from './features/statistics/routes'
+import { scannerRoutes } from './features/scanner/routes'
+import { automationRoutes } from './features/automation/routes'
+import { extensionRoutes } from './features/extension/routes'
+import { LIBRARY_HOME_PATH } from './utils/library-context'
 import {
   useAnimeActivityStore,
   useGameActivityStore,
@@ -24,6 +33,51 @@ import {
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('App')
+
+// =============================================================================
+// Router assembly (composition root)
+// =============================================================================
+
+// The instance stays local to the entry: components use useRouter() and setup
+// modules receive an injected Router, so no module can import the singleton.
+function createAppRouter(): Router {
+  const router = createRouter({
+    // Hash history for Electron compatibility
+    history: createWebHashHistory(),
+    routes: [
+      { path: '/', redirect: LIBRARY_HOME_PATH },
+      ...libraryRoutes,
+      ...statisticsRoutes,
+      ...scannerRoutes,
+      ...automationRoutes,
+      ...extensionRoutes,
+      // Extension declared page surface; core/extensions owns the contract
+      {
+        path: EXTENSION_PAGE_ROUTE_PATTERN,
+        name: EXTENSION_PAGE_ROUTE_NAME,
+        component: () => import('./pages/extension-webview-page.vue'),
+        props: true
+      },
+      // Catch-all 404
+      {
+        path: '/:pathMatch(.*)*',
+        name: 'not-found',
+        component: () => import('./pages/not-found-page.vue')
+      }
+    ],
+    scrollBehavior(_to, _from, savedPosition) {
+      if (savedPosition) {
+        return savedPosition
+      }
+      return { top: 0 }
+    }
+  })
+
+  installRouteData(router)
+  // The library feature owns the browse-context autofill policy.
+  router.beforeEach(libraryFromAutofillGuard)
+  return router
+}
 
 async function initMainWindowRenderer() {
   // ===========================================================================
@@ -39,6 +93,7 @@ async function initMainWindowRenderer() {
   app.use(pinia)
 
   // Router
+  const router = createAppRouter()
   app.use(router)
 
   // Global error handler

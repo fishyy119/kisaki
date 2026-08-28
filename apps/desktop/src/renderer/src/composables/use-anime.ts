@@ -292,8 +292,7 @@ const ANIME_OWNED_TABLES = [
 ]
 
 const animeDetail = createEntityDetailContext<AnimeData>({
-  entityLabel: 'anime',
-  routeParam: 'animeId',
+  entityType: 'anime',
   empty: {
     anime: null,
     episodes: [],

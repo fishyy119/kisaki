@@ -32,7 +32,11 @@ import {
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
 import { usePreferencesStore, useThemeStore } from '@renderer/stores'
-import { extensionContributionStore, resolveExtensionText } from '@renderer/core/extensions'
+import {
+  extensionContributionStore,
+  getExtensionPagePath,
+  resolveExtensionText
+} from '@renderer/core/extensions'
 import type { ExtensionIconInfo } from '@shared/extension'
 import SidebarNavItem from './sidebar-nav-item.vue'
 import { AdderTrigger } from '@renderer/features/adder'
@@ -93,7 +97,7 @@ const extensionNavItems = computed<NavItem[]>(() =>
         id: `extension-page:${page.extensionId}:${page.pageId}`,
         label: resolveExtensionText(page.title),
         icon: page.icon,
-        path: `/extension-page/${page.extensionId}/${page.pageId}`
+        path: getExtensionPagePath(page.extensionId, page.pageId)
       }
     ]
   })

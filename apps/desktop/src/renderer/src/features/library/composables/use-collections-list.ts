@@ -11,7 +11,7 @@ import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
-import { useDbChanges } from '@renderer/composables'
+import { useDbChanges } from '@renderer/composables/use-db-changes'
 
 export const collectionsListData = defineRouteData(async () => {
   const { showNsfw } = storeToRefs(usePreferencesStore())

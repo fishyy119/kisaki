@@ -145,20 +145,6 @@ export interface StatisticsContext {
 export const StatisticsKey: InjectionKey<StatisticsContext> = Symbol('statistics')
 
 // =============================================================================
-// Route Helpers
-// =============================================================================
-
-/** Get report type from route name */
-function getReportTypeFromRoute(routeName: string | symbol | null | undefined): ReportType {
-  if (!routeName || typeof routeName !== 'string') return 'overview'
-
-  if (routeName.includes('weekly')) return 'weekly'
-  if (routeName.includes('monthly')) return 'monthly'
-  if (routeName.includes('yearly')) return 'yearly'
-  return 'overview'
-}
-
-// =============================================================================
 // Data Fetchers
 // =============================================================================
 
@@ -517,7 +503,8 @@ const selectedPeriod = ref<Period>(getCurrentPeriod('overview'))
 const selectedMediaFilter = ref<StatisticsMediaFilter>('all')
 
 export const statisticsData = defineRouteData(async (route): Promise<StatisticsData> => {
-  const reportType = getReportTypeFromRoute(route.name)
+  // Declared by the statistics route manifest on each report page's meta.
+  const reportType = route.meta.reportType ?? 'overview'
   if (reportType !== lastReportType) {
     lastReportType = reportType
     selectedPeriod.value = getCurrentPeriod(reportType)

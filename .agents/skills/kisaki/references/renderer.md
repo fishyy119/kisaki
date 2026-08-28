@@ -2,9 +2,11 @@
 
 ## Key Files
 
-- `apps/desktop/src/renderer/src/main.ts` - Renderer entry point
+- `apps/desktop/src/renderer/src/main.ts` - Renderer entry point and router composition root
 - `apps/desktop/src/renderer/src/main.vue` - Root component with ErrorBoundary
-- `apps/desktop/src/renderer/src/core/route-data.ts` - Route data loaders (navigation-blocking)
+- `apps/desktop/src/renderer/src/core/route-data.ts` - Route data loader kernel (navigation-blocking)
+- `apps/desktop/src/renderer/src/features/<feature>/routes.ts` - Feature route manifests
+- `apps/desktop/src/renderer/src/utils/entity-routes.ts` - Entity route grammar (paths, params)
 - `apps/desktop/src/renderer/src/components/layout/navigation-progress.vue` - Route loading bar
 - `apps/desktop/src/renderer/src/composables/use-async-data.ts` - Async data fetching (non-route surfaces)
 - `apps/desktop/src/renderer/src/composables/use-render-state.ts` - Render state management
@@ -37,8 +39,9 @@ export const gameDetailData = defineRouteData((route) => {
   return fetchGameData(route.params.gameId as string, routeSpoilersRevealed.value, showNsfw.value)
 })
 
-// router.ts
-{ path: 'game/:gameId', component: GameDetailPage, meta: { dataLoaders: [gameDetailData] } }
+// features/<feature>/routes.ts (the feature's route manifest)
+{ path: 'game/:gameId', component: () => import('./pages/game-detail-page.vue'),
+  meta: { dataLoaders: [gameDetailData] } }
 
 // Page/provider: data is already settled at mount
 const { data, error, isFetching, refetch } = gameDetailData()
@@ -54,15 +57,23 @@ Rules:
   reads a consistent value; reset them when the route identity changes inside the fetcher.
 - Fetch failures are captured into the loader `error` ref and never block navigation.
   `null` results mean not-found.
+- A loader declared on several matched records (a layout and its children, or sibling routes
+  sharing one dataset) runs once per navigation; the kernel deduplicates by identity.
+- Loader modules and their imports are reachable from the entry through the manifests, so they
+  must deep-import owning modules (e.g. `@renderer/composables/use-db-changes`), never the
+  `@renderer/composables` barrel; a barrel edge would put every composable back on the
+  full-reload path.
 
 ### Entity Detail Providers (Dual Surface)
 
 The provider/consumer shell is owned once by `composables/entity-context.ts`:
 `createEntityDetailContext(spec)` builds the route loader (with cross-entry spoiler reset), the
 dialog provider, the computed projection over the spec's `empty` shape, db-change invalidation,
-and the injected consumer. A `use-<entity>.ts` file declares only the spec — fetch function,
-empty projection, owned tables, entity table, route param — and re-exports the factory's typed
-entries. Add a new entity detail surface by writing that spec, never by re-implementing the shell.
+and the injected consumer. A `use-<entity>.ts` file declares only the spec — entity type, fetch
+function, empty projection, owned tables, entity table — and re-exports the factory's typed
+entries; the detail-route param derives from the entity type through the entity route grammar
+(`utils/entity-routes.ts`). Add a new entity detail surface by writing that spec, never by
+re-implementing the shell.
 
 Entity detail composables (`use-game`, `use-character`, ...) expose two provider entries over
 one shared fetcher, context assembly, and db-event sync:
@@ -112,27 +123,43 @@ export type { ButtonProps } from './types'
   - `no-restricted-imports` for boundary access.
   - `no-restricted-syntax` to ban `ExportAllDeclaration`.
 
-### Router & Page Import Rules (Must Follow)
+### Routing Topology (Must Follow)
 
-Pages sit downstream of the shared composable/store graph. Any static edge from routing back
-into pages (or from shared modules into the router) creates renderer-wide circular imports:
-HMR degrades to full page reloads and route-level code splitting is defeated.
+Routing is layered so every dependency arrow points one way; each layer's placement encodes
+the rule it enforces:
 
-1. Only the app entry (`main.ts`) imports the router singleton from `core/router`; lint
-   enforces this. Components use `useRouter()`. Setup/wiring modules accept a `Router`
-   parameter injected by the entry (see `core/deeplink.ts`,
-   `core/extensions/webview-navigation.ts`).
-2. Route records lazy-load page components from their concrete `.vue` files:
-   `component: () => import('@renderer/features/<feature>/pages/<page>.vue')`. This deep
-   dynamic import is the sanctioned exception to the feature boundary rule; never import page
-   components statically in `core/router.ts`.
-3. Feature root `index.ts` exports the feature's static contract only (route data loaders and
-   similar); it must not re-export page components.
-4. Root `src/pages/` charter: system-owned route surfaces only. A page belongs there if and
+1. **Grammar** (`utils/entity-routes.ts`, `utils/library-context.ts`): pure URL contracts.
+   Entity detail path patterns and param names have this single source; the manifest, the
+   entity specs, and every page that links to a detail view derive from it.
+2. **Kernel** (`core/route-data.ts`): `defineRouteData` and the `installRouteData` guard.
+   `core/` has zero `features/*` imports; the kernel knows nothing about concrete routes.
+3. **Feature manifests** (`features/<feature>/routes.ts`): each feature owns its
+   `RouteRecordRaw[]` — paths, lazy page imports, `meta.dataLoaders` wiring, route-name
+   constants, and per-feature guard policy (e.g. the library `from`-autofill guard). Route
+   names are exported constants consumed inside the owning feature; nothing re-spells them.
+   The library manifest generates its nine entity detail routes from `ALL_ENTITY_TYPES`, so
+   adding a media type is one registry entry plus its page.
+4. **Composition root** (`main.ts`): `createAppRouter()` concatenates the manifests, adds the
+   two system routes, installs the kernel, and registers feature guards. The router instance
+   is a local variable of the entry: components use `useRouter()`, and setup/wiring modules
+   accept a `Router` parameter injected by the entry (see `core/deeplink.ts`,
+   `core/extensions/webview-navigation.ts`). There is no importable router singleton.
+
+Page import rules:
+
+1. Route records lazy-load page components from their concrete `.vue` files:
+   `component: () => import('./pages/<page>.vue')`. Never import page components statically
+   in a manifest: pages sit downstream of the shared composable graph, and a static page edge
+   would defeat route-level code splitting and put pages on the entry's full-reload path.
+2. Feature root `index.ts` barrels exist only for features consumed as components by other
+   surfaces (adder, scraper, settings, about, task-center); route wiring never goes through
+   them. Manifests import loaders from their owning modules.
+3. Root `src/pages/` charter: system-owned route surfaces only. A page belongs there if and
    only if a core-level subsystem owns it, it imports no `features/*` code, and no feature code
-   references it (two-way zero coupling). Current members: `not-found-page.vue` (owner: router)
-   and `extension-webview-page.vue` (owner: `core/extensions` webview runtime; its
-   `/extension-page/...` route path and name are the webview navigation contract). Every other
+   references it (two-way zero coupling). Current members: `not-found-page.vue` (owner: the
+   app router in `main.ts`) and `extension-webview-page.vue` (owner: `core/extensions` webview
+   runtime; its route name, pattern, and path builder are exported by
+   `core/extensions/webview-navigation.ts` as the webview navigation contract). Every other
    page lives in its feature's `pages/` folder.
 
 ## Vue 3 SFC Patterns

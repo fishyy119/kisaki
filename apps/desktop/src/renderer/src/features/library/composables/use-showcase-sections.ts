@@ -10,7 +10,7 @@ import { nanoid } from 'nanoid'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { showcaseSections, type ShowcaseSection, type NewShowcaseSection } from '@shared/db'
-import { useDbChanges } from '@renderer/composables'
+import { useDbChanges } from '@renderer/composables/use-db-changes'
 
 // =============================================================================
 // Route Loader & Composable

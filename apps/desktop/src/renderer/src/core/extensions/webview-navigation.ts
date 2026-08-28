@@ -1,6 +1,17 @@
 import { watch } from 'vue'
 import type { Router } from 'vue-router'
+import { LIBRARY_HOME_PATH } from '@renderer/utils/library-context'
 import { extensionWebviewStore } from './webviews'
+
+// Route contract of the extension declared page surface. The webview runtime
+// owns this contract; the app entry mounts the record and links derive from it.
+export const EXTENSION_PAGE_ROUTE_NAME = 'extension-page'
+export const EXTENSION_PAGE_ROUTE_PATTERN = '/extension-page/:extensionId/:pageId'
+
+/** Route of one extension declared page. */
+export function getExtensionPagePath(extensionId: string, pageId: string): string {
+  return `/extension-page/${extensionId}/${pageId}`
+}
 
 let initialized = false
 
@@ -31,7 +42,7 @@ export function setupExtensionWebviewNavigation(router: Router): void {
     if (openedSession && openedSession.surface.kind === 'page') {
       if (!isCurrentPageRoute(router, openedSession.extensionId, openedSession.surface.pageId)) {
         void router.push({
-          name: 'extension-page',
+          name: EXTENSION_PAGE_ROUTE_NAME,
           params: {
             extensionId: openedSession.extensionId,
             pageId: openedSession.surface.pageId
@@ -42,7 +53,7 @@ export function setupExtensionWebviewNavigation(router: Router): void {
     }
 
     const route = router.currentRoute.value
-    if (route.name !== 'extension-page') {
+    if (route.name !== EXTENSION_PAGE_ROUTE_NAME) {
       return
     }
 
@@ -61,7 +72,7 @@ export function setupExtensionWebviewNavigation(router: Router): void {
 function isCurrentPageRoute(router: Router, extensionId: string, pageId: string): boolean {
   const route = router.currentRoute.value
   return (
-    route.name === 'extension-page' &&
+    route.name === EXTENSION_PAGE_ROUTE_NAME &&
     route.params.extensionId === extensionId &&
     route.params.pageId === pageId
   )
@@ -75,6 +86,6 @@ function leaveExtensionPage(router: Router): void {
   if (router.options.history.state.back != null) {
     router.back()
   } else {
-    void router.replace('/library')
+    void router.replace(LIBRARY_HOME_PATH)
   }
 }

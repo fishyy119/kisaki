@@ -2,9 +2,11 @@
  * Route-level data loading
  *
  * Navigation-blocking data loaders: a global `beforeResolve` guard awaits the
- * loaders declared on the target route's `meta.dataLoaders`, so the previous
+ * loaders declared on the matched records' `meta.dataLoaders`, so the previous
  * page stays fully visible until the next page's data has settled and route
- * pages never render a loading state on their first frame.
+ * pages never render a loading state on their first frame. Loader wiring is
+ * owned by the feature route manifests (`features/<feature>/routes.ts`); this
+ * kernel has no feature knowledge.
  *
  * Each loader owns a module-level store (route page data is a singleton per
  * loader; the app renders one RouterView). Fetch failures are captured into
@@ -126,9 +128,11 @@ export function installRouteData(router: Router): void {
   })
 
   router.beforeResolve(async (to) => {
-    const loaders = to.matched.flatMap((record) => record.meta.dataLoaders ?? [])
-    if (loaders.length > 0) {
-      await Promise.all(loaders.map((loader) => loader.load(to)))
+    // A loader may be declared on several matched records (a layout and its
+    // children, or sibling routes sharing one dataset); it runs once.
+    const loaders = new Set(to.matched.flatMap((record) => record.meta.dataLoaders ?? []))
+    if (loaders.size > 0) {
+      await Promise.all([...loaders].map((loader) => loader.load(to)))
     }
   })
 

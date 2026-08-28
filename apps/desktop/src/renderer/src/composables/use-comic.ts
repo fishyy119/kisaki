@@ -213,8 +213,7 @@ const COMIC_OWNED_TABLES = [
 ]
 
 const comicDetail = createEntityDetailContext<ComicData>({
-  entityLabel: 'comic',
-  routeParam: 'comicId',
+  entityType: 'comic',
   empty: {
     comic: null,
     chapters: [],

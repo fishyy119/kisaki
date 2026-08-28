@@ -209,8 +209,7 @@ const NOVEL_OWNED_TABLES = [
 ]
 
 const novelDetail = createEntityDetailContext<NovelData>({
-  entityLabel: 'novel',
-  routeParam: 'novelId',
+  entityType: 'novel',
   empty: {
     novel: null,
     volumes: [],

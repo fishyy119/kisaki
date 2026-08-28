@@ -11,7 +11,8 @@ import { COLLECTION_LINKS, ENTITY_TABLES, db, queryEntities } from '@renderer/co
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
-import { useDbChanges, type ContentEntityData } from '@renderer/composables'
+import { useDbChanges } from '@renderer/composables/use-db-changes'
+import type { ContentEntityData } from '@renderer/composables/content-entities'
 
 async function fetchUncategorized(
   entityType: ContentEntityType,

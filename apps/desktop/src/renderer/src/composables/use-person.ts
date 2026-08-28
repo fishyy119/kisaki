@@ -236,8 +236,7 @@ const PERSON_LINK_TABLES = [
 ]
 
 const personDetail = createEntityDetailContext<PersonData>({
-  entityLabel: 'person',
-  routeParam: 'personId',
+  entityType: 'person',
   empty: {
     person: null,
     tags: [],

@@ -12,6 +12,7 @@
 import { computed } from 'vue'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useStatistics } from '../composables'
+import { STATISTICS_ROUTE_NAMES } from '../routes'
 import { isPeriodBeforeCurrent, shiftPeriod } from '../period'
 import { getEntityIcon } from '@renderer/utils/format'
 import { MEDIA_TYPES } from '@shared/common'
@@ -31,10 +32,10 @@ const { reportType, currentPeriod, setCurrentPeriod, periodDisplay, mediaFilter 
 
 // Report type navigation items
 const reportNavItems = computed<PageHeaderNavItem[]>(() => [
-  { label: m.value.statistics.tabs.overview, routeName: 'statistics-overview' },
-  { label: m.value.statistics.tabs.weekly, routeName: 'statistics-weekly' },
-  { label: m.value.statistics.tabs.monthly, routeName: 'statistics-monthly' },
-  { label: m.value.statistics.tabs.yearly, routeName: 'statistics-yearly' }
+  { label: m.value.statistics.tabs.overview, routeName: STATISTICS_ROUTE_NAMES.overview },
+  { label: m.value.statistics.tabs.weekly, routeName: STATISTICS_ROUTE_NAMES.weekly },
+  { label: m.value.statistics.tabs.monthly, routeName: STATISTICS_ROUTE_NAMES.monthly },
+  { label: m.value.statistics.tabs.yearly, routeName: STATISTICS_ROUTE_NAMES.yearly }
 ])
 
 // Period navigation - only shown for non-overview reports

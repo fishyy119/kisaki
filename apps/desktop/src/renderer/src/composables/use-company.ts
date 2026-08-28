@@ -194,8 +194,7 @@ const COMPANY_LINK_TABLES = [
 ]
 
 const companyDetail = createEntityDetailContext<CompanyData>({
-  entityLabel: 'company',
-  routeParam: 'companyId',
+  entityType: 'company',
   empty: {
     company: null,
     tags: [],

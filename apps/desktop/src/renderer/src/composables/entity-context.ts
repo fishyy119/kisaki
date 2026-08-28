@@ -26,6 +26,8 @@ import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { defineRouteData, type RouteDataLoader } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
+import { entityRouteParam } from '@renderer/utils/entity-routes'
+import type { AllEntityType } from '@shared/common'
 import { useAsyncData } from './use-async-data'
 import { useDbChanges } from './use-db-changes'
 
@@ -36,10 +38,8 @@ export interface EntityDetailView {
 }
 
 export interface EntityDetailSpec<TData extends object> {
-  /** Injection key name and consumer error wording. */
-  entityLabel: string
-  /** Route param carrying the entity id on the detail page. */
-  routeParam: string
+  /** Entity type; names the context and derives the detail-route param. */
+  entityType: AllEntityType
   /** Field defaults projected while data is unsettled or hidden. */
   empty: TData
   fetch(id: string, view: EntityDetailView): Promise<TData | null>
@@ -102,7 +102,8 @@ interface EntityDetailSource<TData extends object> {
 export function createEntityDetailContext<TData extends object>(
   spec: EntityDetailSpec<TData>
 ): EntityDetailContextApi<TData> {
-  const key: InjectionKey<EntityDetailContext<TData>> = Symbol(spec.entityLabel)
+  const key: InjectionKey<EntityDetailContext<TData>> = Symbol(spec.entityType)
+  const routeParam = entityRouteParam(spec.entityType)
 
   // Route-surface spoiler state lives beside the loader so the navigation-time
   // fetch reads a consistent value; it resets whenever a different entry loads.
@@ -110,7 +111,7 @@ export function createEntityDetailContext<TData extends object>(
   const routeSpoilersRevealed = ref(false)
 
   const detailData = defineRouteData((route) => {
-    const id = route.params[spec.routeParam] as string
+    const id = route.params[routeParam] as string
     if (id !== lastRouteId) {
       lastRouteId = id
       routeSpoilersRevealed.value = false
@@ -158,7 +159,7 @@ export function createEntityDetailContext<TData extends object>(
 
   function useRouteProvider(): EntityDetailProviderReturn<TData> {
     const route = useRoute()
-    const entityId = computed(() => route.params[spec.routeParam] as string)
+    const entityId = computed(() => route.params[routeParam] as string)
     const { data, error, isFetching, refetch } = detailData()
 
     const { showNsfw } = storeToRefs(usePreferencesStore())
@@ -209,9 +210,7 @@ export function createEntityDetailContext<TData extends object>(
   function useContext(): EntityDetailContext<TData> {
     const context = inject(key)
     if (!context) {
-      throw new Error(
-        `The ${spec.entityLabel} context must be consumed under one of its providers`
-      )
+      throw new Error(`The ${spec.entityType} context must be consumed under one of its providers`)
     }
     return context
   }

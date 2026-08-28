@@ -199,8 +199,7 @@ const GAME_OWNED_TABLES = [
 ]
 
 const gameDetail = createEntityDetailContext<GameData>({
-  entityLabel: 'game',
-  routeParam: 'gameId',
+  entityType: 'game',
   empty: {
     game: null,
     notes: [],

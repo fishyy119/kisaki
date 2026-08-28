@@ -7,13 +7,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { extensionDevelopmentStore, reloadExtensionHost } from '@renderer/core/extensions'
 import { ExtensionHeader, ExtensionReleaseDialog } from '../components'
+import { EXTENSION_ROUTE_NAMES } from '../routes'
 
 const router = useRouter()
 const releaseDialogOpen = ref(false)
 const { hasStaleExtensions, staleCount, reloadingHost } = extensionDevelopmentStore
 
 async function handleInstalled() {
-  await router.push({ name: 'extension-installed' })
+  await router.push({ name: EXTENSION_ROUTE_NAMES.installed })
 }
 </script>
 
