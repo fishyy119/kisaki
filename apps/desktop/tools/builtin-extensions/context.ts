@@ -12,6 +12,9 @@ export const extensionDebugPackageNames = [
   '@kisaki3/extension-sdk'
 ] as const
 
+/** Workspace packages the desktop workflows load in-process to run kisx builds. */
+export const kisxRuntimePackageNames = ['@kisaki3/extension-cli'] as const
+
 export const extensionPackageDependencyFields = [
   'dependencies',
   'devDependencies',
@@ -35,7 +38,6 @@ export function createBuiltinExtensionToolContext(
     desktopRoot,
     repoRoot,
     builtinExtensionsRoot: path.join(repoRoot, 'extensions'),
-    extensionCliEntry: path.join(repoRoot, 'packages', 'extension-cli', 'src', 'index.ts'),
     extensionToolingManifest,
     extensionToolingPackagesByName,
     pnpmCommand: process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'

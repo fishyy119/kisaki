@@ -5,14 +5,13 @@
  */
 
 import path from 'node:path'
-import type {
-  BootstrapArgs,
-  DevelopmentExtension,
-  ExtensionHostInspectOptions
+import {
+  DEVELOPMENT_EXTENSIONS_ENV,
+  type BootstrapArgs,
+  type DevelopmentExtension,
+  type ExtensionHostInspectOptions
 } from '@shared/bootstrap'
 import { wrapIpc, type IpcService } from '@main/services/ipc'
-
-const DEVELOPMENT_EXTENSIONS_ENV = 'KISAKI_DEV_EXTENSIONS'
 
 const DEFAULT_EXTENSION_HOST_INSPECT_ADDRESS = '127.0.0.1:9339'
 

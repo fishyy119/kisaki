@@ -2,10 +2,8 @@ import { Command } from 'commander'
 import { createBuildCommand } from './commands/build'
 import { createDevCommand } from './commands/dev'
 import { createKeyCommand } from './commands/key'
-import { createOutputCommand } from './commands/output'
 import { createPackCommand } from './commands/pack'
 import { createRegistryCommand } from './commands/registry'
-import { createUiDevServerCommand } from './commands/ui-dev-server'
 import { createValidateCommand } from './commands/validate'
 
 /** Version metadata displayed by the kisx CLI. */
@@ -30,8 +28,6 @@ export async function runCli(argv = process.argv, options: RunCliOptions): Promi
     .addCommand(createKeyCommand())
     .addCommand(createRegistryCommand())
     .addCommand(createDevCommand())
-    .addCommand(createOutputCommand(), { hidden: true })
-    .addCommand(createUiDevServerCommand(), { hidden: true })
 
   if (argv.length <= 2) {
     program.outputHelp()

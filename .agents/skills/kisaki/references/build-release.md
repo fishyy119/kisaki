@@ -33,7 +33,7 @@
 pnpm dev  # Start dev server with hot reload
 ```
 
-`pnpm dev` routes to the desktop package, watches root `extensions/*`, writes built-in extension output to `apps/desktop/out/extensions`, and then starts `tools/bundler/cli.ts dev` (renderer dev server with HMR, main/preload watch builds, Electron restart on main rebuilds).
+`pnpm dev` routes to the desktop package and runs `tools/bundler/cli.ts dev`, a single orchestrator process that builds webview fonts, watches root `extensions/*` and serves their webview UI in-process (kisx programmatic API), runs the renderer dev server with HMR plus main/preload watch builds, and restarts Electron on main rebuilds. Electron is the only long-lived child process.
 
 ### Production Build
 
@@ -52,7 +52,7 @@ pnpm build:win:unpack  # Windows unpacked only
 
 1. **Built-in extensions**: `apps/desktop/tools/builtin-extensions/cli.ts build --target=resources` → `resources/extensions`
 2. **TypeScript check**: `vue-tsc --noEmit`
-3. **Vite build**: `tools/bundler/cli.ts build` → `out/` (ESM main + extension host, `.mjs` preload, renderer)
+3. **Vite build**: `tools/bundler/cli.ts build` → webview fonts + `out/` (ESM main + extension host, `.mjs` preload, renderer)
 4. **Package**: `electron-builder` → `dist/`
 5. **Windows installer**: `electron-builder` NSIS target → `*-setup.exe` + `latest.yml`
 

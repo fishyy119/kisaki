@@ -46,6 +46,24 @@ const mainToExtensionHostBoundaryPatterns = [
   }
 ]
 
+// Tools are plain Node programs outside every app bundle. They may consume the
+// pure contract layer (src/shared) but never process-owned modules.
+const toolsBoundaryPatterns = [
+  {
+    group: [
+      '**/src/main/**',
+      '**/src/preload/**',
+      '**/src/renderer/**',
+      '**/src/extension-host/**',
+      '@main/*',
+      '@renderer/*',
+      '@extension-host/*'
+    ],
+    message:
+      'Tools run under plain Node and may import only src/shared contracts, not process-owned modules.'
+  }
+]
+
 const exportAllRestriction = {
   selector: 'ExportAllDeclaration',
   message: 'Use explicit named exports instead of export *.'
@@ -302,6 +320,18 @@ export default defineConfig([
         'error',
         {
           patterns: mainToExtensionHostBoundaryPatterns
+        }
+      ]
+    }
+  },
+  // Tooling boundary: repo automation consumes only the shared contract layer.
+  {
+    files: ['tools/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: toolsBoundaryPatterns
         }
       ]
     }

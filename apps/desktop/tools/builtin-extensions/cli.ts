@@ -2,11 +2,10 @@
 
 import { buildBuiltinExtensions } from './build'
 import { createBuiltinExtensionToolContext } from './context'
-import { watchBuiltinExtensions } from './watch'
 import type { BuiltinExtensionBuildTarget } from './types'
 
 void main().catch((error: unknown) => {
-  console.error('[builtin-extensions]', error instanceof Error ? error.message : error)
+  console.error('[builtin-extensions]', error)
   process.exit(1)
 })
 
@@ -19,17 +18,7 @@ async function main(): Promise<void> {
     return
   }
 
-  if (command === 'watch') {
-    const childCommand = parseChildCommand(args)
-    if (childCommand.length === 0) {
-      throw new Error('watch requires a command after --')
-    }
-
-    await watchBuiltinExtensions(context, childCommand)
-    return
-  }
-
-  throw new Error('Usage: builtin-extensions <build|watch>')
+  throw new Error('Usage: builtin-extensions build [--target=dev|resources]')
 }
 
 function parseTarget(args: string[]): BuiltinExtensionBuildTarget {
@@ -41,13 +30,4 @@ function parseTarget(args: string[]): BuiltinExtensionBuildTarget {
   }
 
   throw new Error(`Unknown built-in extension output target: ${target}`)
-}
-
-function parseChildCommand(args: string[]): string[] {
-  const separatorIndex = args.indexOf('--')
-  if (separatorIndex === -1) {
-    return []
-  }
-
-  return args.slice(separatorIndex + 1)
 }

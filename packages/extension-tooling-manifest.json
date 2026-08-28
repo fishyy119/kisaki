@@ -33,6 +33,8 @@
     "packages/extension-ui-vue/dist/index.mjs",
     "packages/extension-ui-vue/dist/index.d.ts",
     "packages/extension-cli/dist/index.mjs",
+    "packages/extension-cli/dist/api.mjs",
+    "packages/extension-cli/dist/api.d.mts",
     "packages/extension-cli/dist/config.mjs",
     "packages/extension-cli/dist/config.d.mts",
     "packages/create-kisaki-extension/dist/index.mjs"

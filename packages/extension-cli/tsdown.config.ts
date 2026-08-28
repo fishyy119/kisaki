@@ -15,6 +15,7 @@ export default defineConfig([
   },
   {
     entry: {
+      api: 'src/api.ts',
       config: 'src/config.ts'
     },
     format: 'esm',

@@ -54,6 +54,26 @@ kisx dev
   one renderer security boundary while UI HMR remains available. Host changes
   stay pending until the developer uses Reload Process in Kisaki.
 
+## Programmatic API
+
+The package root export exposes the build capabilities as in-process library
+calls, so an orchestrator can build, watch, and serve many extension projects
+from one process instead of spawning one kisx child process per project:
+
+```ts
+import {
+  loadKisxConfig,
+  outputExtensionPackage,
+  readValidManifest,
+  resolveProject,
+  startUiDevServer,
+  watchExtensionBundles
+} from '@kisaki3/extension-cli'
+```
+
+The Kisaki desktop repository uses this API to run all built-in extension
+watchers and webview UI dev servers inside its single dev orchestrator process.
+
 ## Packaging
 
 ```bash

@@ -414,7 +414,7 @@ For a new contribution point:
 - Registry manifests are static JSON documents managed with `kisx registry *`; authors should not hand-edit release artifacts when the CLI can derive them from `.kisx`.
 - Dev flag: `--dev-extension=<path>`
 - Built-in extensions live under root `extensions/*` and should use "built-in" / `builtin` naming in code and logs.
-- Desktop `pnpm dev` uses `apps/desktop/tools/builtin-extensions/cli.ts watch` to write built-ins to `apps/desktop/out/extensions`.
+- Desktop `pnpm dev` watches built-ins in-process through `apps/desktop/tools/builtin-extensions/dev-session.ts` (kisx programmatic API from `@kisaki3/extension-cli`) and writes debug packages to `apps/desktop/out/extensions`.
 - Desktop `pnpm build` uses `apps/desktop/tools/builtin-extensions/cli.ts build --target=resources` to write built-ins to `apps/desktop/resources/extensions`.
 - Root scripts:
   - `pnpm check:extension-tooling`

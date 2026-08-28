@@ -4,6 +4,7 @@ export {
   type ExtensionPackageFileEntry
 } from './layout'
 export { hashFile, inspectKisxPackage, type FileDigest, type KisxPackageInfo } from './info'
+export { outputExtensionPackage } from './output'
 export { createKisxArchive, type CreateArchiveOptions } from './archive'
 export {
   EXTENSION_ARTIFACT_SIGNATURE_FILE_KIND,

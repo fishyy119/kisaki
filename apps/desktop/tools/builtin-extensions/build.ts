@@ -1,5 +1,5 @@
 import { findBuiltinExtensionProjects } from './projects'
-import { runKisxOutput } from './kisx'
+import { outputBuiltinExtension } from './kisx'
 import { resetOutputRoot } from './output'
 import { resolveBuiltinExtensionOutputRoot } from './paths'
 import { prepareExtensionDebugPackages } from './tooling'
@@ -24,5 +24,5 @@ export async function buildBuiltinExtensions(
   }
 
   console.log(`[builtin-extensions] Building ${projects.length} built-in extension(s)`)
-  await Promise.all(projects.map((project) => runKisxOutput(context, project, outputRoot)))
+  await Promise.all(projects.map((project) => outputBuiltinExtension(project, outputRoot)))
 }

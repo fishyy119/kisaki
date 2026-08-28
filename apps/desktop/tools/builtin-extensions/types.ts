@@ -1,5 +1,3 @@
-import type { ChildProcess } from 'node:child_process'
-
 /** Built-in extension output destination used by desktop workflows. */
 export type BuiltinExtensionBuildTarget = 'dev' | 'resources'
 
@@ -29,26 +27,7 @@ export interface BuiltinExtensionToolContext {
   readonly desktopRoot: string
   readonly repoRoot: string
   readonly builtinExtensionsRoot: string
-  readonly extensionCliEntry: string
   readonly extensionToolingManifest: ExtensionToolingManifest
   readonly extensionToolingPackagesByName: ReadonlyMap<string, ExtensionToolingPackage>
   readonly pnpmCommand: string
-}
-
-/** Running kisx host watcher with a readiness boundary. */
-export interface BuiltinExtensionWatcher {
-  readonly process: ChildProcess
-  readonly ready: Promise<void>
-}
-
-/** Running kisx UI dev server with a readiness boundary. */
-export interface BuiltinExtensionUiDevServer {
-  readonly process: ChildProcess
-  readonly ready: Promise<BuiltinExtensionUiDevServerReady>
-}
-
-/** Dev-server origin reported by a ready built-in extension webview. */
-export interface BuiltinExtensionUiDevServerReady {
-  readonly project: string
-  readonly origin: string
 }

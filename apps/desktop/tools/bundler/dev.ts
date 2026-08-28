@@ -6,13 +6,15 @@ import {
   type Rolldown,
   type ViteDevServer
 } from 'vite'
+import { DEVELOPMENT_EXTENSIONS_ENV, RENDERER_DEV_SERVER_URL_ENV } from '../../src/shared/bootstrap'
+import { createBuiltinExtensionToolContext } from '../builtin-extensions/context'
+import { startBuiltinExtensionDevSession } from '../builtin-extensions/dev-session'
+import { buildWebviewFonts } from '../webview-fonts/build'
+import { createWebviewFontToolContext } from '../webview-fonts/paths'
 import { ElectronAppController } from './electron'
 import type { BundlerPaths } from './paths'
 import { DevReloadCoordinator } from './reload'
 import { createMainConfig, createPreloadConfig, createRendererConfig } from './targets'
-
-/** Dev contract consumed by src/main/env.ts to load renderer pages from the dev server. */
-const RENDERER_DEV_SERVER_URL_ENV = 'KISAKI_RENDERER_DEV_SERVER_URL'
 
 interface WatchBuildHandle {
   watcher: Rolldown.RolldownWatcher
@@ -23,11 +25,18 @@ interface WatchBuildHandle {
 }
 
 /**
- * Runs the desktop dev workflow: renderer dev server with HMR, main and preload
- * watch builds, and an Electron instance restarted on main rebuilds.
+ * Runs the desktop dev workflow inside this single process: webview fonts,
+ * built-in extension watchers and UI dev servers, renderer dev server with
+ * HMR, main and preload watch builds, and an Electron instance restarted on
+ * main rebuilds. Electron is the only long-lived child process.
  */
 export async function runDevWorkflow(paths: BundlerPaths): Promise<void> {
   const mode = 'development'
+
+  await buildWebviewFonts(createWebviewFontToolContext())
+  const extensionSession = await startBuiltinExtensionDevSession(
+    createBuiltinExtensionToolContext()
+  )
 
   const rendererServer = await createServer(createRendererConfig(paths, mode))
   await rendererServer.listen()
@@ -47,7 +56,8 @@ export async function runDevWorkflow(paths: BundlerPaths): Promise<void> {
     app.dispose()
     void Promise.allSettled([
       ...watchers.map((watcher) => watcher.close()),
-      rendererServer.close()
+      rendererServer.close(),
+      extensionSession.close()
     ]).then(() => {
       process.exit(code)
     })
@@ -55,7 +65,10 @@ export async function runDevWorkflow(paths: BundlerPaths): Promise<void> {
 
   const app = new ElectronAppController({
     desktopRoot: paths.desktopRoot,
-    env: { [RENDERER_DEV_SERVER_URL_ENV]: rendererUrl },
+    env: {
+      [RENDERER_DEV_SERVER_URL_ENV]: rendererUrl,
+      [DEVELOPMENT_EXTENSIONS_ENV]: JSON.stringify(extensionSession.extensions)
+    },
     onExit: shutdown
   })
 

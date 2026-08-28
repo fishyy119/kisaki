@@ -10,9 +10,9 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "pnpm run build:webview-fonts && tsx tools/builtin-extensions/cli.ts watch -- tsx tools/bundler/cli.ts dev",
-    "start": "pnpm run build:webview-fonts && tsx tools/builtin-extensions/cli.ts build --target=dev && tsx tools/bundler/cli.ts start",
-    "build": "tsx tools/builtin-extensions/cli.ts build --target=resources && pnpm run build:webview-fonts && pnpm run typecheck && tsx tools/bundler/cli.ts build",
+    "dev": "tsx tools/bundler/cli.ts dev",
+    "start": "tsx tools/bundler/cli.ts start",
+    "build": "tsx tools/builtin-extensions/cli.ts build --target=resources && pnpm run typecheck && tsx tools/bundler/cli.ts build",
     "build:webview-fonts": "tsx tools/webview-fonts/cli.ts build",
     "build:unpack": "pnpm run build && pnpm run ensure:media-binaries && electron-builder --dir",
     "build:win:unpack": "pnpm run build && pnpm run ensure:media-binaries && electron-builder --win --dir",
@@ -71,6 +71,7 @@
     "@fontsource-variable/noto-sans-sc": "^5.2.10",
     "@iconify/json": "^2.2.498",
     "@iconify/tailwind4": "catalog:",
+    "@kisaki3/extension-cli": "workspace:*",
     "@lezer/highlight": "^1.2.3",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "catalog:",

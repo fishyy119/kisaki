@@ -1,8 +1,16 @@
 /**
- * Bootstrap Arguments
+ * Bootstrap Contract
  *
- * Parsed early bootstrap arguments used by the main process.
+ * Early launch arguments and environment contract consumed by the main
+ * process. Launchers (the bundler dev workflow, kisx dev) publish the
+ * environment side of this contract.
  */
+
+/** Environment variable carrying a JSON array of DevelopmentExtension entries. */
+export const DEVELOPMENT_EXTENSIONS_ENV = 'KISAKI_DEV_EXTENSIONS'
+
+/** Environment variable carrying the renderer dev server origin in development. */
+export const RENDERER_DEV_SERVER_URL_ENV = 'KISAKI_RENDERER_DEV_SERVER_URL'
 
 export interface BootstrapArgs {
   /** Print help and exit */

@@ -31,7 +31,6 @@ export async function runBuild(options: BuildOptions): Promise<void> {
     })
     await bundles.whenBuilt()
     logger.success('Extension bundles built. Watching for changes.')
-    emitWatchReady(project.rootDir)
 
     let stopped = false
     const stop = (code = 0): void => {
@@ -53,10 +52,4 @@ export async function runBuild(options: BuildOptions): Promise<void> {
   logger.heading('kisx build', 'Building extension with Vite.')
   await buildProject(project, options.hostOnly === undefined ? {} : { hostOnly: options.hostOnly })
   logger.success('Extension build completed.')
-}
-
-function emitWatchReady(projectDir: string): void {
-  if (typeof process.send === 'function') {
-    process.send({ type: 'kisx:watch-ready', project: projectDir })
-  }
 }

@@ -258,6 +258,9 @@ importers:
       '@iconify/tailwind4':
         specifier: 'catalog:'
         version: 1.2.3(tailwindcss@4.3.3)
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3

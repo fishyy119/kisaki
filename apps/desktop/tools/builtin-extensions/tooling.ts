@@ -1,13 +1,14 @@
 import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import spawn from 'cross-spawn'
 import {
   extensionDebugPackageNames,
   extensionPackageDependencyFields,
+  kisxRuntimePackageNames,
   requireExtensionToolingPackage
 } from './context'
 import { resolveBuiltinExtensionDebugPackagesRoot } from './paths'
-import { runProcess } from './process'
 import type { BuiltinExtensionPackageJson, BuiltinExtensionToolContext } from './types'
 
 /** Builds required workspace packages and mirrors debug package output. */
@@ -41,13 +42,32 @@ async function buildExtensionPackages(
   }
 }
 
+/** Runs a child process and rejects when it exits unsuccessfully. */
+function runProcess(command: string, args: string[], cwd: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd,
+      stdio: 'inherit'
+    })
+
+    child.on('error', reject)
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`${command} exited with code ${code ?? 'unknown'}`))
+      }
+    })
+  })
+}
+
 async function collectRequiredExtensionToolingPackages(
   context: BuiltinExtensionToolContext,
   projects: readonly string[]
 ): Promise<Set<string>> {
   const packageNames = new Set<string>()
 
-  for (const packageName of extensionDebugPackageNames) {
+  for (const packageName of [...extensionDebugPackageNames, ...kisxRuntimePackageNames]) {
     addExtensionToolingPackageWithDependencies(context, packageNames, packageName)
   }
 

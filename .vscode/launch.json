@@ -5,12 +5,10 @@
       "name": "Debug Main Process",
       "type": "node",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "pnpm",
-      "windows": {
-        "runtimeExecutable": "pnpm.cmd"
-      },
-      "runtimeArgs": ["--filter", "kisaki", "run", "dev"],
+      "cwd": "${workspaceFolder}/apps/desktop",
+      "runtimeArgs": ["--import", "tsx"],
+      "program": "${workspaceFolder}/apps/desktop/tools/bundler/cli.ts",
+      "args": ["dev"],
       "autoAttachChildProcesses": true,
       "console": "internalConsole",
       "outputCapture": "std",

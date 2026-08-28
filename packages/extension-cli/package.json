@@ -12,6 +12,10 @@
     "kisx": "./dist/index.mjs"
   },
   "exports": {
+    ".": {
+      "types": "./dist/api.d.mts",
+      "default": "./dist/api.mjs"
+    },
     "./config": {
       "types": "./dist/config.d.mts",
       "default": "./dist/config.mjs"
