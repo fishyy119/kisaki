@@ -12,7 +12,6 @@ import type { YmgalClient } from '../../api/client'
 import type { YmgalGame } from '../../api/types'
 import { parseYmgalArchiveId } from '../../identity/archive-id'
 import { YMGAL_COVER_LIMIT } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import {
   buildCharacterFacts,
   buildCompanyFacts,
@@ -119,13 +118,13 @@ async function buildGameInfo(
     gameId ?? game.name
   )
 
-  return omitUndefined({
+  return {
     name,
     originalName,
     releaseDate: parseYmgalDate(game.releaseDate),
     description: normalizeDescription(game.introduction),
     externalSites: gameId ? toOptionalSites(buildGameSites(gameId, game)) : undefined
-  })
+  }
 }
 
 async function buildCharacters(
@@ -158,20 +157,18 @@ async function buildCharacters(
         ]
       : []
 
-    facts.push(
-      omitUndefined({
-        ...toCharacterMetadata(
-          buildCharacterFacts(
-            characterId,
-            characters.get(characterId),
-            cidMapping?.[characterId],
-            ctx
-          )
-        ),
-        role: mapCharacterRole(relation.characterPosition),
-        persons: cast.length > 0 ? cast : undefined
-      })
-    )
+    facts.push({
+      ...toCharacterMetadata(
+        buildCharacterFacts(
+          characterId,
+          characters.get(characterId),
+          cidMapping?.[characterId],
+          ctx
+        )
+      ),
+      role: mapCharacterRole(relation.characterPosition),
+      persons: cast.length > 0 ? cast : undefined
+    })
   }
 
   return facts
@@ -194,17 +191,15 @@ async function buildPersons(
       continue
     }
 
-    facts.push(
-      omitUndefined({
-        ...toPersonMetadata(
-          buildPersonFacts(personId, persons.get(personId), pidMapping?.[personId], ctx)
-        ),
-        role: mapStaffRole(staff),
-        // The job name is what the source actually stated; the role is our
-        // coarse mapping of it, so an unmapped job still reaches the library.
-        note: readStaffNote(staff) ?? readJobName(staff)
-      })
-    )
+    facts.push({
+      ...toPersonMetadata(
+        buildPersonFacts(personId, persons.get(personId), pidMapping?.[personId], ctx)
+      ),
+      role: mapStaffRole(staff),
+      // The job name is what the source actually stated; the role is our
+      // coarse mapping of it, so an unmapped job still reaches the library.
+      note: readStaffNote(staff) ?? readJobName(staff)
+    })
   }
 
   // Voice credits live on the character relation, not in the staff list, so

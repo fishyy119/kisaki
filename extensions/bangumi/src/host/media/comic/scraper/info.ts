@@ -1,6 +1,5 @@
 import type { ContentLocale, ScrapedComicInfo } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../../api/types'
-import { omitUndefined } from '../../../utils/object'
 import { readPositiveInteger } from '../../../utils/numbers'
 import { resolveBangumiComicFormat } from '../../format/formats'
 import { buildSubjectCoreInfo } from '../../subject/info'
@@ -14,12 +13,12 @@ export async function buildComicInfo(
     getSubject()
   ])
 
-  return omitUndefined({
+  return {
     ...core,
     format: resolveBangumiComicFormat(subject),
     totalVolumes: readPositiveInteger(subject.volumes),
     totalChapters: readTotalChapters(subject)
-  })
+  }
 }
 
 /** `eps` is what a serialized entry claims; `total_episodes` counts the rows it has. */

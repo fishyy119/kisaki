@@ -21,19 +21,19 @@ export interface ExtensionLoadRequest {
   extension: ExtensionRuntimeMetadata
   runtimeHandle: ExtensionRuntimeHandle
   generation: number
-  cause?: ExtensionRuntimeChangeCause
+  cause?: ExtensionRuntimeChangeCause | undefined
 }
 
 export interface ExtensionUnloadRequest {
   extensionId: string
-  runtimeHandle?: ExtensionRuntimeHandle
-  reason?: ExtensionUnloadReason
+  runtimeHandle?: ExtensionRuntimeHandle | undefined
+  reason?: ExtensionUnloadReason | undefined
 }
 
 export interface ExtensionUnloadResult {
   unloaded: boolean
-  deactivateError?: RpcErrorPayload
-  cleanupError?: RpcErrorPayload
+  deactivateError?: RpcErrorPayload | undefined
+  cleanupError?: RpcErrorPayload | undefined
 }
 
 export interface ExtensionScopedRpcParams {

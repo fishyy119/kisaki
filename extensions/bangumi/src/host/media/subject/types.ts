@@ -10,10 +10,10 @@ import type {
 } from '../../api/types'
 
 export interface BangumiSubjectImageVariants {
-  large?: string
-  common?: string
-  small?: string
-  grid?: string
+  large?: string | undefined
+  common?: string | undefined
+  small?: string | undefined
+  grid?: string | undefined
 }
 
 /**

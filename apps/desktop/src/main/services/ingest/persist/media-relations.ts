@@ -173,7 +173,7 @@ function buildFinalRelationRows(
       continue
     }
 
-    const currentRow = merged[existingIndex]
+    const currentRow = merged[existingIndex]!
     merged[existingIndex] = { ...currentRow, note: currentRow.note ?? row.note }
   }
 
@@ -187,7 +187,7 @@ function areRelationRowsEqual(
   if (current.length !== next.length) return false
 
   return current.every((row, index) => {
-    const candidate = next[index]
+    const candidate = next[index]!
     return (
       row.toType === candidate.toType &&
       row.toId === candidate.toId &&

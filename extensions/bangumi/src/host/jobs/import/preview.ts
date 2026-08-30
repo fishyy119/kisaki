@@ -5,7 +5,6 @@ import { m } from '../../i18n'
 import type { BangumiMediaScope } from '../../../shared/scopes'
 import type { LocalCollectionTarget, LocalMediaAdapter, LocalMediaItem } from '../../media/types'
 import { BangumiExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'
 import type { JobStateController } from '../context'
 import {
@@ -180,13 +179,10 @@ export function recordRemoteOnlyIndexPreview(
   for (const [index, planItem] of planItems.entries()) {
     const { action, subject, subjectId } = planItem
     if (action.kind === 'error') {
-      job.addError(
-        new BangumiExtensionError('bangumi_validation', action.message),
-        omitUndefined({
-          scope,
-          subjectId: action.subjectId
-        })
-      )
+      job.addError(new BangumiExtensionError('bangumi_validation', action.message), {
+        scope,
+        subjectId: action.subjectId
+      })
       job.increment('failedItems')
       continue
     }

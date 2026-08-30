@@ -39,7 +39,7 @@ export interface ScrapedIdentityCarrier {
 }
 
 export type ScraperSessionResult<TResultMap extends object> = {
-  identity?: ScrapedEntityIdentity
+  identity?: ScrapedEntityIdentity | undefined
   slots: Partial<TResultMap>
 }
 
@@ -58,45 +58,45 @@ export type ScrapedCompanyInfo = Omit<CoreCompanyMetadata, 'externalIds' | 'tags
 export type ScrapedCharacterInfo = Omit<CoreCharacterMetadata, 'externalIds' | 'tags'>
 
 export interface ScrapedGameCore extends ScrapedGameInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 export interface ScrapedAnimeCore extends ScrapedAnimeInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 export interface ScrapedComicCore extends ScrapedComicInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 export interface ScrapedNovelCore extends ScrapedNovelInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 export interface ScrapedPersonCore extends ScrapedPersonInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 export interface ScrapedCompanyCore extends ScrapedCompanyInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 export interface ScrapedCharacterCore extends ScrapedCharacterInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 /**
  * Scraped person metadata with media candidates kept at scraper layer.
  */
 export interface ScrapedPersonMetadata extends ScrapedPersonCore, ScrapedIdentityCarrier {
-  photos?: string[]
+  photos?: string[] | undefined
 }
 
 /**
  * Scraped company metadata with media candidates kept at scraper layer.
  */
 export interface ScrapedCompanyMetadata extends ScrapedCompanyCore, ScrapedIdentityCarrier {
-  logos?: string[]
+  logos?: string[] | undefined
 }
 
 /**
@@ -107,18 +107,18 @@ export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
    * Character reference for game-level character-person facts.
    * Character flow may omit this because the root character is implicit.
    */
-  character?: ScrapedCharacterCore & ScrapedIdentityCarrier
+  character?: (ScrapedCharacterCore & ScrapedIdentityCarrier) | undefined
   role: CharacterPersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
  * Scraped character metadata with relation/media facts.
  */
 export interface ScrapedCharacterMetadata extends ScrapedCharacterCore, ScrapedIdentityCarrier {
-  persons?: ScrapedCharacterPersonFact[]
-  photos?: string[]
+  persons?: ScrapedCharacterPersonFact[] | undefined
+  photos?: string[] | undefined
 }
 
 /**
@@ -126,8 +126,8 @@ export interface ScrapedCharacterMetadata extends ScrapedCharacterCore, ScrapedI
  */
 export interface ScrapedGamePersonFact extends ScrapedPersonMetadata {
   role: GamePersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -135,8 +135,8 @@ export interface ScrapedGamePersonFact extends ScrapedPersonMetadata {
  */
 export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
   role: GameCharacterRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -144,22 +144,22 @@ export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
  */
 export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
   role: GameCompanyRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
  * Scraped game metadata with relation/media facts.
  */
 export interface ScrapedGameMetadata extends ScrapedGameCore, ScrapedIdentityCarrier {
-  persons?: ScrapedGamePersonFact[]
-  characters?: ScrapedGameCharacterFact[]
-  companies?: ScrapedGameCompanyFact[]
-  relatedEntries?: ScrapedRelatedEntryFact[]
-  covers?: string[]
-  backdrops?: string[]
-  logos?: string[]
-  icons?: string[]
+  persons?: ScrapedGamePersonFact[] | undefined
+  characters?: ScrapedGameCharacterFact[] | undefined
+  companies?: ScrapedGameCompanyFact[] | undefined
+  relatedEntries?: ScrapedRelatedEntryFact[] | undefined
+  covers?: string[] | undefined
+  backdrops?: string[] | undefined
+  logos?: string[] | undefined
+  icons?: string[] | undefined
 }
 
 /**
@@ -167,8 +167,8 @@ export interface ScrapedGameMetadata extends ScrapedGameCore, ScrapedIdentityCar
  */
 export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
   role: AnimePersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -176,8 +176,8 @@ export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
  */
 export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
   role: AnimeCharacterRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -185,8 +185,8 @@ export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
  */
 export interface ScrapedAnimeCompanyFact extends ScrapedCompanyMetadata {
   role: AnimeCompanyRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -201,21 +201,21 @@ export interface ScrapedRelatedEntryFact {
   source: string
   externalId: string
   type: MediaRelationType
-  note?: string
+  note?: string | undefined
 }
 
 /**
  * Scraped anime metadata with relation/media facts.
  */
 export interface ScrapedAnimeMetadata extends ScrapedAnimeCore, ScrapedIdentityCarrier {
-  episodes?: AnimeEpisodeInfo[]
-  persons?: ScrapedAnimePersonFact[]
-  characters?: ScrapedAnimeCharacterFact[]
-  companies?: ScrapedAnimeCompanyFact[]
-  relatedEntries?: ScrapedRelatedEntryFact[]
-  covers?: string[]
-  backdrops?: string[]
-  logos?: string[]
+  episodes?: AnimeEpisodeInfo[] | undefined
+  persons?: ScrapedAnimePersonFact[] | undefined
+  characters?: ScrapedAnimeCharacterFact[] | undefined
+  companies?: ScrapedAnimeCompanyFact[] | undefined
+  relatedEntries?: ScrapedRelatedEntryFact[] | undefined
+  covers?: string[] | undefined
+  backdrops?: string[] | undefined
+  logos?: string[] | undefined
 }
 
 /**
@@ -223,8 +223,8 @@ export interface ScrapedAnimeMetadata extends ScrapedAnimeCore, ScrapedIdentityC
  */
 export interface ScrapedComicPersonFact extends ScrapedPersonMetadata {
   role: ComicPersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -232,8 +232,8 @@ export interface ScrapedComicPersonFact extends ScrapedPersonMetadata {
  */
 export interface ScrapedComicCharacterFact extends ScrapedCharacterMetadata {
   role: ComicCharacterRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -241,22 +241,22 @@ export interface ScrapedComicCharacterFact extends ScrapedCharacterMetadata {
  */
 export interface ScrapedComicCompanyFact extends ScrapedCompanyMetadata {
   role: ComicCompanyRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
  * Scraped comic metadata with relation/media facts.
  */
 export interface ScrapedComicMetadata extends ScrapedComicCore, ScrapedIdentityCarrier {
-  chapters?: ComicChapterInfo[]
-  persons?: ScrapedComicPersonFact[]
-  characters?: ScrapedComicCharacterFact[]
-  companies?: ScrapedComicCompanyFact[]
-  relatedEntries?: ScrapedRelatedEntryFact[]
-  covers?: string[]
-  backdrops?: string[]
-  logos?: string[]
+  chapters?: ComicChapterInfo[] | undefined
+  persons?: ScrapedComicPersonFact[] | undefined
+  characters?: ScrapedComicCharacterFact[] | undefined
+  companies?: ScrapedComicCompanyFact[] | undefined
+  relatedEntries?: ScrapedRelatedEntryFact[] | undefined
+  covers?: string[] | undefined
+  backdrops?: string[] | undefined
+  logos?: string[] | undefined
 }
 
 /**
@@ -264,8 +264,8 @@ export interface ScrapedComicMetadata extends ScrapedComicCore, ScrapedIdentityC
  */
 export interface ScrapedNovelPersonFact extends ScrapedPersonMetadata {
   role: NovelPersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -273,8 +273,8 @@ export interface ScrapedNovelPersonFact extends ScrapedPersonMetadata {
  */
 export interface ScrapedNovelCharacterFact extends ScrapedCharacterMetadata {
   role: NovelCharacterRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -282,22 +282,22 @@ export interface ScrapedNovelCharacterFact extends ScrapedCharacterMetadata {
  */
 export interface ScrapedNovelCompanyFact extends ScrapedCompanyMetadata {
   role: NovelCompanyRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
  * Scraped novel metadata with relation/media facts.
  */
 export interface ScrapedNovelMetadata extends ScrapedNovelCore, ScrapedIdentityCarrier {
-  volumes?: NovelVolumeInfo[]
-  persons?: ScrapedNovelPersonFact[]
-  characters?: ScrapedNovelCharacterFact[]
-  companies?: ScrapedNovelCompanyFact[]
-  relatedEntries?: ScrapedRelatedEntryFact[]
-  covers?: string[]
-  backdrops?: string[]
-  logos?: string[]
+  volumes?: NovelVolumeInfo[] | undefined
+  persons?: ScrapedNovelPersonFact[] | undefined
+  characters?: ScrapedNovelCharacterFact[] | undefined
+  companies?: ScrapedNovelCompanyFact[] | undefined
+  relatedEntries?: ScrapedRelatedEntryFact[] | undefined
+  covers?: string[] | undefined
+  backdrops?: string[] | undefined
+  logos?: string[] | undefined
 }
 
 /**
@@ -307,117 +307,131 @@ export interface ScrapedNovelMetadata extends ScrapedNovelCore, ScrapedIdentityC
  * means the source states the game has none.
  */
 export interface ScrapedGameRelationFacts {
-  gamePerson?: ScrapedGamePersonFact[]
-  gameCompany?: ScrapedGameCompanyFact[]
-  gameCharacter?: ScrapedGameCharacterFact[]
-  characterPerson?: ScrapedCharacterPersonFact[]
-  relatedEntries?: ScrapedRelatedEntryFact[]
+  gamePerson?: ScrapedGamePersonFact[] | undefined
+  gameCompany?: ScrapedGameCompanyFact[] | undefined
+  gameCharacter?: ScrapedGameCharacterFact[] | undefined
+  characterPerson?: ScrapedCharacterPersonFact[] | undefined
+  relatedEntries?: ScrapedRelatedEntryFact[] | undefined
 }
 
 export interface ScrapedGameBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedGameCore
-  relationFacts?: ScrapedGameRelationFacts
-  mediaCandidates?: {
-    coverUrls?: string[]
-    backdropUrls?: string[]
-    logoUrls?: string[]
-    iconUrls?: string[]
-  }
+  core?: ScrapedGameCore | undefined
+  relationFacts?: ScrapedGameRelationFacts | undefined
+  mediaCandidates?:
+    | {
+        coverUrls?: string[] | undefined
+        backdropUrls?: string[] | undefined
+        logoUrls?: string[] | undefined
+        iconUrls?: string[] | undefined
+      }
+    | undefined
 }
 
 /** Relation facts an anime scrape can state; see `ScrapedGameRelationFacts`. */
 export interface ScrapedAnimeRelationFacts {
-  animePerson?: ScrapedAnimePersonFact[]
-  animeCompany?: ScrapedAnimeCompanyFact[]
-  animeCharacter?: ScrapedAnimeCharacterFact[]
-  characterPerson?: ScrapedCharacterPersonFact[]
-  relatedEntries?: ScrapedRelatedEntryFact[]
+  animePerson?: ScrapedAnimePersonFact[] | undefined
+  animeCompany?: ScrapedAnimeCompanyFact[] | undefined
+  animeCharacter?: ScrapedAnimeCharacterFact[] | undefined
+  characterPerson?: ScrapedCharacterPersonFact[] | undefined
+  relatedEntries?: ScrapedRelatedEntryFact[] | undefined
 }
 
 export interface ScrapedAnimeBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedAnimeCore
+  core?: ScrapedAnimeCore | undefined
   /** Absent means unknown; an empty array means the source states no episodes. */
-  episodes?: AnimeEpisodeInfo[]
-  relationFacts?: ScrapedAnimeRelationFacts
-  mediaCandidates?: {
-    coverUrls?: string[]
-    backdropUrls?: string[]
-    logoUrls?: string[]
-  }
+  episodes?: AnimeEpisodeInfo[] | undefined
+  relationFacts?: ScrapedAnimeRelationFacts | undefined
+  mediaCandidates?:
+    | {
+        coverUrls?: string[] | undefined
+        backdropUrls?: string[] | undefined
+        logoUrls?: string[] | undefined
+      }
+    | undefined
 }
 
 /** Relation facts a comic scrape can state; see `ScrapedGameRelationFacts`. */
 export interface ScrapedComicRelationFacts {
-  comicPerson?: ScrapedComicPersonFact[]
-  comicCompany?: ScrapedComicCompanyFact[]
-  comicCharacter?: ScrapedComicCharacterFact[]
-  characterPerson?: ScrapedCharacterPersonFact[]
-  relatedEntries?: ScrapedRelatedEntryFact[]
+  comicPerson?: ScrapedComicPersonFact[] | undefined
+  comicCompany?: ScrapedComicCompanyFact[] | undefined
+  comicCharacter?: ScrapedComicCharacterFact[] | undefined
+  characterPerson?: ScrapedCharacterPersonFact[] | undefined
+  relatedEntries?: ScrapedRelatedEntryFact[] | undefined
 }
 
 export interface ScrapedComicBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedComicCore
+  core?: ScrapedComicCore | undefined
   /** Absent means unknown; an empty array means the source states no units. */
-  chapters?: ComicChapterInfo[]
-  relationFacts?: ScrapedComicRelationFacts
-  mediaCandidates?: {
-    coverUrls?: string[]
-    backdropUrls?: string[]
-    logoUrls?: string[]
-  }
+  chapters?: ComicChapterInfo[] | undefined
+  relationFacts?: ScrapedComicRelationFacts | undefined
+  mediaCandidates?:
+    | {
+        coverUrls?: string[] | undefined
+        backdropUrls?: string[] | undefined
+        logoUrls?: string[] | undefined
+      }
+    | undefined
 }
 
 /** Relation facts a novel scrape can state; see `ScrapedGameRelationFacts`. */
 export interface ScrapedNovelRelationFacts {
-  novelPerson?: ScrapedNovelPersonFact[]
-  novelCompany?: ScrapedNovelCompanyFact[]
-  novelCharacter?: ScrapedNovelCharacterFact[]
-  characterPerson?: ScrapedCharacterPersonFact[]
-  relatedEntries?: ScrapedRelatedEntryFact[]
+  novelPerson?: ScrapedNovelPersonFact[] | undefined
+  novelCompany?: ScrapedNovelCompanyFact[] | undefined
+  novelCharacter?: ScrapedNovelCharacterFact[] | undefined
+  characterPerson?: ScrapedCharacterPersonFact[] | undefined
+  relatedEntries?: ScrapedRelatedEntryFact[] | undefined
 }
 
 export interface ScrapedNovelBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedNovelCore
+  core?: ScrapedNovelCore | undefined
   /** Absent means unknown; an empty array means the source states no volumes. */
-  volumes?: NovelVolumeInfo[]
-  relationFacts?: ScrapedNovelRelationFacts
-  mediaCandidates?: {
-    coverUrls?: string[]
-    backdropUrls?: string[]
-    logoUrls?: string[]
-  }
+  volumes?: NovelVolumeInfo[] | undefined
+  relationFacts?: ScrapedNovelRelationFacts | undefined
+  mediaCandidates?:
+    | {
+        coverUrls?: string[] | undefined
+        backdropUrls?: string[] | undefined
+        logoUrls?: string[] | undefined
+      }
+    | undefined
 }
 
 export interface ScrapedPersonBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedPersonCore
-  mediaCandidates?: {
-    photoUrls?: string[]
-  }
+  core?: ScrapedPersonCore | undefined
+  mediaCandidates?:
+    | {
+        photoUrls?: string[] | undefined
+      }
+    | undefined
 }
 
 export interface ScrapedCompanyBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedCompanyCore
-  mediaCandidates?: {
-    logoUrls?: string[]
-  }
+  core?: ScrapedCompanyCore | undefined
+  mediaCandidates?:
+    | {
+        logoUrls?: string[] | undefined
+      }
+    | undefined
 }
 
 /** Relation facts a character scrape can state; see `ScrapedGameRelationFacts`. */
 export interface ScrapedCharacterRelationFacts {
-  characterPerson?: ScrapedCharacterPersonFact[]
+  characterPerson?: ScrapedCharacterPersonFact[] | undefined
 }
 
 export interface ScrapedCharacterBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedCharacterCore
-  relationFacts?: ScrapedCharacterRelationFacts
-  mediaCandidates?: {
-    photoUrls?: string[]
-  }
+  core?: ScrapedCharacterCore | undefined
+  relationFacts?: ScrapedCharacterRelationFacts | undefined
+  mediaCandidates?:
+    | {
+        photoUrls?: string[] | undefined
+      }
+    | undefined
 }

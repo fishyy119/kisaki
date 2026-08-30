@@ -1,8 +1,5 @@
-import {
-  LIBRARY_MEDIA_STATUSES,
-  type LibraryMediaStatus,
-  type SettingsStore
-} from '@kisaki3/extension-sdk'
+import { LIBRARY_MEDIA_STATUSES, type LibraryMediaStatus } from '@kisaki3/extension-sdk'
+import { type SettingsStore } from '../utils/settings-store'
 import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
 import { BANGUMI_MEDIA_SCOPES, type BangumiMediaScope } from '../../shared/scopes'
 

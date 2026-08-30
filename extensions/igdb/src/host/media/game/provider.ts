@@ -14,7 +14,6 @@ import { toResolvedTarget } from '../../identity/target'
 import { m } from '../../i18n'
 import { IGDB_SEARCH_RESULT_LIMIT } from '../../utils/constants'
 import { IgdbExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { GAME_SEARCH_FIELDS } from '../fields'
 import { parseUnixDate } from '../format/dates'
 import { toIgdbExternalId } from '../format/sites'
@@ -88,14 +87,12 @@ export class IgdbGameProvider implements GameScraperProvider {
       }
     }
 
-    return [...byId.values()].slice(0, IGDB_SEARCH_RESULT_LIMIT).map((game) =>
-      omitUndefined({
-        id: String(game.id),
-        name: game.name,
-        releaseDate: parseUnixDate(game.first_release_date),
-        externalIds: [toIgdbExternalId(game.id)]
-      })
-    )
+    return [...byId.values()].slice(0, IGDB_SEARCH_RESULT_LIMIT).map((game) => ({
+      id: String(game.id),
+      name: game.name,
+      releaseDate: parseUnixDate(game.first_release_date),
+      externalIds: [toIgdbExternalId(game.id)]
+    }))
   }
 
   async resolve(

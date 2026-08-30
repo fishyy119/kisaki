@@ -12,7 +12,6 @@ import { toResolvedTarget } from '../../identity/target'
 import { m } from '../../i18n'
 import { VNDB_SEARCH_RESULT_LIMIT, VNDB_SOURCE_ID } from '../../utils/constants'
 import { VndbExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { buildStaffFacts } from '../satellites'
 import { STAFF_FIELDS, STAFF_SEARCH_FIELDS } from '../fields'
 import { resolveEntityDisplayName } from '../format/names'
@@ -44,12 +43,12 @@ export class VndbPersonProvider implements PersonScraperProvider {
         request,
         staff.id
       )
-      return omitUndefined({
+      return {
         id: staff.id,
         name,
         originalName,
         externalIds: [{ source: VNDB_SOURCE_ID, id: staff.id }]
-      })
+      }
     })
   }
 

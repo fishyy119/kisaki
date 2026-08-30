@@ -12,7 +12,6 @@ import {
 import { m } from '../../i18n'
 import { readBangumiSubjectIdFromExternalIds } from '../../identity/subject-ref'
 import { BangumiExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
 import { parseBangumiSubjectDate } from '../format/dates'
 import {
@@ -49,7 +48,7 @@ interface BookEntity {
   id: string
   name: string
   status: LibraryMediaStatus
-  score?: number | null
+  score?: number | null | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -187,6 +186,8 @@ const novelHalf: BookHalf = {
 
 export interface BookLocalMediaAdapterDependencies {
   hooks: HooksRegistrar
+  /** This extension's own change-feed actor id, for self-echo skipping. */
+  selfActor: string
   /**
    * Resolves the platform label of a book subject for entries whose import
    * surface stated no facts (index rows list only ids and names).
@@ -226,6 +227,12 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
     return this.deps.hooks.on('library.changed', ({ changes }) => {
       for (const change of changes) {
         if (change.entity !== 'comic' && change.entity !== 'novel') {
+          continue
+        }
+
+        // Writes this extension caused come back attributed; reacting to them
+        // would only echo our own import or push.
+        if (change.actors.every((actor) => actor === this.deps.selfActor)) {
           continue
         }
 
@@ -293,31 +300,25 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
     const profileId = await this.resolveProfileId(input.profileId, target)
 
     if (target === 'comic') {
-      const result = await kisaki.ingest.comic.add.fromScraper(
-        profileId,
-        omitUndefined({
-          name: input.name,
-          knownIds: [...input.knownIds],
-          releaseDate: parseBangumiSubjectDate(input.facts?.date),
-          // An import row states only the platform label, which places the
-          // entry in a library but says little about its format; the scrape
-          // that follows reads the full subject and settles it.
-          format: resolveBangumiComicFormat({ platform: input.facts?.platform })
-        })
-      )
-      return { localId: result.comicId, isNew: result.isNew }
-    }
-
-    const result = await kisaki.ingest.novel.add.fromScraper(
-      profileId,
-      omitUndefined({
+      const result = await kisaki.ingest.comic.add.fromScraper(profileId, {
         name: input.name,
         knownIds: [...input.knownIds],
         releaseDate: parseBangumiSubjectDate(input.facts?.date),
-        // Platform-only, as above.
-        format: resolveBangumiNovelFormat({ platform: input.facts?.platform })
+        // An import row states only the platform label, which places the
+        // entry in a library but says little about its format; the scrape
+        // that follows reads the full subject and settles it.
+        format: resolveBangumiComicFormat({ platform: input.facts?.platform })
       })
-    )
+      return { localId: result.comicId, isNew: result.isNew }
+    }
+
+    const result = await kisaki.ingest.novel.add.fromScraper(profileId, {
+      name: input.name,
+      knownIds: [...input.knownIds],
+      releaseDate: parseBangumiSubjectDate(input.facts?.date),
+      // Platform-only, as above.
+      format: resolveBangumiNovelFormat({ platform: input.facts?.platform })
+    })
     return { localId: result.novelId, isNew: result.isNew }
   }
 
@@ -452,7 +453,7 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   private async toItem(half: BookHalf, entity: BookEntity): Promise<LocalMediaItem> {
-    return omitUndefined({
+    return {
       scope: 'book' as const,
       localId: entity.id,
       name: entity.name,
@@ -463,7 +464,7 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
         id: externalId.id
       })),
       unitProgress: await half.readUnitProgress(entity.id)
-    })
+    }
   }
 
   /**
@@ -519,13 +520,13 @@ export function createBookMediaDescriptor(adapter: LocalMediaAdapter): BangumiMe
 }
 
 function toBookEntity(entity: LibraryComic | LibraryNovel): BookEntity {
-  return omitUndefined({
+  return {
     id: entity.id,
     name: entity.name,
     status: entity.status,
     score: entity.score,
     externalIds: entity.externalIds
-  })
+  }
 }
 
 function toBookEntities(entities: readonly (LibraryComic | LibraryNovel)[]): BookEntity[] {

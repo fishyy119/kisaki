@@ -1,7 +1,8 @@
 import type {
   ExtensionRuntimeHandle,
   MainToHostRpcEvent,
-  MainToHostRpcEventMap
+  MainToHostRpcEventMap,
+  UndefinedTolerant
 } from '@kisaki3/extension-api'
 import type {
   ExtensionCardActionRunRequest,
@@ -65,7 +66,10 @@ export interface ExtensionContributionRegistryOptions extends ExtensionContribut
   deeplink: DeeplinkService
   scraper: ScraperService
   moduleHooks: ExtensionModuleHookSurfaces
-  sendEventToHost<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void
+  sendEventToHost<K extends MainToHostRpcEvent>(
+    name: K,
+    payload: UndefinedTolerant<MainToHostRpcEventMap[K]>
+  ): void
   onContributionsChanged?: () => void
   onEntityMenusRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void
 }
@@ -319,6 +323,10 @@ export class ExtensionContributionRegistry {
 
   releaseEntityMenu(request: ExtensionEntityMenuReleaseRequest): Promise<void> {
     return this.entityMenus.release(request)
+  }
+
+  releaseAllEntityMenuSessions(): Promise<void> {
+    return this.entityMenus.releaseAllSessions()
   }
 
   runCardAction(request: ExtensionCardActionRunRequest): Promise<void> {

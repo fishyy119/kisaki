@@ -19,7 +19,7 @@ export interface SaveBackup {
   note: string
   locked: boolean
   saveFile: string
-  sizeBytes?: number
+  sizeBytes?: number | undefined
 }
 
 export interface LibraryGameSession {
@@ -40,8 +40,8 @@ export interface LibraryGameNote {
   id: string
   gameId: string
   name: string
-  content?: string
-  coverFile?: string
+  content?: string | undefined
+  coverFile?: string | undefined
   orderInGame: number
   createdAt: number
   updatedAt: number
@@ -49,11 +49,11 @@ export interface LibraryGameNote {
 
 export interface LibraryGameNoteCreateInput {
   name: string
-  content?: string
-  coverPath?: string
-  createdAt?: number
-  updatedAt?: number
-  order?: number
+  content?: string | undefined
+  coverPath?: string | undefined
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  order?: number | undefined
 }
 
 export type SortDirection = 'asc' | 'desc'
@@ -139,13 +139,13 @@ export interface LibraryEntityReference<TEntityType extends LibraryEntityType = 
 }
 
 export interface LibraryListQuery {
-  ids?: readonly string[]
-  search?: string
-  limit?: number
-  offset?: number
+  ids?: readonly string[] | undefined
+  search?: string | undefined
+  limit?: number | undefined
+  offset?: number | undefined
   sort?: {
     field: string
-    direction?: SortDirection
+    direction?: SortDirection | undefined
   }
 }
 
@@ -154,58 +154,58 @@ export interface LibraryEntityBase {
   createdAt: number
   updatedAt: number
   name: string
-  description?: string
+  description?: string | undefined
 }
 
 export interface LibraryNamedEntityBase extends LibraryEntityBase {
-  originalName?: string
-  sortName?: string
+  originalName?: string | undefined
+  sortName?: string | undefined
 }
 
 export interface LibraryRankedEntityBase extends LibraryNamedEntityBase {
-  score?: number | null
+  score?: number | null | undefined
   isFavorite: boolean
   isNsfw: boolean
-  externalSites?: readonly ExternalSite[]
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface LibraryGame extends LibraryRankedEntityBase {
-  coverFile?: string
-  backdropFile?: string
-  logoFile?: string
-  iconFile?: string
+  coverFile?: string | undefined
+  backdropFile?: string | undefined
+  logoFile?: string | undefined
+  iconFile?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
   status: LibraryMediaStatus
-  lastActiveAt?: number | null
+  lastActiveAt?: number | null | undefined
   totalDuration: number
-  savePath?: string
-  saveBackups?: readonly SaveBackup[]
+  savePath?: string | undefined
+  saveBackups?: readonly SaveBackup[] | undefined
   maxSaveBackups: number
   launcherMode: LibraryGameLauncherMode
-  launcherPath?: string
+  launcherPath?: string | undefined
   monitorMode: LibraryGameMonitorMode
-  monitorPath?: string
-  gameDirPath?: string
-  descriptionInlineFiles?: readonly string[]
+  monitorPath?: string | undefined
+  gameDirPath?: string | undefined
+  descriptionInlineFiles?: readonly string[] | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface LibraryAnime extends LibraryRankedEntityBase {
-  coverFile?: string
-  backdropFile?: string
-  logoFile?: string
+  coverFile?: string | undefined
+  backdropFile?: string | undefined
+  logoFile?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
   status: LibraryMediaStatus
   format: LibraryAnimeFormat
-  totalEpisodes?: number | null
-  lastActiveAt?: number | null
+  totalEpisodes?: number | null | undefined
+  lastActiveAt?: number | null | undefined
   totalDuration: number
-  animeDirPath?: string
-  descriptionInlineFiles?: readonly string[]
+  animeDirPath?: string | undefined
+  descriptionInlineFiles?: readonly string[] | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -220,18 +220,18 @@ export interface LibraryAnimeEpisode {
   id: string
   animeId: string
   type: LibraryAnimeEpisodeType
-  episodeNumber?: number | null
-  name?: string
-  originalName?: string
-  airDate?: PartialDate
-  description?: string
-  stillFile?: string
-  durationMs?: number | null
+  episodeNumber?: number | null | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  airDate?: PartialDate | undefined
+  description?: string | undefined
+  stillFile?: string | undefined
+  durationMs?: number | null | undefined
   watched: boolean
   /** Completion time of the last full playback; absent on episodes only marked. */
-  watchedAt?: number | null
+  watchedAt?: number | null | undefined
   playCount: number
-  resumePositionMs?: number | null
+  resumePositionMs?: number | null | undefined
   orderInAnime: number
   externalIds: readonly ExternalId[]
   createdAt: number
@@ -239,15 +239,15 @@ export interface LibraryAnimeEpisode {
 }
 
 export interface LibraryAnimeEpisodeCreateInput {
-  type?: LibraryAnimeEpisodeType
-  episodeNumber?: number | null
-  name?: string
-  originalName?: string
-  airDate?: PartialDate
-  description?: string
-  durationMs?: number | null
-  order?: number
-  externalIds?: readonly ExternalId[]
+  type?: LibraryAnimeEpisodeType | undefined
+  episodeNumber?: number | null | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  airDate?: PartialDate | undefined
+  description?: string | undefined
+  durationMs?: number | null | undefined
+  order?: number | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 /**
@@ -259,36 +259,36 @@ export interface LibraryAnimeEpisodeCreateInput {
  * time; combining a cleared state with a time is rejected.
  */
 export interface LibraryAnimeEpisodeWatchStatePatch {
-  watched?: boolean
-  watchedAt?: number | null
-  playCount?: number
-  resumePositionMs?: number | null
+  watched?: boolean | undefined
+  watchedAt?: number | null | undefined
+  playCount?: number | undefined
+  resumePositionMs?: number | null | undefined
 }
 
 export interface LibraryAnimeEpisodeQuery {
   animeId: string
-  types?: readonly LibraryAnimeEpisodeType[]
-  watchedOnly?: boolean
-  unwatchedOnly?: boolean
+  types?: readonly LibraryAnimeEpisodeType[] | undefined
+  watchedOnly?: boolean | undefined
+  unwatchedOnly?: boolean | undefined
 }
 
 export interface LibraryComic extends LibraryRankedEntityBase {
-  coverFile?: string
-  backdropFile?: string
-  logoFile?: string
+  coverFile?: string | undefined
+  backdropFile?: string | undefined
+  logoFile?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
   status: LibraryMediaStatus
   format: LibraryComicFormat
   /** Per-entry layout override; absent follows the format default. */
-  readingDirection?: LibraryComicReadingDirection
-  totalVolumes?: number | null
-  totalChapters?: number | null
-  lastActiveAt?: number | null
+  readingDirection?: LibraryComicReadingDirection | undefined
+  totalVolumes?: number | null | undefined
+  totalChapters?: number | null | undefined
+  lastActiveAt?: number | null | undefined
   totalDuration: number
-  comicDirPath?: string
-  descriptionInlineFiles?: readonly string[]
+  comicDirPath?: string | undefined
+  descriptionInlineFiles?: readonly string[] | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -303,18 +303,18 @@ export interface LibraryComic extends LibraryRankedEntityBase {
 export interface LibraryComicChapter {
   id: string
   comicId: string
-  volumeNumber?: number | null
-  chapterNumber?: number | null
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
-  coverFile?: string
+  volumeNumber?: number | null | undefined
+  chapterNumber?: number | null | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  coverFile?: string | undefined
   read: boolean
   /** Completion time of the last full read; absent on units only marked. */
-  readAt?: number | null
+  readAt?: number | null | undefined
   readCount: number
-  resumePage?: number | null
+  resumePage?: number | null | undefined
   orderInComic: number
   externalIds: readonly ExternalId[]
   createdAt: number
@@ -322,14 +322,14 @@ export interface LibraryComicChapter {
 }
 
 export interface LibraryComicChapterCreateInput {
-  volumeNumber?: number | null
-  chapterNumber?: number | null
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
-  order?: number
-  externalIds?: readonly ExternalId[]
+  volumeNumber?: number | null | undefined
+  chapterNumber?: number | null | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  order?: number | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 /**
@@ -341,34 +341,34 @@ export interface LibraryComicChapterCreateInput {
  * combining a cleared state with a time is rejected.
  */
 export interface LibraryComicChapterReadStatePatch {
-  read?: boolean
-  readAt?: number | null
-  readCount?: number
+  read?: boolean | undefined
+  readAt?: number | null | undefined
+  readCount?: number | undefined
   /** Zero-based page index to resume at; null once the unit is read. */
-  resumePage?: number | null
+  resumePage?: number | null | undefined
 }
 
 export interface LibraryComicChapterQuery {
   comicId: string
   /** Keeps only units already read; `unreadOnly` is its complement. */
-  finishedOnly?: boolean
-  unreadOnly?: boolean
+  finishedOnly?: boolean | undefined
+  unreadOnly?: boolean | undefined
 }
 
 export interface LibraryNovel extends LibraryRankedEntityBase {
-  coverFile?: string
-  backdropFile?: string
-  logoFile?: string
+  coverFile?: string | undefined
+  backdropFile?: string | undefined
+  logoFile?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
   status: LibraryMediaStatus
   format: LibraryNovelFormat
-  totalVolumes?: number | null
-  lastActiveAt?: number | null
+  totalVolumes?: number | null | undefined
+  lastActiveAt?: number | null | undefined
   totalDuration: number
-  novelDirPath?: string
-  descriptionInlineFiles?: readonly string[]
+  novelDirPath?: string | undefined
+  descriptionInlineFiles?: readonly string[] | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -382,20 +382,20 @@ export interface LibraryNovel extends LibraryRankedEntityBase {
 export interface LibraryNovelVolume {
   id: string
   novelId: string
-  volumeNumber?: number | null
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
-  coverFile?: string
+  volumeNumber?: number | null | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  coverFile?: string | undefined
   read: boolean
   /** Completion time of the last full read; absent on volumes only marked. */
-  readAt?: number | null
+  readAt?: number | null | undefined
   readCount: number
   /** Engine-scoped resume locator; opaque to callers. */
-  resumeLocator?: string | null
+  resumeLocator?: string | null | undefined
   /** Read fraction in [0, 1] for display; the locator stays authoritative. */
-  resumeProgress?: number | null
+  resumeProgress?: number | null | undefined
   orderInNovel: number
   externalIds: readonly ExternalId[]
   createdAt: number
@@ -403,13 +403,13 @@ export interface LibraryNovelVolume {
 }
 
 export interface LibraryNovelVolumeCreateInput {
-  volumeNumber?: number | null
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
-  order?: number
-  externalIds?: readonly ExternalId[]
+  volumeNumber?: number | null | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  order?: number | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 /**
@@ -417,60 +417,60 @@ export interface LibraryNovelVolumeCreateInput {
  * {@link LibraryComicChapterReadStatePatch}, including the cleared-state rule.
  */
 export interface LibraryNovelVolumeReadStatePatch {
-  read?: boolean
-  readAt?: number | null
-  readCount?: number
-  resumeLocator?: string | null
+  read?: boolean | undefined
+  readAt?: number | null | undefined
+  readCount?: number | undefined
+  resumeLocator?: string | null | undefined
   /** Read fraction in [0, 1]; values outside the range are rejected. */
-  resumeProgress?: number | null
+  resumeProgress?: number | null | undefined
 }
 
 export interface LibraryNovelVolumeQuery {
   novelId: string
   /** Keeps only volumes already read; `unreadOnly` is its complement. */
-  finishedOnly?: boolean
-  unreadOnly?: boolean
+  finishedOnly?: boolean | undefined
+  unreadOnly?: boolean | undefined
 }
 
 export interface LibraryPerson extends LibraryRankedEntityBase {
-  photoFile?: string
+  photoFile?: string | undefined
   /** Other names this person is credited under, such as pen names. */
-  aliases?: readonly string[]
-  birthDate?: PartialDate
-  deathDate?: PartialDate
-  gender?: LibraryGender
+  aliases?: readonly string[] | undefined
+  birthDate?: PartialDate | undefined
+  deathDate?: PartialDate | undefined
+  gender?: LibraryGender | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface LibraryCompany extends LibraryRankedEntityBase {
-  foundedDate?: PartialDate
-  logoFile?: string
+  foundedDate?: PartialDate | undefined
+  logoFile?: string | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface LibraryCharacter extends LibraryRankedEntityBase {
-  photoFile?: string
+  photoFile?: string | undefined
   /** Nicknames and romanizations this character is also known by. */
-  aliases?: readonly string[]
-  birthDate?: PartialDate
-  gender?: LibraryGender
-  bloodType?: LibraryBloodType
-  height?: number
-  weight?: number
-  bust?: number
-  waist?: number
-  hips?: number
-  cup?: LibraryCupSize
-  age?: number
+  aliases?: readonly string[] | undefined
+  birthDate?: PartialDate | undefined
+  gender?: LibraryGender | undefined
+  bloodType?: LibraryBloodType | undefined
+  height?: number | undefined
+  weight?: number | undefined
+  bust?: number | undefined
+  waist?: number | undefined
+  hips?: number | undefined
+  cup?: LibraryCupSize | undefined
+  age?: number | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface LibraryCollection extends LibraryEntityBase {
-  coverFile?: string
+  coverFile?: string | undefined
   isNsfw: boolean
   order: number
   isDynamic: boolean
-  dynamicConfig?: DynamicCollectionConfig
+  dynamicConfig?: DynamicCollectionConfig | undefined
 }
 
 export interface LibraryTag extends LibraryEntityBase {
@@ -479,146 +479,146 @@ export interface LibraryTag extends LibraryEntityBase {
 
 export interface LibraryEntityInputBase {
   name: string
-  description?: string
+  description?: string | undefined
 }
 
 export interface LibraryNamedEntityInputBase extends LibraryEntityInputBase {
-  originalName?: string
-  sortName?: string
+  originalName?: string | undefined
+  sortName?: string | undefined
 }
 
 export interface LibraryRankedEntityInputBase extends LibraryNamedEntityInputBase {
-  score?: number | null
-  isFavorite?: boolean
-  isNsfw?: boolean
-  externalSites?: readonly ExternalSite[]
+  score?: number | null | undefined
+  isFavorite?: boolean | undefined
+  isNsfw?: boolean | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  coverFile?: string
-  backdropFile?: string
-  logoFile?: string
-  iconFile?: string
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
-  status?: LibraryMediaStatus
-  lastActiveAt?: number | null
-  totalDuration?: number
-  savePath?: string
-  saveBackups?: readonly SaveBackup[]
-  maxSaveBackups?: number
-  launcherMode?: LibraryGameLauncherMode
-  launcherPath?: string
-  monitorMode?: LibraryGameMonitorMode
-  monitorPath?: string
-  gameDirPath?: string
-  descriptionInlineFiles?: readonly string[]
-  externalIds?: readonly ExternalId[]
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  coverFile?: string | undefined
+  backdropFile?: string | undefined
+  logoFile?: string | undefined
+  iconFile?: string | undefined
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
+  status?: LibraryMediaStatus | undefined
+  lastActiveAt?: number | null | undefined
+  totalDuration?: number | undefined
+  savePath?: string | undefined
+  saveBackups?: readonly SaveBackup[] | undefined
+  maxSaveBackups?: number | undefined
+  launcherMode?: LibraryGameLauncherMode | undefined
+  launcherPath?: string | undefined
+  monitorMode?: LibraryGameMonitorMode | undefined
+  monitorPath?: string | undefined
+  gameDirPath?: string | undefined
+  descriptionInlineFiles?: readonly string[] | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export type LibraryGamePatch = Partial<Omit<LibraryGameCreateInput, 'createdAt' | 'updatedAt'>> & {
-  lastActiveAt?: number | null
-  totalDuration?: number
+  lastActiveAt?: number | null | undefined
+  totalDuration?: number | undefined
 }
 
 export interface LibraryAnimeCreateInput extends LibraryRankedEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  coverFile?: string
-  backdropFile?: string
-  logoFile?: string
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
-  status?: LibraryMediaStatus
-  format?: LibraryAnimeFormat
-  totalEpisodes?: number | null
-  lastActiveAt?: number | null
-  totalDuration?: number
-  animeDirPath?: string
-  descriptionInlineFiles?: readonly string[]
-  externalIds?: readonly ExternalId[]
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  coverFile?: string | undefined
+  backdropFile?: string | undefined
+  logoFile?: string | undefined
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
+  status?: LibraryMediaStatus | undefined
+  format?: LibraryAnimeFormat | undefined
+  totalEpisodes?: number | null | undefined
+  lastActiveAt?: number | null | undefined
+  totalDuration?: number | undefined
+  animeDirPath?: string | undefined
+  descriptionInlineFiles?: readonly string[] | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export type LibraryAnimePatch = Partial<
   Omit<LibraryAnimeCreateInput, 'createdAt' | 'updatedAt'>
 > & {
-  lastActiveAt?: number | null
-  totalDuration?: number
+  lastActiveAt?: number | null | undefined
+  totalDuration?: number | undefined
 }
 
 export interface LibraryComicCreateInput extends LibraryRankedEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  coverFile?: string
-  backdropFile?: string
-  logoFile?: string
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
-  status?: LibraryMediaStatus
-  format?: LibraryComicFormat
-  readingDirection?: LibraryComicReadingDirection | null
-  totalVolumes?: number | null
-  totalChapters?: number | null
-  lastActiveAt?: number | null
-  totalDuration?: number
-  comicDirPath?: string
-  descriptionInlineFiles?: readonly string[]
-  externalIds?: readonly ExternalId[]
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  coverFile?: string | undefined
+  backdropFile?: string | undefined
+  logoFile?: string | undefined
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
+  status?: LibraryMediaStatus | undefined
+  format?: LibraryComicFormat | undefined
+  readingDirection?: LibraryComicReadingDirection | null | undefined
+  totalVolumes?: number | null | undefined
+  totalChapters?: number | null | undefined
+  lastActiveAt?: number | null | undefined
+  totalDuration?: number | undefined
+  comicDirPath?: string | undefined
+  descriptionInlineFiles?: readonly string[] | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export type LibraryComicPatch = Partial<
   Omit<LibraryComicCreateInput, 'createdAt' | 'updatedAt'>
 > & {
-  lastActiveAt?: number | null
-  totalDuration?: number
+  lastActiveAt?: number | null | undefined
+  totalDuration?: number | undefined
 }
 
 export interface LibraryNovelCreateInput extends LibraryRankedEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  coverFile?: string
-  backdropFile?: string
-  logoFile?: string
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
-  status?: LibraryMediaStatus
-  format?: LibraryNovelFormat
-  totalVolumes?: number | null
-  lastActiveAt?: number | null
-  totalDuration?: number
-  novelDirPath?: string
-  descriptionInlineFiles?: readonly string[]
-  externalIds?: readonly ExternalId[]
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  coverFile?: string | undefined
+  backdropFile?: string | undefined
+  logoFile?: string | undefined
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
+  status?: LibraryMediaStatus | undefined
+  format?: LibraryNovelFormat | undefined
+  totalVolumes?: number | null | undefined
+  lastActiveAt?: number | null | undefined
+  totalDuration?: number | undefined
+  novelDirPath?: string | undefined
+  descriptionInlineFiles?: readonly string[] | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export type LibraryNovelPatch = Partial<
   Omit<LibraryNovelCreateInput, 'createdAt' | 'updatedAt'>
 > & {
-  lastActiveAt?: number | null
-  totalDuration?: number
+  lastActiveAt?: number | null | undefined
+  totalDuration?: number | undefined
 }
 
 export interface LibraryPersonCreateInput extends LibraryRankedEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  photoFile?: string
-  aliases?: readonly string[]
-  birthDate?: PartialDate
-  deathDate?: PartialDate
-  gender?: LibraryGender
-  externalIds?: readonly ExternalId[]
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  photoFile?: string | undefined
+  aliases?: readonly string[] | undefined
+  birthDate?: PartialDate | undefined
+  deathDate?: PartialDate | undefined
+  gender?: LibraryGender | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export type LibraryPersonPatch = Partial<Omit<LibraryPersonCreateInput, 'createdAt' | 'updatedAt'>>
 
 export interface LibraryCompanyCreateInput extends LibraryRankedEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  foundedDate?: PartialDate
-  logoFile?: string
-  externalIds?: readonly ExternalId[]
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  foundedDate?: PartialDate | undefined
+  logoFile?: string | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export type LibraryCompanyPatch = Partial<
@@ -626,21 +626,21 @@ export type LibraryCompanyPatch = Partial<
 >
 
 export interface LibraryCharacterCreateInput extends LibraryRankedEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  photoFile?: string
-  aliases?: readonly string[]
-  birthDate?: PartialDate
-  gender?: LibraryGender
-  bloodType?: LibraryBloodType
-  height?: number
-  weight?: number
-  bust?: number
-  waist?: number
-  hips?: number
-  cup?: LibraryCupSize
-  age?: number
-  externalIds?: readonly ExternalId[]
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  photoFile?: string | undefined
+  aliases?: readonly string[] | undefined
+  birthDate?: PartialDate | undefined
+  gender?: LibraryGender | undefined
+  bloodType?: LibraryBloodType | undefined
+  height?: number | undefined
+  weight?: number | undefined
+  bust?: number | undefined
+  waist?: number | undefined
+  hips?: number | undefined
+  cup?: LibraryCupSize | undefined
+  age?: number | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export type LibraryCharacterPatch = Partial<
@@ -648,13 +648,13 @@ export type LibraryCharacterPatch = Partial<
 >
 
 export interface LibraryCollectionCreateInput extends LibraryEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  coverFile?: string
-  isNsfw?: boolean
-  order?: number
-  isDynamic?: boolean
-  dynamicConfig?: DynamicCollectionConfig
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  coverFile?: string | undefined
+  isNsfw?: boolean | undefined
+  order?: number | undefined
+  isDynamic?: boolean | undefined
+  dynamicConfig?: DynamicCollectionConfig | undefined
 }
 
 export type LibraryCollectionPatch = Partial<
@@ -662,73 +662,73 @@ export type LibraryCollectionPatch = Partial<
 >
 
 export interface LibraryTagCreateInput extends LibraryEntityInputBase {
-  createdAt?: number
-  updatedAt?: number
-  isNsfw?: boolean
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
+  isNsfw?: boolean | undefined
 }
 
 export type LibraryTagPatch = Partial<Omit<LibraryTagCreateInput, 'createdAt' | 'updatedAt'>>
 
 export interface LibraryGameQuery extends LibraryListQuery {
-  statuses?: readonly LibraryMediaStatus[]
-  favoritesOnly?: boolean
-  includeNsfw?: boolean
-  collectionIds?: readonly string[]
-  tagIds?: readonly string[]
+  statuses?: readonly LibraryMediaStatus[] | undefined
+  favoritesOnly?: boolean | undefined
+  includeNsfw?: boolean | undefined
+  collectionIds?: readonly string[] | undefined
+  tagIds?: readonly string[] | undefined
 }
 
 export interface LibraryAnimeQuery extends LibraryListQuery {
-  statuses?: readonly LibraryMediaStatus[]
-  formats?: readonly LibraryAnimeFormat[]
-  favoritesOnly?: boolean
-  includeNsfw?: boolean
-  collectionIds?: readonly string[]
-  tagIds?: readonly string[]
+  statuses?: readonly LibraryMediaStatus[] | undefined
+  formats?: readonly LibraryAnimeFormat[] | undefined
+  favoritesOnly?: boolean | undefined
+  includeNsfw?: boolean | undefined
+  collectionIds?: readonly string[] | undefined
+  tagIds?: readonly string[] | undefined
 }
 
 export interface LibraryComicQuery extends LibraryListQuery {
-  statuses?: readonly LibraryMediaStatus[]
-  formats?: readonly LibraryComicFormat[]
-  favoritesOnly?: boolean
-  includeNsfw?: boolean
-  collectionIds?: readonly string[]
-  tagIds?: readonly string[]
+  statuses?: readonly LibraryMediaStatus[] | undefined
+  formats?: readonly LibraryComicFormat[] | undefined
+  favoritesOnly?: boolean | undefined
+  includeNsfw?: boolean | undefined
+  collectionIds?: readonly string[] | undefined
+  tagIds?: readonly string[] | undefined
 }
 
 export interface LibraryNovelQuery extends LibraryListQuery {
-  statuses?: readonly LibraryMediaStatus[]
-  formats?: readonly LibraryNovelFormat[]
-  favoritesOnly?: boolean
-  includeNsfw?: boolean
-  collectionIds?: readonly string[]
-  tagIds?: readonly string[]
+  statuses?: readonly LibraryMediaStatus[] | undefined
+  formats?: readonly LibraryNovelFormat[] | undefined
+  favoritesOnly?: boolean | undefined
+  includeNsfw?: boolean | undefined
+  collectionIds?: readonly string[] | undefined
+  tagIds?: readonly string[] | undefined
 }
 
 export interface LibraryPersonQuery extends LibraryListQuery {
-  favoritesOnly?: boolean
-  includeNsfw?: boolean
-  genders?: readonly LibraryGender[]
-  tagIds?: readonly string[]
+  favoritesOnly?: boolean | undefined
+  includeNsfw?: boolean | undefined
+  genders?: readonly LibraryGender[] | undefined
+  tagIds?: readonly string[] | undefined
 }
 
 export interface LibraryCompanyQuery extends LibraryListQuery {
-  favoritesOnly?: boolean
-  includeNsfw?: boolean
-  tagIds?: readonly string[]
+  favoritesOnly?: boolean | undefined
+  includeNsfw?: boolean | undefined
+  tagIds?: readonly string[] | undefined
 }
 
 export interface LibraryCharacterQuery extends LibraryListQuery {
-  favoritesOnly?: boolean
-  includeNsfw?: boolean
-  genders?: readonly LibraryGender[]
-  tagIds?: readonly string[]
+  favoritesOnly?: boolean | undefined
+  includeNsfw?: boolean | undefined
+  genders?: readonly LibraryGender[] | undefined
+  tagIds?: readonly string[] | undefined
 }
 
 export interface LibraryCollectionQuery extends LibraryListQuery {
-  includeDynamic?: boolean
-  includeStatic?: boolean
+  includeDynamic?: boolean | undefined
+  includeStatic?: boolean | undefined
 }
 
 export interface LibraryTagQuery extends LibraryListQuery {
-  includeNsfw?: boolean
+  includeNsfw?: boolean | undefined
 }

@@ -17,7 +17,7 @@ export interface ScraperProfileSummary {
 }
 
 export interface ScraperProfileListQuery {
-  mediaType?: ScraperMediaType
+  mediaType?: ScraperMediaType | undefined
 }
 
 export interface ScraperProfilesCapability {

@@ -146,22 +146,22 @@ function handleKeyDown(e: KeyboardEvent) {
         const firstItem = flatResults.value[0]
         if (firstItem) focusedIndex.value = 0
       } else {
-        const current = flatResults.value[focusedIndex.value]
-        const col = columnItems.value[current.columnIndex]
+        const current = flatResults.value[focusedIndex.value]!
+        const col = columnItems.value[current.columnIndex]!
         const currentIdx = col.findIndex((r) => r.globalIndex === focusedIndex.value)
         if (currentIdx < col.length - 1) {
-          focusedIndex.value = col[currentIdx + 1].globalIndex
+          focusedIndex.value = col[currentIdx + 1]!.globalIndex
         }
       }
       break
     }
     case 'ArrowUp': {
       if (focusedIndex.value === -1) return
-      const current = flatResults.value[focusedIndex.value]
-      const col = columnItems.value[current.columnIndex]
+      const current = flatResults.value[focusedIndex.value]!
+      const col = columnItems.value[current.columnIndex]!
       const currentIdx = col.findIndex((r) => r.globalIndex === focusedIndex.value)
       if (currentIdx > 0) {
-        focusedIndex.value = col[currentIdx - 1].globalIndex
+        focusedIndex.value = col[currentIdx - 1]!.globalIndex
       } else {
         // At top of column, go back to input
         focusedIndex.value = -1
@@ -171,14 +171,14 @@ function handleKeyDown(e: KeyboardEvent) {
     }
     case 'ArrowRight': {
       if (focusedIndex.value === -1) return
-      const current = flatResults.value[focusedIndex.value]
+      const current = flatResults.value[focusedIndex.value]!
       // Find next non-empty column
       for (let col = current.columnIndex + 1; col < COLUMNS.value.length; col++) {
-        const targetCol = columnItems.value[col]
+        const targetCol = columnItems.value[col]!
         if (targetCol.length > 0) {
           // Try to match row index, clamp to column length
           const targetIdx = Math.min(current.itemIndex, targetCol.length - 1)
-          focusedIndex.value = targetCol[targetIdx].globalIndex
+          focusedIndex.value = targetCol[targetIdx]!.globalIndex
           break
         }
       }
@@ -186,14 +186,14 @@ function handleKeyDown(e: KeyboardEvent) {
     }
     case 'ArrowLeft': {
       if (focusedIndex.value === -1) return
-      const current = flatResults.value[focusedIndex.value]
+      const current = flatResults.value[focusedIndex.value]!
       // Find previous non-empty column
       for (let col = current.columnIndex - 1; col >= 0; col--) {
-        const targetCol = columnItems.value[col]
+        const targetCol = columnItems.value[col]!
         if (targetCol.length > 0) {
           // Try to match row index, clamp to column length
           const targetIdx = Math.min(current.itemIndex, targetCol.length - 1)
-          focusedIndex.value = targetCol[targetIdx].globalIndex
+          focusedIndex.value = targetCol[targetIdx]!.globalIndex
           break
         }
       }
@@ -201,7 +201,7 @@ function handleKeyDown(e: KeyboardEvent) {
     }
     case 'Enter': {
       if (focusedIndex.value >= 0 && focusedIndex.value < flatResults.value.length) {
-        const { type, item } = flatResults.value[focusedIndex.value]
+        const { type, item } = flatResults.value[focusedIndex.value]!
         handleResultClick(type, item.id)
       }
       break

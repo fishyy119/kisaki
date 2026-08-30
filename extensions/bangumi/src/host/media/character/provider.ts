@@ -10,7 +10,6 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { BangumiCharacterPerson } from '../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { BANGUMI_LABEL, buildCharacterFacts, type BangumiSatelliteFacts } from '../satellites'
 import {
   BangumiSatelliteProvider,
@@ -128,18 +127,15 @@ function buildCharacterPersons(
       continue
     }
 
-    byPerson.set(
-      credit.id,
-      omitUndefined({
-        name: credit.name,
-        originalName: credit.name,
-        externalSites: [{ label: BANGUMI_LABEL, url: buildBangumiPersonUrl(credit.id) }],
-        identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(credit.id) }] },
-        photos: dedupeUrls(extractImageUrls(credit.images)),
-        role: 'actor' as const,
-        note: credit.staff?.trim() || undefined
-      })
-    )
+    byPerson.set(credit.id, {
+      name: credit.name,
+      originalName: credit.name,
+      externalSites: [{ label: BANGUMI_LABEL, url: buildBangumiPersonUrl(credit.id) }],
+      identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(credit.id) }] },
+      photos: dedupeUrls(extractImageUrls(credit.images)),
+      role: 'actor' as const,
+      note: credit.staff?.trim() || undefined
+    })
   }
 
   return [...byPerson.values()]

@@ -148,12 +148,12 @@ export function buildEntityAliasKeys(
 export function buildEntityCanonicalIdentityKey(entity: EntityIdentityInput): string {
   const externalIdKeys = buildEntityExternalIdKeys(entity)
   if (externalIdKeys.length > 0) {
-    return externalIdKeys[0]
+    return externalIdKeys[0]!
   }
 
   const fallbackKeys = buildEntityFallbackIdentityKeys(entity)
   if (fallbackKeys.length > 0) {
-    return fallbackKeys[0]
+    return fallbackKeys[0]!
   }
 
   return `nm:${normalizeKeyText(entity.name)}`

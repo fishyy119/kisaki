@@ -79,7 +79,7 @@ export function useReadingUnits(
       index >= 0 && index < units.value.length;
       index += step
     ) {
-      const candidate = units.value[index]
+      const candidate = units.value[index]!
       if (candidate.fileId) return candidate
     }
     return null

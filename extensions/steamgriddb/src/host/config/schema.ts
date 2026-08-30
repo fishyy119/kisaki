@@ -1,4 +1,4 @@
-import type { SettingsStore } from '@kisaki3/extension-sdk'
+import type { SettingsStore } from '../utils/settings-store'
 import { DEFAULT_SGDB_SETTINGS } from './defaults'
 
 /** Store shape every SteamGridDB submodule reads settings through. */

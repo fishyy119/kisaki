@@ -18,7 +18,6 @@ import { findKnownIsbn, findKnownNeodbId, parseNeodbId } from '../../identity/id
 import { m } from '../../i18n'
 import { NEODB_SEARCH_RESULT_LIMIT, NEODB_SOURCE_ID } from '../../utils/constants'
 import { NeodbExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import {
   buildBookExternalIds,
   buildCompanyFacts,
@@ -213,14 +212,14 @@ function buildInfo(
     book.description?.trim() ??
     book.brief?.trim()
 
-  return omitUndefined({
+  return {
     name,
     originalName: original,
     aliases: aliases.length > 0 ? aliases : undefined,
     releaseDate: buildReleaseDate(book),
     description: description || undefined,
     externalSites: buildExternalSites(book, instanceUrl)
-  })
+  }
 }
 
 function buildTags(book: NdBook): ScrapedTag[] {

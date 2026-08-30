@@ -1,19 +1,9 @@
-import { UI_LOCALES, type LocalizedText, type UiLocale } from '@kisaki3/extension-sdk'
+import { UI_LOCALES, kisaki, type LocalizedText, type UiLocale } from '@kisaki3/extension-sdk'
 import { getAnilistMessages, type AnilistMessages } from '../shared/i18n'
-
-/**
- * Host-process UI locale state. Seeded from `RuntimeInfo.uiLocale` during
- * activation and refreshed through the `app.ui-locale.changed` host event.
- */
-let currentLocale: UiLocale = 'en'
-
-export function setHostUiLocale(locale: UiLocale): void {
-  currentLocale = locale
-}
 
 /** Returns the message catalog for the current host UI locale. */
 export function m(): AnilistMessages {
-  return getAnilistMessages(currentLocale)
+  return getAnilistMessages(kisaki.runtime.uiLocale)
 }
 
 /**
@@ -25,6 +15,7 @@ export function localizedMessage(select: (messages: AnilistMessages) => string):
     en: select(getAnilistMessages('en'))
   }
   for (const locale of UI_LOCALES) {
+    if (locale === 'en') continue
     text[locale] = select(getAnilistMessages(locale))
   }
   return text

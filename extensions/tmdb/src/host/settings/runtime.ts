@@ -1,4 +1,5 @@
-import type { ExtensionLogger, SettingsStore } from '@kisaki3/extension-sdk'
+import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import type { SettingsStore } from '../utils/settings-store'
 import type { TmdbClient } from '../api/client'
 import type { ApiKeyStore } from '../auth/api-key'
 import type { TmdbSettingsV1 } from '../config/schema'

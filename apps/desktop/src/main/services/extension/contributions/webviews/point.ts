@@ -59,7 +59,7 @@ export class ExtensionWebviewContributionPoint {
       // Resolving at registration surfaces confinement violations immediately.
       ...(page.icon === undefined
         ? {}
-        : { icon: resolveContributionIcon(owner.extension.extensionPath, page.icon) })
+        : { icon: resolveContributionIcon(owner.extension.id, page.icon) })
     }
     this.pages.set(getRuntimeContributionKey(runtimeHandle, page.id), registration)
     this.pagesByPublicId.set(publicKey, registration)

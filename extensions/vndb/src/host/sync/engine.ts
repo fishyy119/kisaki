@@ -4,7 +4,6 @@ import type { VndbUserListPatch } from '../api/types'
 import type { VndbSettingsStore } from '../config/schema'
 import { getGame, readVndbVnId } from '../library'
 import { createSyncFingerprint, type SyncStateStore } from './state'
-import type { SyncSuppressor } from './suppressor'
 
 /**
  * VNDB's built-in list labels. The five status labels are mutually exclusive
@@ -25,10 +24,9 @@ export type SyncItemStatus =
   | 'synced'
   | 'skippedDisabled'
   | 'skippedMissingItem'
-  | 'skippedNoVndbId'
+  | 'skippedNoRemoteId'
   | 'skippedNoStatus'
   | 'skippedNoChange'
-  | 'skippedSuppressed'
 
 export interface SyncItemResult {
   status: SyncItemStatus
@@ -40,7 +38,6 @@ export interface SyncEngineDependencies {
   settingsStore: VndbSettingsStore
   client: VndbClient
   stateStore: SyncStateStore
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -71,7 +68,7 @@ export class SyncEngine {
 
     const vnId = readVndbVnId(game.externalIds ?? [])
     if (!vnId) {
-      return { status: 'skippedNoVndbId', gameId }
+      return { status: 'skippedNoRemoteId', gameId }
     }
 
     const status = game.status
@@ -89,10 +86,6 @@ export class SyncEngine {
       pushScore: settings.sync.pushScore
     })
 
-    if (this.deps.suppressor.match(gameId, fingerprint)) {
-      return { status: 'skippedSuppressed', gameId, vnId }
-    }
-
     if ((await this.deps.stateStore.getLastFingerprint(gameId)) === fingerprint) {
       return { status: 'skippedNoChange', gameId, vnId }
     }
@@ -104,13 +97,10 @@ export class SyncEngine {
     }
 
     await this.deps.client.patchUserListEntry(vnId, patch, { signal: options.signal })
-    await this.deps.stateStore.recordSuccessfulSync({
-      gameId,
-      vnId,
+    await this.deps.stateStore.recordSuccessfulSync(gameId, {
       fingerprint,
       updatedAt: Date.now()
     })
-    this.deps.suppressor.suppressFingerprint(gameId, fingerprint)
 
     return { status: 'synced', gameId, vnId }
   }

@@ -97,7 +97,7 @@ async function seedStaleSnapshot(): Promise<void> {
 function notifyDevelopmentChange(addedExtensionIds: readonly string[]): void {
   const subject =
     addedExtensionIds.length === 1
-      ? messages.value.extension.host.subjectSingle({ id: addedExtensionIds[0] })
+      ? messages.value.extension.host.subjectSingle({ id: addedExtensionIds[0]! })
       : messages.value.extension.host.subjectMultiple({ count: addedExtensionIds.length })
   notify({
     toastId: developmentChangeToastId,

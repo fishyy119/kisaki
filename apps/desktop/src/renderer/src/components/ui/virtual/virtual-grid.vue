@@ -89,7 +89,7 @@ function getRowItems(rowIndex: number): { item: T; index: number }[] {
   const result: { item: T; index: number }[] = []
 
   for (let i = startIndex; i < endIndex; i++) {
-    result.push({ item: props.items[i], index: i })
+    result.push({ item: props.items[i]!, index: i })
   }
 
   return result

@@ -42,7 +42,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 const spec = computed(() => ENTITY_ASSET_SPECS[props.entityType])
 
-const selectedType = ref(spec.value.slots[0].type)
+const selectedType = ref(spec.value.slots[0]!.type)
 
 // Sub-dialog states
 const showSearchDialog = ref(false)

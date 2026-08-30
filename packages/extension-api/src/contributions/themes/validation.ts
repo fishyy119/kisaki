@@ -117,7 +117,7 @@ export function isSafeThemeColorToken(value: string): boolean {
     return false
   }
 
-  const fnName = fnMatch[1].toLowerCase()
+  const fnName = fnMatch[1]!.toLowerCase()
   if (
     ![
       'rgb',
@@ -136,5 +136,5 @@ export function isSafeThemeColorToken(value: string): boolean {
     return false
   }
 
-  return /^[#A-Za-z0-9\s.,%+\-/()_]+$/.test(fnMatch[2]) && !/\burl\s*\(/i.test(fnMatch[2])
+  return /^[#A-Za-z0-9\s.,%+\-/()_]+$/.test(fnMatch[2]!) && !/\burl\s*\(/i.test(fnMatch[2]!)
 }

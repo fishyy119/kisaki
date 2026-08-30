@@ -19,7 +19,6 @@ import {
   IGDB_KEYWORD_LIMIT,
   IGDB_SOURCE_ID
 } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { buildCompanyFacts, toCompanyMetadata } from '../satellites'
 import { resolveReleaseDate } from '../format/dates'
 import { dedupeUrls, resolveImageUrl } from '../format/images'
@@ -140,12 +139,12 @@ async function buildInfo(loaders: IgdbGameLoaders): Promise<ScrapedGameInfo> {
     sites.push(youtubeSite(video.name, video.video_id))
   }
 
-  return omitUndefined({
+  return {
     name: game.name,
     releaseDate: resolveReleaseDate(game.first_release_date, releaseDates.dates),
     description: buildGameDescription(game.storyline, game.summary),
     externalSites: toOptionalSites(dedupeExternalSites(sites))
-  })
+  }
 }
 
 /**
@@ -247,7 +246,7 @@ async function buildCharacters(loaders: IgdbGameLoaders): Promise<ScrapedGameCha
       (value) => trimToUndefined(value) && value.trim() !== character.name
     )
 
-    return omitUndefined({
+    return {
       name: character.name,
       originalName: trimToUndefined(aka),
       description: normalizeDescription(character.description),
@@ -259,7 +258,7 @@ async function buildCharacters(loaders: IgdbGameLoaders): Promise<ScrapedGameCha
       photos: photos.length > 0 ? photos : undefined,
       tags: tags.length > 0 ? dedupeTags(tags) : undefined,
       role: 'main' as const
-    })
+    }
   })
 }
 
@@ -284,7 +283,7 @@ async function buildCompanies(loaders: IgdbGameLoaders): Promise<ScrapedGameComp
     )
 
     for (const relation of mapCompanyRelations(entry)) {
-      facts.push(omitUndefined({ ...metadata, role: relation.role, note: relation.note }))
+      facts.push({ ...metadata, role: relation.role, note: relation.note })
     }
   }
 
@@ -338,9 +337,13 @@ async function buildRelatedEntries(loaders: IgdbGameLoaders): Promise<ScrapedRel
     const list = typeof ids === 'number' ? [ids] : (ids ?? [])
     for (const id of list) {
       if (typeof id === 'number' && id !== game.id) {
-        facts.push(
-          omitUndefined({ mediaType: 'game' as const, source: IGDB_SOURCE_ID, externalId: String(id), type, note })
-        )
+        facts.push({
+          mediaType: 'game' as const,
+          source: IGDB_SOURCE_ID,
+          externalId: String(id),
+          type,
+          note
+        })
       }
     }
   }

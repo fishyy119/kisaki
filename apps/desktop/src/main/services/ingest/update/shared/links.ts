@@ -183,7 +183,7 @@ function areLinkRowsEqual(current: OrderedLinkRow[], next: OrderedLinkRow[]): bo
   if (current.length !== next.length) return false
 
   return current.every((row, index) => {
-    const candidate = next[index]
+    const candidate = next[index]!
     return (
       row.relatedId === candidate.relatedId &&
       row.role === candidate.role &&
@@ -234,7 +234,7 @@ function buildFinalLinkRows(
       continue
     }
 
-    const currentRow = merged[existingIndex]
+    const currentRow = merged[existingIndex]!
     merged[existingIndex] = {
       ...currentRow,
       isSpoiler: currentRow.isSpoiler || row.isSpoiler,

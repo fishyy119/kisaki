@@ -5,7 +5,6 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { TmdbCompanySummary } from '../../api/types'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { buildImageUrl } from './images'
 import { mapTmdbCompanyRole } from './roles'
 import { buildExternalSites, tmdbCompanyUrl, tmdbSite } from './sites'
@@ -15,7 +14,10 @@ import { trimToUndefined } from './text'
 const COUNTRY_TAG_NOTE = 'Country'
 const NETWORK_NOTE = 'Network'
 
-type CompanyFact<TRole extends string> = ScrapedCompanyMetadata & { role: TRole; note?: string }
+type CompanyFact<TRole extends string> = ScrapedCompanyMetadata & {
+  role: TRole
+  note?: string | undefined
+}
 
 type TmdbCompanyKind = 'production' | 'network'
 
@@ -67,7 +69,7 @@ function toCompanyFact<TRole extends string>(
   const role = mapRole(kind)
 
   return {
-    ...omitUndefined({
+    ...{
       // Not user-facing copy: guards a malformed company row from entering the
       // library without a name.
       name: trimToUndefined(company.name) ?? `TMDB ${company.id}`,
@@ -76,7 +78,7 @@ function toCompanyFact<TRole extends string>(
       tags: tags.length > 0 ? tags : undefined,
       // Only worth stating when the role vocabulary cannot name a carrier.
       note: kind === 'network' && role !== 'network' ? NETWORK_NOTE : undefined
-    }),
+    },
     identity: { externalIds: [{ source: TMDB_SOURCE_ID, id: String(company.id) }] },
     role
   }

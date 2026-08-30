@@ -19,8 +19,8 @@ const props = defineProps<Props>()
 const range = computed(() => {
   if (props.sessions.length === 0) return null
 
-  let start = props.sessions[0].startedAt
-  let end = props.sessions[0].endedAt
+  let start = props.sessions[0]!.startedAt
+  let end = props.sessions[0]!.endedAt
 
   for (const session of props.sessions) {
     if (session.startedAt < start) start = session.startedAt

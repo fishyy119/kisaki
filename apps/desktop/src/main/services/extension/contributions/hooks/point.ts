@@ -6,7 +6,8 @@ import {
   type HookRegistrationInfo,
   type JsonValue,
   type MainToHostRpcEvent,
-  type MainToHostRpcEventMap
+  type MainToHostRpcEventMap,
+  type UndefinedTolerant
 } from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
 import type { HookVeto } from '@main/hooks'
@@ -23,7 +24,10 @@ const log = createLogger('Extension')
 const HOOK_INVOKE_TIMEOUT_MS = 10_000
 
 export interface ExtensionHookContributionPointOptions extends ExtensionContributionPointOptions {
-  sendEventToHost<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void
+  sendEventToHost<K extends MainToHostRpcEvent>(
+    name: K,
+    payload: UndefinedTolerant<MainToHostRpcEventMap[K]>
+  ): void
 }
 
 interface HookRegistrationRecord {

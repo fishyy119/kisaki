@@ -15,7 +15,6 @@ import {
   MANGADEX_SITE_URL,
   MANGADEX_SOURCE_ID
 } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { selectDescription } from './titles'
 
 export function toMangadexExternalId(id: string): ExternalId {
@@ -149,12 +148,12 @@ export function toCreditedPerson(
   }
 
   const photos = attributes?.imageUrl?.trim()
-  return omitUndefined({
+  return {
     name,
     identity: { externalIds: [toMangadexExternalId(relationship.id)] },
     description: selectDescription(attributes?.biography, locale),
     photos: photos ? [photos] : undefined
-  })
+  }
 }
 
 /** Standalone author entity to person info (for the person provider). */
@@ -179,9 +178,9 @@ export function toPersonInfo(
     }
   }
 
-  return omitUndefined({
+  return {
     name,
     description: selectDescription(author.attributes?.biography, locale),
     externalSites: sites.length > 0 ? sites : undefined
-  })
+  }
 }

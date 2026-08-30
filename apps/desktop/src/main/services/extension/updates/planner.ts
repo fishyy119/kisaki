@@ -213,7 +213,7 @@ export class ExtensionUpdatePlanner {
       }
     }
 
-    return { plan: eligiblePlans.toSorted(compareUpdatePlans)[0], unavailable: null }
+    return { plan: eligiblePlans.toSorted(compareUpdatePlans)[0]!, unavailable: null }
   }
 
   private createPlan(

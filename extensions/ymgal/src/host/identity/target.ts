@@ -1,5 +1,4 @@
 import type { ExternalId, IdResolvedTarget } from '@kisaki3/extension-sdk'
-import { omitUndefined } from '../utils/object'
 
 /**
  * A resolved scrape target. The id is also the cache key: it names exactly one
@@ -10,10 +9,10 @@ export function toResolvedTarget(
   resolveName?: string,
   externalIds?: readonly ExternalId[]
 ): IdResolvedTarget {
-  return omitUndefined({
+  return {
     id,
     cacheKey: id,
     resolveName: resolveName?.trim() || undefined,
     identity: externalIds ? { externalIds } : undefined
-  })
+  }
 }

@@ -45,7 +45,7 @@ export type ExtensionHookHandler<TPoint extends ExtensionHookPointId> =
 export interface ExtensionHookPointDescriptor {
   kind: HookKind
   /** Notify points the dispatching workflow awaits within a bounded budget. */
-  await?: boolean
+  await?: boolean | undefined
 }
 
 /** Runtime catalog of every hook point, for validation and kind dispatch. */
@@ -125,7 +125,7 @@ export const EXTENSION_HOOK_POINTS = {
 
 export interface HookTapOptions {
   /** Ascending dispatch order; equal priorities keep registration order. */
-  priority?: number
+  priority?: number | undefined
 }
 
 /** Registration surface exposed to extensions as `context.hooks`. */
@@ -133,6 +133,6 @@ export interface HooksRegistrar {
   on<TPoint extends ExtensionHookPointId>(
     pointId: TPoint,
     handler: ExtensionHookHandler<TPoint>,
-    options?: HookTapOptions
+    options?: HookTapOptions | undefined
   ): Disposable
 }

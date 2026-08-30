@@ -1,19 +1,9 @@
-import { UI_LOCALES, type LocalizedText, type UiLocale } from '@kisaki3/extension-sdk'
+import { UI_LOCALES, kisaki, type LocalizedText, type UiLocale } from '@kisaki3/extension-sdk'
 import { getTmdbMessages, type TmdbMessages } from '../shared/i18n'
-
-/**
- * Host-process UI locale state. Seeded from `RuntimeInfo.uiLocale` during
- * activation and refreshed through the `app.ui-locale.changed` host event.
- */
-let currentLocale: UiLocale = 'en'
-
-export function setHostUiLocale(locale: UiLocale): void {
-  currentLocale = locale
-}
 
 /** Returns the message catalog for the current host UI locale. */
 export function m(): TmdbMessages {
-  return getTmdbMessages(currentLocale)
+  return getTmdbMessages(kisaki.runtime.uiLocale)
 }
 
 /**
@@ -25,6 +15,7 @@ export function localizedMessage(select: (messages: TmdbMessages) => string): Lo
     en: select(getTmdbMessages('en'))
   }
   for (const locale of UI_LOCALES) {
+    if (locale === 'en') continue
     text[locale] = select(getTmdbMessages(locale))
   }
   return text

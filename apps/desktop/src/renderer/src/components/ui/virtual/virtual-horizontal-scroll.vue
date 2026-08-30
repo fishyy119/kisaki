@@ -241,7 +241,7 @@ defineExpose({
         <div
           v-for="virtualItem in virtualizer.getVirtualItems()"
           :key="
-            props.getKey?.(props.items[virtualItem.index], virtualItem.index) ??
+            props.getKey?.(props.items[virtualItem.index]!, virtualItem.index) ??
             String(virtualItem.key)
           "
           :style="{
@@ -254,7 +254,7 @@ defineExpose({
         >
           <slot
             name="item"
-            :item="props.items[virtualItem.index]"
+            :item="props.items[virtualItem.index]!"
             :index="virtualItem.index"
           />
         </div>

@@ -7,7 +7,6 @@ import type {
   ScraperProviderContext
 } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../../api/types'
-import { omitUndefined } from '../../../utils/object'
 import { parseBangumiSubjectDate } from '../../format/dates'
 import { resolveLocalizedSubjectName } from '../../format/names'
 import { BangumiSubjectProvider } from '../../subject/provider'
@@ -51,12 +50,12 @@ export class BangumiGameProvider
       locale
     )
 
-    return omitUndefined({
+    return {
       id: String(subject.id),
       name,
       originalName,
       releaseDate: parseBangumiSubjectDate(subject.date),
       externalIds: this.buildSearchExternalIds(subject)
-    })
+    }
   }
 }

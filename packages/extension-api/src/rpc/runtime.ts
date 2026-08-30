@@ -1,4 +1,5 @@
 import type { JsonValue } from '../shared'
+import type { UiLocale } from '../shared/locales'
 import { RPC_ABORT_EVENT, type RpcMethodDefinition, type RpcNoPayload, type RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
 
@@ -15,7 +16,7 @@ export interface ExtensionRuntimeDiagnostic {
   source: string
   code: string
   message: string
-  details?: string
+  details?: string | undefined
   createdAt: string
 }
 
@@ -28,7 +29,7 @@ export interface StorageGetRequest extends ExtensionScopedRpcParams {
 }
 
 export interface StorageGetResult {
-  value?: JsonValue
+  value?: JsonValue | undefined
 }
 
 export interface StorageSetRequest extends ExtensionScopedRpcParams {
@@ -41,7 +42,7 @@ export interface StorageDeleteRequest extends ExtensionScopedRpcParams {
 }
 
 export interface StorageListKeysRequest extends ExtensionScopedRpcParams {
-  prefix?: string
+  prefix?: string | undefined
 }
 
 export interface StorageListKeysResult {
@@ -53,7 +54,7 @@ export interface SecretsGetRequest extends ExtensionScopedRpcParams {
 }
 
 export interface SecretsGetResult {
-  value?: JsonValue
+  value?: JsonValue | undefined
 }
 
 export interface SecretsSetRequest extends ExtensionScopedRpcParams {
@@ -66,7 +67,7 @@ export interface SecretsDeleteRequest extends ExtensionScopedRpcParams {
 }
 
 export interface SecretsListKeysRequest extends ExtensionScopedRpcParams {
-  prefix?: string
+  prefix?: string | undefined
 }
 
 export interface SecretsListKeysResult {
@@ -91,4 +92,6 @@ export type HostToMainRuntimeRpcRequestMap = {
 
 export interface MainToHostRuntimeRpcEventMap {
   [RPC_ABORT_EVENT]: { requestId: string }
+  /** Host interface language changed; the host runtime updates its cache. */
+  'runtime.uiLocaleChanged': { uiLocale: UiLocale }
 }

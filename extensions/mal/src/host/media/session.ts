@@ -44,7 +44,6 @@ import type {
 import type { MalSettingsV1 } from '../config/schema'
 import { MAL_SOURCE_ID } from '../utils/constants'
 import { toSafeErrorLog } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import { parseMalDate, parseMirrorAired } from './format/dates'
 import { selectMalTitles } from './format/names'
 import { mapComicAuthorRole, mapNovelAuthorRole, mapRelationType } from './format/roles'
@@ -295,11 +294,11 @@ function buildIdentity(id: number): ScrapedEntityIdentity {
 
 interface InfoCore {
   name: string
-  originalName?: string
-  aliases?: string[]
-  releaseDate?: PartialDate
-  description?: string
-  externalSites?: ExternalSite[]
+  originalName?: string | undefined
+  aliases?: string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  externalSites?: ExternalSite[] | undefined
 }
 
 function buildInfoCore(
@@ -313,14 +312,14 @@ function buildInfoCore(
   }
 
   const externalSites: ExternalSite[] = [malEntrySite(kind, detail.id)]
-  return omitUndefined({
+  return {
     name: titles.name,
     originalName: titles.originalName,
     aliases: titles.aliases,
     releaseDate: parseMalDate(detail.start_date),
     description: normalizeSynopsis(detail.synopsis),
     externalSites
-  })
+  }
 }
 
 function buildAnimeInfo(
@@ -332,11 +331,11 @@ function buildAnimeInfo(
     return undefined
   }
 
-  return omitUndefined({
+  return {
     ...core,
     format: mapAnimeFormat(detail.media_type),
     totalEpisodes: readCount(detail.num_episodes)
-  })
+  }
 }
 
 function buildComicInfo(
@@ -348,12 +347,12 @@ function buildComicInfo(
     return undefined
   }
 
-  return omitUndefined({
+  return {
     ...core,
     format: mapComicFormat(detail.media_type),
     totalVolumes: readCount(detail.num_volumes),
     totalChapters: readCount(detail.num_chapters)
-  })
+  }
 }
 
 function buildNovelInfo(
@@ -365,11 +364,11 @@ function buildNovelInfo(
     return undefined
   }
 
-  return omitUndefined({
+  return {
     ...core,
     format: mapNovelFormat(detail.media_type),
     totalVolumes: readCount(detail.num_volumes)
-  })
+  }
 }
 
 function buildTags(detail: MalAnimeDetail | MalMangaDetail): ScrapedTag[] {
@@ -429,7 +428,7 @@ function buildSerializationFacts(detail: MalMangaDetail) {
 }
 
 function buildAuthorFacts(detail: MalMangaDetail, kind: 'comic' | 'novel') {
-  const facts: (ScrapedPersonMetadata & { role: string; note?: string })[] = []
+  const facts: (ScrapedPersonMetadata & { role: string; note?: string | undefined })[] = []
 
   for (const edge of detail.authors ?? []) {
     const fact = toAuthorFact(edge, kind)
@@ -457,12 +456,12 @@ function toAuthorFact(edge: MalAuthorEdge, kind: 'comic' | 'novel') {
   const role = kind === 'comic' ? mapComicAuthorRole(edge.role) : mapNovelAuthorRole(edge.role)
   const note = trimToUndefined(edge.role)
 
-  return omitUndefined({
+  return {
     name,
     identity: { externalIds: [toMalExternalId(node.id)] },
     role,
     note
-  })
+  }
 }
 
 function buildRelatedEntries(detail: MalAnimeDetail | MalMangaDetail): ScrapedRelatedEntryFact[] {
@@ -527,19 +526,17 @@ function buildEpisodes(episodes: MirrorEpisode[] | undefined): ScrapedAnimeEpiso
       continue
     }
 
-    facts.push(
-      omitUndefined({
-        number: episode.mal_id,
-        type: 'regular' as const,
-        name: trimToUndefined(episode.title),
-        originalName: trimToUndefined(episode.title_japanese),
-        airDate: parseMirrorAired(episode.aired),
-        durationMs:
-          typeof episode.duration === 'number' && episode.duration > 0
-            ? Math.trunc(episode.duration * 1000)
-            : undefined
-      })
-    )
+    facts.push({
+      number: episode.mal_id,
+      type: 'regular' as const,
+      name: trimToUndefined(episode.title),
+      originalName: trimToUndefined(episode.title_japanese),
+      airDate: parseMirrorAired(episode.aired),
+      durationMs:
+        typeof episode.duration === 'number' && episode.duration > 0
+          ? Math.trunc(episode.duration * 1000)
+          : undefined
+    })
   }
 
   return facts

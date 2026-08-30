@@ -21,8 +21,8 @@ const LIST_PAGE_SIZE = 500
 export interface LocalComicEntry {
   id: string
   name: string
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -61,12 +61,14 @@ export async function getComic(id: string): Promise<LocalComicEntry | null> {
 }
 
 export interface ComicUserStatePatch {
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
 }
 
 export async function updateComicUserState(id: string, patch: ComicUserStatePatch): Promise<void> {
-  if (Object.keys(patch).length === 0) {
+  // Explicitly-undefined members mean "leave unchanged"; an all-absent patch
+  // must not become an empty library update.
+  if (Object.values(patch).every((value) => value === undefined)) {
     return
   }
 
@@ -80,11 +82,18 @@ export async function updateComicUserState(id: string, patch: ComicUserStatePatc
  */
 export function subscribeComicChanges(
   hooks: HooksRegistrar,
+  selfActor: string,
   listener: (comicId: string) => void
 ): Disposable {
   return hooks.on('library.changed', ({ changes }) => {
     for (const change of changes) {
       if (change.kind !== 'updated' || change.entity !== 'comic') {
+        continue
+      }
+
+      // Writes this extension caused come back attributed; reacting to them
+      // would only echo our own import or push.
+      if (change.actors.every((actor) => actor === selfActor)) {
         continue
       }
 

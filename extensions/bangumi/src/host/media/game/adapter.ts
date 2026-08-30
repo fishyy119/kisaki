@@ -2,7 +2,6 @@ import { kisaki, type LibraryGame, type LibraryGamePatch } from '@kisaki3/extens
 import { BangumiLocalMediaAdapter } from '../local/adapter'
 import { parseBangumiSubjectDate } from '../format/dates'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../../../shared/scopes'
-import { omitUndefined } from '../../utils/object'
 import type {
   BangumiMediaDescriptor,
   LocalMediaAddFromScraperInput,
@@ -20,14 +19,11 @@ export class GameLocalMediaAdapter extends BangumiLocalMediaAdapter {
   protected readonly collectionLinkKind = 'collection-game' as const
 
   async addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult> {
-    const result = await kisaki.ingest.game.add.fromScraper(
-      input.profileId,
-      omitUndefined({
-        name: input.name,
-        knownIds: [...input.knownIds],
-        releaseDate: parseBangumiSubjectDate(input.facts?.date)
-      })
-    )
+    const result = await kisaki.ingest.game.add.fromScraper(input.profileId, {
+      name: input.name,
+      knownIds: [...input.knownIds],
+      releaseDate: parseBangumiSubjectDate(input.facts?.date)
+    })
 
     return { localId: result.gameId, isNew: result.isNew }
   }

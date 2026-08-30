@@ -1,13 +1,10 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import type { TokenService } from '../auth/token-service'
 import type { TokenStore } from '../auth/token-store'
 import type { GbooksSettingsV1 } from '../config/schema'
@@ -102,7 +99,7 @@ export class GbooksClient {
     }
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         await this.limiter.acquire(options.signal)
@@ -124,7 +121,7 @@ export class GbooksClient {
         // The shared keyless pool reports exhaustion as 429; retrying within
         // one run cannot help, so it classifies immediately.
         if (response.status >= 500 && attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
 
@@ -132,8 +129,8 @@ export class GbooksClient {
       } catch (error) {
         // Must precede the retry branch: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof GbooksExtensionError) {
@@ -142,7 +139,7 @@ export class GbooksClient {
 
         this.logger.debug('Google Books request attempt failed.', { attempt })
         if (attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }

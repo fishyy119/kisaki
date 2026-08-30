@@ -18,12 +18,12 @@ import type { ExternalId, Tag } from './common'
  */
 export interface GameInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: string[]
-  releaseDate?: PartialDate
-  description?: string
-  externalSites?: ExternalSite[]
+  aliases?: string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  externalSites?: ExternalSite[] | undefined
   externalIds: ExternalId[]
 }
 
@@ -31,5 +31,5 @@ export interface GameInfo {
  * Core game metadata used across identity and normalization layers.
  */
 export interface CoreGameMetadata extends GameInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }

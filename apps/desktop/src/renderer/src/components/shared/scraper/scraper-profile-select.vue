@@ -23,7 +23,7 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils/cn'
-import ScraperNewProfileDialog from './presets/new-profile-dialog.vue'
+import ScraperNewProfileDialog from './new-profile-dialog.vue'
 
 /** Sentinel item value for the explicit "no profile" choice. */
 const NONE_VALUE = '#none'
@@ -106,7 +106,7 @@ watch(
       !model.value &&
       (profiles.value?.length ?? 0) > 0
     ) {
-      const firstProfile = profiles.value![0]
+      const firstProfile = profiles.value![0]!
       model.value = firstProfile.id
       emit('change', firstProfile.id)
     }

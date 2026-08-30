@@ -103,9 +103,9 @@ function measure(image: HTMLImageElement): CropInsets | null {
   const isBorder = (x: number, y: number): boolean => {
     const offset = (y * sampleWidth + x) * 4
     return (
-      Math.abs(data[offset] - border[0]) <= COLOR_TOLERANCE &&
-      Math.abs(data[offset + 1] - border[1]) <= COLOR_TOLERANCE &&
-      Math.abs(data[offset + 2] - border[2]) <= COLOR_TOLERANCE
+      Math.abs(data[offset]! - border[0]) <= COLOR_TOLERANCE &&
+      Math.abs(data[offset + 1]! - border[1]) <= COLOR_TOLERANCE &&
+      Math.abs(data[offset + 2]! - border[2]) <= COLOR_TOLERANCE
     )
   }
 
@@ -154,8 +154,8 @@ function readBorderColor(
   ]
 
   const channel = (offset: number): number => {
-    const values = corners.map((corner) => data[corner + offset]).sort((a, b) => a - b)
-    return Math.round((values[1] + values[2]) / 2)
+    const values = corners.map((corner) => data[corner + offset]!).sort((a, b) => a - b)
+    return Math.round((values[1]! + values[2]!) / 2)
   }
 
   return [channel(0), channel(1), channel(2)]

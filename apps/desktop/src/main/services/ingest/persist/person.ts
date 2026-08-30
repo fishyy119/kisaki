@@ -116,7 +116,7 @@ export class PersonIngestPersistHandler {
     }
 
     for (let i = 0; i < (core.tags?.length ?? 0); i++) {
-      const tagData = core.tags![i]
+      const tagData = core.tags![i]!
 
       const tagId = resolveTagId(tx, tagData)
       if (!tagId) {

@@ -45,7 +45,7 @@ export class ExtensionHostCrashPolicy {
 
   private prune(now: number): void {
     const threshold = now - this.windowMs
-    while (this.crashTimestamps.length > 0 && this.crashTimestamps[0] < threshold) {
+    while (this.crashTimestamps.length > 0 && this.crashTimestamps[0]! < threshold) {
       this.crashTimestamps.shift()
     }
   }

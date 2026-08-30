@@ -23,6 +23,8 @@ import type {
   ScraperProviderRegistration,
   RpcParams,
   RpcResult,
+  UiLocale,
+  UndefinedTolerant,
   ThemeContribution,
   ThemeRegistration,
   WebviewDialogContribution,
@@ -77,9 +79,10 @@ const CONTRIBUTION_CLEANUP_REQUEST_OPTIONS = Object.freeze({
   timeoutMs: EXTENSION_CLEANUP_TIMEOUT_MS
 })
 
-type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
-  RpcParams<HostToMainRpcRequestMap, K>,
-  'runtimeHandle'
+// Callers construct outbound params, so optional members tolerate explicit
+// undefined; the wire normalizer drops them before transport.
+type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = UndefinedTolerant<
+  Omit<RpcParams<HostToMainRpcRequestMap, K>, 'runtimeHandle'>
 >
 
 /**
@@ -100,6 +103,8 @@ export class ExtensionHostSdkBridge {
   private readonly hooks: HostHooksContributionPoint
   private readonly scopedApis = new Map<ExtensionRuntimeHandle, KisakiApi>()
   private readonly pendingMainRequests = new Map<ExtensionRuntimeHandle, Set<Promise<void>>>()
+  /** Cached host interface language; seeded by handshake, kept current by event. */
+  private uiLocale: UiLocale = 'en'
   private readonly taskRunAbortControllers = new Map<
     ExtensionRuntimeHandle,
     Map<string, AbortController>
@@ -172,6 +177,10 @@ export class ExtensionHostSdkBridge {
 
   configure(): void {
     configureExtensionSdkBridge(this.bridge)
+  }
+
+  setUiLocale(locale: UiLocale): void {
+    this.uiLocale = locale
   }
 
   async dispose(): Promise<void> {
@@ -356,6 +365,7 @@ export class ExtensionHostSdkBridge {
   private createKisakiApiDelegate(): KisakiApiBridgeDelegate {
     return {
       requireCurrentScope: () => this.requireCurrentScope(),
+      getUiLocale: () => this.uiLocale,
       requestMain: (scope, method, params, signal) =>
         this.requestMain(scope, method, params, signal),
       registerTaskRunAbortController: (scope, runId, controller) =>
@@ -384,10 +394,12 @@ export class ExtensionHostSdkBridge {
   ): Promise<RpcResult<HostToMainRpcRequestMap, K>> {
     return this.rpc.requestMain(
       method,
+      // The generic K keeps the params type unresolved, so the spread and the
+      // scoped-to-full widening need an assertion; runtime shape is exact.
       {
         runtimeHandle: scope.runtimeHandle,
-        ...params
-      } as RpcParams<HostToMainRpcRequestMap, K>,
+        ...(params as object)
+      } as UndefinedTolerant<RpcParams<HostToMainRpcRequestMap, K>>,
       this.getRequestOptions(scope, signal)
     )
   }

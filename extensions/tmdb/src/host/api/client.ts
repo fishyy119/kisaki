@@ -1,13 +1,10 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import { normalizeTmdbApiError, readRetryAfterMs, TmdbApiError } from './errors'
 import type {
   TmdbCollectionDetail,
@@ -35,7 +32,6 @@ import type { ApiKeyStore } from '../auth/api-key'
 import type { TmdbSettingsV1 } from '../config/schema'
 import { m } from '../i18n'
 import { TmdbExtensionError } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 
 /** Paced well below the burst rate TMDB tolerates for a single client. */
 const RATE_LIMIT: { maxRequests: number; windowMs: number } = {
@@ -250,7 +246,7 @@ export class TmdbClient {
     }
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         await this.limiter.acquire(options.signal)
@@ -262,7 +258,7 @@ export class TmdbClient {
             timeoutMs: settings.client.timeoutMs,
             responseType: 'json'
           },
-          omitUndefined({ signal: options.signal })
+          { signal: options.signal }
         )
 
         if (response.ok) {
@@ -271,7 +267,9 @@ export class TmdbClient {
 
         const retryAfterMs = readRetryAfterMs(response.headers)
         if (shouldRetryStatus(response.status) && attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt, retryAfterMs), options.signal)
+          await delay(resolveRetryDelayMs(attempt, retryAfterMs), undefined, {
+            signal: options.signal
+          })
           continue
         }
 
@@ -279,8 +277,8 @@ export class TmdbClient {
       } catch (error) {
         // Must precede the retry branch: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof TmdbExtensionError) {
@@ -289,7 +287,7 @@ export class TmdbClient {
 
         this.logger.debug('TMDB request attempt failed.', { path: pathname, attempt })
         if (attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }

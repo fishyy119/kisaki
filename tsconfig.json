@@ -3,8 +3,6 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
-    "exactOptionalPropertyTypes": true,
-    "noUncheckedIndexedAccess": true,
     "noEmit": true
   },
   "include": ["tools/**/*.ts", ".github/scripts/**/*.ts", "eslint.config.ts"]

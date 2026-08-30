@@ -20,13 +20,13 @@ export type LibraryAttachmentSource =
   | {
       kind: 'buffer'
       buffer: Uint8Array
-      fileName?: string
-      contentType?: string
+      fileName?: string | undefined
+      contentType?: string | undefined
     }
   | {
       kind: 'url'
       url: string
-      fileName?: string
+      fileName?: string | undefined
     }
   | {
       kind: 'path'
@@ -38,22 +38,22 @@ export interface LibraryAttachment {
   slot: LibraryAttachmentKind
   fileName: string
   filePath: string
-  contentType?: string
-  sizeBytes?: number
-  createdAt?: number
+  contentType?: string | undefined
+  sizeBytes?: number | undefined
+  createdAt?: number | undefined
 }
 
 export interface LibraryAttachmentWriteInput {
   entity: LibraryEntityReference<LibraryAttachmentOwnerType>
   slot: LibraryAttachmentKind
   source: LibraryAttachmentSource
-  replace?: boolean
+  replace?: boolean | undefined
 }
 
 export interface LibraryAttachmentRemoveInput {
   entity: LibraryEntityReference<LibraryAttachmentOwnerType>
   slot: LibraryAttachmentKind
-  fileName?: string
+  fileName?: string | undefined
 }
 
 export interface LibraryAttachmentCapability {

@@ -3,7 +3,6 @@ import type { AnilistClient } from '../api/client'
 import type { AnilistSettingsStore } from '../config/schema'
 import { getEntry, readAnilistMediaId, type LocalMediaRef } from '../library'
 import { createSyncFingerprint, type SyncStateStore } from './state'
-import type { SyncSuppressor } from './suppressor'
 
 /** Local statuses map onto AniList's list statuses one to one. */
 export const ANILIST_STATUS_BY_LOCAL: Record<LibraryMediaStatus, string> = {
@@ -18,10 +17,9 @@ export type SyncItemStatus =
   | 'synced'
   | 'skippedDisabled'
   | 'skippedMissingItem'
-  | 'skippedNoAnilistId'
+  | 'skippedNoRemoteId'
   | 'skippedNoStatus'
   | 'skippedNoChange'
-  | 'skippedSuppressed'
 
 export interface SyncItemResult {
   status: SyncItemStatus
@@ -33,7 +31,6 @@ export interface SyncEngineDependencies {
   settingsStore: AnilistSettingsStore
   client: AnilistClient
   stateStore: SyncStateStore
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -65,7 +62,7 @@ export class SyncEngine {
 
     const mediaId = readAnilistMediaId(entry.externalIds ?? [])
     if (mediaId === null) {
-      return { status: 'skippedNoAnilistId', ref }
+      return { status: 'skippedNoRemoteId', ref }
     }
 
     if (!entry.status) {
@@ -82,10 +79,6 @@ export class SyncEngine {
       pushScore: settings.sync.pushScore
     })
 
-    if (this.deps.suppressor.match(ref, fingerprint)) {
-      return { status: 'skippedSuppressed', ref, mediaId }
-    }
-
     if ((await this.deps.stateStore.getLastFingerprint(ref)) === fingerprint) {
       return { status: 'skippedNoChange', ref, mediaId }
     }
@@ -95,8 +88,7 @@ export class SyncEngine {
       { status, ...(scoreRaw !== undefined ? { scoreRaw } : {}) },
       { signal: options.signal }
     )
-    await this.deps.stateStore.recordSuccessfulSync(ref, mediaId, fingerprint)
-    this.deps.suppressor.suppressFingerprint(ref, fingerprint)
+    await this.deps.stateStore.recordSuccessfulSync(ref, fingerprint)
 
     return { status: 'synced', ref, mediaId }
   }

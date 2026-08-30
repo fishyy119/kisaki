@@ -47,7 +47,8 @@ export function registerAttachmentProtocol(stores: AttachmentProtocolStores): vo
       return new Response('Invalid attachment path', { status: 400 })
     }
 
-    const [rowId, fileName] = segments
+    // Length was checked to be exactly two segments above.
+    const [rowId, fileName] = segments as [string, string]
 
     let fileDir: string
     let filePath: string

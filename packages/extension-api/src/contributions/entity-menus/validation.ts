@@ -348,8 +348,8 @@ function validateVisibleSeparatorPlacement(
     return issues
   }
 
-  const first = visibleNodes[0]
-  const last = visibleNodes[visibleNodes.length - 1]
+  const first = visibleNodes[0]!
+  const last = visibleNodes[visibleNodes.length - 1]!
 
   if (first.node.kind === 'separator') {
     issues.push({

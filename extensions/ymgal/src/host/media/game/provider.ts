@@ -13,7 +13,6 @@ import { toResolvedTarget } from '../../identity/target'
 import { m } from '../../i18n'
 import { YMGAL_SEARCH_RESULT_LIMIT, YMGAL_SOURCE_ID } from '../../utils/constants'
 import { YmgalExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { parseYmgalDate } from '../format/dates'
 import { resolveDisplayName } from '../format/names'
 import { createRequestContext, type YmgalRequestContext, type YmgalRuntime } from '../runtime'
@@ -123,13 +122,13 @@ function toGameSearchResult(game: YmgalGame, ctx: YmgalRequestContext): GameSear
 
   const { name, originalName } = resolveDisplayName(game.name, game.chineseName, ctx, gameId)
 
-  return omitUndefined({
+  return {
     id: gameId,
     name,
     originalName,
     releaseDate: parseYmgalDate(game.releaseDate),
     externalIds: buildGameIdentity(gameId, game).externalIds
-  })
+  }
 }
 
 function toListSearchResult(
@@ -143,11 +142,11 @@ function toListSearchResult(
 
   const { name, originalName } = resolveDisplayName(item.name, item.chineseName, ctx, gameId)
 
-  return omitUndefined({
+  return {
     id: gameId,
     name,
     originalName,
     releaseDate: parseYmgalDate(item.releaseDate),
     externalIds: [{ source: YMGAL_SOURCE_ID, id: gameId }]
-  })
+  }
 }

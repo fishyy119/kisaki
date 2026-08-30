@@ -1,32 +1,22 @@
-import {
-  defineExtension,
-  kisaki,
-  SettingsStore,
-  type ExtensionLogger
-} from '@kisaki3/extension-sdk'
+import { defineExtension, kisaki, type ExtensionLogger } from '@kisaki3/extension-sdk'
+import { SettingsStore } from './utils/settings-store'
 import { NeodbClient } from './api/client'
 import { NeodbOauthFlow } from './auth/oauth-flow'
 import { SessionStore } from './auth/session-store'
 import { createDefaultNeodbSettings } from './config/defaults'
 import { normalizeNeodbSettings } from './config/schema'
-import { m, setHostUiLocale } from './i18n'
+import { m } from './i18n'
 import { NeodbNovelProvider } from './media/novel/provider'
 import { registerNeodbSettingsUi } from './settings'
 import { SyncEngine } from './sync/engine'
 import { SyncStateStore } from './sync/state'
 import { SyncSubscription } from './sync/subscription'
-import { SyncSuppressor } from './sync/suppressor'
 import { NeodbTasks } from './tasks'
 import { NeodbExtensionError, toSafeErrorLog } from './utils/errors'
 import { NEODB_STORAGE_KEYS } from './utils/ids'
 
 export default defineExtension({
   async activate(context) {
-    setHostUiLocale((await kisaki.runtime.getInfo()).uiLocale)
-    context.hooks.on('app.ui-locale.changed', ({ effective }) => {
-      setHostUiLocale(effective)
-    })
-
     const settingsStore = new SettingsStore(context.storage, NEODB_STORAGE_KEYS.settings, {
       normalize: normalizeNeodbSettings,
       createDefault: createDefaultNeodbSettings
@@ -82,17 +72,14 @@ export default defineExtension({
     oauthFlowRef.current = oauthFlow
 
     const syncStateStore = new SyncStateStore(context.storage)
-    const syncSuppressor = new SyncSuppressor()
     const syncEngine = new SyncEngine({
       settingsStore,
       client,
-      stateStore: syncStateStore,
-      suppressor: syncSuppressor
+      stateStore: syncStateStore
     })
     const tasks = new NeodbTasks({
       client,
       engine: syncEngine,
-      suppressor: syncSuppressor,
       logger: context.logger
     })
 
@@ -107,6 +94,7 @@ export default defineExtension({
     context.subscriptions.add(
       new SyncSubscription({
         hooks: context.hooks,
+        selfActor: `extension:${context.extension.id}`,
         settingsStore,
         engine: syncEngine,
         logger: context.logger

@@ -7,12 +7,12 @@ export type NetworkResponseType = 'json' | 'text' | 'arrayBuffer'
 
 export interface NetworkRequest {
   url: string
-  method?: NetworkMethod
-  headers?: Record<string, string>
-  query?: Record<string, string | number | boolean>
-  body?: JsonValue | Uint8Array
-  timeoutMs?: number
-  responseType?: NetworkResponseType
+  method?: NetworkMethod | undefined
+  headers?: Record<string, string> | undefined
+  query?: Record<string, string | number | boolean> | undefined
+  body?: JsonValue | Uint8Array | undefined
+  timeoutMs?: number | undefined
+  responseType?: NetworkResponseType | undefined
 }
 
 export interface NetworkResponse<TData = RpcValue> {
@@ -25,16 +25,16 @@ export interface NetworkResponse<TData = RpcValue> {
 
 export interface NetworkDownloadRequest {
   url: string
-  destinationPath?: string
-  fileName?: string
-  headers?: Record<string, string>
-  timeoutMs?: number
+  destinationPath?: string | undefined
+  fileName?: string | undefined
+  headers?: Record<string, string> | undefined
+  timeoutMs?: number | undefined
 }
 
 export interface NetworkDownloadResult {
   filePath: string
   bytesWritten: number
-  contentType?: string
+  contentType?: string | undefined
 }
 
 /**
@@ -47,16 +47,16 @@ export interface NetworkDownloadResult {
  * signal explicitly for work the extension drives itself, such as a task run.
  */
 export interface NetworkCallOptions {
-  signal?: AbortSignal
+  signal?: AbortSignal | undefined
 }
 
 export interface NetworkCapability {
   request<TData = RpcValue>(
     input: NetworkRequest,
-    options?: NetworkCallOptions
+    options?: NetworkCallOptions | undefined
   ): Promise<NetworkResponse<TData>>
   download(
     input: NetworkDownloadRequest,
-    options?: NetworkCallOptions
+    options?: NetworkCallOptions | undefined
   ): Promise<NetworkDownloadResult>
 }

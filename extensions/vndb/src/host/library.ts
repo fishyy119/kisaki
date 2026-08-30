@@ -54,15 +54,17 @@ export async function getGame(gameId: string): Promise<LibraryGame | null> {
 }
 
 export interface GameUserStatePatch {
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
 }
 
 export async function updateGameUserState(
   gameId: string,
   patch: GameUserStatePatch
 ): Promise<void> {
-  if (Object.keys(patch).length === 0) {
+  // Explicitly-undefined members mean "leave unchanged"; an all-absent patch
+  // must not become an empty library update.
+  if (Object.values(patch).every((value) => value === undefined)) {
     return
   }
 
@@ -78,11 +80,18 @@ export async function updateGameUserState(
  */
 export function subscribeGameChanges(
   hooks: HooksRegistrar,
+  selfActor: string,
   listener: (gameId: string) => void
 ): Disposable {
   return hooks.on('library.changed', ({ changes }) => {
     for (const change of changes) {
       if (change.entity !== 'game' || change.kind !== 'updated') {
+        continue
+      }
+
+      // Writes this extension caused come back attributed; reacting to them
+      // would only echo our own import or push.
+      if (change.actors.every((actor) => actor === selfActor)) {
         continue
       }
 

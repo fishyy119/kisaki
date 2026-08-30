@@ -1,4 +1,4 @@
-import type { SettingsStore } from '@kisaki3/extension-sdk'
+import type { SettingsStore } from '../utils/settings-store'
 import { matchesSteamId64Format } from '../../shared/settings'
 import { DEFAULT_STEAM_SETTINGS } from './defaults'
 

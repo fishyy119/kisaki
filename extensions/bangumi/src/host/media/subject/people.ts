@@ -1,5 +1,4 @@
 import {
-  isCancellationError,
   type ContentLocale,
   type ScrapedCompanyMetadata,
   type ScrapedPersonMetadata
@@ -10,7 +9,6 @@ import type {
   BangumiPersonDetail,
   BangumiRelatedPerson
 } from '../../api/types'
-import { omitUndefined } from '../../utils/object'
 import {
   buildCompanyFacts,
   buildPersonFacts,
@@ -23,12 +21,12 @@ import { composeBangumiRoleNote } from '../format/roles'
 /** Person credit of a subject, before a media scope assigns its role union. */
 export type SubjectPersonFact<TRole extends string> = ScrapedPersonMetadata & {
   role: TRole
-  note?: string
+  note?: string | undefined
 }
 
 export type SubjectCompanyFact<TRole extends string> = ScrapedCompanyMetadata & {
   role: TRole
-  note?: string
+  note?: string | undefined
 }
 
 interface SubjectPersonsOptions<TRole extends string> {
@@ -97,7 +95,7 @@ export async function fetchPersonDetails(
 
         return [personId, detail] as const
       } catch (error) {
-        if (isCancellationError(error)) {
+        if (signal?.aborted) {
           throw error
         }
 
@@ -121,7 +119,7 @@ function mapSubjectPerson<TRole extends string>(
 
   return {
     ...toPersonMetadata(facts),
-    ...omitUndefined({ note: composeBangumiRoleNote(relatedPerson.relation, relatedPerson.eps) }),
+    ...{ note: composeBangumiRoleNote(relatedPerson.relation, relatedPerson.eps) },
     role: mapRole(relatedPerson.relation, detail?.career ?? relatedPerson.career)
   }
 }
@@ -136,7 +134,7 @@ function mapSubjectCompany<TRole extends string>(
 
   return {
     ...toCompanyMetadata(facts),
-    ...omitUndefined({ note: composeBangumiRoleNote(relatedCompany.relation, relatedCompany.eps) }),
+    ...{ note: composeBangumiRoleNote(relatedCompany.relation, relatedCompany.eps) },
     role: mapRole(relatedCompany.relation)
   }
 }

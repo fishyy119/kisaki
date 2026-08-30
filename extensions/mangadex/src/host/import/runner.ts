@@ -17,9 +17,7 @@ import {
 import { buildMangaExternalIds, buildReleaseDate } from '../media/format/facts'
 import { selectMangaTitles } from '../media/format/titles'
 import { statusFromMangadex } from '../sync/engine'
-import type { SyncSuppressor } from '../sync/suppressor'
 import { toSafeErrorLog } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 
 const REPORT_EVERY = 5
 
@@ -43,7 +41,6 @@ export interface ImportSummary {
 
 export interface ImportRunnerDependencies {
   client: MangadexClient
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -166,7 +163,6 @@ async function importItem(
       return
     }
 
-    deps.suppressor.suppressImport(existing.id)
     await updateComicUserState(existing.id, patch)
     summary.updated += 1
     return
@@ -181,19 +177,16 @@ async function importItem(
   const manga = await deps.client.getManga(mangaId, { signal: handle.signal })
   const titles = selectMangaTitles(manga.attributes, { locale: 'en', preferRomanized: false })
   const knownIds: ExternalId[] = buildMangaExternalIds(manga)
-  const lookup = omitUndefined({
+  const lookup = {
     name: titles?.name ?? mangaId,
     knownIds,
     releaseDate: buildReleaseDate(manga.attributes)
-  })
+  }
 
   const result = await kisaki.ingest.comic.add.fromScraper(options.profileId, lookup)
 
-  const patch: ComicUserStatePatch = omitUndefined({ status, score })
-  if (Object.keys(patch).length > 0) {
-    deps.suppressor.suppressImport(result.comicId)
-    await updateComicUserState(result.comicId, patch)
-  }
+  const patch: ComicUserStatePatch = { status, score }
+  await updateComicUserState(result.comicId, patch)
 
   if (result.isNew) {
     summary.created += 1

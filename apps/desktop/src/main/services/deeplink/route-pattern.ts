@@ -63,7 +63,7 @@ export function matchNormalizedDeeplinkRoutePath(
   const params: DeeplinkParamMap = {}
 
   for (let routeIndex = 0, pathIndex = 0; routeIndex < compiled.segments.length; routeIndex++) {
-    const routeSegment = compiled.segments[routeIndex]
+    const routeSegment = compiled.segments[routeIndex]!
     const pathSegment = pathSegments[pathIndex]
 
     if (routeSegment.kind === 'wildcard') {

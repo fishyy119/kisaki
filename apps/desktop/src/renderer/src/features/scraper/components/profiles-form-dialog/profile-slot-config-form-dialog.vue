@@ -210,14 +210,14 @@ function handleRemoveProvider(index: number) {
 function handleMoveUp(index: number) {
   if (index <= 0) return
   const entries = formData.value.providers
-  ;[entries[index - 1], entries[index]] = [entries[index], entries[index - 1]]
+  ;[entries[index - 1], entries[index]] = [entries[index]!, entries[index - 1]!]
   reindexProviders()
 }
 
 function handleMoveDown(index: number) {
   if (index >= formData.value.providers.length - 1) return
   const entries = formData.value.providers
-  ;[entries[index], entries[index + 1]] = [entries[index + 1], entries[index]]
+  ;[entries[index], entries[index + 1]] = [entries[index + 1]!, entries[index]!]
   reindexProviders()
 }
 

@@ -12,7 +12,6 @@ import { toResolvedTarget } from '../../identity/target'
 import { m } from '../../i18n'
 import { VNDB_SEARCH_RESULT_LIMIT, VNDB_SOURCE_ID } from '../../utils/constants'
 import { VndbExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { buildProducerFacts } from '../satellites'
 import { PRODUCER_FIELDS, PRODUCER_SEARCH_FIELDS } from '../fields'
 import { buildEnumLabels } from '../format/enums'
@@ -45,12 +44,12 @@ export class VndbCompanyProvider implements CompanyScraperProvider {
         request,
         producer.id
       )
-      return omitUndefined({
+      return {
         id: producer.id,
         name,
         originalName,
         externalIds: [{ source: VNDB_SOURCE_ID, id: producer.id }]
-      })
+      }
     })
   }
 

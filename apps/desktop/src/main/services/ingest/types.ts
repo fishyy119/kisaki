@@ -12,10 +12,10 @@ export interface IngestProgressUpdate {
 }
 
 export interface IngestOperationOptions {
-  signal?: AbortSignal
-  onProgress?: (update: TaskRunProgressUpdate) => void
+  signal?: AbortSignal | undefined
+  onProgress?: ((update: TaskRunProgressUpdate) => void) | undefined
 }
 
 export interface IngestTaskRunOptions {
-  taskRunInitiator?: TaskRunInitiator
+  taskRunInitiator?: TaskRunInitiator | undefined
 }

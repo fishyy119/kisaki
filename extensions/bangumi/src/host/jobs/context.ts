@@ -1,13 +1,12 @@
 import {
-  createTaskRunProgressWork,
   isCancellationError,
   type ExtensionLogger,
   type JsonObject,
   type TaskRunProgressUpdate,
-  type TaskRunProgressWorkInput,
   type TaskRunResult,
   type TaskRunWarning
 } from '@kisaki3/extension-sdk'
+import { createTaskRunProgressWork, type TaskRunProgressWorkInput } from './progress-work'
 import type { BangumiClient } from '../api/client'
 import type { AccountService } from '../auth/account'
 import type { TokenService } from '../auth/token-service'
@@ -16,12 +15,12 @@ import type { MediaRegistry } from '../media/registry'
 import type { SyncEngine } from '../sync/engine'
 import type { EpisodeSyncEngine } from '../sync/episodes'
 import type { SyncQueueStore } from '../sync/queue'
-import type { SyncSuppressor } from '../sync/suppressor'
 import type { BangumiJobPreviewGroup } from '../../shared/settings'
 import {
   createBangumiJobSummary,
   createJobError,
   type BangumiJobError,
+  type BangumiJobErrorContext,
   type BangumiJobSummary
 } from './summary'
 import { BangumiExtensionError } from '../utils/errors'
@@ -43,7 +42,6 @@ export interface JobRunnerDependencies {
   episodeSyncEngine: EpisodeSyncEngine
   mediaRegistry: MediaRegistry
   syncQueueStore: SyncQueueStore
-  syncSuppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -99,7 +97,7 @@ export class JobStateController {
     this.state.previewGroups.push(group)
   }
 
-  addError(error: unknown, context: Partial<BangumiJobError> = {}): void {
+  addError(error: unknown, context: BangumiJobErrorContext = {}): void {
     this.state.errors.push(createJobError(error, context))
   }
 

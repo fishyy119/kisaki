@@ -2,12 +2,12 @@ import type { JsonObject } from '../shared'
 
 export interface AutomationCronTrigger {
   expression: string
-  timezone?: string
+  timezone?: string | undefined
 }
 
 export interface AutomationTriggers {
   onStartup: boolean
-  cron?: AutomationCronTrigger
+  cron?: AutomationCronTrigger | undefined
 }
 
 export type AutomationFailurePolicy =
@@ -21,7 +21,7 @@ export type AutomationCommandInvocationStatus = 'completed' | 'failed'
 
 export interface AutomationInvocationError {
   message: string
-  code?: string
+  code?: string | undefined
 }
 
 export interface AutomationRunHistoryRecord {
@@ -29,13 +29,13 @@ export interface AutomationRunHistoryRecord {
   automationId: string
   automationNameSnapshot: string
   commandId: string
-  commandTitleSnapshot?: string
+  commandTitleSnapshot?: string | undefined
   startedAt: number
   finishedAt: number
   invocationStatus: AutomationCommandInvocationStatus
   attempt: number
   trigger: AutomationTrigger
-  error?: AutomationInvocationError
+  error?: AutomationInvocationError | undefined
 }
 
 export interface Automation {
@@ -48,18 +48,18 @@ export interface Automation {
   failurePolicy: AutomationFailurePolicy
   createdAt: number
   updatedAt: number
-  lastRunAt?: number
-  nextRunAt?: number
+  lastRunAt?: number | undefined
+  nextRunAt?: number | undefined
   history: readonly AutomationRunHistoryRecord[]
 }
 
 export interface AutomationCreateInput {
-  name?: string
+  name?: string | undefined
   commandId: string
-  args?: JsonObject
-  enabled?: boolean
-  triggers?: AutomationTriggers
-  failurePolicy?: AutomationFailurePolicy
+  args?: JsonObject | undefined
+  enabled?: boolean | undefined
+  triggers?: AutomationTriggers | undefined
+  failurePolicy?: AutomationFailurePolicy | undefined
 }
 
 export type AutomationUpdateInput = Partial<

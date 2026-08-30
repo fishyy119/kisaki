@@ -13,7 +13,6 @@ import type {
 import type { VndbClient } from '../../api/client'
 import type { VndbVn } from '../../api/types'
 import { VNDB_BACKDROP_LIMIT, VNDB_COVER_LIMIT, VNDB_SOURCE_ID } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import {
   buildCharacterFacts,
   buildIdentity,
@@ -121,14 +120,14 @@ async function buildInfo(
   const { name, originalName } = resolveVnDisplayName(vn, ctx, vn.id)
   const sites = dedupeExternalSites([vndbSite(vn.id), ...toExternalSites(vn.extlinks)])
 
-  return omitUndefined({
+  return {
     name,
     originalName,
     aliases: buildAliases(vn, name, originalName),
     releaseDate: parseVndbReleaseDate(vn.released),
     description: sanitizeVndbText(vn.description),
     externalSites: toOptionalSites(sites)
-  })
+  }
 }
 
 /** Other titles the work is known by, so a re-scrape still matches by name. */
@@ -232,23 +231,21 @@ async function buildCharacters(
     }
 
     const cast = castByCharacter.get(characterId) ?? []
-    cast.push(
-      omitUndefined({
-        ...toPersonMetadata(buildStaffFacts(staffId, staff.get(staffId), ctx)),
-        role: 'actor' as const,
-        note: sanitizeVndbText(entry.note)
-      })
-    )
+    cast.push({
+      ...toPersonMetadata(buildStaffFacts(staffId, staff.get(staffId), ctx)),
+      role: 'actor' as const,
+      note: sanitizeVndbText(entry.note)
+    })
     castByCharacter.set(characterId, cast)
   }
 
   return characters.map((character) => {
     const cast = castByCharacter.get(character.id) ?? []
-    return omitUndefined({
+    return {
       ...toCharacterMetadata(buildCharacterFacts(character, traits, ctx)),
       role: mapCharacterRole(character.vns?.find((entry) => entry.id === vnId)?.role),
       persons: cast.length > 0 ? cast : undefined
-    })
+    }
   })
 }
 
@@ -270,15 +267,13 @@ async function buildPersons(
 
   for (const link of relations.staff ?? []) {
     const roleLabel = link.role ? (roleLabels.get(link.role) ?? link.role) : undefined
-    facts.push(
-      omitUndefined({
-        ...toPersonMetadata(buildStaffFacts(link.id, staff.get(link.id), ctx)),
-        role: mapStaffRole(link.role),
-        // The source's own role label is finer than the library's category, so
-        // it travels with the credit rather than being discarded.
-        note: mergeNotes(roleLabel, sanitizeVndbText(link.note))
-      })
-    )
+    facts.push({
+      ...toPersonMetadata(buildStaffFacts(link.id, staff.get(link.id), ctx)),
+      role: mapStaffRole(link.role),
+      // The source's own role label is finer than the library's category, so
+      // it travels with the credit rather than being discarded.
+      note: mergeNotes(roleLabel, sanitizeVndbText(link.note))
+    })
   }
 
   for (const link of relations.va ?? []) {
@@ -287,13 +282,11 @@ async function buildPersons(
       continue
     }
 
-    facts.push(
-      omitUndefined({
-        ...toPersonMetadata(buildStaffFacts(staffId, staff.get(staffId), ctx)),
-        role: 'actor' as const,
-        note: sanitizeVndbText(link.note)
-      })
-    )
+    facts.push({
+      ...toPersonMetadata(buildStaffFacts(staffId, staff.get(staffId), ctx)),
+      role: 'actor' as const,
+      note: sanitizeVndbText(link.note)
+    })
   }
 
   return facts

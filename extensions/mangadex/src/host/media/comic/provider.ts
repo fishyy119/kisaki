@@ -12,7 +12,6 @@ import { findKnownMangadexId, parseMangadexId } from '../../identity/ids'
 import { m } from '../../i18n'
 import { MANGADEX_SEARCH_RESULT_LIMIT, MANGADEX_SOURCE_ID } from '../../utils/constants'
 import { MangadexExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { buildComicFormat, buildMangaExternalIds, buildReleaseDate } from '../format/facts'
 import { selectMangaTitles } from '../format/titles'
 import { createMangadexComicSession } from './session'
@@ -60,16 +59,14 @@ export class MangadexComicProvider implements ComicScraperProvider {
         continue
       }
 
-      results.push(
-        omitUndefined({
-          id: manga.id,
-          name: titles.name,
-          originalName: titles.originalName,
-          releaseDate: buildReleaseDate(manga.attributes),
-          format: buildComicFormat(manga.attributes),
-          externalIds: buildMangaExternalIds(manga)
-        })
-      )
+      results.push({
+        id: manga.id,
+        name: titles.name,
+        originalName: titles.originalName,
+        releaseDate: buildReleaseDate(manga.attributes),
+        format: buildComicFormat(manga.attributes),
+        externalIds: buildMangaExternalIds(manga)
+      })
     }
 
     return results

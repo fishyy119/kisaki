@@ -93,7 +93,7 @@ export class PhashIndexStore {
 
       for (let i = 0; i < count; i += 1) {
         const distance =
-          popcount32(index.hashesHi[i] ^ probeHi) + popcount32(index.hashesLo[i] ^ probeLo)
+          popcount32(index.hashesHi[i]! ^ probeHi) + popcount32(index.hashesLo[i]! ^ probeLo)
         if (distance < bestDistance) {
           bestDistance = distance
           bestRow = i
@@ -108,7 +108,7 @@ export class PhashIndexStore {
       return null
     }
 
-    const record = this.readRecord(index, index.rowids[bestRow])
+    const record = this.readRecord(index, index.rowids[bestRow]!)
     return record ? { record, distance: bestDistance } : null
   }
 
@@ -151,7 +151,7 @@ export class PhashIndexStore {
       const hashesLo = new Uint32Array(rows.length)
 
       for (let i = 0; i < rows.length; i += 1) {
-        const row = rows[i]
+        const row = rows[i]!
         if (!(row.phash instanceof Uint8Array) || row.phash.byteLength !== PHASH_BYTE_LENGTH) {
           throw new Error(`Index entry at rowid ${row.rowid} has an invalid phash value.`)
         }

@@ -14,12 +14,12 @@ export interface NotifyAction {
 
 export interface NotifyOptions {
   title: string
-  message?: string
-  type?: NotifyType
-  target?: NotifyTarget // Default: 'toast'
-  duration?: number // Toast duration in ms
-  action?: NotifyAction
-  closable?: boolean
+  message?: string | undefined
+  type?: NotifyType | undefined
+  target?: NotifyTarget | undefined // Default: 'toast'
+  duration?: number | undefined // Toast duration in ms
+  action?: NotifyAction | undefined
+  closable?: boolean | undefined
 }
 
 /**

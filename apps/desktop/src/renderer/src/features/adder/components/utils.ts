@@ -15,6 +15,6 @@ export function getExistingReasonText(reason: ExistingReason | undefined): strin
  */
 export function getIngestWarningMessage(warnings: IngestWarning[] | undefined): string | undefined {
   if (!warnings?.length) return undefined
-  if (warnings.length === 1) return warnings[0].message
+  if (warnings.length === 1) return warnings[0]!.message
   return messages.value.adder.postProcessWarnings({ count: warnings.length })
 }

@@ -339,14 +339,16 @@ export class ExtensionLibraryEntityStore {
         builder = builder.offset(query.offset)
       }
 
+      // Every configured entity table carries a string id column; the generic
+      // select type cannot see that, so the id reads are asserted.
       const rows = builder.all()
-      const ids = rows.map((row) => row.id)
+      const ids = rows.map((row) => row.id as string)
       const externalIdsByEntity = config.externalIds
         ? loadExternalIds(this.options.db.client, config.externalIds, ids)
         : new Map<string, readonly ExternalId[]>()
 
       return rows.map((row) =>
-        config.toDto(row as TTable['$inferSelect'], externalIdsByEntity.get(row.id) ?? [])
+        config.toDto(row as TTable['$inferSelect'], externalIdsByEntity.get(row.id as string) ?? [])
       )
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to query the library.')

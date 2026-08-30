@@ -12,7 +12,6 @@ import { toResolvedTarget } from '../../identity/target'
 import { m } from '../../i18n'
 import { VNDB_SEARCH_RESULT_LIMIT, VNDB_SOURCE_ID } from '../../utils/constants'
 import { VndbExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { buildCharacterFacts } from '../satellites'
 import { CHARACTER_FIELDS, CHARACTER_SEARCH_FIELDS, TRAIT_FIELDS } from '../fields'
 import { parseVndbBirthday } from '../format/dates'
@@ -44,13 +43,13 @@ export class VndbCharacterProvider implements CharacterScraperProvider {
         request,
         character.id
       )
-      return omitUndefined({
+      return {
         id: character.id,
         name,
         originalName,
         birthDate: parseVndbBirthday(character.birthday),
         externalIds: [{ source: VNDB_SOURCE_ID, id: character.id }]
-      })
+      }
     })
   }
 

@@ -16,7 +16,7 @@ export type HookKind = 'notify' | 'waterfall' | 'veto'
 /** Result a veto hook handler returns to abort the gated workflow. */
 export interface HookVeto {
   veto: true
-  reason?: string
+  reason?: string | undefined
 }
 
 /** Declarative shape of one hook point in the {@link ExtensionHookPoints} map. */

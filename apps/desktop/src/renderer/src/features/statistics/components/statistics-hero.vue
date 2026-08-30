@@ -143,7 +143,7 @@ function buildMediaComposition(total: number): CompositionSegment[] {
     ranked.map(([mediaType, duration], index) => ({
       id: mediaType,
       name: m.value.library.entities[mediaType],
-      fill: SEGMENT_FILLS[index],
+      fill: SEGMENT_FILLS[index]!,
       duration
     })),
     total
@@ -163,7 +163,7 @@ function buildEntityComposition(total: number): CompositionSegment[] {
   const slices: CompositionSlice[] = top.map((item, index) => ({
     id: item.id,
     name: item.name,
-    fill: SEGMENT_FILLS[index],
+    fill: SEGMENT_FILLS[index]!,
     duration: item.totalDuration
   }))
 
@@ -223,7 +223,7 @@ function formatWeekdayMondayFirst(weekday: number): string {
 }
 
 function formatMonth(monthKey: string): string {
-  const [year, month] = monthKey.split('-')
+  const [year = '', month = ''] = monthKey.split('-')
   return f.value.yearMonth(new Date(parseInt(year), parseInt(month) - 1, 1))
 }
 

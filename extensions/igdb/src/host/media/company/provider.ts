@@ -14,7 +14,7 @@ import { toResolvedTarget } from '../../identity/target'
 import { m } from '../../i18n'
 import { IGDB_SEARCH_RESULT_LIMIT } from '../../utils/constants'
 import { IgdbExtensionError } from '../../utils/errors'
-import { indexById, indexNames, omitUndefined } from '../../utils/object'
+import { indexById, indexNames } from '../../utils/object'
 import { buildCompanyFacts } from '../satellites'
 import {
   COMPANY_FIELDS,
@@ -47,15 +47,13 @@ export class IgdbCompanyProvider implements CompanyScraperProvider {
       { signal: ctx.signal }
     )
 
-    return rows.map((company) =>
-      omitUndefined({
-        id: String(company.id),
-        // Not user-facing copy: guards a malformed row from entering the
-        // library without a name.
-        name: company.name?.trim() || `IGDB ${company.id}`,
-        externalIds: [toIgdbExternalId(company.id)]
-      })
-    )
+    return rows.map((company) => ({
+      id: String(company.id),
+      // Not user-facing copy: guards a malformed row from entering the
+      // library without a name.
+      name: company.name?.trim() || `IGDB ${company.id}`,
+      externalIds: [toIgdbExternalId(company.id)]
+    }))
   }
 
   async resolve(

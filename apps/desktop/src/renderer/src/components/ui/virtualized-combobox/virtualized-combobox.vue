@@ -130,6 +130,11 @@ const displayText = computed(() => {
   return selected?.name ?? null
 })
 
+/** Virtual rows only render for in-range indexes, so the lookup is total. */
+function entityAt(index: number) {
+  return filteredEntities.value[index]!
+}
+
 function handleSelect(id: string) {
   if (props.multiple) {
     // Toggle selection in multiple mode
@@ -374,17 +379,17 @@ function handleMouseMove() {
             }"
             @mouseenter="handleMouseEnter(virtualItem.index)"
             @mouseleave="handleMouseLeave"
-            @click="handleSelect(filteredEntities[virtualItem.index].id)"
+            @click="handleSelect(entityAt(virtualItem.index).id)"
           >
             <!-- Avatar (if has imageUrl) -->
             <div
-              v-if="filteredEntities[virtualItem.index].imageUrl !== undefined"
+              v-if="entityAt(virtualItem.index).imageUrl !== undefined"
               class="size-8 shrink-0 rounded-md overflow-hidden bg-muted border shadow-raised"
             >
               <img
-                v-if="filteredEntities[virtualItem.index].imageUrl"
-                :src="filteredEntities[virtualItem.index].imageUrl ?? ''"
-                :alt="filteredEntities[virtualItem.index].name"
+                v-if="entityAt(virtualItem.index).imageUrl"
+                :src="entityAt(virtualItem.index).imageUrl ?? ''"
+                :alt="entityAt(virtualItem.index).name"
                 class="size-full object-cover"
               />
               <div
@@ -401,13 +406,13 @@ function handleMouseMove() {
             <!-- Text content -->
             <div class="flex-1 min-w-0">
               <div class="truncate text-sm">
-                {{ filteredEntities[virtualItem.index].name }}
+                {{ entityAt(virtualItem.index).name }}
               </div>
               <div
-                v-if="filteredEntities[virtualItem.index].subText"
+                v-if="entityAt(virtualItem.index).subText"
                 class="truncate text-xs text-muted-foreground"
               >
-                {{ filteredEntities[virtualItem.index].subText }}
+                {{ entityAt(virtualItem.index).subText }}
               </div>
             </div>
 
@@ -417,9 +422,7 @@ function handleMouseMove() {
               :class="
                 cn(
                   'size-4 shrink-0',
-                  selectedIdsSet.has(filteredEntities[virtualItem.index].id)
-                    ? 'opacity-100'
-                    : 'opacity-0'
+                  selectedIdsSet.has(entityAt(virtualItem.index).id) ? 'opacity-100' : 'opacity-0'
                 )
               "
             />

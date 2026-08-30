@@ -7,7 +7,6 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { BangumiSubject, BangumiSubjectRelation } from '../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { parseBangumiSubjectDate } from '../format/dates'
 import { extractImageUrls } from '../format/images'
 import { resolveLocalizedSubjectName } from '../format/names'
@@ -38,12 +37,12 @@ export interface BangumiBookUnitOptions {
 
 /** One collected volume, as Bangumi files it: its own subject under the work. */
 interface BangumiBookVolume {
-  volumeNumber?: number
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
-  coverUrl?: string
+  volumeNumber?: number | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  coverUrl?: string | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -104,7 +103,7 @@ async function readVolume(
     locale
   )
 
-  return omitUndefined({
+  return {
     volumeNumber: readVolumeNumber(relation.name, relation.name_cn),
     name: name || undefined,
     originalName: originalName || undefined,
@@ -112,7 +111,7 @@ async function readVolume(
     description: normalizeDescription(subject?.summary),
     coverUrl: extractImageUrls(relation.images ?? subject?.images)[0],
     externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(relation.id) }]
-  })
+  }
 }
 
 /**

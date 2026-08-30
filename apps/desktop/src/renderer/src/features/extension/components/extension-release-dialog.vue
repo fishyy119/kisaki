@@ -159,7 +159,7 @@ async function handleSelectLocalFile() {
       return
     }
 
-    const filePath = res.data.filePaths[0]
+    const filePath = res.data.filePaths[0]!
     localFilePath.value = filePath
     applyPlan(
       unwrapIpcData(

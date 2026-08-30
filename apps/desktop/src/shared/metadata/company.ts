@@ -18,10 +18,10 @@ import type { ExternalId, Tag } from './common'
  */
 export interface CompanyInfo {
   name: string
-  originalName?: string
-  foundedDate?: PartialDate
-  description?: string
-  externalSites?: ExternalSite[]
+  originalName?: string | undefined
+  foundedDate?: PartialDate | undefined
+  description?: string | undefined
+  externalSites?: ExternalSite[] | undefined
   externalIds: ExternalId[]
 }
 
@@ -31,5 +31,5 @@ export interface CompanyInfo {
  * Core company metadata used across identity and normalization layers.
  */
 export interface CoreCompanyMetadata extends CompanyInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }

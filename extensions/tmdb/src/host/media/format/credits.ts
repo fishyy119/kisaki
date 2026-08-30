@@ -1,7 +1,6 @@
 import type { ScrapedAnimePersonFact, ScrapedPersonMetadata } from '@kisaki3/extension-sdk'
 import type { TmdbCreditPerson, TmdbCredits, TmdbCrewMember } from '../../api/types'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { buildImageUrl } from './images'
 import { mapTmdbCrewRole, mapTmdbGender } from './roles'
 import { buildExternalSites, tmdbPersonUrl, tmdbSite } from './sites'
@@ -95,13 +94,13 @@ function toPersonFact<TRole extends string>(
   const photo = buildImageUrl(imageBaseUrl, member.profile_path)
 
   return {
-    ...omitUndefined({
+    ...{
       name,
       originalName: originalName && originalName !== name ? originalName : undefined,
       gender: mapTmdbGender(member.gender),
       externalSites: buildExternalSites([tmdbSite(tmdbPersonUrl(member.id))]),
       photos: photo ? [photo] : undefined
-    }),
+    },
     identity: { externalIds: [{ source: TMDB_SOURCE_ID, id: String(member.id) }] },
     role
   }

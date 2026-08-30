@@ -170,8 +170,7 @@ export class SyncSubscription implements Disposable {
       status: result.status,
       scope: result.scope,
       localId: result.localId,
-      subjectId: result.subjectId,
-      suppressReason: result.suppressReason
+      subjectId: result.subjectId
     })
   }
 

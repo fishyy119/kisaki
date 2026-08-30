@@ -10,11 +10,17 @@ export interface RuntimeInfo {
   mode: RuntimeMode
   platform: RuntimePlatform
   arch: string
-  /** Host interface language in effect. Follow `app.ui-locale.changed` for updates. */
+  /** Host interface language at snapshot time; `runtime.uiLocale` stays current. */
   uiLocale: UiLocale
 }
 
 export interface RuntimeCapability {
+  /**
+   * Host interface language currently in effect. The platform keeps this
+   * current, so catalog lookups read it directly; `app.ui-locale.changed`
+   * remains available for reactions beyond message lookup.
+   */
+  readonly uiLocale: UiLocale
   getInfo(): Promise<RuntimeInfo>
   delay(ms: number): Promise<void>
   openExternal(url: string): Promise<void>

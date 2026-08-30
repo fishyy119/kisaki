@@ -37,12 +37,12 @@ export interface ExtensionManifest {
    * Package-relative root directory of built webview UI assets, e.g.
    * `./dist/ui`. Required for the extension to open webviews.
    */
-  ui?: string
-  description?: LocalizedText
-  author?: string
-  homepage?: string
-  icon?: string
-  keywords?: readonly string[]
+  ui?: string | undefined
+  description?: LocalizedText | undefined
+  author?: string | undefined
+  homepage?: string | undefined
+  icon?: string | undefined
+  keywords?: readonly string[] | undefined
   engines: ExtensionManifestEngines
 }
 

@@ -48,7 +48,7 @@ export class ExtensionFilesCapabilityProvider {
         return null
       }
 
-      const selectedPath = path.resolve(result.filePaths[0])
+      const selectedPath = path.resolve(result.filePaths[0]!)
       const stats = await stat(selectedPath)
       if (!stats.isFile()) {
         throw createValidationError('The selected path must be a file.')

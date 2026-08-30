@@ -48,11 +48,11 @@ declaring a domain dependency fails to compile. When a platform service seems to
 service, invert it: the domain service registers itself with the platform one. `activity` registering
 its own `kisaki://launch` route on `deeplink.router` is the reference example.
 
-| Layer      | Services                                                                                                     | Charter                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| Platform   | `ipc`, `db`, `window`, `native`, `notify`, `network`, `deeplink`, `updater`, `i18n`                           | Wrap Electron, the OS, and transports; no library business rules  |
-| Capability | `task-run`, `file-watch`, `process`, `video`, `reader`                                                        | Technical abilities with no domain vocabulary and no library rows |
-| Domain     | `scraper`, `ingest`, `scanner`, `holdings`, `activity`, `attachment`, `command`, `automation`, `extension`    | Own library meaning and workflows; grow one media type at a time  |
+| Layer      | Services                                                                                                   | Charter                                                           |
+| ---------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Platform   | `ipc`, `db`, `window`, `native`, `notify`, `network`, `deeplink`, `updater`, `i18n`                        | Wrap Electron, the OS, and transports; no library business rules  |
+| Capability | `task-run`, `file-watch`, `process`, `video`, `reader`                                                     | Technical abilities with no domain vocabulary and no library rows |
+| Domain     | `scraper`, `ingest`, `scanner`, `holdings`, `activity`, `attachment`, `command`, `automation`, `extension` | Own library meaning and workflows; grow one media type at a time  |
 
 `db` is the one platform service that is a data platform rather than a thin adapter. A synchronous
 better-sqlite3 connection cannot hand a transaction to another service, so every operation that must
@@ -65,12 +65,12 @@ it owns no workflow of its own — it exposes cross-table primitives that domain
 One capability service hosts the engine of each consumption vertical, so a media type's technical
 layer is never split across two services:
 
-| Vertical      | Engine service | Owns                                                            |
-| ------------- | -------------- | --------------------------------------------------------------- |
-| game          | `process`      | Process launch and run/foreground detection                     |
+| Vertical      | Engine service | Owns                                                              |
+| ------------- | -------------- | ----------------------------------------------------------------- |
+| game          | `process`      | Process launch and run/foreground detection                       |
 | anime         | `video`        | `video.sessions` (mpv playback) and `video.probe` (ffprobe facts) |
-| comic / novel | `reader`       | Reader windows, `reader.books` container access, `book://`      |
-| music / audio | (planned)      | `audio`, same shape                                             |
+| comic / novel | `reader`       | Reader windows, `reader.books` container access, `book://`        |
+| music / audio | (planned)      | `audio`, same shape                                               |
 
 Probing sits with the engine that consumes the file: asking whether a container is playable or
 pageable is the same question as asking whether that engine can open it.
@@ -407,13 +407,13 @@ change in the library. Two contracts hold the seam together:
 
 **Optional files by service type:**
 
-| File/Directory | Used By                                          | Purpose                                   |
-| -------------- | ------------------------------------------------ | ----------------------------------------- |
-| `handlers/`    | activity, deeplink, scraper                      | Per-media handlers or route handlers      |
-| `types.ts`     | db, deeplink, extension, process                 | Service-specific type definitions         |
-| `ipc.ts`       | Any service with IPC channels                    | IPC registration using `wrapIpc` helpers  |
-| `router.ts`    | deeplink                                         | URL route definitions (deeplink-specific) |
-| `locales/`     | i18n                                             | Translation resources (i18n-specific)     |
+| File/Directory | Used By                          | Purpose                                   |
+| -------------- | -------------------------------- | ----------------------------------------- |
+| `handlers/`    | activity, deeplink, scraper      | Per-media handlers or route handlers      |
+| `types.ts`     | db, deeplink, extension, process | Service-specific type definitions         |
+| `ipc.ts`       | Any service with IPC channels    | IPC registration using `wrapIpc` helpers  |
+| `router.ts`    | deeplink                         | URL route definitions (deeplink-specific) |
+| `locales/`     | i18n                             | Translation resources (i18n-specific)     |
 
 **Complex services** may have additional domain-specific files:
 

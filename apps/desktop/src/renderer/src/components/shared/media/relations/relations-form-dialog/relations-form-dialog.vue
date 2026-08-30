@@ -300,7 +300,7 @@ function handleItemFormSubmit(data: MediaRelationDraft) {
   }
   const index = items.value.findIndex((item) => item.id === editingItem.value?.id)
   if (index !== -1) {
-    items.value[index] = { ...items.value[index], ...data }
+    items.value[index] = { ...items.value[index]!, ...data }
   }
 }
 
@@ -316,10 +316,10 @@ function handleMove(type: MediaRelationType, index: number, offset: -1 | 1) {
   // Only out-edges are orderable; they occupy the group prefix.
   if (swapWith < 0 || swapWith >= group.outCount) return
 
-  const indexA = items.value.findIndex((item) => item.id === group.items[index].id)
-  const indexB = items.value.findIndex((item) => item.id === group.items[swapWith].id)
+  const indexA = items.value.findIndex((item) => item.id === group.items[index]!.id)
+  const indexB = items.value.findIndex((item) => item.id === group.items[swapWith]!.id)
   if (indexA === -1 || indexB === -1) return
-  ;[items.value[indexA], items.value[indexB]] = [items.value[indexB], items.value[indexA]]
+  ;[items.value[indexA], items.value[indexB]] = [items.value[indexB]!, items.value[indexA]!]
 }
 
 const itemFormInitialData = computed(() =>

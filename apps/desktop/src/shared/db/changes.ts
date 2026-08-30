@@ -17,6 +17,8 @@ export interface RawDbChange {
   old?: Record<string, unknown>
   next?: Record<string, unknown>
   occurredAt: number
+  /** Writer attribution: `app` or `extension:<id>`; see db/actor. */
+  actor: string
 }
 
 export interface DbChangeSummary {

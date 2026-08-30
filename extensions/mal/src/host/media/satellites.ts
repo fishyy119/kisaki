@@ -10,7 +10,6 @@ import type {
   ScrapedCharacterPersonFact
 } from '@kisaki3/extension-sdk'
 import type { MirrorCharacterEdge, MirrorPersonRef, MirrorStaffEdge } from '../api/types'
-import { omitUndefined } from '../utils/object'
 import { formatMalName, trimToUndefined } from './format/text'
 import { mapAnimeStaffPositions, mapCharacterRole } from './format/roles'
 import { dedupeUrls, toMalExternalId } from './format/sites'
@@ -28,13 +27,13 @@ export function toCharacterFact(edge: MirrorCharacterEdge): ScrapedAnimeCharacte
     .map((entry) => toVoiceActorFact(entry.person))
     .filter((fact) => fact !== undefined)
 
-  return omitUndefined({
+  return {
     name,
     identity: { externalIds: [toMalExternalId(node.mal_id)] },
     photos: photos.length > 0 ? photos : undefined,
     persons: voiceActors.length > 0 ? voiceActors : undefined,
     role: mapCharacterRole(edge.role)
-  })
+  }
 }
 
 export function toStaffFact(edge: MirrorStaffEdge): ScrapedAnimePersonFact | undefined {
@@ -49,13 +48,13 @@ export function toStaffFact(edge: MirrorStaffEdge): ScrapedAnimePersonFact | und
     .filter((position) => position !== undefined)
   const photos = dedupeUrls([node.images?.jpg?.image_url ?? node.images?.webp?.image_url])
 
-  return omitUndefined({
+  return {
     name,
     identity: { externalIds: [toMalExternalId(node.mal_id)] },
     photos: photos.length > 0 ? photos : undefined,
     role: mapAnimeStaffPositions(positions),
     note: positions.length > 0 ? positions.join(', ') : undefined
-  })
+  }
 }
 
 function toVoiceActorFact(
@@ -68,10 +67,10 @@ function toVoiceActorFact(
 
   const photos = dedupeUrls([person.images?.jpg?.image_url ?? person.images?.webp?.image_url])
 
-  return omitUndefined({
+  return {
     name,
     identity: { externalIds: [toMalExternalId(person.mal_id)] },
     photos: photos.length > 0 ? photos : undefined,
     role: 'actor' as const
-  })
+  }
 }

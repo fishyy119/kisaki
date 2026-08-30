@@ -16,7 +16,7 @@ import path from 'node:path'
 export function normalizeLibraryDirPath(dirPath: string): string {
   const resolved = path.resolve(dirPath)
   if (process.platform === 'win32' && /^[a-z]:/.test(resolved)) {
-    return resolved[0].toUpperCase() + resolved.slice(1)
+    return resolved[0]!.toUpperCase() + resolved.slice(1)
   }
   return resolved
 }

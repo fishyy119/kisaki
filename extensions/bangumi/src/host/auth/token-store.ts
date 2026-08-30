@@ -4,11 +4,11 @@ import { BANGUMI_SECRET_KEYS } from '../utils/ids'
 export interface BangumiTokenSecretV1 {
   version: 1
   accessToken: string
-  refreshToken?: string
-  tokenType?: string
-  scope?: string | null
-  userId?: number
-  expiresAt?: number | null
+  refreshToken?: string | undefined
+  tokenType?: string | undefined
+  scope?: string | null | undefined
+  userId?: number | undefined
+  expiresAt?: number | null | undefined
 }
 
 export interface BangumiPendingSessionSecretV1 {

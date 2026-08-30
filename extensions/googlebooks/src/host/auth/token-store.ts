@@ -1,9 +1,9 @@
+import type { ExtensionSecrets } from '@kisaki3/extension-sdk'
 import type {
-  ExtensionSecrets,
   OAuthRelayPendingSession,
   OAuthRelaySessionStore,
   OAuthRelayToken
-} from '@kisaki3/extension-sdk'
+} from './oauth-relay'
 import { GBOOKS_SECRET_KEYS } from '../utils/ids'
 
 export interface GbooksTokenSecretV1 {

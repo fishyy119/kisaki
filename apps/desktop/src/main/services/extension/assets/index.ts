@@ -4,6 +4,7 @@
  * bytes over custom schemes and are independent of install mechanics.
  */
 
+export { ExtensionFileAssetServer, extensionFileUrl } from './files'
 export { ExtensionIconManager } from './icon'
 export { ExtensionUiAssetServer, resolveExtensionUiRootPath } from './ui'
 export { ExtensionWebviewFontServer } from './fonts'

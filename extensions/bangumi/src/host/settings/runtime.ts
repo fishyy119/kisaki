@@ -1,4 +1,5 @@
-import type { ExtensionLogger, OAuthRelayFlow } from '@kisaki3/extension-sdk'
+import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import type { OAuthRelayFlow } from '../auth/oauth-relay'
 import type { AccountService } from '../auth/account'
 import type { TokenService } from '../auth/token-service'
 import type { BangumiSettingsStore } from '../config/schema'

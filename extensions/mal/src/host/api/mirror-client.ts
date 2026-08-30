@@ -1,18 +1,14 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import type { MalSettingsV1 } from '../config/schema'
 import { m } from '../i18n'
 import { MAL_MIRROR_MAX_PAGES, MAL_MIRROR_RATE_LIMIT } from '../utils/constants'
 import { MalExtensionError } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import type { MirrorCharacterEdge, MirrorEpisode, MirrorPage, MirrorStaffEdge } from './types'
 
 export interface MirrorRequestOptions {
@@ -95,7 +91,7 @@ export class MalMirrorClient {
     const url = `${settings.endpoints.mirrorUrl}/${path}`
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         await this.limiter.acquire(options.signal)
@@ -107,7 +103,7 @@ export class MalMirrorClient {
             timeoutMs: settings.client.timeoutMs,
             responseType: 'json'
           },
-          omitUndefined({ signal: options.signal })
+          { signal: options.signal }
         )
 
         if (response.ok) {
@@ -122,14 +118,14 @@ export class MalMirrorClient {
           attempt < settings.client.retryCount &&
           (response.status === 429 || response.status >= 500)
         ) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
 
         throw new MalExtensionError('mirror_unavailable', m().errors.mirrorUnavailable)
       } catch (error) {
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof MalExtensionError) {
@@ -138,7 +134,7 @@ export class MalMirrorClient {
 
         this.logger.debug('MAL mirror request attempt failed.', { attempt })
         if (attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }

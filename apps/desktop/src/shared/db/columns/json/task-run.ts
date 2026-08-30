@@ -131,8 +131,8 @@ function matchesTaskRunOperation(value: unknown): value is TaskRunOperation {
   const ingestMatch = /^ingest\.([^.]+)\.([^.]+)$/.exec(value)
   if (ingestMatch) {
     return (
-      TASK_RUN_CONTENT_ENTITY_VALUES.has(ingestMatch[1]) &&
-      TASK_RUN_INGEST_ACTION_VALUES.has(ingestMatch[2])
+      TASK_RUN_CONTENT_ENTITY_VALUES.has(ingestMatch[1]!) &&
+      TASK_RUN_INGEST_ACTION_VALUES.has(ingestMatch[2]!)
     )
   }
 

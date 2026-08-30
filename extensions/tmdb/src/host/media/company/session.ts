@@ -6,7 +6,6 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { TmdbClient } from '../../api/client'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { buildCountryTags } from '../format/companies'
 import { buildImageUrl, dedupeUrls, selectLogoUrls } from '../format/images'
 import { buildExternalSites, homepageSite, tmdbCompanyUrl, tmdbSite } from '../format/sites'
@@ -65,7 +64,7 @@ function loadSlot(
 async function buildCompanyInfo(loaders: TmdbCompanyLoaders): Promise<ScrapedCompanyInfo> {
   const company = await loaders.getCompany()
 
-  return omitUndefined({
+  return {
     // Not user-facing copy: guards a malformed row from entering the library
     // without a name.
     name: trimToUndefined(company.name) ?? `TMDB ${company.id}`,
@@ -74,7 +73,7 @@ async function buildCompanyInfo(loaders: TmdbCompanyLoaders): Promise<ScrapedCom
       tmdbSite(tmdbCompanyUrl(company.id)),
       homepageSite(company.homepage)
     ])
-  })
+  }
 }
 
 async function buildCompanyLogos(

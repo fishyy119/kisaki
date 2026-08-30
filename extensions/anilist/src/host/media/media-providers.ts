@@ -29,7 +29,6 @@ import { findKnownAnilistId, parseAnilistId } from '../identity/ids'
 import { m } from '../i18n'
 import { ANILIST_SEARCH_RESULT_LIMIT, ANILIST_SOURCE_ID } from '../utils/constants'
 import { AnilistExtensionError } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import { parseFuzzyDate } from './format/dates'
 import { selectMediaTitles } from './format/names'
 import { buildMediaExternalIds } from './format/sites'
@@ -61,8 +60,8 @@ const MEDIA_SLOTS = [
 interface SearchCore {
   id: string
   name: string
-  originalName?: string
-  releaseDate?: PartialDate
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
   externalIds: ExternalId[]
 }
 
@@ -101,13 +100,13 @@ abstract class AnilistMediaProviderBase {
 
       results.push({
         item,
-        core: omitUndefined({
+        core: {
           id: String(item.id),
           name: titles.name,
           originalName: titles.originalName,
           releaseDate: parseFuzzyDate(item.startDate),
           externalIds: buildMediaExternalIds(item.id, item.idMal)
-        })
+        }
       })
     }
 
@@ -165,9 +164,7 @@ export class AnilistAnimeProvider extends AnilistMediaProviderBase implements An
 
   async search(query: string, ctx: ScraperProviderContext): Promise<AnimeSearchResult[]> {
     const results = await this.searchItems(query, ctx)
-    return results.map(({ item, core }) =>
-      omitUndefined({ ...core, format: mapAnimeFormat(item.format) })
-    )
+    return results.map(({ item, core }) => ({ ...core, format: mapAnimeFormat(item.format) }))
   }
 
   async resolve(
@@ -197,9 +194,10 @@ export class AnilistComicProvider extends AnilistMediaProviderBase implements Co
 
   async search(query: string, ctx: ScraperProviderContext): Promise<ComicSearchResult[]> {
     const results = await this.searchItems(query, ctx)
-    return results.map(({ item, core }) =>
-      omitUndefined({ ...core, format: mapComicFormat(item.countryOfOrigin) })
-    )
+    return results.map(({ item, core }) => ({
+      ...core,
+      format: mapComicFormat(item.countryOfOrigin)
+    }))
   }
 
   async resolve(
@@ -229,7 +227,7 @@ export class AnilistNovelProvider extends AnilistMediaProviderBase implements No
 
   async search(query: string, ctx: ScraperProviderContext): Promise<NovelSearchResult[]> {
     const results = await this.searchItems(query, ctx)
-    return results.map(({ core }) => omitUndefined({ ...core, format: 'lightNovel' as const }))
+    return results.map(({ core }) => ({ ...core, format: 'lightNovel' as const }))
   }
 
   async resolve(

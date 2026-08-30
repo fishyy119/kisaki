@@ -31,7 +31,6 @@ import { findKnownMalId, parseMalId } from '../identity/ids'
 import { m } from '../i18n'
 import { MAL_SEARCH_RESULT_LIMIT, MAL_SOURCE_ID } from '../utils/constants'
 import { MalExtensionError } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import { parseMalDate } from './format/dates'
 import { selectMalTitles } from './format/names'
 import { toMalExternalId } from './format/sites'
@@ -54,8 +53,8 @@ import {
 interface SearchCore {
   id: string
   name: string
-  originalName?: string
-  releaseDate?: PartialDate
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
   externalIds: ExternalId[]
 }
 
@@ -111,13 +110,13 @@ abstract class MalMediaProviderBase {
       const externalIds: ExternalId[] = [toMalExternalId(item.id)]
       results.push({
         item,
-        core: omitUndefined({
+        core: {
           id: String(item.id),
           name: titles.name,
           originalName: titles.originalName,
           releaseDate: parseMalDate(item.start_date),
           externalIds
-        })
+        }
       })
     }
 
@@ -182,9 +181,7 @@ export class MalAnimeProvider extends MalMediaProviderBase implements AnimeScrap
 
   async search(query: string, ctx: ScraperProviderContext): Promise<AnimeSearchResult[]> {
     const results = await this.searchItems(query, ctx)
-    return results.map(({ item, core }) =>
-      omitUndefined({ ...core, format: mapAnimeFormat(item.media_type) })
-    )
+    return results.map(({ item, core }) => ({ ...core, format: mapAnimeFormat(item.media_type) }))
   }
 
   async resolve(
@@ -222,9 +219,7 @@ export class MalComicProvider extends MalMediaProviderBase implements ComicScrap
 
   async search(query: string, ctx: ScraperProviderContext): Promise<ComicSearchResult[]> {
     const results = await this.searchItems(query, ctx)
-    return results.map(({ item, core }) =>
-      omitUndefined({ ...core, format: mapComicFormat(item.media_type) })
-    )
+    return results.map(({ item, core }) => ({ ...core, format: mapComicFormat(item.media_type) }))
   }
 
   async resolve(
@@ -262,9 +257,7 @@ export class MalNovelProvider extends MalMediaProviderBase implements NovelScrap
 
   async search(query: string, ctx: ScraperProviderContext): Promise<NovelSearchResult[]> {
     const results = await this.searchItems(query, ctx)
-    return results.map(({ item, core }) =>
-      omitUndefined({ ...core, format: mapNovelFormat(item.media_type) })
-    )
+    return results.map(({ item, core }) => ({ ...core, format: mapNovelFormat(item.media_type) }))
   }
 
   async resolve(

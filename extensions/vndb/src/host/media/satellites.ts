@@ -20,7 +20,6 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { VndbCharacter, VndbProducer, VndbStaff, VndbTrait } from '../api/types'
 import { VNDB_SOURCE_ID } from '../utils/constants'
-import { omitUndefined } from '../utils/object'
 import { parseVndbBirthday, toPositiveNumber } from './format/dates'
 import { mapBloodType, mapCupSize, mapGender, mapProducerType, TAG_NOTES } from './format/enums'
 import { resolveEntityDisplayName } from './format/names'
@@ -72,7 +71,7 @@ export function buildCharacterFacts(
   const sites = dedupeExternalSites([vndbSite(character.id)])
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       description: sanitizeVndbText(character.description),
@@ -87,7 +86,7 @@ export function buildCharacterFacts(
       waist: toPositiveNumber(character.waist),
       hips: toPositiveNumber(character.hips),
       externalSites: toOptionalSites(sites)
-    }),
+    },
     identity: buildIdentity(character.id),
     tags: buildTraitTags(character, traits),
     images: dedupeImageUrls([character.image])
@@ -108,14 +107,14 @@ export function buildStaffFacts(
   const sites = dedupeExternalSites([vndbSite(staffId), ...toExternalSites(staff?.extlinks)])
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       description: sanitizeVndbText(staff?.description),
       gender: mapGender(staff?.gender),
       aliases: buildStaffAliases(staff),
       externalSites: toOptionalSites(sites)
-    }),
+    },
     identity: buildIdentity(staffId, staff?.extlinks),
     tags: [],
     images: []
@@ -150,12 +149,12 @@ export function buildProducerFacts(
   }
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       description: sanitizeVndbText(producer?.description),
       externalSites: toOptionalSites(sites)
-    }),
+    },
     identity: buildIdentity(producerId, producer?.extlinks),
     tags: dedupeTags(tags),
     images: []
@@ -165,34 +164,34 @@ export function buildProducerFacts(
 export function toCharacterMetadata(
   facts: VndbSatelliteFacts<ScrapedCharacterInfo>
 ): ScrapedCharacterMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     photos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 export function toPersonMetadata(
   facts: VndbSatelliteFacts<ScrapedPersonInfo>
 ): ScrapedPersonMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     photos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 export function toCompanyMetadata(
   facts: VndbSatelliteFacts<ScrapedCompanyInfo>
 ): ScrapedCompanyMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     logos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 /** Traits are VNDB's character vocabulary; the trait group names the tag. */

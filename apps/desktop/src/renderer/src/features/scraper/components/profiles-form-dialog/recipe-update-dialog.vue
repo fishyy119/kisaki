@@ -70,14 +70,6 @@ const diffRows = computed<DiffRow[]>(() => {
     })
   }
 
-  if ((props.profile.defaultLocale ?? null) !== props.recommendation.defaultLocale) {
-    rows.push({
-      label: m.value.scraper.profiles.defaultLanguageLabel,
-      before: props.profile.defaultLocale ?? m.value.scraper.recipeUpdate.systemLocale,
-      after: props.recommendation.defaultLocale
-    })
-  }
-
   for (const slot of getScraperSlotsForMediaType(props.profile.mediaType)) {
     const before = describeProviders(props.profile.slotConfigs[slot])
     const after = describeProviders(props.recommendation.slotConfigs[slot])

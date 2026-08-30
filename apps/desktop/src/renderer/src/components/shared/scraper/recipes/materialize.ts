@@ -169,14 +169,14 @@ function fallbackLabel(providerId: string): string {
 }
 
 /**
- * Canonical fingerprint of a scrape configuration: search source, default
- * locale, and per-slot strategy plus ordered provider ids. Profile names
- * never enter, so renames cannot fake or hide an update. Stored profiles and
+ * Canonical fingerprint of a scrape configuration: search source plus
+ * per-slot strategy and ordered provider ids. Profile names and the content
+ * locale never enter — both are user parameters, so neither renames nor a
+ * chosen language can fake or hide an update. Stored profiles and
  * materialized recommendations hash in the same space.
  */
 export function computeRecipeFingerprint(config: {
   searchProviderId: string
-  defaultLocale: ContentLocale | null
   slotConfigs: ScraperSlotConfigs
 }): string {
   const slots = Object.entries(config.slotConfigs)
@@ -192,13 +192,12 @@ export function computeRecipeFingerprint(config: {
     .sort((left, right) => left.slot.localeCompare(right.slot))
 
   const canonical = JSON.stringify({
-    version: 1,
+    version: 2,
     searchProviderId: config.searchProviderId,
-    defaultLocale: config.defaultLocale,
     slots
   })
 
-  return `v1:${fnv1a(canonical)}`
+  return `v2:${fnv1a(canonical)}`
 }
 
 /** FNV-1a 32-bit, hex-encoded; stable and dependency-free. */

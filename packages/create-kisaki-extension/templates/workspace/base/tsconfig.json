@@ -4,6 +4,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "isolatedModules": true,
+    "strict": true,
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "types": ["node"],

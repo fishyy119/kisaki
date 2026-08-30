@@ -19,6 +19,7 @@ import { createLogger } from '@main/log'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
 import type { RawDbChange, RawDbChangeOperation } from '@shared/db/changes'
+import { getCurrentDbActor } from './actor'
 
 const log = createLogger('Db')
 
@@ -38,6 +39,7 @@ interface OutboxRow {
   old_json: string | null
   next_json: string | null
   occurred_at: number
+  actor: string
 }
 
 /**
@@ -121,7 +123,7 @@ export class TriggerStore {
     // append new outbox rows, which must not be redelivered with this batch.
     this.sqlite
       .prepare(`DELETE FROM ${quoteIdentifier(OUTBOX_TABLE)} WHERE "seq" <= ?`)
-      .run(rows[rows.length - 1].seq)
+      .run(rows[rows.length - 1]!.seq)
 
     for (const row of rows) {
       this.sink(toRawChange(row))
@@ -145,7 +147,8 @@ export class TriggerStore {
         "row_id" TEXT NOT NULL,
         "old_json" TEXT,
         "next_json" TEXT,
-        "occurred_at" INTEGER NOT NULL
+        "occurred_at" INTEGER NOT NULL,
+        "actor" TEXT NOT NULL
       )
     `)
   }
@@ -160,6 +163,9 @@ export class TriggerStore {
       this.scheduleDrain()
       return null
     })
+    // Executes synchronously inside the writing statement, so the async-local
+    // actor context of the caller is still on the stack.
+    this.sqlite.function('current_db_actor', { deterministic: false }, () => getCurrentDbActor())
   }
 
   private scheduleDrain(): void {
@@ -235,14 +241,15 @@ export class TriggerStore {
       CREATE TEMP TRIGGER ${name} AFTER ${event} ON main.${quoteIdentifier(table)}
       BEGIN
         INSERT INTO ${quoteIdentifier(OUTBOX_TABLE)}
-          ("operation", "table_name", "row_id", "old_json", "next_json", "occurred_at")
+          ("operation", "table_name", "row_id", "old_json", "next_json", "occurred_at", "actor")
         VALUES (
           ${quoteString(operation)},
           ${quoteString(table)},
           ${alias}."id",
           ${oldExpression},
           ${nextExpression},
-          ${OCCURRED_AT_MS}
+          ${OCCURRED_AT_MS},
+          current_db_actor()
         );
         SELECT emit_db_change_signal();
       END
@@ -277,7 +284,8 @@ function toRawChange(row: OutboxRow): RawDbChange {
     id: String(row.row_id),
     old: parseRowSnapshot(row.old_json),
     next: parseRowSnapshot(row.next_json),
-    occurredAt: row.occurred_at
+    occurredAt: row.occurred_at,
+    actor: String(row.actor)
   }
 }
 

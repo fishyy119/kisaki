@@ -4,16 +4,14 @@ import { ANILIST_STORAGE_KEYS } from '../utils/ids'
 
 const MAX_FINGERPRINTS = 5000
 
-export interface SyncFingerprintRecord {
-  key: string
-  mediaId: number
+export interface SyncFingerprintEntry {
   fingerprint: string
   updatedAt: number
 }
 
 interface AnilistSyncStateV1 {
   version: 1
-  fingerprints: Record<string, SyncFingerprintRecord>
+  fingerprints: Record<string, SyncFingerprintEntry>
 }
 
 /**
@@ -30,14 +28,9 @@ export class SyncStateStore {
     return state.fingerprints[createStateKey(ref)]?.fingerprint
   }
 
-  async recordSuccessfulSync(
-    ref: LocalMediaRef,
-    mediaId: number,
-    fingerprint: string
-  ): Promise<void> {
+  async recordSuccessfulSync(ref: LocalMediaRef, fingerprint: string): Promise<void> {
     const state = await this.read()
-    const key = createStateKey(ref)
-    state.fingerprints[key] = { key, mediaId, fingerprint, updatedAt: Date.now() }
+    state.fingerprints[createStateKey(ref)] = { fingerprint, updatedAt: Date.now() }
     await this.storage.set(ANILIST_STORAGE_KEYS.syncState, prune(state))
   }
 
@@ -77,22 +70,19 @@ function normalizeState(value: unknown): AnilistSyncStateV1 {
     return { version: 1, fingerprints: {} }
   }
 
-  const fingerprints: Record<string, SyncFingerprintRecord> = {}
+  const fingerprints: Record<string, SyncFingerprintEntry> = {}
   for (const [key, record] of Object.entries(value.fingerprints)) {
     if (!isRecord(record)) {
       continue
     }
 
+    const id = key.trim()
     const fingerprint = typeof record.fingerprint === 'string' ? record.fingerprint : ''
-    const mediaId =
-      typeof record.mediaId === 'number' && Number.isInteger(record.mediaId) ? record.mediaId : 0
-    if (!fingerprint || mediaId <= 0) {
+    if (!id || !fingerprint) {
       continue
     }
 
-    fingerprints[key] = {
-      key,
-      mediaId,
+    fingerprints[id] = {
       fingerprint,
       updatedAt:
         typeof record.updatedAt === 'number' && Number.isFinite(record.updatedAt)

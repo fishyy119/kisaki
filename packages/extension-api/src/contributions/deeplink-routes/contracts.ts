@@ -39,9 +39,9 @@ export interface DeeplinkRouteHandleEvent<TPattern extends string = string> {
 
 export interface DeeplinkRouteHandleResult {
   success: boolean
-  status?: 'handled' | 'ignored' | 'error'
-  message?: string
-  data?: JsonValue
+  status?: 'handled' | 'ignored' | 'error' | undefined
+  message?: string | undefined
+  data?: JsonValue | undefined
 }
 
 export interface DeeplinkRouteContribution<TPattern extends string = string> {

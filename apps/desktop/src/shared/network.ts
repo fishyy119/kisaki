@@ -8,14 +8,14 @@
  * Network request options
  */
 export interface FetchOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-  headers?: Record<string, string>
-  body?: string | Buffer
-  signal?: AbortSignal
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | undefined
+  headers?: Record<string, string> | undefined
+  body?: string | Buffer | undefined
+  signal?: AbortSignal | undefined
   /** Timeout in ms (overrides global setting) */
-  timeout?: number
+  timeout?: number | undefined
   /** Retry count (overrides global setting) */
-  retries?: number
+  retries?: number | undefined
   /** Maximum number of bytes allowed while streaming a download */
-  maxBytes?: number
+  maxBytes?: number | undefined
 }

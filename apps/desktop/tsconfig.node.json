@@ -13,6 +13,11 @@
     "composite": true,
     "jsx": "preserve",
     "types": ["node"],
+    // Desktop app code predates exactOptionalPropertyTypes; the internal DTO
+    // surface (~400 sites) is not yet migrated. Contract packages and all
+    // extensions enforce it via the root base. TODO: migrate and drop this
+    // opt-out once the desktop DTO surface adopts explicit `| undefined`.
+    "exactOptionalPropertyTypes": false,
     "paths": {
       "@main/*": ["./src/main/*"],
       "@extension-host/*": ["./src/extension-host/*"],

@@ -33,7 +33,7 @@ export interface RegisteredEntityMenuContributionFor<
   id: string
   domain: TDomain
   scope: TScope
-  order?: number
+  order?: number | undefined
   contribution: EntityMenuContribution<EntityMenuInputFor<TDomain, TScope>>
 }
 

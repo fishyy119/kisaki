@@ -631,7 +631,8 @@ function getMenuNodeId(
     return node.id
   }
 
-  const base = `__kisaki_separator:${index}`
+  // Synthesized for any node without an explicit id, not only separators.
+  const base = `__kisaki_node:${index}`
   let candidate = base
   let suffix = 1
   while (usedNodeIds.has(candidate)) {

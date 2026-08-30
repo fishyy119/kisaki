@@ -18,15 +18,15 @@ import type { ExternalId, Tag } from './common'
  */
 export interface NovelInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: string[]
-  releaseDate?: PartialDate
-  description?: string
-  format?: NovelFormat
+  aliases?: string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  format?: NovelFormat | undefined
   /** Volume count declared by the source; stored volume rows stay authoritative. */
-  totalVolumes?: number
-  externalSites?: ExternalSite[]
+  totalVolumes?: number | undefined
+  externalSites?: ExternalSite[] | undefined
   externalIds: ExternalId[]
 }
 
@@ -34,7 +34,7 @@ export interface NovelInfo {
  * Core novel metadata used across identity and normalization layers.
  */
 export interface CoreNovelMetadata extends NovelInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 /**
@@ -44,14 +44,14 @@ export interface CoreNovelMetadata extends NovelInfo {
  * rows by external id instead of by number, which sources revise.
  */
 export interface NovelVolumeInfo {
-  volumeNumber?: number
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
+  volumeNumber?: number | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
   /** Cover art of this volume, not a page render. */
-  coverUrl?: string
-  externalIds?: ExternalId[]
+  coverUrl?: string | undefined
+  externalIds?: ExternalId[] | undefined
 }
 
 /** Numbering a novel volume can be identified by, whether stated or stored. */

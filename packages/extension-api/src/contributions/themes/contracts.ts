@@ -21,7 +21,7 @@ export type ThemeTokenMap = Record<ThemeTokenName, string>
 export interface ThemeContribution {
   id: string
   name: string
-  description?: string
+  description?: string | undefined
   tokens: {
     light: ThemeTokenMap
     dark: ThemeTokenMap

@@ -151,7 +151,10 @@ function startPolling(runId: string): void {
         if (state) {
           task.value = state
         }
-        if (!state || !['queued', 'running', 'pausing', 'paused', 'cancelling'].includes(state.status)) {
+        if (
+          !state ||
+          !['queued', 'running', 'pausing', 'paused', 'cancelling'].includes(state.status)
+        ) {
           stopPolling()
         }
       })

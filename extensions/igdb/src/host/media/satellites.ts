@@ -15,7 +15,6 @@ import type {
   ScrapedTag
 } from '@kisaki3/extension-sdk'
 import type { IgdbCompany, IgdbImageRow, IgdbWebsite } from '../api/types'
-import { omitUndefined } from '../utils/object'
 import { parseUnixDate } from './format/dates'
 import { dedupeUrls, resolveImageUrl } from './format/images'
 import {
@@ -57,14 +56,14 @@ export function buildCompanyFacts(
   }
 
   return {
-    info: omitUndefined({
+    info: {
       // Not user-facing copy: guards a malformed row from entering the library
       // without a name.
       name: trimToUndefined(company.name) ?? `IGDB ${company.id}`,
       description: normalizeDescription(company.description),
       foundedDate: parseUnixDate(company.start_date),
       externalSites: toOptionalSites(dedupeExternalSites(sites))
-    }),
+    },
     identity: { externalIds: [toIgdbExternalId(company.id)] },
     tags: [],
     images: dedupeUrls([resolveImageUrl(references.logos.get(company.logo ?? -1), 'logo_med')])
@@ -74,10 +73,10 @@ export function buildCompanyFacts(
 export function toCompanyMetadata(
   facts: IgdbSatelliteFacts<ScrapedCompanyInfo>
 ): ScrapedCompanyMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: facts.tags.length > 0 ? [...facts.tags] : undefined,
     logos: facts.images.length > 0 ? [...facts.images] : undefined
-  })
+  }
 }

@@ -64,10 +64,10 @@ export interface LibraryMediaRelation {
   from: LibraryEntityReference<LibraryMediaType>
   to: LibraryEntityReference<LibraryMediaType>
   type: LibraryMediaRelationType
-  note?: string
-  order?: number
-  createdAt?: number
-  updatedAt?: number
+  note?: string | undefined
+  order?: number | undefined
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
 }
 
 /**
@@ -79,8 +79,8 @@ export interface LibraryMediaRelationCreateInput {
   from: LibraryEntityReference<LibraryMediaType>
   to: LibraryEntityReference<LibraryMediaType>
   type: LibraryMediaRelationType
-  note?: string
-  order?: number
+  note?: string | undefined
+  order?: number | undefined
 }
 
 export interface LibraryMediaRelationSelector {
@@ -90,14 +90,14 @@ export interface LibraryMediaRelationSelector {
 }
 
 export interface LibraryMediaRelationPatch {
-  type?: LibraryMediaRelationType
-  note?: string
-  order?: number
+  type?: LibraryMediaRelationType | undefined
+  note?: string | undefined
+  order?: number | undefined
 }
 
 export interface LibraryMediaRelationQuery {
-  entity?: LibraryEntityReference<LibraryMediaType>
-  relatedEntity?: LibraryEntityReference<LibraryMediaType>
+  entity?: LibraryEntityReference<LibraryMediaType> | undefined
+  relatedEntity?: LibraryEntityReference<LibraryMediaType> | undefined
 }
 
 export interface LibraryMediaRelationCapability {

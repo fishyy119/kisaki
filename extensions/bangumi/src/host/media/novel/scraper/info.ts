@@ -1,6 +1,5 @@
 import type { ContentLocale, ScrapedNovelInfo } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../../api/types'
-import { omitUndefined } from '../../../utils/object'
 import { readPositiveInteger } from '../../../utils/numbers'
 import { resolveBangumiNovelFormat } from '../../format/formats'
 import { buildSubjectCoreInfo } from '../../subject/info'
@@ -14,9 +13,9 @@ export async function buildNovelInfo(
     getSubject()
   ])
 
-  return omitUndefined({
+  return {
     ...core,
     format: resolveBangumiNovelFormat(subject),
     totalVolumes: readPositiveInteger(subject.volumes)
-  })
+  }
 }

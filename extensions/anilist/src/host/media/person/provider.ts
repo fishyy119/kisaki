@@ -11,7 +11,6 @@ import { findKnownAnilistId, parseAnilistId } from '../../identity/ids'
 import { m } from '../../i18n'
 import { ANILIST_SEARCH_RESULT_LIMIT, ANILIST_SOURCE_ID } from '../../utils/constants'
 import { AnilistExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { parseFuzzyDate } from '../format/dates'
 import { selectPersonNames } from '../format/names'
 import { toAnilistExternalId } from '../format/sites'
@@ -39,16 +38,14 @@ export class AnilistPersonProvider implements PersonScraperProvider {
         continue
       }
 
-      results.push(
-        omitUndefined({
-          id: String(node.id),
-          name: names.name,
-          originalName: names.originalName,
-          birthDate: parseFuzzyDate(node.dateOfBirth),
-          deathDate: parseFuzzyDate(node.dateOfDeath),
-          externalIds: [toAnilistExternalId(node.id)]
-        })
-      )
+      results.push({
+        id: String(node.id),
+        name: names.name,
+        originalName: names.originalName,
+        birthDate: parseFuzzyDate(node.dateOfBirth),
+        deathDate: parseFuzzyDate(node.dateOfDeath),
+        externalIds: [toAnilistExternalId(node.id)]
+      })
     }
 
     return results

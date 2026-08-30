@@ -1,5 +1,4 @@
 import {
-  isCancellationError,
   kisaki,
   type Disposable,
   type ExtensionLogger,
@@ -32,6 +31,8 @@ export class SyncSubscription implements Disposable {
   constructor(
     private readonly deps: {
       hooks: HooksRegistrar
+      /** This extension's own change-feed actor id, for self-echo skipping. */
+      selfActor: string
       settingsStore: VndbSettingsStore
       engine: SyncEngine
       logger?: ExtensionLogger
@@ -39,7 +40,7 @@ export class SyncSubscription implements Disposable {
   ) {}
 
   start(): Disposable {
-    this.registration = subscribeGameChanges(this.deps.hooks, (gameId) => {
+    this.registration = subscribeGameChanges(this.deps.hooks, this.deps.selfActor, (gameId) => {
       this.handleChange(gameId).catch((error) => {
         this.deps.logger?.warn('VNDB sync scheduling failed.', toSafeErrorLog(error))
       })
@@ -76,7 +77,7 @@ export class SyncSubscription implements Disposable {
     const timer = setTimeout(() => {
       this.pending.delete(gameId)
       this.push(gameId, controller.signal).catch((error) => {
-        void this.handlePushError(gameId, error)
+        void this.handlePushError(gameId, error, controller.signal)
       })
     }, SYNC_DEBOUNCE_MS)
 
@@ -100,8 +101,12 @@ export class SyncSubscription implements Disposable {
     })
   }
 
-  private async handlePushError(gameId: string, error: unknown): Promise<void> {
-    if (isCancellationError(error)) {
+  private async handlePushError(
+    gameId: string,
+    error: unknown,
+    signal: AbortSignal
+  ): Promise<void> {
+    if (signal.aborted) {
       return
     }
 

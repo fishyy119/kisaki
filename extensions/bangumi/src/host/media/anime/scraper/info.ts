@@ -1,6 +1,5 @@
 import type { ContentLocale, ScrapedAnimeInfo } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../../api/types'
-import { omitUndefined } from '../../../utils/object'
 import { mapBangumiAnimeFormat } from '../../format/formats'
 import { buildSubjectCoreInfo } from '../../subject/info'
 
@@ -13,11 +12,11 @@ export async function buildAnimeInfo(
     getSubject()
   ])
 
-  return omitUndefined({
+  return {
     ...core,
     format: mapBangumiAnimeFormat(subject.platform),
     totalEpisodes: readTotalEpisodes(subject)
-  })
+  }
 }
 
 /** `eps` is what the entry claims; `total_episodes` counts the rows it has. */

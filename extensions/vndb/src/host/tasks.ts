@@ -1,16 +1,10 @@
-import {
-  isCancellationError,
-  kisaki,
-  type ExtensionLogger,
-  type TaskRunHandle
-} from '@kisaki3/extension-sdk'
+import { kisaki, type ExtensionLogger, type TaskRunHandle } from '@kisaki3/extension-sdk'
 import type { VndbTaskStateView } from '../shared/settings'
 import type { VndbClient } from './api/client'
 import { m } from './i18n'
 import { runUserListImport, type ImportOptions, type ImportSummary } from './import/runner'
 import { listAllGames, readVndbVnId } from './library'
 import type { SyncEngine } from './sync/engine'
-import type { SyncSuppressor } from './sync/suppressor'
 import { VndbExtensionError, toSafeErrorLog } from './utils/errors'
 
 const IMPORT_OPERATION = 'vndb.ulist-import'
@@ -20,7 +14,6 @@ const OPERATIONS = [IMPORT_OPERATION, PUSH_OPERATION]
 export interface VndbTasksDependencies {
   client: VndbClient
   engine: SyncEngine
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -49,7 +42,6 @@ export class VndbTasks {
       const summary = await runUserListImport(
         {
           client: this.deps.client,
-          suppressor: this.deps.suppressor,
           ...(this.deps.logger ? { logger: this.deps.logger } : {})
         },
         options,
@@ -106,7 +98,7 @@ export class VndbTasks {
             skipped += 1
           }
         } catch (error) {
-          if (isCancellationError(error)) {
+          if (handle.signal.aborted) {
             throw error
           }
           failed += 1
@@ -179,7 +171,7 @@ export class VndbTasks {
     try {
       await work()
     } catch (error) {
-      if (isCancellationError(error)) {
+      if (handle.signal.aborted) {
         await handle.cancel()
         return
       }

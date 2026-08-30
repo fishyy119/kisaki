@@ -1,17 +1,12 @@
-import {
-  defineExtension,
-  kisaki,
-  OAuthRelayClient,
-  OAuthRelayFlow,
-  SettingsStore,
-  type ExtensionLogger
-} from '@kisaki3/extension-sdk'
+import { defineExtension, kisaki, type ExtensionLogger } from '@kisaki3/extension-sdk'
+import { OAuthRelayClient, OAuthRelayFlow } from './auth/oauth-relay'
+import { SettingsStore } from './utils/settings-store'
 import { GbooksClient } from './api/client'
 import { TokenService } from './auth/token-service'
 import { TokenStore } from './auth/token-store'
 import { createDefaultGbooksSettings } from './config/defaults'
 import { normalizeGbooksSettings } from './config/schema'
-import { m, setHostUiLocale } from './i18n'
+import { m } from './i18n'
 import { GbooksNovelProvider } from './media/novel/provider'
 import { registerGbooksSettingsUi } from './settings'
 import { GbooksTasks } from './tasks'
@@ -21,11 +16,6 @@ import { GBOOKS_STORAGE_KEYS } from './utils/ids'
 
 export default defineExtension({
   async activate(context) {
-    setHostUiLocale((await kisaki.runtime.getInfo()).uiLocale)
-    context.hooks.on('app.ui-locale.changed', ({ effective }) => {
-      setHostUiLocale(effective)
-    })
-
     const settingsStore = new SettingsStore(context.storage, GBOOKS_STORAGE_KEYS.settings, {
       normalize: normalizeGbooksSettings,
       createDefault: createDefaultGbooksSettings

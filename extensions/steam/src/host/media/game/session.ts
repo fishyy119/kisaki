@@ -20,7 +20,6 @@ import type {
 import type { SteamClient } from '../../api/client'
 import type { SteamAppDetails } from '../../api/types'
 import { STEAM_ASSETS_URL, STEAM_SOURCE_ID, STEAM_STORE_PAGE_URL } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { toSteamLanguage } from '../locales'
 
 export function createSteamGameSession(
@@ -92,12 +91,12 @@ function buildInfo(appId: number, details: SteamAppDetails): ScrapedGameInfo | u
     sites.push({ label: 'Official website', url: website })
   }
 
-  return omitUndefined({
+  return {
     name,
     releaseDate: parseReleaseDate(details.release_date?.date),
     description: normalizeDescription(details.short_description ?? details.about_the_game),
     externalSites: sites
-  })
+  }
 }
 
 /** Genres are editorial; categories are store features worth keeping as tags. */

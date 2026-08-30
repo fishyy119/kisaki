@@ -80,7 +80,7 @@ if (process.defaultApp) {
   // Development: need to pass the script path
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient(DEEPLINK_SCHEME, process.execPath, [
-      path.resolve(process.argv[1])
+      path.resolve(process.argv[1]!)
     ])
   }
 } else {

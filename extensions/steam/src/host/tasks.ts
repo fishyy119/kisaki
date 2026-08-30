@@ -1,9 +1,4 @@
-import {
-  isCancellationError,
-  kisaki,
-  type ExtensionLogger,
-  type TaskRunHandle
-} from '@kisaki3/extension-sdk'
+import { kisaki, type ExtensionLogger, type TaskRunHandle } from '@kisaki3/extension-sdk'
 import type { SteamTaskStateView } from '../shared/settings'
 import type { SteamClient } from './api/client'
 import { m } from './i18n'
@@ -100,7 +95,7 @@ export class SteamTasks {
     try {
       await work()
     } catch (error) {
-      if (isCancellationError(error)) {
+      if (handle.signal.aborted) {
         await handle.cancel()
         return
       }

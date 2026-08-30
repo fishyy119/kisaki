@@ -69,14 +69,12 @@ export const scraper = {
   recipeUpdate: {
     badge: '有更新建議',
     title: '推薦設定已變化',
-    hint: '該場景的目前推薦與此設定不同。套用後將覆蓋搜尋來源、語言與欄位設定。',
+    hint: '該場景的目前推薦與此設定不同。套用後將覆蓋搜尋來源與欄位設定。',
     beforeLabel: '目前',
     afterLabel: '建議',
     apply: '套用建議',
     dismiss: '忽略此建議',
-    emptySlot: '（空）',
-    systemLocale: '系統語言',
-    ignoredNotice: '在推薦再次變化前保持忽略'
+    emptySlot: '（空）'
   },
 
   profiles: {

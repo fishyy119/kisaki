@@ -4,7 +4,8 @@ import type {
   MainToHostRpcMethod,
   MainToHostRpcRequestMap,
   RpcParams,
-  RpcResult
+  RpcResult,
+  UndefinedTolerant
 } from '@kisaki3/extension-api'
 import type { RpcRequestOptions } from '@extension-host/protocol'
 
@@ -16,7 +17,7 @@ export interface ExtensionContributionPointOptions {
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
   requestHost<K extends MainToHostRpcMethod>(
     method: K,
-    params: RpcParams<MainToHostRpcRequestMap, K>,
+    params: UndefinedTolerant<RpcParams<MainToHostRpcRequestMap, K>>,
     options?: RpcRequestOptions
   ): Promise<RpcResult<MainToHostRpcRequestMap, K>>
 }

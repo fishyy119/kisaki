@@ -1,9 +1,15 @@
 import type { JsonPrimitive, JsonObject } from '../shared'
 import type { ExtensionErrorShape } from '../shared/errors'
-import { createExtensionError, readErrorCode, readErrorDetails } from '../shared/errors'
+import {
+  CANCELLED_ERROR_CODE,
+  createExtensionError,
+  isCancellationError,
+  readErrorCode,
+  readErrorDetails
+} from '../shared/errors'
 
 export interface RpcErrorPayload extends ExtensionErrorShape {
-  stack?: string
+  stack?: string | undefined
 }
 
 export class RpcTimeoutError extends Error {
@@ -35,6 +41,11 @@ export function toRpcErrorPayload(error: unknown): RpcErrorPayload {
 
     if (code) {
       payload.code = code
+    } else if (isCancellationError(error)) {
+      // The wire carries no error name, so a native AbortError would arrive
+      // as an anonymous failure. Cancellation is classified here, on the side
+      // that still sees the full error identity.
+      payload.code = CANCELLED_ERROR_CODE
     }
 
     if (details) {
@@ -91,15 +102,15 @@ export const RPC_ABORT_EVENT = 'rpc.abort'
 
 export interface RpcHandshakeRequest {
   protocolVersion: string
-  peerVersion?: string
-  metadata?: JsonObject
+  peerVersion?: string | undefined
+  metadata?: JsonObject | undefined
 }
 
 export interface RpcHandshakeResponse {
   protocolVersion: string
   accepted: boolean
-  error?: RpcErrorPayload
-  metadata?: JsonObject
+  error?: RpcErrorPayload | undefined
+  metadata?: JsonObject | undefined
 }
 
 export interface RpcRequestEnvelope<TMethod extends RpcMethod = RpcMethod, TParams = RpcValue> {
@@ -162,6 +173,29 @@ export type RpcEventMap = object
 export type RpcMethodName<TMap extends RpcRequestMap = RpcRequestMap> = Extract<keyof TMap, string>
 
 export type RpcEventName<TMap extends RpcEventMap = RpcEventMap> = Extract<keyof TMap, string>
+
+/**
+ * Adds `undefined` to the optional members of a wire type, recursively.
+ * @remarks The wire normalizer drops `undefined` object members (see the
+ * channel's `toRpcValue`), so an absent member and an explicitly-undefined
+ * one are the same value on the receiving side. The transform is
+ * direction-aware by usage: the constructing side (request params, handler
+ * results, event payloads at their send seams) accepts explicit `undefined`
+ * so callers skip omission ceremony, while the receiving side keeps the
+ * exact-optional shape the wire actually delivers.
+ */
+export type UndefinedTolerant<T> = T extends JsonPrimitive | RpcBinary | undefined
+  ? T
+  : T extends (...args: never) => unknown
+    ? T
+    : T extends readonly (infer TItem)[]
+      ? readonly UndefinedTolerant<TItem>[]
+      : T extends object
+        ? // Homomorphic map: optional members read as `| undefined`, and the
+          // union survives reconstruction, which is exactly the tolerance the
+          // wire's undefined-dropping normalizer implies.
+          { [K in keyof T]: UndefinedTolerant<T[K]> }
+        : T
 
 export type RpcParams<TMap extends RpcRequestMap, TMethod extends RpcMethodName<TMap>> =
   TMap[TMethod] extends RpcMethodDefinition<infer TParams, unknown> ? TParams : never

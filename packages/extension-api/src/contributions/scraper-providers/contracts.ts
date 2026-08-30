@@ -141,8 +141,8 @@ export type ScraperCapability<TSlot extends ScraperSlot = ScraperSlot> = 'search
  */
 export interface ScraperLookup {
   name: string
-  locale?: ContentLocale
-  knownIds?: readonly ExternalId[]
+  locale?: ContentLocale | undefined
+  knownIds?: readonly ExternalId[] | undefined
 }
 
 /**
@@ -156,22 +156,22 @@ export interface ScraperLookup {
  */
 export interface MediaScraperLookup extends ScraperLookup {
   /** Release date of the entry, as precise as the host knows it. */
-  releaseDate?: PartialDate
+  releaseDate?: PartialDate | undefined
 }
 
 /** Lookup for an anime entry, adding its release format to the media facts. */
 export interface AnimeScraperLookup extends MediaScraperLookup {
-  format?: LibraryAnimeFormat
+  format?: LibraryAnimeFormat | undefined
 }
 
 /** Lookup for a comic entry, adding its release format to the media facts. */
 export interface ComicScraperLookup extends MediaScraperLookup {
-  format?: LibraryComicFormat
+  format?: LibraryComicFormat | undefined
 }
 
 /** Lookup for a novel entry, adding its release format to the media facts. */
 export interface NovelScraperLookup extends MediaScraperLookup {
-  format?: LibraryNovelFormat
+  format?: LibraryNovelFormat | undefined
 }
 
 /** Lookup for a game entry; game entries state no facts beyond the media ones. */
@@ -200,53 +200,53 @@ export interface ScrapedIdentityCarrier {
 }
 
 export type ScraperSessionResult<TResultMap extends object> = {
-  identity?: ScrapedEntityIdentity
+  identity?: ScrapedEntityIdentity | undefined
   slots: Partial<TResultMap>
 }
 
 export interface ScrapedTag {
   name: string
-  isSpoiler?: boolean
-  note?: string
-  isNsfw?: boolean
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
+  isNsfw?: boolean | undefined
 }
 
 export interface ScrapedGameInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
-  description?: string
-  externalSites?: readonly ExternalSite[]
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface ScrapedAnimeInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
-  description?: string
-  format?: LibraryAnimeFormat
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  format?: LibraryAnimeFormat | undefined
   /** Episode count declared by the source; episode rows stay authoritative. */
-  totalEpisodes?: number
-  externalSites?: readonly ExternalSite[]
+  totalEpisodes?: number | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface ScrapedComicInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
-  description?: string
-  format?: LibraryComicFormat
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  format?: LibraryComicFormat | undefined
   /** Volume count declared by the source; unit rows stay authoritative. */
-  totalVolumes?: number
+  totalVolumes?: number | undefined
   /** Chapter count declared by the source; unit rows stay authoritative. */
-  totalChapters?: number
-  externalSites?: readonly ExternalSite[]
+  totalChapters?: number | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 /**
@@ -258,28 +258,28 @@ export interface ScrapedComicInfo {
  * by id rather than by number, which sources revise.
  */
 export interface ScrapedComicChapter {
-  volumeNumber?: number
-  chapterNumber?: number
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
+  volumeNumber?: number | undefined
+  chapterNumber?: number | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
   /** Cover art of this installment (tankobon art), not a page render. */
-  coverUrl?: string
-  externalIds?: readonly ExternalId[]
+  coverUrl?: string | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export interface ScrapedNovelInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: readonly string[]
-  releaseDate?: PartialDate
-  description?: string
-  format?: LibraryNovelFormat
+  aliases?: readonly string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  format?: LibraryNovelFormat | undefined
   /** Volume count declared by the source; volume rows stay authoritative. */
-  totalVolumes?: number
-  externalSites?: readonly ExternalSite[]
+  totalVolumes?: number | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 /**
@@ -289,14 +289,14 @@ export interface ScrapedNovelInfo {
  * rows by id rather than by number, which sources revise.
  */
 export interface ScrapedNovelVolume {
-  volumeNumber?: number
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
+  volumeNumber?: number | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
   /** Cover art of this volume, not a page render. */
-  coverUrl?: string
-  externalIds?: readonly ExternalId[]
+  coverUrl?: string | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 /**
@@ -313,81 +313,81 @@ export interface ScrapedNovelVolume {
 export interface ScrapedAnimeEpisode {
   number: number
   type: LibraryAnimeEpisodeType
-  name?: string
-  originalName?: string
-  airDate?: PartialDate
-  description?: string
-  durationMs?: number
+  name?: string | undefined
+  originalName?: string | undefined
+  airDate?: PartialDate | undefined
+  description?: string | undefined
+  durationMs?: number | undefined
   /** Still frame of this episode from metadata, not a render of the local file. */
-  stillUrl?: string
-  externalIds?: readonly ExternalId[]
+  stillUrl?: string | undefined
+  externalIds?: readonly ExternalId[] | undefined
 }
 
 export interface ScrapedPersonInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other names this person is credited under, such as pen names. */
-  aliases?: readonly string[]
-  birthDate?: PartialDate
-  deathDate?: PartialDate
-  gender?: LibraryGender
-  description?: string
-  externalSites?: readonly ExternalSite[]
+  aliases?: readonly string[] | undefined
+  birthDate?: PartialDate | undefined
+  deathDate?: PartialDate | undefined
+  gender?: LibraryGender | undefined
+  description?: string | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface ScrapedCompanyInfo {
   name: string
-  originalName?: string
-  foundedDate?: PartialDate
-  description?: string
-  externalSites?: readonly ExternalSite[]
+  originalName?: string | undefined
+  foundedDate?: PartialDate | undefined
+  description?: string | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface ScrapedCharacterInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Nicknames and romanizations this character is also known by. */
-  aliases?: readonly string[]
-  birthDate?: PartialDate
-  gender?: LibraryGender
-  age?: number
-  bloodType?: LibraryBloodType
-  height?: number
-  weight?: number
-  bust?: number
-  waist?: number
-  hips?: number
-  cup?: LibraryCupSize
-  description?: string
-  externalSites?: readonly ExternalSite[]
+  aliases?: readonly string[] | undefined
+  birthDate?: PartialDate | undefined
+  gender?: LibraryGender | undefined
+  age?: number | undefined
+  bloodType?: LibraryBloodType | undefined
+  height?: number | undefined
+  weight?: number | undefined
+  bust?: number | undefined
+  waist?: number | undefined
+  hips?: number | undefined
+  cup?: LibraryCupSize | undefined
+  description?: string | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface ScrapedPersonMetadata extends ScrapedPersonInfo, ScrapedIdentityCarrier {
-  tags?: readonly ScrapedTag[]
-  photos?: readonly string[]
+  tags?: readonly ScrapedTag[] | undefined
+  photos?: readonly string[] | undefined
 }
 
 export interface ScrapedCompanyMetadata extends ScrapedCompanyInfo, ScrapedIdentityCarrier {
-  tags?: readonly ScrapedTag[]
-  logos?: readonly string[]
+  tags?: readonly ScrapedTag[] | undefined
+  logos?: readonly string[] | undefined
 }
 
 export interface ScrapedCharacterMetadata extends ScrapedCharacterInfo, ScrapedIdentityCarrier {
-  tags?: readonly ScrapedTag[]
-  persons?: readonly ScrapedCharacterPersonFact[]
-  photos?: readonly string[]
+  tags?: readonly ScrapedTag[] | undefined
+  persons?: readonly ScrapedCharacterPersonFact[] | undefined
+  photos?: readonly string[] | undefined
 }
 
 export interface ScrapedGamePersonFact extends ScrapedPersonMetadata {
   role: LibraryGamePersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
   role: LibraryGameCompanyRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -398,16 +398,16 @@ export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
  * the work-independent character-person row.
  */
 export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
-  character?: ScrapedCharacterInfo & ScrapedIdentityCarrier
+  character?: (ScrapedCharacterInfo & ScrapedIdentityCarrier) | undefined
   role: LibraryCharacterPersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
   role: LibraryGameCharacterRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 /**
@@ -422,145 +422,145 @@ export interface ScrapedRelatedEntryFact {
   source: string
   externalId: string
   type: LibraryMediaRelationType
-  note?: string
+  note?: string | undefined
 }
 
 export interface ScrapedAnimePersonFact extends ScrapedPersonMetadata {
   role: LibraryAnimePersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedAnimeCompanyFact extends ScrapedCompanyMetadata {
   role: LibraryAnimeCompanyRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedAnimeCharacterFact extends ScrapedCharacterMetadata {
   role: LibraryAnimeCharacterRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedComicPersonFact extends ScrapedPersonMetadata {
   role: LibraryComicPersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedComicCompanyFact extends ScrapedCompanyMetadata {
   role: LibraryComicCompanyRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedComicCharacterFact extends ScrapedCharacterMetadata {
   role: LibraryComicCharacterRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedNovelPersonFact extends ScrapedPersonMetadata {
   role: LibraryNovelPersonRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedNovelCompanyFact extends ScrapedCompanyMetadata {
   role: LibraryNovelCompanyRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedNovelCharacterFact extends ScrapedCharacterMetadata {
   role: LibraryNovelCharacterRole
-  isSpoiler?: boolean
-  note?: string
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
 }
 
 export interface ScrapedGameBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedGameInfo
-  tags?: readonly ScrapedTag[]
-  persons?: readonly ScrapedGamePersonFact[]
-  companies?: readonly ScrapedGameCompanyFact[]
-  characters?: readonly ScrapedGameCharacterFact[]
-  relatedEntries?: readonly ScrapedRelatedEntryFact[]
-  covers?: readonly string[]
-  backdrops?: readonly string[]
-  logos?: readonly string[]
-  icons?: readonly string[]
+  core?: ScrapedGameInfo | undefined
+  tags?: readonly ScrapedTag[] | undefined
+  persons?: readonly ScrapedGamePersonFact[] | undefined
+  companies?: readonly ScrapedGameCompanyFact[] | undefined
+  characters?: readonly ScrapedGameCharacterFact[] | undefined
+  relatedEntries?: readonly ScrapedRelatedEntryFact[] | undefined
+  covers?: readonly string[] | undefined
+  backdrops?: readonly string[] | undefined
+  logos?: readonly string[] | undefined
+  icons?: readonly string[] | undefined
 }
 
 export interface ScrapedAnimeBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedAnimeInfo
-  tags?: readonly ScrapedTag[]
-  episodes?: readonly ScrapedAnimeEpisode[]
-  persons?: readonly ScrapedAnimePersonFact[]
-  companies?: readonly ScrapedAnimeCompanyFact[]
-  characters?: readonly ScrapedAnimeCharacterFact[]
-  relatedEntries?: readonly ScrapedRelatedEntryFact[]
-  covers?: readonly string[]
-  backdrops?: readonly string[]
-  logos?: readonly string[]
+  core?: ScrapedAnimeInfo | undefined
+  tags?: readonly ScrapedTag[] | undefined
+  episodes?: readonly ScrapedAnimeEpisode[] | undefined
+  persons?: readonly ScrapedAnimePersonFact[] | undefined
+  companies?: readonly ScrapedAnimeCompanyFact[] | undefined
+  characters?: readonly ScrapedAnimeCharacterFact[] | undefined
+  relatedEntries?: readonly ScrapedRelatedEntryFact[] | undefined
+  covers?: readonly string[] | undefined
+  backdrops?: readonly string[] | undefined
+  logos?: readonly string[] | undefined
 }
 
 export interface ScrapedComicBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedComicInfo
-  tags?: readonly ScrapedTag[]
-  chapters?: readonly ScrapedComicChapter[]
-  persons?: readonly ScrapedComicPersonFact[]
-  companies?: readonly ScrapedComicCompanyFact[]
-  characters?: readonly ScrapedComicCharacterFact[]
-  relatedEntries?: readonly ScrapedRelatedEntryFact[]
-  covers?: readonly string[]
-  backdrops?: readonly string[]
-  logos?: readonly string[]
+  core?: ScrapedComicInfo | undefined
+  tags?: readonly ScrapedTag[] | undefined
+  chapters?: readonly ScrapedComicChapter[] | undefined
+  persons?: readonly ScrapedComicPersonFact[] | undefined
+  companies?: readonly ScrapedComicCompanyFact[] | undefined
+  characters?: readonly ScrapedComicCharacterFact[] | undefined
+  relatedEntries?: readonly ScrapedRelatedEntryFact[] | undefined
+  covers?: readonly string[] | undefined
+  backdrops?: readonly string[] | undefined
+  logos?: readonly string[] | undefined
 }
 
 export interface ScrapedNovelBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedNovelInfo
-  tags?: readonly ScrapedTag[]
-  volumes?: readonly ScrapedNovelVolume[]
-  persons?: readonly ScrapedNovelPersonFact[]
-  companies?: readonly ScrapedNovelCompanyFact[]
-  characters?: readonly ScrapedNovelCharacterFact[]
-  relatedEntries?: readonly ScrapedRelatedEntryFact[]
-  covers?: readonly string[]
-  backdrops?: readonly string[]
-  logos?: readonly string[]
+  core?: ScrapedNovelInfo | undefined
+  tags?: readonly ScrapedTag[] | undefined
+  volumes?: readonly ScrapedNovelVolume[] | undefined
+  persons?: readonly ScrapedNovelPersonFact[] | undefined
+  companies?: readonly ScrapedNovelCompanyFact[] | undefined
+  characters?: readonly ScrapedNovelCharacterFact[] | undefined
+  relatedEntries?: readonly ScrapedRelatedEntryFact[] | undefined
+  covers?: readonly string[] | undefined
+  backdrops?: readonly string[] | undefined
+  logos?: readonly string[] | undefined
 }
 
 export interface ScrapedPersonBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedPersonInfo
-  tags?: readonly ScrapedTag[]
-  photos?: readonly string[]
+  core?: ScrapedPersonInfo | undefined
+  tags?: readonly ScrapedTag[] | undefined
+  photos?: readonly string[] | undefined
 }
 
 export interface ScrapedCompanyBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedCompanyInfo
-  tags?: readonly ScrapedTag[]
-  logos?: readonly string[]
+  core?: ScrapedCompanyInfo | undefined
+  tags?: readonly ScrapedTag[] | undefined
+  logos?: readonly string[] | undefined
 }
 
 export interface ScrapedCharacterBundle {
   identity: ScrapedEntityIdentity
-  core?: ScrapedCharacterInfo
-  tags?: readonly ScrapedTag[]
-  persons?: readonly ScrapedCharacterPersonFact[]
-  photos?: readonly string[]
+  core?: ScrapedCharacterInfo | undefined
+  tags?: readonly ScrapedTag[] | undefined
+  persons?: readonly ScrapedCharacterPersonFact[] | undefined
+  photos?: readonly string[] | undefined
 }
 
 export interface BaseResolvedTarget {
   cacheKey: string
-  resolveName?: string
-  identity?: ScrapedEntityIdentity
+  resolveName?: string | undefined
+  identity?: ScrapedEntityIdentity | undefined
 }
 
 export interface IdResolvedTarget extends BaseResolvedTarget {
@@ -587,64 +587,64 @@ export interface BaseScraperSession<
 export interface GameSearchResult {
   id: string
   name: string
-  originalName?: string
-  releaseDate?: PartialDate
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface AnimeSearchResult {
   id: string
   name: string
-  originalName?: string
-  releaseDate?: PartialDate
-  format?: LibraryAnimeFormat
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  format?: LibraryAnimeFormat | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface ComicSearchResult {
   id: string
   name: string
-  originalName?: string
-  releaseDate?: PartialDate
-  format?: LibraryComicFormat
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  format?: LibraryComicFormat | undefined
   /** Layer this row sits at, for sources that list works and volumes together. */
-  grain?: MediaEntryGrain
+  grain?: MediaEntryGrain | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface NovelSearchResult {
   id: string
   name: string
-  originalName?: string
-  releaseDate?: PartialDate
-  format?: LibraryNovelFormat
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  format?: LibraryNovelFormat | undefined
   /** Layer this row sits at, for sources that list works and volumes together. */
-  grain?: MediaEntryGrain
+  grain?: MediaEntryGrain | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface PersonSearchResult {
   id: string
   name: string
-  originalName?: string
-  birthDate?: PartialDate
-  deathDate?: PartialDate
+  originalName?: string | undefined
+  birthDate?: PartialDate | undefined
+  deathDate?: PartialDate | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface CompanySearchResult {
   id: string
   name: string
-  originalName?: string
-  foundedDate?: PartialDate
+  originalName?: string | undefined
+  foundedDate?: PartialDate | undefined
   externalIds: readonly ExternalId[]
 }
 
 export interface CharacterSearchResult {
   id: string
   name: string
-  originalName?: string
-  birthDate?: PartialDate
+  originalName?: string | undefined
+  birthDate?: PartialDate | undefined
   externalIds: readonly ExternalId[]
 }
 

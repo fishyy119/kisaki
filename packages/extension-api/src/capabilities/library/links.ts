@@ -55,12 +55,12 @@ export const LIBRARY_LINK_KINDS = [
 export type LibraryLinkKind = (typeof LIBRARY_LINK_KINDS)[number]
 
 export interface LibraryOrderedLinkMetadata {
-  note?: string
-  order?: number
+  note?: string | undefined
+  order?: number | undefined
 }
 
 export interface LibrarySpoilerLinkMetadata extends LibraryOrderedLinkMetadata {
-  isSpoiler?: boolean
+  isSpoiler?: boolean | undefined
 }
 
 export interface GamePersonLinkMetadata extends LibrarySpoilerLinkMetadata {
@@ -198,8 +198,8 @@ export interface LibraryLink<K extends LibraryLinkKind = LibraryLinkKind> {
   from: LibraryEntityReference<LibraryLinkFromType<K>>
   to: LibraryEntityReference<LibraryLinkToType<K>>
   metadata: LibraryLinkMetadataMap[K]
-  createdAt?: number
-  updatedAt?: number
+  createdAt?: number | undefined
+  updatedAt?: number | undefined
 }
 
 export interface LibraryLinkCreateInput<K extends LibraryLinkKind = LibraryLinkKind> {
@@ -216,9 +216,9 @@ export type LibraryLinkSelector<K extends LibraryLinkKind = LibraryLinkKind> = {
 } & LibraryLinkSelectorExtra<K>
 
 export interface LibraryLinkQuery {
-  entity?: LibraryEntityReference
-  relatedEntity?: LibraryEntityReference
-  kinds?: readonly LibraryLinkKind[]
+  entity?: LibraryEntityReference | undefined
+  relatedEntity?: LibraryEntityReference | undefined
+  kinds?: readonly LibraryLinkKind[] | undefined
 }
 
 export interface LibraryLinkCapability {

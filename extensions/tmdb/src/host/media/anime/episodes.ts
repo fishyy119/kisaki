@@ -2,7 +2,7 @@ import type { LibraryAnimeEpisodeType, ScrapedAnimeEpisode } from '@kisaki3/exte
 import type { TmdbEpisode } from '../../api/types'
 import type { TmdbEpisodeGroupRef, TmdbSeasonRef } from '../../identity/subject-id'
 import type { TmdbMovieLoaders, TmdbSeriesLoaders } from '../loaders'
-import { mapWithConcurrency, omitUndefined } from '../../utils/object'
+import { mapWithConcurrency } from '../../utils/object'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
 import { parseTmdbDate, toDurationMs } from '../format/dates'
 import { buildImageUrl } from '../format/images'
@@ -24,14 +24,14 @@ export async function buildMovieEpisodes(
   const movie = await loaders.getMovie()
 
   return [
-    omitUndefined({
+    {
       number: 1,
       type: 'regular' as const,
       name: readMovieNames(movie).name,
       airDate: parseTmdbDate(movie.release_date),
       description: trimToUndefined(movie.overview),
       durationMs: toDurationMs(movie.runtime)
-    })
+    }
   ]
 }
 
@@ -116,7 +116,7 @@ function toEpisode(
   type: LibraryAnimeEpisodeType,
   imageBaseUrl: string
 ): ScrapedAnimeEpisode {
-  return omitUndefined({
+  return {
     number,
     type,
     name: trimToUndefined(episode.name),
@@ -128,5 +128,5 @@ function toEpisode(
     // switching between aired order and an episode group renumbers rows
     // instead of replacing them, and watch state survives.
     externalIds: [{ source: TMDB_SOURCE_ID, id: String(episode.id) }]
-  })
+  }
 }

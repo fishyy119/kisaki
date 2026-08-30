@@ -12,7 +12,6 @@ import { toResolvedTarget } from '../../identity/target'
 import { m } from '../../i18n'
 import { VNDB_SEARCH_RESULT_LIMIT, VNDB_SOURCE_ID } from '../../utils/constants'
 import { VndbExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { VN_SEARCH_FIELDS } from '../fields'
 import { parseVndbReleaseDate } from '../format/dates'
 import { resolveVnDisplayName } from '../format/names'
@@ -48,13 +47,13 @@ export class VndbGameProvider implements GameScraperProvider {
 
     return rows.map((vn) => {
       const { name, originalName } = resolveVnDisplayName(vn, request, vn.id)
-      return omitUndefined({
+      return {
         id: vn.id,
         name,
         originalName,
         releaseDate: parseVndbReleaseDate(vn.released),
         externalIds: [{ source: VNDB_SOURCE_ID, id: vn.id }]
-      })
+      }
     })
   }
 

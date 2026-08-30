@@ -15,7 +15,6 @@ import { findKnownIsbn, findKnownVolumeId, parseGbooksVolumeId } from '../../ide
 import { m } from '../../i18n'
 import { GBOOKS_SEARCH_RESULT_LIMIT, GBOOKS_SOURCE_ID } from '../../utils/constants'
 import { GbooksExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import {
   buildCompanyFacts,
   buildCovers,
@@ -66,14 +65,12 @@ export class GbooksNovelProvider implements NovelScraperProvider {
         continue
       }
 
-      results.push(
-        omitUndefined({
-          id: volume.id,
-          name,
-          releaseDate: parsePublishedDate(volume.volumeInfo?.publishedDate),
-          externalIds: buildVolumeExternalIds(volume)
-        })
-      )
+      results.push({
+        id: volume.id,
+        name,
+        releaseDate: parsePublishedDate(volume.volumeInfo?.publishedDate),
+        externalIds: buildVolumeExternalIds(volume)
+      })
     }
 
     return results
@@ -187,13 +184,13 @@ function buildInfo(volume: GbVolume): ScrapedNovelInfo | undefined {
 
   const subtitle = info?.subtitle?.trim()
 
-  return omitUndefined({
+  return {
     name: subtitle ? `${title}: ${subtitle}` : title,
     aliases: subtitle ? [title] : undefined,
     releaseDate: parsePublishedDate(info?.publishedDate),
     description: normalizeDescription(info?.description),
     externalSites: buildExternalSites(info)
-  })
+  }
 }
 
 function memoize<T>(load: () => Promise<T>): () => Promise<T> {

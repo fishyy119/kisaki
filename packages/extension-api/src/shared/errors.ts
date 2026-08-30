@@ -34,32 +34,32 @@ export type ExtensionErrorCode =
 export type ExtensionCapabilityErrorCode = ExtensionErrorCode
 
 export interface ExtensionErrorShape {
-  code?: string
+  code?: string | undefined
   message: string
-  details?: JsonObject
+  details?: JsonObject | undefined
 }
 
 export interface ValidateExtensionErrorShapeOptions {
-  allowedKeys?: ReadonlySet<string>
-  path?: string
+  allowedKeys?: ReadonlySet<string> | undefined
+  path?: string | undefined
 }
 
 export interface ExtensionErrorOptions {
-  code?: ExtensionErrorCode
-  details?: JsonObject
-  exposeStack?: boolean
+  code?: ExtensionErrorCode | undefined
+  details?: JsonObject | undefined
+  exposeStack?: boolean | undefined
 }
 
 export interface NormalizeExtensionErrorOptions {
-  conflictCodes?: readonly string[]
-  conflictMessage?: string
-  timeoutMessage?: string
+  conflictCodes?: readonly string[] | undefined
+  conflictMessage?: string | undefined
+  timeoutMessage?: string | undefined
 }
 
 export class ExtensionError extends Error {
   readonly name = 'ExtensionError'
-  readonly code?: string
-  readonly details?: JsonObject
+  readonly code?: string | undefined
+  readonly details?: JsonObject | undefined
   readonly exposeStack: boolean
 
   constructor(message: string, options: ExtensionErrorOptions = {}) {
@@ -233,7 +233,7 @@ function matchesErrorCode(code: string | undefined, patterns: readonly string[])
 function createCodedExtensionError(
   message: string,
   code: ExtensionErrorCode,
-  details?: JsonObject
+  details?: JsonObject | undefined
 ): ExtensionError {
   return createExtensionError(
     message,

@@ -144,7 +144,7 @@ export class ExtensionRepositoryStore {
 
     const nextIndex = Math.max(0, Math.min(targetIndex, rows.length - 1))
     const [moved] = rows.splice(currentIndex, 1)
-    rows.splice(nextIndex, 0, moved)
+    rows.splice(nextIndex, 0, moved!)
     this.writePriorityOrder(rows)
 
     return this.require(id)

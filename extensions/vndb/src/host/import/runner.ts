@@ -7,13 +7,16 @@ import {
 import type { VndbClient } from '../api/client'
 import type { VndbUserListItem } from '../api/types'
 import { m } from '../i18n'
-import { listAllGames, readVndbVnId, updateGameUserState, type GameUserStatePatch } from '../library'
+import {
+  listAllGames,
+  readVndbVnId,
+  updateGameUserState,
+  type GameUserStatePatch
+} from '../library'
 import { fromVndbVote, statusFromVndbLabels } from '../sync/engine'
-import type { SyncSuppressor } from '../sync/suppressor'
 import { parseVndbReleaseDate } from '../media/format/dates'
 import { VNDB_SOURCE_ID } from '../utils/constants'
 import { VndbExtensionError, toSafeErrorLog } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 
 const ULIST_FIELDS = 'vote, labels{id,label}, vn.title, vn.alttitle, vn.released'
 const REPORT_EVERY = 10
@@ -39,7 +42,6 @@ export interface ImportSummary {
 
 export interface ImportRunnerDependencies {
   client: VndbClient
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -90,7 +92,7 @@ export async function runUserListImport(
     handle.signal.throwIfAborted()
 
     try {
-      await importItem(deps, options, gamesByVnId, item, summary)
+      await importItem(options, gamesByVnId, item, summary)
     } catch (error) {
       summary.failed += 1
       if (summary.warnings.length < 20) {
@@ -121,9 +123,11 @@ export async function runUserListImport(
 }
 
 async function importItem(
-  deps: ImportRunnerDependencies,
   options: ImportOptions,
-  gamesByVnId: ReadonlyMap<string, { id: string; status?: string; score?: number | null }>,
+  gamesByVnId: ReadonlyMap<
+    string,
+    { id: string; status?: string | undefined; score?: number | null | undefined }
+  >,
   item: VndbUserListItem,
   summary: ImportSummary
 ): Promise<void> {
@@ -155,7 +159,6 @@ async function importItem(
       return
     }
 
-    deps.suppressor.suppressImport(existing.id)
     await updateGameUserState(existing.id, patch)
     summary.updated += 1
     return
@@ -171,20 +174,14 @@ async function importItem(
   }
 
   const name = item.vn?.title?.trim() || item.id
-  const result = await kisaki.ingest.game.add.fromScraper(
-    options.profileId,
-    omitUndefined({
-      name,
-      knownIds: [{ source: VNDB_SOURCE_ID, id: item.id }],
-      releaseDate: parseVndbReleaseDate(item.vn?.released)
-    })
-  )
+  const result = await kisaki.ingest.game.add.fromScraper(options.profileId, {
+    name,
+    knownIds: [{ source: VNDB_SOURCE_ID, id: item.id }],
+    releaseDate: parseVndbReleaseDate(item.vn?.released)
+  })
 
-  const patch: GameUserStatePatch = omitUndefined({ status, score })
-  if (Object.keys(patch).length > 0) {
-    deps.suppressor.suppressImport(result.gameId)
-    await updateGameUserState(result.gameId, patch)
-  }
+  const patch: GameUserStatePatch = { status, score }
+  await updateGameUserState(result.gameId, patch)
 
   if (result.isNew) {
     summary.created += 1

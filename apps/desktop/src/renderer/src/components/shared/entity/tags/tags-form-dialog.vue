@@ -143,15 +143,15 @@ async function handleSave() {
 
 function handleMoveUp(index: number) {
   if (index <= 0) return
-  const temp = items.value[index - 1]
-  items.value[index - 1] = items.value[index]
+  const temp = items.value[index - 1]!
+  items.value[index - 1] = items.value[index]!
   items.value[index] = temp
 }
 
 function handleMoveDown(index: number) {
   if (index >= items.value.length - 1) return
-  const temp = items.value[index]
-  items.value[index] = items.value[index + 1]
+  const temp = items.value[index]!
+  items.value[index] = items.value[index + 1]!
   items.value[index + 1] = temp
 }
 

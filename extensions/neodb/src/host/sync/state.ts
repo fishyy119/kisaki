@@ -3,16 +3,14 @@ import { NEODB_STORAGE_KEYS } from '../utils/ids'
 
 const MAX_FINGERPRINTS = 5000
 
-export interface SyncFingerprintRecord {
-  novelId: string
-  itemUuid: string
+export interface SyncFingerprintEntry {
   fingerprint: string
   updatedAt: number
 }
 
 interface NeodbSyncStateV1 {
   version: 1
-  fingerprints: Record<string, SyncFingerprintRecord>
+  fingerprints: Record<string, SyncFingerprintEntry>
 }
 
 /**
@@ -29,13 +27,9 @@ export class SyncStateStore {
     return state.fingerprints[novelId]?.fingerprint
   }
 
-  async recordSuccessfulSync(
-    novelId: string,
-    itemUuid: string,
-    fingerprint: string
-  ): Promise<void> {
+  async recordSuccessfulSync(novelId: string, entry: SyncFingerprintEntry): Promise<void> {
     const state = await this.read()
-    state.fingerprints[novelId] = { novelId, itemUuid, fingerprint, updatedAt: Date.now() }
+    state.fingerprints[novelId] = entry
     await this.storage.set(NEODB_STORAGE_KEYS.syncState, prune(state))
   }
 
@@ -73,21 +67,19 @@ function normalizeState(value: unknown): NeodbSyncStateV1 {
     return { version: 1, fingerprints: {} }
   }
 
-  const fingerprints: Record<string, SyncFingerprintRecord> = {}
-  for (const [novelId, record] of Object.entries(value.fingerprints)) {
+  const fingerprints: Record<string, SyncFingerprintEntry> = {}
+  for (const [key, record] of Object.entries(value.fingerprints)) {
     if (!isRecord(record)) {
       continue
     }
 
+    const id = key.trim()
     const fingerprint = typeof record.fingerprint === 'string' ? record.fingerprint : ''
-    const itemUuid = typeof record.itemUuid === 'string' ? record.itemUuid : ''
-    if (!fingerprint || !itemUuid) {
+    if (!id || !fingerprint) {
       continue
     }
 
-    fingerprints[novelId] = {
-      novelId,
-      itemUuid,
+    fingerprints[id] = {
       fingerprint,
       updatedAt:
         typeof record.updatedAt === 'number' && Number.isFinite(record.updatedAt)

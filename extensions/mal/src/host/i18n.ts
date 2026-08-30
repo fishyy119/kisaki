@@ -1,19 +1,9 @@
-import { UI_LOCALES, type LocalizedText, type UiLocale } from '@kisaki3/extension-sdk'
+import { UI_LOCALES, kisaki, type LocalizedText, type UiLocale } from '@kisaki3/extension-sdk'
 import { getMalMessages, type MalMessages } from '../shared/i18n'
-
-/**
- * Host-process UI locale state. Seeded from `RuntimeInfo.uiLocale` during
- * activation and refreshed through the `app.ui-locale.changed` host event.
- */
-let currentLocale: UiLocale = 'en'
-
-export function setHostUiLocale(locale: UiLocale): void {
-  currentLocale = locale
-}
 
 /** Returns the message catalog for the current host UI locale. */
 export function m(): MalMessages {
-  return getMalMessages(currentLocale)
+  return getMalMessages(kisaki.runtime.uiLocale)
 }
 
 /**
@@ -25,6 +15,7 @@ export function localizedMessage(select: (messages: MalMessages) => string): Loc
     en: select(getMalMessages('en'))
   }
   for (const locale of UI_LOCALES) {
+    if (locale === 'en') continue
     text[locale] = select(getMalMessages(locale))
   }
   return text

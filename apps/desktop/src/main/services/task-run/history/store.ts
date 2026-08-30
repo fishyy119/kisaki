@@ -96,7 +96,7 @@ export class TaskRunHistoryStore {
 
   private deleteMany(ids: readonly string[]): void {
     if (ids.length === 1) {
-      this.db.delete(taskRunHistory).where(eq(taskRunHistory.id, ids[0])).run()
+      this.db.delete(taskRunHistory).where(eq(taskRunHistory.id, ids[0]!)).run()
       return
     }
 

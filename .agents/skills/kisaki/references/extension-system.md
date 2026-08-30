@@ -456,6 +456,27 @@ For the registry refactor, run the acceptance searches listed in
 matches outside that design document. The positive searches should find the new registry
 DTOs, IPC, managers, package commit/recovery/icon services, and SQLite tables.
 
+## SDK Admission Doctrine
+
+The SDK (`packages/extension-sdk`) contains platform bindings only: the `kisaki`
+bridge, `defineExtension`, webview RPC glue, and re-exported api vocabulary. It
+never collects convenience code, however many built-in extensions repeat it.
+
+- When author code looks like mechanical glue everyone must copy correctly, the
+  first suspect is the platform protocol itself. Fix the root cause in the
+  platform (examples: cancellation classification lives in `toRpcErrorPayload`,
+  wire-optional tolerance lives in the RPC seams, `runtime.uiLocale` is cached
+  by the host runtime, `library.changed` carries writer `actors`).
+- Glue that survives the root-cause check is author code and lives in each
+  extension as a same-shaped copy (`settings-store`, `rate-limiter`,
+  `oauth-relay`). The canonical shape is whatever the newest generation of
+  built-in extensions demonstrates; copies may diverge only for real source
+  differences.
+- Single-consumer helpers stay inside their consumer.
+- Trust model: extensions are trusted code. The platform does not enforce
+  runtime least-privilege; integrity is carried by signed distribution and
+  registry verification. There is no permission declaration field by design.
+
 ## Constraints
 
 - Public contracts are defined in `packages/extension-api` before host implementation.

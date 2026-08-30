@@ -8,7 +8,6 @@
  * way an abandoned session gets released on the host.
  */
 
-import { isCancellationError } from '@kisaki3/extension-api'
 import { createAbortError } from '@main/utils/async'
 import type { ScraperLookup } from '@shared/scraper'
 import type { ScraperProviderContext } from '@main/services/scraper'
@@ -154,10 +153,11 @@ async function requestScraperHost<TResponse>(
 
     return response as TResponse
   } catch (error) {
-    // Translate the extension boundary's coded cancellation into the DOM-style
-    // abort the scraper pipeline recognizes, so a cancelled invocation is
-    // abandoned instead of recorded as a provider failure.
-    if (isCancellationError(error)) {
+    // The initiator's own signal adjudicates: only a cancellation this host
+    // asked for becomes the DOM-style abort the scraper pipeline abandons.
+    // A cancellation-shaped error without our abort is an extension-internal
+    // leak and stays a provider failure.
+    if (signal?.aborted) {
       throw createAbortError()
     }
 

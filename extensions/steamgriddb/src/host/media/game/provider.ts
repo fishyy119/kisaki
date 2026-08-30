@@ -13,7 +13,6 @@ import type { SgdbClient } from '../../api/client'
 import { m } from '../../i18n'
 import { SGDB_SEARCH_RESULT_LIMIT, SGDB_SOURCE_ID, STEAM_SOURCE_ID } from '../../utils/constants'
 import { SgdbExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 
 /**
  * Artwork-only game provider: covers (600×900 grids), hero backdrops, logos,
@@ -43,14 +42,12 @@ export class SgdbGameProvider implements GameScraperProvider {
         continue
       }
 
-      results.push(
-        omitUndefined({
-          id: String(game.id),
-          name,
-          releaseDate: toReleaseDate(game.release_date),
-          externalIds: [{ source: SGDB_SOURCE_ID, id: String(game.id) }]
-        })
-      )
+      results.push({
+        id: String(game.id),
+        name,
+        releaseDate: toReleaseDate(game.release_date),
+        externalIds: [{ source: SGDB_SOURCE_ID, id: String(game.id) }]
+      })
     }
 
     return results

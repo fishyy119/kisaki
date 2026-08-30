@@ -1,16 +1,10 @@
-import {
-  isCancellationError,
-  kisaki,
-  type ExtensionLogger,
-  type TaskRunHandle
-} from '@kisaki3/extension-sdk'
+import { kisaki, type ExtensionLogger, type TaskRunHandle } from '@kisaki3/extension-sdk'
 import type { MalTaskStateView } from '../shared/settings'
 import type { MalOfficialClient } from './api/official-client'
 import { m } from './i18n'
 import { runListImport, type ImportOptions, type ImportSummary } from './import/runner'
 import { listAllEntries, readMalMediaId, type LocalMediaRef } from './library'
 import type { SyncEngine } from './sync/engine'
-import type { SyncSuppressor } from './sync/suppressor'
 import { MalExtensionError, toSafeErrorLog } from './utils/errors'
 
 const IMPORT_OPERATION = 'mal.list-import'
@@ -20,7 +14,6 @@ const OPERATIONS = [IMPORT_OPERATION, PUSH_OPERATION]
 export interface MalTasksDependencies {
   client: MalOfficialClient
   engine: SyncEngine
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -49,7 +42,6 @@ export class MalTasks {
       const summary = await runListImport(
         {
           client: this.deps.client,
-          suppressor: this.deps.suppressor,
           ...(this.deps.logger ? { logger: this.deps.logger } : {})
         },
         options,
@@ -112,7 +104,7 @@ export class MalTasks {
             skipped += 1
           }
         } catch (error) {
-          if (isCancellationError(error)) {
+          if (handle.signal.aborted) {
             throw error
           }
           failed += 1
@@ -186,7 +178,7 @@ export class MalTasks {
     try {
       await work()
     } catch (error) {
-      if (isCancellationError(error)) {
+      if (handle.signal.aborted) {
         await handle.cancel()
         return
       }

@@ -24,7 +24,7 @@ interface PendingCharacterPersonLink {
   personIdentityKey: string
   role: CharacterPersonRole
   isSpoiler: boolean
-  note?: string
+  note?: string | undefined
 }
 
 function upsertCharacterPersonLink(

@@ -15,8 +15,7 @@ import type { ScraperProfile } from '@shared/db'
 import { computed, ref, watch } from 'vue'
 import { nanoid } from 'nanoid'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData, useI18n } from '@renderer/composables'
-import { ipcManager } from '@renderer/core/ipc'
+import { useI18n } from '@renderer/composables'
 import { createSlotConfigs, getScraperSlotsForMediaType } from '@shared/scraper'
 import {
   Dialog,
@@ -33,9 +32,14 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { ContentLocaleSelect } from '@renderer/components/ui/locale-select'
 import { Field, FieldContent, FieldLabel } from '@renderer/components/ui/field'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { ScraperProviderInfo, ScraperProvidersByType } from '../provider-display'
-import { getRecipesForMediaType, resolveRecipeLanguageGroup, type ScraperRecipe } from './recipes'
-import { assessRecipeAvailability, materializeRecipe } from './materialize'
+import type { ScraperProviderInfo } from './provider-display'
+import { useScraperProviders } from './use-scraper-providers'
+import {
+  getRecipesForMediaType,
+  resolveRecipeLanguageGroup,
+  type ScraperRecipe
+} from './recipes/recipes'
+import { assessRecipeAvailability, materializeRecipe } from './recipes/materialize'
 
 interface Props {
   /** `recipes` hides the provider and blank paths (for quick-create hosts). */
@@ -67,29 +71,7 @@ const profileName = ref('')
 const contentLocale = ref<ContentLocale | null>(null)
 
 // The provider lists are the availability ground truth for every path.
-const { data: providersByType, isLoading } = useAsyncData(
-  async (): Promise<ScraperProvidersByType> => {
-    const [game, anime, comic, novel, person, company, character] = await Promise.all([
-      ipcManager.invoke('scraper:list-game-providers'),
-      ipcManager.invoke('scraper:list-anime-providers'),
-      ipcManager.invoke('scraper:list-comic-providers'),
-      ipcManager.invoke('scraper:list-novel-providers'),
-      ipcManager.invoke('scraper:list-person-providers'),
-      ipcManager.invoke('scraper:list-company-providers'),
-      ipcManager.invoke('scraper:list-character-providers')
-    ])
-    return {
-      game: game.success ? game.data : [],
-      anime: anime.success ? anime.data : [],
-      comic: comic.success ? comic.data : [],
-      novel: novel.success ? novel.data : [],
-      person: person.success ? person.data : [],
-      company: company.success ? company.data : [],
-      character: character.success ? character.data : []
-    }
-  },
-  { enabled: () => open.value }
-)
+const { data: providersByType, isLoading } = useScraperProviders({ enabled: () => open.value })
 
 const mediaTypeOptions = computed<{ value: ContentEntityType; label: string }[]>(() =>
   CONTENT_ENTITY_TYPES.map((value) => ({ value, label: m.value.library.entities[value] }))

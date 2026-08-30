@@ -4,7 +4,6 @@ import { readBangumiSubjectIdFromExternalIds } from '../identity/subject-ref'
 import { isCancellationError } from '@kisaki3/extension-sdk'
 import { m } from '../i18n'
 import { BangumiExtensionError } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import type { SyncItemResult } from '../sync/engine'
 import type { BangumiChangedItemsSyncArgs, BangumiFullSyncArgs } from './args'
 import {
@@ -174,20 +173,18 @@ export class SyncJobRunner {
         await job.checkpoint()
         let countScanned = true
         try {
-          const result = await this.deps.syncEngine.collectItem(
-            omitUndefined({
-              scope: args.scope,
-              item,
-              updateExisting: args.updateExisting,
-              accountUsername: account.username,
-              checkRemote: true,
-              playStatusEnabled: args.playStatusEnabled,
-              scoreEnabled: args.scoreEnabled,
-              unitProgressEnabled: args.unitProgressEnabled,
-              clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
-              signal: job.signal
-            })
-          )
+          const result = await this.deps.syncEngine.collectItem({
+            scope: args.scope,
+            item,
+            updateExisting: args.updateExisting,
+            accountUsername: account.username,
+            checkRemote: true,
+            playStatusEnabled: args.playStatusEnabled,
+            scoreEnabled: args.scoreEnabled,
+            unitProgressEnabled: args.unitProgressEnabled,
+            clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
+            signal: job.signal
+          })
           recordSyncItemResult(job, result, { includePreview: options.includePreview })
 
           if (result.status === 'wouldSync') {
@@ -337,17 +334,14 @@ function recordSyncItemResult(
       }
       return
     }
-    case 'skippedNoBangumiId':
-      job.increment('skippedNoBangumiId')
+    case 'skippedNoRemoteId':
+      job.increment('skippedNoRemoteId')
       return
     case 'skippedByMapping':
       job.increment('skippedByMapping')
       return
     case 'skippedNoChange':
       job.increment('skippedNoChange')
-      return
-    case 'skippedSuppressed':
-      job.increment('skippedSuppressed')
       return
     case 'skippedRemoteExisting':
       job.increment('skippedRemoteExisting')

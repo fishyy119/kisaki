@@ -6,14 +6,14 @@ export interface FilePickerFilter {
 export type FileIconSize = 'small' | 'normal' | 'large'
 
 export interface GetFileIconInput {
-  size?: FileIconSize
+  size?: FileIconSize | undefined
 }
 
 export interface PickFileInput {
-  title?: string
-  filters?: readonly FilePickerFilter[]
-  copyTo?: 'temp' | 'data'
-  maxSizeBytes?: number
+  title?: string | undefined
+  filters?: readonly FilePickerFilter[] | undefined
+  copyTo?: 'temp' | 'data' | undefined
+  maxSizeBytes?: number | undefined
 }
 
 export interface ExtensionFileGrant {

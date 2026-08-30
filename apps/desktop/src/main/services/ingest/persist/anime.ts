@@ -514,7 +514,7 @@ export class AnimeIngestPersistHandler {
     if (!metadataTags?.length) return
 
     for (let i = 0; i < metadataTags.length; i++) {
-      const tagData = metadataTags[i]
+      const tagData = metadataTags[i]!
       const tagId = resolveTagId(tx, tagData)
       if (!tagId) {
         continue

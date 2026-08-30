@@ -1,4 +1,4 @@
-import type { ExtensionStorage } from '@kisaki3/extension-api'
+import type { ExtensionStorage } from '@kisaki3/extension-sdk'
 
 /**
  * Per-extension knowledge a settings store is parameterized with.
@@ -14,11 +14,12 @@ export interface SettingsCodec<TSettings> {
 }
 
 /**
- * Versioned settings store on extension storage: lenient read, strict write.
+ * Settings store on extension storage: lenient read, strict write.
  *
  * Reads degrade malformed content to the codec's canonical form and heal the
  * stored value in place; writes persist only the canonical form, so a value
- * round-trips to itself by construction.
+ * round-trips to itself by construction. Version evolution lives in the
+ * codec: stored shapes carry their version and `normalize` migrates them.
  */
 export class SettingsStore<TSettings> {
   constructor(

@@ -10,7 +10,7 @@ export type WebviewDialogSize = (typeof WEBVIEW_DIALOG_SIZES)[number]
  * into the app sidebar; `order` sorts extension navigation entries.
  */
 export interface WebviewPageNavPlacement {
-  order?: number
+  order?: number | undefined
 }
 
 /**
@@ -31,9 +31,9 @@ export interface WebviewPageContribution {
    */
   entry: string
   /** Chrome icon; required when `nav` is declared. */
-  icon?: ContributionIcon
+  icon?: ContributionIcon | undefined
   /** Top-level navigation placement. Omit for programmatic-only pages. */
-  nav?: WebviewPageNavPlacement
+  nav?: WebviewPageNavPlacement | undefined
 }
 
 /**
@@ -51,7 +51,7 @@ export interface WebviewDialogContribution {
    * `dialogs/settings/index.html`.
    */
   entry: string
-  size?: WebviewDialogSize
+  size?: WebviewDialogSize | undefined
 }
 
 export interface WebviewPageRegistration extends Disposable {

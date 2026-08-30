@@ -23,8 +23,8 @@ const LIST_PAGE_SIZE = 500
 export interface LocalMediaEntry {
   id: string
   name: string
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -75,15 +75,17 @@ export async function getEntry(ref: LocalMediaRef): Promise<LocalMediaEntry | nu
 }
 
 export interface MediaUserStatePatch {
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
 }
 
 export async function updateEntryUserState(
   ref: LocalMediaRef,
   patch: MediaUserStatePatch
 ): Promise<void> {
-  if (Object.keys(patch).length === 0) {
+  // Explicitly-undefined members mean "leave unchanged"; an all-absent patch
+  // must not become an empty library update.
+  if (Object.values(patch).every((value) => value === undefined)) {
     return
   }
 
@@ -109,6 +111,7 @@ export async function updateEntryUserState(
  */
 export function subscribeEntryChanges(
   hooks: HooksRegistrar,
+  selfActor: string,
   listener: (ref: LocalMediaRef) => void
 ): Disposable {
   return hooks.on('library.changed', ({ changes }) => {
@@ -117,6 +120,12 @@ export function subscribeEntryChanges(
         continue
       }
       if (change.entity !== 'anime' && change.entity !== 'comic' && change.entity !== 'novel') {
+        continue
+      }
+
+      // Writes this extension caused come back attributed; reacting to them
+      // would only echo our own import or push.
+      if (change.actors.every((actor) => actor === selfActor)) {
         continue
       }
 

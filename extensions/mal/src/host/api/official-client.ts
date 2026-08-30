@@ -1,19 +1,15 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import type { TokenManager } from '../auth/token-manager'
 import type { MalSettingsV1 } from '../config/schema'
 import { m } from '../i18n'
 import { MAL_OAUTH_CLIENT_ID, MAL_RATE_LIMIT } from '../utils/constants'
 import { MalExtensionError, toSafeErrorLog } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import type {
   MalAnimeDetail,
   MalListPage,
@@ -170,7 +166,7 @@ export class MalOfficialClient {
     const url = buildUrl(settings.endpoints.apiUrl, path, query)
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         await this.limiter.acquire(options.signal)
@@ -183,7 +179,7 @@ export class MalOfficialClient {
             timeoutMs: settings.client.timeoutMs,
             responseType: 'json'
           },
-          omitUndefined({ signal: options.signal })
+          { signal: options.signal }
         )
 
         if (response.ok) {
@@ -191,7 +187,7 @@ export class MalOfficialClient {
         }
 
         if (shouldRetryStatus(response.status) && attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
 
@@ -199,8 +195,8 @@ export class MalOfficialClient {
       } catch (error) {
         // Must precede the retry branch: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof MalExtensionError) {
@@ -209,7 +205,7 @@ export class MalOfficialClient {
 
         this.logger.debug('MAL request attempt failed.', { attempt })
         if (attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }

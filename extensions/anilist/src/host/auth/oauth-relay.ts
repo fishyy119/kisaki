@@ -1,6 +1,5 @@
-import type { ExtensionLogger, NetworkCapability } from '@kisaki3/extension-api'
-import { isCancellationError } from '@kisaki3/extension-api'
-import { throwIfAborted } from './rate-limiter'
+import type { ExtensionLogger, NetworkCapability } from '@kisaki3/extension-sdk'
+import { isCancellationError } from '@kisaki3/extension-sdk'
 
 /**
  * Client and session flow for the Kisaki OAuth relay.
@@ -51,10 +50,7 @@ export interface OAuthRelayHealth {
  * their own coded error types and localized messages through the factory.
  */
 export type OAuthRelayFailure =
-  | 'relay_unavailable'
-  | 'session_expired'
-  | 'callback_invalid'
-  | 'no_pending_login'
+  'relay_unavailable' | 'session_expired' | 'callback_invalid' | 'no_pending_login'
 
 export type OAuthRelayErrorFactory = (failure: OAuthRelayFailure, detail?: string) => Error
 
@@ -69,7 +65,10 @@ export interface OAuthRelayClientOptions {
 export class OAuthRelayClient {
   constructor(private readonly options: OAuthRelayClientOptions) {}
 
-  async createSession(desktopCallbackUrl: string, signal?: AbortSignal): Promise<OAuthRelaySession> {
+  async createSession(
+    desktopCallbackUrl: string,
+    signal?: AbortSignal
+  ): Promise<OAuthRelaySession> {
     const data = await this.request('/sessions', { desktopCallbackUrl }, signal)
     return this.parseSession(data)
   }
@@ -147,7 +146,7 @@ export class OAuthRelayClient {
     signal: AbortSignal | undefined,
     notFoundFailure: OAuthRelayFailure = 'relay_unavailable'
   ): Promise<Record<string, unknown>> {
-    throwIfAborted(signal)
+    signal?.throwIfAborted()
 
     let response
     try {
@@ -170,10 +169,16 @@ export class OAuthRelayClient {
     }
 
     if (!response.ok) {
-      throw this.options.createError(
-        response.status === 404 ? notFoundFailure : 'relay_unavailable',
-        readRelayErrorDetail(response.data)
-      )
+      // Wire contract: 401 means the upstream rejected the grant (e.g. a
+      // revoked refresh token) — the user must sign in again, not retry the
+      // relay. 404 carries per-endpoint semantics supplied by the caller.
+      const failure: OAuthRelayFailure =
+        response.status === 401
+          ? 'session_expired'
+          : response.status === 404
+            ? notFoundFailure
+            : 'relay_unavailable'
+      throw this.options.createError(failure, readRelayErrorDetail(response.data))
     }
 
     if (!isRecord(response.data)) {

@@ -79,7 +79,7 @@ export const TagKey: InjectionKey<TagContext> = Symbol('tag')
 function getDefaultEntityType(counts: ContentEntityCounts): ContentEntityType {
   const entries = Object.entries(counts) as [ContentEntityType, number][]
   const sorted = entries.sort((a, b) => b[1] - a[1])
-  return sorted[0][1] > 0 ? sorted[0][0] : 'game'
+  return sorted[0]![1] > 0 ? sorted[0]![0] : 'game'
 }
 
 // =============================================================================

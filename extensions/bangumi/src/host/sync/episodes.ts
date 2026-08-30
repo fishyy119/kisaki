@@ -29,7 +29,7 @@ export type EpisodeSyncStatus =
   | 'skippedLocalSyncDisabled'
   | 'skippedDisabled'
   | 'skippedMissingLocalItem'
-  | 'skippedNoBangumiId'
+  | 'skippedNoRemoteId'
   | 'skippedNoLinkedEpisodes'
   | 'skippedNoChange'
 
@@ -83,7 +83,7 @@ export class EpisodeSyncEngine {
 
     const subjectId = readBangumiSubjectIdFromExternalIds(item)
     if (!subjectId) {
-      return { status: 'skippedNoBangumiId', scope, localId }
+      return { status: 'skippedNoRemoteId', scope, localId }
     }
 
     const episodes = await adapter.listEpisodes(localId)

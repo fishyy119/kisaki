@@ -26,7 +26,6 @@ import type {
   YmgalPersonMapping
 } from '../api/types'
 import { YMGAL_SOURCE_ID } from '../utils/constants'
-import { omitUndefined } from '../utils/object'
 import { parseYmgalDate } from './format/dates'
 import { dedupeImageUrls } from './format/images'
 import { resolveDisplayName } from './format/names'
@@ -90,14 +89,14 @@ export function buildPersonFacts(
   ])
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       description: normalizeDescription(detail?.introduction),
       birthDate: parseYmgalDate(detail?.birthday),
       gender: mapGender(detail?.gender),
       externalSites: toOptionalSites(sites)
-    }),
+    },
     identity: buildIdentity(personId, sites),
     tags: buildCountryTags(detail?.country),
     images: dedupeImageUrls([detail?.mainImg, snapshot?.mainImg])
@@ -120,14 +119,14 @@ export function buildCharacterFacts(
   const sites = dedupeExternalSites([ymgalSite(ymgalCharacterUrl(characterId))])
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       description: normalizeDescription(detail?.introduction),
       birthDate: parseYmgalDate(detail?.birthday),
       gender: mapGender(detail?.gender),
       externalSites: toOptionalSites(sites)
-    }),
+    },
     identity: buildIdentity(characterId, sites),
     tags: [],
     images: dedupeImageUrls([detail?.mainImg, snapshot?.mainImg])
@@ -152,13 +151,13 @@ export function buildCompanyFacts(
   ])
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       description: normalizeDescription(detail?.introduction),
       foundedDate: parseYmgalDate(detail?.birthday),
       externalSites: toOptionalSites(sites)
-    }),
+    },
     identity: buildIdentity(organizationId, sites),
     tags: buildCountryTags(detail?.country),
     images: dedupeImageUrls([detail?.mainImg])
@@ -168,34 +167,34 @@ export function buildCompanyFacts(
 export function toPersonMetadata(
   facts: YmgalSatelliteFacts<ScrapedPersonInfo>
 ): ScrapedPersonMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     photos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 export function toCharacterMetadata(
   facts: YmgalSatelliteFacts<ScrapedCharacterInfo>
 ): ScrapedCharacterMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     photos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 export function toCompanyMetadata(
   facts: YmgalSatelliteFacts<ScrapedCompanyInfo>
 ): ScrapedCompanyMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     logos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 function toOptionalArray<T>(values: readonly T[]): T[] | undefined {

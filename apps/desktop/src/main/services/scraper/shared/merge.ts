@@ -159,7 +159,7 @@ function findBestAnchorMatch(
   }
 
   const rankedMatches = [...scores.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])
-  const [bestAnchorIndex, bestScore] = rankedMatches[0]
+  const [bestAnchorIndex, bestScore] = rankedMatches[0]!
 
   if (
     rankedMatches.some(
@@ -209,7 +209,7 @@ export function reconcileEntitiesByKeys<T>(
       continue
     }
 
-    const anchor = anchors[matchedAnchorIndex]
+    const anchor = anchors[matchedAnchorIndex]!
     anchor.item = mergeFn(anchor.item, item)
 
     registerAnchorKeys(keyToAnchorIndexes, matchedAnchorIndex, keys)

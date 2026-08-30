@@ -1,4 +1,5 @@
-import type { ExtensionLogger, OAuthRelayClient } from '@kisaki3/extension-sdk'
+import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import type { OAuthRelayClient } from './oauth-relay'
 import { m } from '../i18n'
 import { GbooksExtensionError, toSafeErrorLog } from '../utils/errors'
 import type { TokenStore } from './token-store'

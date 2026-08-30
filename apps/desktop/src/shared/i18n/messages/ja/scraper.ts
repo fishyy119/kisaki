@@ -70,14 +70,12 @@ export const scraper = {
   recipeUpdate: {
     badge: '更新の提案',
     title: '推奨構成が変わりました',
-    hint: 'このシーンの現在の推奨がプロファイル構成と異なります。適用すると検索ソース・言語・スロット設定を上書きします。',
+    hint: 'このシーンの現在の推奨がプロファイル構成と異なります。適用すると検索ソースとスロット設定を上書きします。',
     beforeLabel: '現在',
     afterLabel: '提案',
     apply: '提案を適用',
     dismiss: 'この提案を無視',
-    emptySlot: '（空）',
-    systemLocale: 'システム言語',
-    ignoredNotice: '推奨が再び変わるまで無視されます'
+    emptySlot: '（空）'
   },
 
   profiles: {

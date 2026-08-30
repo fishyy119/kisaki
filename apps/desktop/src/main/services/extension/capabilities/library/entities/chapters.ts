@@ -331,7 +331,7 @@ export class ExtensionLibraryComicChapterStore {
     const looser = rows.filter((row) =>
       isSameChapterAcrossVolumeKnowledge({ volumeNumber, chapterNumber }, row)
     )
-    return looser.length === 1 ? this.get(looser[0].id) : null
+    return looser.length === 1 ? this.get(looser[0]!.id) : null
   }
 
   private require(chapterId: string): LibraryComicChapter {

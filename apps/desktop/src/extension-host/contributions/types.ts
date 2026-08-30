@@ -8,7 +8,7 @@ export type HostContributionDiagnosticInput = Omit<ExtensionRuntimeDiagnostic, '
 export interface HostContributionScope {
   extensionId: string
   runtimeHandle: ExtensionRuntimeHandle
-  signal?: AbortSignal
+  signal?: AbortSignal | undefined
 }
 
 export interface HostContributionDomainOptions {

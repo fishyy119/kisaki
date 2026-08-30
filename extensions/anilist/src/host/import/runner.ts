@@ -22,9 +22,7 @@ import { selectMediaTitles } from '../media/format/names'
 import { buildMediaExternalIds } from '../media/format/sites'
 import { resolveMediaKind, type AnilistMediaKind } from '../media/kinds'
 import { fromScore100, statusFromAnilist } from '../sync/engine'
-import type { SyncSuppressor } from '../sync/suppressor'
 import { toSafeErrorLog } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 
 const REPORT_EVERY = 10
 
@@ -49,7 +47,6 @@ export interface ImportSummary {
 
 export interface ImportRunnerDependencies {
   client: AnilistClient
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -100,7 +97,7 @@ export async function runListImport(
     handle.signal.throwIfAborted()
 
     try {
-      await importItem(deps, options, localByMediaId, item, summary)
+      await importItem(options, localByMediaId, item, summary)
     } catch (error) {
       summary.failed += 1
       if (summary.warnings.length < 20) {
@@ -174,7 +171,6 @@ async function indexLocalEntries(): Promise<Map<number, LocalMediaRef & LocalMed
 }
 
 async function importItem(
-  deps: ImportRunnerDependencies,
   options: ImportOptions,
   localByMediaId: ReadonlyMap<number, LocalMediaRef & LocalMediaEntry>,
   item: AnilistMediaListEntry,
@@ -215,9 +211,7 @@ async function importItem(
       return
     }
 
-    const ref: LocalMediaRef = { kind: existing.kind, id: existing.id }
-    deps.suppressor.suppressImport(ref)
-    await updateEntryUserState(ref, patch)
+    await updateEntryUserState({ kind: existing.kind, id: existing.id }, patch)
     summary.updated += 1
     return
   }
@@ -229,20 +223,16 @@ async function importItem(
   }
 
   const titles = selectMediaTitles(media.title, undefined, { locale: 'en', preferRomaji: false })
-  const lookup = omitUndefined({
+  const lookup = {
     name: titles?.name ?? String(media.id),
     knownIds: buildMediaExternalIds(media.id, media.idMal),
     releaseDate: parseFuzzyDate(media.startDate)
-  })
+  }
 
   const result = await addFromScraper(kind, profileId, lookup)
 
-  const patch: MediaUserStatePatch = omitUndefined({ status, score })
-  if (Object.keys(patch).length > 0) {
-    const ref: LocalMediaRef = { kind, id: result.id }
-    deps.suppressor.suppressImport(ref)
-    await updateEntryUserState(ref, patch)
-  }
+  const patch: MediaUserStatePatch = { status, score }
+  await updateEntryUserState({ kind, id: result.id }, patch)
 
   if (result.isNew) {
     summary.created += 1
@@ -254,8 +244,8 @@ async function importItem(
 /** Shared subset of the per-kind scraper lookups; no format is stated. */
 interface CommonScraperLookup {
   name: string
-  knownIds?: ExternalId[]
-  releaseDate?: PartialDate
+  knownIds?: ExternalId[] | undefined
+  releaseDate?: PartialDate | undefined
 }
 
 async function addFromScraper(

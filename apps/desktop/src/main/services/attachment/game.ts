@@ -131,7 +131,7 @@ export class GameAttachmentHandler {
       throw new Error('Backup not found')
     }
 
-    const updatedBackup = { ...currentBackups[backupIndex], ...updates }
+    const updatedBackup = { ...currentBackups[backupIndex]!, ...updates }
     const updatedBackups = [...currentBackups]
     updatedBackups[backupIndex] = updatedBackup
 

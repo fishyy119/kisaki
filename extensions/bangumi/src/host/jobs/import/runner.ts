@@ -4,12 +4,9 @@ import { m } from '../../i18n'
 import { ImportExecutor } from '../../import/executor'
 import { IndexReader } from '../../import/index-reader'
 import { ImportPlanner } from '../../import/planner'
-import type { BangumiMediaScope } from '../../../shared/scopes'
 import type { LocalMediaAdapter } from '../../media/types'
 import { BangumiExtensionError } from '../../utils/errors'
 import { readPositiveInteger } from '../../utils/numbers'
-import { omitUndefined } from '../../utils/object'
-import { createImportSuppressTtlMs } from '../../sync/suppressor'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'
 import {
   JobStateController,
@@ -222,13 +219,13 @@ export class ImportJobRunner {
         fields: args.fields,
         targetCollection
       })
-      return omitUndefined({
+      return {
         scope: descriptor.scope,
         targetCollection,
         planItems: plan.items,
         operations: [],
         skippedNoChange: 0
-      })
+      }
     }
 
     job.report('matchingLocalItems', m().jobs.import.matchingLocal({ scope: descriptor.scope }), {
@@ -254,14 +251,14 @@ export class ImportJobRunner {
       targetCollection
     })
 
-    return omitUndefined({
+    return {
       scope: descriptor.scope,
       adapter,
       targetCollection,
       planItems: plan.items,
       operations: collected.operations,
       skippedNoChange: collected.skippedNoChange
-    })
+    }
   }
 
   private async collectIndexImport(
@@ -311,13 +308,13 @@ export class ImportJobRunner {
         patchExisting: args.patchExisting,
         targetCollection
       })
-      return omitUndefined({
+      return {
         scope: descriptor.scope,
         targetCollection,
         planItems: plan.items,
         operations: [],
         skippedNoChange: 0
-      })
+      }
     }
 
     job.report('matchingLocalItems', m().jobs.import.matchingLocal({ scope: descriptor.scope }), {
@@ -345,14 +342,14 @@ export class ImportJobRunner {
       targetCollection
     })
 
-    return omitUndefined({
+    return {
       scope: descriptor.scope,
       adapter,
       targetCollection,
       planItems: plan.items,
       operations: collected.operations,
       skippedNoChange: collected.skippedNoChange
-    })
+    }
   }
 
   private async executeCollectionImport(
@@ -371,7 +368,6 @@ export class ImportJobRunner {
 
       try {
         if (operation.kind === 'patch') {
-          await this.suppressImport(args.scope, operation.localItem.localId)
           await applyCollectionLocalUpdatePlan({
             executor: this.importExecutor,
             scope: args.scope,
@@ -388,7 +384,6 @@ export class ImportJobRunner {
           args.profileId,
           collection
         )
-        await this.suppressImport(args.scope, imported.localId)
         const item = await requireLocalItem(adapter, imported.localId)
 
         if (imported.isNew) {
@@ -464,7 +459,6 @@ export class ImportJobRunner {
 
       try {
         if (operation.kind === 'patch') {
-          await this.suppressImport(args.scope, operation.localItem.localId)
           await this.importExecutor.ensureInCollection(
             args.scope,
             operation.localItem.localId,
@@ -480,7 +474,6 @@ export class ImportJobRunner {
           args.profileId,
           subject
         )
-        await this.suppressImport(args.scope, imported.localId)
         const item = await requireLocalItem(adapter, imported.localId)
         if (collected.targetCollection && imported.isNew) {
           await this.importExecutor.ensureInCollection(
@@ -548,15 +541,6 @@ export class ImportJobRunner {
     if (!profiles.some((profile) => profile.id === normalizedProfileId)) {
       throw new BangumiExtensionError('profile_missing', m().errors.profileNotFound)
     }
-  }
-
-  private async suppressImport(scope: BangumiMediaScope, localId: string): Promise<void> {
-    const settings = await this.deps.settingsStore.get()
-    this.deps.syncSuppressor.suppressImport(
-      scope,
-      localId,
-      createImportSuppressTtlMs(settings.autoSync.debounceMs)
-    )
   }
 
   private async requireAccount() {

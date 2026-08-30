@@ -6,6 +6,7 @@
  * - book:// - Streams reading content out of unit file rows
  * - kisaki-extension-icon:// - Lazily proxies extension catalog icons
  * - kisaki-extension-ui:// - Serves packaged and proxied development extension UI assets
+ * - kisaki-extension-file:// - Serves installed extension package files (icons)
  * - kisaki-webview-font:// - Serves app fonts to extension webview documents
  * - kisaki:// - Deeplink protocol for external triggers
  *
@@ -20,6 +21,7 @@ import { BOOK_SCHEME } from '@shared/book'
 const ATTACHMENT_SCHEME = 'attachment'
 const EXTENSION_ICON_SCHEME = 'kisaki-extension-icon'
 const EXTENSION_UI_SCHEME = 'kisaki-extension-ui'
+const EXTENSION_FILE_SCHEME = 'kisaki-extension-file'
 const DEEPLINK_SCHEME = 'kisaki'
 
 /**
@@ -81,6 +83,16 @@ export function registerAppSchemes(): void {
       }
     },
     {
+      scheme: EXTENSION_FILE_SCHEME,
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        bypassCSP: true,
+        stream: true
+      }
+    },
+    {
       scheme: EXTENSION_WEBVIEW_FONT_SCHEME,
       privileges: {
         standard: true,
@@ -96,4 +108,4 @@ export function registerAppSchemes(): void {
   ])
 }
 
-export { DEEPLINK_SCHEME, EXTENSION_ICON_SCHEME, EXTENSION_UI_SCHEME }
+export { DEEPLINK_SCHEME, EXTENSION_FILE_SCHEME, EXTENSION_ICON_SCHEME, EXTENSION_UI_SCHEME }

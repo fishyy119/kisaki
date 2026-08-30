@@ -4,6 +4,7 @@ import type {
   JsonValue,
   RpcParams,
   RpcResult,
+  UndefinedTolerant,
   WebviewClosedEvent,
   WebviewHandle,
   WebviewMessagePostedEvent
@@ -29,7 +30,7 @@ export interface HostWebviewSessionManagerOptions {
   requestMain<K extends WebviewSessionRpcMethod>(
     scope: ActiveExtensionScope,
     method: K,
-    params: Omit<RpcParams<HostToMainRpcRequestMap, K>, 'runtimeHandle'>
+    params: UndefinedTolerant<Omit<RpcParams<HostToMainRpcRequestMap, K>, 'runtimeHandle'>>
   ): Promise<RpcResult<HostToMainRpcRequestMap, K>>
 }
 

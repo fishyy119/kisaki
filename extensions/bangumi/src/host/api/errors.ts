@@ -1,11 +1,10 @@
 import { BangumiExtensionError, type BangumiErrorCode } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import { m } from '../i18n'
 
 export interface BangumiApiErrorOptions {
-  status?: number
-  path?: string
-  retryAfterMs?: number
+  status?: number | undefined
+  path?: string | undefined
+  retryAfterMs?: number | undefined
 }
 
 export class BangumiApiError extends BangumiExtensionError {
@@ -51,11 +50,11 @@ export function normalizeBangumiApiError(
   }
 
   if (status === 429) {
-    return new BangumiApiError(
-      'bangumi_rate_limited',
-      detail || m().errors.apiRateLimited,
-      omitUndefined({ status, path, retryAfterMs })
-    )
+    return new BangumiApiError('bangumi_rate_limited', detail || m().errors.apiRateLimited, {
+      status,
+      path,
+      retryAfterMs
+    })
   }
 
   if (status >= 400 && status < 500) {

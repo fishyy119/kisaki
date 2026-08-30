@@ -24,9 +24,9 @@ export function createUiSuccess(refresh = false): UiCallbackResult {
 export function createUiError(
   message: string,
   options: {
-    code?: string
-    details?: JsonObject
-    refresh?: boolean
+    code?: string | undefined
+    details?: JsonObject | undefined
+    refresh?: boolean | undefined
   } = {}
 ): UiCallbackResult {
   const error: ExtensionErrorShape = { message }

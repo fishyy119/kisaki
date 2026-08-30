@@ -23,29 +23,29 @@ export type CommandInvocationSource =
       type: 'extension'
       extension: {
         id: string
-        nameSnapshot?: string
+        nameSnapshot?: string | undefined
       }
     }
   | {
       type: 'system'
-      reason?: CommandSystemReason
+      reason?: CommandSystemReason | undefined
     }
 
 export interface CommandDescriptor {
   id: string
   title: string
-  description?: string
-  argsSchema?: JsonObject
-  defaultArgs?: JsonObject
+  description?: string | undefined
+  argsSchema?: JsonObject | undefined
+  defaultArgs?: JsonObject | undefined
   dangerLevel: CommandDangerLevel
-  ownerExtensionId?: string
+  ownerExtensionId?: string | undefined
 }
 
 export type CommandListItem = CommandDescriptor
 
 export interface CommandInvocationRequest {
   commandId: string
-  args?: JsonObject
+  args?: JsonObject | undefined
 }
 
 export interface CommandInvocationContext {
@@ -55,7 +55,7 @@ export interface CommandInvocationContext {
 
 export interface CommandInvocationResult {
   commandId: string
-  output?: JsonValue
+  output?: JsonValue | undefined
 }
 
 export interface CommandsCapability {

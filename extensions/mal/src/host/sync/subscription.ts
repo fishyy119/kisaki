@@ -1,5 +1,4 @@
 import {
-  isCancellationError,
   kisaki,
   type Disposable,
   type ExtensionLogger,
@@ -32,6 +31,8 @@ export class SyncSubscription implements Disposable {
   constructor(
     private readonly deps: {
       hooks: HooksRegistrar
+      /** This extension's own change-feed actor id, for self-echo skipping. */
+      selfActor: string
       settingsStore: MalSettingsStore
       engine: SyncEngine
       logger?: ExtensionLogger
@@ -39,7 +40,7 @@ export class SyncSubscription implements Disposable {
   ) {}
 
   start(): Disposable {
-    this.registration = subscribeEntryChanges(this.deps.hooks, (ref) => {
+    this.registration = subscribeEntryChanges(this.deps.hooks, this.deps.selfActor, (ref) => {
       this.handleChange(ref).catch((error) => {
         this.deps.logger?.warn('MAL sync scheduling failed.', toSafeErrorLog(error))
       })
@@ -77,7 +78,7 @@ export class SyncSubscription implements Disposable {
     const timer = setTimeout(() => {
       this.pending.delete(key)
       this.push(ref, controller.signal).catch((error) => {
-        void this.handlePushError(ref, error)
+        void this.handlePushError(ref, error, controller.signal)
       })
     }, SYNC_DEBOUNCE_MS)
 
@@ -103,8 +104,12 @@ export class SyncSubscription implements Disposable {
     })
   }
 
-  private async handlePushError(ref: LocalMediaRef, error: unknown): Promise<void> {
-    if (isCancellationError(error)) {
+  private async handlePushError(
+    ref: LocalMediaRef,
+    error: unknown,
+    signal: AbortSignal
+  ): Promise<void> {
+    if (signal.aborted) {
       return
     }
 

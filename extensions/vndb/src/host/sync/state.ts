@@ -3,16 +3,14 @@ import { VNDB_STORAGE_KEYS } from '../utils/ids'
 
 const MAX_FINGERPRINTS = 5000
 
-export interface SyncFingerprintRecord {
-  gameId: string
-  vnId: string
+export interface SyncFingerprintEntry {
   fingerprint: string
   updatedAt: number
 }
 
 interface VndbSyncStateV1 {
   version: 1
-  fingerprints: Record<string, SyncFingerprintRecord>
+  fingerprints: Record<string, SyncFingerprintEntry>
 }
 
 /**
@@ -29,14 +27,9 @@ export class SyncStateStore {
     return state.fingerprints[gameId]?.fingerprint
   }
 
-  async recordSuccessfulSync(record: SyncFingerprintRecord): Promise<void> {
+  async recordSuccessfulSync(gameId: string, entry: SyncFingerprintEntry): Promise<void> {
     const state = await this.read()
-    state.fingerprints[record.gameId] = {
-      gameId: record.gameId.trim(),
-      vnId: record.vnId.trim(),
-      fingerprint: record.fingerprint,
-      updatedAt: record.updatedAt
-    }
+    state.fingerprints[gameId] = entry
     await this.storage.set(VNDB_STORAGE_KEYS.syncState, prune(state))
   }
 
@@ -72,22 +65,19 @@ function normalizeState(value: unknown): VndbSyncStateV1 {
     return { version: 1, fingerprints: {} }
   }
 
-  const fingerprints: Record<string, SyncFingerprintRecord> = {}
+  const fingerprints: Record<string, SyncFingerprintEntry> = {}
   for (const [key, record] of Object.entries(value.fingerprints)) {
     if (!isRecord(record)) {
       continue
     }
 
-    const gameId = readString(record.gameId) || key.trim()
-    const vnId = readString(record.vnId)
+    const id = key.trim()
     const fingerprint = readString(record.fingerprint)
-    if (!gameId || !vnId || !fingerprint) {
+    if (!id || !fingerprint) {
       continue
     }
 
-    fingerprints[gameId] = {
-      gameId,
-      vnId,
+    fingerprints[id] = {
       fingerprint,
       updatedAt: readTimestamp(record.updatedAt)
     }

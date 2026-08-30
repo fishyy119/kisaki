@@ -23,7 +23,7 @@ export interface ScannerEntityMatch {
 
 export interface ScannerAddOptions {
   entityPath: string
-  targetCollectionId?: string
+  targetCollectionId?: string | undefined
   signal: AbortSignal
 }
 

@@ -1,8 +1,4 @@
-import type {
-  Disposable,
-  LibraryMediaStatus,
-  ScraperProfileSummary
-} from '@kisaki3/extension-sdk'
+import type { Disposable, LibraryMediaStatus, ScraperProfileSummary } from '@kisaki3/extension-sdk'
 import type { BangumiMediaScope, BangumiSupportedSubjectType } from '../../shared/scopes'
 
 export interface ExternalIdRef {
@@ -38,17 +34,17 @@ export interface LocalMediaItem {
   scope: BangumiMediaScope
   localId: string
   name: string
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
   externalIds: readonly ExternalIdRef[]
   /** Present for scopes that push unit progress with the collection payload. */
-  unitProgress?: LocalUnitProgress
+  unitProgress?: LocalUnitProgress | undefined
 }
 
 export interface LocalMediaListQuery {
-  includeNsfw?: boolean
-  limit?: number
-  offset?: number
+  includeNsfw?: boolean | undefined
+  limit?: number | undefined
+  offset?: number | undefined
 }
 
 export type LocalMediaChangeReason = 'created' | 'updated' | 'episodes' | 'manual'
@@ -70,8 +66,8 @@ export type LocalMediaChangeListener = (event: LocalMediaChangeEvent) => void | 
  * and names, such as index entries, state nothing here.
  */
 export interface BangumiSubjectFacts {
-  date?: string
-  platform?: string
+  date?: string | undefined
+  platform?: string | undefined
 }
 
 export interface LocalMediaAddFromScraperInput {

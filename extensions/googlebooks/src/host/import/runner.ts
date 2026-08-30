@@ -25,7 +25,6 @@ import {
   ISBN_SOURCE_ID
 } from '../utils/constants'
 import { toSafeErrorLog } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 
 const REPORT_EVERY = 5
 const LIST_PAGE_SIZE = 500
@@ -70,7 +69,7 @@ function statusRank(status: LibraryMediaStatus | undefined): number {
 
 interface ImportRow {
   volume: GbVolume
-  status?: LibraryMediaStatus
+  status?: LibraryMediaStatus | undefined
 }
 
 interface LocalMatch {
@@ -106,7 +105,7 @@ export async function runLibraryImport(
     for (const volume of await readWholeShelf(deps, shelfId, handle.signal)) {
       const existing = rowByVolumeId.get(volume.id)
       if (!existing) {
-        rowByVolumeId.set(volume.id, omitUndefined({ volume, status }))
+        rowByVolumeId.set(volume.id, { volume, status })
         continue
       }
 
@@ -266,11 +265,11 @@ async function indexLocalEntries(): Promise<Map<string, LocalMatch>> {
           : await kisaki.library.comics.list({ limit: LIST_PAGE_SIZE, offset })
 
       for (const entry of page) {
-        const match: LocalMatch = omitUndefined({
+        const match: LocalMatch = {
           kind,
           id: entry.id,
           status: entry.status ?? undefined
-        })
+        }
         for (const externalId of entry.externalIds ?? []) {
           const source = externalId.source.trim().toLowerCase()
           if (source === GBOOKS_SOURCE_ID) {
@@ -327,11 +326,11 @@ async function importRow(
     return
   }
 
-  const lookup = omitUndefined({
+  const lookup = {
     name: row.volume.volumeInfo?.title?.trim() || row.volume.id,
     knownIds: externalIds,
     releaseDate: parsePublishedDate(row.volume.volumeInfo?.publishedDate)
-  })
+  }
 
   const result =
     kind === 'comic'

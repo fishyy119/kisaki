@@ -15,7 +15,6 @@ import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 import { BangumiExtensionError } from '../../utils/errors'
 import { m } from '../../i18n'
 import { readPositiveInteger } from '../../utils/numbers'
-import { omitUndefined } from '../../utils/object'
 import type { BangumiImportCollectionsArgs, BangumiImportTargetCollection } from '../args'
 import type { CollectionLocalUpdatePlan } from './model'
 import { formatBangumiSubjectTitle } from '../presentation'
@@ -60,7 +59,7 @@ export async function importItemFromCollection(
     profileId: requireProfileId(profileId),
     name: title,
     knownIds: [{ source: BANGUMI_SOURCE_ID, id: String(subjectId) }],
-    facts: omitUndefined({ date: subject?.date, platform: subject?.platform })
+    facts: { date: subject?.date, platform: subject?.platform }
   })
 }
 
@@ -235,13 +234,13 @@ export async function buildCollectionLocalUpdatePlan({
     })
   }
 
-  return omitUndefined({
+  return {
     patch,
     tagNames,
     targetCollection: resolvedTargetCollection,
     unitProgress,
     rows
-  })
+  }
 }
 
 /**

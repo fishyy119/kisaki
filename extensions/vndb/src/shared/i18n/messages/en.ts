@@ -24,8 +24,15 @@ export const en = {
     autoSyncFailedTitle: 'VNDB sync failed',
     autoSyncFailedFallback: 'The change could not be pushed to VNDB',
     pushTaskTitle: 'Push library to VNDB list',
-    pushSummary: ({ pushed, skipped, failed }: { pushed: number; skipped: number; failed: number }) =>
-      `Pushed ${pushed}, skipped ${skipped}, failed ${failed}`
+    pushSummary: ({
+      pushed,
+      skipped,
+      failed
+    }: {
+      pushed: number
+      skipped: number
+      failed: number
+    }) => `Pushed ${pushed}, skipped ${skipped}, failed ${failed}`
   },
 
   import: {

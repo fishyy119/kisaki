@@ -7,6 +7,7 @@ import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import { openExternalLink } from '@main/utils/external-url'
 import type { MainWindowCloseAction } from '@shared/db/contracts/enums'
+import type { MainWindowDocumentGoneCause } from '../hooks'
 
 const log = createLogger('Window')
 
@@ -24,6 +25,8 @@ export interface MainWindowApi {
 interface MainWindowControllerDeps {
   ipcService: IpcService
   dbService: DbService
+  /** Reports the renderer document ending: navigation, crash, or close. */
+  onDocumentGone?: (cause: MainWindowDocumentGoneCause) => void
 }
 
 export class MainWindowController implements MainWindowApi {
@@ -31,9 +34,11 @@ export class MainWindowController implements MainWindowApi {
   private ipcService: IpcService | null = null
   private mainWindowCloseAction: MainWindowCloseAction = 'exit'
   private isQuitting = false
+  private onDocumentGone: ((cause: MainWindowDocumentGoneCause) => void) | undefined
 
   init(deps: MainWindowControllerDeps): void {
     this.ipcService = deps.ipcService
+    this.onDocumentGone = deps.onDocumentGone
     this.mainWindowCloseAction = this.loadMainWindowCloseActionFromDb(deps.dbService)
   }
 
@@ -128,8 +133,13 @@ export class MainWindowController implements MainWindowApi {
       ...(isLinux || isDev ? { icon } : {}),
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.mjs'),
-        sandbox: false,
-        webSecurity: false
+        // Web security stays on: the renderer displays untrusted content
+        // (reader-rendered book HTML, scraped text), and all local resources
+        // are served through registered privileged custom protocols.
+        // `sandbox` stays off because the ESM preload bundle requires a
+        // non-sandboxed renderer; context isolation remains enabled by
+        // default and the preload exposes only the typed IPC bridge.
+        sandbox: false
       }
     })
     this.window = mainWindow
@@ -163,6 +173,16 @@ export class MainWindowController implements MainWindowApi {
       if (this.window === mainWindow) {
         this.window = null
       }
+      this.onDocumentGone?.('closed')
+    })
+
+    // A navigation (including reloads) or a crashed renderer ends the
+    // document that owned interactive sessions; owners must release them.
+    mainWindow.webContents.on('did-navigate', () => {
+      this.onDocumentGone?.('navigated')
+    })
+    mainWindow.webContents.on('render-process-gone', () => {
+      this.onDocumentGone?.('render-process-gone')
     })
 
     if (isDev && rendererDevServerUrl) {

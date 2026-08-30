@@ -19,6 +19,7 @@ import {
   type MainToHostRpcMethod,
   type MainToHostRpcRequestMap,
   type RpcParams,
+  type UndefinedTolerant,
   type RpcResult,
   type RuntimeInfo
 } from '@kisaki3/extension-api'
@@ -183,14 +184,17 @@ export class ExtensionRuntimeManager {
 
   requestHost<K extends MainToHostRpcMethod>(
     method: K,
-    params: RpcParams<MainToHostRpcRequestMap, K>,
+    params: UndefinedTolerant<RpcParams<MainToHostRpcRequestMap, K>>,
     options?: RpcRequestOptions
   ): Promise<RpcResult<MainToHostRpcRequestMap, K>> {
     return this.requireRpc().requestHost(method, params, options)
   }
 
   /** One-way event delivery to the host; silently dropped when it is not running. */
-  sendEventToHost<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void {
+  sendEventToHost<K extends MainToHostRpcEvent>(
+    name: K,
+    payload: UndefinedTolerant<MainToHostRpcEventMap[K]>
+  ): void {
     this.rpc?.sendEventToHost(name, payload)
   }
 
@@ -331,7 +335,10 @@ export class ExtensionRuntimeManager {
       this.options.hostModulePath,
       this.options.hostInspect
     )
-    const rpc = new ExtensionHostRpcClient((message) => controller.send(message))
+    const rpc = new ExtensionHostRpcClient((message) => controller.send(message), {
+      resolveExtensionId: (runtimeHandle) =>
+        this.resolveRuntimeHandle(runtimeHandle as ExtensionRuntimeHandle)?.id ?? null
+    })
     registerHostRequests({
       rpc,
       logs: this.logs,
@@ -373,7 +380,8 @@ export class ExtensionRuntimeManager {
           apiVersion: runtimeInfo.apiVersion,
           mode: runtimeInfo.mode,
           platform: runtimeInfo.platform,
-          arch: runtimeInfo.arch
+          arch: runtimeInfo.arch,
+          uiLocale: runtimeInfo.uiLocale
         }
       },
       { timeoutMs: EXTENSION_HOST_HANDSHAKE_TIMEOUT_MS }
@@ -547,7 +555,7 @@ export class ExtensionRuntimeManager {
 
   private async requestHostLifecycle<K extends MainToHostRpcMethod>(
     method: K,
-    params: RpcParams<MainToHostRpcRequestMap, K>,
+    params: UndefinedTolerant<RpcParams<MainToHostRpcRequestMap, K>>,
     extensionId: string,
     cause: ExtensionRuntimeChangeCause,
     timeoutMs: number

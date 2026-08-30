@@ -1,7 +1,9 @@
 import {
   EXTENSION_RPC_PROTOCOL_VERSION,
+  UI_LOCALES,
   createExtensionError,
-  toRpcErrorPayload
+  toRpcErrorPayload,
+  type UiLocale
 } from '@kisaki3/extension-api'
 import { ExtensionLoader } from './loader'
 import { ExtensionRegistry } from './registry'
@@ -41,6 +43,8 @@ rpc.handleHandshake(async (request) => {
     }
   }
 
+  sdkBridge.setUiLocale(readHandshakeUiLocale(request.metadata))
+
   return {
     protocolVersion: EXTENSION_RPC_PROTOCOL_VERSION,
     accepted: true,
@@ -50,6 +54,20 @@ rpc.handleHandshake(async (request) => {
     }
   }
 })
+
+rpc.onMainEvent('runtime.uiLocaleChanged', ({ uiLocale }) => {
+  sdkBridge.setUiLocale(uiLocale)
+})
+
+function readHandshakeUiLocale(metadata: unknown): UiLocale {
+  const value =
+    typeof metadata === 'object' && metadata !== null
+      ? (metadata as Record<string, unknown>).uiLocale
+      : undefined
+  return typeof value === 'string' && (UI_LOCALES as readonly string[]).includes(value)
+    ? (value as UiLocale)
+    : 'en'
+}
 
 rpc.handle('extensions.load', async ({ extension, runtimeHandle, generation }) => {
   await loader.loadExtension(extension, runtimeHandle, generation)

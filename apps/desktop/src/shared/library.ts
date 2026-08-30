@@ -433,6 +433,12 @@ export interface LibraryEntityChangeSummary {
   /** Facet-level changes; present for updated entities. */
   changes?: LibraryChange[]
   occurredAt: number
+  /**
+   * Distinct writers behind this summary: `app` for application writes and
+   * `extension:<id>` for writes an extension caused. A consumer that pushes
+   * data into the library skips summaries whose only writer is itself.
+   */
+  actors: readonly string[]
 }
 
 export interface LibraryChangedPayload {

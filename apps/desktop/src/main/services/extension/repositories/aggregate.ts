@@ -137,7 +137,7 @@ export class ExtensionRepositoryAggregator {
     const packageSources = accumulator.packageSources.toSorted((left, right) =>
       compareRepositoryRows(left.repository, right.repository)
     )
-    const primary = packageSources[0]
+    const primary = packageSources[0]!
     const releases = [...accumulator.releasesByDigest.values()]
       .map(({ release, sourcesByRepositoryId }) => ({
         ...release,

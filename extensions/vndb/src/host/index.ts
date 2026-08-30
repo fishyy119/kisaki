@@ -1,9 +1,9 @@
-import { defineExtension, kisaki, SettingsStore } from '@kisaki3/extension-sdk'
+import { defineExtension, kisaki } from '@kisaki3/extension-sdk'
+import { SettingsStore } from './utils/settings-store'
 import { VndbClient } from './api/client'
 import { TokenStore } from './auth/token'
 import { createDefaultVndbSettings } from './config/defaults'
 import { normalizeVndbSettings } from './config/schema'
-import { setHostUiLocale } from './i18n'
 import { VndbCharacterProvider } from './media/character/provider'
 import { VndbCompanyProvider } from './media/company/provider'
 import { VndbGameProvider } from './media/game/provider'
@@ -13,17 +13,11 @@ import { registerVndbSettingsUi } from './settings'
 import { SyncEngine } from './sync/engine'
 import { SyncStateStore } from './sync/state'
 import { SyncSubscription } from './sync/subscription'
-import { SyncSuppressor } from './sync/suppressor'
 import { VndbTasks } from './tasks'
 import { VNDB_STORAGE_KEYS } from './utils/ids'
 
 export default defineExtension({
   async activate(context) {
-    setHostUiLocale((await kisaki.runtime.getInfo()).uiLocale)
-    context.hooks.on('app.ui-locale.changed', ({ effective }) => {
-      setHostUiLocale(effective)
-    })
-
     const settingsStore = new SettingsStore(context.storage, VNDB_STORAGE_KEYS.settings, {
       normalize: normalizeVndbSettings,
       createDefault: createDefaultVndbSettings
@@ -35,18 +29,15 @@ export default defineExtension({
     const runtime: VndbRuntime = { client, getSettings: () => settingsStore.get() }
 
     const syncStateStore = new SyncStateStore(context.storage)
-    const syncSuppressor = new SyncSuppressor()
     const syncEngine = new SyncEngine({
       settingsStore,
       client,
       stateStore: syncStateStore,
-      suppressor: syncSuppressor,
       logger: context.logger
     })
     const tasks = new VndbTasks({
       client,
       engine: syncEngine,
-      suppressor: syncSuppressor,
       logger: context.logger
     })
 
@@ -65,6 +56,7 @@ export default defineExtension({
     context.subscriptions.add(
       new SyncSubscription({
         hooks: context.hooks,
+        selfActor: `extension:${context.extension.id}`,
         settingsStore,
         engine: syncEngine,
         logger: context.logger

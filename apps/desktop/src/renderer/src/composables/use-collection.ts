@@ -107,7 +107,7 @@ function getDefaultEntityType(
   configured: ContentEntityType[]
 ): ContentEntityType {
   const candidates = configured.length > 0 ? configured : CONTENT_ENTITY_TYPES
-  return candidates.find((type) => counts[type] > 0) ?? candidates[0]
+  return candidates.find((type) => counts[type] > 0) ?? candidates[0]!
 }
 
 // =============================================================================
@@ -235,7 +235,7 @@ function resolveEntityType(
   let type = selectedType ?? getDefaultEntityType(counts, configuredTypes)
   // Ensure the selected type is valid for dynamic collections
   if (isDynamic && configuredTypes.length > 0 && !configuredTypes.includes(type)) {
-    type = configuredTypes[0]
+    type = configuredTypes[0]!
   }
   return type
 }

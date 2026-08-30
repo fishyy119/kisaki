@@ -1,4 +1,4 @@
-import type { TaskRunProgressWork } from '@kisaki3/extension-api'
+import type { TaskRunProgressWork } from '@kisaki3/extension-sdk'
 
 export type TaskRunProgressWorkInput = Partial<
   Pick<TaskRunProgressWork, 'current' | 'total' | 'unit' | 'ratePeriod' | 'indeterminate'>

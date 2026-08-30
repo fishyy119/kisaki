@@ -1,9 +1,5 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkMethod,
@@ -11,6 +7,7 @@ import {
   type NetworkResponseType,
   type JsonValue
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import { BangumiApiError, normalizeBangumiApiError, readRetryAfterMs } from './errors'
 import { normalizePageQuery, toPage, type Page, type PageQuery } from './pagination'
 import type {
@@ -43,7 +40,6 @@ import type { BangumiSettingsV1 } from '../config/schema'
 import { BANGUMI_API_BASE_URL, BANGUMI_EPISODE_PAGE_LIMIT } from '../utils/constants'
 import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
-import { omitUndefined } from '../utils/object'
 import type { TokenService } from '../auth/token-service'
 import type { BangumiSubjectRef } from '../identity/subject-ref'
 import { getBangumiSubjectType, type BangumiMediaScope } from '../../shared/scopes'
@@ -156,12 +152,12 @@ export class BangumiClient {
 
     for (;;) {
       const response = await this.request<BangumiPaged<BangumiEpisode>>('GET', '/v0/episodes', {
-        query: omitUndefined({
+        query: {
           subject_id: subjectId,
           type: query.type,
           limit,
           offset
-        }),
+        },
         auth: 'optional',
         signal: options.signal
       })
@@ -485,7 +481,7 @@ export class BangumiClient {
       return response.url?.trim() || undefined
     } catch (error) {
       // A missing image is expected; a cancellation is not an absent image.
-      if (isCancellationError(error)) {
+      if (signal?.aborted) {
         throw error
       }
 
@@ -504,7 +500,7 @@ export class BangumiClient {
     let refreshedAfter401 = false
 
     for (let attempt = 0; attempt <= retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         const response = await this.sendOnce<T>(method, pathname, {
@@ -529,7 +525,9 @@ export class BangumiClient {
         }
 
         if (shouldRetryStatus(response.status) && attempt < retryCount) {
-          await delay(resolveRetryDelayMs(attempt, retryAfterMs), options.signal)
+          await delay(resolveRetryDelayMs(attempt, retryAfterMs), undefined, {
+            signal: options.signal
+          })
           continue
         }
 
@@ -537,8 +535,8 @@ export class BangumiClient {
       } catch (error) {
         // Must precede the retry branches: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof BangumiExtensionError) {
@@ -546,7 +544,7 @@ export class BangumiClient {
         }
 
         if (attempt < retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }
@@ -574,15 +572,15 @@ export class BangumiClient {
     await this.limiter.acquire(options.signal)
 
     return this.network.request<T>(
-      omitUndefined({
+      {
         url: this.buildUrl(pathname, options.query),
         method,
         headers: this.buildHeaders(method, accessToken),
         body: options.body === undefined ? undefined : (options.body as JsonValue),
         timeoutMs: normalizeTimeoutMs(settings.timeoutMs),
         responseType: options.responseType ?? 'json'
-      }),
-      omitUndefined({ signal: options.signal })
+      },
+      { signal: options.signal }
     )
   }
 

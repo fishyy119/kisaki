@@ -211,11 +211,11 @@ rather than for whoever happens to dispatch it. Two roots are allowed, and nothi
 
 Whitelist meanings, so a new hook lands in the right root:
 
-| Root       | Subject                                                                  |
-| ---------- | ------------------------------------------------------------------------ |
-| `app.*`    | Application-wide lifecycle and preferences (ready, shutting down, theme, ui-locale, settings) |
-| `library.*`| The catalog itself: entity changes, merges                               |
-| `play.*`   | Consumption of an entry by the user, in any vertical: launching a game, watching, reading |
+| Root        | Subject                                                                                       |
+| ----------- | --------------------------------------------------------------------------------------------- |
+| `app.*`     | Application-wide lifecycle and preferences (ready, shutting down, theme, ui-locale, settings) |
+| `library.*` | The catalog itself: entity changes, merges                                                    |
+| `play.*`    | Consumption of an entry by the user, in any vertical: launching a game, watching, reading     |
 
 `play.*` deliberately covers watching and reading as well as launching: to an extension author the
 interesting event is "the user started consuming this entry", and one root keeps that subscribable

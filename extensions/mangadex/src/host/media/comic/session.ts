@@ -19,7 +19,6 @@ import type {
 import type { MangadexClient } from '../../api/client'
 import type { MdCover, MdManga } from '../../api/types'
 import { MANGADEX_SOURCE_ID, MANGADEX_UPLOADS_URL } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import {
   buildComicFormat,
   buildExternalSites,
@@ -99,7 +98,7 @@ function buildInfo(manga: MdManga, ctx: ComicSessionContext): ScrapedComicInfo |
     return undefined
   }
 
-  return omitUndefined({
+  return {
     name: titles.name,
     originalName: titles.originalName,
     aliases: titles.aliases,
@@ -109,7 +108,7 @@ function buildInfo(manga: MdManga, ctx: ComicSessionContext): ScrapedComicInfo |
     totalVolumes: parseCount(attributes?.lastVolume),
     totalChapters: parseCount(attributes?.lastChapter),
     externalSites: buildExternalSites(manga)
-  })
+  }
 }
 
 /** Tag names are curated English vocabulary; groups are not repeated as text. */

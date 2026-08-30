@@ -82,9 +82,9 @@ export function resolveLocalizedText(text: LocalizedText, locale: UiLocale): str
 
 interface LocalizedTextValidationOptions {
   /** Require non-empty variants. Defaults to true. */
-  minLength?: number
-  typeMessage?: string
-  valueMessage?: string
+  minLength?: number | undefined
+  typeMessage?: string | undefined
+  valueMessage?: string | undefined
 }
 
 /**

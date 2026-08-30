@@ -16,7 +16,6 @@ import type { BangumiClient } from '../api/client'
 import { m } from '../i18n'
 import { BANGUMI_SOURCE_ID } from '../utils/constants'
 import { BangumiExtensionError } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import { parseBangumiId } from './format/ids'
 import { normalizeKeyText } from './format/text'
 
@@ -70,12 +69,12 @@ export function toResolvedTarget(
 ): IdResolvedTarget {
   const normalizedId = id.trim()
 
-  return omitUndefined({
+  return {
     id: normalizedId,
     cacheKey: normalizedId,
     resolveName: resolveName?.trim() || undefined,
     identity: externalIds ? { externalIds } : undefined
-  })
+  }
 }
 
 /** The first Bangumi id the entity already carries, if any. */

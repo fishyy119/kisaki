@@ -18,4 +18,3 @@ export {
   type RecipeAvailability,
   type RecipeProviderAvailability
 } from './materialize'
-export { default as ScraperNewProfileDialog } from './new-profile-dialog.vue'

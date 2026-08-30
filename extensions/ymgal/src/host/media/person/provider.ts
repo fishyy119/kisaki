@@ -18,10 +18,12 @@ import { createSatelliteSession } from '../satellite-session'
 /**
  * Enriches a person the library already identifies on YMGal.
  *
- * The public API searches games only, so this provider declares no `search`
- * capability and answers exclusively for entities carrying a YMGal id — which
- * is how they arrive, since a game scrape writes that id alongside the person
- * it credits.
+ * The public API searches games only — verified against the live API
+ * (2026-08: docs list `search-game` as the sole search endpoint, and probing
+ * `/open/archive/search-person` answers code 404). So this provider declares
+ * no `search` capability and answers exclusively for entities carrying a
+ * YMGal id — which is how they arrive, since a game scrape writes that id
+ * alongside the person it credits.
  */
 export class YmgalPersonProvider implements PersonScraperProvider {
   public readonly id = YMGAL_SOURCE_ID

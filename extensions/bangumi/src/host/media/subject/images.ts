@@ -1,7 +1,5 @@
-import { isCancellationError } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../api/client'
 import type { BangumiSubject, BangumiSubjectRelation } from '../../api/types'
-import { omitUndefined } from '../../utils/object'
 import { extractImageUrls } from '../format/images'
 import { dedupeUrls } from '../format/urls'
 import type { BangumiSubjectImageVariants } from './types'
@@ -17,7 +15,7 @@ export async function fetchSubjectImageVariants(
   const [large, common, small, grid] = await Promise.all(
     (['large', 'common', 'small', 'grid'] as const).map((type) =>
       client.getSubjectImageUrl(subjectId, type, { signal }).catch((error: unknown) => {
-        if (isCancellationError(error)) {
+        if (signal?.aborted) {
           throw error
         }
 
@@ -26,7 +24,7 @@ export async function fetchSubjectImageVariants(
     )
   )
 
-  return omitUndefined({ large, common, small, grid })
+  return { large, common, small, grid }
 }
 
 export async function buildSubjectCovers(

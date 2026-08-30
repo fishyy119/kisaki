@@ -35,7 +35,7 @@ export function useInlineAttachments<TTable extends SQLiteTable>(
     const out = new Set<string>()
     const re = new RegExp(`attachment://${safeTable}/${safeRowId}/([^\\s)"'<>]+)`, 'g')
     for (const match of content.matchAll(re)) {
-      const raw = match[1]
+      const raw = match[1]!
       const fileName = raw.split(/[?#]/)[0]
       if (fileName) out.add(fileName)
     }

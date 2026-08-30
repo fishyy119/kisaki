@@ -17,7 +17,6 @@ import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { useAsyncData, useDbChanges } from '@renderer/composables'
-import { ipcManager } from '@renderer/core/ipc'
 import { scanners, scraperProfiles } from '@shared/db'
 import {
   Dialog,
@@ -35,6 +34,7 @@ import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { getEntityIcon } from '@renderer/utils/format'
 import {
   computeRecipeFingerprint,
+  fetchScraperProvidersByType,
   getRecipeById,
   getScraperProviderDisplay,
   materializeRecipe,
@@ -59,37 +59,11 @@ interface ProfileFormData {
 // Fetch data when dialog opens
 const { data, isLoading, refetch } = useAsyncData(
   async (): Promise<ProfileFormData> => {
-    const [
-      profilesData,
-      gameProvidersResult,
-      animeProvidersResult,
-      comicProvidersResult,
-      novelProvidersResult,
-      personProvidersResult,
-      companyProvidersResult,
-      characterProvidersResult
-    ] = await Promise.all([
+    const [profilesData, providersByType] = await Promise.all([
       db.select().from(scraperProfiles).orderBy(scraperProfiles.order),
-      ipcManager.invoke('scraper:list-game-providers'),
-      ipcManager.invoke('scraper:list-anime-providers'),
-      ipcManager.invoke('scraper:list-comic-providers'),
-      ipcManager.invoke('scraper:list-novel-providers'),
-      ipcManager.invoke('scraper:list-person-providers'),
-      ipcManager.invoke('scraper:list-company-providers'),
-      ipcManager.invoke('scraper:list-character-providers')
+      fetchScraperProvidersByType()
     ])
-    return {
-      profiles: profilesData,
-      providersByType: {
-        game: gameProvidersResult.success ? gameProvidersResult.data : [],
-        anime: animeProvidersResult.success ? animeProvidersResult.data : [],
-        comic: comicProvidersResult.success ? comicProvidersResult.data : [],
-        novel: novelProvidersResult.success ? novelProvidersResult.data : [],
-        person: personProvidersResult.success ? personProvidersResult.data : [],
-        company: companyProvidersResult.success ? companyProvidersResult.data : [],
-        character: characterProvidersResult.success ? characterProvidersResult.data : []
-      }
-    }
+    return { profiles: profilesData, providersByType }
   },
   { enabled: () => open.value }
 )
@@ -163,7 +137,6 @@ const updateSuggestions = computed(() => {
 
     const currentFingerprint = computeRecipeFingerprint({
       searchProviderId: profile.searchProviderId,
-      defaultLocale: profile.defaultLocale,
       slotConfigs: profile.slotConfigs
     })
 
@@ -277,7 +250,11 @@ function handleShowUpdate(profile: ScraperProfile) {
   updateDialogOpen.value = true
 }
 
-/** Applies the recommendation onto the profile; the batch save persists it. */
+/**
+ * Applies the recommendation onto the profile; the batch save persists it.
+ * The content locale stays untouched — like the name, it is the user's
+ * parameter, not curated knowledge.
+ */
 function handleApplyUpdate() {
   const candidate = updateCandidate.value
   if (!candidate) return
@@ -287,7 +264,6 @@ function handleApplyUpdate() {
       ? {
           ...profile,
           searchProviderId: candidate.recommendation.searchProviderId,
-          defaultLocale: candidate.recommendation.defaultLocale,
           slotConfigs: candidate.recommendation.slotConfigs,
           dismissedRecipeFingerprint: null,
           updatedAt: new Date()
@@ -325,14 +301,14 @@ function handleDeleteConfirm() {
 function handleMoveUp(index: number) {
   if (index <= 0) return
   const newProfiles = [...profiles.value]
-  ;[newProfiles[index - 1], newProfiles[index]] = [newProfiles[index], newProfiles[index - 1]]
+  ;[newProfiles[index - 1], newProfiles[index]] = [newProfiles[index]!, newProfiles[index - 1]!]
   profiles.value = newProfiles
 }
 
 function handleMoveDown(index: number) {
   if (index >= profiles.value.length - 1) return
   const newProfiles = [...profiles.value]
-  ;[newProfiles[index], newProfiles[index + 1]] = [newProfiles[index + 1], newProfiles[index]]
+  ;[newProfiles[index], newProfiles[index + 1]] = [newProfiles[index + 1]!, newProfiles[index]!]
   profiles.value = newProfiles
 }
 
@@ -350,7 +326,7 @@ async function handleSave() {
 
     // Upsert all profiles with updated order
     for (let i = 0; i < profiles.value.length; i++) {
-      const profile = profiles.value[i]
+      const profile = profiles.value[i]!
       const isNew = !initialProfilesRef.value.some((p) => p.id === profile.id)
 
       if (isNew) {

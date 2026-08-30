@@ -28,7 +28,6 @@ import type {
   BangumiRelatedPerson
 } from '../api/types'
 import { BANGUMI_SOURCE_ID } from '../utils/constants'
-import { omitUndefined } from '../utils/object'
 import { dedupeExternalIds, dedupeTags } from './format/dedupe'
 import { toPartialDateFromParts } from './format/dates'
 import { extractImageUrls } from './format/images'
@@ -76,7 +75,7 @@ export function buildPersonFacts(
   const aliases = extractAliasesFromInfobox(detail?.infobox, [name, originalName])
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       aliases: aliases.length > 0 ? aliases : undefined,
@@ -84,7 +83,7 @@ export function buildPersonFacts(
       gender: mapBangumiGender(detail?.gender),
       birthDate: toPartialDateFromParts(detail?.birth_year, detail?.birth_mon, detail?.birth_day),
       externalSites: sites
-    }),
+    },
     identity: buildIdentity(personId, sites),
     tags: mapBangumiCareersToTags(detail?.career ?? related?.career),
     images: dedupeUrls(extractImageUrls(detail?.images ?? related?.images))
@@ -109,13 +108,13 @@ export function buildCompanyFacts(
   const sites = buildPersonSites(companyId, detail?.infobox)
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       description: normalizeDescription(detail?.summary),
       foundedDate: toPartialDateFromParts(detail?.birth_year, detail?.birth_mon, detail?.birth_day),
       externalSites: sites
-    }),
+    },
     identity: buildIdentity(companyId, sites),
     tags: mapBangumiCareersToTags(detail?.career ?? related?.career),
     images: dedupeUrls(extractImageUrls(detail?.images ?? related?.images))
@@ -144,7 +143,7 @@ export function buildCharacterFacts(
   }
 
   return {
-    info: omitUndefined({
+    info: {
       name,
       originalName,
       aliases: aliases.length > 0 ? aliases : undefined,
@@ -158,7 +157,7 @@ export function buildCharacterFacts(
       waist: measurements.waist,
       hips: measurements.hips,
       externalSites: [{ label: BANGUMI_LABEL, url: buildBangumiCharacterUrl(characterId) }]
-    }),
+    },
     identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(characterId) }] },
     tags: dedupeTags(tags),
     images: dedupeUrls(extractImageUrls(detail?.images ?? related?.images))
@@ -168,34 +167,34 @@ export function buildCharacterFacts(
 export function toPersonMetadata(
   facts: BangumiSatelliteFacts<ScrapedPersonInfo>
 ): ScrapedPersonMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     photos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 export function toCompanyMetadata(
   facts: BangumiSatelliteFacts<ScrapedCompanyInfo>
 ): ScrapedCompanyMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     logos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 export function toCharacterMetadata(
   facts: BangumiSatelliteFacts<ScrapedCharacterInfo>
 ): ScrapedCharacterMetadata {
-  return omitUndefined({
+  return {
     ...facts.info,
     identity: facts.identity,
     tags: toOptionalArray(facts.tags),
     photos: toOptionalArray(facts.images)
-  })
+  }
 }
 
 /** Site labels are provider names, not translatable copy. */

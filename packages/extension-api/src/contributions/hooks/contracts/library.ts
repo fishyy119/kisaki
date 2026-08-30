@@ -24,74 +24,74 @@ export type LibraryEntityTopic =
 export type LibraryChangeKind = 'created' | 'updated' | 'deleted'
 
 export interface LibraryGameCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  aliases?: readonly string[]
-  description?: string | null
-  releaseDate?: PartialDate | null
+  name?: string | undefined
+  originalName?: string | null | undefined
+  aliases?: readonly string[] | undefined
+  description?: string | null | undefined
+  releaseDate?: PartialDate | null | undefined
 }
 
 export interface LibraryAnimeCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  aliases?: readonly string[]
-  description?: string | null
-  releaseDate?: PartialDate | null
-  format?: LibraryAnimeFormat
-  totalEpisodes?: number | null
+  name?: string | undefined
+  originalName?: string | null | undefined
+  aliases?: readonly string[] | undefined
+  description?: string | null | undefined
+  releaseDate?: PartialDate | null | undefined
+  format?: LibraryAnimeFormat | undefined
+  totalEpisodes?: number | null | undefined
 }
 
 export interface LibraryComicCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  aliases?: readonly string[]
-  description?: string | null
-  releaseDate?: PartialDate | null
-  format?: LibraryComicFormat
-  readingDirection?: LibraryComicReadingDirection | null
-  totalVolumes?: number | null
-  totalChapters?: number | null
+  name?: string | undefined
+  originalName?: string | null | undefined
+  aliases?: readonly string[] | undefined
+  description?: string | null | undefined
+  releaseDate?: PartialDate | null | undefined
+  format?: LibraryComicFormat | undefined
+  readingDirection?: LibraryComicReadingDirection | null | undefined
+  totalVolumes?: number | null | undefined
+  totalChapters?: number | null | undefined
 }
 
 export interface LibraryNovelCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  aliases?: readonly string[]
-  description?: string | null
-  releaseDate?: PartialDate | null
-  format?: LibraryNovelFormat
-  totalVolumes?: number | null
+  name?: string | undefined
+  originalName?: string | null | undefined
+  aliases?: readonly string[] | undefined
+  description?: string | null | undefined
+  releaseDate?: PartialDate | null | undefined
+  format?: LibraryNovelFormat | undefined
+  totalVolumes?: number | null | undefined
 }
 
 export interface LibraryGameAssetSnapshot {
-  coverFile?: string | null
-  backdropFile?: string | null
-  logoFile?: string | null
-  iconFile?: string | null
+  coverFile?: string | null | undefined
+  backdropFile?: string | null | undefined
+  logoFile?: string | null | undefined
+  iconFile?: string | null | undefined
 }
 
 export interface LibraryAnimeAssetSnapshot {
-  coverFile?: string | null
-  backdropFile?: string | null
-  logoFile?: string | null
+  coverFile?: string | null | undefined
+  backdropFile?: string | null | undefined
+  logoFile?: string | null | undefined
 }
 
 export interface LibraryComicAssetSnapshot {
-  coverFile?: string | null
-  backdropFile?: string | null
-  logoFile?: string | null
+  coverFile?: string | null | undefined
+  backdropFile?: string | null | undefined
+  logoFile?: string | null | undefined
 }
 
 export interface LibraryNovelAssetSnapshot {
-  coverFile?: string | null
-  backdropFile?: string | null
-  logoFile?: string | null
+  coverFile?: string | null | undefined
+  backdropFile?: string | null | undefined
+  logoFile?: string | null | undefined
 }
 
 /** Consumption counters shared by every media type that tracks consumption. */
 export interface LibraryMediaActivitySnapshot {
-  totalDuration?: number
-  lastActiveAt?: number | null
+  totalDuration?: number | undefined
+  lastActiveAt?: number | null | undefined
 }
 
 /** Satellite links every media type owns. */
@@ -125,177 +125,177 @@ export interface LibraryMediaRelationsSnapshot {
 }
 
 export interface LibraryPersonCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  sortName?: string | null
-  aliases?: readonly string[]
-  description?: string | null
-  isFavorite?: boolean
-  isNsfw?: boolean
-  birthDate?: PartialDate | null
-  deathDate?: PartialDate | null
-  gender?: LibraryGender | null
-  externalSites?: readonly ExternalSite[]
+  name?: string | undefined
+  originalName?: string | null | undefined
+  sortName?: string | null | undefined
+  aliases?: readonly string[] | undefined
+  description?: string | null | undefined
+  isFavorite?: boolean | undefined
+  isNsfw?: boolean | undefined
+  birthDate?: PartialDate | null | undefined
+  deathDate?: PartialDate | null | undefined
+  gender?: LibraryGender | null | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface LibraryCompanyCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  sortName?: string | null
-  description?: string | null
-  isFavorite?: boolean
-  isNsfw?: boolean
-  foundedDate?: PartialDate | null
-  externalSites?: readonly ExternalSite[]
+  name?: string | undefined
+  originalName?: string | null | undefined
+  sortName?: string | null | undefined
+  description?: string | null | undefined
+  isFavorite?: boolean | undefined
+  isNsfw?: boolean | undefined
+  foundedDate?: PartialDate | null | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface LibraryCharacterCoreSnapshot {
-  name?: string
-  originalName?: string | null
-  sortName?: string | null
-  aliases?: readonly string[]
-  description?: string | null
-  isFavorite?: boolean
-  isNsfw?: boolean
-  birthDate?: PartialDate | null
-  gender?: LibraryGender | null
-  bloodType?: LibraryBloodType | null
-  height?: number | null
-  weight?: number | null
-  bust?: number | null
-  waist?: number | null
-  hips?: number | null
-  cup?: LibraryCupSize | null
-  age?: number | null
-  externalSites?: readonly ExternalSite[]
+  name?: string | undefined
+  originalName?: string | null | undefined
+  sortName?: string | null | undefined
+  aliases?: readonly string[] | undefined
+  description?: string | null | undefined
+  isFavorite?: boolean | undefined
+  isNsfw?: boolean | undefined
+  birthDate?: PartialDate | null | undefined
+  gender?: LibraryGender | null | undefined
+  bloodType?: LibraryBloodType | null | undefined
+  height?: number | null | undefined
+  weight?: number | null | undefined
+  bust?: number | null | undefined
+  waist?: number | null | undefined
+  hips?: number | null | undefined
+  cup?: LibraryCupSize | null | undefined
+  age?: number | null | undefined
+  externalSites?: readonly ExternalSite[] | undefined
 }
 
 export interface LibraryCollectionCoreSnapshot {
-  name?: string
-  description?: string | null
-  isNsfw?: boolean
-  order?: number
+  name?: string | undefined
+  description?: string | null | undefined
+  isNsfw?: boolean | undefined
+  order?: number | undefined
 }
 
 export interface LibraryCollectionDynamicConfigSnapshot {
-  isDynamic?: boolean
-  dynamicConfig?: DynamicCollectionConfig | null
+  isDynamic?: boolean | undefined
+  dynamicConfig?: DynamicCollectionConfig | null | undefined
 }
 
 export interface LibraryTagCoreSnapshot {
-  name?: string
-  description?: string | null
-  isNsfw?: boolean
+  name?: string | undefined
+  description?: string | null | undefined
+  isNsfw?: boolean | undefined
 }
 
 export interface LibraryPersonAssetSnapshot {
-  photoFile?: string | null
+  photoFile?: string | null | undefined
 }
 
 export interface LibraryCompanyAssetSnapshot {
-  logoFile?: string | null
+  logoFile?: string | null | undefined
 }
 
 export interface LibraryCharacterAssetSnapshot {
-  photoFile?: string | null
+  photoFile?: string | null | undefined
 }
 
 export interface LibraryCollectionAssetSnapshot {
-  coverFile?: string | null
+  coverFile?: string | null | undefined
 }
 
 export interface LibraryCollectionMembershipSnapshot {
-  gameIds?: readonly string[]
-  animeIds?: readonly string[]
-  comicIds?: readonly string[]
-  novelIds?: readonly string[]
-  personIds?: readonly string[]
-  companyIds?: readonly string[]
-  characterIds?: readonly string[]
+  gameIds?: readonly string[] | undefined
+  animeIds?: readonly string[] | undefined
+  comicIds?: readonly string[] | undefined
+  novelIds?: readonly string[] | undefined
+  personIds?: readonly string[] | undefined
+  companyIds?: readonly string[] | undefined
+  characterIds?: readonly string[] | undefined
 }
 
 export type LibraryCoreChange<TSnapshot extends object> = {
   facet: 'core'
   before: Partial<TSnapshot>
   after: Partial<TSnapshot>
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryScoreChange = {
   facet: 'score'
   before: { score: number | null }
   after: { score: number | null }
-  fields?: readonly ['score']
+  fields?: readonly ['score'] | undefined
 }
 
 export type LibraryIdentityChange = {
   facet: 'identity'
   before: { externalIds: readonly ExternalId[] }
   after: { externalIds: readonly ExternalId[] }
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryTagsChange = {
   facet: 'tags'
   before: { tagIds: readonly string[] }
   after: { tagIds: readonly string[] }
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryAssetChange<TSnapshot extends object> = {
   facet: 'assets'
   before: Partial<TSnapshot>
   after: Partial<TSnapshot>
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryLinksChange<TSnapshot extends object> = {
   facet: 'links'
   before: TSnapshot
   after: TSnapshot
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryRelationsChange<TSnapshot extends object> = {
   facet: 'relations'
   before: TSnapshot
   after: TSnapshot
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryMembershipChange<TSnapshot extends object> = {
   facet: 'membership'
   before: TSnapshot
   after: TSnapshot
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryDynamicConfigChange = {
   facet: 'dynamicConfig'
   before: Partial<LibraryCollectionDynamicConfigSnapshot>
   after: Partial<LibraryCollectionDynamicConfigSnapshot>
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryStatusChange = {
   facet: 'status'
   before: { status: LibraryMediaStatus }
   after: { status: LibraryMediaStatus }
-  fields?: readonly ['status']
+  fields?: readonly ['status'] | undefined
 }
 
 export type LibraryActivityChange = {
   facet: 'activity'
   before: LibraryMediaActivitySnapshot
   after: LibraryMediaActivitySnapshot
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 export type LibraryCollectionsChange = {
   facet: 'collections'
   before: { collectionIds: readonly string[] }
   after: { collectionIds: readonly string[] }
-  fields?: readonly string[]
+  fields?: readonly string[] | undefined
 }
 
 /**
@@ -308,7 +308,7 @@ export type LibraryEpisodesChange = {
   facet: 'episodes'
   before: { watchedEpisodeIds: readonly string[] }
   after: { watchedEpisodeIds: readonly string[] }
-  fields?: readonly ['watchedEpisodeIds']
+  fields?: readonly ['watchedEpisodeIds'] | undefined
 }
 
 /**
@@ -320,7 +320,7 @@ export type LibraryUnitsChange = {
   facet: 'units'
   before: { readUnitIds: readonly string[] }
   after: { readUnitIds: readonly string[] }
-  fields?: readonly ['readUnitIds']
+  fields?: readonly ['readUnitIds'] | undefined
 }
 
 export type LibraryGameChange =
@@ -420,10 +420,17 @@ export interface LibraryEntityChangeSummary {
   id: string
   kind: LibraryChangeKind
   /** Present for created entities when a name is known. */
-  name?: string
+  name?: string | undefined
   /** Facet-level changes; present for updated entities. */
-  changes?: readonly LibraryChange[]
+  changes?: readonly LibraryChange[] | undefined
   occurredAt: number
+  /**
+   * Distinct writers behind this summary: `app` for application writes and
+   * `extension:<id>` for writes an extension caused. An extension that pushes
+   * data into the library skips summaries whose only writer is itself, which
+   * removes the need for self-echo suppression state.
+   */
+  actors: readonly string[]
 }
 
 export interface LibraryChangedPayload {

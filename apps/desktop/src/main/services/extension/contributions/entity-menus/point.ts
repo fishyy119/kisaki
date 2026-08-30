@@ -288,19 +288,32 @@ export class ExtensionEntityMenuContributionPoint {
       return
     }
 
+    await this.releaseSession(request.sessionId)
+  }
+
+  /**
+   * Releases every live session. Sessions belong to the renderer document
+   * that resolved them, so the owner calls this when that document ends
+   * (navigation, crash, or close) — the renderer can no longer release them
+   * itself, and without this both sides would retain callbacks until the
+   * contribution or runtime goes away.
+   */
+  async releaseAllSessions(): Promise<void> {
+    await Promise.all([...this.sessions.keys()].map((sessionId) => this.releaseSession(sessionId)))
+  }
+
+  private async releaseSession(sessionId: string): Promise<void> {
     try {
       await this.options.requestHost(
         'contributions.entityMenus.release',
-        {
-          sessionId: request.sessionId
-        },
+        { sessionId },
         { timeoutMs: EXTENSION_CLEANUP_TIMEOUT_MS }
       )
     } catch (error) {
-      log.warn('Failed to release menu session.', error, { requestSessionId: request.sessionId })
+      log.warn('Failed to release menu session.', error, { requestSessionId: sessionId })
     } finally {
-      this.sessions.get(request.sessionId)?.abortController.abort()
-      this.sessions.delete(request.sessionId)
+      this.sessions.get(sessionId)?.abortController.abort()
+      this.sessions.delete(sessionId)
     }
   }
 
@@ -351,7 +364,7 @@ export class ExtensionEntityMenuContributionPoint {
           // before they cross the RPC boundary; main only translates the icon
           // contract into the renderer DTO here.
           nodes: resolveEntityMenuNodeIcons(
-            result.value.registration.owner.extension.extensionPath,
+            result.value.registration.owner.extension.id,
             result.value.resolved.nodes
           )
         })
@@ -419,13 +432,13 @@ export class ExtensionEntityMenuContributionPoint {
 }
 
 function resolveEntityMenuNodeIcons(
-  extensionPath: string,
+  extensionId: string,
   nodes: readonly JsonObject[]
 ): readonly ExtensionResolvedEntityMenuNode[] {
   return nodes.map((node) => {
     const mapped: Record<string, unknown> = { ...node }
 
-    const icon = resolveOptionalContributionIcon(extensionPath, node.icon)
+    const icon = resolveOptionalContributionIcon(extensionId, node.icon)
     if (icon) {
       mapped.icon = icon
     } else {
@@ -434,7 +447,7 @@ function resolveEntityMenuNodeIcons(
 
     if (Array.isArray(node.children)) {
       mapped.children = resolveEntityMenuNodeIcons(
-        extensionPath,
+        extensionId,
         node.children as readonly JsonObject[]
       )
     }

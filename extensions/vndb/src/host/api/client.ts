@@ -1,13 +1,10 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import { normalizeVndbApiError, VndbApiError } from './errors'
 import type {
   VndbAuthInfo,
@@ -34,7 +31,7 @@ import {
   VNDB_USER_AGENT
 } from '../utils/constants'
 import { VndbExtensionError } from '../utils/errors'
-import { chunk, omitUndefined } from '../utils/object'
+import { chunk } from '../utils/object'
 
 /**
  * Official limit is 200 requests per 5 minutes; stay under it. One scrape
@@ -85,11 +82,7 @@ export class VndbClient {
     fields: string,
     options: VndbRequestOptions = {}
   ): Promise<VndbUserListItem[]> {
-    return this.queryAll<VndbUserListItem>(
-      'ulist',
-      { user: userId, fields, sort: 'id' },
-      options
-    )
+    return this.queryAll<VndbUserListItem>('ulist', { user: userId, fields, sort: 'id' }, options)
   }
 
   /** Adds or updates one visual novel on the user's list; needs `listwrite`. */
@@ -361,20 +354,20 @@ export class VndbClient {
     }
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         await this.limiter.acquire(options.signal)
         const response: NetworkResponse<T> = await this.network.request<T>(
-          omitUndefined({
+          {
             url: `${settings.endpoints.apiBaseUrl}${pathname}`,
             method,
             headers,
             body: body === undefined ? undefined : JSON.stringify(body),
             timeoutMs: settings.client.timeoutMs,
             responseType: 'json' as const
-          }),
-          omitUndefined({ signal: options.signal })
+          },
+          { signal: options.signal }
         )
 
         if (response.ok) {
@@ -382,7 +375,7 @@ export class VndbClient {
         }
 
         if (shouldRetryStatus(response.status) && attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
 
@@ -390,8 +383,8 @@ export class VndbClient {
       } catch (error) {
         // Must precede the retry branch: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof VndbExtensionError) {
@@ -400,7 +393,7 @@ export class VndbClient {
 
         this.logger.debug('VNDB request attempt failed.', { path: pathname, attempt })
         if (attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }

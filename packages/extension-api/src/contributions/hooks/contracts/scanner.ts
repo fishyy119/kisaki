@@ -43,7 +43,7 @@ export interface ScannerRunFinishedPayload {
   scannerName: string
   status: ScannerRunFinishedStatus
   stats: Record<string, number>
-  error?: string
+  error?: string | undefined
 }
 
 /**

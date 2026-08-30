@@ -1,5 +1,8 @@
 import {
+  ANIME_UPDATE_SURFACES,
+  COMIC_UPDATE_SURFACES,
   GAME_UPDATE_SURFACES,
+  NOVEL_UPDATE_SURFACES,
   CONTENT_LOCALES,
   LIBRARY_ANIME_FORMATS,
   LIBRARY_COMIC_FORMATS,
@@ -11,7 +14,6 @@ import {
   type ContentLocale,
   type ExtensionRuntimeMetadata,
   type GameScraperLookup,
-  type GameUpdateSurface,
   type IngestAddAnimeFromScraperOptions,
   type IngestAddAnimeFromScraperResult,
   type IngestAddComicFromScraperOptions,
@@ -20,8 +22,13 @@ import {
   type IngestAddGameFromScraperResult,
   type IngestAddNovelFromScraperOptions,
   type IngestAddNovelFromScraperResult,
+  type IngestAnimeUpdateFromScraperInput,
+  type IngestComicUpdateFromScraperInput,
   type IngestGameUpdateFromScraperInput,
+  type IngestNovelUpdateFromScraperInput,
+  type IngestUpdateInput,
   type IngestUpdateResult,
+  type IngestWarningCode,
   type MediaScraperLookup,
   type NovelScraperLookup,
   type ScraperLookup
@@ -37,7 +44,6 @@ import type {
   NovelScraperLookup as AppNovelScraperLookup,
   ScraperLookup as AppScraperLookup
 } from '@shared/scraper'
-import type { GameUpdateRequest } from '@shared/ingest/update'
 import type {
   IngestAddAnimeFromScraperOptions as AppIngestAddAnimeFromScraperOptions,
   IngestAddAnimeFromScraperResult as AppIngestAddAnimeFromScraperResult,
@@ -204,16 +210,10 @@ export class ExtensionIngestCapabilityProvider {
   ): Promise<IngestUpdateResult> {
     this.requireRuntime(runtimeHandle)
     const result = await this.options.ingest.update.game.updateFromScraper(
-      toAppGameUpdateRequest(input),
+      toAppUpdateRequest(input, GAME_UPDATE_SURFACE_KEYS, toAppMediaScraperLookup),
       { signal }
     )
-
-    return {
-      warnings: result.warnings?.map((warning) => ({
-        code: warning.code,
-        message: warning.message
-      }))
-    }
+    return toPublicIngestUpdateResult(result)
   }
 
   startUpdateGameFromScraper(
@@ -221,9 +221,82 @@ export class ExtensionIngestCapabilityProvider {
     input: IngestGameUpdateFromScraperInput
   ): TaskRunStartResult {
     const metadata = this.requireRuntime(runtimeHandle)
-    return this.options.ingest.update.game.startUpdateFromScraper(toAppGameUpdateRequest(input), {
-      taskRunInitiator: createExtensionTaskRunInitiator(metadata)
-    })
+    return this.options.ingest.update.game.startUpdateFromScraper(
+      toAppUpdateRequest(input, GAME_UPDATE_SURFACE_KEYS, toAppMediaScraperLookup),
+      { taskRunInitiator: createExtensionTaskRunInitiator(metadata) }
+    )
+  }
+
+  async updateAnimeFromScraper(
+    runtimeHandle: string,
+    input: IngestAnimeUpdateFromScraperInput,
+    signal?: AbortSignal
+  ): Promise<IngestUpdateResult> {
+    this.requireRuntime(runtimeHandle)
+    const result = await this.options.ingest.update.anime.updateFromScraper(
+      toAppUpdateRequest(input, ANIME_UPDATE_SURFACE_KEYS, toAppAnimeScraperLookup),
+      { signal }
+    )
+    return toPublicIngestUpdateResult(result)
+  }
+
+  startUpdateAnimeFromScraper(
+    runtimeHandle: string,
+    input: IngestAnimeUpdateFromScraperInput
+  ): TaskRunStartResult {
+    const metadata = this.requireRuntime(runtimeHandle)
+    return this.options.ingest.update.anime.startUpdateFromScraper(
+      toAppUpdateRequest(input, ANIME_UPDATE_SURFACE_KEYS, toAppAnimeScraperLookup),
+      { taskRunInitiator: createExtensionTaskRunInitiator(metadata) }
+    )
+  }
+
+  async updateComicFromScraper(
+    runtimeHandle: string,
+    input: IngestComicUpdateFromScraperInput,
+    signal?: AbortSignal
+  ): Promise<IngestUpdateResult> {
+    this.requireRuntime(runtimeHandle)
+    const result = await this.options.ingest.update.comic.updateFromScraper(
+      toAppUpdateRequest(input, COMIC_UPDATE_SURFACE_KEYS, toAppComicScraperLookup),
+      { signal }
+    )
+    return toPublicIngestUpdateResult(result)
+  }
+
+  startUpdateComicFromScraper(
+    runtimeHandle: string,
+    input: IngestComicUpdateFromScraperInput
+  ): TaskRunStartResult {
+    const metadata = this.requireRuntime(runtimeHandle)
+    return this.options.ingest.update.comic.startUpdateFromScraper(
+      toAppUpdateRequest(input, COMIC_UPDATE_SURFACE_KEYS, toAppComicScraperLookup),
+      { taskRunInitiator: createExtensionTaskRunInitiator(metadata) }
+    )
+  }
+
+  async updateNovelFromScraper(
+    runtimeHandle: string,
+    input: IngestNovelUpdateFromScraperInput,
+    signal?: AbortSignal
+  ): Promise<IngestUpdateResult> {
+    this.requireRuntime(runtimeHandle)
+    const result = await this.options.ingest.update.novel.updateFromScraper(
+      toAppUpdateRequest(input, NOVEL_UPDATE_SURFACE_KEYS, toAppNovelScraperLookup),
+      { signal }
+    )
+    return toPublicIngestUpdateResult(result)
+  }
+
+  startUpdateNovelFromScraper(
+    runtimeHandle: string,
+    input: IngestNovelUpdateFromScraperInput
+  ): TaskRunStartResult {
+    const metadata = this.requireRuntime(runtimeHandle)
+    return this.options.ingest.update.novel.startUpdateFromScraper(
+      toAppUpdateRequest(input, NOVEL_UPDATE_SURFACE_KEYS, toAppNovelScraperLookup),
+      { taskRunInitiator: createExtensionTaskRunInitiator(metadata) }
+    )
   }
 
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {
@@ -455,7 +528,18 @@ function readOptionalLocale(value: unknown): ContentLocale | undefined {
   return value as ContentLocale
 }
 
-function toAppGameUpdateRequest(input: IngestGameUpdateFromScraperInput): GameUpdateRequest {
+/** Validates one media update input against its per-kind surface whitelist. */
+function toAppUpdateRequest<TSurface extends string, TLookup extends ScraperLookup, TAppLookup>(
+  input: IngestUpdateInput<TSurface, TLookup>,
+  surfaceKeys: ReadonlySet<string>,
+  toLookup: (lookup: TLookup) => TAppLookup
+): {
+  rootId: string
+  profileId: string
+  lookup: TAppLookup
+  selection: { surfaces: TSurface[] }
+  policy: { singularUpdate: 'ifMissing' | 'overwrite'; collectionUpdate: 'merge' | 'replace' }
+} {
   if (!isPlainRecord(input)) {
     throw createValidationError('ingest update input must be an object with a lookup.')
   }
@@ -467,9 +551,9 @@ function toAppGameUpdateRequest(input: IngestGameUpdateFromScraperInput): GameUp
   return {
     rootId: readNonEmptyString(input.rootId, 'ingest update input.rootId'),
     profileId: readNonEmptyString(input.profileId, 'ingest update input.profileId'),
-    lookup: toAppMediaScraperLookup(input.lookup),
+    lookup: toLookup(input.lookup),
     selection: {
-      surfaces: readUpdateSurfaces(input.selection.surfaces)
+      surfaces: readUpdateSurfaces<TSurface>(input.selection.surfaces, surfaceKeys)
     },
     policy: {
       singularUpdate: readEnum(
@@ -487,6 +571,15 @@ function toAppGameUpdateRequest(input: IngestGameUpdateFromScraperInput): GameUp
 }
 
 const GAME_UPDATE_SURFACE_KEYS = new Set<string>(GAME_UPDATE_SURFACES.map((surface) => surface.key))
+const ANIME_UPDATE_SURFACE_KEYS = new Set<string>(
+  ANIME_UPDATE_SURFACES.map((surface) => surface.key)
+)
+const COMIC_UPDATE_SURFACE_KEYS = new Set<string>(
+  COMIC_UPDATE_SURFACES.map((surface) => surface.key)
+)
+const NOVEL_UPDATE_SURFACE_KEYS = new Set<string>(
+  NOVEL_UPDATE_SURFACES.map((surface) => surface.key)
+)
 
 function readKnownIds(value: unknown): { source: string; id: string }[] {
   if (!Array.isArray(value)) {
@@ -505,19 +598,22 @@ function readKnownIds(value: unknown): { source: string; id: string }[] {
   })
 }
 
-function readUpdateSurfaces(value: unknown): GameUpdateSurface[] {
+function readUpdateSurfaces<TSurface extends string>(
+  value: unknown,
+  surfaceKeys: ReadonlySet<string>
+): TSurface[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw createValidationError('ingest update selection.surfaces must be a non-empty array.')
   }
 
   return value.map((surface, index) => {
-    if (typeof surface !== 'string' || !GAME_UPDATE_SURFACE_KEYS.has(surface)) {
+    if (typeof surface !== 'string' || !surfaceKeys.has(surface)) {
       throw createValidationError(
         `ingest update selection.surfaces[${index}] must be a known update surface.`
       )
     }
 
-    return surface as GameUpdateSurface
+    return surface as TSurface
   })
 }
 
@@ -548,6 +644,17 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 
   const prototype = Object.getPrototypeOf(value)
   return prototype === Object.prototype || prototype === null
+}
+
+function toPublicIngestUpdateResult(result: {
+  warnings?: readonly { code: IngestWarningCode; message: string }[]
+}): IngestUpdateResult {
+  return {
+    warnings: result.warnings?.map((warning) => ({
+      code: warning.code,
+      message: warning.message
+    }))
+  }
 }
 
 function toPublicIngestAddGameFromScraperResult(

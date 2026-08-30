@@ -12,7 +12,7 @@ export interface WebviewOpenOptions {
   /**
    * Open parameters delivered to the webview document at bootstrap.
    */
-  params?: JsonObject
+  params?: JsonObject | undefined
 }
 
 /**

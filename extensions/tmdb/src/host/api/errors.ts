@@ -1,11 +1,10 @@
 import { TmdbExtensionError, type TmdbErrorCode } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import { m } from '../i18n'
 
 export interface TmdbApiErrorOptions {
-  status?: number
-  path?: string
-  retryAfterMs?: number
+  status?: number | undefined
+  path?: string | undefined
+  retryAfterMs?: number | undefined
 }
 
 export class TmdbApiError extends TmdbExtensionError {
@@ -48,11 +47,11 @@ export function normalizeTmdbApiError(
   }
 
   if (status === 429) {
-    return new TmdbApiError(
-      'tmdb_rate_limited',
-      m().errors.rateLimited,
-      omitUndefined({ status, path, retryAfterMs })
-    )
+    return new TmdbApiError('tmdb_rate_limited', m().errors.rateLimited, {
+      status,
+      path,
+      retryAfterMs
+    })
   }
 
   if (status >= 400 && status < 500) {

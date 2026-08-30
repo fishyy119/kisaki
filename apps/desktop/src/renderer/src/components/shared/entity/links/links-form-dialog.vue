@@ -112,7 +112,7 @@ const groupedItems = computed(() => {
     grouped[item.role]?.push(item)
   })
   for (const role of spec.value.roleOrder) {
-    grouped[role].sort((a, b) => a.order - b.order)
+    grouped[role]!.sort((a, b) => a.order - b.order)
   }
   return grouped
 })
@@ -160,7 +160,7 @@ async function handleSave() {
   try {
     const rows: Parameters<typeof spec.value.replace>[1] = []
     for (const role of spec.value.roleOrder) {
-      groupedItems.value[role].forEach((link, index) => {
+      groupedItems.value[role]!.forEach((link, index) => {
         rows.push({
           id: link.isNew ? nanoid() : link.id,
           targetId: link.targetId,
@@ -194,15 +194,15 @@ function reorderRole(role: string, roleLinks: LinkItem[]) {
 
 function handleMoveUp(role: string, index: number) {
   if (index <= 0) return
-  const roleLinks = [...groupedItems.value[role]]
-  ;[roleLinks[index - 1], roleLinks[index]] = [roleLinks[index], roleLinks[index - 1]]
+  const roleLinks = [...groupedItems.value[role]!]
+  ;[roleLinks[index - 1], roleLinks[index]] = [roleLinks[index]!, roleLinks[index - 1]!]
   reorderRole(role, roleLinks)
 }
 
 function handleMoveDown(role: string, index: number) {
-  const roleLinks = [...groupedItems.value[role]]
+  const roleLinks = [...groupedItems.value[role]!]
   if (index >= roleLinks.length - 1) return
-  ;[roleLinks[index], roleLinks[index + 1]] = [roleLinks[index + 1], roleLinks[index]]
+  ;[roleLinks[index], roleLinks[index + 1]] = [roleLinks[index + 1]!, roleLinks[index]!]
   reorderRole(role, roleLinks)
 }
 
@@ -223,7 +223,7 @@ function handleAddNew() {
     targetId: '',
     targetName: '',
     targetImage: null,
-    role: spec.value.roleOrder[0],
+    role: spec.value.roleOrder[0]!,
     note: '',
     isSpoiler: false,
     order: items.value.length,
@@ -256,13 +256,13 @@ function handleItemFormSubmit(data: {
   }
 
   if (isAddMode.value) {
-    updatedItem.order = groupedItems.value[updatedItem.role].length
+    updatedItem.order = groupedItems.value[updatedItem.role]!.length
     items.value.push(updatedItem)
   } else {
     const index = items.value.findIndex((item) => item.id === updatedItem.id)
     if (index !== -1) {
       if (editingItem.value && editingItem.value.role !== updatedItem.role) {
-        updatedItem.order = groupedItems.value[updatedItem.role].length
+        updatedItem.order = groupedItems.value[updatedItem.role]!.length
       }
       items.value[index] = updatedItem
     }
@@ -321,14 +321,14 @@ function handleRevealSpoilersConfirm() {
                 v-for="role in spec.roleOrder"
                 :key="role"
               >
-                <div v-if="groupedItems[role].length > 0">
+                <div v-if="groupedItems[role]!.length > 0">
                   <h4 class="text-xs font-medium text-muted-foreground mb-2">
                     {{ roleLabels[role] }}
                   </h4>
                   <div class="space-y-1">
                     <ListItem
                       v-for="({ link, spoiler, imageUrl }, index) in withSpoiler(
-                        groupedItems[role]
+                        groupedItems[role]!
                       )"
                       :key="link.id"
                       :icon="
@@ -356,7 +356,7 @@ function handleRevealSpoilersConfirm() {
                         <ListItemActions
                           movable
                           :is-first="index === 0"
-                          :is-last="index === groupedItems[role].length - 1"
+                          :is-last="index === groupedItems[role]!.length - 1"
                           @move-up="handleMoveUp(role, index)"
                           @move-down="handleMoveDown(role, index)"
                           @edit="handleEdit(link)"

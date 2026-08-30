@@ -18,17 +18,17 @@ import type { ExternalId, Tag } from './common'
  */
 export interface ComicInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: string[]
-  releaseDate?: PartialDate
-  description?: string
-  format?: ComicFormat
+  aliases?: string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  format?: ComicFormat | undefined
   /** Volume count declared by the source; stored unit rows stay authoritative. */
-  totalVolumes?: number
+  totalVolumes?: number | undefined
   /** Chapter count declared by the source; stored unit rows stay authoritative. */
-  totalChapters?: number
-  externalSites?: ExternalSite[]
+  totalChapters?: number | undefined
+  externalSites?: ExternalSite[] | undefined
   externalIds: ExternalId[]
 }
 
@@ -36,7 +36,7 @@ export interface ComicInfo {
  * Core comic metadata used across identity and normalization layers.
  */
 export interface CoreComicMetadata extends ComicInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 /**
@@ -48,15 +48,15 @@ export interface CoreComicMetadata extends ComicInfo {
  * external id instead of by number, which sources revise.
  */
 export interface ComicChapterInfo {
-  volumeNumber?: number
-  chapterNumber?: number
-  name?: string
-  originalName?: string
-  releaseDate?: PartialDate
-  description?: string
+  volumeNumber?: number | undefined
+  chapterNumber?: number | undefined
+  name?: string | undefined
+  originalName?: string | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
   /** Cover art of this installment (tankobon art), not a page render. */
-  coverUrl?: string
-  externalIds?: ExternalId[]
+  coverUrl?: string | undefined
+  externalIds?: ExternalId[] | undefined
 }
 
 /** Numbering a comic unit can be identified by, whether stated or stored. */

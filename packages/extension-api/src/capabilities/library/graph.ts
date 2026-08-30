@@ -125,29 +125,29 @@ export interface LibraryGraphCapability {
 }
 
 export interface LibraryGraphInput {
-  requestId?: string
-  options?: LibraryGraphOptions
+  requestId?: string | undefined
+  options?: LibraryGraphOptions | undefined
   nodes: LibraryGraphNodes
-  edges?: readonly LibraryGraphEdge[]
-  diagnostics?: readonly LibraryGraphDiagnostic[]
+  edges?: readonly LibraryGraphEdge[] | undefined
+  diagnostics?: readonly LibraryGraphDiagnostic[] | undefined
 }
 
 export interface LibraryGraphOptions {
-  conflictMode?: LibraryGraphConflictMode
-  strictAttachments?: boolean
+  conflictMode?: LibraryGraphConflictMode | undefined
+  strictAttachments?: boolean | undefined
 }
 
 export interface LibraryGraphNodes {
-  media?: readonly LibraryGraphMediaNode[]
-  collections?: readonly LibraryGraphCollectionNode[]
-  tags?: readonly LibraryGraphTagNode[]
-  companies?: readonly LibraryGraphCompanyNode[]
-  people?: readonly LibraryGraphPersonNode[]
-  characters?: readonly LibraryGraphCharacterNode[]
-  notes?: readonly LibraryGraphNoteNode[]
-  sessions?: readonly LibraryGraphSessionNode[]
-  units?: readonly LibraryGraphUnitNode[]
-  attachments?: readonly LibraryGraphAttachmentNode[]
+  media?: readonly LibraryGraphMediaNode[] | undefined
+  collections?: readonly LibraryGraphCollectionNode[] | undefined
+  tags?: readonly LibraryGraphTagNode[] | undefined
+  companies?: readonly LibraryGraphCompanyNode[] | undefined
+  people?: readonly LibraryGraphPersonNode[] | undefined
+  characters?: readonly LibraryGraphCharacterNode[] | undefined
+  notes?: readonly LibraryGraphNoteNode[] | undefined
+  sessions?: readonly LibraryGraphSessionNode[] | undefined
+  units?: readonly LibraryGraphUnitNode[] | undefined
+  attachments?: readonly LibraryGraphAttachmentNode[] | undefined
 }
 
 export interface LibraryGraphNodeBase {
@@ -241,8 +241,8 @@ export interface LibraryGraphNovelVolumeNode extends LibraryGraphNodeBase {
 export interface LibraryGraphAttachmentNode extends LibraryGraphNodeBase {
   kind: 'attachment'
   path: string
-  fileName?: string
-  contentType?: string
+  fileName?: string | undefined
+  contentType?: string | undefined
 }
 
 export interface LibraryGraphNodeRef {
@@ -270,14 +270,14 @@ export interface LibraryGraphCollectionMediaEdge {
   kind: 'collection-media'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  order?: number
+  order?: number | undefined
 }
 
 export interface LibraryGraphMediaTagEdge {
   kind: 'media-tag'
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
-  order?: number
+  order?: number | undefined
 }
 
 /** Role vocabulary is per media type; the host checks it against the `from` node. */
@@ -290,7 +290,7 @@ export interface LibraryGraphMediaCompanyEdge {
     | LibraryAnimeCompanyRole
     | LibraryComicCompanyRole
     | LibraryNovelCompanyRole
-  order?: number
+  order?: number | undefined
 }
 
 export interface LibraryGraphMediaPersonEdge {
@@ -299,8 +299,8 @@ export interface LibraryGraphMediaPersonEdge {
   to: LibraryGraphNodeRef
   role:
     LibraryGamePersonRole | LibraryAnimePersonRole | LibraryComicPersonRole | LibraryNovelPersonRole
-  order?: number
-  note?: string
+  order?: number | undefined
+  note?: string | undefined
 }
 
 /** Role vocabulary is per media type; the host checks it against the `from` node. */
@@ -313,8 +313,8 @@ export interface LibraryGraphMediaCharacterEdge {
     | LibraryAnimeCharacterRole
     | LibraryComicCharacterRole
     | LibraryNovelCharacterRole
-  order?: number
-  note?: string
+  order?: number | undefined
+  note?: string | undefined
 }
 
 /**
@@ -329,7 +329,7 @@ export interface LibraryGraphMediaCastEdge {
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
   person: LibraryGraphNodeRef
-  note?: string
+  note?: string | undefined
 }
 
 export interface LibraryGraphCharacterPersonEdge {
@@ -337,8 +337,8 @@ export interface LibraryGraphCharacterPersonEdge {
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
   role: LibraryCharacterPersonRole
-  order?: number
-  note?: string
+  order?: number | undefined
+  note?: string | undefined
 }
 
 /**
@@ -353,8 +353,8 @@ export interface LibraryGraphMediaMediaEdge {
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
   type: LibraryMediaRelationType
-  note?: string
-  order?: number
+  note?: string | undefined
+  order?: number | undefined
 }
 
 /**
@@ -368,8 +368,8 @@ export interface LibraryGraphCompanyCompanyEdge {
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
   type: LibraryCompanyRelationType
-  note?: string
-  order?: number
+  note?: string | undefined
+  order?: number | undefined
 }
 
 export interface LibraryGraphMediaNoteEdge {
@@ -396,8 +396,8 @@ export interface LibraryGraphMediaAttachmentEdge {
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
   slot: LibraryGraphMediaAttachmentSlot
-  replace?: boolean
-  saveBackup?: LibraryGraphSaveBackupInput
+  replace?: boolean | undefined
+  saveBackup?: LibraryGraphSaveBackupInput | undefined
 }
 
 /** Anime episodes only; see {@link LIBRARY_GRAPH_UNIT_ATTACHMENT_SLOTS}. */
@@ -406,7 +406,7 @@ export interface LibraryGraphUnitAttachmentEdge {
   from: LibraryGraphNodeRef
   to: LibraryGraphNodeRef
   slot: LibraryGraphUnitAttachmentSlot
-  replace?: boolean
+  replace?: boolean | undefined
 }
 
 export interface LibraryGraphSaveBackupInput {
@@ -416,7 +416,7 @@ export interface LibraryGraphSaveBackupInput {
 }
 
 export interface LibraryGraphResult {
-  requestId?: string
+  requestId?: string | undefined
   mode: LibraryGraphResultMode
   startedAt: number
   finishedAt: number
@@ -429,10 +429,10 @@ export interface LibraryGraphResult {
 export interface LibraryGraphNodeResult {
   key: string
   kind: LibraryGraphNodeKind
-  mediaType?: LibraryMediaType
-  entityId?: string
+  mediaType?: LibraryMediaType | undefined
+  entityId?: string | undefined
   action: LibraryGraphResultAction
-  diagnostics?: readonly LibraryGraphDiagnostic[]
+  diagnostics?: readonly LibraryGraphDiagnostic[] | undefined
 }
 
 export interface LibraryGraphEdgeResult {
@@ -440,13 +440,13 @@ export interface LibraryGraphEdgeResult {
   fromKey: string
   toKey: string
   action: LibraryGraphResultAction
-  diagnostics?: readonly LibraryGraphDiagnostic[]
+  diagnostics?: readonly LibraryGraphDiagnostic[] | undefined
 }
 
 export interface LibraryGraphDiagnostic {
   level: LibraryGraphDiagnosticLevel
   code: string
   message: string
-  nodeKey?: string
-  edgeKind?: LibraryGraphEdgeKind
+  nodeKey?: string | undefined
+  edgeKind?: LibraryGraphEdgeKind | undefined
 }

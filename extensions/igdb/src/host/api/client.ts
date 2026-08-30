@@ -1,13 +1,10 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import { IgdbApiError, normalizeIgdbApiError } from './errors'
 import type { IgdbTokenResponse } from './types'
 import type { CredentialStore } from '../auth/credentials'
@@ -15,7 +12,7 @@ import type { IgdbSettingsV1 } from '../config/schema'
 import { m } from '../i18n'
 import { IGDB_ID_CHUNK_SIZE, IGDB_QUERY_LIMIT, IGDB_USER_AGENT } from '../utils/constants'
 import { IgdbExtensionError } from '../utils/errors'
-import { chunk, omitUndefined } from '../utils/object'
+import { chunk } from '../utils/object'
 
 /** Official limits: 4 requests per second, at most 8 open requests. */
 const RATE_LIMIT: { maxRequests: number; windowMs: number; maxConcurrent: number } = {
@@ -105,7 +102,7 @@ export class IgdbClient {
     let refreshedToken = false
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         const credential = await this.requireCredential()
@@ -127,7 +124,7 @@ export class IgdbClient {
                 timeoutMs: settings.client.timeoutMs,
                 responseType: 'json'
               },
-              omitUndefined({ signal: options.signal })
+              { signal: options.signal }
             ),
           options.signal
         )
@@ -142,7 +139,7 @@ export class IgdbClient {
 
         if (!response.ok) {
           if (shouldRetryStatus(response.status) && attempt < settings.client.retryCount) {
-            await delay(resolveRetryDelayMs(attempt), options.signal)
+            await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
             continue
           }
 
@@ -153,8 +150,8 @@ export class IgdbClient {
       } catch (error) {
         // Must precede the retry branch: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof IgdbExtensionError) {
@@ -163,7 +160,7 @@ export class IgdbClient {
 
         this.logger.debug('IGDB request attempt failed.', { endpoint, attempt })
         if (attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }
@@ -203,7 +200,7 @@ export class IgdbClient {
             timeoutMs: settings.client.timeoutMs,
             responseType: 'json'
           },
-          omitUndefined({ signal: options.signal })
+          { signal: options.signal }
         ),
       options.signal
     )

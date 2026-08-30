@@ -2,16 +2,15 @@ import type { ExtensionStorage } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import type { BangumiMe } from '../api/types'
 import { BANGUMI_STORAGE_KEYS } from '../utils/ids'
-import type { OAuthRelayTokenStatus } from '@kisaki3/extension-sdk'
+import type { OAuthRelayTokenStatus } from './oauth-relay'
 import type { TokenService } from './token-service'
-import { omitUndefined } from '../utils/object'
 
 export interface BangumiAccountSnapshotV1 {
   version: 1
   id: number
   username: string
   nickname: string
-  avatarUrl?: string
+  avatarUrl?: string | undefined
   updatedAt: number
 }
 
@@ -57,14 +56,14 @@ export class AccountService {
 }
 
 function toAccountSnapshot(me: BangumiMe): BangumiAccountSnapshotV1 {
-  return omitUndefined({
+  return {
     version: 1,
     id: me.id,
     username: me.username,
     nickname: me.nickname || me.username,
     avatarUrl: me.avatar?.large ?? me.avatar?.medium ?? me.avatar?.small,
     updatedAt: Date.now()
-  })
+  }
 }
 
 function normalizeAccountSnapshot(value: unknown): BangumiAccountSnapshotV1 | undefined {

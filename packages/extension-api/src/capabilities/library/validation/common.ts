@@ -97,7 +97,7 @@ export function validateRankedEntityFields(
 export function validateLibraryEntityReference(
   value: unknown,
   path: string,
-  expectedEntityType?: LibraryEntityType
+  expectedEntityType?: LibraryEntityType | undefined
 ): ValidationIssue[] {
   if (!isRecord(value)) {
     return [{ path, message: 'Library entity reference must be an object.' }]

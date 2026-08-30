@@ -1,4 +1,4 @@
-import type { SettingsStore } from '@kisaki3/extension-sdk'
+import type { SettingsStore } from '../utils/settings-store'
 import { matchesHttpUrlFormat, type NeodbSyncVisibility } from '../../shared/settings'
 import { DEFAULT_NEODB_SETTINGS } from './defaults'
 

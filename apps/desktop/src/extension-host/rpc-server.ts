@@ -12,7 +12,8 @@ import {
   type RpcHandshakeRequest,
   type RpcHandshakeResponse,
   type RpcParams,
-  type RpcResult
+  type RpcResult,
+  type UndefinedTolerant
 } from '@kisaki3/extension-api'
 import { RpcChannel, type RpcRequestContext, type RpcRequestOptions } from './protocol'
 
@@ -20,7 +21,11 @@ export class ExtensionHostRpcServer {
   private readonly channel: RpcChannel
 
   constructor(sender: (envelope: RpcEnvelope) => void) {
-    this.channel = new RpcChannel(sender)
+    this.channel = new RpcChannel(sender, {
+      reportEventListenerError: (eventName, error) => {
+        console.error(`[ExtensionHost] Event "${eventName}" listener failed:`, error)
+      }
+    })
   }
 
   onMessage(message: unknown): Promise<void> {
@@ -42,12 +47,16 @@ export class ExtensionHostRpcServer {
     )
   }
 
+  // Constructing sides go through UndefinedTolerant (the wire drops undefined
+  // members); receiving sides keep the exact-optional shape the wire delivers.
   handle<K extends MainToHostRpcMethod>(
     method: K,
     handler: (
       params: RpcParams<MainToHostRpcRequestMap, K>,
       context: RpcRequestContext
-    ) => Promise<RpcResult<MainToHostRpcRequestMap, K>> | RpcResult<MainToHostRpcRequestMap, K>
+    ) =>
+      | Promise<UndefinedTolerant<RpcResult<MainToHostRpcRequestMap, K>>>
+      | UndefinedTolerant<RpcResult<MainToHostRpcRequestMap, K>>
   ): void {
     this.channel.handle(method, (params, context) =>
       handler(params as RpcParams<MainToHostRpcRequestMap, K>, context)
@@ -56,13 +65,16 @@ export class ExtensionHostRpcServer {
 
   requestMain<K extends HostToMainRpcMethod>(
     method: K,
-    params: RpcParams<HostToMainRpcRequestMap, K>,
+    params: UndefinedTolerant<RpcParams<HostToMainRpcRequestMap, K>>,
     options?: RpcRequestOptions
   ): Promise<RpcResult<HostToMainRpcRequestMap, K>> {
     return this.channel.request<RpcResult<HostToMainRpcRequestMap, K>>(method, params, options)
   }
 
-  sendEvent<K extends HostToMainRpcEvent>(name: K, payload: HostToMainRpcEventMap[K]): void {
+  sendEvent<K extends HostToMainRpcEvent>(
+    name: K,
+    payload: UndefinedTolerant<HostToMainRpcEventMap[K]>
+  ): void {
     this.channel.sendEvent(name, payload)
   }
 

@@ -41,9 +41,14 @@ export function createBangumiJobSummary(input: BangumiJobSummaryInput): BangumiJ
   }
 }
 
+/** Construction-side context: explicitly-undefined members read as absent. */
+export type BangumiJobErrorContext = {
+  [K in keyof BangumiJobError]?: BangumiJobError[K] | undefined
+}
+
 export function createJobError(
   error: unknown,
-  context: Partial<BangumiJobError> = {}
+  context: BangumiJobErrorContext = {}
 ): BangumiJobError {
   const base = toErrorShape(error)
   return normalizeJobError({
@@ -79,7 +84,7 @@ function normalizeCounters(counters: Record<string, number> | undefined): Record
 }
 
 function normalizeJobError(
-  error: Partial<BangumiJobError> & { code: string; message: string }
+  error: BangumiJobErrorContext & { code: string; message: string }
 ): BangumiJobError {
   return {
     scope: error.scope || null,

@@ -54,7 +54,7 @@ async function validateFontPackage(root: string, stylesheet: string): Promise<vo
   }
 
   for (const referencedFile of referencedFiles) {
-    await stat(path.resolve(root, referencedFile))
+    await stat(path.resolve(root, referencedFile!))
   }
 
   const files = await readdir(path.join(root, 'files'))

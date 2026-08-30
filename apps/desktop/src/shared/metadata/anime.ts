@@ -18,15 +18,15 @@ import type { ExternalId, Tag } from './common'
  */
 export interface AnimeInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other titles this entry is known by, such as localized names and abbreviations. */
-  aliases?: string[]
-  releaseDate?: PartialDate
-  description?: string
-  format?: AnimeFormat
+  aliases?: string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  format?: AnimeFormat | undefined
   /** Episode count declared by the source; stored episode rows stay authoritative. */
-  totalEpisodes?: number
-  externalSites?: ExternalSite[]
+  totalEpisodes?: number | undefined
+  externalSites?: ExternalSite[] | undefined
   externalIds: ExternalId[]
 }
 
@@ -34,7 +34,7 @@ export interface AnimeInfo {
  * Core anime metadata used across identity and normalization layers.
  */
 export interface CoreAnimeMetadata extends AnimeInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }
 
 /**
@@ -46,14 +46,14 @@ export interface CoreAnimeMetadata extends AnimeInfo {
 export interface AnimeEpisodeInfo {
   number: number
   type: AnimeEpisodeType
-  name?: string
-  originalName?: string
-  airDate?: PartialDate
-  description?: string
-  durationMs?: number
+  name?: string | undefined
+  originalName?: string | undefined
+  airDate?: PartialDate | undefined
+  description?: string | undefined
+  durationMs?: number | undefined
   /** Still frame of this episode from metadata, not a render of the local file. */
-  stillUrl?: string
-  externalIds?: ExternalId[]
+  stillUrl?: string | undefined
+  externalIds?: ExternalId[] | undefined
 }
 
 /** Numbering an anime episode is identified by, whether stated or stored. */

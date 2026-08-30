@@ -17,7 +17,12 @@ import {
 } from './installations'
 import { ExtensionInstallerManager } from './installer'
 import { registerExtensionIpc } from './ipc'
-import { ExtensionIconManager, ExtensionUiAssetServer, ExtensionWebviewFontServer } from './assets'
+import {
+  ExtensionFileAssetServer,
+  ExtensionIconManager,
+  ExtensionUiAssetServer,
+  ExtensionWebviewFontServer
+} from './assets'
 import {
   ExtensionPackageArchiveStore,
   ExtensionPackageCommitter,
@@ -125,6 +130,11 @@ export class ExtensionService implements IService<'extension'> {
     })
     uiAssetServer.registerProtocolHandler()
 
+    const fileAssetServer = new ExtensionFileAssetServer({
+      resolvePackageRoot: (extensionId) => this.installations?.get(extensionId)?.packagePath ?? null
+    })
+    fileAssetServer.registerProtocolHandler()
+
     const webviewFontServer = new ExtensionWebviewFontServer()
     webviewFontServer.registerProtocolHandler()
 
@@ -208,6 +218,16 @@ export class ExtensionService implements IService<'extension'> {
       getUiLocale: () => container.get('i18n').locale,
       onRuntimeStateChanged: (extensionId, state) =>
         this.emitRuntimeStateChanged(extensionId, state)
+    })
+    // Keep the host runtime's cached uiLocale current (`kisaki.runtime.uiLocale`).
+    container.get('i18n').hooks.uiLocaleChanged.tap(({ effective }) => {
+      this.runtime.sendEventToHost('runtime.uiLocaleChanged', { uiLocale: effective })
+    })
+    // Menu sessions belong to the renderer document that resolved them; when
+    // that document ends, release them on both sides instead of leaking until
+    // the contribution or runtime goes away.
+    container.get('window').hooks.mainWindowDocumentGone.tap(() => {
+      void this.contributions.releaseAllEntityMenuSessions()
     })
     this.developmentWatcher = new ExtensionDevelopmentWatcher(
       container.get('file-watch'),

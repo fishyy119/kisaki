@@ -3,10 +3,10 @@ export type NotifyMode = 'toast' | 'native' | 'auto'
 export type NotificationKind = 'success' | 'info' | 'warning' | 'error' | 'loading'
 
 export interface NotifyOptions {
-  message?: string
-  mode?: NotifyMode
-  id?: string
-  closable?: boolean
+  message?: string | undefined
+  mode?: NotifyMode | undefined
+  id?: string | undefined
+  closable?: boolean | undefined
 }
 
 export interface NotificationHandle {
@@ -23,7 +23,7 @@ export interface NotifyCapability {
     id: string,
     kind: NotificationKind,
     title: string,
-    options?: string | NotifyOptions
+    options?: string | NotifyOptions | undefined
   ): Promise<void>
   dismiss(id: string): Promise<void>
 }

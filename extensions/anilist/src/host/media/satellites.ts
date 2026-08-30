@@ -15,7 +15,6 @@ import type {
   ScrapedPersonMetadata
 } from '@kisaki3/extension-sdk'
 import type { AnilistCharacterNode, AnilistStaffNode } from '../api/types'
-import { omitUndefined } from '../utils/object'
 import { parseFuzzyDate } from './format/dates'
 import { selectPersonNames } from './format/names'
 import { mapGender } from './format/roles'
@@ -37,7 +36,7 @@ export function toPersonInfo(
 
   const site = anilistSite(node.siteUrl)
 
-  return omitUndefined({
+  return {
     name: names.name,
     originalName: names.originalName,
     aliases: names.aliases,
@@ -46,7 +45,7 @@ export function toPersonInfo(
     gender: mapGender(node.gender),
     description: normalizeDescription(node.description),
     externalSites: site ? [site] : undefined
-  })
+  }
 }
 
 export function toPersonMetadata(
@@ -60,11 +59,11 @@ export function toPersonMetadata(
 
   const photos = dedupeUrls([node.image?.large])
 
-  return omitUndefined({
+  return {
     ...info,
     identity: { externalIds: [toAnilistExternalId(node.id)] },
     photos: photos.length > 0 ? photos : undefined
-  })
+  }
 }
 
 export function toCharacterInfo(
@@ -78,7 +77,7 @@ export function toCharacterInfo(
 
   const site = anilistSite(node.siteUrl)
 
-  return omitUndefined({
+  return {
     name: names.name,
     originalName: names.originalName,
     aliases: names.aliases,
@@ -88,7 +87,7 @@ export function toCharacterInfo(
     bloodType: parseBloodType(node.bloodType),
     description: normalizeDescription(node.description),
     externalSites: site ? [site] : undefined
-  })
+  }
 }
 
 export function toCharacterMetadata(
@@ -102,11 +101,11 @@ export function toCharacterMetadata(
 
   const photos = dedupeUrls([node.image?.large])
 
-  return omitUndefined({
+  return {
     ...info,
     identity: { externalIds: [toAnilistExternalId(node.id)] },
     photos: photos.length > 0 ? photos : undefined
-  })
+  }
 }
 
 /** A voice credit stated on a media character edge. */

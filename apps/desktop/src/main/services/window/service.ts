@@ -45,7 +45,11 @@ export class WindowService implements INonDomainService<'window'> {
     const ipcService = container.get('ipc')
     const dbService = container.get('db')
 
-    this.mainWindow.init({ ipcService, dbService })
+    this.mainWindow.init({
+      ipcService,
+      dbService,
+      onDocumentGone: (cause) => this.hooks.mainWindowDocumentGone.dispatch({ cause })
+    })
     this.tray.init({ focusMainWindow: () => this.mainWindow.focus() })
     registerWindowIpc(this, ipcService)
     app.on('before-quit', this.onBeforeQuit)

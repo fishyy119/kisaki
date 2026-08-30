@@ -6,7 +6,6 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { TmdbClient } from '../../api/client'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { parseTmdbDate } from '../format/dates'
 import { buildImageUrl, dedupeUrls, selectProfileUrls } from '../format/images'
 import { mapTmdbGender } from '../format/roles'
@@ -77,7 +76,7 @@ async function buildPersonInfo(loaders: TmdbPersonLoaders): Promise<ScrapedPerso
   // without a name.
   const name = trimToUndefined(person.name) ?? `TMDB ${person.id}`
 
-  return omitUndefined({
+  return {
     name,
     birthDate: parseTmdbDate(person.birthday),
     deathDate: parseTmdbDate(person.deathday),
@@ -88,7 +87,7 @@ async function buildPersonInfo(loaders: TmdbPersonLoaders): Promise<ScrapedPerso
       imdbNameSite(person.imdb_id),
       homepageSite(person.homepage)
     ])
-  })
+  }
 }
 
 async function buildPersonPhotos(

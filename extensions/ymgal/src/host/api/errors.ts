@@ -1,6 +1,5 @@
 import { m } from '../i18n'
 import { YmgalExtensionError, type YmgalErrorCode } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 
 export interface YmgalApiErrorOptions {
   status?: number
@@ -66,24 +65,16 @@ export function normalizeYmgalHttpError(status: number, path: string): YmgalApiE
 /** Classifies a 2xx response whose envelope reports a business failure. */
 export function normalizeYmgalEnvelopeError(apiCode: number, path: string): YmgalApiError {
   if (NOT_FOUND_API_CODES.has(apiCode)) {
-    return new YmgalApiError(
-      'ymgal_not_found',
-      m().errors.notFound,
-      omitUndefined({ apiCode, path })
-    )
+    return new YmgalApiError('ymgal_not_found', m().errors.notFound, { apiCode, path })
   }
 
   if (apiCode === 401 || apiCode === 403) {
-    return new YmgalApiError('auth_failed', m().errors.authFailed, omitUndefined({ apiCode, path }))
+    return new YmgalApiError('auth_failed', m().errors.authFailed, { apiCode, path })
   }
 
   if (apiCode === 429) {
-    return new YmgalApiError(
-      'ymgal_rate_limited',
-      m().errors.rateLimited,
-      omitUndefined({ apiCode, path })
-    )
+    return new YmgalApiError('ymgal_rate_limited', m().errors.rateLimited, { apiCode, path })
   }
 
-  return new YmgalApiError('ymgal_rejected', m().errors.rejected, omitUndefined({ apiCode, path }))
+  return new YmgalApiError('ymgal_rejected', m().errors.rejected, { apiCode, path })
 }

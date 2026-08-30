@@ -185,7 +185,7 @@ function handleDelete() {
 function handleMoveUp(index: number) {
   if (index === 0) return
   const typeLinks = [...currentTypeLinks.value]
-  ;[typeLinks[index - 1], typeLinks[index]] = [typeLinks[index], typeLinks[index - 1]]
+  ;[typeLinks[index - 1], typeLinks[index]] = [typeLinks[index]!, typeLinks[index - 1]!]
   typeLinks.forEach((link, i) => {
     link.orderInCollection = i
   })
@@ -196,7 +196,7 @@ function handleMoveUp(index: number) {
 function handleMoveDown(index: number) {
   if (index >= currentTypeLinks.value.length - 1) return
   const typeLinks = [...currentTypeLinks.value]
-  ;[typeLinks[index], typeLinks[index + 1]] = [typeLinks[index + 1], typeLinks[index]]
+  ;[typeLinks[index], typeLinks[index + 1]] = [typeLinks[index + 1]!, typeLinks[index]!]
   typeLinks.forEach((link, i) => {
     link.orderInCollection = i
   })

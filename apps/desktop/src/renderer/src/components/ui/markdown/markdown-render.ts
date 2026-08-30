@@ -33,7 +33,8 @@ const defaultLinkOpen =
   ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options))
 
 md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
-  const token = tokens[idx]
+  // markdown-it always passes a valid token index into renderer rules.
+  const token = tokens[idx]!
 
   const hrefIndex = token.attrIndex('href')
   const href = hrefIndex < 0 || !token.attrs ? undefined : token.attrs[hrefIndex]?.[1]
@@ -43,7 +44,7 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
     if (targetIndex < 0) {
       token.attrPush(['target', '_blank'])
     } else if (token.attrs) {
-      token.attrs[targetIndex][1] = '_blank'
+      token.attrs[targetIndex]![1] = '_blank'
     }
 
     const relIndex = token.attrIndex('rel')
@@ -52,7 +53,7 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
     if (relIndex < 0) {
       token.attrPush(['rel', nextRel])
     } else if (token.attrs) {
-      token.attrs[relIndex][1] = nextRel
+      token.attrs[relIndex]![1] = nextRel
     }
   }
 

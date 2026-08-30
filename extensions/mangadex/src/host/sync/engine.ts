@@ -3,8 +3,6 @@ import type { MangadexClient } from '../api/client'
 import type { MangadexSettingsStore } from '../config/schema'
 import { getComic, readMangadexId } from '../library'
 import { createSyncFingerprint, type SyncStateStore } from './state'
-import type { SyncSuppressor } from './suppressor'
-
 /** Local statuses map onto MangaDex reading statuses one to one. */
 export function toMangadexStatus(status: LibraryMediaStatus): string {
   switch (status) {
@@ -55,10 +53,9 @@ export type SyncItemStatus =
   | 'synced'
   | 'skippedDisabled'
   | 'skippedMissingItem'
-  | 'skippedNoMangadexId'
+  | 'skippedNoRemoteId'
   | 'skippedNoStatus'
   | 'skippedNoChange'
-  | 'skippedSuppressed'
 
 export interface SyncItemResult {
   status: SyncItemStatus
@@ -70,7 +67,6 @@ export interface SyncEngineDependencies {
   settingsStore: MangadexSettingsStore
   client: MangadexClient
   stateStore: SyncStateStore
-  suppressor: SyncSuppressor
 }
 
 /**
@@ -100,7 +96,7 @@ export class SyncEngine {
 
     const mangaId = readMangadexId(entry.externalIds ?? [])
     if (mangaId === null) {
-      return { status: 'skippedNoMangadexId', comicId }
+      return { status: 'skippedNoRemoteId', comicId }
     }
 
     if (!entry.status) {
@@ -117,10 +113,6 @@ export class SyncEngine {
       pushScore: settings.sync.pushScore
     })
 
-    if (this.deps.suppressor.match(comicId, fingerprint)) {
-      return { status: 'skippedSuppressed', comicId, mangaId }
-    }
-
     if ((await this.deps.stateStore.getLastFingerprint(comicId)) === fingerprint) {
       return { status: 'skippedNoChange', comicId, mangaId }
     }
@@ -129,8 +121,10 @@ export class SyncEngine {
     if (rating !== undefined) {
       await this.deps.client.updateRating(mangaId, rating, { signal: options.signal })
     }
-    await this.deps.stateStore.recordSuccessfulSync(comicId, mangaId, fingerprint)
-    this.deps.suppressor.suppressFingerprint(comicId, fingerprint)
+    await this.deps.stateStore.recordSuccessfulSync(comicId, {
+      fingerprint,
+      updatedAt: Date.now()
+    })
 
     return { status: 'synced', comicId, mangaId }
   }

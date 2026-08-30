@@ -10,7 +10,6 @@ import type {
 import type { BangumiClient } from '../../api/client'
 import type { BangumiSubject } from '../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
-import { omitUndefined } from '../../utils/object'
 import { parseBangumiId } from '../format/ids'
 import { normalizeKeyText } from '../format/text'
 import { getBangumiSubjectType, type BangumiMediaScope } from '../../../shared/scopes'
@@ -20,9 +19,9 @@ const SEARCH_RESULT_LIMIT = 25
 interface SubjectSearchResult {
   id: string
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Stated only by scopes whose search spans works and their volumes. */
-  grain?: MediaEntryGrain
+  grain?: MediaEntryGrain | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -92,12 +91,12 @@ export abstract class BangumiSubjectProvider<TSearchResult extends SubjectSearch
   ): IdResolvedTarget {
     const normalizedId = id.trim()
 
-    return omitUndefined({
+    return {
       id: normalizedId,
       cacheKey: normalizedId,
       resolveName: resolveName?.trim() || undefined,
       identity
-    })
+    }
   }
 
   private findKnownSubjectId(lookup: ScraperLookup): string | undefined {

@@ -20,15 +20,18 @@ import type {
   NetworkResponse,
   RpcParams,
   RpcResult,
+  UiLocale,
+  UndefinedTolerant,
   WebviewHandle,
   WebviewOpenOptions
 } from '@kisaki3/extension-api'
 import type { ActiveExtensionScope } from './types'
 import { toTaskRunFailureErrorPayload } from './utils/task-runs'
 
-type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
-  RpcParams<HostToMainRpcRequestMap, K>,
-  'runtimeHandle'
+// Callers construct outbound params, so optional members tolerate explicit
+// undefined; the wire normalizer drops them before transport.
+type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = UndefinedTolerant<
+  Omit<RpcParams<HostToMainRpcRequestMap, K>, 'runtimeHandle'>
 >
 
 type LibraryEntityPrefix =
@@ -80,6 +83,7 @@ interface LibraryEntityMethods {
 
 export interface KisakiApiBridgeDelegate {
   requireCurrentScope(): ActiveExtensionScope
+  getUiLocale(): UiLocale
   requestMain<K extends HostToMainRpcMethod>(
     scope: ActiveExtensionScope,
     method: K,
@@ -542,6 +546,9 @@ export function createKisakiApi(
       }
     },
     runtime: {
+      get uiLocale() {
+        return delegate.getUiLocale()
+      },
       getInfo: async () => {
         return (await requestMain('capabilities.runtime.getInfo', {})).info
       },
@@ -613,6 +620,13 @@ export function createKisakiApi(
                 options
               })
             ).start
+        },
+        update: {
+          fromScraper: async (input) =>
+            (await requestMain('capabilities.ingest.anime.update.fromScraper', { input })).result,
+          startFromScraper: async (input) =>
+            (await requestMain('capabilities.ingest.anime.update.startFromScraper', { input }))
+              .start
         }
       },
       comic: {
@@ -633,6 +647,13 @@ export function createKisakiApi(
                 options
               })
             ).start
+        },
+        update: {
+          fromScraper: async (input) =>
+            (await requestMain('capabilities.ingest.comic.update.fromScraper', { input })).result,
+          startFromScraper: async (input) =>
+            (await requestMain('capabilities.ingest.comic.update.startFromScraper', { input }))
+              .start
         }
       },
       novel: {
@@ -653,6 +674,13 @@ export function createKisakiApi(
                 options
               })
             ).start
+        },
+        update: {
+          fromScraper: async (input) =>
+            (await requestMain('capabilities.ingest.novel.update.fromScraper', { input })).result,
+          startFromScraper: async (input) =>
+            (await requestMain('capabilities.ingest.novel.update.startFromScraper', { input }))
+              .start
         }
       }
     },

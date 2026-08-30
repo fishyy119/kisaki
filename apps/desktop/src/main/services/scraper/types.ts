@@ -14,14 +14,14 @@ import type { ScrapedEntityIdentity, ScraperSessionResult } from '@shared/scrape
  */
 export interface ScraperProviderContext {
   locale: ContentLocale
-  signal?: AbortSignal
+  signal?: AbortSignal | undefined
 }
 
 /**
  * Caller-supplied options for a handler-level scraper invocation.
  */
 export interface ScraperInvocationOptions {
-  signal?: AbortSignal
+  signal?: AbortSignal | undefined
 }
 
 /**

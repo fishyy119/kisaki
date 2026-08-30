@@ -335,7 +335,7 @@ function handleToggleSortDirection() {
         :value="cat.id"
       >
         <Icon
-          :icon="CATEGORY_ICONS[cat.id]"
+          :icon="CATEGORY_ICONS[cat.id]!"
           class="size-3.5"
         />
         {{ cat.label }}

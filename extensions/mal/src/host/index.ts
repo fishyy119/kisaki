@@ -1,9 +1,5 @@
-import {
-  defineExtension,
-  kisaki,
-  SettingsStore,
-  type ExtensionLogger
-} from '@kisaki3/extension-sdk'
+import { defineExtension, kisaki, type ExtensionLogger } from '@kisaki3/extension-sdk'
+import { SettingsStore } from './utils/settings-store'
 import { MalMirrorClient } from './api/mirror-client'
 import { MalOfficialClient } from './api/official-client'
 import { MalOauthFlow } from './auth/oauth-flow'
@@ -11,25 +7,19 @@ import { TokenManager } from './auth/token-manager'
 import { TokenStore } from './auth/token-store'
 import { createDefaultMalSettings } from './config/defaults'
 import { normalizeMalSettings } from './config/schema'
-import { m, setHostUiLocale } from './i18n'
+import { m } from './i18n'
 import { MalAnimeProvider, MalComicProvider, MalNovelProvider } from './media/media-providers'
 import type { MalRuntime } from './media/runtime'
 import { registerMalSettingsUi } from './settings'
 import { SyncEngine } from './sync/engine'
 import { SyncStateStore } from './sync/state'
 import { SyncSubscription } from './sync/subscription'
-import { SyncSuppressor } from './sync/suppressor'
 import { MalTasks } from './tasks'
 import { MalExtensionError, toSafeErrorLog } from './utils/errors'
 import { MAL_STORAGE_KEYS } from './utils/ids'
 
 export default defineExtension({
   async activate(context) {
-    setHostUiLocale((await kisaki.runtime.getInfo()).uiLocale)
-    context.hooks.on('app.ui-locale.changed', ({ effective }) => {
-      setHostUiLocale(effective)
-    })
-
     const settingsStore = new SettingsStore(context.storage, MAL_STORAGE_KEYS.settings, {
       normalize: normalizeMalSettings,
       createDefault: createDefaultMalSettings
@@ -92,17 +82,14 @@ export default defineExtension({
     oauthFlowRef.current = oauthFlow
 
     const syncStateStore = new SyncStateStore(context.storage)
-    const syncSuppressor = new SyncSuppressor()
     const syncEngine = new SyncEngine({
       settingsStore,
       client: official,
-      stateStore: syncStateStore,
-      suppressor: syncSuppressor
+      stateStore: syncStateStore
     })
     const tasks = new MalTasks({
       client: official,
       engine: syncEngine,
-      suppressor: syncSuppressor,
       logger: context.logger
     })
 
@@ -121,6 +108,7 @@ export default defineExtension({
     context.subscriptions.add(
       new SyncSubscription({
         hooks: context.hooks,
+        selfActor: `extension:${context.extension.id}`,
         settingsStore,
         engine: syncEngine,
         logger: context.logger

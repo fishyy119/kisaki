@@ -33,7 +33,6 @@ import type {
 import type { AnilistClient } from '../api/client'
 import type { AnilistMedia } from '../api/types'
 import type { AnilistSettingsV1 } from '../config/schema'
-import { omitUndefined } from '../utils/object'
 import { ANILIST_SOURCE_ID } from '../utils/constants'
 import { parseFuzzyDate } from './format/dates'
 import { selectMediaTitles } from './format/names'
@@ -239,11 +238,11 @@ async function buildIdentity(loaders: AnilistMediaLoaders): Promise<ScrapedEntit
 
 interface InfoCore {
   name: string
-  originalName?: string
-  aliases?: string[]
-  releaseDate?: PartialDate
-  description?: string
-  externalSites?: ExternalSite[]
+  originalName?: string | undefined
+  aliases?: string[] | undefined
+  releaseDate?: PartialDate | undefined
+  description?: string | undefined
+  externalSites?: ExternalSite[] | undefined
 }
 
 async function buildInfoCore(
@@ -263,14 +262,14 @@ async function buildInfoCore(
 
   return {
     media,
-    core: omitUndefined({
+    core: {
       name: titles.name,
       originalName: titles.originalName,
       aliases: titles.aliases,
       releaseDate: parseFuzzyDate(media.startDate),
       description: normalizeDescription(media.description),
       externalSites: toOptionalSites(sites)
-    })
+    }
   }
 }
 
@@ -283,11 +282,11 @@ async function buildAnimeInfo(
     return undefined
   }
 
-  return omitUndefined({
+  return {
     ...built.core,
     format: mapAnimeFormat(built.media.format),
     totalEpisodes: readCount(built.media.episodes)
-  })
+  }
 }
 
 async function buildComicInfo(
@@ -299,12 +298,12 @@ async function buildComicInfo(
     return undefined
   }
 
-  return omitUndefined({
+  return {
     ...built.core,
     format: mapComicFormat(built.media.countryOfOrigin),
     totalVolumes: readCount(built.media.volumes),
     totalChapters: readCount(built.media.chapters)
-  })
+  }
 }
 
 async function buildNovelInfo(
@@ -316,11 +315,11 @@ async function buildNovelInfo(
     return undefined
   }
 
-  return omitUndefined({
+  return {
     ...built.core,
     format: mapNovelFormat(),
     totalVolumes: readCount(built.media.volumes)
-  })
+  }
 }
 
 /** Genres are AniList's own vocabulary; tags are community facts with flags. */
@@ -342,13 +341,11 @@ function buildTags(media: AnilistMedia): ScrapedTag[] {
       continue
     }
     seen.add(name)
-    tags.push(
-      omitUndefined({
-        name,
-        isSpoiler: tag?.isMediaSpoiler === true ? true : undefined,
-        isNsfw: tag?.isAdult === true ? true : undefined
-      })
-    )
+    tags.push({
+      name,
+      isSpoiler: tag?.isMediaSpoiler === true ? true : undefined,
+      isNsfw: tag?.isAdult === true ? true : undefined
+    })
   }
 
   return tags
@@ -375,13 +372,11 @@ async function buildCharacters(
       .map((actor) => toVoiceActorFact(actor, ctx))
       .filter((fact) => fact !== undefined)
 
-    facts.push(
-      omitUndefined({
-        ...metadata,
-        persons: voiceActors.length > 0 ? voiceActors : metadata.persons,
-        role: mapCharacterRole(edge.role)
-      })
-    )
+    facts.push({
+      ...metadata,
+      persons: voiceActors.length > 0 ? voiceActors : metadata.persons,
+      role: mapCharacterRole(edge.role)
+    })
   }
 
   return facts

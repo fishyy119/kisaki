@@ -3,16 +3,14 @@ import { MANGADEX_STORAGE_KEYS } from '../utils/ids'
 
 const MAX_FINGERPRINTS = 5000
 
-export interface SyncFingerprintRecord {
-  comicId: string
-  mangaId: string
+export interface SyncFingerprintEntry {
   fingerprint: string
   updatedAt: number
 }
 
 interface MangadexSyncStateV1 {
   version: 1
-  fingerprints: Record<string, SyncFingerprintRecord>
+  fingerprints: Record<string, SyncFingerprintEntry>
 }
 
 /**
@@ -29,9 +27,9 @@ export class SyncStateStore {
     return state.fingerprints[comicId]?.fingerprint
   }
 
-  async recordSuccessfulSync(comicId: string, mangaId: string, fingerprint: string): Promise<void> {
+  async recordSuccessfulSync(comicId: string, entry: SyncFingerprintEntry): Promise<void> {
     const state = await this.read()
-    state.fingerprints[comicId] = { comicId, mangaId, fingerprint, updatedAt: Date.now() }
+    state.fingerprints[comicId] = entry
     await this.storage.set(MANGADEX_STORAGE_KEYS.syncState, prune(state))
   }
 
@@ -67,21 +65,19 @@ function normalizeState(value: unknown): MangadexSyncStateV1 {
     return { version: 1, fingerprints: {} }
   }
 
-  const fingerprints: Record<string, SyncFingerprintRecord> = {}
-  for (const [comicId, record] of Object.entries(value.fingerprints)) {
+  const fingerprints: Record<string, SyncFingerprintEntry> = {}
+  for (const [key, record] of Object.entries(value.fingerprints)) {
     if (!isRecord(record)) {
       continue
     }
 
+    const id = key.trim()
     const fingerprint = typeof record.fingerprint === 'string' ? record.fingerprint : ''
-    const mangaId = typeof record.mangaId === 'string' ? record.mangaId : ''
-    if (!fingerprint || !mangaId) {
+    if (!id || !fingerprint) {
       continue
     }
 
-    fingerprints[comicId] = {
-      comicId,
-      mangaId,
+    fingerprints[id] = {
       fingerprint,
       updatedAt:
         typeof record.updatedAt === 'number' && Number.isFinite(record.updatedAt)

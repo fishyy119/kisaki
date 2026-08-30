@@ -19,7 +19,7 @@ import {
   TMDB_NAME_SEARCH_SERIES_LIMIT,
   TMDB_SOURCE_ID
 } from '../../utils/constants'
-import { mapWithConcurrency, omitUndefined } from '../../utils/object'
+import { mapWithConcurrency } from '../../utils/object'
 import { parseTmdbDate } from '../format/dates'
 import {
   composeSeasonEntryName,
@@ -251,14 +251,14 @@ function toResult(
   const id = formatTmdbSubjectId(ref)
   const displayName = trimToUndefined(name) ?? String(fallbackId)
 
-  return omitUndefined({
+  return {
     id,
     name: displayName,
     originalName: originalName !== displayName ? trimToUndefined(originalName) : undefined,
     releaseDate: parseTmdbDate(airDate),
     format,
     externalIds: [{ source: TMDB_SOURCE_ID, id }]
-  })
+  }
 }
 
 function byPopularity(left: { popularity?: number }, right: { popularity?: number }): number {

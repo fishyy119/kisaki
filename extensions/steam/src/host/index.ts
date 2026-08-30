@@ -1,9 +1,9 @@
-import { defineExtension, kisaki, SettingsStore } from '@kisaki3/extension-sdk'
+import { defineExtension, kisaki } from '@kisaki3/extension-sdk'
+import { SettingsStore } from './utils/settings-store'
 import { AppDetailsCache } from './api/cache'
 import { SteamClient } from './api/client'
 import { createDefaultSteamSettings } from './config/defaults'
 import { normalizeSteamSettings } from './config/schema'
-import { setHostUiLocale } from './i18n'
 import { SteamGameProvider } from './media/game/provider'
 import { registerSteamSettingsUi } from './settings'
 import { SteamTasks } from './tasks'
@@ -11,11 +11,6 @@ import { STEAM_STORAGE_KEYS } from './utils/ids'
 
 export default defineExtension({
   async activate(context) {
-    setHostUiLocale((await kisaki.runtime.getInfo()).uiLocale)
-    context.hooks.on('app.ui-locale.changed', ({ effective }) => {
-      setHostUiLocale(effective)
-    })
-
     const settingsStore = new SettingsStore(context.storage, STEAM_STORAGE_KEYS.settings, {
       normalize: normalizeSteamSettings,
       createDefault: createDefaultSteamSettings

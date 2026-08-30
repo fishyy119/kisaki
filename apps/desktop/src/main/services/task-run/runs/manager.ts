@@ -263,7 +263,22 @@ export class TaskRunManager {
   }
 
   fail(runId: string, error: unknown, result?: TaskRunFailureResult): void {
-    this.finish(runId, 'failed', {
+    const record = this.requireRecord(runId)
+
+    // Initiator knowledge adjudicates the terminal status: a failure reported
+    // after cancellation was requested is the cancellation surfacing through
+    // the work's error path, not a new outcome. Completion stays completion —
+    // work past its point of no return finished with a real result.
+    if (record.controller.signal.aborted || record.run.status === 'cancelling') {
+      log.info('Task run reported failure after cancellation; recording cancelled.', {
+        runId,
+        error: toSafeErrorMessage(error)
+      })
+      this.finishRecord(record, 'cancelled', sanitizeCompletionResult(result))
+      return
+    }
+
+    this.finishRecord(record, 'failed', {
       ...sanitizeCompletionResult(result),
       error: toSafeErrorMessage(error)
     })

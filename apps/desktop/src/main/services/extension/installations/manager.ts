@@ -1,6 +1,5 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { pathToFileURL } from 'node:url'
 import { app } from 'electron'
 import { mkdir, rm } from 'node:fs/promises'
 import { createLogger } from '@main/log'
@@ -31,6 +30,7 @@ import {
 import {
   type ExtensionIconManager,
   type ExtensionWebviewUiSource,
+  extensionFileUrl,
   resolveExtensionUiRootPath
 } from '../assets'
 import { resolveExtensionFilePath } from '@shared/extension/manifest'
@@ -655,9 +655,7 @@ function toExtensionInstalledPackageInfo(
     homepage: repositoryPackage?.homepage ?? entry.manifest?.homepage,
     iconUrl:
       registryIconUrl ??
-      (entry.manifest?.icon
-        ? pathToFileURL(resolveExtensionFilePath(entry.packagePath, entry.manifest.icon)).toString()
-        : undefined),
+      (entry.manifest?.icon ? extensionFileUrl(entry.id, entry.manifest.icon) : undefined),
     categories: repositoryPackage?.categories ?? entry.categories,
     enabled: entry.enabled,
     status: entry.status,

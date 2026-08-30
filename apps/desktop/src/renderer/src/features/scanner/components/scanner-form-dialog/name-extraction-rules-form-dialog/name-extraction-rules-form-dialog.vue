@@ -136,14 +136,14 @@ function createEnabledModel(ruleId: string) {
 function handleMoveUp(index: number) {
   if (index <= 0) return
   const newRules = [...localRules.value]
-  ;[newRules[index - 1], newRules[index]] = [newRules[index], newRules[index - 1]]
+  ;[newRules[index - 1], newRules[index]] = [newRules[index]!, newRules[index - 1]!]
   localRules.value = newRules
 }
 
 function handleMoveDown(index: number) {
   if (index >= localRules.value.length - 1) return
   const newRules = [...localRules.value]
-  ;[newRules[index], newRules[index + 1]] = [newRules[index + 1], newRules[index]]
+  ;[newRules[index], newRules[index + 1]] = [newRules[index + 1]!, newRules[index]!]
   localRules.value = newRules
 }
 

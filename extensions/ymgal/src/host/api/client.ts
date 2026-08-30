@@ -1,13 +1,10 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import {
   isYmgalNotFound,
   normalizeYmgalEnvelopeError,
@@ -36,7 +33,6 @@ import {
   YMGAL_TOKEN_SCOPE
 } from '../utils/constants'
 import { YmgalExtensionError } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 
 /** The developer notes ask clients not to burst; pace well under that. */
 const RATE_LIMIT: { maxRequests: number; windowMs: number } = {
@@ -206,7 +202,7 @@ export class YmgalClient {
     let refreshedToken = false
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         const token = await this.requireAccessToken(options)
@@ -231,7 +227,7 @@ export class YmgalClient {
 
         if (!response.ok) {
           if (shouldRetryStatus(response.status) && attempt < settings.client.retryCount) {
-            await delay(resolveRetryDelayMs(attempt), options.signal)
+            await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
             continue
           }
 
@@ -242,8 +238,8 @@ export class YmgalClient {
       } catch (error) {
         // Must precede the retry branch: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof YmgalExtensionError) {
@@ -252,7 +248,7 @@ export class YmgalClient {
 
         this.logger.debug('YMGal request attempt failed.', { path: pathname, attempt })
         if (attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }
@@ -323,7 +319,7 @@ export class YmgalClient {
           timeoutMs: settings.client.timeoutMs,
           responseType: 'json'
         },
-        omitUndefined({ signal: options.signal })
+        { signal: options.signal }
       )
     )
   }

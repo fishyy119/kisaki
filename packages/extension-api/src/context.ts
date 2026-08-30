@@ -80,5 +80,5 @@ export interface ExtensionContributionRegistrars {
 
 export interface ExtensionDefinition {
   activate(context: ExtensionContext): Promise<void> | void
-  deactivate?(context: ExtensionContext): Promise<void> | void
+  deactivate?: ((context: ExtensionContext) => Promise<void> | void) | undefined
 }

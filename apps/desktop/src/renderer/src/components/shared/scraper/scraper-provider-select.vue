@@ -5,7 +5,6 @@
 -->
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { ipcManager } from '@renderer/core/ipc'
 import { useAsyncData, useI18n, useRenderState } from '@renderer/composables'
 import {
   Select,
@@ -19,7 +18,8 @@ import { cn } from '@renderer/utils/cn'
 import { cva } from 'class-variance-authority'
 import type { ScraperCapability } from '@shared/scraper'
 import type { ContentEntityType } from '@shared/common'
-import { getScraperProviderDisplay, type ScraperProviderInfo } from './provider-display'
+import { getScraperProviderDisplay } from './provider-display'
+import { fetchScraperProviders } from './use-scraper-providers'
 
 interface Props {
   /** Which entity type this provider list is for (default: game) */
@@ -65,45 +65,14 @@ const placeholderText = computed(
   () => props.placeholder ?? m.value.scraper.providerSelect.placeholder
 )
 
-async function listProviders(entityType: ContentEntityType): Promise<ScraperProviderInfo[]> {
-  switch (entityType) {
-    case 'game': {
-      const result = await ipcManager.invoke('scraper:list-game-providers')
-      return result.success ? result.data : []
-    }
-    case 'anime': {
-      const result = await ipcManager.invoke('scraper:list-anime-providers')
-      return result.success ? result.data : []
-    }
-    case 'comic': {
-      const result = await ipcManager.invoke('scraper:list-comic-providers')
-      return result.success ? result.data : []
-    }
-    case 'novel': {
-      const result = await ipcManager.invoke('scraper:list-novel-providers')
-      return result.success ? result.data : []
-    }
-    case 'person': {
-      const result = await ipcManager.invoke('scraper:list-person-providers')
-      return result.success ? result.data : []
-    }
-    case 'company': {
-      const result = await ipcManager.invoke('scraper:list-company-providers')
-      return result.success ? result.data : []
-    }
-    case 'character': {
-      const result = await ipcManager.invoke('scraper:list-character-providers')
-      return result.success ? result.data : []
-    }
-  }
-}
-
 // Fetch providers via IPC
 const {
   data: providers,
   isLoading,
   error
-} = useAsyncData(() => listProviders(props.entityType), { watch: [() => props.entityType] })
+} = useAsyncData(() => fetchScraperProviders(props.entityType), {
+  watch: [() => props.entityType]
+})
 const state = useRenderState(isLoading, error, providers)
 
 // Filter providers by required capabilities and exclude list
@@ -165,7 +134,7 @@ watch(
       !model.value &&
       filteredProviders.value.length > 0
     ) {
-      const firstProvider = filteredProviders.value[0]
+      const firstProvider = filteredProviders.value[0]!
       model.value = firstProvider.id
       emit('change', firstProvider.id)
     }

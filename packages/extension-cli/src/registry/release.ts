@@ -67,7 +67,7 @@ export function upsertRegistryRelease(input: {
   const packages = [...input.manifest.packages]
   const packageIndex = packages.findIndex((item) => item.id === input.extensionManifest.id)
   const existingPackage =
-    packageIndex >= 0 ? packages[packageIndex] : createRegistryPackage(input.extensionManifest)
+    packageIndex >= 0 ? packages[packageIndex]! : createRegistryPackage(input.extensionManifest)
   const releaseIndex = existingPackage.releases.findIndex(
     (release) => release.version === input.release.version
   )
@@ -82,7 +82,7 @@ export function upsertRegistryRelease(input: {
     releaseIndex >= 0
       ? mergeRegistryRelease({
           packageId: existingPackage.id,
-          existing: existingPackage.releases[releaseIndex],
+          existing: existingPackage.releases[releaseIndex]!,
           incoming: input.release,
           ...(input.replace === undefined ? {} : { replace: input.replace })
         })
@@ -144,11 +144,16 @@ function mergeRegistryRelease(input: {
   }
 
   const incomingArtifact = input.incoming.artifacts[0]
+  if (!incomingArtifact) {
+    throw new CliError(
+      `${input.packageId}@${input.incoming.version} release carries no artifact to merge.`
+    )
+  }
   const artifactIndex = input.existing.artifacts.findIndex(
     (artifact) => artifact.target === incomingArtifact.target
   )
   if (artifactIndex >= 0) {
-    const existingArtifact = input.existing.artifacts[artifactIndex]
+    const existingArtifact = input.existing.artifacts[artifactIndex]!
     const artifactChanged = !areRegistryArtifactsEqual(existingArtifact, incomingArtifact)
     const changelogChanged =
       input.incoming.changelog !== undefined &&

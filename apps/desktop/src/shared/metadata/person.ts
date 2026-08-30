@@ -19,14 +19,14 @@ import type { ExternalId, Tag } from './common'
  */
 export interface PersonInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Other names this person is credited under, such as pen names. */
-  aliases?: string[]
-  birthDate?: PartialDate
-  deathDate?: PartialDate
-  gender?: Gender
-  description?: string
-  externalSites?: ExternalSite[]
+  aliases?: string[] | undefined
+  birthDate?: PartialDate | undefined
+  deathDate?: PartialDate | undefined
+  gender?: Gender | undefined
+  description?: string | undefined
+  externalSites?: ExternalSite[] | undefined
   externalIds: ExternalId[]
 }
 
@@ -36,5 +36,5 @@ export interface PersonInfo {
  * Core person metadata used across identity and normalization layers.
  */
 export interface CorePersonMetadata extends PersonInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }

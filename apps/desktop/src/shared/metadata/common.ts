@@ -10,7 +10,7 @@ export type { ExternalId } from '@shared/identity'
  */
 export interface Tag {
   name: string
-  isSpoiler?: boolean
-  note?: string
-  isNsfw?: boolean
+  isSpoiler?: boolean | undefined
+  note?: string | undefined
+  isNsfw?: boolean | undefined
 }

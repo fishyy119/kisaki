@@ -8,25 +8,6 @@ export type {
   WebviewRpcRemote,
   WebviewRpcTransport
 } from './shared/webview-rpc'
-export { createTaskRunProgressWork, type TaskRunProgressWorkInput } from './task-runs'
-export { RateLimiter, delay, throwIfAborted, type RateLimitConfig } from './rate-limiter'
-export { SettingsStore, type SettingsCodec } from './settings-store'
-export {
-  OAuthRelayClient,
-  OAuthRelayFlow,
-  type OAuthRelayCallbackEvent,
-  type OAuthRelayClientOptions,
-  type OAuthRelayErrorFactory,
-  type OAuthRelayFailure,
-  type OAuthRelayFlowOptions,
-  type OAuthRelayHealth,
-  type OAuthRelayPendingSession,
-  type OAuthRelayPendingStatus,
-  type OAuthRelaySession,
-  type OAuthRelaySessionStore,
-  type OAuthRelayToken,
-  type OAuthRelayTokenStatus
-} from './oauth-relay'
 
 export function defineExtension(definition: ExtensionDefinition): ExtensionDefinition {
   return definition

@@ -68,14 +68,12 @@ export const scraper = {
   recipeUpdate: {
     badge: 'Update suggested',
     title: 'Recommended configuration changed',
-    hint: 'The current recommendation for this scene differs from the profile configuration. Applying overwrites the search source, language, and slots.',
+    hint: 'The current recommendation for this scene differs from the profile configuration. Applying overwrites the search source and slots.',
     beforeLabel: 'Current',
     afterLabel: 'Suggested',
     apply: 'Apply suggestion',
     dismiss: 'Ignore this suggestion',
-    emptySlot: '(empty)',
-    systemLocale: 'System language',
-    ignoredNotice: 'Ignored until the recommendation changes again'
+    emptySlot: '(empty)'
   },
 
   profiles: {

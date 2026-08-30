@@ -123,7 +123,7 @@ export class ScannerRunSession {
         break
       }
 
-      const currentItem = items[nextIndex]
+      const currentItem = items[nextIndex]!
       nextIndex++
 
       // Worker failures (cancellation rethrows) are captured instead of

@@ -140,7 +140,7 @@ export function computeStreaks(sessions: StatisticsSession[]): {
   let streak = 1
 
   for (let i = 1; i < sortedDates.length; i++) {
-    if (isNextDay(sortedDates[i - 1], sortedDates[i])) {
+    if (isNextDay(sortedDates[i - 1]!, sortedDates[i]!)) {
       streak++
       longestStreak = Math.max(longestStreak, streak)
     } else {
@@ -159,7 +159,7 @@ export function computeStreaks(sessions: StatisticsSession[]): {
   if (lastDate === today || lastDate === yesterday) {
     currentStreak = 1
     for (let i = sortedDates.length - 2; i >= 0; i--) {
-      if (isNextDay(sortedDates[i], sortedDates[i + 1])) {
+      if (isNextDay(sortedDates[i]!, sortedDates[i + 1]!)) {
         currentStreak++
       } else {
         break
@@ -278,8 +278,8 @@ export function computeStats<TSession extends StatisticsSession>(
   const longestSession = Math.max(...durations)
 
   const sortedByDate = [...sessions].sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
-  const firstSessionDate = sortedByDate[0].startedAt
-  const lastSessionDate = sortedByDate[sortedByDate.length - 1].endedAt
+  const firstSessionDate = sortedByDate[0]!.startedAt
+  const lastSessionDate = sortedByDate[sortedByDate.length - 1]!.endedAt
 
   const { currentStreak, longestStreak } = computeStreaks(sessions)
 
@@ -372,14 +372,14 @@ export function getMostActiveWeekdayMondayFirst(
     for (const slice of splitLocalByDay(session.startedAt, session.endedAt)) {
       const jsDay = slice.start.getDay() // 0=Sun
       const mondayFirst = jsDay === 0 ? 6 : jsDay - 1
-      buckets[mondayFirst] += slice.durationMs
+      buckets[mondayFirst] = buckets[mondayFirst]! + slice.durationMs
     }
   }
 
   let bestWeekday = -1
   let bestDuration = 0
   for (let i = 0; i < buckets.length; i++) {
-    const duration = buckets[i]
+    const duration = buckets[i]!
     if (duration > bestDuration) {
       bestDuration = duration
       bestWeekday = i
@@ -400,7 +400,7 @@ export function getMostActiveWeek(
   const weekly = aggregateByTime(sessions, 'weekly')
   if (weekly.length === 0) return null
 
-  let best = weekly[0]
+  let best = weekly[0]!
   for (const item of weekly) {
     if (item.totalDuration > best.totalDuration) best = item
   }
@@ -421,7 +421,7 @@ export function aggregateByLocalHour(sessions: StatisticsSession[]): number[] {
   for (const session of sessions) {
     for (const slice of splitLocalByHour(session.startedAt, session.endedAt)) {
       const hour = slice.start.getHours()
-      buckets[hour] += slice.durationMs / 3600000
+      buckets[hour] = buckets[hour]! + slice.durationMs / 3600000
     }
   }
   return buckets
@@ -437,7 +437,7 @@ export function aggregateByLocalWeekdayMondayFirst(sessions: StatisticsSession[]
     for (const slice of splitLocalByDay(session.startedAt, session.endedAt)) {
       const jsDay = slice.start.getDay() // 0=Sun
       const mondayFirst = jsDay === 0 ? 6 : jsDay - 1
-      buckets[mondayFirst] += slice.durationMs / 3600000
+      buckets[mondayFirst] = buckets[mondayFirst]! + slice.durationMs / 3600000
     }
   }
   return buckets
@@ -454,7 +454,7 @@ export function aggregateByLocalDayOfMonth(sessions: StatisticsSession[]): numbe
       const dayOfMonth = slice.start.getDate() // 1..31
       const idx = dayOfMonth - 1
       if (idx >= 0 && idx < buckets.length) {
-        buckets[idx] += slice.durationMs / 3600000
+        buckets[idx] = buckets[idx]! + slice.durationMs / 3600000
       }
     }
   }

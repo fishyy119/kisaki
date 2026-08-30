@@ -70,7 +70,7 @@ const formData = ref<LinkItemData>({
   targetId: '',
   targetName: '',
   targetImage: null,
-  role: spec.value.roleOrder[0],
+  role: spec.value.roleOrder[0]!,
   note: '',
   isSpoiler: false
 })
@@ -88,7 +88,7 @@ watch(
             targetId: '',
             targetName: '',
             targetImage: null,
-            role: spec.value.roleOrder[0],
+            role: spec.value.roleOrder[0]!,
             note: '',
             isSpoiler: false
           }

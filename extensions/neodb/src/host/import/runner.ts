@@ -16,9 +16,7 @@ import {
 } from '../library'
 import { buildBookExternalIds, buildReleaseDate, pickItemTitle } from '../media/format'
 import { scoreFromRatingGrade, statusFromShelf } from '../sync/engine'
-import type { SyncSuppressor } from '../sync/suppressor'
 import { toSafeErrorLog } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 
 const REPORT_EVERY = 5
 const SHELF_TYPES: readonly NdShelfType[] = ['wishlist', 'progress', 'complete', 'dropped']
@@ -41,7 +39,6 @@ export interface ImportSummary {
 
 export interface ImportRunnerDependencies {
   client: NeodbClient
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -180,7 +177,6 @@ async function importItem(
       return
     }
 
-    deps.suppressor.suppressImport(existing.id)
     await updateNovelUserState(existing.id, patch)
     summary.updated += 1
     return
@@ -194,19 +190,16 @@ async function importItem(
   // The shelf row carries the item skeleton only; the detail read supplies
   // the ISBN so cross-source resolution starts with an exact id.
   const book = await deps.client.getBook(row.itemUuid, { signal: handle.signal })
-  const lookup = omitUndefined({
+  const lookup = {
     name: pickItemTitle(book, 'en') ?? row.itemUuid,
     knownIds: buildBookExternalIds(book),
     releaseDate: buildReleaseDate(book)
-  })
+  }
 
   const result = await kisaki.ingest.novel.add.fromScraper(options.profileId, lookup)
 
-  const patch: NovelUserStatePatch = omitUndefined({ status, score })
-  if (Object.keys(patch).length > 0) {
-    deps.suppressor.suppressImport(result.novelId)
-    await updateNovelUserState(result.novelId, patch)
-  }
+  const patch: NovelUserStatePatch = { status, score }
+  await updateNovelUserState(result.novelId, patch)
 
   if (result.isNew) {
     summary.created += 1

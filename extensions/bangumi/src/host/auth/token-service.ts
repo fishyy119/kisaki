@@ -1,11 +1,7 @@
-import type {
-  ExtensionLogger,
-  OAuthRelayClient,
-  OAuthRelayTokenStatus
-} from '@kisaki3/extension-sdk'
+import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import type { OAuthRelayClient, OAuthRelayTokenStatus } from './oauth-relay'
 import { m } from '../i18n'
 import { BangumiExtensionError } from '../utils/errors'
-import { omitUndefined } from '../utils/object'
 import type { BangumiTokenSecretV1 } from './token-store'
 import { TokenStore } from './token-store'
 
@@ -20,7 +16,7 @@ export interface TokenAccessOptions {
 export interface StoredTokenState {
   hasToken: boolean
   hasRefreshToken: boolean
-  expiresAt?: number | null
+  expiresAt?: number | null | undefined
   expired: boolean
   refreshRecommended: boolean
 }
@@ -83,14 +79,14 @@ export class TokenService {
     }
 
     const refreshed = await this.relayClient.refresh(current.refreshToken, options.signal)
-    const next: Omit<BangumiTokenSecretV1, 'version'> = omitUndefined({
+    const next: Omit<BangumiTokenSecretV1, 'version'> = {
       accessToken: refreshed.accessToken,
       refreshToken: refreshed.refreshToken ?? current.refreshToken,
       tokenType: refreshed.tokenType ?? current.tokenType,
       scope: refreshed.scope ?? current.scope,
       userId: refreshed.userId ?? current.userId,
       expiresAt: refreshed.expiresAt ?? current.expiresAt
-    })
+    }
 
     await this.tokenStore.setToken(next)
     const stored = await this.tokenStore.getToken()
@@ -119,13 +115,13 @@ export class TokenService {
     const token = await this.tokenStore.getToken()
     const now = Date.now()
 
-    return omitUndefined({
+    return {
       hasToken: !!token,
       hasRefreshToken: !!token?.refreshToken,
       expiresAt: token?.expiresAt,
       expired: isExpired(token?.expiresAt, now),
       refreshRecommended: shouldRefreshToken(token?.expiresAt, now)
-    })
+    }
   }
 
   async clear(): Promise<void> {

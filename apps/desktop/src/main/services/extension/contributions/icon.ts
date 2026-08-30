@@ -1,27 +1,25 @@
-import { pathToFileURL } from 'node:url'
 import {
   matchesContributionIconFormat,
   matchesMdiIconFormat,
   type ContributionIcon
 } from '@kisaki3/extension-api'
 import type { ExtensionIconInfo } from '@shared/extension'
-import { resolveInsideRoot } from '@shared/extension/path-confinement'
+import { extensionFileUrl } from '../assets/files'
 
 /**
  * Translates the public contribution icon contract into the renderer DTO.
- * File icons resolve to app-local `file://` URLs confined to the extension
- * package root, matching how manifest package icons are served.
+ * File icons resolve to `kisaki-extension-file://` URLs served out of the
+ * extension package; the protocol handler confines paths at serve time.
  */
 export function resolveContributionIcon(
-  extensionPath: string,
+  extensionId: string,
   icon: ContributionIcon
 ): ExtensionIconInfo {
   if (matchesMdiIconFormat(icon)) {
     return { kind: 'mdi', name: icon.slice('mdi:'.length) }
   }
 
-  const filePath = resolveInsideRoot(extensionPath, ...icon.slice(2).split('/').filter(Boolean))
-  return { kind: 'url', url: pathToFileURL(filePath).toString() }
+  return { kind: 'url', url: extensionFileUrl(extensionId, icon.slice(2)) }
 }
 
 /**
@@ -30,12 +28,12 @@ export function resolveContributionIcon(
  * never breaks the surrounding contribution.
  */
 export function resolveOptionalContributionIcon(
-  extensionPath: string,
+  extensionId: string,
   icon: unknown
 ): ExtensionIconInfo | undefined {
   if (!matchesContributionIconFormat(icon)) {
     return undefined
   }
 
-  return resolveContributionIcon(extensionPath, icon)
+  return resolveContributionIcon(extensionId, icon)
 }

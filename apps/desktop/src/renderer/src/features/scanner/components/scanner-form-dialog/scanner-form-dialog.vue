@@ -181,7 +181,7 @@ async function handleSelectPath() {
   })
 
   if (result.success && result.data && !result.data.canceled && result.data.filePaths.length > 0) {
-    formData.value.path = result.data.filePaths[0]
+    formData.value.path = result.data.filePaths[0]!
   }
 }
 

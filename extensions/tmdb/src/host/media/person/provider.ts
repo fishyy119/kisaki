@@ -11,7 +11,6 @@ import { toResolvedTarget } from '../../identity/target'
 import { m } from '../../i18n'
 import { TMDB_SOURCE_ID } from '../../utils/constants'
 import { TmdbExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import { toTmdbLanguage } from '../format/languages'
 import { trimToUndefined } from '../format/text'
 import { createRequestContext, type TmdbRuntime } from '../runtime'
@@ -46,12 +45,12 @@ export class TmdbPersonProvider implements PersonScraperProvider {
       // without a name.
       const name = trimToUndefined(person.name) ?? originalName ?? `TMDB ${person.id}`
 
-      return omitUndefined({
+      return {
         id: String(person.id),
         name,
         originalName: originalName !== name ? originalName : undefined,
         externalIds: [{ source: TMDB_SOURCE_ID, id: String(person.id) }]
-      })
+      }
     })
   }
 

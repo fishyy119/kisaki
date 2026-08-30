@@ -69,14 +69,12 @@ export const scraper = {
   recipeUpdate: {
     badge: '有更新建议',
     title: '推荐配置已变化',
-    hint: '该场景的当前推荐与此配置不同。应用后将覆盖搜索源、语言与槽位设置。',
+    hint: '该场景的当前推荐与此配置不同。应用后将覆盖搜索源与槽位设置。',
     beforeLabel: '当前',
     afterLabel: '建议',
     apply: '应用建议',
     dismiss: '忽略此建议',
-    emptySlot: '（空）',
-    systemLocale: '系统语言',
-    ignoredNotice: '在推荐再次变化前保持忽略'
+    emptySlot: '（空）'
   },
 
   profiles: {

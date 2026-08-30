@@ -177,9 +177,10 @@ export class DbChangeFeed {
     const created = directChanges.some((change) => change.operation === 'inserted')
     const deleted = directChanges.some((change) => change.operation === 'deleted')
     const occurredAt = Math.max(...changes.map((change) => change.occurredAt))
+    const actors = collectActors(changes)
 
     if (deleted) {
-      return { entity: projection.entity, id: mediaId, kind: 'deleted', occurredAt }
+      return { entity: projection.entity, id: mediaId, kind: 'deleted', occurredAt, actors }
     }
 
     if (created) {
@@ -189,7 +190,8 @@ export class DbChangeFeed {
         id: mediaId,
         kind: 'created',
         name: getMediaCreatedName(this.sqlite, projection, mediaId, next),
-        occurredAt
+        occurredAt,
+        actors
       }
     }
 
@@ -207,7 +209,8 @@ export class DbChangeFeed {
       id: mediaId,
       kind: 'updated',
       changes: projectedChanges,
-      occurredAt
+      occurredAt,
+      actors
     }
   }
 
@@ -231,9 +234,10 @@ export class DbChangeFeed {
     const occurredAt = Math.max(...tableChanges.map((change) => change.occurredAt))
     const created = tableChanges.some((change) => change.operation === 'inserted')
     const deleted = tableChanges.some((change) => change.operation === 'deleted')
+    const actors = collectActors(tableChanges)
 
     if (deleted) {
-      return { entity, id: entityId, kind: 'deleted', occurredAt }
+      return { entity, id: entityId, kind: 'deleted', occurredAt, actors }
     }
 
     if (created) {
@@ -243,7 +247,8 @@ export class DbChangeFeed {
         id: entityId,
         kind: 'created',
         name: stringValue(next?.name),
-        occurredAt
+        occurredAt,
+        actors
       }
     }
 
@@ -258,8 +263,12 @@ export class DbChangeFeed {
       return null
     }
 
-    return { entity, id: entityId, kind: 'updated', changes: entityChanges, occurredAt }
+    return { entity, id: entityId, kind: 'updated', changes: entityChanges, occurredAt, actors }
   }
+}
+
+function collectActors(changes: RawDbChange[]): readonly string[] {
+  return [...new Set(changes.map((change) => change.actor))].sort()
 }
 
 function projectSettingValue(projection: SettingsColumnProjection, value: unknown): unknown {

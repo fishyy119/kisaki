@@ -105,7 +105,7 @@ async function handleDelete(noteId: string) {
 
 async function normalizeOrders(): Promise<void> {
   for (let i = 0; i < displayNotes.value.length; i++) {
-    const note = displayNotes.value[i]
+    const note = displayNotes.value[i]!
     if (note.order === i) continue
     await store.value.setOrder(note.id, i)
   }
@@ -120,8 +120,8 @@ async function reorder(noteId: string, direction: -1 | 1) {
   const nextIndex = index + direction
   if (nextIndex < 0 || nextIndex >= displayNotes.value.length) return
 
-  const source = displayNotes.value[index]
-  const neighbor = displayNotes.value[nextIndex]
+  const source = displayNotes.value[index]!
+  const neighbor = displayNotes.value[nextIndex]!
 
   // Optimistic UI swap
   const next = [...displayNotes.value]

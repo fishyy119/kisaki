@@ -109,7 +109,7 @@ async function runQuery(raw: string): Promise<void> {
         groups.value = [
           ...groups.value,
           {
-            key: items[0].cfi,
+            key: items[0]!.cfi,
             label: result.label.trim() || m.value.reader.search.unnamedSection,
             items
           }

@@ -1,12 +1,7 @@
-import {
-  defineExtension,
-  kisaki,
-  OAuthRelayClient,
-  OAuthRelayFlow,
-  SettingsStore,
-  type ExtensionLogger
-} from '@kisaki3/extension-sdk'
-import { m, setHostUiLocale } from './i18n'
+import { defineExtension, kisaki, type ExtensionLogger } from '@kisaki3/extension-sdk'
+import { OAuthRelayClient, OAuthRelayFlow } from './auth/oauth-relay'
+import { SettingsStore } from './utils/settings-store'
+import { m } from './i18n'
 import { BangumiClient } from './api/client'
 import { createBangumiUserAgent } from './api/user-agent'
 import { AccountService } from './auth/account'
@@ -39,15 +34,8 @@ import { EpisodeSyncEngine } from './sync/episodes'
 import { SyncStateStore } from './sync/fingerprint'
 import { SyncQueueStore } from './sync/queue'
 import { SyncSubscription } from './sync/subscription'
-import { SyncSuppressor } from './sync/suppressor'
-
 export default defineExtension({
   async activate(context) {
-    setHostUiLocale((await kisaki.runtime.getInfo()).uiLocale)
-    context.hooks.on('app.ui-locale.changed', ({ effective }) => {
-      setHostUiLocale(effective)
-    })
-
     const settingsStore = new SettingsStore(context.storage, BANGUMI_STORAGE_KEYS.settings, {
       normalize: normalizeBangumiSettings,
       createDefault: createDefaultBangumiSettings
@@ -72,10 +60,12 @@ export default defineExtension({
       }
     )
     const accountService = new AccountService(context.storage, client, tokenService)
-    const gameAdapter = new GameLocalMediaAdapter(context.hooks)
-    const animeAdapter = new AnimeLocalMediaAdapter(context.hooks)
+    const selfActor = `extension:${context.extension.id}`
+    const gameAdapter = new GameLocalMediaAdapter(context.hooks, selfActor)
+    const animeAdapter = new AnimeLocalMediaAdapter(context.hooks, selfActor)
     const bookAdapter = new BookLocalMediaAdapter({
       hooks: context.hooks,
+      selfActor,
       resolveSubjectPlatform: async (subjectId) => {
         const subject = await client.getSubject(Number.parseInt(subjectId, 10))
         return subject.platform ?? undefined
@@ -89,13 +79,11 @@ export default defineExtension({
     ])
     const syncStateStore = new SyncStateStore(context.storage)
     const syncQueueStore = new SyncQueueStore(context.storage)
-    const syncSuppressor = new SyncSuppressor()
     const syncEngine = new SyncEngine({
       settingsStore,
       client,
       mediaRegistry,
       stateStore: syncStateStore,
-      suppressor: syncSuppressor,
       logger: context.logger
     })
     const episodeSyncStateStore = new EpisodeSyncStateStore(context.storage)
@@ -115,7 +103,6 @@ export default defineExtension({
       episodeSyncEngine,
       mediaRegistry,
       syncQueueStore,
-      syncSuppressor,
       logger: context.logger
     })
     const jobEvents = new BangumiJobEvents()

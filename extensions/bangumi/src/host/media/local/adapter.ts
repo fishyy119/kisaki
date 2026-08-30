@@ -12,7 +12,6 @@ import {
 import { m } from '../../i18n'
 import { readBangumiSubjectIdFromExternalIds } from '../../identity/subject-ref'
 import { BangumiExtensionError } from '../../utils/errors'
-import { omitUndefined } from '../../utils/object'
 import type { BangumiMediaScope } from '../../../shared/scopes'
 import type {
   LocalCollectionSummary,
@@ -40,8 +39,8 @@ const SUBJECT_LOOKUP_PAGE_SIZE = 500
 interface LocalMediaEntity {
   id: string
   name: string
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -69,7 +68,11 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   protected abstract readonly tagLinkKind: LibraryLinkKind
   protected abstract readonly collectionLinkKind: LibraryLinkKind
 
-  constructor(private readonly hooks: HooksRegistrar) {}
+  constructor(
+    private readonly hooks: HooksRegistrar,
+    /** This extension's own change-feed actor id, for self-echo skipping. */
+    private readonly selfActor: string
+  ) {}
 
   async listProfiles() {
     return kisaki.scrapers.profiles.list({ mediaType: this.localMediaType })
@@ -82,6 +85,12 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
           continue
         }
 
+        // Writes this extension caused come back attributed; reacting to them
+        // would only echo our own import or push.
+        if (change.actors.every((actor) => actor === this.selfActor)) {
+          continue
+        }
+
         for (const reason of readChangeReasons(change)) {
           void Promise.resolve(listener({ scope: this.scope, localId: change.id, reason }))
         }
@@ -90,13 +99,11 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   async listLocalItems(query: LocalMediaListQuery): Promise<readonly LocalMediaItem[]> {
-    const entities = await this.listEntities(
-      omitUndefined({
-        includeNsfw: query.includeNsfw ?? true,
-        limit: query.limit,
-        offset: query.offset
-      })
-    )
+    const entities = await this.listEntities({
+      includeNsfw: query.includeNsfw ?? true,
+      limit: query.limit,
+      offset: query.offset
+    })
 
     return entities.map((entity) => this.toLocalItem(entity))
   }
@@ -239,7 +246,7 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   private toLocalItem(entity: LocalMediaEntity): LocalMediaItem {
-    return omitUndefined({
+    return {
       scope: this.scope,
       localId: entity.id,
       name: entity.name,
@@ -249,7 +256,7 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
         source: externalId.source,
         id: externalId.id
       }))
-    })
+    }
   }
 }
 

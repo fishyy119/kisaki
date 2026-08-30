@@ -2,7 +2,6 @@ import { isCancellationError, type ScrapedAnimeInfo } from '@kisaki3/extension-s
 import type { TmdbAlternativeTitle, TmdbExternalIds } from '../../api/types'
 import type { TmdbEpisodeGroupRef, TmdbSeasonRef, TmdbSeriesRef } from '../../identity/subject-id'
 import type { TmdbMovieLoaders, TmdbSeriesLoaders } from '../loaders'
-import { omitUndefined } from '../../utils/object'
 import { parseTmdbDate } from '../format/dates'
 import {
   composeEpisodeGroupEntryName,
@@ -35,7 +34,7 @@ export async function buildMovieInfo(
   ])
   const names = readMovieNames(movie)
 
-  return omitUndefined({
+  return {
     ...names,
     aliases: toAliases(alternativeTitles, {
       localCountries: titleCountries,
@@ -50,7 +49,7 @@ export async function buildMovieInfo(
       imdbTitleSite(movie.imdb_id),
       homepageSite(movie.homepage)
     ])
-  })
+  }
 }
 
 export async function buildSeriesInfo(
@@ -65,7 +64,7 @@ export async function buildSeriesInfo(
   ])
   const names = readSeriesNames(series)
 
-  return omitUndefined({
+  return {
     ...names,
     aliases: toAliases(alternativeTitles, {
       localCountries: titleCountries,
@@ -80,7 +79,7 @@ export async function buildSeriesInfo(
       imdbTitleSite(externalIds.imdb_id),
       homepageSite(series.homepage)
     ])
-  })
+  }
 }
 
 export async function buildSeasonInfo(
@@ -102,7 +101,7 @@ export async function buildSeasonInfo(
     ref.seasonNumber
   )
 
-  return omitUndefined({
+  return {
     name: entryName,
     originalName,
     // TMDB titles the show, not the season, so the show's other titles are the
@@ -122,7 +121,7 @@ export async function buildSeasonInfo(
       tmdbSite(tmdbSeasonUrl(ref.seriesId, ref.seasonNumber)),
       homepageSite(series.homepage)
     ])
-  })
+  }
 }
 
 /**
@@ -151,7 +150,7 @@ export async function buildEpisodeGroupInfo(
     composeEpisodeGroupPartName(detail, item, index)
   )
 
-  return omitUndefined({
+  return {
     name: entryName,
     originalName: names.originalName,
     aliases: toAliases(alternativeTitles, {
@@ -166,7 +165,7 @@ export async function buildEpisodeGroupInfo(
       tmdbSite(tmdbEpisodeGroupUrl(ref.seriesId, ref.setId, ref.groupId)),
       homepageSite(series.homepage)
     ])
-  })
+  }
 }
 
 function readPositiveInteger(value: number | undefined): number | undefined {

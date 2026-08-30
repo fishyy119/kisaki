@@ -207,13 +207,13 @@ function next(): void {
     emit('endReached')
     return
   }
-  setPage(nextSlot[0])
+  setPage(nextSlot[0]!)
 }
 
 function previous(): void {
   if (pageIndex.value <= 0) return
   const previousSlot = slots.value[slotIndex.value - 1]
-  setPage(previousSlot ? previousSlot[0] : pageIndex.value - 1)
+  setPage(previousSlot ? previousSlot[0]! : pageIndex.value - 1)
 }
 
 /** Screen-side navigation: which side means forward depends on the flow. */
@@ -373,7 +373,7 @@ const slotSizes = computed<Map<number, PageDims>>(() => {
   const dims = (records as ResolvedPage[]).map((record) => effectiveDims(record))
   const layout = computeSlotLayout(viewportSize.value, dims, props.fit, zoom.value)
   currentPages.value.forEach((index, position) => {
-    sizes.set(index, layout[position])
+    sizes.set(index, layout[position]!)
   })
   return sizes
 })

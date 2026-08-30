@@ -139,15 +139,15 @@ function handleRemoveSite(index: number) {
 
 function handleMoveUp(index: number) {
   if (index <= 0) return
-  const temp = sites.value[index - 1]
-  sites.value[index - 1] = sites.value[index]
+  const temp = sites.value[index - 1]!
+  sites.value[index - 1] = sites.value[index]!
   sites.value[index] = temp
 }
 
 function handleMoveDown(index: number) {
   if (index >= sites.value.length - 1) return
-  const temp = sites.value[index]
-  sites.value[index] = sites.value[index + 1]
+  const temp = sites.value[index]!
+  sites.value[index] = sites.value[index + 1]!
   sites.value[index + 1] = temp
 }
 

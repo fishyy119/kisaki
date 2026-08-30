@@ -5,3 +5,7 @@ drizzle
 resources/extensions
 resources/webview-fonts
 node_modules
+
+# Vendored upstream sources: kept close to upstream so updates stay diffable.
+# Local deviations are documented in each directory's README.
+src/renderer/vendor/

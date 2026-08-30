@@ -12,19 +12,36 @@ import {
   type RpcHandshakeRequest,
   type RpcHandshakeResponse,
   type RpcParams,
-  type RpcResult
+  type RpcResult,
+  type UndefinedTolerant
 } from '@kisaki3/extension-api'
 import {
   RpcChannel,
   type RpcRequestContext,
   type RpcRequestOptions
 } from '@extension-host/protocol'
+import { createLogger } from '@main/log'
+import { extensionDbActor, runAsDbActor } from '@main/services/db/actor'
+
+const log = createLogger('Extension')
+
+export interface ExtensionHostRpcClientOptions {
+  /** Maps a runtime handle to the owning extension id, when still loaded. */
+  resolveExtensionId?: (runtimeHandle: string) => string | null
+}
 
 export class ExtensionHostRpcClient {
   private readonly channel: RpcChannel
 
-  constructor(sender: (envelope: RpcEnvelope) => void) {
-    this.channel = new RpcChannel(sender)
+  constructor(
+    sender: (envelope: RpcEnvelope) => void,
+    private readonly options: ExtensionHostRpcClientOptions = {}
+  ) {
+    this.channel = new RpcChannel(sender, {
+      reportEventListenerError: (eventName, error) => {
+        log.error('RPC event listener failed.', error, { event: eventName })
+      }
+    })
   }
 
   setSender(sender: (envelope: RpcEnvelope) => void): void {
@@ -46,9 +63,11 @@ export class ExtensionHostRpcClient {
     return this.channel.request<RpcHandshakeResponse>(RPC_HANDSHAKE_METHOD, request, options)
   }
 
+  // Constructing sides go through UndefinedTolerant (the wire drops undefined
+  // members); receiving sides keep the exact-optional shape the wire delivers.
   requestHost<K extends MainToHostRpcMethod>(
     method: K,
-    params: RpcParams<MainToHostRpcRequestMap, K>,
+    params: UndefinedTolerant<RpcParams<MainToHostRpcRequestMap, K>>,
     options?: RpcRequestOptions
   ): Promise<RpcResult<MainToHostRpcRequestMap, K>> {
     return this.channel.request<RpcResult<MainToHostRpcRequestMap, K>>(method, params, options)
@@ -59,14 +78,36 @@ export class ExtensionHostRpcClient {
     handler: (
       params: RpcParams<HostToMainRpcRequestMap, K>,
       context: RpcRequestContext
-    ) => Promise<RpcResult<HostToMainRpcRequestMap, K>> | RpcResult<HostToMainRpcRequestMap, K>
+    ) =>
+      | Promise<UndefinedTolerant<RpcResult<HostToMainRpcRequestMap, K>>>
+      | UndefinedTolerant<RpcResult<HostToMainRpcRequestMap, K>>
   ): void {
-    this.channel.handle(method, (params, context) =>
-      handler(params as RpcParams<HostToMainRpcRequestMap, K>, context)
-    )
+    this.channel.handle(method, (params, context) => {
+      const typed = params as RpcParams<HostToMainRpcRequestMap, K>
+      // Database writes the handler causes are attributed to the requesting
+      // extension; the async-local scope survives awaits inside the handler.
+      const extensionId = this.resolveRequestExtensionId(typed)
+      return extensionId
+        ? runAsDbActor(extensionDbActor(extensionId), () => handler(typed, context))
+        : handler(typed, context)
+    })
   }
 
-  sendEventToHost<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void {
+  private resolveRequestExtensionId(params: unknown): string | null {
+    const runtimeHandle =
+      typeof params === 'object' && params !== null
+        ? (params as { runtimeHandle?: unknown }).runtimeHandle
+        : undefined
+    if (typeof runtimeHandle !== 'string' || runtimeHandle.length === 0) {
+      return null
+    }
+    return this.options.resolveExtensionId?.(runtimeHandle) ?? null
+  }
+
+  sendEventToHost<K extends MainToHostRpcEvent>(
+    name: K,
+    payload: UndefinedTolerant<MainToHostRpcEventMap[K]>
+  ): void {
     this.channel.sendEvent(name, payload)
   }
 

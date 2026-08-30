@@ -38,7 +38,7 @@ function formatIdList(field: FilterUiFieldDef, values: string[]): string {
       (value) => field.options.find((option) => option.value === value)?.label ?? value
     )
     if (labels.length <= 2) return labels.join(', ')
-    return m.value.filter.summaryAndMore({ first: labels[0], count: labels.length })
+    return m.value.filter.summaryAndMore({ first: labels[0]!, count: labels.length })
   }
   return m.value.common.itemCount({ count: values.length })
 }

@@ -93,7 +93,7 @@ function createEmptyDraft(mediaType: MediaType): MediaRelationDraft {
     targetType: mediaType,
     targetId: '',
     targetName: '',
-    type: getMediaRelationTypeRules(mediaType, mediaType)[0],
+    type: getMediaRelationTypeRules(mediaType, mediaType)[0]!,
     note: ''
   }
 }
@@ -119,7 +119,7 @@ watch(
     formData.value.targetId = ''
     formData.value.targetName = ''
     if (!allowedTypes.value.includes(formData.value.type)) {
-      formData.value.type = allowedTypes.value[0]
+      formData.value.type = allowedTypes.value[0]!
     }
   }
 )

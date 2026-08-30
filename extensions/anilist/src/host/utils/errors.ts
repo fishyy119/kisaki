@@ -1,4 +1,4 @@
-import type { OAuthRelayFailure } from '@kisaki3/extension-sdk'
+import type { OAuthRelayFailure } from '../auth/oauth-relay'
 import { m } from '../i18n'
 
 export type AnilistErrorCode =

@@ -11,9 +11,9 @@ export interface SyncFingerprintInput {
   localId: string
   subjectId: string
   playStatusEnabled: boolean
-  mappedType?: number
+  mappedType?: number | undefined
   scoreEnabled: boolean
-  mappedRate?: number
+  mappedRate?: number | undefined
   clearRemoteScoreWhenEmpty: boolean
   payload: BangumiCollectionPatch
 }

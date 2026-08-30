@@ -7,8 +7,8 @@ import type {
 } from '../../shared'
 
 export interface EntityMenuRefreshReason {
-  reason?: string
-  params?: JsonObject
+  reason?: string | undefined
+  params?: JsonObject | undefined
 }
 
 export interface EntityMenuInputBase {
@@ -157,7 +157,7 @@ export type EntityMenuRegistrar = {
 
 export interface EntityMenuContribution<TInput extends EntityMenuInput> {
   id: string
-  order?: number
+  order?: number | undefined
   resolve(
     input: TInput,
     menu: EntityMenuNodeFactory<TInput>
@@ -174,8 +174,8 @@ export interface EntityMenuRegistration extends Disposable {
 
 export interface EntityMenuNodeBase {
   id: string
-  hidden?: boolean
-  disabled?: boolean
+  hidden?: boolean | undefined
+  disabled?: boolean | undefined
 }
 
 export interface EntityMenuActionNode<
@@ -183,9 +183,9 @@ export interface EntityMenuActionNode<
 > extends EntityMenuNodeBase {
   kind: 'action'
   label: string
-  icon?: ContributionIcon
-  tone?: 'default' | 'danger'
-  shortcut?: string
+  icon?: ContributionIcon | undefined
+  tone?: 'default' | 'danger' | undefined
+  shortcut?: string | undefined
   onClick(event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
 }
 
@@ -194,7 +194,7 @@ export interface EntityMenuCheckboxNode<
 > extends EntityMenuNodeBase {
   kind: 'checkbox'
   label: string
-  icon?: ContributionIcon
+  icon?: ContributionIcon | undefined
   checked: boolean
   onChange(checked: boolean, event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
 }
@@ -204,7 +204,7 @@ export interface EntityMenuSelectNode<
 > extends EntityMenuNodeBase {
   kind: 'select'
   label: string
-  icon?: ContributionIcon
+  icon?: ContributionIcon | undefined
   value: string
   options: readonly EntityMenuSelectOption[]
   onChange(value: string, event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
@@ -215,14 +215,14 @@ export interface EntityMenuSubmenuNode<
 > extends EntityMenuNodeBase {
   kind: 'submenu'
   label: string
-  icon?: ContributionIcon
+  icon?: ContributionIcon | undefined
   children: readonly EntityMenuNode<TInput>[]
 }
 
 export interface EntityMenuSeparatorNode {
   kind: 'separator'
-  id?: string
-  hidden?: boolean
+  id?: string | undefined
+  hidden?: boolean | undefined
 }
 
 export type EntityMenuNode<TInput extends EntityMenuInput = EntityMenuInput> =
@@ -235,7 +235,7 @@ export type EntityMenuNode<TInput extends EntityMenuInput = EntityMenuInput> =
 export interface EntityMenuSelectOption {
   value: string
   label: string
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 
 export interface EntityMenuNodeEvent<TInput extends EntityMenuInput = EntityMenuInput> {

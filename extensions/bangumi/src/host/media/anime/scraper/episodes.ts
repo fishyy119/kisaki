@@ -5,7 +5,6 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { BangumiEpisode, BangumiEpisodeType } from '../../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../../utils/constants'
-import { omitUndefined } from '../../../utils/object'
 import { parseBangumiSubjectDate } from '../../format/dates'
 import { resolveLocalizedSubjectName } from '../../format/names'
 import { normalizeDescription } from '../../format/text'
@@ -43,18 +42,16 @@ export function buildAnimeEpisodes(
       locale
     )
 
-    mapped.push(
-      omitUndefined({
-        number,
-        type,
-        name: name || undefined,
-        originalName: originalName || undefined,
-        airDate: parseBangumiSubjectDate(episode.airdate),
-        description: normalizeDescription(episode.desc),
-        durationMs: readDurationMs(episode),
-        externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(episode.id) }]
-      })
-    )
+    mapped.push({
+      number,
+      type,
+      name: name || undefined,
+      originalName: originalName || undefined,
+      airDate: parseBangumiSubjectDate(episode.airdate),
+      description: normalizeDescription(episode.desc),
+      durationMs: readDurationMs(episode),
+      externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(episode.id) }]
+    })
   }
 
   return mapped

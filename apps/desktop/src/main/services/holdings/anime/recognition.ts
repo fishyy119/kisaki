@@ -175,7 +175,7 @@ function readEpisodeNumber(cleaned: string): number | undefined {
 
   let lastValid: number | undefined
   for (const match of cleaned.matchAll(BARE_EPISODE_NUMBER_PATTERN)) {
-    const value = Number.parseFloat(match[1])
+    const value = Number.parseFloat(match[1]!)
     if (Number.isFinite(value) && value >= 0 && !isPlausibleYearToken(value)) {
       lastValid = value
     }

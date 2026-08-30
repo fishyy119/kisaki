@@ -33,6 +33,11 @@ type RpcRequestHandler = (params: unknown, context: RpcRequestContext) => Promis
 
 type RpcEventListener = (payload: unknown) => Promise<void> | void
 
+export interface RpcChannelOptions {
+  /** Receives event listener failures, attributed to the event name. */
+  reportEventListenerError?: (eventName: string, error: unknown) => void
+}
+
 interface PendingRpcRequest {
   cleanupAbort?: () => void
   reject: (error: Error) => void
@@ -54,7 +59,10 @@ export class RpcChannel {
   private readonly pendingRequests = new Map<string, PendingRpcRequest>()
   private readonly activeRequests = new Map<string, AbortController>()
 
-  constructor(private sendEnvelope: (envelope: RpcEnvelope) => void) {}
+  constructor(
+    private sendEnvelope: (envelope: RpcEnvelope) => void,
+    private readonly options: RpcChannelOptions = {}
+  ) {}
 
   setSender(sender: (envelope: RpcEnvelope) => void): void {
     this.sendEnvelope = sender
@@ -169,7 +177,7 @@ export class RpcChannel {
     }
 
     if (envelope.kind === 'event') {
-      await this.handleEvent(envelope.name, envelope.payload)
+      this.handleEvent(envelope.name, envelope.payload)
       return
     }
 
@@ -215,7 +223,12 @@ export class RpcChannel {
     pending.reject(fromRpcErrorPayload(envelope.error))
   }
 
-  private async handleEvent(name: string, payload: unknown): Promise<void> {
+  /**
+   * Events are notifications: listeners are dispatched without awaiting, so a
+   * slow listener never delays its peers, and each listener's failure — thrown
+   * or rejected — is isolated and reported against the event name.
+   */
+  private handleEvent(name: string, payload: unknown): void {
     if (name === RPC_ABORT_EVENT && isAbortPayload(payload)) {
       this.activeRequests.get(payload.requestId)?.abort()
       return
@@ -227,8 +240,24 @@ export class RpcChannel {
     }
 
     for (const listener of [...listeners]) {
-      await Promise.resolve(listener(payload))
+      try {
+        const result = listener(payload)
+        if (result && typeof result.then === 'function') {
+          result.then(undefined, (error: unknown) => this.reportEventListenerError(name, error))
+        }
+      } catch (error) {
+        this.reportEventListenerError(name, error)
+      }
     }
+  }
+
+  private reportEventListenerError(name: string, error: unknown): void {
+    if (this.options.reportEventListenerError) {
+      this.options.reportEventListenerError(name, error)
+      return
+    }
+
+    console.error(`[RpcChannel] Event "${name}" listener failed:`, error)
   }
 
   private async handleRequest(id: string, method: string, params: unknown): Promise<void> {

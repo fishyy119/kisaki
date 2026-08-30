@@ -76,8 +76,9 @@ export class TrayController implements TrayApi {
 
       webPreferences: {
         preload: join(import.meta.dirname, '../preload/index.mjs'),
-        sandbox: false,
-        webSecurity: false
+        // Same policy as the main window: web security on, custom protocols
+        // serve local resources; ESM preload requires a non-sandboxed renderer.
+        sandbox: false
       }
     })
     this.window = menuWindow
@@ -119,7 +120,8 @@ export class TrayController implements TrayApi {
     if (!win || win.isDestroyed()) return
     if (!Number.isFinite(height) || height <= 0) return
 
-    const [currentWidth, currentHeight] = win.getContentSize()
+    // Electron guarantees a [width, height] pair.
+    const [currentWidth, currentHeight] = win.getContentSize() as [number, number]
     if (currentHeight === height) return
 
     win.setContentSize(currentWidth, height, false)
@@ -162,7 +164,8 @@ export class TrayController implements TrayApi {
   /** Places the menu next to the anchor without leaving the display work area. */
   private positionMenu(win: BrowserWindow, anchor: Electron.Point): void {
     const { workArea } = screen.getDisplayNearestPoint(anchor)
-    const [winWidth, winHeight] = win.getSize()
+    // Electron guarantees a [width, height] pair.
+    const [winWidth, winHeight] = win.getSize() as [number, number]
 
     const workAreaRight = workArea.x + workArea.width
     const workAreaBottom = workArea.y + workArea.height

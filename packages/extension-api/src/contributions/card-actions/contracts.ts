@@ -8,8 +8,8 @@ import type { Disposable, MaybePromise } from '../../shared'
 export interface CardActionContribution {
   id: string
   label: string
-  description?: string
-  order?: number
+  description?: string | undefined
+  order?: number | undefined
   run(): MaybePromise<void>
 }
 

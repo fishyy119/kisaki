@@ -7,16 +7,16 @@ export interface ValidationIssue {
 }
 
 interface StringValidationOptions {
-  minLength?: number
-  trim?: boolean
-  typeMessage?: string
-  valueMessage?: string
+  minLength?: number | undefined
+  trim?: boolean | undefined
+  typeMessage?: string | undefined
+  valueMessage?: string | undefined
 }
 
 interface ArrayValidationOptions {
-  minLength?: number
-  typeMessage?: string
-  valueMessage?: string
+  minLength?: number | undefined
+  typeMessage?: string | undefined
+  valueMessage?: string | undefined
 }
 
 export function isPlainObject(value: unknown): value is Record<string, unknown> {

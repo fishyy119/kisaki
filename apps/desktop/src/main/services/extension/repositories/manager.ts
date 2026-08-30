@@ -357,7 +357,7 @@ export class ExtensionRepositoryManager {
     if (candidates.length > 0) {
       return candidates.toSorted((left, right) =>
         compareInstallCandidates(left, right, this.apiVersion)
-      )[0]
+      )[0]!
     }
 
     if (!result.packageFound) {

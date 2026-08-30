@@ -549,7 +549,7 @@ function buildListCondition(
       return null
     }
     conditions.push(
-      entityConditions.length === 1 ? entityConditions[0] : (or(...entityConditions) as SQL)
+      entityConditions.length === 1 ? entityConditions[0]! : (or(...entityConditions) as SQL)
     )
   }
 
@@ -565,7 +565,7 @@ function buildListCondition(
       return null
     }
     conditions.push(
-      relatedConditions.length === 1 ? relatedConditions[0] : (or(...relatedConditions) as SQL)
+      relatedConditions.length === 1 ? relatedConditions[0]! : (or(...relatedConditions) as SQL)
     )
   }
 

@@ -11,10 +11,10 @@ export type CommandContributionExecuteResult = JsonValue | void
 export interface CommandContribution {
   id: string
   title: string
-  description?: string
-  argsSchema?: JsonObject
-  defaultArgs?: JsonObject
-  dangerLevel?: CommandDangerLevel
+  description?: string | undefined
+  argsSchema?: JsonObject | undefined
+  defaultArgs?: JsonObject | undefined
+  dangerLevel?: CommandDangerLevel | undefined
   execute(
     args: JsonObject,
     event: CommandContributionExecuteEvent

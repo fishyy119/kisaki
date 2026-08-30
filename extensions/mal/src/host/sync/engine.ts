@@ -4,8 +4,6 @@ import type { MalSettingsStore } from '../config/schema'
 import { getEntry, readMalMediaId, type LocalMediaRef } from '../library'
 import { toMalFamily } from '../media/kinds'
 import { createSyncFingerprint, type SyncStateStore } from './state'
-import type { SyncSuppressor } from './suppressor'
-
 /** Local statuses map onto MAL's list statuses one to one, per family. */
 export function toMalStatus(kind: 'anime' | 'manga', status: LibraryMediaStatus): string {
   switch (status) {
@@ -64,10 +62,9 @@ export type SyncItemStatus =
   | 'synced'
   | 'skippedDisabled'
   | 'skippedMissingItem'
-  | 'skippedNoMalId'
+  | 'skippedNoRemoteId'
   | 'skippedNoStatus'
   | 'skippedNoChange'
-  | 'skippedSuppressed'
 
 export interface SyncItemResult {
   status: SyncItemStatus
@@ -79,7 +76,6 @@ export interface SyncEngineDependencies {
   settingsStore: MalSettingsStore
   client: MalOfficialClient
   stateStore: SyncStateStore
-  suppressor: SyncSuppressor
 }
 
 /**
@@ -109,7 +105,7 @@ export class SyncEngine {
 
     const mediaId = readMalMediaId(entry.externalIds ?? [])
     if (mediaId === null) {
-      return { status: 'skippedNoMalId', ref }
+      return { status: 'skippedNoRemoteId', ref }
     }
 
     if (!entry.status) {
@@ -127,10 +123,6 @@ export class SyncEngine {
       pushScore: settings.sync.pushScore
     })
 
-    if (this.deps.suppressor.match(ref, fingerprint)) {
-      return { status: 'skippedSuppressed', ref, mediaId }
-    }
-
     if ((await this.deps.stateStore.getLastFingerprint(ref)) === fingerprint) {
       return { status: 'skippedNoChange', ref, mediaId }
     }
@@ -141,8 +133,7 @@ export class SyncEngine {
       { status, ...(score !== undefined ? { score } : {}) },
       { signal: options.signal }
     )
-    await this.deps.stateStore.recordSuccessfulSync(ref, mediaId, fingerprint)
-    this.deps.suppressor.suppressFingerprint(ref, fingerprint)
+    await this.deps.stateStore.recordSuccessfulSync(ref, fingerprint)
 
     return { status: 'synced', ref, mediaId }
   }

@@ -19,21 +19,21 @@ import type { ExternalId, Tag } from './common'
  */
 export interface CharacterInfo {
   name: string
-  originalName?: string
+  originalName?: string | undefined
   /** Nicknames and romanizations this character is also known by. */
-  aliases?: string[]
-  birthDate?: PartialDate
-  gender?: Gender
-  age?: number
-  bloodType?: BloodType
-  height?: number
-  weight?: number
-  bust?: number
-  waist?: number
-  hips?: number
-  cup?: CupSize
-  description?: string
-  externalSites?: ExternalSite[]
+  aliases?: string[] | undefined
+  birthDate?: PartialDate | undefined
+  gender?: Gender | undefined
+  age?: number | undefined
+  bloodType?: BloodType | undefined
+  height?: number | undefined
+  weight?: number | undefined
+  bust?: number | undefined
+  waist?: number | undefined
+  hips?: number | undefined
+  cup?: CupSize | undefined
+  description?: string | undefined
+  externalSites?: ExternalSite[] | undefined
   externalIds: ExternalId[]
 }
 
@@ -43,5 +43,5 @@ export interface CharacterInfo {
  * Core character metadata used across identity and normalization layers.
  */
 export interface CoreCharacterMetadata extends CharacterInfo {
-  tags?: Tag[]
+  tags?: Tag[] | undefined
 }

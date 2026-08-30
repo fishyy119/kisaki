@@ -240,6 +240,18 @@ export class ExtensionCapabilityGateway {
       })
     )
     rpc.handleHostRequest(
+      'capabilities.ingest.anime.update.fromScraper',
+      async ({ runtimeHandle, input }, context) => ({
+        result: await this.ingest.updateAnimeFromScraper(runtimeHandle, input, context.signal)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.anime.update.startFromScraper',
+      async ({ runtimeHandle, input }) => ({
+        start: this.ingest.startUpdateAnimeFromScraper(runtimeHandle, input)
+      })
+    )
+    rpc.handleHostRequest(
       'capabilities.ingest.comic.add.fromScraper',
       async ({ runtimeHandle, profileId, lookup, options }, context) => ({
         result: await this.ingest.addComicFromScraper(
@@ -258,6 +270,18 @@ export class ExtensionCapabilityGateway {
       })
     )
     rpc.handleHostRequest(
+      'capabilities.ingest.comic.update.fromScraper',
+      async ({ runtimeHandle, input }, context) => ({
+        result: await this.ingest.updateComicFromScraper(runtimeHandle, input, context.signal)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.comic.update.startFromScraper',
+      async ({ runtimeHandle, input }) => ({
+        start: this.ingest.startUpdateComicFromScraper(runtimeHandle, input)
+      })
+    )
+    rpc.handleHostRequest(
       'capabilities.ingest.novel.add.fromScraper',
       async ({ runtimeHandle, profileId, lookup, options }, context) => ({
         result: await this.ingest.addNovelFromScraper(
@@ -273,6 +297,18 @@ export class ExtensionCapabilityGateway {
       'capabilities.ingest.novel.add.startFromScraper',
       async ({ runtimeHandle, profileId, lookup, options }) => ({
         start: this.ingest.startAddNovelFromScraper(runtimeHandle, profileId, lookup, options)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.novel.update.fromScraper',
+      async ({ runtimeHandle, input }, context) => ({
+        result: await this.ingest.updateNovelFromScraper(runtimeHandle, input, context.signal)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.novel.update.startFromScraper',
+      async ({ runtimeHandle, input }) => ({
+        start: this.ingest.startUpdateNovelFromScraper(runtimeHandle, input)
       })
     )
 

@@ -7,7 +7,6 @@ import type {
   ScraperProviderContext
 } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../../api/types'
-import { omitUndefined } from '../../../utils/object'
 import { parseBangumiSubjectDate } from '../../format/dates'
 import {
   resolveBangumiBookGrain,
@@ -20,7 +19,7 @@ import { BangumiSubjectProvider } from '../../subject/provider'
 import { createBangumiComicSession } from './session'
 
 /** Search result plus the platform fact the comic/novel split filters on. */
-type ComicCandidate = ComicSearchResult & { bookKind?: BangumiBookKind }
+type ComicCandidate = ComicSearchResult & { bookKind?: BangumiBookKind | undefined }
 
 export class BangumiComicProvider
   extends BangumiSubjectProvider<ComicCandidate>
@@ -72,7 +71,7 @@ export class BangumiComicProvider
       locale
     )
 
-    return omitUndefined({
+    return {
       id: String(subject.id),
       name,
       originalName,
@@ -81,6 +80,6 @@ export class BangumiComicProvider
       grain: resolveBangumiBookGrain(subject.series),
       externalIds: this.buildSearchExternalIds(subject),
       bookKind: resolveBangumiBookKind(subject.platform)
-    })
+    }
   }
 }

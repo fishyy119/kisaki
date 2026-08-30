@@ -1,16 +1,10 @@
-import {
-  isCancellationError,
-  kisaki,
-  type ExtensionLogger,
-  type TaskRunHandle
-} from '@kisaki3/extension-sdk'
+import { kisaki, type ExtensionLogger, type TaskRunHandle } from '@kisaki3/extension-sdk'
 import type { AnilistTaskStateView } from '../shared/settings'
 import type { AnilistClient } from './api/client'
 import { m } from './i18n'
 import { runListImport, type ImportOptions, type ImportSummary } from './import/runner'
 import { listAllEntries, readAnilistMediaId, type LocalMediaRef } from './library'
 import type { SyncEngine } from './sync/engine'
-import type { SyncSuppressor } from './sync/suppressor'
 import { AnilistExtensionError, toSafeErrorLog } from './utils/errors'
 
 const IMPORT_OPERATION = 'anilist.list-import'
@@ -20,7 +14,6 @@ const OPERATIONS = [IMPORT_OPERATION, PUSH_OPERATION]
 export interface AnilistTasksDependencies {
   client: AnilistClient
   engine: SyncEngine
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -49,7 +42,6 @@ export class AnilistTasks {
       const summary = await runListImport(
         {
           client: this.deps.client,
-          suppressor: this.deps.suppressor,
           ...(this.deps.logger ? { logger: this.deps.logger } : {})
         },
         options,
@@ -112,7 +104,7 @@ export class AnilistTasks {
             skipped += 1
           }
         } catch (error) {
-          if (isCancellationError(error)) {
+          if (handle.signal.aborted) {
             throw error
           }
           failed += 1
@@ -186,7 +178,7 @@ export class AnilistTasks {
     try {
       await work()
     } catch (error) {
-      if (isCancellationError(error)) {
+      if (handle.signal.aborted) {
         await handle.cancel()
         return
       }

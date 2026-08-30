@@ -1,16 +1,10 @@
-import {
-  isCancellationError,
-  kisaki,
-  type ExtensionLogger,
-  type TaskRunHandle
-} from '@kisaki3/extension-sdk'
+import { kisaki, type ExtensionLogger, type TaskRunHandle } from '@kisaki3/extension-sdk'
 import type { NeodbTaskStateView } from '../shared/settings'
 import type { NeodbClient } from './api/client'
 import { m } from './i18n'
 import { runShelfImport, type ImportOptions, type ImportSummary } from './import/runner'
 import { listAllNovels, readNeodbId } from './library'
 import type { SyncEngine } from './sync/engine'
-import type { SyncSuppressor } from './sync/suppressor'
 import { NeodbExtensionError, toSafeErrorLog } from './utils/errors'
 
 const IMPORT_OPERATION = 'neodb.shelf-import'
@@ -20,7 +14,6 @@ const OPERATIONS = [IMPORT_OPERATION, PUSH_OPERATION]
 export interface NeodbTasksDependencies {
   client: NeodbClient
   engine: SyncEngine
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -49,7 +42,6 @@ export class NeodbTasks {
       const summary = await runShelfImport(
         {
           client: this.deps.client,
-          suppressor: this.deps.suppressor,
           ...(this.deps.logger ? { logger: this.deps.logger } : {})
         },
         options,
@@ -110,7 +102,7 @@ export class NeodbTasks {
             skipped += 1
           }
         } catch (error) {
-          if (isCancellationError(error)) {
+          if (handle.signal.aborted) {
             throw error
           }
           failed += 1
@@ -183,7 +175,7 @@ export class NeodbTasks {
     try {
       await work()
     } catch (error) {
-      if (isCancellationError(error)) {
+      if (handle.signal.aborted) {
         await handle.cancel()
         return
       }

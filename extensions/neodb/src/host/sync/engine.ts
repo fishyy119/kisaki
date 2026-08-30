@@ -5,8 +5,6 @@ import type { NeodbSettingsStore } from '../config/schema'
 import type { NeodbSyncVisibility } from '../../shared/settings'
 import { getNovel, readNeodbId } from '../library'
 import { createSyncFingerprint, type SyncStateStore } from './state'
-import type { SyncSuppressor } from './suppressor'
-
 /**
  * NeoDB has no on-hold shelf, so `onHold` states nothing pushable; mapping it
  * to any shelf would misstate the user's record.
@@ -76,11 +74,10 @@ export type SyncItemStatus =
   | 'synced'
   | 'skippedDisabled'
   | 'skippedMissingItem'
-  | 'skippedNoNeodbId'
+  | 'skippedNoRemoteId'
   | 'skippedNoStatus'
   | 'skippedNoMapping'
   | 'skippedNoChange'
-  | 'skippedSuppressed'
 
 export interface SyncItemResult {
   status: SyncItemStatus
@@ -92,7 +89,6 @@ export interface SyncEngineDependencies {
   settingsStore: NeodbSettingsStore
   client: NeodbClient
   stateStore: SyncStateStore
-  suppressor: SyncSuppressor
 }
 
 /**
@@ -120,7 +116,7 @@ export class SyncEngine {
 
     const itemUuid = readNeodbId(entry.externalIds ?? [])
     if (itemUuid === null) {
-      return { status: 'skippedNoNeodbId', novelId }
+      return { status: 'skippedNoRemoteId', novelId }
     }
 
     if (!entry.status) {
@@ -143,10 +139,6 @@ export class SyncEngine {
       pushScore: settings.sync.pushScore
     })
 
-    if (this.deps.suppressor.match(novelId, fingerprint)) {
-      return { status: 'skippedSuppressed', novelId, itemUuid }
-    }
-
     if ((await this.deps.stateStore.getLastFingerprint(novelId)) === fingerprint) {
       return { status: 'skippedNoChange', novelId, itemUuid }
     }
@@ -160,8 +152,10 @@ export class SyncEngine {
       },
       { signal: options.signal }
     )
-    await this.deps.stateStore.recordSuccessfulSync(novelId, itemUuid, fingerprint)
-    this.deps.suppressor.suppressFingerprint(novelId, fingerprint)
+    await this.deps.stateStore.recordSuccessfulSync(novelId, {
+      fingerprint,
+      updatedAt: Date.now()
+    })
 
     return { status: 'synced', novelId, itemUuid }
   }

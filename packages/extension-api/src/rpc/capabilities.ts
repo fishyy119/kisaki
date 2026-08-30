@@ -20,7 +20,10 @@ import type {
   IngestAddGameFromScraperResult,
   IngestAddNovelFromScraperOptions,
   IngestAddNovelFromScraperResult,
+  IngestAnimeUpdateFromScraperInput,
+  IngestComicUpdateFromScraperInput,
   IngestGameUpdateFromScraperInput,
+  IngestNovelUpdateFromScraperInput,
   IngestTaskRunStart,
   IngestUpdateResult
 } from '../capabilities/ingest'
@@ -120,14 +123,14 @@ import type { ExtensionScopedRpcParams } from './lifecycle'
 export interface NotifyShowRequest extends ExtensionScopedRpcParams {
   kind: NotificationKind
   title: string
-  options?: string | NotifyOptions
+  options?: string | NotifyOptions | undefined
 }
 
 export interface NotifyUpdateRequest extends ExtensionScopedRpcParams {
   id: string
   kind: NotificationKind
   title: string
-  options?: string | NotifyOptions
+  options?: string | NotifyOptions | undefined
 }
 
 export interface NotifyDismissRequest extends ExtensionScopedRpcParams {
@@ -141,7 +144,7 @@ export interface RuntimeOpenExternalRequest extends ExtensionScopedRpcParams {
 }
 
 export interface PickFileRequest extends ExtensionScopedRpcParams {
-  input?: PickFileInput
+  input?: PickFileInput | undefined
 }
 
 export interface ReleaseFileGrantRequest extends ExtensionScopedRpcParams {
@@ -150,7 +153,7 @@ export interface ReleaseFileGrantRequest extends ExtensionScopedRpcParams {
 
 export interface GetFileIconRequest extends ExtensionScopedRpcParams {
   path: string
-  input?: GetFileIconInput
+  input?: GetFileIconInput | undefined
 }
 
 export interface CommandGetRequest extends ExtensionScopedRpcParams {
@@ -162,7 +165,7 @@ export interface CommandInvocationRpcRequest extends ExtensionScopedRpcParams {
 }
 
 export interface ScraperProfilesListRequest extends ExtensionScopedRpcParams {
-  query?: ScraperProfileListQuery
+  query?: ScraperProfileListQuery | undefined
 }
 
 export interface ScraperProfileGetRequest extends ExtensionScopedRpcParams {
@@ -172,29 +175,41 @@ export interface ScraperProfileGetRequest extends ExtensionScopedRpcParams {
 export interface IngestGameAddFromScraperRequest extends ExtensionScopedRpcParams {
   profileId: string
   lookup: GameScraperLookup
-  options?: IngestAddGameFromScraperOptions
+  options?: IngestAddGameFromScraperOptions | undefined
 }
 
 export interface IngestGameUpdateFromScraperRequest extends ExtensionScopedRpcParams {
   input: IngestGameUpdateFromScraperInput
 }
 
+export interface IngestAnimeUpdateFromScraperRequest extends ExtensionScopedRpcParams {
+  input: IngestAnimeUpdateFromScraperInput
+}
+
+export interface IngestComicUpdateFromScraperRequest extends ExtensionScopedRpcParams {
+  input: IngestComicUpdateFromScraperInput
+}
+
+export interface IngestNovelUpdateFromScraperRequest extends ExtensionScopedRpcParams {
+  input: IngestNovelUpdateFromScraperInput
+}
+
 export interface IngestAnimeAddFromScraperRequest extends ExtensionScopedRpcParams {
   profileId: string
   lookup: AnimeScraperLookup
-  options?: IngestAddAnimeFromScraperOptions
+  options?: IngestAddAnimeFromScraperOptions | undefined
 }
 
 export interface IngestComicAddFromScraperRequest extends ExtensionScopedRpcParams {
   profileId: string
   lookup: ComicScraperLookup
-  options?: IngestAddComicFromScraperOptions
+  options?: IngestAddComicFromScraperOptions | undefined
 }
 
 export interface IngestNovelAddFromScraperRequest extends ExtensionScopedRpcParams {
   profileId: string
   lookup: NovelScraperLookup
-  options?: IngestAddNovelFromScraperOptions
+  options?: IngestAddNovelFromScraperOptions | undefined
 }
 
 export interface LibraryGraphRpcRequest extends ExtensionScopedRpcParams {
@@ -229,7 +244,7 @@ export interface AutomationRunRequest extends ExtensionScopedRpcParams {
 
 export interface TaskRunFailureErrorPayload {
   message: string
-  code?: string
+  code?: string | undefined
 }
 
 export interface TaskRunCreateRequest extends ExtensionScopedRpcParams {
@@ -245,24 +260,24 @@ export interface TaskRunReportRequest extends TaskRunScopedRequest {
 }
 
 export interface TaskRunCompleteRequest extends TaskRunScopedRequest {
-  result?: Omit<TaskRunResult, 'status' | 'error'>
+  result?: Omit<TaskRunResult, 'status' | 'error'> | undefined
 }
 
 export interface TaskRunFailRequest extends TaskRunScopedRequest {
   error: TaskRunFailureErrorPayload
-  result?: Omit<TaskRunResult, 'status' | 'error'>
+  result?: Omit<TaskRunResult, 'status' | 'error'> | undefined
 }
 
 export interface TaskRunCancelRequest extends TaskRunScopedRequest {
-  result?: Omit<TaskRunResult, 'status' | 'error'>
+  result?: Omit<TaskRunResult, 'status' | 'error'> | undefined
 }
 
 export interface TaskRunActiveListRequest extends ExtensionScopedRpcParams {
-  query?: TaskRunActiveListQuery
+  query?: TaskRunActiveListQuery | undefined
 }
 
 export interface TaskRunHistoryListRequest extends ExtensionScopedRpcParams {
-  query?: TaskRunHistoryListQuery
+  query?: TaskRunHistoryListQuery | undefined
 }
 
 export interface TaskRunCancelRequestedEvent {
@@ -272,12 +287,12 @@ export interface TaskRunCancelRequestedEvent {
 
 export interface WebviewOpenPageRpcRequest extends ExtensionScopedRpcParams {
   pageId: string
-  options?: WebviewOpenOptions
+  options?: WebviewOpenOptions | undefined
 }
 
 export interface WebviewOpenDialogRpcRequest extends ExtensionScopedRpcParams {
   dialogId: string
-  options?: WebviewOpenOptions
+  options?: WebviewOpenOptions | undefined
 }
 
 export interface WebviewScopedRpcRequest extends ExtensionScopedRpcParams {
@@ -487,6 +502,14 @@ export type HostToMainCapabilityRpcRequestMap = {
     IngestAnimeAddFromScraperRequest,
     { start: IngestTaskRunStart }
   >
+  'capabilities.ingest.anime.update.fromScraper': RpcMethodDefinition<
+    IngestAnimeUpdateFromScraperRequest,
+    { result: IngestUpdateResult }
+  >
+  'capabilities.ingest.anime.update.startFromScraper': RpcMethodDefinition<
+    IngestAnimeUpdateFromScraperRequest,
+    { start: IngestTaskRunStart }
+  >
   'capabilities.ingest.comic.add.fromScraper': RpcMethodDefinition<
     IngestComicAddFromScraperRequest,
     { result: IngestAddComicFromScraperResult }
@@ -495,12 +518,28 @@ export type HostToMainCapabilityRpcRequestMap = {
     IngestComicAddFromScraperRequest,
     { start: IngestTaskRunStart }
   >
+  'capabilities.ingest.comic.update.fromScraper': RpcMethodDefinition<
+    IngestComicUpdateFromScraperRequest,
+    { result: IngestUpdateResult }
+  >
+  'capabilities.ingest.comic.update.startFromScraper': RpcMethodDefinition<
+    IngestComicUpdateFromScraperRequest,
+    { start: IngestTaskRunStart }
+  >
   'capabilities.ingest.novel.add.fromScraper': RpcMethodDefinition<
     IngestNovelAddFromScraperRequest,
     { result: IngestAddNovelFromScraperResult }
   >
   'capabilities.ingest.novel.add.startFromScraper': RpcMethodDefinition<
     IngestNovelAddFromScraperRequest,
+    { start: IngestTaskRunStart }
+  >
+  'capabilities.ingest.novel.update.fromScraper': RpcMethodDefinition<
+    IngestNovelUpdateFromScraperRequest,
+    { result: IngestUpdateResult }
+  >
+  'capabilities.ingest.novel.update.startFromScraper': RpcMethodDefinition<
+    IngestNovelUpdateFromScraperRequest,
     { start: IngestTaskRunStart }
   >
   'capabilities.commands.list': RpcMethodDefinition<

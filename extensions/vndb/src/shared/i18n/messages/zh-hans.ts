@@ -12,7 +12,8 @@ export const zhHans: VndbMessages = {
     operationCancelled: '操作已取消',
     baseUrlInvalid: '请输入 http 或 https 地址',
     idInvalid: ({ value }) => `“${value}”不是有效的 VNDB ID`,
-    listPermissionMissing: '该 VNDB 令牌无法读取你的列表，请创建带 listread 与 listwrite 权限的令牌',
+    listPermissionMissing:
+      '该 VNDB 令牌无法读取你的列表，请创建带 listread 与 listwrite 权限的令牌',
     operationRunning: '已有 VNDB 列表操作在运行，请等待其完成'
   },
 

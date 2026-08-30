@@ -1,14 +1,11 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
-  createCancellationError,
-  delay,
-  isCancellationError,
-  RateLimiter,
-  throwIfAborted,
   type ExtensionLogger,
   type ExtensionSecrets,
   type NetworkCapability,
   type NetworkResponse
 } from '@kisaki3/extension-sdk'
+import { RateLimiter } from '../utils/rate-limiter'
 import type { SgdbSettingsV1 } from '../config/schema'
 import { m } from '../i18n'
 import {
@@ -109,7 +106,7 @@ export class SgdbClient {
     const url = `${SGDB_API_URL}/${path}`
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
-      throwIfAborted(options.signal)
+      options.signal?.throwIfAborted()
 
       try {
         await this.limiter.acquire(options.signal)
@@ -132,7 +129,7 @@ export class SgdbClient {
         }
 
         if (shouldRetryStatus(response.status) && attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
 
@@ -140,8 +137,8 @@ export class SgdbClient {
       } catch (error) {
         // Must precede the retry branch: a cancelled call is not a transient
         // fault and reissuing it would outlive the cancellation.
-        if (isCancellationError(error)) {
-          throw createCancellationError(m().errors.operationCancelled)
+        if (options.signal?.aborted) {
+          throw error
         }
 
         if (error instanceof SgdbExtensionError) {
@@ -150,7 +147,7 @@ export class SgdbClient {
 
         this.logger.debug('SteamGridDB request attempt failed.', { attempt })
         if (attempt < settings.client.retryCount) {
-          await delay(resolveRetryDelayMs(attempt), options.signal)
+          await delay(resolveRetryDelayMs(attempt), undefined, { signal: options.signal })
           continue
         }
       }

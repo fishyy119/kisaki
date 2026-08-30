@@ -12,7 +12,6 @@ import {
 } from '../identity/subject-ref'
 import { BangumiExtensionError } from '../utils/errors'
 import { m } from '../i18n'
-import { omitUndefined } from '../utils/object'
 import { createSyncFingerprint, type SyncStateStore } from './fingerprint'
 import {
   createSyncMappingOptions,
@@ -20,15 +19,12 @@ import {
   syncPayloadMatchesRemote,
   type SyncMappingOverrides
 } from './mapping'
-import type { SyncSuppressor } from './suppressor'
-
 export type SyncItemResultStatus =
   | 'synced'
   | 'wouldSync'
-  | 'skippedNoBangumiId'
+  | 'skippedNoRemoteId'
   | 'skippedByMapping'
   | 'skippedNoChange'
-  | 'skippedSuppressed'
   | 'skippedRemoteExisting'
   | 'skippedMissingLocalItem'
   | 'skippedUnsupportedScope'
@@ -38,12 +34,11 @@ export interface SyncItemResult {
   status: SyncItemResultStatus
   scope: BangumiMediaScope
   localId: string
-  item?: LocalMediaItem
-  subjectId?: string
-  payload?: BangumiCollectionPatch
-  fingerprint?: string
-  remote?: BangumiUserCollection
-  suppressReason?: string
+  item?: LocalMediaItem | undefined
+  subjectId?: string | undefined
+  payload?: BangumiCollectionPatch | undefined
+  fingerprint?: string | undefined
+  remote?: BangumiUserCollection | undefined
 }
 
 export interface SyncItemOptions extends SyncMappingOverrides {
@@ -61,7 +56,6 @@ export interface SyncEngineDependencies {
   client: BangumiClient
   mediaRegistry: MediaRegistry
   stateStore: SyncStateStore
-  suppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -70,7 +64,7 @@ export class SyncEngine {
 
   async syncItem(options: SyncItemOptions): Promise<SyncItemResult> {
     const result = await this.collectItem(options)
-    return this.applyItem(result, omitUndefined({ signal: options.signal }))
+    return this.applyItem(result, { signal: options.signal })
   }
 
   async collectItem(options: SyncItemOptions): Promise<SyncItemResult> {
@@ -94,7 +88,7 @@ export class SyncEngine {
 
     const subjectId = readBangumiSubjectIdFromExternalIds(item)
     if (!subjectId) {
-      return { status: 'skippedNoBangumiId', scope: options.scope, localId: item.localId, item }
+      return { status: 'skippedNoRemoteId', scope: options.scope, localId: item.localId, item }
     }
 
     const mappingOptions = createSyncMappingOptions(settings, options)
@@ -110,33 +104,17 @@ export class SyncEngine {
       }
     }
 
-    const fingerprint = createSyncFingerprint(
-      omitUndefined({
-        scope: options.scope,
-        localId: item.localId,
-        subjectId,
-        playStatusEnabled: mappingOptions.playStatusEnabled,
-        mappedType: payloadPlan.mappedType,
-        scoreEnabled: mappingOptions.scoreEnabled,
-        mappedRate: payloadPlan.mappedRate,
-        clearRemoteScoreWhenEmpty: mappingOptions.clearRemoteScoreWhenEmpty,
-        payload: payloadPlan.payload
-      })
-    )
-
-    const suppress = this.deps.suppressor.match(options.scope, item.localId, fingerprint)
-    if (suppress) {
-      return {
-        status: 'skippedSuppressed',
-        scope: options.scope,
-        localId: item.localId,
-        item,
-        subjectId,
-        payload: payloadPlan.payload,
-        fingerprint,
-        suppressReason: suppress.reason
-      }
-    }
+    const fingerprint = createSyncFingerprint({
+      scope: options.scope,
+      localId: item.localId,
+      subjectId,
+      playStatusEnabled: mappingOptions.playStatusEnabled,
+      mappedType: payloadPlan.mappedType,
+      scoreEnabled: mappingOptions.scoreEnabled,
+      mappedRate: payloadPlan.mappedRate,
+      clearRemoteScoreWhenEmpty: mappingOptions.clearRemoteScoreWhenEmpty,
+      payload: payloadPlan.payload
+    })
 
     const subjectRef = createBangumiSubjectRef(options.scope, subjectId)
     const remote = options.checkRemote
@@ -157,7 +135,7 @@ export class SyncEngine {
     }
 
     if (options.checkRemote && syncPayloadMatchesRemote(payloadPlan.payload, remote)) {
-      return omitUndefined({
+      return {
         status: 'skippedNoChange',
         scope: options.scope,
         localId: item.localId,
@@ -166,7 +144,7 @@ export class SyncEngine {
         payload: payloadPlan.payload,
         fingerprint,
         remote
-      })
+      }
     }
 
     if (!options.checkRemote) {
@@ -187,7 +165,7 @@ export class SyncEngine {
       }
     }
 
-    return omitUndefined({
+    return {
       status: 'wouldSync',
       scope: options.scope,
       localId: item.localId,
@@ -196,7 +174,7 @@ export class SyncEngine {
       payload: payloadPlan.payload,
       fingerprint,
       remote
-    })
+    }
   }
 
   async applyItem(
@@ -217,7 +195,6 @@ export class SyncEngine {
       return result
     }
 
-    const settings = await this.deps.settingsStore.get()
     await this.deps.client.upsertMyCollection(
       createBangumiSubjectRef(result.scope, result.subjectId),
       result.payload,
@@ -232,12 +209,6 @@ export class SyncEngine {
       fingerprint: result.fingerprint,
       updatedAt: Date.now()
     })
-    this.deps.suppressor.suppressFingerprint(
-      result.scope,
-      result.localId,
-      result.fingerprint,
-      Math.max(30_000, settings.autoSync.debounceMs * 2)
-    )
 
     return {
       ...result,

@@ -29,12 +29,12 @@ export type TaskRunInitiator =
       type: 'extension'
       extension: {
         id: string
-        nameSnapshot?: string
+        nameSnapshot?: string | undefined
       }
     }
   | {
       type: 'system'
-      reason?: TaskRunSystemReason
+      reason?: TaskRunSystemReason | undefined
     }
 
 export type TaskRunProgressUnit =
@@ -43,74 +43,74 @@ export type TaskRunProgressUnit =
 export type TaskRunRatePeriod = 'second' | 'minute' | 'hour'
 
 export interface TaskRunWarning {
-  code?: string
+  code?: string | undefined
   message: string
 }
 
 export interface TaskRunProgressPhase {
   key: string
   label: string
-  current?: number
-  total?: number
+  current?: number | undefined
+  total?: number | undefined
 }
 
 export interface TaskRunProgressWork {
-  current?: number
-  total?: number
-  unit?: TaskRunProgressUnit
-  ratePeriod?: TaskRunRatePeriod
-  indeterminate?: boolean
+  current?: number | undefined
+  total?: number | undefined
+  unit?: TaskRunProgressUnit | undefined
+  ratePeriod?: TaskRunRatePeriod | undefined
+  indeterminate?: boolean | undefined
 }
 
 export interface TaskRunProgressWorkMetrics {
-  rate?: number
-  etaMs?: number
-  percent?: number
+  rate?: number | undefined
+  etaMs?: number | undefined
+  percent?: number | undefined
 }
 
 export interface TaskRunProgressUpdate {
-  phase?: TaskRunProgressPhase
-  work?: TaskRunProgressWork
-  counters?: Record<string, number>
-  warnings?: readonly TaskRunWarning[]
+  phase?: TaskRunProgressPhase | undefined
+  work?: TaskRunProgressWork | undefined
+  counters?: Record<string, number> | undefined
+  warnings?: readonly TaskRunWarning[] | undefined
 }
 
 export interface TaskRunProgress extends Omit<TaskRunProgressUpdate, 'work'> {
-  work?: TaskRunProgressWork & TaskRunProgressWorkMetrics
+  work?: (TaskRunProgressWork & TaskRunProgressWorkMetrics) | undefined
   updatedAt: number
 }
 
 export interface TaskRunResult {
   status: TaskRunFinalStatus
-  title?: string
-  summary?: string
-  output?: JsonValue
-  error?: string
-  counters?: Record<string, number>
-  warnings?: readonly TaskRunWarning[]
+  title?: string | undefined
+  summary?: string | undefined
+  output?: JsonValue | undefined
+  error?: string | undefined
+  counters?: Record<string, number> | undefined
+  warnings?: readonly TaskRunWarning[] | undefined
 }
 
 export type TaskRunSubjectType = 'command' | 'extension'
 
 export interface TaskRunSubject {
   type: TaskRunSubjectType
-  id?: string
-  labelSnapshot?: string
+  id?: string | undefined
+  labelSnapshot?: string | undefined
 }
 
 export interface TaskRunControls {
-  cancelable?: boolean
-  pausable?: boolean
+  cancelable?: boolean | undefined
+  pausable?: boolean | undefined
 }
 
 export interface TaskRunPresentation {
   notify?: {
     enabled: boolean
-    title?: string
-    message?: string
-    showProgress?: boolean
-    showResult?: boolean
-    closable?: boolean
+    title?: string | undefined
+    message?: string | undefined
+    showProgress?: boolean | undefined
+    showResult?: boolean | undefined
+    closable?: boolean | undefined
   }
 }
 
@@ -118,46 +118,46 @@ export interface TaskRunSnapshot {
   id: string
   operation: TaskRunOperation
   title: string
-  description?: string
+  description?: string | undefined
   status: TaskRunStatus
   initiator: TaskRunInitiator
-  subject?: TaskRunSubject
+  subject?: TaskRunSubject | undefined
   controls: Required<TaskRunControls>
-  progress?: TaskRunProgress
-  result?: TaskRunResult
+  progress?: TaskRunProgress | undefined
+  result?: TaskRunResult | undefined
   createdAt: number
-  startedAt?: number
+  startedAt?: number | undefined
   updatedAt: number
-  finishedAt?: number
+  finishedAt?: number | undefined
 }
 
 export interface TaskRunCreateInput {
   operation: TaskRunOperation
   title: string
-  description?: string
-  initiator?: TaskRunInitiator
-  subject?: TaskRunSubject
-  controls?: TaskRunControls
-  presentation?: TaskRunPresentation
+  description?: string | undefined
+  initiator?: TaskRunInitiator | undefined
+  subject?: TaskRunSubject | undefined
+  controls?: TaskRunControls | undefined
+  presentation?: TaskRunPresentation | undefined
 }
 
 export interface TaskRunActiveListQuery {
-  operations?: readonly TaskRunOperation[]
+  operations?: readonly TaskRunOperation[] | undefined
   subject?: {
     type: TaskRunSubjectType
-    id?: string
+    id?: string | undefined
   }
-  limit?: number
+  limit?: number | undefined
 }
 
 export interface TaskRunHistoryListQuery {
-  statuses?: readonly TaskRunFinalStatus[]
-  operations?: readonly TaskRunOperation[]
+  statuses?: readonly TaskRunFinalStatus[] | undefined
+  operations?: readonly TaskRunOperation[] | undefined
   subject?: {
     type: TaskRunSubjectType
-    id?: string
+    id?: string | undefined
   }
-  limit?: number
+  limit?: number | undefined
 }
 
 export class TaskRunCancellation extends Error {

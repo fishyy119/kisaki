@@ -70,8 +70,9 @@ function toCompositedLuma(rgba: Uint8Array, pixelCount: number): Float64Array {
   const luma = new Float64Array(pixelCount)
   for (let i = 0; i < pixelCount; i += 1) {
     const offset = i * 4
-    const alpha = rgba[offset + 3] / 255
-    luma[i] = (0.299 * rgba[offset] + 0.587 * rgba[offset + 1] + 0.114 * rgba[offset + 2]) * alpha
+    const alpha = rgba[offset + 3]! / 255
+    luma[i] =
+      (0.299 * rgba[offset]! + 0.587 * rgba[offset + 1]! + 0.114 * rgba[offset + 2]!) * alpha
   }
   return luma
 }
@@ -98,7 +99,7 @@ function resampleArea(src: Float64Array, width: number, height: number): Float64
           const weightX = Math.min(sx + 1, x1) - Math.max(sx, x0)
           if (weightX <= 0) continue
           const w = weightX * weightY
-          sum += src[sy * width + sx] * w
+          sum += src[sy * width + sx]! * w
           weight += w
         }
       }
@@ -134,7 +135,7 @@ function dctLowFrequencyBlock(values: Float64Array): Float64Array {
     for (let fx = 0; fx < BLOCK_SIZE; fx += 1) {
       let sum = 0
       for (let x = 0; x < SAMPLE_SIZE; x += 1) {
-        sum += values[y * SAMPLE_SIZE + x] * COS_TABLE[fx * SAMPLE_SIZE + x]
+        sum += values[y * SAMPLE_SIZE + x]! * COS_TABLE[fx * SAMPLE_SIZE + x]!
       }
       rowPass[y * BLOCK_SIZE + fx] = sum
     }
@@ -145,7 +146,7 @@ function dctLowFrequencyBlock(values: Float64Array): Float64Array {
     for (let fx = 0; fx < BLOCK_SIZE; fx += 1) {
       let sum = 0
       for (let y = 0; y < SAMPLE_SIZE; y += 1) {
-        sum += rowPass[y * BLOCK_SIZE + fx] * COS_TABLE[fy * SAMPLE_SIZE + y]
+        sum += rowPass[y * BLOCK_SIZE + fx]! * COS_TABLE[fy * SAMPLE_SIZE + y]!
       }
       block[fy * BLOCK_SIZE + fx] = sum
     }
@@ -157,13 +158,13 @@ function dctLowFrequencyBlock(values: Float64Array): Float64Array {
 function hashFromBlock(block: Float64Array): bigint {
   let mean = 0
   for (let i = 0; i < block.length; i += 1) {
-    mean += block[i]
+    mean += block[i]!
   }
   mean /= block.length
 
   let hash = 0n
   for (let i = 0; i < block.length; i += 1) {
-    hash = (hash << 1n) | (block[i] > mean ? 1n : 0n)
+    hash = (hash << 1n) | (block[i]! > mean ? 1n : 0n)
   }
   return hash
 }

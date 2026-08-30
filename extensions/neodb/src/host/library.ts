@@ -21,8 +21,8 @@ const LIST_PAGE_SIZE = 500
 export interface LocalNovelEntry {
   id: string
   name: string
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
   externalIds: readonly ExternalId[]
 }
 
@@ -61,12 +61,14 @@ export async function getNovel(id: string): Promise<LocalNovelEntry | null> {
 }
 
 export interface NovelUserStatePatch {
-  status?: LibraryMediaStatus
-  score?: number | null
+  status?: LibraryMediaStatus | undefined
+  score?: number | null | undefined
 }
 
 export async function updateNovelUserState(id: string, patch: NovelUserStatePatch): Promise<void> {
-  if (Object.keys(patch).length === 0) {
+  // Explicitly-undefined members mean "leave unchanged"; an all-absent patch
+  // must not become an empty library update.
+  if (Object.values(patch).every((value) => value === undefined)) {
     return
   }
 
@@ -80,11 +82,18 @@ export async function updateNovelUserState(id: string, patch: NovelUserStatePatc
  */
 export function subscribeNovelChanges(
   hooks: HooksRegistrar,
+  selfActor: string,
   listener: (novelId: string) => void
 ): Disposable {
   return hooks.on('library.changed', ({ changes }) => {
     for (const change of changes) {
       if (change.kind !== 'updated' || change.entity !== 'novel') {
+        continue
+      }
+
+      // Writes this extension caused come back attributed; reacting to them
+      // would only echo our own import or push.
+      if (change.actors.every((actor) => actor === selfActor)) {
         continue
       }
 

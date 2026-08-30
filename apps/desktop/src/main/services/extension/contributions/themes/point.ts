@@ -21,10 +21,14 @@ export class ExtensionThemeContributionPoint {
 
   register(runtimeHandle: ExtensionRuntimeHandle, theme: ThemeContribution): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)
-    this.registrations.set(getRuntimeContributionKey(runtimeHandle, theme.id), {
-      owner,
-      theme
-    })
+    const key = getRuntimeContributionKey(runtimeHandle, theme.id)
+    // Same policy as every other contribution point: a duplicate id within
+    // one extension is a registration bug, not an update channel.
+    if (this.registrations.has(key)) {
+      throw new Error(`Theme "${theme.id}" is already registered by "${owner.extension.id}".`)
+    }
+
+    this.registrations.set(key, { owner, theme })
   }
 
   unregister(runtimeHandle: ExtensionRuntimeHandle, themeId: string): void {

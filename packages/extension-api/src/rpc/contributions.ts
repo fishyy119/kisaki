@@ -59,7 +59,7 @@ export type EntityMenuRegistrationInfo = {
       id: string
       domain: TDomain
       scope: TScope
-      order?: number
+      order?: number | undefined
     }
   }[EntityMenuScope<TDomain>]
 }[EntityMenuDomain]
@@ -150,7 +150,7 @@ export type EntityMenuInvokeRequest = EntityMenuScopedRpcParams & {
   sessionId: string
   nodePath: readonly string[]
   input: EntityMenuInput
-  value?: boolean | string
+  value?: boolean | string | undefined
 }
 
 export interface EntityMenuReleaseRequest {
@@ -158,7 +158,7 @@ export interface EntityMenuReleaseRequest {
 }
 
 export type EntityMenuRefreshRequestedNotification = EntityMenuScopedRpcParams & {
-  reason?: EntityMenuRefreshReason
+  reason?: EntityMenuRefreshReason | undefined
 }
 
 export interface DeeplinkRouteHandleRequest extends ContributionScopedRpcParams {
@@ -174,7 +174,7 @@ export interface CommandExecuteRequest extends ExtensionScopedRpcParams {
 }
 
 export interface CommandExecuteResponse {
-  output?: Exclude<CommandContributionExecuteResult, void>
+  output?: Exclude<CommandContributionExecuteResult, void> | undefined
 }
 
 type ScraperProviderScopedRpcParamsFor<TMediaType extends ScraperMediaType> =
@@ -392,7 +392,7 @@ export type ScraperProviderSessionCloseRequest =
 export interface HookRegistrationInfo {
   registrationId: string
   pointId: ExtensionHookPointId
-  priority?: number
+  priority?: number | undefined
 }
 
 export interface HookRegisterRequest extends ExtensionScopedRpcParams {

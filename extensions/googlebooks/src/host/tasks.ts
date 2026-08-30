@@ -1,9 +1,4 @@
-import {
-  isCancellationError,
-  kisaki,
-  type ExtensionLogger,
-  type TaskRunHandle
-} from '@kisaki3/extension-sdk'
+import { kisaki, type ExtensionLogger, type TaskRunHandle } from '@kisaki3/extension-sdk'
 import type { GbooksTaskStateView } from '../shared/settings'
 import type { GbooksClient } from './api/client'
 import { m } from './i18n'
@@ -103,7 +98,7 @@ export class GbooksTasks {
     try {
       await work()
     } catch (error) {
-      if (isCancellationError(error)) {
+      if (handle.signal.aborted) {
         await handle.cancel()
         return
       }

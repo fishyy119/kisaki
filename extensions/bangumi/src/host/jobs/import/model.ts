@@ -12,9 +12,9 @@ import type { BangumiJobPreviewGroup, BangumiJobPreviewRow } from '../../../shar
 export interface CollectionLocalUpdatePlan {
   patch: LocalMediaUserPatch
   tagNames: readonly string[]
-  targetCollection?: LocalCollectionTarget
+  targetCollection?: LocalCollectionTarget | undefined
   /** Remote unit counts to adopt locally; present when ahead of local state. */
-  unitProgress?: LocalUnitProgress
+  unitProgress?: LocalUnitProgress | undefined
   rows: readonly BangumiJobPreviewRow[]
 }
 
@@ -37,8 +37,8 @@ export type CollectionImportOperation =
 
 export interface CollectedCollectionImport {
   scope: BangumiMediaScope
-  adapter?: LocalMediaAdapter
-  targetCollection?: LocalCollectionTarget
+  adapter?: LocalMediaAdapter | undefined
+  targetCollection?: LocalCollectionTarget | undefined
   planItems: readonly CollectionImportPlanItem[]
   operations: readonly CollectionImportOperation[]
   skippedNoChange: number
@@ -56,8 +56,8 @@ export type IndexImportOperation =
 
 export interface CollectedIndexImport {
   scope: BangumiMediaScope
-  adapter?: LocalMediaAdapter
-  targetCollection?: LocalCollectionTarget
+  adapter?: LocalMediaAdapter | undefined
+  targetCollection?: LocalCollectionTarget | undefined
   planItems: readonly IndexImportPlanItem[]
   operations: readonly IndexImportOperation[]
   skippedNoChange: number
