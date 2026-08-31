@@ -6,21 +6,7 @@
 
 export const GBOOKS_SETTINGS_ENTRY = 'settings/index.html'
 
-/** Kisaki OAuth relay route holding the Google client secret. */
-export const GBOOKS_DEFAULT_OAUTH_RELAY_URL = 'https://oauth-relay.ximu.dev/kisaki/google-books'
-
-/** Accepts an http(s) origin with an optional path. */
-export function matchesHttpUrlFormat(value: string): boolean {
-  try {
-    const url = new URL(value)
-    return url.protocol === 'http:' || url.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
-
 export interface GbooksSettingsFormState {
-  oauthRelayUrl: string
   timeoutSeconds: number
   retryCount: number
 }
@@ -35,9 +21,21 @@ export interface GbooksAccountState {
   loginPending: boolean
 }
 
+export type GbooksAutomationKind = 'import-refresh-weekly'
+
+export type GbooksAutomationStatus = 'missing' | 'enabled' | 'disabled'
+
+export interface GbooksAutomationState {
+  kind: GbooksAutomationKind
+  status: GbooksAutomationStatus
+}
+
 export interface GbooksSettingsOverview {
   form: GbooksSettingsFormState
   account: GbooksAccountState
+  automations: readonly GbooksAutomationState[]
+  /** Operations of the extension's currently active task runs. */
+  runningOperations: readonly string[]
 }
 
 export interface GbooksProfileOption {
@@ -100,5 +98,7 @@ export interface GbooksSettingsHostFunctions {
   startImport(request: GbooksImportRequest): Promise<{ runId: string }>
   getTaskState(runId: string): Promise<GbooksTaskStateView | null>
   cancelTask(runId: string): Promise<boolean>
+  /** Creates one recommended app-owned automation for a Google Books command. */
+  createAutomation(kind: GbooksAutomationKind): Promise<void>
   resetSettings(): Promise<void>
 }

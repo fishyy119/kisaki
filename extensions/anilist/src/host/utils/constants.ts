@@ -5,6 +5,9 @@ export const MAL_SOURCE_ID = 'mal'
 
 export const ANILIST_SITE_URL = 'https://anilist.co'
 
+/** Kisaki OAuth relay route holding the AniList client secret. */
+export const ANILIST_OAUTH_RELAY_BASE_URL = 'https://oauth-relay.ximu.dev/kisaki/anilist'
+
 /** The API is degraded to 30 requests per minute; stay under it. */
 export const ANILIST_RATE_LIMIT: { maxRequests: number; windowMs: number } = {
   maxRequests: 28,

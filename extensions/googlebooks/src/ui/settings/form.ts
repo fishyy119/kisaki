@@ -6,7 +6,6 @@ import type { GbooksSettingsFormState } from '../../shared/settings'
  * instead of mutating props, keeping Vue's one-way data flow intact.
  */
 export const settingsForm = reactive<GbooksSettingsFormState>({
-  oauthRelayUrl: '',
   timeoutSeconds: 20,
   retryCount: 2
 })
@@ -19,7 +18,6 @@ export function snapshotSettingsForm(
   source: GbooksSettingsFormState = settingsForm
 ): GbooksSettingsFormState {
   return {
-    oauthRelayUrl: source.oauthRelayUrl,
     timeoutSeconds: source.timeoutSeconds,
     retryCount: source.retryCount
   }
@@ -30,8 +28,6 @@ export function settingsFormsEqual(
   second: GbooksSettingsFormState
 ): boolean {
   return (
-    first.oauthRelayUrl === second.oauthRelayUrl &&
-    first.timeoutSeconds === second.timeoutSeconds &&
-    first.retryCount === second.retryCount
+    first.timeoutSeconds === second.timeoutSeconds && first.retryCount === second.retryCount
   )
 }

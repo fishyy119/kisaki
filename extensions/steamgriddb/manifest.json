@@ -7,14 +7,14 @@
   "entry": "./dist/index.mjs",
   "ui": "./dist/ui",
   "description": {
-    "en": "Built-in SteamGridDB artwork scraper for Kisaki: game covers, hero backdrops, logos, and icons from the community art database.",
-    "ja": "Kisaki 内蔵の SteamGridDB アートスクレイパー。コミュニティアートデータベースからゲームのカバー、ヒーロー背景、ロゴ、アイコンを取得。",
-    "zh-Hans": "Kisaki 内置的 SteamGridDB 美术刮削器：从社区美术数据库获取游戏封面、横幅背景、Logo 与图标。",
-    "zh-Hant": "Kisaki 內建的 SteamGridDB 美術刮削器：從社群美術資料庫取得遊戲封面、橫幅背景、Logo 與圖示。"
+    "en": "Built-in SteamGridDB game artwork scraper for Kisaki, with covers, backdrops, logos, and icons.",
+    "ja": "Kisaki 内蔵の SteamGridDB ゲームアートスクレイパー。カバー・背景・ロゴ・アイコンに対応。",
+    "zh-Hans": "Kisaki 内置的 SteamGridDB 游戏美术刮削器，支持封面、背景、Logo 与图标。",
+    "zh-Hant": "Kisaki 內建的 SteamGridDB 遊戲美術刮削器，支援封面、背景、Logo 與圖示。"
   },
   "author": "Kisaki",
   "homepage": "https://www.steamgriddb.com",
-  "keywords": ["steamgriddb", "scraper", "game", "artwork"],
+  "keywords": ["steamgriddb", "game", "artwork", "scraper"],
   "engines": {
     "kisakiExtensionApi": "=0.0.14"
   }

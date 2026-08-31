@@ -49,9 +49,21 @@ export interface MalAccountVerification {
   userName: string
 }
 
+export type MalAutomationKind = 'auth-check' | 'push-full-daily' | 'import-refresh-weekly'
+
+export type MalAutomationStatus = 'missing' | 'enabled' | 'disabled'
+
+export interface MalAutomationState {
+  kind: MalAutomationKind
+  status: MalAutomationStatus
+}
+
 export interface MalSettingsOverview {
   form: MalSettingsFormState
   account: MalAccountState
+  automations: readonly MalAutomationState[]
+  /** Operations of the extension's currently active task runs. */
+  runningOperations: readonly string[]
 }
 
 export interface MalProfileOption {
@@ -110,6 +122,8 @@ export interface MalSettingsHostFunctions {
   startPushAll(): Promise<{ runId: string }>
   getTaskState(runId: string): Promise<MalTaskStateView | null>
   cancelTask(runId: string): Promise<boolean>
+  /** Creates one recommended app-owned automation for a MyAnimeList command. */
+  createAutomation(kind: MalAutomationKind): Promise<void>
   resetSettings(): Promise<void>
   openExternal(url: string): Promise<void>
 }

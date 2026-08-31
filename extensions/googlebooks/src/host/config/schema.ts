@@ -1,5 +1,4 @@
 import type { SettingsStore } from '../utils/settings-store'
-import { matchesHttpUrlFormat } from '../../shared/settings'
 import { DEFAULT_GBOOKS_SETTINGS } from './defaults'
 
 /** Store shape every Google Books submodule reads settings through. */
@@ -7,10 +6,6 @@ export type GbooksSettingsStore = SettingsStore<GbooksSettingsV1>
 
 export interface GbooksSettingsV1 {
   version: 1
-  endpoints: {
-    /** Kisaki OAuth relay route holding the Google client secret. */
-    oauthRelayUrl: string
-  }
   client: {
     timeoutMs: number
     retryCount: number
@@ -24,14 +19,10 @@ export interface GbooksSettingsV1 {
 export function normalizeGbooksSettings(value: unknown): GbooksSettingsV1 {
   const input = isRecord(value) && value.version === 1 ? value : undefined
   const defaults = DEFAULT_GBOOKS_SETTINGS
-  const endpoints = asRecord(input?.endpoints)
   const client = asRecord(input?.client)
 
   return {
     version: 1,
-    endpoints: {
-      oauthRelayUrl: normalizeHttpUrl(endpoints?.oauthRelayUrl, defaults.endpoints.oauthRelayUrl)
-    },
     client: {
       timeoutMs: normalizeInteger(client?.timeoutMs, defaults.client.timeoutMs, {
         min: 1_000,
@@ -43,15 +34,6 @@ export function normalizeGbooksSettings(value: unknown): GbooksSettingsV1 {
       })
     }
   }
-}
-
-function normalizeHttpUrl(value: unknown, fallback: string): string {
-  if (typeof value !== 'string') {
-    return fallback
-  }
-
-  const trimmed = value.trim().replace(/\/+$/, '')
-  return trimmed && matchesHttpUrlFormat(trimmed) ? trimmed : fallback
 }
 
 function normalizeInteger(

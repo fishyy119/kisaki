@@ -61,6 +61,47 @@ export const en = {
       `Created ${created}, updated ${updated}, unchanged ${unchanged}, skipped ${skipped}, failed ${failed}`
   },
 
+  commands: {
+    verifyAccount: {
+      title: 'Verify the MyAnimeList account',
+      description: 'Checks the stored sign-in against the MyAnimeList API'
+    },
+    pushAll: {
+      title: 'Push the library to MyAnimeList',
+      description: 'Pushes every entry with a MyAnimeList id to the lists'
+    },
+    importLists: {
+      title: 'Import the MyAnimeList lists',
+      description: 'Writes list status and scores onto matching local entries'
+    }
+  },
+
+  automations: {
+    names: {
+      'auth-check': 'MyAnimeList: verify the account at startup',
+      'push-full-daily': 'MyAnimeList: daily full push',
+      'import-refresh-weekly': 'MyAnimeList: weekly list refresh'
+    },
+    labels: {
+      'auth-check': 'Verify the account at startup',
+      'push-full-daily': 'Daily full push',
+      'import-refresh-weekly': 'Weekly list refresh'
+    },
+    descriptions: {
+      'auth-check':
+        'Verifies the MyAnimeList sign-in when the app starts and keeps the token refresh warm',
+      'push-full-daily':
+        'Pushes every linked entry to the MyAnimeList lists once a day in the early morning',
+      'import-refresh-weekly':
+        'Re-imports list status and scores onto existing entries once a week'
+    },
+    status: {
+      missing: 'Not created',
+      enabled: 'Enabled',
+      disabled: 'Disabled'
+    }
+  },
+
   settings: {
     webviewTitle: 'MyAnimeList',
     commandLabel: 'Settings',
@@ -78,6 +119,51 @@ export const en = {
     cancel: 'Cancel',
     confirm: 'Confirm',
 
+    tabs: {
+      overview: 'Overview',
+      account: 'Account',
+      sync: 'Sync',
+      import: 'Import',
+      automation: 'Automation',
+      maintenance: 'Maintenance'
+    },
+
+    task: {
+      progress: ({ current, total }: { current: number; total: number }) =>
+        `${current} / ${total}`,
+      running: 'Running',
+      completed: 'Completed',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+      cancel: 'Cancel'
+    },
+
+    overview: {
+      statusTitle: 'Status overview',
+      accountLabel: 'Account',
+      signedIn: 'Signed in',
+      notSignedIn: 'Not signed in',
+      available: 'Available',
+      autoSyncLabel: 'Auto push',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      withScore: 'Status and score',
+      withoutScore: 'Status only',
+      recommendedAutomations: 'Recommended automations',
+      automationsComplete: 'All created',
+      automationsMissing: ({ count }: { count: number }) => `${count} not created`,
+      templatesCount: ({ count }: { count: number }) =>
+        `${count} ${count === 1 ? 'template' : 'templates'}`,
+      runtimeTitle: 'Runtime status',
+      runningJobs: 'Running MyAnimeList jobs',
+      running: 'Running',
+      idle: 'Idle',
+      quickActionsTitle: 'Shortcuts',
+      importAction: 'Import the MyAnimeList lists',
+      maintenanceAction: 'Adjust endpoint and client options',
+      automationsTitle: 'Automation templates'
+    },
+
     account: {
       title: 'Account',
       description:
@@ -86,6 +172,8 @@ export const en = {
       configuredLabel: 'Signed in',
       missingLabel: 'Not signed in',
       pendingLabel: 'Waiting for the browser sign-in…',
+      expiresAtLabel: 'Token valid until',
+      expiredLabel: 'Expired',
       login: 'Sign in with MyAnimeList',
       cancelLogin: 'Cancel sign-in',
       logout: 'Sign out',
@@ -93,18 +181,25 @@ export const en = {
       verifiedAs: ({ userName }: { userName: string }) => `Signed in as ${userName}`
     },
 
-    integration: {
-      title: 'List integration',
+    sync: {
+      preferencesTitle: 'Auto push preferences',
       syncEnabledLabel: 'Push changes automatically',
       syncEnabledDescription:
         'Send status and score changes of entries carrying a MyAnimeList id to the lists',
       pushScoreLabel: 'Include score',
       pushScoreDescription:
         'Write the local score to MyAnimeList. An empty score never clears the remote one.',
-      pushAll: 'Push everything now',
-      importTitle: 'Import lists',
-      importDescription:
+      manualTitle: 'Manual push',
+      manualDescription:
+        'Pushes every entry with a MyAnimeList id to the lists. Progress and cancellation are handled by the task center.',
+      pushAll: 'Push everything now'
+    },
+
+    import: {
+      title: 'Import lists',
+      description:
         'Writes list status and score onto matching entries. Creating missing entries scrapes them through the selected profile.',
+      optionsLabel: 'Options',
       listAnime: 'Anime list',
       listManga: 'Manga list',
       updateExistingLabel: 'Update existing entries',
@@ -113,19 +208,21 @@ export const en = {
       comicProfileLabel: 'Manga profile',
       novelProfileLabel: 'Novel profile',
       profilePlaceholder: 'Select a profile',
-      startImport: 'Import',
-      taskProgress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
-      taskRunning: 'Running',
-      taskCompleted: 'Completed',
-      taskFailed: 'Failed',
-      taskCancelled: 'Cancelled',
-      cancelTask: 'Cancel'
+      runLabel: 'Run import',
+      runDescription: 'Runs as an app task; the options above apply to this run only',
+      startImport: 'Import'
     },
 
-    endpoints: {
-      title: 'Endpoints',
-      description: 'The official API root and the Jikan-compatible metadata mirror',
+    automation: {
+      title: 'Recommended automations',
+      description:
+        'Only recommended MyAnimeList templates are created here; enabling, triggers, and history are managed on the main app automation page',
+      create: 'Create'
+    },
+
+    maintenance: {
+      endpointTitle: 'Endpoints',
+      endpointDescription: 'The official API root and the Jikan-compatible metadata mirror',
       apiUrlLabel: 'API URL',
       apiUrlDescription: 'Root of the official MyAnimeList API v2',
       mirrorEnabledLabel: 'Use metadata mirror',
@@ -134,12 +231,9 @@ export const en = {
       mirrorUrlLabel: 'Mirror URL',
       mirrorUrlDescription:
         'Root of a Jikan v4-compatible API, such as Tenrai or a self-hosted Jikan',
-      restoreDefaults: 'Restore official endpoints'
-    },
-
-    preferences: {
-      title: 'Preferences',
-      description: 'Applies to every MyAnimeList search and scrape',
+      restoreDefaults: 'Restore official endpoints',
+      clientTitle: 'Scraping and client',
+      clientDescription: 'Applies to every MyAnimeList search and scrape',
       preferRomajiLabel: 'Prefer romaji titles',
       preferRomajiDescription:
         'Use the romaji title as the display name when no title matches the content locale',
@@ -149,9 +243,10 @@ export const en = {
       retryLabel: 'Retry count',
       retryDescription: 'Extra attempts after rate limits or server errors',
       retryUnit: 'retries',
+      actionsTitle: 'Maintenance actions',
+      actionsDescription: 'These actions take effect immediately and cannot be undone',
       reset: 'Restore default settings',
-      resetDescription: 'Endpoints and preferences return to their defaults. The sign-in is kept.',
-      resetSucceeded: 'Settings were restored to defaults'
+      resetDescription: 'Endpoints and preferences return to their defaults. The sign-in is kept.'
     }
   }
 }

@@ -37,6 +37,30 @@ export const zhHant: GbooksMessages = {
       `新增 ${created} 項、更新 ${updated} 項、無變化 ${unchanged} 項、略過 ${skipped} 項、失敗 ${failed} 項`
   },
 
+  commands: {
+    importLibrary: {
+      title: '匯入 Google Books 書庫',
+      description: '將書庫與書架狀態寫入相符的本機條目'
+    }
+  },
+
+  automations: {
+    names: {
+      'import-refresh-weekly': 'Google Books：每週書庫重新整理'
+    },
+    labels: {
+      'import-refresh-weekly': '每週書庫重新整理'
+    },
+    descriptions: {
+      'import-refresh-weekly': '每週將書庫與書架狀態重新匯入到既有條目'
+    },
+    status: {
+      missing: '未建立',
+      enabled: '已啟用',
+      disabled: '已停用'
+    }
+  },
+
   settings: {
     webviewTitle: 'Google Books',
     commandLabel: '設定',
@@ -53,6 +77,43 @@ export const zhHant: GbooksMessages = {
     actionFailed: '操作失敗',
     cancel: '取消',
     confirm: '確認',
+
+    tabs: {
+      overview: '概覽',
+      account: '帳號',
+      import: '匯入',
+      automation: '自動化',
+      maintenance: '維護'
+    },
+
+    task: {
+      progress: ({ current, total }) => `${current} / ${total}`,
+      running: '進行中',
+      completed: '已完成',
+      failed: '失敗',
+      cancelled: '已取消',
+      cancel: '取消'
+    },
+
+    overview: {
+      statusTitle: '狀態總覽',
+      accountLabel: '帳號',
+      signedIn: '已登入',
+      notSignedIn: '未登入',
+      available: '可用',
+      recommendedAutomations: '推薦自動化',
+      automationsComplete: '已全部建立',
+      automationsMissing: ({ count }) => `${count} 項未建立`,
+      templatesCount: ({ count }) => `${count} 個範本`,
+      runtimeTitle: '執行狀態',
+      runningJobs: '執行中的 Google Books 任務',
+      running: '執行中',
+      idle: '閒置',
+      quickActionsTitle: '快捷入口',
+      importAction: '匯入 Google Books 書庫',
+      maintenanceAction: '調整用戶端選項',
+      automationsTitle: '自動化範本'
+    },
 
     account: {
       title: '帳號',
@@ -74,7 +135,7 @@ export const zhHant: GbooksMessages = {
       clearKey: '移除金鑰'
     },
 
-    integration: {
+    import: {
       title: '書庫匯入',
       description:
         '讀取已購書庫與閱讀書架，將狀態寫入相符條目，並經所選設定檔建立缺漏條目。Google Books 承載的是購買而非追蹤，因此不做反向推送。',
@@ -82,42 +143,39 @@ export const zhHant: GbooksMessages = {
       includeEbooksDescription: '已購與已上傳的書庫，匯入時不寫入狀態',
       includeShelvesLabel: '閱讀書架',
       includeShelvesDescription: '想讀、在讀、讀完將寫入為條目狀態',
-      updateExistingLabel: '更新既有條目',
-      createMissingLabel: '建立缺漏條目',
       mergeSeriesLabel: '合併系列分卷',
       mergeSeriesDescription: '同一系列的多卷只以第一卷建立條目',
+      optionsLabel: '選項',
+      updateExistingLabel: '更新既有條目',
+      createMissingLabel: '建立缺漏條目',
       novelProfileLabel: '小說設定檔',
       comicProfileLabel: '漫畫設定檔',
       profilePlaceholder: '選擇設定檔',
-      startImport: '匯入',
-      taskProgress: ({ current, total }) => `${current} / ${total}`,
-      taskRunning: '進行中',
-      taskCompleted: '已完成',
-      taskFailed: '失敗',
-      taskCancelled: '已取消',
-      cancelTask: '取消'
+      runLabel: '執行匯入',
+      runDescription: '以應用任務執行；以上選項僅作用於本次執行',
+      startImport: '匯入'
     },
 
-    endpoints: {
-      title: '端點',
-      description: 'Google 登入經 Kisaki 中繼完成',
-      relayUrlLabel: 'OAuth 中繼位址',
-      relayUrlDescription: 'Kisaki 中繼上 Google Books 路由的根位址',
-      restoreDefaults: '還原預設中繼'
+    automation: {
+      title: '推薦自動化',
+      description:
+        '此處僅建立推薦的 Google Books 範本；啟用狀態、觸發器與歷史在應用的自動化頁面管理',
+      create: '建立'
     },
 
-    preferences: {
-      title: '偏好',
-      description: '套用於所有 Google Books 請求',
+    maintenance: {
+      clientTitle: '用戶端',
+      clientDescription: '套用於所有 Google Books 請求',
       timeoutLabel: '請求逾時',
       timeoutDescription: '等待單次回應的秒數',
       seconds: '秒',
       retryLabel: '重試次數',
       retryDescription: '限流或伺服器錯誤後的額外嘗試次數',
       retryUnit: '次',
+      actionsTitle: '維護操作',
+      actionsDescription: '這些操作立即生效且無法復原',
       reset: '還原預設設定',
-      resetDescription: '端點與偏好將還原為預設值，登入狀態保留。',
-      resetSucceeded: '已還原預設設定'
+      resetDescription: '偏好將還原為預設值，登入狀態保留。'
     }
   }
 }

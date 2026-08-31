@@ -6,10 +6,10 @@
   "categories": ["tool"],
   "entry": "./dist/index.mjs",
   "description": {
-    "en": "Built-in executable-icon perceptual-hash matching that upgrades Kisaki scanner results.",
-    "ja": "Kisaki 内蔵の実行ファイルアイコン知覚ハッシュ照合。スキャナーの認識結果を強化します。",
-    "zh-Hans": "Kisaki 内置的可执行文件图标感知哈希匹配，用于增强扫描器识别结果。",
-    "zh-Hant": "Kisaki 內建的可執行檔圖示感知雜湊比對，用於增強掃描器識別結果。"
+    "en": "Built-in executable-icon perceptual-hash matching for Kisaki scanner recognition.",
+    "ja": "Kisaki 内蔵の実行ファイルアイコン知覚ハッシュ照合。スキャナーの認識を強化します。",
+    "zh-Hans": "Kisaki 内置的可执行文件图标感知哈希匹配，用于增强扫描器识别。",
+    "zh-Hant": "Kisaki 內建的可執行檔圖示感知雜湊比對，用於增強掃描器識別。"
   },
   "author": "Kisaki",
   "keywords": ["phash", "scanner", "match", "game"],

@@ -2,6 +2,7 @@ import { kisaki } from '@kisaki3/extension-sdk'
 import type {
   MangadexAccountState,
   MangadexAccountVerification,
+  MangadexAutomationKind,
   MangadexCredentialsInput,
   MangadexImportRequest,
   MangadexProfileOption,
@@ -14,6 +15,7 @@ import { m } from '../i18n'
 import { MANGADEX_CLIENT_SETTINGS_URL } from '../utils/constants'
 import { MangadexExtensionError } from '../utils/errors'
 import type { ImportOptions } from '../import/runner'
+import { createMangadexAutomation, resolveAutomationStates } from './automations'
 import { applyFormState, toFormState } from './forms'
 import type { MangadexSettingsRuntime } from './runtime'
 
@@ -31,11 +33,13 @@ export function createMangadexSettingsHostFunctions(
 
   return {
     async getOverview(): Promise<MangadexSettingsOverview> {
-      const [settings, account] = await Promise.all([
+      const [settings, account, automations, runningOperations] = await Promise.all([
         runtime.settingsStore.get(),
-        readAccountState()
+        readAccountState(),
+        resolveAutomationStates(),
+        listRunningOperations()
       ])
-      return { form: toFormState(settings), account }
+      return { form: toFormState(settings), account, automations, runningOperations }
     },
 
     async saveSettings(form: MangadexSettingsFormState): Promise<void> {
@@ -93,6 +97,10 @@ export function createMangadexSettingsHostFunctions(
       return runtime.tasks.cancelTask(runId)
     },
 
+    async createAutomation(kind: MangadexAutomationKind): Promise<void> {
+      await createMangadexAutomation(kind)
+    },
+
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
     },
@@ -104,4 +112,9 @@ export function createMangadexSettingsHostFunctions(
       )
     }
   }
+}
+
+async function listRunningOperations(): Promise<readonly string[]> {
+  const active = await kisaki.taskRuns.listActiveOwn({ limit: 20 }).catch(() => [])
+  return active.map((run) => run.operation)
 }

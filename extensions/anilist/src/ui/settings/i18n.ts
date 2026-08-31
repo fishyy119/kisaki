@@ -14,3 +14,6 @@ webview.onUiLocaleChange((next) => {
 
 /** Reactive message catalog for the current UI locale. */
 export const m = computed(() => getAnilistMessages(locale.value))
+
+/** Current UI locale, for locale-aware formatting such as dates. */
+export const uiLocale = computed(() => locale.value)

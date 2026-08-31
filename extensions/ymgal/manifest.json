@@ -7,14 +7,14 @@
   "entry": "./dist/index.mjs",
   "ui": "./dist/ui",
   "description": {
-    "en": "Built-in YMGal scraper for visual novels, with company, person, and character enrichment.",
-    "ja": "Kisaki 内蔵の YMGal ビジュアルノベルスクレイパー。ブランド・人物・キャラクターの補完に対応。",
-    "zh-Hans": "Kisaki 内置的月幕 Galgame 视觉小说刮削器，支持会社、人物与角色补全。",
-    "zh-Hant": "Kisaki 內建的月幕 Galgame 視覺小說刮削器，支援會社、人物與角色補完。"
+    "en": "Built-in YMGal visual novel metadata scraper for Kisaki, with company, person, and character enrichment.",
+    "ja": "Kisaki 内蔵の YMGal ビジュアルノベルメタデータスクレイパー。会社・人物・キャラクターの補完に対応。",
+    "zh-Hans": "Kisaki 内置的月幕 Galgame 视觉小说元数据刮削器，支持公司、人物与角色补全。",
+    "zh-Hant": "Kisaki 內建的月幕 Galgame 視覺小說中繼資料刮削器，支援公司、人物與角色補全。"
   },
   "author": "Kisaki",
   "homepage": "https://www.ymgal.games",
-  "keywords": ["ymgal", "galgame", "visual-novel", "scraper"],
+  "keywords": ["ymgal", "game", "visual-novel", "galgame", "scraper"],
   "engines": {
     "kisakiExtensionApi": "=0.0.14"
   }

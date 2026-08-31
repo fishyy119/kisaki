@@ -5,7 +5,6 @@ export const MAL_SOURCE_ID = 'mal'
 export const ANILIST_SOURCE_ID = 'anilist'
 
 export const MANGADEX_SITE_URL = 'https://mangadex.org'
-export const MANGADEX_API_URL = 'https://api.mangadex.org'
 export const MANGADEX_UPLOADS_URL = 'https://uploads.mangadex.org'
 export const MANGADEX_AUTH_TOKEN_URL =
   'https://auth.mangadex.org/realms/mangadex/protocol/openid-connect/token'

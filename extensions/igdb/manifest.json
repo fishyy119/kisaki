@@ -7,14 +7,14 @@
   "entry": "./dist/index.mjs",
   "ui": "./dist/ui",
   "description": {
-    "en": "Built-in Internet Game Database scraper for video games, with company enrichment.",
-    "ja": "Kisaki 内蔵の Internet Game Database ビデオゲームスクレイパー。会社情報の補完に対応。",
-    "zh-Hans": "Kisaki 内置的 Internet Game Database 电子游戏刮削器，支持公司补全。",
-    "zh-Hant": "Kisaki 內建的 Internet Game Database 電子遊戲刮削器，支援公司補完。"
+    "en": "Built-in IGDB game metadata scraper for Kisaki, with company enrichment.",
+    "ja": "Kisaki 内蔵の IGDB ゲームメタデータスクレイパー。会社情報の補完に対応。",
+    "zh-Hans": "Kisaki 内置的 IGDB 游戏元数据刮削器，支持公司补全。",
+    "zh-Hant": "Kisaki 內建的 IGDB 遊戲中繼資料刮削器，支援公司補全。"
   },
   "author": "Kisaki",
   "homepage": "https://www.igdb.com",
-  "keywords": ["igdb", "game", "video-game", "scraper"],
+  "keywords": ["igdb", "game", "scraper"],
   "engines": {
     "kisakiExtensionApi": "=0.0.14"
   }

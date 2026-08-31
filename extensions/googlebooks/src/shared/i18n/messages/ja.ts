@@ -40,6 +40,31 @@ export const ja: GbooksMessages = {
       `作成 ${created} 件、更新 ${updated} 件、変更なし ${unchanged} 件、スキップ ${skipped} 件、失敗 ${failed} 件`
   },
 
+  commands: {
+    importLibrary: {
+      title: 'Google Books ライブラリをインポート',
+      description: 'ライブラリとシェルフのステータスを一致するローカルエントリへ書き込みます'
+    }
+  },
+
+  automations: {
+    names: {
+      'import-refresh-weekly': 'Google Books: 毎週のライブラリ更新'
+    },
+    labels: {
+      'import-refresh-weekly': '毎週のライブラリ更新'
+    },
+    descriptions: {
+      'import-refresh-weekly':
+        '毎週、ライブラリとシェルフのステータスを既存エントリへ再インポートします'
+    },
+    status: {
+      missing: '未作成',
+      enabled: '有効',
+      disabled: '無効'
+    }
+  },
+
   settings: {
     webviewTitle: 'Google Books',
     commandLabel: '設定',
@@ -57,6 +82,43 @@ export const ja: GbooksMessages = {
     actionFailed: '操作に失敗しました',
     cancel: 'キャンセル',
     confirm: '確認',
+
+    tabs: {
+      overview: '概要',
+      account: 'アカウント',
+      import: 'インポート',
+      automation: '自動化',
+      maintenance: 'メンテナンス'
+    },
+
+    task: {
+      progress: ({ current, total }) => `${current} / ${total}`,
+      running: '実行中',
+      completed: '完了',
+      failed: '失敗',
+      cancelled: 'キャンセル済み',
+      cancel: 'キャンセル'
+    },
+
+    overview: {
+      statusTitle: 'ステータス概要',
+      accountLabel: 'アカウント',
+      signedIn: 'サインイン済み',
+      notSignedIn: '未サインイン',
+      available: '利用可能',
+      recommendedAutomations: '推奨自動化',
+      automationsComplete: 'すべて作成済み',
+      automationsMissing: ({ count }) => `${count} 件未作成`,
+      templatesCount: ({ count }) => `テンプレート ${count} 件`,
+      runtimeTitle: '実行状況',
+      runningJobs: '実行中の Google Books タスク',
+      running: '実行中',
+      idle: '待機中',
+      quickActionsTitle: 'ショートカット',
+      importAction: 'Google Books ライブラリをインポート',
+      maintenanceAction: 'クライアント設定を調整',
+      automationsTitle: '自動化テンプレート'
+    },
 
     account: {
       title: 'アカウント',
@@ -78,7 +140,7 @@ export const ja: GbooksMessages = {
       clearKey: 'キーを削除'
     },
 
-    integration: {
+    import: {
       title: 'ライブラリのインポート',
       description:
         '購入済みライブラリと読書シェルフを読み込み、一致するエントリへステータスを書き込み、不足エントリは選択したプロファイルで作成します。Google Books が扱うのは購入であり追跡ではないため、書き戻しは行いません。',
@@ -87,42 +149,39 @@ export const ja: GbooksMessages = {
         '購入・アップロード済みのライブラリ。ステータスなしでインポートされます',
       includeShelvesLabel: '読書シェルフ',
       includeShelvesDescription: '読みたい・読書中・読了がエントリのステータスになります',
-      updateExistingLabel: '既存エントリを更新',
-      createMissingLabel: '不足エントリを作成',
       mergeSeriesLabel: 'シリーズの巻をまとめる',
       mergeSeriesDescription: '同一シリーズの複数巻は最初の巻のみでエントリを作成します',
+      optionsLabel: 'オプション',
+      updateExistingLabel: '既存エントリを更新',
+      createMissingLabel: '不足エントリを作成',
       novelProfileLabel: 'ノベルプロファイル',
       comicProfileLabel: 'コミックプロファイル',
       profilePlaceholder: 'プロファイルを選択',
-      startImport: 'インポート',
-      taskProgress: ({ current, total }) => `${current} / ${total}`,
-      taskRunning: '実行中',
-      taskCompleted: '完了',
-      taskFailed: '失敗',
-      taskCancelled: 'キャンセル済み',
-      cancelTask: 'キャンセル'
+      runLabel: 'インポートを実行',
+      runDescription: 'アプリタスクとして実行します。上のオプションはこの実行にのみ適用されます',
+      startImport: 'インポート'
     },
 
-    endpoints: {
-      title: 'エンドポイント',
-      description: 'Google サインインは Kisaki リレーで完了します',
-      relayUrlLabel: 'OAuth リレー URL',
-      relayUrlDescription: 'Kisaki リレー上の Google Books ルートのルート URL',
-      restoreDefaults: '既定のリレーに戻す'
+    automation: {
+      title: '推奨自動化',
+      description:
+        'ここでは推奨の Google Books テンプレートのみ作成します。有効化・トリガー・履歴はアプリの自動化ページで管理します',
+      create: '作成'
     },
 
-    preferences: {
-      title: '設定',
-      description: 'すべての Google Books リクエストに適用されます',
+    maintenance: {
+      clientTitle: 'クライアント',
+      clientDescription: 'すべての Google Books リクエストに適用されます',
       timeoutLabel: 'リクエストタイムアウト',
       timeoutDescription: '1 回のレスポンスを待つ秒数',
       seconds: '秒',
       retryLabel: '再試行回数',
       retryDescription: 'レート制限やサーバーエラー後の追加試行回数',
       retryUnit: '回',
+      actionsTitle: 'メンテナンス操作',
+      actionsDescription: 'これらの操作は直ちに反映され、元に戻せません',
       reset: '既定の設定に戻す',
-      resetDescription: 'エンドポイントと設定が既定値に戻ります。サインインは保持されます。',
-      resetSucceeded: '既定の設定に戻しました'
+      resetDescription: '設定が既定値に戻ります。サインインは保持されます。'
     }
   }
 }

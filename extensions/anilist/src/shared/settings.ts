@@ -9,9 +9,6 @@ export const ANILIST_SETTINGS_ENTRY = 'settings/index.html'
 /** Official GraphQL endpoint; offered as the restore point when a mirror is set. */
 export const ANILIST_DEFAULT_GRAPHQL_URL = 'https://graphql.anilist.co'
 
-/** Kisaki OAuth relay route holding the AniList client secret. */
-export const ANILIST_DEFAULT_OAUTH_RELAY_URL = 'https://oauth-relay.ximu.dev/kisaki/anilist'
-
 /** Accepts an http(s) origin with an optional path. */
 export function matchesHttpUrlFormat(value: string): boolean {
   try {
@@ -24,7 +21,6 @@ export function matchesHttpUrlFormat(value: string): boolean {
 
 export interface AnilistSettingsFormState {
   graphqlUrl: string
-  oauthRelayUrl: string
   /** Prefer the romaji title over the English one outside Japanese content locales. */
   preferRomajiTitles: boolean
   timeoutSeconds: number
@@ -48,9 +44,21 @@ export interface AnilistAccountVerification {
   userName: string
 }
 
+export type AnilistAutomationKind = 'auth-check' | 'push-full-daily' | 'import-refresh-weekly'
+
+export type AnilistAutomationStatus = 'missing' | 'enabled' | 'disabled'
+
+export interface AnilistAutomationState {
+  kind: AnilistAutomationKind
+  status: AnilistAutomationStatus
+}
+
 export interface AnilistSettingsOverview {
   form: AnilistSettingsFormState
   account: AnilistAccountState
+  automations: readonly AnilistAutomationState[]
+  /** Operations of the extension's currently active task runs. */
+  runningOperations: readonly string[]
 }
 
 export interface AnilistProfileOption {
@@ -111,6 +119,8 @@ export interface AnilistSettingsHostFunctions {
   startPushAll(): Promise<{ runId: string }>
   getTaskState(runId: string): Promise<AnilistTaskStateView | null>
   cancelTask(runId: string): Promise<boolean>
+  /** Creates one recommended app-owned automation for an AniList command. */
+  createAutomation(kind: AnilistAutomationKind): Promise<void>
   resetSettings(): Promise<void>
   openExternal(url: string): Promise<void>
 }

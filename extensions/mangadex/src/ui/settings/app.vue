@@ -1,19 +1,57 @@
 <!--
-MangaDex Settings App is the webview root: it loads the overview, owns the
-preference draft lifecycle, and surfaces load and action errors. Successful
-results are reported by the host through the app's own notifications.
+MangaDex Settings App is the webview root: tab navigation, preference draft
+lifecycle, and load/action error surfacing. Immediate actions live in tab
+components, and their successful results are reported by the host through the
+app's own notifications.
 -->
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Alert, Button, Spinner, WebviewDialogShell } from '@kisaki3/extension-ui-vue'
-import type { MangadexSettingsFormState, MangadexSettingsOverview } from '../../shared/settings'
+import {
+  Alert,
+  Button,
+  Icon,
+  Spinner,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  WebviewDialogShell
+} from '@kisaki3/extension-ui-vue'
+import {
+  matchesHttpUrlFormat,
+  type MangadexSettingsFormState,
+  type MangadexSettingsOverview
+} from '../../shared/settings'
 import { applySettingsForm, settingsForm, settingsFormsEqual, snapshotSettingsForm } from './form'
 import { m } from './i18n'
 import { host, toErrorMessage } from './rpc'
-import AccountSection from './sections/account-section.vue'
-import IntegrationSection from './sections/integration-section.vue'
-import PreferencesSection from './sections/preferences-section.vue'
+import OverviewTab from './tabs/overview-tab.vue'
+import AccountTab from './tabs/account-tab.vue'
+import SyncTab from './tabs/sync-tab.vue'
+import ImportTab from './tabs/import-tab.vue'
+import AutomationTab from './tabs/automation-tab.vue'
+import MaintenanceTab from './tabs/maintenance-tab.vue'
 
+type SettingsTabId = 'overview' | 'account' | 'sync' | 'import' | 'automation' | 'maintenance'
+
+const TAB_ICONS: Record<SettingsTabId, string> = {
+  overview: 'icon-[mdi--view-dashboard-outline]',
+  account: 'icon-[mdi--account-circle-outline]',
+  sync: 'icon-[mdi--sync]',
+  import: 'icon-[mdi--database-import-outline]',
+  automation: 'icon-[mdi--calendar-sync-outline]',
+  maintenance: 'icon-[mdi--tune-variant]'
+}
+
+const tabs = computed(() =>
+  (Object.keys(TAB_ICONS) as SettingsTabId[]).map((id) => ({
+    id,
+    label: m.value.ui.tabs[id],
+    icon: TAB_ICONS[id]
+  }))
+)
+
+const activeTab = ref<SettingsTabId>('overview')
 const overview = ref<MangadexSettingsOverview | null>(null)
 const savedForm = ref<MangadexSettingsFormState | null>(null)
 const loading = ref(true)
@@ -23,6 +61,8 @@ const error = ref<string | null>(null)
 const isDirty = computed(
   () => savedForm.value !== null && !settingsFormsEqual(settingsForm, savedForm.value)
 )
+// A rejected endpoint would silently fall back to the default on save.
+const isValid = computed(() => matchesHttpUrlFormat(settingsForm.apiUrl))
 
 onMounted(() => {
   void reload({ keepDraft: false })
@@ -67,34 +107,102 @@ function discardDraft(): void {
 function reportError(message: string): void {
   error.value = message
 }
+
+function navigate(tab: SettingsTabId): void {
+  activeTab.value = tab
+}
 </script>
 
 <template>
-  <WebviewDialogShell :title="m.settings.webviewTitle">
-    <div
+  <WebviewDialogShell
+    :title="m.settings.webviewTitle"
+    content-class="p-0 overflow-hidden"
+  >
+    <Tabs
       v-if="overview"
-      class="mx-auto max-w-3xl space-y-4"
+      v-model="activeTab"
+      orientation="vertical"
+      class="h-full min-h-0 flex-row gap-0"
     >
-      <Alert
-        v-if="error"
-        variant="destructive"
-      >
-        {{ error }}
-      </Alert>
+      <aside class="flex w-40 shrink-0 flex-col border-r border-border p-2">
+        <TabsList class="h-auto w-full flex-col items-stretch">
+          <TabsTrigger
+            v-for="tab in tabs"
+            :key="tab.id"
+            :value="tab.id"
+            class="h-8 justify-start px-2"
+          >
+            <Icon
+              :icon="tab.icon"
+              class="size-3.5"
+            />
+            {{ tab.label }}
+          </TabsTrigger>
+        </TabsList>
+      </aside>
 
-      <AccountSection
-        :account="overview.account"
-        @refresh="() => void reload({ keepDraft: isDirty })"
-        @error="reportError"
-      />
+      <main class="min-w-0 flex-1 overflow-y-auto">
+        <div class="mx-auto max-w-4xl space-y-4 px-4 py-4">
+          <Alert
+            v-if="error"
+            variant="destructive"
+          >
+            {{ error }}
+          </Alert>
 
-      <IntegrationSection @error="reportError" />
-
-      <PreferencesSection
-        @refresh="() => void reload({ keepDraft: false })"
-        @error="reportError"
-      />
-    </div>
+          <TabsContent
+            value="overview"
+            class="mt-0"
+          >
+            <OverviewTab
+              :overview="overview"
+              @navigate="navigate"
+            />
+          </TabsContent>
+          <TabsContent
+            value="account"
+            class="mt-0"
+          >
+            <AccountTab
+              :account="overview.account"
+              @refresh="() => void reload({ keepDraft: isDirty })"
+              @error="reportError"
+            />
+          </TabsContent>
+          <TabsContent
+            value="sync"
+            class="mt-0"
+          >
+            <SyncTab @error="reportError" />
+          </TabsContent>
+          <TabsContent
+            value="import"
+            class="mt-0"
+          >
+            <ImportTab @error="reportError" />
+          </TabsContent>
+          <TabsContent
+            value="automation"
+            class="mt-0"
+          >
+            <AutomationTab
+              :overview="overview"
+              @refresh="() => void reload({ keepDraft: isDirty })"
+              @error="reportError"
+            />
+          </TabsContent>
+          <TabsContent
+            value="maintenance"
+            class="mt-0"
+          >
+            <MaintenanceTab
+              @refresh="() => void reload({ keepDraft: false })"
+              @error="reportError"
+            />
+          </TabsContent>
+        </div>
+      </main>
+    </Tabs>
 
     <main
       v-else
@@ -119,7 +227,7 @@ function reportError(message: string): void {
       </Button>
       <Button
         type="button"
-        :disabled="saving || loading"
+        :disabled="saving || loading || !isValid"
         @click="save"
       >
         <Spinner v-if="saving" />

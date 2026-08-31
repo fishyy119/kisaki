@@ -37,6 +37,30 @@ export const zhHans: GbooksMessages = {
       `新建 ${created} 项、更新 ${updated} 项、无变化 ${unchanged} 项、跳过 ${skipped} 项、失败 ${failed} 项`
   },
 
+  commands: {
+    importLibrary: {
+      title: '导入 Google Books 书库',
+      description: '将书库与书架状态写入匹配的本地条目'
+    }
+  },
+
+  automations: {
+    names: {
+      'import-refresh-weekly': 'Google Books：每周书库刷新'
+    },
+    labels: {
+      'import-refresh-weekly': '每周书库刷新'
+    },
+    descriptions: {
+      'import-refresh-weekly': '每周将书库与书架状态重新导入到已有条目'
+    },
+    status: {
+      missing: '未创建',
+      enabled: '已启用',
+      disabled: '已禁用'
+    }
+  },
+
   settings: {
     webviewTitle: 'Google Books',
     commandLabel: '设置',
@@ -53,6 +77,43 @@ export const zhHans: GbooksMessages = {
     actionFailed: '操作失败',
     cancel: '取消',
     confirm: '确认',
+
+    tabs: {
+      overview: '概览',
+      account: '账号',
+      import: '导入',
+      automation: '自动化',
+      maintenance: '维护'
+    },
+
+    task: {
+      progress: ({ current, total }) => `${current} / ${total}`,
+      running: '进行中',
+      completed: '已完成',
+      failed: '失败',
+      cancelled: '已取消',
+      cancel: '取消'
+    },
+
+    overview: {
+      statusTitle: '状态总览',
+      accountLabel: '账号',
+      signedIn: '已登录',
+      notSignedIn: '未登录',
+      available: '可用',
+      recommendedAutomations: '推荐自动化',
+      automationsComplete: '已全部创建',
+      automationsMissing: ({ count }) => `${count} 项未创建`,
+      templatesCount: ({ count }) => `${count} 个模板`,
+      runtimeTitle: '运行状态',
+      runningJobs: '运行中的 Google Books 任务',
+      running: '运行中',
+      idle: '空闲',
+      quickActionsTitle: '快捷入口',
+      importAction: '导入 Google Books 书库',
+      maintenanceAction: '调整客户端选项',
+      automationsTitle: '自动化模板'
+    },
 
     account: {
       title: '账号',
@@ -74,7 +135,7 @@ export const zhHans: GbooksMessages = {
       clearKey: '移除密钥'
     },
 
-    integration: {
+    import: {
       title: '书库导入',
       description:
         '读取已购书库与阅读书架，将状态写入匹配条目，并经所选配置创建缺失条目。Google Books 承载的是购买而非追踪，因此不做反向推送。',
@@ -82,42 +143,39 @@ export const zhHans: GbooksMessages = {
       includeEbooksDescription: '已购与已上传的书库，导入时不写入状态',
       includeShelvesLabel: '阅读书架',
       includeShelvesDescription: '想读、在读、读完将写入为条目状态',
-      updateExistingLabel: '更新已有条目',
-      createMissingLabel: '创建缺失条目',
       mergeSeriesLabel: '合并系列分卷',
       mergeSeriesDescription: '同一系列的多卷只以第一卷创建条目',
+      optionsLabel: '选项',
+      updateExistingLabel: '更新已有条目',
+      createMissingLabel: '创建缺失条目',
       novelProfileLabel: '小说配置',
       comicProfileLabel: '漫画配置',
       profilePlaceholder: '选择配置',
-      startImport: '导入',
-      taskProgress: ({ current, total }) => `${current} / ${total}`,
-      taskRunning: '进行中',
-      taskCompleted: '已完成',
-      taskFailed: '失败',
-      taskCancelled: '已取消',
-      cancelTask: '取消'
+      runLabel: '执行导入',
+      runDescription: '以应用任务运行；以上选项仅作用于本次运行',
+      startImport: '导入'
     },
 
-    endpoints: {
-      title: '端点',
-      description: 'Google 登录经 Kisaki 中继完成',
-      relayUrlLabel: 'OAuth 中继地址',
-      relayUrlDescription: 'Kisaki 中继上 Google Books 路由的根地址',
-      restoreDefaults: '恢复默认中继'
+    automation: {
+      title: '推荐自动化',
+      description:
+        '此处仅创建推荐的 Google Books 模板；启用状态、触发器与历史在应用的自动化页面管理',
+      create: '创建'
     },
 
-    preferences: {
-      title: '偏好',
-      description: '作用于所有 Google Books 请求',
+    maintenance: {
+      clientTitle: '客户端',
+      clientDescription: '作用于所有 Google Books 请求',
       timeoutLabel: '请求超时',
       timeoutDescription: '等待单次响应的秒数',
       seconds: '秒',
       retryLabel: '重试次数',
       retryDescription: '限流或服务器错误后的额外尝试次数',
       retryUnit: '次',
+      actionsTitle: '维护操作',
+      actionsDescription: '这些操作立即生效且不可撤销',
       reset: '恢复默认设置',
-      resetDescription: '端点与偏好将恢复为默认值，登录状态保留。',
-      resetSucceeded: '已恢复默认设置'
+      resetDescription: '偏好将恢复为默认值，登录状态保留。'
     }
   }
 }

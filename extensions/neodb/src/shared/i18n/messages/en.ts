@@ -62,6 +62,46 @@ export const en = {
       `Created ${created}, updated ${updated}, unchanged ${unchanged}, skipped ${skipped}, failed ${failed}`
   },
 
+  commands: {
+    verifyAccount: {
+      title: 'Verify the NeoDB account',
+      description: 'Checks the stored sign-in against the NeoDB instance'
+    },
+    pushAll: {
+      title: 'Push the library to NeoDB',
+      description: 'Pushes every entry with a NeoDB id to the shelf'
+    },
+    importShelf: {
+      title: 'Import the NeoDB shelf',
+      description: 'Writes shelf status and ratings onto matching local entries'
+    }
+  },
+
+  automations: {
+    names: {
+      'auth-check': 'NeoDB: verify the account at startup',
+      'push-full-daily': 'NeoDB: daily full push',
+      'import-refresh-weekly': 'NeoDB: weekly shelf refresh'
+    },
+    labels: {
+      'auth-check': 'Verify the account at startup',
+      'push-full-daily': 'Daily full push',
+      'import-refresh-weekly': 'Weekly shelf refresh'
+    },
+    descriptions: {
+      'auth-check': 'Verifies the NeoDB sign-in when the app starts',
+      'push-full-daily':
+        'Pushes every linked entry to the NeoDB shelf once a day in the early morning',
+      'import-refresh-weekly':
+        'Re-imports shelf status and ratings onto existing entries once a week'
+    },
+    status: {
+      missing: 'Not created',
+      enabled: 'Enabled',
+      disabled: 'Disabled'
+    }
+  },
+
   settings: {
     webviewTitle: 'NeoDB',
     commandLabel: 'Settings',
@@ -78,6 +118,51 @@ export const en = {
     actionFailed: 'The action failed',
     cancel: 'Cancel',
     confirm: 'Confirm',
+
+    tabs: {
+      overview: 'Overview',
+      account: 'Account',
+      sync: 'Sync',
+      import: 'Import',
+      automation: 'Automation',
+      maintenance: 'Maintenance'
+    },
+
+    task: {
+      progress: ({ current, total }: { current: number; total: number }) =>
+        `${current} / ${total}`,
+      running: 'Running',
+      completed: 'Completed',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+      cancel: 'Cancel'
+    },
+
+    overview: {
+      statusTitle: 'Status overview',
+      accountLabel: 'Account',
+      signedIn: 'Signed in',
+      notSignedIn: 'Not signed in',
+      available: 'Available',
+      autoSyncLabel: 'Auto push',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      withScore: 'Status and rating',
+      withoutScore: 'Status only',
+      recommendedAutomations: 'Recommended automations',
+      automationsComplete: 'All created',
+      automationsMissing: ({ count }: { count: number }) => `${count} not created`,
+      templatesCount: ({ count }: { count: number }) =>
+        `${count} ${count === 1 ? 'template' : 'templates'}`,
+      runtimeTitle: 'Runtime status',
+      runningJobs: 'Running NeoDB jobs',
+      running: 'Running',
+      idle: 'Idle',
+      quickActionsTitle: 'Shortcuts',
+      importAction: 'Import the NeoDB shelf',
+      maintenanceAction: 'Adjust instance and client options',
+      automationsTitle: 'Automation templates'
+    },
 
     account: {
       title: 'Account',
@@ -99,8 +184,8 @@ export const en = {
       verifiedAs: ({ userName }: { userName: string }) => `Signed in as ${userName}`
     },
 
-    integration: {
-      title: 'Shelf integration',
+    sync: {
+      preferencesTitle: 'Auto push preferences',
       syncEnabledLabel: 'Push changes automatically',
       syncEnabledDescription:
         'Send status and score changes of entries carrying a NeoDB id to the shelf',
@@ -112,43 +197,51 @@ export const en = {
       visibilityPublic: 'Public',
       visibilityFollowers: 'Followers only',
       visibilitySelf: 'Only me',
-      pushAll: 'Push everything now',
-      importTitle: 'Import shelf',
-      importDescription:
+      manualTitle: 'Manual push',
+      manualDescription:
+        'Pushes every entry with a NeoDB id to the shelf. Progress and cancellation are handled by the task center.',
+      pushAll: 'Push everything now'
+    },
+
+    import: {
+      title: 'Import shelf',
+      description:
         'Writes shelf status and rating onto matching entries. Creating missing entries scrapes them through the selected profile.',
+      optionsLabel: 'Options',
       updateExistingLabel: 'Update existing entries',
       createMissingLabel: 'Create missing entries',
+      profileLabel: 'Novel profile',
       profilePlaceholder: 'Select a profile',
-      startImport: 'Import',
-      taskProgress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
-      taskRunning: 'Running',
-      taskCompleted: 'Completed',
-      taskFailed: 'Failed',
-      taskCancelled: 'Cancelled',
-      cancelTask: 'Cancel'
+      runLabel: 'Run import',
+      runDescription: 'Runs as an app task; the options above apply to this run only',
+      startImport: 'Import'
     },
 
-    endpoints: {
-      title: 'Instance',
-      description: 'Any NeoDB deployment works; the sign-in is bound to its instance',
+    automation: {
+      title: 'Recommended automations',
+      description:
+        'Only recommended NeoDB templates are created here; enabling, triggers, and history are managed on the main app automation page',
+      create: 'Create'
+    },
+
+    maintenance: {
+      instanceTitle: 'Instance',
+      instanceDescription: 'Any NeoDB deployment works; the sign-in is bound to its instance',
       instanceUrlLabel: 'Instance URL',
       instanceUrlDescription: 'Root of the NeoDB instance',
-      restoreDefaults: 'Restore the flagship instance'
-    },
-
-    preferences: {
-      title: 'Preferences',
-      description: 'Applies to every NeoDB request',
+      restoreDefaults: 'Restore the flagship instance',
+      clientTitle: 'Client',
+      clientDescription: 'Applies to every NeoDB request',
       timeoutLabel: 'Request timeout',
       timeoutDescription: 'Seconds to wait for a single response',
       seconds: 'seconds',
       retryLabel: 'Retry count',
       retryDescription: 'Extra attempts after rate limits or server errors',
       retryUnit: 'retries',
+      actionsTitle: 'Maintenance actions',
+      actionsDescription: 'These actions take effect immediately and cannot be undone',
       reset: 'Restore default settings',
-      resetDescription: 'Instance and preferences return to their defaults. The sign-in is kept.',
-      resetSucceeded: 'Settings were restored to defaults'
+      resetDescription: 'Instance and preferences return to their defaults. The sign-in is kept.'
     }
   }
 }

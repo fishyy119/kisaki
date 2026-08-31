@@ -49,9 +49,21 @@ export interface NeodbAccountVerification {
   displayName: string
 }
 
+export type NeodbAutomationKind = 'auth-check' | 'push-full-daily' | 'import-refresh-weekly'
+
+export type NeodbAutomationStatus = 'missing' | 'enabled' | 'disabled'
+
+export interface NeodbAutomationState {
+  kind: NeodbAutomationKind
+  status: NeodbAutomationStatus
+}
+
 export interface NeodbSettingsOverview {
   form: NeodbSettingsFormState
   account: NeodbAccountState
+  automations: readonly NeodbAutomationState[]
+  /** Operations of the extension's currently active task runs. */
+  runningOperations: readonly string[]
 }
 
 export interface NeodbProfileOption {
@@ -103,5 +115,7 @@ export interface NeodbSettingsHostFunctions {
   startPushAll(): Promise<{ runId: string }>
   getTaskState(runId: string): Promise<NeodbTaskStateView | null>
   cancelTask(runId: string): Promise<boolean>
+  /** Creates one recommended app-owned automation for a NeoDB command. */
+  createAutomation(kind: NeodbAutomationKind): Promise<void>
   resetSettings(): Promise<void>
 }

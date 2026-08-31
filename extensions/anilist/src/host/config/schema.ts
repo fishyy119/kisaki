@@ -10,8 +10,6 @@ export interface AnilistSettingsV1 {
   endpoints: {
     /** Root of the AniList GraphQL API; changeable for mirrors. */
     graphqlUrl: string
-    /** Kisaki OAuth relay route holding the AniList client secret. */
-    oauthRelayUrl: string
   }
   naming: {
     /** Prefer the romaji title over the English one outside Japanese locales. */
@@ -44,8 +42,7 @@ export function normalizeAnilistSettings(value: unknown): AnilistSettingsV1 {
   return {
     version: 1,
     endpoints: {
-      graphqlUrl: normalizeHttpUrl(endpoints?.graphqlUrl, defaults.endpoints.graphqlUrl),
-      oauthRelayUrl: normalizeHttpUrl(endpoints?.oauthRelayUrl, defaults.endpoints.oauthRelayUrl)
+      graphqlUrl: normalizeHttpUrl(endpoints?.graphqlUrl, defaults.endpoints.graphqlUrl)
     },
     naming: {
       preferRomajiTitles: normalizeBoolean(

@@ -6,6 +6,7 @@ import type { MangadexSettingsFormState } from '../../shared/settings'
  * instead of mutating props, keeping Vue's one-way data flow intact.
  */
 export const settingsForm = reactive<MangadexSettingsFormState>({
+  apiUrl: '',
   preferRomanizedTitles: false,
   timeoutSeconds: 20,
   retryCount: 2,
@@ -21,6 +22,7 @@ export function snapshotSettingsForm(
   source: MangadexSettingsFormState = settingsForm
 ): MangadexSettingsFormState {
   return {
+    apiUrl: source.apiUrl,
     preferRomanizedTitles: source.preferRomanizedTitles,
     timeoutSeconds: source.timeoutSeconds,
     retryCount: source.retryCount,
@@ -34,6 +36,7 @@ export function settingsFormsEqual(
   second: MangadexSettingsFormState
 ): boolean {
   return (
+    first.apiUrl === second.apiUrl &&
     first.preferRomanizedTitles === second.preferRomanizedTitles &&
     first.timeoutSeconds === second.timeoutSeconds &&
     first.retryCount === second.retryCount &&

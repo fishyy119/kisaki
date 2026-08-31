@@ -34,6 +34,45 @@ export const ja: VndbMessages = {
       `作成 ${created} 件、更新 ${updated} 件、変更なし ${unchanged} 件、スキップ ${skipped} 件、失敗 ${failed} 件`
   },
 
+  commands: {
+    verifyAccount: {
+      title: 'VNDB アカウントを確認',
+      description: '保存済みトークンとそのリスト権限を VNDB API に照会します'
+    },
+    pushAll: {
+      title: 'ライブラリを VNDB へ送信',
+      description: 'VNDB ID を持つすべてのエントリをリストへ送信します'
+    },
+    importList: {
+      title: 'VNDB リストをインポート',
+      description: 'リストのステータスと投票を一致するローカルエントリへ書き込みます'
+    }
+  },
+
+  automations: {
+    names: {
+      'auth-check': 'VNDB: 起動時にアカウントを確認',
+      'push-full-daily': 'VNDB: 毎日の全件送信',
+      'import-refresh-weekly': 'VNDB: 毎週のリスト更新'
+    },
+    labels: {
+      'auth-check': '起動時にアカウントを確認',
+      'push-full-daily': '毎日の全件送信',
+      'import-refresh-weekly': '毎週のリスト更新'
+    },
+    descriptions: {
+      'auth-check': 'アプリ起動時に VNDB トークンとそのリスト権限を確認します',
+      'push-full-daily': '毎日早朝に、関連付け済みの全エントリを VNDB リストへ送信します',
+      'import-refresh-weekly':
+        '毎週、リストのステータスと投票を既存エントリへ再インポートします'
+    },
+    status: {
+      missing: '未作成',
+      enabled: '有効',
+      disabled: '無効'
+    }
+  },
+
   settings: {
     webviewTitle: 'VNDB',
     commandLabel: '設定',
@@ -51,10 +90,53 @@ export const ja: VndbMessages = {
     cancel: 'キャンセル',
     confirm: '確認',
 
-    credentials: {
+    tabs: {
+      overview: '概要',
+      account: 'アカウント',
+      sync: '同期',
+      import: 'インポート',
+      automation: '自動化',
+      maintenance: 'メンテナンス'
+    },
+
+    task: {
+      progress: ({ current, total }) => `${current} / ${total}`,
+      running: '実行中',
+      completed: '完了',
+      failed: '失敗',
+      cancelled: 'キャンセル済み',
+      cancel: 'キャンセル'
+    },
+
+    overview: {
+      statusTitle: 'ステータス概要',
+      accountLabel: 'アカウント',
+      tokenConfigured: 'トークン設定済み',
+      anonymous: '匿名アクセス',
+      available: '利用可能',
+      autoSyncLabel: '自動送信',
+      enabled: '有効',
+      disabled: '無効',
+      withScore: 'ステータスと投票',
+      withoutScore: 'ステータスのみ',
+      recommendedAutomations: '推奨自動化',
+      automationsComplete: 'すべて作成済み',
+      automationsMissing: ({ count }) => `${count} 件未作成`,
+      templatesCount: ({ count }) => `テンプレート ${count} 件`,
+      runtimeTitle: '実行状況',
+      runningJobs: '実行中の VNDB タスク',
+      running: '実行中',
+      idle: '待機中',
+      quickActionsTitle: 'ショートカット',
+      importAction: 'VNDB リストをインポート',
+      maintenanceAction: 'エンドポイントとクライアント設定を調整',
+      automationsTitle: '自動化テンプレート'
+    },
+
+    account: {
       title: 'API トークン',
       description:
-        'Kana API は公開されているため、トークンなしでもスクレイピングできます。個人トークンを追加するとレート上限が上がります。',
+        'Kana API は公開されているため、トークンなしでもスクレイピングできます。個人トークンを追加するとレート上限が上がります。リスト連携には listread と listwrite が必要です。',
       statusLabel: 'ステータス',
       inputLabel: 'トークン',
       inputPlaceholder: 'VNDB のトークンを貼り付け',
@@ -66,20 +148,61 @@ export const ja: VndbMessages = {
       saveSucceeded: 'API トークンを保存しました',
       clearSucceeded: 'API トークンを削除しました',
       testSucceeded: 'VNDB はリクエストを受け入れました',
-      openSettings: 'vndb.org でトークンを作成'
+      openSettings: 'vndb.org でトークンを作成',
+      verify: 'アカウントを確認',
+      verifiedAs: ({ username }) => `${username} としてサインイン中`,
+      permissionsLabel: 'リスト権限',
+      listRead: '読み取り',
+      listWrite: '書き込み',
+      permissionGranted: '許可済み',
+      permissionMissing: '不足'
     },
 
-    endpoints: {
-      title: 'エンドポイント',
-      description: '公式ホストに接続できない場合はミラーを指定します',
+    sync: {
+      preferencesTitle: '自動送信の設定',
+      preferencesDescription:
+        'リストへの送信には listread と listwrite の権限を持つトークンが必要です',
+      syncEnabledLabel: '変更を自動送信',
+      syncEnabledDescription:
+        'VNDB ID を持つエントリのステータスとスコアの変更をリストへ送信します',
+      pushScoreLabel: 'スコアを含める',
+      pushScoreDescription:
+        'ローカルスコアを VNDB の投票として書き込みます。スコアが空でも投票は消去されません。',
+      manualTitle: '手動送信',
+      manualDescription:
+        'VNDB ID を持つすべてのエントリをリストへ送信します。進行状況とキャンセルはタスクセンターが扱います。',
+      pushAll: '今すぐ全件送信'
+    },
+
+    import: {
+      title: 'リストをインポート',
+      description:
+        'リストのステータスと投票を一致するエントリへ書き込みます。不足エントリの作成は選択したプロファイルでスクレイピングします。',
+      optionsLabel: 'オプション',
+      updateExistingLabel: '既存エントリを更新',
+      createMissingLabel: '不足エントリを作成',
+      profileLabel: 'ゲームプロファイル',
+      profilePlaceholder: 'プロファイルを選択',
+      runLabel: 'インポートを実行',
+      runDescription: 'アプリタスクとして実行します。上のオプションはこの実行にのみ適用されます',
+      startImport: 'インポート'
+    },
+
+    automation: {
+      title: '推奨自動化',
+      description:
+        'ここでは推奨の VNDB テンプレートのみ作成します。有効化・トリガー・履歴はアプリの自動化ページで管理します',
+      create: '作成'
+    },
+
+    maintenance: {
+      endpointTitle: 'エンドポイント',
+      endpointDescription: '公式ホストに接続できない場合はミラーを指定します',
       apiBaseUrlLabel: 'API ベース URL',
       apiBaseUrlDescription: 'VNDB Kana API のルート',
-      restoreDefaults: '公式エンドポイントに戻す'
-    },
-
-    preferences: {
-      title: '設定',
-      description: 'すべての VNDB 検索とスクレイピングに適用されます',
+      restoreDefaults: '公式エンドポイントに戻す',
+      clientTitle: 'スクレイピングとクライアント',
+      clientDescription: 'すべての VNDB 検索とスクレイピングに適用されます',
       preferRomanizedLabel: 'ローマ字タイトルを優先',
       preferRomanizedDescription:
         'コンテンツ言語に対応するタイトルがない場合、ローマ字タイトルを表示名として使用します',
@@ -89,43 +212,11 @@ export const ja: VndbMessages = {
       retryLabel: '再試行回数',
       retryDescription: 'レート制限やサーバーエラー後の追加試行回数',
       retryUnit: '回',
+      actionsTitle: 'メンテナンス操作',
+      actionsDescription: 'これらの操作は直ちに反映され、元に戻せません',
       reset: '既定の設定に戻す',
       resetDescription: 'エンドポイントと設定が既定値に戻ります。トークンは保持されます。',
       resetSucceeded: '既定の設定に戻しました'
-    },
-
-    integration: {
-      title: 'リスト連携',
-      description:
-        'VNDB リストと連携します。ライブラリへのインポートと、ローカルのステータス・スコア変更の送信を行います。listread と listwrite の権限を持つトークンが必要です。',
-      verify: 'アカウントを確認',
-      verifiedAs: ({ username }) => `${username} としてサインイン中`,
-      permissionsLabel: 'リスト権限',
-      listRead: '読み取り',
-      listWrite: '書き込み',
-      permissionGranted: '許可済み',
-      permissionMissing: '不足',
-      syncEnabledLabel: '変更を自動送信',
-      syncEnabledDescription:
-        'VNDB ID を持つエントリのステータスとスコアの変更をリストへ送信します',
-      pushScoreLabel: 'スコアを含める',
-      pushScoreDescription:
-        'ローカルスコアを VNDB の投票として書き込みます。スコアが空でも投票は消去されません。',
-      pushAll: '今すぐ全件送信',
-      importTitle: 'リストをインポート',
-      importDescription:
-        'リストのステータスと投票を一致するエントリへ書き込みます。不足エントリの作成は選択したプロファイルでスクレイピングします。',
-      profileLabel: 'スクレイピングプロファイル',
-      profilePlaceholder: 'プロファイルを選択',
-      updateExistingLabel: '既存エントリを更新',
-      createMissingLabel: '不足エントリを作成',
-      startImport: 'インポート',
-      taskProgress: ({ current, total }) => `${current} / ${total}`,
-      taskRunning: '実行中',
-      taskCompleted: '完了',
-      taskFailed: '失敗',
-      taskCancelled: 'キャンセル済み',
-      cancelTask: 'キャンセル'
     }
   }
 }

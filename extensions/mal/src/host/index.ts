@@ -8,6 +8,7 @@ import { TokenStore } from './auth/token-store'
 import { createDefaultMalSettings } from './config/defaults'
 import { normalizeMalSettings } from './config/schema'
 import { m } from './i18n'
+import { registerMalJobCommands } from './jobs/commands'
 import { MalAnimeProvider, MalComicProvider, MalNovelProvider } from './media/media-providers'
 import type { MalRuntime } from './media/runtime'
 import { registerMalSettingsUi } from './settings'
@@ -114,6 +115,16 @@ export default defineExtension({
         logger: context.logger
       }).start()
     )
+    for (const registration of registerMalJobCommands({
+      commands: context.contributions.commands,
+      tasks,
+      client: official,
+      tokenStore,
+      signal: context.abortSignal,
+      logger: context.logger
+    })) {
+      context.subscriptions.add(registration)
+    }
 
     registerMalSettingsUi(context, {
       settingsStore,

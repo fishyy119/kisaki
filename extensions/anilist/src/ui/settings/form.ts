@@ -7,7 +7,6 @@ import type { AnilistSettingsFormState } from '../../shared/settings'
  */
 export const settingsForm = reactive<AnilistSettingsFormState>({
   graphqlUrl: '',
-  oauthRelayUrl: '',
   preferRomajiTitles: false,
   timeoutSeconds: 20,
   retryCount: 2,
@@ -24,7 +23,6 @@ export function snapshotSettingsForm(
 ): AnilistSettingsFormState {
   return {
     graphqlUrl: source.graphqlUrl,
-    oauthRelayUrl: source.oauthRelayUrl,
     preferRomajiTitles: source.preferRomajiTitles,
     timeoutSeconds: source.timeoutSeconds,
     retryCount: source.retryCount,
@@ -39,7 +37,6 @@ export function settingsFormsEqual(
 ): boolean {
   return (
     first.graphqlUrl === second.graphqlUrl &&
-    first.oauthRelayUrl === second.oauthRelayUrl &&
     first.preferRomajiTitles === second.preferRomajiTitles &&
     first.timeoutSeconds === second.timeoutSeconds &&
     first.retryCount === second.retryCount &&

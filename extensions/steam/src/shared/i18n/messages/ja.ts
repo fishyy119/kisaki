@@ -5,6 +5,7 @@ export const ja: SteamMessages = {
     keyRequired: 'まず Steam Web API キーを保存してください',
     steamIdInvalid: '有効な SteamID64 を入力してください(7656 で始まる 17 桁の数字)',
     keyRejected: 'Steam が Web API キーを拒否しました',
+    profileRequired: 'まずゲームのスクレイピングプロファイルを作成してください',
     profileNotVisible:
       'Steam からゲームが返されませんでした。SteamID と、プロフィールのゲーム詳細が公開されているか確認してください。',
     notFound: 'その Steam アプリは存在しないか、ストアで公開されていません',
@@ -27,6 +28,38 @@ export const ja: SteamMessages = {
       `作成 ${created} 件、既存 ${existing} 件、失敗 ${failed} 件`
   },
 
+  commands: {
+    verifyAccount: {
+      title: 'Steam アカウントを確認',
+      description: '所有ゲームを数えて、保存済みの Web API キーと SteamID を確認します'
+    },
+    importOwned: {
+      title: '所有している Steam ゲームをインポート',
+      description: 'ライブラリにまだない所有ゲームのエントリを作成します'
+    }
+  },
+
+  automations: {
+    names: {
+      'auth-check': 'Steam: 起動時にアカウントを確認',
+      'import-refresh-weekly': 'Steam: 毎週の所有ゲームインポート'
+    },
+    labels: {
+      'auth-check': '起動時にアカウントを確認',
+      'import-refresh-weekly': '毎週の所有ゲームインポート'
+    },
+    descriptions: {
+      'auth-check': 'アプリ起動時に Steam Web API キーと SteamID を確認します',
+      'import-refresh-weekly':
+        '毎週、テンプレートに固定されたプロファイルで新しく所有したゲームをインポートします'
+    },
+    status: {
+      missing: '未作成',
+      enabled: '有効',
+      disabled: '無効'
+    }
+  },
+
   settings: {
     webviewTitle: 'Steam',
     commandLabel: '設定',
@@ -44,6 +77,43 @@ export const ja: SteamMessages = {
     actionFailed: '操作に失敗しました',
     cancel: 'キャンセル',
     confirm: '確認',
+
+    tabs: {
+      overview: '概要',
+      account: 'アカウント',
+      import: 'インポート',
+      automation: '自動化',
+      maintenance: 'メンテナンス'
+    },
+
+    task: {
+      progress: ({ current, total }) => `${current} / ${total}`,
+      running: '実行中',
+      completed: '完了',
+      failed: '失敗',
+      cancelled: 'キャンセル済み',
+      cancel: 'キャンセル'
+    },
+
+    overview: {
+      statusTitle: 'ステータス概要',
+      accountLabel: 'アカウント',
+      keyConfigured: 'キー保存済み',
+      noKey: 'キー未保存',
+      available: '利用可能',
+      recommendedAutomations: '推奨自動化',
+      automationsComplete: 'すべて作成済み',
+      automationsMissing: ({ count }) => `${count} 件未作成`,
+      templatesCount: ({ count }) => `テンプレート ${count} 件`,
+      runtimeTitle: '実行状況',
+      runningJobs: '実行中の Steam タスク',
+      running: '実行中',
+      idle: '待機中',
+      quickActionsTitle: 'ショートカット',
+      importAction: '所有している Steam ゲームをインポート',
+      maintenanceAction: 'クライアント設定を調整',
+      automationsTitle: '自動化テンプレート'
+    },
 
     account: {
       title: 'アカウント',
@@ -63,33 +133,37 @@ export const ja: SteamMessages = {
       openKeyPage: 'Web API キーを取得'
     },
 
-    integration: {
+    import: {
       title: '所有ゲームのインポート',
       description:
         '所有ライブラリを読み込み、選択したプロファイルで不足エントリを作成します。既に Steam ID を持つエントリは変更されません。',
       profileLabel: 'ゲームプロファイル',
       profilePlaceholder: 'プロファイルを選択',
-      startImport: '所有ゲームをインポート',
-      taskProgress: ({ current, total }) => `${current} / ${total}`,
-      taskRunning: '実行中',
-      taskCompleted: '完了',
-      taskFailed: '失敗',
-      taskCancelled: 'キャンセル済み',
-      cancelTask: 'キャンセル'
+      runLabel: 'インポートを実行',
+      runDescription: 'アプリタスクとして実行します。上のオプションはこの実行にのみ適用されます',
+      startImport: '所有ゲームをインポート'
     },
 
-    preferences: {
-      title: '設定',
-      description: 'すべての Steam リクエストに適用されます',
+    automation: {
+      title: '推奨自動化',
+      description:
+        'ここでは推奨の Steam テンプレートのみ作成します。有効化・トリガー・履歴はアプリの自動化ページで管理します',
+      create: '作成'
+    },
+
+    maintenance: {
+      clientTitle: 'クライアント',
+      clientDescription: 'すべての Steam リクエストに適用されます',
       timeoutLabel: 'リクエストタイムアウト',
       timeoutDescription: '1 回のレスポンスを待つ秒数',
       seconds: '秒',
       retryLabel: '再試行回数',
       retryDescription: 'レート制限やサーバーエラー後の追加試行回数',
       retryUnit: '回',
+      actionsTitle: 'メンテナンス操作',
+      actionsDescription: 'これらの操作は直ちに反映され、元に戻せません',
       reset: '既定の設定に戻す',
-      resetDescription: '設定が既定値に戻ります。保存済みのキーは保持されます。',
-      resetSucceeded: '既定の設定に戻しました'
+      resetDescription: '設定が既定値に戻ります。保存済みのキーは保持されます。'
     }
   }
 }

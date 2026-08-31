@@ -20,7 +20,7 @@ export const zhHant: MangadexMessages = {
     autoSyncFailedFallback: '無法將變更推送到 MangaDex',
     pushTaskTitle: '將媒體庫推送到 MangaDex',
     pushSummary: ({ pushed, skipped, failed }) =>
-      `已推送 ${pushed} 項、略過 ${skipped} 項、失敗 ${failed} 項`
+      `已推送 ${pushed} 項、跳過 ${skipped} 項、失敗 ${failed} 項`
   },
 
   import: {
@@ -29,7 +29,45 @@ export const zhHant: MangadexMessages = {
     phaseApply: '正在套用條目',
     itemFailed: ({ id }) => `${id} 匯入失敗`,
     summary: ({ created, updated, unchanged, skipped, failed }) =>
-      `新增 ${created} 項、更新 ${updated} 項、無變化 ${unchanged} 項、略過 ${skipped} 項、失敗 ${failed} 項`
+      `新建 ${created} 項、更新 ${updated} 項、無變化 ${unchanged} 項、跳過 ${skipped} 項、失敗 ${failed} 項`
+  },
+
+  commands: {
+    verifyAccount: {
+      title: '驗證 MangaDex 帳號',
+      description: '向 MangaDex 介面驗證已儲存的憑證'
+    },
+    pushAll: {
+      title: '推送資料庫到 MangaDex',
+      description: '將所有帶 MangaDex ID 的條目推送到帳號'
+    },
+    importStatuses: {
+      title: '匯入 MangaDex 閱讀狀態',
+      description: '將閱讀狀態與評分寫入相符的本機條目'
+    }
+  },
+
+  automations: {
+    names: {
+      'auth-check': 'MangaDex：啟動時驗證帳號',
+      'push-full-daily': 'MangaDex：每日全量推送',
+      'import-refresh-weekly': 'MangaDex：每週狀態重新整理'
+    },
+    labels: {
+      'auth-check': '啟動時驗證帳號',
+      'push-full-daily': '每日全量推送',
+      'import-refresh-weekly': '每週狀態重新整理'
+    },
+    descriptions: {
+      'auth-check': '應用啟動時驗證 MangaDex 憑證',
+      'push-full-daily': '每天凌晨將全部已關聯條目推送到 MangaDex 帳號',
+      'import-refresh-weekly': '每週將閱讀狀態與評分重新匯入到既有條目'
+    },
+    status: {
+      missing: '未建立',
+      enabled: '已啟用',
+      disabled: '已停用'
+    }
   },
 
   settings: {
@@ -49,6 +87,49 @@ export const zhHant: MangadexMessages = {
     cancel: '取消',
     confirm: '確認',
 
+    tabs: {
+      overview: '概覽',
+      account: '帳號',
+      sync: '同步',
+      import: '匯入',
+      automation: '自動化',
+      maintenance: '維護'
+    },
+
+    task: {
+      progress: ({ current, total }) => `${current} / ${total}`,
+      running: '進行中',
+      completed: '已完成',
+      failed: '失敗',
+      cancelled: '已取消',
+      cancel: '取消'
+    },
+
+    overview: {
+      statusTitle: '狀態總覽',
+      accountLabel: '帳號',
+      connected: '已連接',
+      notConnected: '未連接',
+      available: '可用',
+      autoSyncLabel: '自動推送',
+      enabled: '已啟用',
+      disabled: '已停用',
+      withScore: '狀態與評分',
+      withoutScore: '僅狀態',
+      recommendedAutomations: '推薦自動化',
+      automationsComplete: '已全部建立',
+      automationsMissing: ({ count }) => `${count} 項未建立`,
+      templatesCount: ({ count }) => `${count} 個範本`,
+      runtimeTitle: '執行狀態',
+      runningJobs: '執行中的 MangaDex 任務',
+      running: '執行中',
+      idle: '閒置',
+      quickActionsTitle: '快捷入口',
+      importAction: '匯入 MangaDex 閱讀狀態',
+      maintenanceAction: '調整介面與用戶端選項',
+      automationsTitle: '自動化範本'
+    },
+
     account: {
       title: '帳號',
       description:
@@ -67,31 +148,45 @@ export const zhHant: MangadexMessages = {
       openClientSettings: '開啟 MangaDex API 用戶端頁面'
     },
 
-    integration: {
-      title: '閱讀聯動',
+    sync: {
+      preferencesTitle: '自動推送偏好',
       syncEnabledLabel: '自動推送變更',
       syncEnabledDescription: '將帶有 MangaDex ID 條目的狀態與評分變更推送到帳號',
       pushScoreLabel: '包含評分',
       pushScoreDescription: '將本機評分寫入 MangaDex 評分。本機評分為空時不會清除遠端評分。',
-      pushAll: '立即全量推送',
-      importTitle: '匯入閱讀狀態',
-      importDescription: '將閱讀狀態寫入相符的條目。建立缺漏條目時會經所選設定檔刮削完整中繼資料。',
+      manualTitle: '手動推送',
+      manualDescription: '將所有帶 MangaDex ID 的條目推送到帳號。進度與取消由任務中心接管。',
+      pushAll: '立即全量推送'
+    },
+
+    import: {
+      title: '匯入閱讀狀態',
+      description: '將閱讀狀態寫入相符的條目。建立缺漏條目時會經所選設定檔刮削完整中繼資料。',
+      optionsLabel: '選項',
       importScoresLabel: '同時匯入評分',
       updateExistingLabel: '更新既有條目',
       createMissingLabel: '建立缺漏條目',
+      profileLabel: '漫畫設定檔',
       profilePlaceholder: '選擇設定檔',
-      startImport: '匯入',
-      taskProgress: ({ current, total }) => `${current} / ${total}`,
-      taskRunning: '進行中',
-      taskCompleted: '已完成',
-      taskFailed: '失敗',
-      taskCancelled: '已取消',
-      cancelTask: '取消'
+      runLabel: '執行匯入',
+      runDescription: '以應用任務執行；以上選項僅作用於本次執行',
+      startImport: '匯入'
     },
 
-    preferences: {
-      title: '偏好',
-      description: '套用於所有 MangaDex 搜尋與刮削',
+    automation: {
+      title: '推薦自動化',
+      description: '此處僅建立推薦的 MangaDex 範本；啟用狀態、觸發器與歷史在應用的自動化頁面管理',
+      create: '建立'
+    },
+
+    maintenance: {
+      endpointTitle: '介面位址',
+      endpointDescription: '當官方位址無法連線時，可指向鏡像',
+      apiUrlLabel: 'API 位址',
+      apiUrlDescription: 'MangaDex REST API 的根位址；登入流量仍走官方位址',
+      restoreDefaults: '還原官方位址',
+      clientTitle: '刮削與用戶端',
+      clientDescription: '套用於所有 MangaDex 搜尋與刮削',
       preferRomanizedLabel: '優先羅馬字標題',
       preferRomanizedDescription: '當沒有符合內容語言的標題時，使用羅馬字標題作為顯示名稱',
       timeoutLabel: '請求逾時',
@@ -100,9 +195,10 @@ export const zhHant: MangadexMessages = {
       retryLabel: '重試次數',
       retryDescription: '限流或伺服器錯誤後的額外嘗試次數',
       retryUnit: '次',
+      actionsTitle: '維護操作',
+      actionsDescription: '這些操作立即生效且無法復原',
       reset: '還原預設設定',
-      resetDescription: '偏好將還原為預設值，已儲存的憑證保留。',
-      resetSucceeded: '已還原預設設定'
+      resetDescription: '偏好將還原為預設值，已儲存的憑證保留。'
     }
   }
 }

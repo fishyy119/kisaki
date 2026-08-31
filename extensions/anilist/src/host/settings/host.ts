@@ -2,6 +2,7 @@ import { kisaki } from '@kisaki3/extension-sdk'
 import type {
   AnilistAccountState,
   AnilistAccountVerification,
+  AnilistAutomationKind,
   AnilistImportRequest,
   AnilistProfileOption,
   AnilistProfileOptions,
@@ -11,6 +12,7 @@ import type {
   AnilistTaskStateView
 } from '../../shared/settings'
 import type { ImportOptions } from '../import/runner'
+import { createAnilistAutomation, resolveAutomationStates } from './automations'
 import { applyFormState, toFormState } from './forms'
 import type { AnilistSettingsRuntime } from './runtime'
 
@@ -35,11 +37,13 @@ export function createAnilistSettingsHostFunctions(
 
   return {
     async getOverview(): Promise<AnilistSettingsOverview> {
-      const [settings, account] = await Promise.all([
+      const [settings, account, automations, runningOperations] = await Promise.all([
         runtime.settingsStore.get(),
-        readAccountState()
+        readAccountState(),
+        resolveAutomationStates(),
+        listRunningOperations()
       ])
-      return { form: toFormState(settings), account }
+      return { form: toFormState(settings), account, automations, runningOperations }
     },
 
     async saveSettings(form: AnilistSettingsFormState): Promise<void> {
@@ -107,6 +111,10 @@ export function createAnilistSettingsHostFunctions(
       return runtime.tasks.cancelTask(runId)
     },
 
+    async createAutomation(kind: AnilistAutomationKind): Promise<void> {
+      await createAnilistAutomation(kind)
+    },
+
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
     },
@@ -122,4 +130,9 @@ async function listProfiles(
 ): Promise<AnilistProfileOption[]> {
   const profiles = await kisaki.scrapers.profiles.list({ mediaType })
   return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
+}
+
+async function listRunningOperations(): Promise<readonly string[]> {
+  const active = await kisaki.taskRuns.listActiveOwn({ limit: 20 }).catch(() => [])
+  return active.map((run) => run.operation)
 }

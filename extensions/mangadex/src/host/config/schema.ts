@@ -1,4 +1,5 @@
 import type { SettingsStore } from '../utils/settings-store'
+import { matchesHttpUrlFormat } from '../../shared/settings'
 import { DEFAULT_MANGADEX_SETTINGS } from './defaults'
 
 /** Store shape every MangaDex submodule reads settings through. */
@@ -6,6 +7,10 @@ export type MangadexSettingsStore = SettingsStore<MangadexSettingsV1>
 
 export interface MangadexSettingsV1 {
   version: 1
+  endpoints: {
+    /** Root of the MangaDex REST API; changeable for mirrors. */
+    apiUrl: string
+  }
   naming: {
     /** Prefer the romanized title over the English one outside native locales. */
     preferRomanizedTitles: boolean
@@ -29,12 +34,16 @@ export interface MangadexSettingsV1 {
 export function normalizeMangadexSettings(value: unknown): MangadexSettingsV1 {
   const input = isRecord(value) && value.version === 1 ? value : undefined
   const defaults = DEFAULT_MANGADEX_SETTINGS
+  const endpoints = asRecord(input?.endpoints)
   const naming = asRecord(input?.naming)
   const client = asRecord(input?.client)
   const sync = asRecord(input?.sync)
 
   return {
     version: 1,
+    endpoints: {
+      apiUrl: normalizeHttpUrl(endpoints?.apiUrl, defaults.endpoints.apiUrl)
+    },
     naming: {
       preferRomanizedTitles: normalizeBoolean(
         naming?.preferRomanizedTitles,
@@ -56,6 +65,15 @@ export function normalizeMangadexSettings(value: unknown): MangadexSettingsV1 {
       pushScore: normalizeBoolean(sync?.pushScore, defaults.sync.pushScore)
     }
   }
+}
+
+function normalizeHttpUrl(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  const trimmed = value.trim().replace(/\/+$/, '')
+  return trimmed && matchesHttpUrlFormat(trimmed) ? trimmed : fallback
 }
 
 function normalizeBoolean(value: unknown, fallback: boolean): boolean {

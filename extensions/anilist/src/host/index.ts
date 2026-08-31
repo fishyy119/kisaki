@@ -6,6 +6,7 @@ import { TokenStore } from './auth/token-store'
 import { createDefaultAnilistSettings } from './config/defaults'
 import { normalizeAnilistSettings } from './config/schema'
 import { m } from './i18n'
+import { registerAnilistJobCommands } from './jobs/commands'
 import { AnilistCharacterProvider } from './media/character/provider'
 import {
   AnilistAnimeProvider,
@@ -19,7 +20,7 @@ import { SyncEngine } from './sync/engine'
 import { SyncStateStore } from './sync/state'
 import { SyncSubscription } from './sync/subscription'
 import { AnilistTasks } from './tasks'
-import { ANILIST_LOGIN_TIMEOUT_MS } from './utils/constants'
+import { ANILIST_LOGIN_TIMEOUT_MS, ANILIST_OAUTH_RELAY_BASE_URL } from './utils/constants'
 import { AnilistExtensionError, createRelayError, toSafeErrorLog } from './utils/errors'
 import { ANILIST_STORAGE_KEYS } from './utils/ids'
 
@@ -42,7 +43,7 @@ export default defineExtension({
 
     const relayClient = new OAuthRelayClient({
       network: kisaki.network,
-      getBaseUrl: async () => (await settingsStore.get()).endpoints.oauthRelayUrl,
+      getBaseUrl: async () => ANILIST_OAUTH_RELAY_BASE_URL,
       getTimeoutMs: async () => (await settingsStore.get()).client.timeoutMs,
       createError: createRelayError
     })
@@ -130,6 +131,16 @@ export default defineExtension({
         logger: context.logger
       }).start()
     )
+    for (const registration of registerAnilistJobCommands({
+      commands: context.contributions.commands,
+      tasks,
+      client,
+      tokenStore,
+      signal: context.abortSignal,
+      logger: context.logger
+    })) {
+      context.subscriptions.add(registration)
+    }
 
     registerAnilistSettingsUi(context, {
       settingsStore,

@@ -48,6 +48,31 @@ export const en = {
       `Created ${created}, updated ${updated}, unchanged ${unchanged}, skipped ${skipped}, failed ${failed}`
   },
 
+  commands: {
+    importLibrary: {
+      title: 'Import the Google Books library',
+      description: 'Writes library and shelf statuses onto matching local entries'
+    }
+  },
+
+  automations: {
+    names: {
+      'import-refresh-weekly': 'Google Books: weekly library refresh'
+    },
+    labels: {
+      'import-refresh-weekly': 'Weekly library refresh'
+    },
+    descriptions: {
+      'import-refresh-weekly':
+        'Re-imports library and shelf statuses onto existing entries once a week'
+    },
+    status: {
+      missing: 'Not created',
+      enabled: 'Enabled',
+      disabled: 'Disabled'
+    }
+  },
+
   settings: {
     webviewTitle: 'Google Books',
     commandLabel: 'Settings',
@@ -64,6 +89,45 @@ export const en = {
     actionFailed: 'The action failed',
     cancel: 'Cancel',
     confirm: 'Confirm',
+
+    tabs: {
+      overview: 'Overview',
+      account: 'Account',
+      import: 'Import',
+      automation: 'Automation',
+      maintenance: 'Maintenance'
+    },
+
+    task: {
+      progress: ({ current, total }: { current: number; total: number }) =>
+        `${current} / ${total}`,
+      running: 'Running',
+      completed: 'Completed',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+      cancel: 'Cancel'
+    },
+
+    overview: {
+      statusTitle: 'Status overview',
+      accountLabel: 'Account',
+      signedIn: 'Signed in',
+      notSignedIn: 'Not signed in',
+      available: 'Available',
+      recommendedAutomations: 'Recommended automations',
+      automationsComplete: 'All created',
+      automationsMissing: ({ count }: { count: number }) => `${count} not created`,
+      templatesCount: ({ count }: { count: number }) =>
+        `${count} ${count === 1 ? 'template' : 'templates'}`,
+      runtimeTitle: 'Runtime status',
+      runningJobs: 'Running Google Books jobs',
+      running: 'Running',
+      idle: 'Idle',
+      quickActionsTitle: 'Shortcuts',
+      importAction: 'Import the Google Books library',
+      maintenanceAction: 'Adjust client options',
+      automationsTitle: 'Automation templates'
+    },
 
     account: {
       title: 'Account',
@@ -85,7 +149,7 @@ export const en = {
       clearKey: 'Remove key'
     },
 
-    integration: {
+    import: {
       title: 'Library import',
       description:
         'Reads the purchased library and the reading shelves, writes statuses onto matching entries, and creates missing ones through the selected profiles. Google Books carries purchases, not tracking, so nothing is pushed back.',
@@ -93,44 +157,40 @@ export const en = {
       includeEbooksDescription: 'The purchased and uploaded library; imported without a status',
       includeShelvesLabel: 'Reading shelves',
       includeShelvesDescription: 'To read, reading now, and have read become entry statuses',
-      updateExistingLabel: 'Update existing entries',
-      createMissingLabel: 'Create missing entries',
       mergeSeriesLabel: 'Merge series volumes',
       mergeSeriesDescription:
         'When several volumes belong to one series, only the first volume creates an entry',
+      optionsLabel: 'Options',
+      updateExistingLabel: 'Update existing entries',
+      createMissingLabel: 'Create missing entries',
       novelProfileLabel: 'Novel profile',
       comicProfileLabel: 'Comic profile',
       profilePlaceholder: 'Select a profile',
-      startImport: 'Import',
-      taskProgress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
-      taskRunning: 'Running',
-      taskCompleted: 'Completed',
-      taskFailed: 'Failed',
-      taskCancelled: 'Cancelled',
-      cancelTask: 'Cancel'
+      runLabel: 'Run import',
+      runDescription: 'Runs as an app task; the options above apply to this run only',
+      startImport: 'Import'
     },
 
-    endpoints: {
-      title: 'Endpoints',
-      description: 'The Kisaki relay completes the Google sign-in',
-      relayUrlLabel: 'OAuth relay URL',
-      relayUrlDescription: 'Root of the Kisaki relay route for Google Books',
-      restoreDefaults: 'Restore the default relay'
+    automation: {
+      title: 'Recommended automations',
+      description:
+        'Only recommended Google Books templates are created here; enabling, triggers, and history are managed on the main app automation page',
+      create: 'Create'
     },
 
-    preferences: {
-      title: 'Preferences',
-      description: 'Applies to every Google Books request',
+    maintenance: {
+      clientTitle: 'Client',
+      clientDescription: 'Applies to every Google Books request',
       timeoutLabel: 'Request timeout',
       timeoutDescription: 'Seconds to wait for a single response',
       seconds: 'seconds',
       retryLabel: 'Retry count',
       retryDescription: 'Extra attempts after rate limits or server errors',
       retryUnit: 'retries',
+      actionsTitle: 'Maintenance actions',
+      actionsDescription: 'These actions take effect immediately and cannot be undone',
       reset: 'Restore default settings',
-      resetDescription: 'Endpoints and preferences return to their defaults. The sign-in is kept.',
-      resetSucceeded: 'Settings were restored to defaults'
+      resetDescription: 'Preferences return to their defaults. The sign-in is kept.'
     }
   }
 }

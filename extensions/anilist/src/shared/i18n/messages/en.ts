@@ -30,6 +30,14 @@ export const en = {
     callbackFailed: 'The AniList sign-in could not be completed'
   },
 
+  auth: {
+    expiresSoonTitle: 'AniList sign-in expires soon',
+    expiresSoon: ({ days }: { days: number }) =>
+      days > 0
+        ? `The AniList token expires in ${days} days. Sign in again to renew it.`
+        : 'The AniList token has expired. Sign in again.'
+  },
+
   sync: {
     autoSyncFailedTitle: 'AniList sync failed',
     autoSyncFailedFallback: 'The change could not be pushed to AniList',
@@ -66,6 +74,47 @@ export const en = {
       `Created ${created}, updated ${updated}, unchanged ${unchanged}, skipped ${skipped}, failed ${failed}`
   },
 
+  commands: {
+    verifyAccount: {
+      title: 'Verify the AniList account',
+      description: 'Checks the stored sign-in against the AniList API and warns before it expires'
+    },
+    pushAll: {
+      title: 'Push the library to AniList',
+      description: 'Pushes every entry with an AniList id to the lists'
+    },
+    importLists: {
+      title: 'Import the AniList lists',
+      description: 'Writes list status and scores onto matching local entries'
+    }
+  },
+
+  automations: {
+    names: {
+      'auth-check': 'AniList: verify the account at startup',
+      'push-full-daily': 'AniList: daily full push',
+      'import-refresh-weekly': 'AniList: weekly list refresh'
+    },
+    labels: {
+      'auth-check': 'Verify the account at startup',
+      'push-full-daily': 'Daily full push',
+      'import-refresh-weekly': 'Weekly list refresh'
+    },
+    descriptions: {
+      'auth-check':
+        'Verifies the AniList sign-in when the app starts and warns before the token expires',
+      'push-full-daily':
+        'Pushes every linked entry to the AniList lists once a day in the early morning',
+      'import-refresh-weekly':
+        'Re-imports list status and scores onto existing entries once a week'
+    },
+    status: {
+      missing: 'Not created',
+      enabled: 'Enabled',
+      disabled: 'Disabled'
+    }
+  },
+
   settings: {
     webviewTitle: 'AniList',
     commandLabel: 'Settings',
@@ -83,6 +132,53 @@ export const en = {
     cancel: 'Cancel',
     confirm: 'Confirm',
 
+    tabs: {
+      overview: 'Overview',
+      account: 'Account',
+      sync: 'Sync',
+      import: 'Import',
+      automation: 'Automation',
+      maintenance: 'Maintenance'
+    },
+
+    task: {
+      progress: ({ current, total }: { current: number; total: number }) =>
+        `${current} / ${total}`,
+      running: 'Running',
+      completed: 'Completed',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+      cancel: 'Cancel'
+    },
+
+    overview: {
+      statusTitle: 'Status overview',
+      accountLabel: 'Account',
+      signedIn: 'Signed in',
+      notSignedIn: 'Not signed in',
+      available: 'Available',
+      expiresSoon: 'Expires soon',
+      expired: 'Expired',
+      autoSyncLabel: 'Auto push',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      withScore: 'Status and score',
+      withoutScore: 'Status only',
+      recommendedAutomations: 'Recommended automations',
+      automationsComplete: 'All created',
+      automationsMissing: ({ count }: { count: number }) => `${count} not created`,
+      templatesCount: ({ count }: { count: number }) =>
+        `${count} ${count === 1 ? 'template' : 'templates'}`,
+      runtimeTitle: 'Runtime status',
+      runningJobs: 'Running AniList jobs',
+      running: 'Running',
+      idle: 'Idle',
+      quickActionsTitle: 'Shortcuts',
+      importAction: 'Import the AniList lists',
+      maintenanceAction: 'Adjust endpoint and client options',
+      automationsTitle: 'Automation templates'
+    },
+
     account: {
       title: 'Account',
       description:
@@ -91,6 +187,8 @@ export const en = {
       configuredLabel: 'Signed in',
       missingLabel: 'Not signed in',
       pendingLabel: 'Waiting for the browser sign-in…',
+      expiresAtLabel: 'Token valid until',
+      expiredLabel: 'Expired',
       login: 'Sign in with AniList',
       completeLogin: 'I have authorized',
       cancelLogin: 'Cancel sign-in',
@@ -99,17 +197,24 @@ export const en = {
       verifiedAs: ({ userName }: { userName: string }) => `Signed in as ${userName}`
     },
 
-    integration: {
-      title: 'List integration',
+    sync: {
+      preferencesTitle: 'Auto push preferences',
       syncEnabledLabel: 'Push changes automatically',
       syncEnabledDescription:
         'Status and score edits on entries with an AniList id are pushed to your lists',
       pushScoreLabel: 'Include the score',
       pushScoreDescription: 'Writes the local score to AniList; an empty score never clears it',
-      pushAll: 'Push all now',
-      importTitle: 'Import lists',
-      importDescription:
+      manualTitle: 'Manual push',
+      manualDescription:
+        'Pushes every entry with an AniList id to the lists. Progress and cancellation are handled by the task center.',
+      pushAll: 'Push all now'
+    },
+
+    import: {
+      title: 'Import lists',
+      description:
         'Writes list status and scores onto matching entries. Creating missing entries scrapes them through the selected profiles.',
+      optionsLabel: 'Options',
       listAnime: 'Anime list',
       listManga: 'Manga list',
       updateExistingLabel: 'Update existing entries',
@@ -118,29 +223,26 @@ export const en = {
       comicProfileLabel: 'Comic profile',
       novelProfileLabel: 'Novel profile',
       profilePlaceholder: 'Select a profile',
-      startImport: 'Import',
-      taskProgress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
-      taskRunning: 'Running',
-      taskCompleted: 'Completed',
-      taskFailed: 'Failed',
-      taskCancelled: 'Cancelled',
-      cancelTask: 'Cancel'
+      runLabel: 'Run import',
+      runDescription: 'Runs as an app task; the options above apply to this run only',
+      startImport: 'Import'
     },
 
-    endpoints: {
-      title: 'Endpoints',
-      description: 'Point these at mirrors when the official hosts are unreachable',
+    automation: {
+      title: 'Recommended automations',
+      description:
+        'Only recommended AniList templates are created here; enabling, triggers, and history are managed on the main app automation page',
+      create: 'Create'
+    },
+
+    maintenance: {
+      endpointTitle: 'Endpoint',
+      endpointDescription: 'Point it at a mirror when the official host is unreachable',
       graphqlUrlLabel: 'GraphQL URL',
       graphqlUrlDescription: 'Root of the AniList GraphQL API',
-      relayUrlLabel: 'OAuth relay URL',
-      relayUrlDescription: 'Kisaki relay route that completes the AniList sign-in',
-      restoreDefaults: 'Restore official endpoints'
-    },
-
-    preferences: {
-      title: 'Preferences',
-      description: 'Applies to every AniList search and scrape',
+      restoreDefaults: 'Restore official endpoint',
+      clientTitle: 'Scraping and client',
+      clientDescription: 'Applies to every AniList search and scrape',
       preferRomajiLabel: 'Prefer romaji titles',
       preferRomajiDescription:
         'Uses the romaji title as the display name when the content language has no title of its own',
@@ -150,9 +252,10 @@ export const en = {
       retryLabel: 'Retry attempts',
       retryDescription: 'Extra attempts after a rate limit or a server error',
       retryUnit: 'attempts',
+      actionsTitle: 'Maintenance actions',
+      actionsDescription: 'These actions take effect immediately and cannot be undone',
       reset: 'Restore default settings',
-      resetDescription: 'Endpoints and preferences return to their defaults. The sign-in is kept.',
-      resetSucceeded: 'Default settings restored'
+      resetDescription: 'Endpoint and preferences return to their defaults. The sign-in is kept.'
     }
   }
 }

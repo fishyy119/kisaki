@@ -12,6 +12,8 @@
 - `apps/desktop/src/renderer/src/components/ui/dialog/` - Dialog components
 - `@kisaki3/extension-ui-vue` `SettingsSection` - Multi-section settings recipe; the app has
   no surface of that type yet, so it has no counterpart component
+- `extensions/bangumi/src/ui/settings/app.vue` - Integration control panel (rail shell)
+  reference implementation
 - `apps/desktop/src/renderer/src/components/ui/icon.vue` - Icon component
 - `apps/desktop/src/renderer/src/components/shared/game/game-forms/game-characters-form-dialog/` - ListForm pattern reference
 
@@ -60,9 +62,12 @@ the need first proposes, but the recipe belongs to the system and both sides use
 
 The line between a form and a multi-section settings surface is the presence of
 several groups, not the owner and not the surface's size. A dialog holding one flat
-set of settings (the app settings dialog) is a form. Extension settings webviews carry
-three to six titled groups each and are multi-section settings surfaces; the app has no
-instance of that type today and adopts the same recipe when it grows one.
+set of settings (the app settings dialog) is a form. The line between multi-section
+settings and an integration control panel is the content mix, not the section count:
+pure configuration (scraper extension settings such as TMDB or IGDB) stays a
+one-page multi-section surface, while an account-backed integration that also runs
+operations (list import, full push, automations) is an integration control panel and
+uses the rail recipe regardless of how many tabs it currently fills.
 
 ## Semantic Tokens
 
@@ -433,8 +438,8 @@ every form in the app reads the same. Notes:
 
 ### Multi-Section Settings (SettingsSection)
 
-For a resident surface carrying several titled groups of settings - today the
-extension settings webviews:
+For a resident surface carrying several titled groups of pure configuration -
+today the scraper extension settings webviews (TMDB, IGDB, YMGal, SteamGridDB):
 
 ```vue
 <div class="space-y-4">
@@ -457,6 +462,60 @@ extension settings webviews:
 - The component lives in `@kisaki3/extension-ui-vue`. When the app grows a
   surface of this type, mirror it into `components/ui/` rather than inventing a
   second recipe.
+
+### Integration Control Panel (rail shell)
+
+For account-backed integration extensions that mix status, operations, and
+configuration (Bangumi, AniList, MyAnimeList, MangaDex, NeoDB, VNDB, Steam,
+Google Books). The reference implementation is the Bangumi settings webview
+(`extensions/bangumi/src/ui/settings/app.vue`); each extension copies the recipe
+composition - the shell is ~40 lines of shared primitives and is deliberately
+not a package component.
+
+Shell composition:
+
+```vue
+<WebviewDialogShell :title="t" content-class="p-0 overflow-hidden">
+  <Tabs v-model="activeTab" orientation="vertical" class="h-full min-h-0 flex-row gap-0">
+    <aside class="flex w-40 shrink-0 flex-col border-r border-border p-2">
+      <TabsList class="h-auto w-full flex-col items-stretch">
+        <TabsTrigger class="h-8 justify-start px-2"><Icon />{{ label }}</TabsTrigger>
+      </TabsList>
+    </aside>
+    <main class="min-w-0 flex-1 overflow-y-auto">
+      <div class="mx-auto max-w-4xl space-y-4 px-4 py-4">
+        <TabsContent value="..." class="mt-0">...</TabsContent>
+      </div>
+    </main>
+  </Tabs>
+</WebviewDialogShell>
+```
+
+Fixed tab vocabulary, fixed order; a tab the extension has no capability for is
+simply not rendered:
+
+1. **overview** - status cards (account health, sync switches, automation
+   completeness, running jobs) plus quick navigation. Exists because tabs hide
+   state; it is the landing page.
+2. **account** - sign-in / token lifecycle, including expiry display.
+3. **sync** - automatic push configuration plus the manual full-push flow
+   (only for extensions that can write back).
+4. **import** - import options and execution flows.
+5. **automation** - recommended automation templates (status badge + one-click
+   create through `kisaki.automations`).
+6. **maintenance** - endpoints, client preferences (timeout, retries, naming),
+   and destructive actions behind a confirm dialog (clear sync state, reset).
+
+Content rules:
+
+- Operations (import, full push, other task runs) live in tab bodies as flow
+  areas with progress and preview dialogs. They never sit in a
+  `SettingsSection` header `#actions` slot; header actions are reserved for
+  light actions (test connection, restore defaults, external links).
+- The draft/save lifecycle keeps the `WebviewDialogShell` footer recipe:
+  dirty hint left, discard + save right.
+- Preference edits save through the footer; immediate operations report through
+  task runs and host notifications.
 
 ### ListForm with Sub-Form Pattern
 

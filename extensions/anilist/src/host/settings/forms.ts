@@ -6,7 +6,6 @@ const MS_PER_SECOND = 1_000
 export function toFormState(settings: AnilistSettingsV1): AnilistSettingsFormState {
   return {
     graphqlUrl: settings.endpoints.graphqlUrl,
-    oauthRelayUrl: settings.endpoints.oauthRelayUrl,
     preferRomajiTitles: settings.naming.preferRomajiTitles,
     timeoutSeconds: settings.client.timeoutMs / MS_PER_SECOND,
     retryCount: settings.client.retryCount,
@@ -27,8 +26,7 @@ export function applyFormState(
   return normalizeAnilistSettings({
     ...current,
     endpoints: {
-      graphqlUrl: form.graphqlUrl,
-      oauthRelayUrl: form.oauthRelayUrl
+      graphqlUrl: form.graphqlUrl
     },
     naming: {
       preferRomajiTitles: form.preferRomajiTitles

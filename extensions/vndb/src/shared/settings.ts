@@ -50,9 +50,21 @@ export interface VndbAccountVerification {
   listWrite: boolean
 }
 
+export type VndbAutomationKind = 'auth-check' | 'push-full-daily' | 'import-refresh-weekly'
+
+export type VndbAutomationStatus = 'missing' | 'enabled' | 'disabled'
+
+export interface VndbAutomationState {
+  kind: VndbAutomationKind
+  status: VndbAutomationStatus
+}
+
 export interface VndbSettingsOverview {
   form: VndbSettingsFormState
   credential: VndbCredentialState
+  automations: readonly VndbAutomationState[]
+  /** Operations of the extension's currently active task runs. */
+  runningOperations: readonly string[]
 }
 
 export interface VndbGameProfileOption {
@@ -103,6 +115,8 @@ export interface VndbSettingsHostFunctions {
   startPushAll(): Promise<{ runId: string }>
   getTaskState(runId: string): Promise<VndbTaskStateView | null>
   cancelTask(runId: string): Promise<boolean>
+  /** Creates one recommended app-owned automation for a VNDB command. */
+  createAutomation(kind: VndbAutomationKind): Promise<void>
   resetSettings(): Promise<void>
   openExternal(url: string): Promise<void>
 }

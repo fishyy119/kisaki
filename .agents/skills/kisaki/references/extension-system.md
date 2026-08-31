@@ -146,6 +146,30 @@ the general single-file-versus-folder rule instead (see `architecture.md`).
 
 Extensions use a single `manifest.json` with an `entry` field and implement `activate(context)`. Public APIs come from `@kisaki/extension-api` and `@kisaki/extension-sdk`; app internals such as `ServiceContainer`, Electron modules, Drizzle schema, Vue app, router, Pinia, and renderer components are not exposed.
 
+### Manifest Metadata Conventions
+
+Built-in manifests follow one metadata formula; third-party authors are encouraged to match it.
+
+- `description` is a single sentence per locale, same skeleton in all four locales, no
+  implementation details (mirror mechanics, identifier schemes):
+  - Integration extensions: `Built-in <Service> integration and <media types> metadata scraper for Kisaki, with <1–2 capability items>.`
+  - Pure scrapers: `Built-in <Service> <media types/assets> scraper for Kisaki, with <enrichment items>.`
+  - Tools: `Built-in <mechanism> for Kisaki <owning surface>.`
+- Service names use the common short name matching the manifest `name` (VNDB, IGDB, TMDB); do not
+  expand full names in descriptions. Locale-native service names (月幕 Galgame) appear only in the
+  matching locales.
+- Media types use the app library vocabulary (en `game/anime/comic/novel`, zh-Hans
+  游戏/动漫/漫画/小说, zh-Hant 遊戲/動漫/漫畫/小說, ja ゲーム/アニメ/マンガ/小説). Narrowing to the
+  source's real coverage (light novel, visual novel) is allowed. Satellite terms follow the i18n
+  glossary (Company = 公司 / 会社; Person = 人物; Character = 角色).
+- `keywords` are lowercase-hyphenated, ordered service name → media types (domain words) →
+  capability words (`scraper`, `sync`, `import`, `artwork`). Common search synonyms (`manga`,
+  `book`, `galgame`) may follow the domain word. Never list unimplemented capabilities, and keep
+  `categories` aligned with what the extension actually registers (`integration` requires real
+  import/sync features).
+- `author` is `Kisaki` for built-ins; `homepage` points at the upstream service and is omitted for
+  purely local tools.
+
 ## Contribution Points
 
 - `entityMenus` - Structured entity menu items and callbacks

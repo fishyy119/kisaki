@@ -2,6 +2,7 @@ import { kisaki } from '@kisaki3/extension-sdk'
 import type {
   MalAccountState,
   MalAccountVerification,
+  MalAutomationKind,
   MalImportRequest,
   MalProfileOption,
   MalProfileOptions,
@@ -11,6 +12,7 @@ import type {
   MalTaskStateView
 } from '../../shared/settings'
 import type { ImportOptions } from '../import/runner'
+import { createMalAutomation, resolveAutomationStates } from './automations'
 import { applyFormState, toFormState } from './forms'
 import type { MalSettingsRuntime } from './runtime'
 
@@ -35,11 +37,13 @@ export function createMalSettingsHostFunctions(
 
   return {
     async getOverview(): Promise<MalSettingsOverview> {
-      const [settings, account] = await Promise.all([
+      const [settings, account, automations, runningOperations] = await Promise.all([
         runtime.settingsStore.get(),
-        readAccountState()
+        readAccountState(),
+        resolveAutomationStates(),
+        listRunningOperations()
       ])
-      return { form: toFormState(settings), account }
+      return { form: toFormState(settings), account, automations, runningOperations }
     },
 
     async saveSettings(form: MalSettingsFormState): Promise<void> {
@@ -102,6 +106,10 @@ export function createMalSettingsHostFunctions(
       return runtime.tasks.cancelTask(runId)
     },
 
+    async createAutomation(kind: MalAutomationKind): Promise<void> {
+      await createMalAutomation(kind)
+    },
+
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
     },
@@ -115,4 +123,9 @@ export function createMalSettingsHostFunctions(
 async function listProfiles(mediaType: 'anime' | 'comic' | 'novel'): Promise<MalProfileOption[]> {
   const profiles = await kisaki.scrapers.profiles.list({ mediaType })
   return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
+}
+
+async function listRunningOperations(): Promise<readonly string[]> {
+  const active = await kisaki.taskRuns.listActiveOwn({ limit: 20 }).catch(() => [])
+  return active.map((run) => run.operation)
 }

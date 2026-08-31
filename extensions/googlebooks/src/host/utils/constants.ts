@@ -5,6 +5,9 @@ export const ISBN_SOURCE_ID = 'isbn'
 
 export const GBOOKS_API_URL = 'https://www.googleapis.com/books/v1'
 
+/** Kisaki OAuth relay route holding the Google client secret. */
+export const GBOOKS_OAUTH_RELAY_BASE_URL = 'https://oauth-relay.ximu.dev/kisaki/google-books'
+
 /** Keyless quota is a shared pool; pace conservatively either way. */
 export const GBOOKS_RATE_LIMIT: { maxRequests: number; windowMs: number } = {
   maxRequests: 2,

@@ -6,7 +6,22 @@
 
 export const MANGADEX_SETTINGS_ENTRY = 'settings/index.html'
 
+/** Official REST API root; offered as the restore point when a mirror is set. */
+export const MANGADEX_DEFAULT_API_URL = 'https://api.mangadex.org'
+
+/** Accepts an http(s) origin with an optional path. */
+export function matchesHttpUrlFormat(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export interface MangadexSettingsFormState {
+  /** Root of the MangaDex REST API; changeable for mirrors. */
+  apiUrl: string
   /** Prefer the romanized title over the English one outside native locales. */
   preferRomanizedTitles: boolean
   timeoutSeconds: number
@@ -34,9 +49,21 @@ export interface MangadexAccountVerification {
   userName: string
 }
 
+export type MangadexAutomationKind = 'auth-check' | 'push-full-daily' | 'import-refresh-weekly'
+
+export type MangadexAutomationStatus = 'missing' | 'enabled' | 'disabled'
+
+export interface MangadexAutomationState {
+  kind: MangadexAutomationKind
+  status: MangadexAutomationStatus
+}
+
 export interface MangadexSettingsOverview {
   form: MangadexSettingsFormState
   account: MangadexAccountState
+  automations: readonly MangadexAutomationState[]
+  /** Operations of the extension's currently active task runs. */
+  runningOperations: readonly string[]
 }
 
 export interface MangadexProfileOption {
@@ -85,6 +112,8 @@ export interface MangadexSettingsHostFunctions {
   startPushAll(): Promise<{ runId: string }>
   getTaskState(runId: string): Promise<MangadexTaskStateView | null>
   cancelTask(runId: string): Promise<boolean>
+  /** Creates one recommended app-owned automation for a MangaDex command. */
+  createAutomation(kind: MangadexAutomationKind): Promise<void>
   resetSettings(): Promise<void>
   openExternal(url: string): Promise<void>
 }

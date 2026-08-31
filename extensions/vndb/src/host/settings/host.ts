@@ -1,6 +1,7 @@
 import { kisaki } from '@kisaki3/extension-sdk'
 import type {
   VndbAccountVerification,
+  VndbAutomationKind,
   VndbCredentialState,
   VndbGameProfileOption,
   VndbImportRequest,
@@ -11,6 +12,7 @@ import type {
 } from '../../shared/settings'
 import { m } from '../i18n'
 import { VndbExtensionError, toSafeErrorLog } from '../utils/errors'
+import { createVndbAutomation, resolveAutomationStates } from './automations'
 import { applyFormState, toFormState } from './forms'
 import type { VndbSettingsRuntime } from './runtime'
 
@@ -24,12 +26,14 @@ export function createVndbSettingsHostFunctions(
 
   return {
     async getOverview(): Promise<VndbSettingsOverview> {
-      const [settings, credential] = await Promise.all([
+      const [settings, credential, automations, runningOperations] = await Promise.all([
         runtime.settingsStore.get(),
-        readCredentialState()
+        readCredentialState(),
+        resolveAutomationStates(),
+        listRunningOperations()
       ])
 
-      return { form: toFormState(settings), credential }
+      return { form: toFormState(settings), credential, automations, runningOperations }
     },
 
     async saveSettings(form: VndbSettingsFormState): Promise<void> {
@@ -45,13 +49,13 @@ export function createVndbSettingsHostFunctions(
       }
 
       await runtime.tokens.set(trimmed)
-      await notifySuccess(runtime, m().ui.credentials.saveSucceeded)
+      await notifySuccess(runtime, m().ui.account.saveSucceeded)
       return { configured: true }
     },
 
     async clearToken(): Promise<VndbCredentialState> {
       await runtime.tokens.clear()
-      await notifySuccess(runtime, m().ui.credentials.clearSucceeded)
+      await notifySuccess(runtime, m().ui.account.clearSucceeded)
       return { configured: false }
     },
 
@@ -64,7 +68,7 @@ export function createVndbSettingsHostFunctions(
         throw error
       }
 
-      await notifySuccess(runtime, m().ui.credentials.testSucceeded)
+      await notifySuccess(runtime, m().ui.account.testSucceeded)
     },
 
     async verifyAccount(): Promise<VndbAccountVerification> {
@@ -108,9 +112,13 @@ export function createVndbSettingsHostFunctions(
       return runtime.tasks.cancelTask(runId)
     },
 
+    async createAutomation(kind: VndbAutomationKind): Promise<void> {
+      await createVndbAutomation(kind)
+    },
+
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
-      await notifySuccess(runtime, m().ui.preferences.resetSucceeded)
+      await notifySuccess(runtime, m().ui.maintenance.resetSucceeded)
     },
 
     async openExternal(url: string): Promise<void> {
@@ -130,4 +138,9 @@ async function notifySuccess(runtime: VndbSettingsRuntime, title: string): Promi
   } catch (error) {
     runtime.logger.warn('VNDB notification failed.', toSafeErrorLog(error))
   }
+}
+
+async function listRunningOperations(): Promise<readonly string[]> {
+  const active = await kisaki.taskRuns.listActiveOwn({ limit: 20 }).catch(() => [])
+  return active.map((run) => run.operation)
 }

@@ -7,14 +7,14 @@
   "entry": "./dist/index.mjs",
   "ui": "./dist/ui",
   "description": {
-    "en": "Built-in MyAnimeList integration and anime/manga/light-novel metadata scraper for Kisaki, with list import and sync. Characters, staff, and episodes are enriched through a configurable Jikan-compatible mirror.",
-    "ja": "Kisaki 内蔵の MyAnimeList 連携。アニメ・マンガ・ライトノベルのメタデータスクレイパーと、リストのインポート・同期に対応。キャラクター・スタッフ・エピソードは設定可能な Jikan 互換ミラーで補完。",
-    "zh-Hans": "Kisaki 内置的 MyAnimeList 集成与动画/漫画/轻小说元数据刮削器，支持列表导入与同步。角色、工作人员与剧集数据经可配置的 Jikan 兼容镜像补全。",
-    "zh-Hant": "Kisaki 內建的 MyAnimeList 整合與動畫/漫畫/輕小說中繼資料刮削器，支援清單匯入與同步。角色、工作人員與劇集資料經可設定的 Jikan 相容鏡像補全。"
+    "en": "Built-in MyAnimeList integration and anime/comic/light-novel metadata scraper for Kisaki, with list import and sync.",
+    "ja": "Kisaki 内蔵の MyAnimeList 連携。アニメ・マンガ・ライトノベルのメタデータスクレイパーと、リストのインポート・同期に対応。",
+    "zh-Hans": "Kisaki 内置的 MyAnimeList 集成与动漫/漫画/轻小说元数据刮削器，支持列表导入与同步。",
+    "zh-Hant": "Kisaki 內建的 MyAnimeList 整合與動漫/漫畫/輕小說中繼資料刮削器，支援清單匯入與同步。"
   },
   "author": "Kisaki",
   "homepage": "https://myanimelist.net",
-  "keywords": ["myanimelist", "mal", "scraper", "anime", "manga", "light-novel", "sync"],
+  "keywords": ["myanimelist", "mal", "anime", "comic", "manga", "light-novel", "scraper", "sync"],
   "engines": {
     "kisakiExtensionApi": "=0.0.14"
   }

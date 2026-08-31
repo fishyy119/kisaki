@@ -4,6 +4,7 @@ import { AppDetailsCache } from './api/cache'
 import { SteamClient } from './api/client'
 import { createDefaultSteamSettings } from './config/defaults'
 import { normalizeSteamSettings } from './config/schema'
+import { registerSteamJobCommands } from './jobs/commands'
 import { SteamGameProvider } from './media/game/provider'
 import { registerSteamSettingsUi } from './settings'
 import { SteamTasks } from './tasks'
@@ -32,6 +33,15 @@ export default defineExtension({
     context.subscriptions.add(
       context.contributions.scraperProviders.game.register(new SteamGameProvider(client))
     )
+    for (const registration of registerSteamJobCommands({
+      commands: context.contributions.commands,
+      tasks,
+      client,
+      signal: context.abortSignal,
+      logger: context.logger
+    })) {
+      context.subscriptions.add(registration)
+    }
 
     registerSteamSettingsUi(context, {
       settingsStore,

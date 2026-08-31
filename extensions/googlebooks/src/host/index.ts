@@ -7,10 +7,11 @@ import { TokenStore } from './auth/token-store'
 import { createDefaultGbooksSettings } from './config/defaults'
 import { normalizeGbooksSettings } from './config/schema'
 import { m } from './i18n'
+import { registerGbooksJobCommands } from './jobs/commands'
 import { GbooksNovelProvider } from './media/novel/provider'
 import { registerGbooksSettingsUi } from './settings'
 import { GbooksTasks } from './tasks'
-import { GBOOKS_LOGIN_TIMEOUT_MS } from './utils/constants'
+import { GBOOKS_LOGIN_TIMEOUT_MS, GBOOKS_OAUTH_RELAY_BASE_URL } from './utils/constants'
 import { GbooksExtensionError, createRelayError, toSafeErrorLog } from './utils/errors'
 import { GBOOKS_STORAGE_KEYS } from './utils/ids'
 
@@ -25,7 +26,7 @@ export default defineExtension({
 
     const relayClient = new OAuthRelayClient({
       network: kisaki.network,
-      getBaseUrl: async () => (await settingsStore.get()).endpoints.oauthRelayUrl,
+      getBaseUrl: async () => GBOOKS_OAUTH_RELAY_BASE_URL,
       getTimeoutMs: async () => (await settingsStore.get()).client.timeoutMs,
       createError: createRelayError
     })
@@ -85,6 +86,14 @@ export default defineExtension({
     context.subscriptions.add(
       context.contributions.scraperProviders.novel.register(new GbooksNovelProvider(client))
     )
+    for (const registration of registerGbooksJobCommands({
+      commands: context.contributions.commands,
+      tasks,
+      signal: context.abortSignal,
+      logger: context.logger
+    })) {
+      context.subscriptions.add(registration)
+    }
 
     registerGbooksSettingsUi(context, {
       settingsStore,

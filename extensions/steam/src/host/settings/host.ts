@@ -2,6 +2,7 @@ import { kisaki } from '@kisaki3/extension-sdk'
 import type {
   SteamAccountState,
   SteamAccountVerification,
+  SteamAutomationKind,
   SteamImportRequest,
   SteamProfileOption,
   SteamSettingsFormState,
@@ -12,6 +13,7 @@ import type {
 import { STEAM_API_KEY_PAGE_URL } from '../../shared/settings'
 import { m } from '../i18n'
 import { SteamExtensionError } from '../utils/errors'
+import { createSteamAutomation, resolveAutomationStates } from './automations'
 import { applyFormState, toFormState } from './forms'
 import type { SteamSettingsRuntime } from './runtime'
 
@@ -24,11 +26,13 @@ export function createSteamSettingsHostFunctions(
 
   return {
     async getOverview(): Promise<SteamSettingsOverview> {
-      const [settings, account] = await Promise.all([
+      const [settings, account, automations, runningOperations] = await Promise.all([
         runtime.settingsStore.get(),
-        readAccountState()
+        readAccountState(),
+        resolveAutomationStates(),
+        listRunningOperations()
       ])
-      return { form: toFormState(settings), account }
+      return { form: toFormState(settings), account, automations, runningOperations }
     },
 
     async saveSettings(form: SteamSettingsFormState): Promise<void> {
@@ -73,6 +77,10 @@ export function createSteamSettingsHostFunctions(
       return runtime.tasks.cancelTask(runId)
     },
 
+    async createAutomation(kind: SteamAutomationKind): Promise<void> {
+      await createSteamAutomation(kind)
+    },
+
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
     },
@@ -84,4 +92,9 @@ export function createSteamSettingsHostFunctions(
       )
     }
   }
+}
+
+async function listRunningOperations(): Promise<readonly string[]> {
+  const active = await kisaki.taskRuns.listActiveOwn({ limit: 20 }).catch(() => [])
+  return active.map((run) => run.operation)
 }

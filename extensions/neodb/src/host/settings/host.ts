@@ -2,6 +2,7 @@ import { kisaki } from '@kisaki3/extension-sdk'
 import type {
   NeodbAccountState,
   NeodbAccountVerification,
+  NeodbAutomationKind,
   NeodbImportRequest,
   NeodbProfileOption,
   NeodbSettingsFormState,
@@ -10,6 +11,7 @@ import type {
   NeodbTaskStateView
 } from '../../shared/settings'
 import type { ImportOptions } from '../import/runner'
+import { createNeodbAutomation, resolveAutomationStates } from './automations'
 import { applyFormState, toFormState } from './forms'
 import type { NeodbSettingsRuntime } from './runtime'
 
@@ -35,11 +37,13 @@ export function createNeodbSettingsHostFunctions(
 
   return {
     async getOverview(): Promise<NeodbSettingsOverview> {
-      const [settings, account] = await Promise.all([
+      const [settings, account, automations, runningOperations] = await Promise.all([
         runtime.settingsStore.get(),
-        readAccountState()
+        readAccountState(),
+        resolveAutomationStates(),
+        listRunningOperations()
       ])
-      return { form: toFormState(settings), account }
+      return { form: toFormState(settings), account, automations, runningOperations }
     },
 
     async saveSettings(form: NeodbSettingsFormState): Promise<void> {
@@ -104,8 +108,17 @@ export function createNeodbSettingsHostFunctions(
       return runtime.tasks.cancelTask(runId)
     },
 
+    async createAutomation(kind: NeodbAutomationKind): Promise<void> {
+      await createNeodbAutomation(kind)
+    },
+
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
     }
   }
+}
+
+async function listRunningOperations(): Promise<readonly string[]> {
+  const active = await kisaki.taskRuns.listActiveOwn({ limit: 20 }).catch(() => [])
+  return active.map((run) => run.operation)
 }

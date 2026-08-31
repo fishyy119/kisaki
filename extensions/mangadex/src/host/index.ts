@@ -5,6 +5,7 @@ import { CredentialsStore } from './auth/credentials-store'
 import { TokenManager } from './auth/token-manager'
 import { createDefaultMangadexSettings } from './config/defaults'
 import { normalizeMangadexSettings } from './config/schema'
+import { registerMangadexJobCommands } from './jobs/commands'
 import { MangadexComicProvider } from './media/comic/provider'
 import { MangadexPersonProvider } from './media/person/provider'
 import { registerMangadexSettingsUi } from './settings'
@@ -62,6 +63,16 @@ export default defineExtension({
         logger: context.logger
       }).start()
     )
+    for (const registration of registerMangadexJobCommands({
+      commands: context.contributions.commands,
+      tasks,
+      client,
+      tokenManager,
+      signal: context.abortSignal,
+      logger: context.logger
+    })) {
+      context.subscriptions.add(registration)
+    }
 
     registerMangadexSettingsUi(context, {
       settingsStore,

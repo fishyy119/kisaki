@@ -7,14 +7,14 @@
   "entry": "./dist/index.mjs",
   "ui": "./dist/ui",
   "description": {
-    "en": "Built-in The Movie Database scraper for anime, with native episode group support.",
-    "ja": "エピソードグループに対応した Kisaki 内蔵の The Movie Database アニメスクレイパー。",
-    "zh-Hans": "Kisaki 内置的 The Movie Database 动画刮削器，原生支持剧集组。",
-    "zh-Hant": "Kisaki 內建的 The Movie Database 動畫刮削器，原生支援劇集組。"
+    "en": "Built-in TMDB anime metadata scraper for Kisaki, with episode groups and person/company enrichment.",
+    "ja": "Kisaki 内蔵の TMDB アニメメタデータスクレイパー。エピソードグループと人物・会社情報の補完に対応。",
+    "zh-Hans": "Kisaki 内置的 TMDB 动漫元数据刮削器，支持剧集组与人物/公司补全。",
+    "zh-Hant": "Kisaki 內建的 TMDB 動漫中繼資料刮削器，支援劇集組與人物/公司補全。"
   },
   "author": "Kisaki",
   "homepage": "https://www.themoviedb.org",
-  "keywords": ["tmdb", "scraper", "anime", "episode-group"],
+  "keywords": ["tmdb", "anime", "scraper", "episode-group"],
   "engines": {
     "kisakiExtensionApi": "=0.0.14"
   }

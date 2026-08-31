@@ -2,6 +2,7 @@ export type SteamErrorCode =
   | 'key_required'
   | 'key_rejected'
   | 'steam_id_invalid'
+  | 'profile_required'
   | 'profile_not_visible'
   | 'steam_not_found'
   | 'steam_rate_limited'

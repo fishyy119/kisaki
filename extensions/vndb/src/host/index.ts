@@ -4,6 +4,7 @@ import { VndbClient } from './api/client'
 import { TokenStore } from './auth/token'
 import { createDefaultVndbSettings } from './config/defaults'
 import { normalizeVndbSettings } from './config/schema'
+import { registerVndbJobCommands } from './jobs/commands'
 import { VndbCharacterProvider } from './media/character/provider'
 import { VndbCompanyProvider } from './media/company/provider'
 import { VndbGameProvider } from './media/game/provider'
@@ -62,6 +63,16 @@ export default defineExtension({
         logger: context.logger
       }).start()
     )
+    for (const registration of registerVndbJobCommands({
+      commands: context.contributions.commands,
+      tasks,
+      client,
+      tokens,
+      signal: context.abortSignal,
+      logger: context.logger
+    })) {
+      context.subscriptions.add(registration)
+    }
 
     registerVndbSettingsUi(context, {
       settingsStore,

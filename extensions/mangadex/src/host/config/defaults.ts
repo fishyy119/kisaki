@@ -1,7 +1,11 @@
+import { MANGADEX_DEFAULT_API_URL } from '../../shared/settings'
 import type { MangadexSettingsV1 } from './schema'
 
 export const DEFAULT_MANGADEX_SETTINGS: MangadexSettingsV1 = {
   version: 1,
+  endpoints: {
+    apiUrl: MANGADEX_DEFAULT_API_URL
+  },
   naming: {
     preferRomanizedTitles: false
   },

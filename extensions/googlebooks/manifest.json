@@ -7,14 +7,14 @@
   "entry": "./dist/index.mjs",
   "ui": "./dist/ui",
   "description": {
-    "en": "Built-in Google Books integration and book metadata scraper for Kisaki, with worldwide bibliographic data and import of the purchased library and reading shelves.",
-    "ja": "Kisaki 内蔵の Google Books 連携。世界規模の書誌データに対応した書籍スクレイパーと、購入済みライブラリ・読書シェルフのインポート。",
-    "zh-Hans": "Kisaki 内置的 Google Books 集成与书目元数据刮削器：全球书目数据，支持导入已购书库与阅读书架。",
-    "zh-Hant": "Kisaki 內建的 Google Books 整合與書目中繼資料刮削器：全球書目資料，支援匯入已購書庫與閱讀書架。"
+    "en": "Built-in Google Books integration and novel metadata scraper for Kisaki, with library and shelf import.",
+    "ja": "Kisaki 内蔵の Google Books 連携。小説のメタデータスクレイパーと、ライブラリ・シェルフのインポートに対応。",
+    "zh-Hans": "Kisaki 内置的 Google Books 集成与小说元数据刮削器，支持书库与书架导入。",
+    "zh-Hant": "Kisaki 內建的 Google Books 整合與小說中繼資料刮削器，支援書庫與書架匯入。"
   },
   "author": "Kisaki",
   "homepage": "https://books.google.com",
-  "keywords": ["google-books", "scraper", "book", "novel", "library-import"],
+  "keywords": ["google-books", "novel", "book", "scraper", "import"],
   "engines": {
     "kisakiExtensionApi": "=0.0.14"
   }

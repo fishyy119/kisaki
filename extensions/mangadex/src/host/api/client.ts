@@ -9,7 +9,6 @@ import type { TokenManager } from '../auth/token-manager'
 import type { MangadexSettingsV1 } from '../config/schema'
 import { m } from '../i18n'
 import {
-  MANGADEX_API_URL,
   MANGADEX_COVER_PAGE_SIZE,
   MANGADEX_RATE_LIMIT,
   MANGADEX_RATING_BATCH_SIZE
@@ -235,7 +234,7 @@ export class MangadexClient {
       headers['Content-Type'] = 'application/json'
     }
 
-    const url = `${MANGADEX_API_URL}/${path}`
+    const url = `${settings.endpoints.apiUrl}/${path}`
 
     for (let attempt = 0; attempt <= settings.client.retryCount; attempt += 1) {
       options.signal?.throwIfAborted()

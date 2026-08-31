@@ -32,6 +32,44 @@ export const zhHans: MangadexMessages = {
       `新建 ${created} 项、更新 ${updated} 项、无变化 ${unchanged} 项、跳过 ${skipped} 项、失败 ${failed} 项`
   },
 
+  commands: {
+    verifyAccount: {
+      title: '验证 MangaDex 账号',
+      description: '向 MangaDex 接口校验已保存的凭据'
+    },
+    pushAll: {
+      title: '推送库到 MangaDex',
+      description: '将所有带 MangaDex ID 的条目推送到账号'
+    },
+    importStatuses: {
+      title: '导入 MangaDex 阅读状态',
+      description: '将阅读状态与评分写入匹配的本地条目'
+    }
+  },
+
+  automations: {
+    names: {
+      'auth-check': 'MangaDex：启动时验证账号',
+      'push-full-daily': 'MangaDex：每日全量推送',
+      'import-refresh-weekly': 'MangaDex：每周状态刷新'
+    },
+    labels: {
+      'auth-check': '启动时验证账号',
+      'push-full-daily': '每日全量推送',
+      'import-refresh-weekly': '每周状态刷新'
+    },
+    descriptions: {
+      'auth-check': '应用启动时验证 MangaDex 凭据',
+      'push-full-daily': '每天凌晨将全部已关联条目推送到 MangaDex 账号',
+      'import-refresh-weekly': '每周将阅读状态与评分重新导入到已有条目'
+    },
+    status: {
+      missing: '未创建',
+      enabled: '已启用',
+      disabled: '已禁用'
+    }
+  },
+
   settings: {
     webviewTitle: 'MangaDex',
     commandLabel: '设置',
@@ -48,6 +86,49 @@ export const zhHans: MangadexMessages = {
     actionFailed: '操作失败',
     cancel: '取消',
     confirm: '确认',
+
+    tabs: {
+      overview: '概览',
+      account: '账号',
+      sync: '同步',
+      import: '导入',
+      automation: '自动化',
+      maintenance: '维护'
+    },
+
+    task: {
+      progress: ({ current, total }) => `${current} / ${total}`,
+      running: '进行中',
+      completed: '已完成',
+      failed: '失败',
+      cancelled: '已取消',
+      cancel: '取消'
+    },
+
+    overview: {
+      statusTitle: '状态总览',
+      accountLabel: '账号',
+      connected: '已连接',
+      notConnected: '未连接',
+      available: '可用',
+      autoSyncLabel: '自动推送',
+      enabled: '已启用',
+      disabled: '已禁用',
+      withScore: '状态与评分',
+      withoutScore: '仅状态',
+      recommendedAutomations: '推荐自动化',
+      automationsComplete: '已全部创建',
+      automationsMissing: ({ count }) => `${count} 项未创建`,
+      templatesCount: ({ count }) => `${count} 个模板`,
+      runtimeTitle: '运行状态',
+      runningJobs: '运行中的 MangaDex 任务',
+      running: '运行中',
+      idle: '空闲',
+      quickActionsTitle: '快捷入口',
+      importAction: '导入 MangaDex 阅读状态',
+      maintenanceAction: '调整接口与客户端选项',
+      automationsTitle: '自动化模板'
+    },
 
     account: {
       title: '账号',
@@ -67,31 +148,45 @@ export const zhHans: MangadexMessages = {
       openClientSettings: '打开 MangaDex API 客户端页面'
     },
 
-    integration: {
-      title: '阅读联动',
+    sync: {
+      preferencesTitle: '自动推送偏好',
       syncEnabledLabel: '自动推送变更',
       syncEnabledDescription: '将带有 MangaDex ID 条目的状态与评分变更推送到账号',
       pushScoreLabel: '包含评分',
       pushScoreDescription: '将本地评分写入 MangaDex 评分。本地评分为空时不会清除远端评分。',
-      pushAll: '立即全量推送',
-      importTitle: '导入阅读状态',
-      importDescription: '将阅读状态写入匹配的条目。创建缺失条目时会经所选配置刮削完整元数据。',
+      manualTitle: '手动推送',
+      manualDescription: '将所有带 MangaDex ID 的条目推送到账号。进度与取消由任务中心接管。',
+      pushAll: '立即全量推送'
+    },
+
+    import: {
+      title: '导入阅读状态',
+      description: '将阅读状态写入匹配的条目。创建缺失条目时会经所选配置刮削完整元数据。',
+      optionsLabel: '选项',
       importScoresLabel: '同时导入评分',
       updateExistingLabel: '更新已有条目',
       createMissingLabel: '创建缺失条目',
+      profileLabel: '漫画配置',
       profilePlaceholder: '选择配置',
-      startImport: '导入',
-      taskProgress: ({ current, total }) => `${current} / ${total}`,
-      taskRunning: '进行中',
-      taskCompleted: '已完成',
-      taskFailed: '失败',
-      taskCancelled: '已取消',
-      cancelTask: '取消'
+      runLabel: '执行导入',
+      runDescription: '以应用任务运行；以上选项仅作用于本次运行',
+      startImport: '导入'
     },
 
-    preferences: {
-      title: '偏好',
-      description: '作用于所有 MangaDex 搜索与刮削',
+    automation: {
+      title: '推荐自动化',
+      description: '此处仅创建推荐的 MangaDex 模板；启用状态、触发器与历史在应用的自动化页面管理',
+      create: '创建'
+    },
+
+    maintenance: {
+      endpointTitle: '接口地址',
+      endpointDescription: '当官方地址不可达时，可指向镜像',
+      apiUrlLabel: 'API 地址',
+      apiUrlDescription: 'MangaDex REST API 的根地址；登录流量仍走官方地址',
+      restoreDefaults: '恢复官方地址',
+      clientTitle: '刮削与客户端',
+      clientDescription: '作用于所有 MangaDex 搜索与刮削',
       preferRomanizedLabel: '优先罗马字标题',
       preferRomanizedDescription: '当没有匹配内容语言的标题时，使用罗马字标题作为显示名称',
       timeoutLabel: '请求超时',
@@ -100,9 +195,10 @@ export const zhHans: MangadexMessages = {
       retryLabel: '重试次数',
       retryDescription: '限流或服务器错误后的额外尝试次数',
       retryUnit: '次',
+      actionsTitle: '维护操作',
+      actionsDescription: '这些操作立即生效且不可撤销',
       reset: '恢复默认设置',
-      resetDescription: '偏好将恢复为默认值，已保存的凭据保留。',
-      resetSucceeded: '已恢复默认设置'
+      resetDescription: '偏好将恢复为默认值，已保存的凭据保留。'
     }
   }
 }

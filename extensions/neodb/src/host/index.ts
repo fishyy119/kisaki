@@ -6,6 +6,7 @@ import { SessionStore } from './auth/session-store'
 import { createDefaultNeodbSettings } from './config/defaults'
 import { normalizeNeodbSettings } from './config/schema'
 import { m } from './i18n'
+import { registerNeodbJobCommands } from './jobs/commands'
 import { NeodbNovelProvider } from './media/novel/provider'
 import { registerNeodbSettingsUi } from './settings'
 import { SyncEngine } from './sync/engine'
@@ -100,6 +101,15 @@ export default defineExtension({
         logger: context.logger
       }).start()
     )
+    for (const registration of registerNeodbJobCommands({
+      commands: context.contributions.commands,
+      tasks,
+      client,
+      signal: context.abortSignal,
+      logger: context.logger
+    })) {
+      context.subscriptions.add(registration)
+    }
 
     registerNeodbSettingsUi(context, {
       settingsStore,

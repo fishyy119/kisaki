@@ -3,18 +3,18 @@
   "id": "builtin.vndb",
   "name": "VNDB",
   "version": "0.0.1",
-  "categories": ["scraper"],
+  "categories": ["scraper", "integration"],
   "entry": "./dist/index.mjs",
   "ui": "./dist/ui",
   "description": {
-    "en": "Built-in Visual Novel Database scraper for visual novels, characters, staff, and producers.",
-    "ja": "Kisaki 内蔵の Visual Novel Database スクレイパー。作品・キャラクター・スタッフ・ブランドに対応。",
-    "zh-Hans": "Kisaki 内置的 Visual Novel Database 刮削器，支持作品、角色、staff 与会社。",
-    "zh-Hant": "Kisaki 內建的 Visual Novel Database 刮削器，支援作品、角色、staff 與會社。"
+    "en": "Built-in VNDB integration and visual novel metadata scraper for Kisaki, with list import and sync.",
+    "ja": "Kisaki 内蔵の VNDB 連携。ビジュアルノベルのメタデータスクレイパーと、リストのインポート・同期に対応。",
+    "zh-Hans": "Kisaki 内置的 VNDB 集成与视觉小说元数据刮削器，支持列表导入与同步。",
+    "zh-Hant": "Kisaki 內建的 VNDB 整合與視覺小說中繼資料刮削器，支援清單匯入與同步。"
   },
   "author": "Kisaki",
   "homepage": "https://vndb.org",
-  "keywords": ["vndb", "visual-novel", "galgame", "scraper"],
+  "keywords": ["vndb", "game", "visual-novel", "galgame", "scraper", "sync"],
   "engines": {
     "kisakiExtensionApi": "=0.0.14"
   }

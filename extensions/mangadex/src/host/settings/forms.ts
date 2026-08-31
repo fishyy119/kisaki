@@ -5,6 +5,7 @@ const MS_PER_SECOND = 1_000
 
 export function toFormState(settings: MangadexSettingsV1): MangadexSettingsFormState {
   return {
+    apiUrl: settings.endpoints.apiUrl,
     preferRomanizedTitles: settings.naming.preferRomanizedTitles,
     timeoutSeconds: settings.client.timeoutMs / MS_PER_SECOND,
     retryCount: settings.client.retryCount,
@@ -23,6 +24,9 @@ export function applyFormState(
 ): MangadexSettingsV1 {
   return normalizeMangadexSettings({
     ...current,
+    endpoints: {
+      apiUrl: form.apiUrl
+    },
     naming: {
       preferRomanizedTitles: form.preferRomanizedTitles
     },

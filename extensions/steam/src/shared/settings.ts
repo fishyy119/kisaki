@@ -30,9 +30,21 @@ export interface SteamAccountVerification {
   gameCount: number
 }
 
+export type SteamAutomationKind = 'auth-check' | 'import-refresh-weekly'
+
+export type SteamAutomationStatus = 'missing' | 'enabled' | 'disabled'
+
+export interface SteamAutomationState {
+  kind: SteamAutomationKind
+  status: SteamAutomationStatus
+}
+
 export interface SteamSettingsOverview {
   form: SteamSettingsFormState
   account: SteamAccountState
+  automations: readonly SteamAutomationState[]
+  /** Operations of the extension's currently active task runs. */
+  runningOperations: readonly string[]
 }
 
 export interface SteamProfileOption {
@@ -76,6 +88,8 @@ export interface SteamSettingsHostFunctions {
   startImport(request: SteamImportRequest): Promise<{ runId: string }>
   getTaskState(runId: string): Promise<SteamTaskStateView | null>
   cancelTask(runId: string): Promise<boolean>
+  /** Creates one recommended app-owned automation for a Steam command. */
+  createAutomation(kind: SteamAutomationKind): Promise<void>
   resetSettings(): Promise<void>
   openExternal(url: string): Promise<void>
 }

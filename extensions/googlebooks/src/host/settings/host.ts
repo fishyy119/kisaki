@@ -1,6 +1,7 @@
 import { kisaki } from '@kisaki3/extension-sdk'
 import type {
   GbooksAccountState,
+  GbooksAutomationKind,
   GbooksImportRequest,
   GbooksProfileOption,
   GbooksProfileOptions,
@@ -12,6 +13,7 @@ import type {
 import { m } from '../i18n'
 import { GbooksExtensionError } from '../utils/errors'
 import type { ImportOptions } from '../import/runner'
+import { createGbooksAutomation, resolveAutomationStates } from './automations'
 import { applyFormState, toFormState } from './forms'
 import type { GbooksSettingsRuntime } from './runtime'
 
@@ -38,11 +40,13 @@ export function createGbooksSettingsHostFunctions(
 
   return {
     async getOverview(): Promise<GbooksSettingsOverview> {
-      const [settings, account] = await Promise.all([
+      const [settings, account, automations, runningOperations] = await Promise.all([
         runtime.settingsStore.get(),
-        readAccountState()
+        readAccountState(),
+        resolveAutomationStates(),
+        listRunningOperations()
       ])
-      return { form: toFormState(settings), account }
+      return { form: toFormState(settings), account, automations, runningOperations }
     },
 
     async saveSettings(form: GbooksSettingsFormState): Promise<void> {
@@ -111,6 +115,10 @@ export function createGbooksSettingsHostFunctions(
       return runtime.tasks.cancelTask(runId)
     },
 
+    async createAutomation(kind: GbooksAutomationKind): Promise<void> {
+      await createGbooksAutomation(kind)
+    },
+
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
     }
@@ -120,4 +128,9 @@ export function createGbooksSettingsHostFunctions(
 async function listProfiles(mediaType: 'novel' | 'comic'): Promise<GbooksProfileOption[]> {
   const profiles = await kisaki.scrapers.profiles.list({ mediaType })
   return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
+}
+
+async function listRunningOperations(): Promise<readonly string[]> {
+  const active = await kisaki.taskRuns.listActiveOwn({ limit: 20 }).catch(() => [])
+  return active.map((run) => run.operation)
 }
