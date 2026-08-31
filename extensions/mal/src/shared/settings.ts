@@ -127,3 +127,12 @@ export interface MalSettingsHostFunctions {
   resetSettings(): Promise<void>
   openExternal(url: string): Promise<void>
 }
+
+/**
+ * Functions the settings webview exposes to the extension host. The OAuth
+ * sign-in settles in the host through the deeplink, so account refreshes are
+ * pushed straight into the open document.
+ */
+export interface MalSettingsUiFunctions {
+  refreshRequested(reason: string): void
+}

@@ -1,7 +1,7 @@
 <!--
 IGDB Settings App is the webview root: it loads the overview, owns the
-preference draft lifecycle, and surfaces load and action errors. Successful
-results are reported by the host through the app's own notifications.
+preference draft lifecycle, and surfaces load and action errors inline.
+Action successes read from the refreshed UI state.
 -->
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'

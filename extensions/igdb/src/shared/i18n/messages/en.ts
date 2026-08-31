@@ -28,7 +28,6 @@ export const en = {
   ui: {
     loading: 'Loading…',
     unavailable: 'The IGDB settings could not be loaded',
-    saved: 'Preferences saved',
     savePreferences: 'Save',
     discardChanges: 'Discard',
     unsavedChanges: 'Unsaved changes',
@@ -50,8 +49,6 @@ export const en = {
       save: 'Save client',
       clear: 'Remove client',
       test: 'Test connection',
-      saveSucceeded: 'The Twitch client was saved',
-      clearSucceeded: 'The Twitch client was removed',
       testSucceeded: 'Twitch accepted the client credentials',
       openConsole: 'Register an application on dev.twitch.tv'
     },
@@ -77,8 +74,7 @@ export const en = {
       retryUnit: 'attempts',
       reset: 'Restore default settings',
       resetDescription:
-        'Endpoints and preferences return to their defaults. The Twitch client is kept.',
-      resetSucceeded: 'Default settings restored'
+        'Endpoints and preferences return to their defaults. The Twitch client is kept.'
     }
   }
 }

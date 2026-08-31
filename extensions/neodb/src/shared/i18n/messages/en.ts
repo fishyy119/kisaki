@@ -11,7 +11,12 @@ export const en = {
     instanceUrlInvalid: 'Enter an http or https address',
     idInvalid: ({ value }: { value: string }) => `"${value}" is not a valid NeoDB id`,
     registrationFailed: 'The app could not register itself on the instance',
+    instanceUnreachable: 'Could not reach the NeoDB instance. Try again later.',
+    instanceUnavailable: ({ status }: { status: number }) =>
+      `The NeoDB instance is temporarily unavailable (HTTP ${status}). Try again later.`,
     loginStateMismatch: 'The NeoDB sign-in callback failed validation. Sign in again.',
+    loginDenied: 'The NeoDB authorization was declined. Sign in again when ready.',
+    loginAuthorizeFailed: 'The NeoDB instance reported an authorization error. Sign in again.',
     loginSessionExpired: 'The NeoDB sign-in session expired. Sign in again.',
     noPendingLogin: 'No NeoDB sign-in is waiting to complete',
     loginNotReady: 'The NeoDB sign-in is not ready yet',
@@ -129,8 +134,7 @@ export const en = {
     },
 
     task: {
-      progress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
+      progress: ({ current, total }: { current: number; total: number }) => `${current} / ${total}`,
       running: 'Running',
       completed: 'Completed',
       failed: 'Failed',

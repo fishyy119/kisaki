@@ -23,7 +23,6 @@ export const ja: YmgalMessages = {
   ui: {
     loading: '読み込み中…',
     unavailable: 'YMGal の設定を読み込めませんでした',
-    saved: '設定を保存しました',
     savePreferences: '保存',
     discardChanges: '破棄',
     unsavedChanges: '未保存の変更',
@@ -45,8 +44,6 @@ export const ja: YmgalMessages = {
       save: 'クライアントを保存',
       clear: '共有クライアントに戻す',
       test: '接続テスト',
-      saveSucceeded: 'API クライアントを保存しました',
-      clearSucceeded: '共有の公開クライアントに戻しました',
       testSucceeded: 'YMGal は API クライアントを受け入れました',
       openDeveloper: 'ymgal.games でクライアントを申請'
     },
@@ -71,8 +68,7 @@ export const ja: YmgalMessages = {
       retryDescription: 'レート制限やサーバーエラー後の追加試行回数',
       retryUnit: '回',
       reset: '既定の設定に戻す',
-      resetDescription: 'エンドポイントと設定が既定値に戻ります。クライアント情報は保持されます。',
-      resetSucceeded: '既定の設定に戻しました'
+      resetDescription: 'エンドポイントと設定が既定値に戻ります。クライアント情報は保持されます。'
     }
   }
 }

@@ -122,7 +122,7 @@ export default defineExtension({
 
           await oauthFlow.completeFromDeeplink(event)
           const account = await accountService.refreshAccount()
-          settingsUiRef.current?.notifyOauthCompleted()
+          settingsUiRef.current?.notifyOauthSettled('completed')
           await notifyLoginSuccess(account.nickname, context.logger)
           return {
             success: true,
@@ -132,6 +132,9 @@ export default defineExtension({
         } catch (error) {
           const message = toUserMessage(error)
           context.logger.warn('Bangumi OAuth callback failed.', toSafeErrorLog(error))
+          // A failed attempt can still consume the pending session, so the
+          // open dialog must re-read account state as well.
+          settingsUiRef.current?.notifyOauthSettled('failed')
           await notifyLoginFailure(message, context.logger)
           return {
             success: false,

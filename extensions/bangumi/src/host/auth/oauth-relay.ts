@@ -50,7 +50,12 @@ export interface OAuthRelayHealth {
  * their own coded error types and localized messages through the factory.
  */
 export type OAuthRelayFailure =
-  'relay_unavailable' | 'session_expired' | 'callback_invalid' | 'no_pending_login'
+  | 'relay_unavailable'
+  | 'session_expired'
+  | 'callback_invalid'
+  | 'authorize_denied'
+  | 'authorize_failed'
+  | 'no_pending_login'
 
 export type OAuthRelayErrorFactory = (failure: OAuthRelayFailure, detail?: string) => Error
 
@@ -313,6 +318,20 @@ export class OAuthRelayFlow {
   }
 
   async completeFromDeeplink(event: OAuthRelayCallbackEvent): Promise<OAuthRelayToken> {
+    const callbackError = event.query.error?.trim()
+    if (callbackError) {
+      // The relay destroys its session before redirecting with `error`, so
+      // the local pending session can neither be completed nor reopened.
+      await this.options.store.deletePendingSession()
+      this.options.logger?.warn('OAuth callback reported an authorize error.', {
+        error: callbackError.slice(0, 64)
+      })
+      throw this.options.createError(
+        callbackError === 'access_denied' ? 'authorize_denied' : 'authorize_failed',
+        callbackError
+      )
+    }
+
     const sessionId = event.query.sessionId?.trim()
     const state = event.query.state?.trim()
 
@@ -326,6 +345,26 @@ export class OAuthRelayFlow {
   async completePending(signal?: AbortSignal): Promise<OAuthRelayToken> {
     const pending = await this.requirePendingSession()
     return this.completeSession(pending.sessionId, pending.state, signal)
+  }
+
+  /**
+   * Reopens the authorize page of the still-pending session, so a login that
+   * broke inside the browser (for example the provider lost the flow around
+   * its own sign-in page) can be retried without discarding the session.
+   */
+  async reopenPendingAuthorize(): Promise<void> {
+    const pending = await this.requirePendingSession()
+
+    if (pending.expiresAt <= Date.now()) {
+      await this.options.store.deletePendingSession()
+      throw this.options.createError('session_expired')
+    }
+
+    if (!pending.authorizeUrl) {
+      throw this.options.createError('no_pending_login')
+    }
+
+    await this.options.openExternal(pending.authorizeUrl)
   }
 
   async cancelPending(): Promise<void> {

@@ -15,6 +15,8 @@ export const zhHans: AnilistMessages = {
     relayUnavailable: 'Kisaki OAuth 中继暂时不可用，请稍后再试',
     loginSessionExpired: 'AniList 登录会话已过期，请重新登录',
     loginCallbackInvalid: 'AniList 登录回调校验失败，请重新登录',
+    loginDenied: 'AniList 授权已被拒绝，请重新登录',
+    loginAuthorizeFailed: 'AniList 返回了授权错误，请重新登录',
     noPendingLogin: '没有等待完成的 AniList 登录',
     loginNotReady: 'AniList 登录尚未就绪',
     operationRunning: '已有 AniList 列表操作在运行，请等待其完成'
@@ -30,7 +32,9 @@ export const zhHans: AnilistMessages = {
   auth: {
     expiresSoonTitle: 'AniList 登录即将过期',
     expiresSoon: ({ days }) =>
-      days > 0 ? `AniList 令牌将在 ${days} 天后过期，请重新登录以续期` : 'AniList 令牌已过期，请重新登录'
+      days > 0
+        ? `AniList 令牌将在 ${days} 天后过期，请重新登录以续期`
+        : 'AniList 令牌已过期，请重新登录'
   },
 
   sync: {
@@ -161,6 +165,8 @@ export const zhHans: AnilistMessages = {
       expiredLabel: '已过期',
       login: '使用 AniList 登录',
       completeLogin: '我已完成授权',
+      reopenAuthorize: '重新打开授权页',
+      pendingHint: '如浏览器显示错误页，请先登录 anilist.co，再重新打开授权页。',
       cancelLogin: '取消登录',
       logout: '退出登录',
       verify: '验证账号',

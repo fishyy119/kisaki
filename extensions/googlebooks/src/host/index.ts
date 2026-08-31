@@ -9,7 +9,7 @@ import { normalizeGbooksSettings } from './config/schema'
 import { m } from './i18n'
 import { registerGbooksJobCommands } from './jobs/commands'
 import { GbooksNovelProvider } from './media/novel/provider'
-import { registerGbooksSettingsUi } from './settings'
+import { registerGbooksSettingsUi, type GbooksSettingsUiHandle } from './settings'
 import { GbooksTasks } from './tasks'
 import { GBOOKS_LOGIN_TIMEOUT_MS, GBOOKS_OAUTH_RELAY_BASE_URL } from './utils/constants'
 import { GbooksExtensionError, createRelayError, toSafeErrorLog } from './utils/errors'
@@ -40,6 +40,7 @@ export default defineExtension({
     )
 
     const oauthFlowRef: { current?: OAuthRelayFlow } = {}
+    const settingsUiRef: { current?: GbooksSettingsUiHandle } = {}
 
     const deeplinkRegistration = context.contributions.deeplinkRoutes.register({
       id: 'oauth-callback',
@@ -52,6 +53,7 @@ export default defineExtension({
           }
 
           await oauthFlow.completeFromDeeplink(event)
+          settingsUiRef.current?.notifyOauthSettled('completed')
           await notifyLoginSuccess(context.logger)
           return {
             success: true,
@@ -61,6 +63,9 @@ export default defineExtension({
         } catch (error) {
           const message = toUserMessage(error)
           context.logger.warn('Google Books OAuth callback failed.', toSafeErrorLog(error))
+          // A failed attempt can still consume the pending session, so the
+          // open dialog must re-read account state as well.
+          settingsUiRef.current?.notifyOauthSettled('failed')
           await notifyLoginFailure(message, context.logger)
           return { success: false, status: 'error', message }
         }
@@ -95,7 +100,7 @@ export default defineExtension({
       context.subscriptions.add(registration)
     }
 
-    registerGbooksSettingsUi(context, {
+    settingsUiRef.current = registerGbooksSettingsUi(context, {
       settingsStore,
       tokenStore,
       client,

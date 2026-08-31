@@ -24,7 +24,6 @@ export const zhHans: IgdbMessages = {
   ui: {
     loading: '加载中…',
     unavailable: '无法加载 IGDB 设置',
-    saved: '偏好已保存',
     savePreferences: '保存',
     discardChanges: '放弃更改',
     unsavedChanges: '有未保存的更改',
@@ -46,8 +45,6 @@ export const zhHans: IgdbMessages = {
       save: '保存客户端',
       clear: '移除客户端',
       test: '测试连接',
-      saveSucceeded: 'Twitch 客户端已保存',
-      clearSucceeded: 'Twitch 客户端已移除',
       testSucceeded: 'Twitch 已接受该客户端凭证',
       openConsole: '前往 dev.twitch.tv 注册应用'
     },
@@ -72,8 +69,7 @@ export const zhHans: IgdbMessages = {
       retryDescription: '遇到限流或服务端错误后的额外尝试次数',
       retryUnit: '次',
       reset: '恢复默认设置',
-      resetDescription: '地址与偏好恢复默认，Twitch 客户端保留',
-      resetSucceeded: '已恢复默认设置'
+      resetDescription: '地址与偏好恢复默认，Twitch 客户端保留'
     }
   }
 }

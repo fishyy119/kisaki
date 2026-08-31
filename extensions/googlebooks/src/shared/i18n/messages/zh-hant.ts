@@ -12,6 +12,8 @@ export const zhHant: GbooksMessages = {
     relayUnavailable: 'Kisaki OAuth 中繼暫時無法使用，請稍後重試。',
     loginSessionExpired: 'Google 登入工作階段已過期，請重新登入。',
     loginCallbackInvalid: 'Google 登入回呼驗證失敗，請重新登入。',
+    loginDenied: 'Google 授權已被拒絕，請重新登入。',
+    loginAuthorizeFailed: 'Google 回傳了授權錯誤，請重新登入。',
     noPendingLogin: '沒有等待完成的 Google 登入',
     loginNotReady: 'Google 登入尚未就緒',
     operationCancelled: '操作已取消',

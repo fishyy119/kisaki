@@ -104,7 +104,6 @@ export const en = {
   ui: {
     loading: 'Loading…',
     unavailable: 'The VNDB settings could not be loaded',
-    saved: 'Preferences saved',
     savePreferences: 'Save',
     discardChanges: 'Discard',
     unsavedChanges: 'Unsaved changes',
@@ -122,8 +121,7 @@ export const en = {
     },
 
     task: {
-      progress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
+      progress: ({ current, total }: { current: number; total: number }) => `${current} / ${total}`,
       running: 'Running',
       completed: 'Completed',
       failed: 'Failed',
@@ -169,8 +167,6 @@ export const en = {
       save: 'Save token',
       clear: 'Remove token',
       test: 'Test connection',
-      saveSucceeded: 'The API token was saved',
-      clearSucceeded: 'The API token was removed',
       testSucceeded: 'VNDB accepted the request',
       openSettings: 'Create a token on vndb.org',
       verify: 'Verify account',
@@ -238,8 +234,7 @@ export const en = {
       actionsTitle: 'Maintenance actions',
       actionsDescription: 'These actions take effect immediately and cannot be undone',
       reset: 'Restore default settings',
-      resetDescription: 'Endpoint and preferences return to their defaults. The token is kept.',
-      resetSucceeded: 'Default settings restored'
+      resetDescription: 'Endpoint and preferences return to their defaults. The token is kept.'
     }
   }
 }

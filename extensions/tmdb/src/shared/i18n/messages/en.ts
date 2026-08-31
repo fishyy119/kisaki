@@ -33,7 +33,6 @@ export const en = {
   ui: {
     loading: 'Loading…',
     unavailable: 'The TMDB settings could not be loaded',
-    saved: 'Preferences saved',
     savePreferences: 'Save',
     discardChanges: 'Discard',
     unsavedChanges: 'Unsaved changes',
@@ -55,8 +54,6 @@ export const en = {
       save: 'Save key',
       clear: 'Remove key',
       test: 'Test connection',
-      saveSucceeded: 'The API key was saved',
-      clearSucceeded: 'The API key was removed',
       testSucceeded: 'TMDB accepted the API key',
       openSettings: 'Get a key on themoviedb.org'
     },
@@ -97,8 +94,7 @@ export const en = {
       retryDescription: 'Extra attempts after a rate limit or a server error',
       retryUnit: 'attempts',
       reset: 'Restore default settings',
-      resetDescription: 'Endpoints and preferences return to their defaults. The API key is kept.',
-      resetSucceeded: 'Default settings restored'
+      resetDescription: 'Endpoints and preferences return to their defaults. The API key is kept.'
     }
   }
 }

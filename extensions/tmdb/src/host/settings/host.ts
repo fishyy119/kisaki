@@ -35,7 +35,6 @@ export function createTmdbSettingsHostFunctions(
     async saveSettings(form: TmdbSettingsFormState): Promise<void> {
       const current = await runtime.settingsStore.get()
       await runtime.settingsStore.set(applyFormState(current, form))
-      await notifySuccess(runtime, m().ui.saved)
     },
 
     async saveApiKey(key: string): Promise<TmdbCredentialState> {
@@ -45,13 +44,11 @@ export function createTmdbSettingsHostFunctions(
       }
 
       await runtime.apiKeys.set(trimmed)
-      await notifySuccess(runtime, m().ui.credentials.saveSucceeded)
       return { configured: true, mode: detectTmdbAuthMode(trimmed) }
     },
 
     async clearApiKey(): Promise<TmdbCredentialState> {
       await runtime.apiKeys.clear()
-      await notifySuccess(runtime, m().ui.credentials.clearSucceeded)
       return { configured: false, mode: null }
     },
 
@@ -63,30 +60,14 @@ export function createTmdbSettingsHostFunctions(
         runtime.logger.warn('TMDB connection test failed.', toSafeErrorLog(error))
         throw error
       }
-
-      await notifySuccess(runtime, m().ui.credentials.testSucceeded)
     },
 
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
-      await notifySuccess(runtime, m().ui.preferences.resetSucceeded)
     },
 
     async openExternal(url: string): Promise<void> {
       await kisaki.runtime.openExternal(url)
     }
-  }
-}
-
-/**
- * Results are reported through the app's own notification surface, so an
- * extension action reads exactly like a native one. A failed notification is
- * cosmetic and must not fail the action that already succeeded.
- */
-async function notifySuccess(runtime: TmdbSettingsRuntime, title: string): Promise<void> {
-  try {
-    await kisaki.notify.success(title)
-  } catch (error) {
-    runtime.logger.warn('TMDB notification failed.', toSafeErrorLog(error))
   }
 }

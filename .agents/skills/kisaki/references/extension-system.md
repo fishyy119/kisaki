@@ -402,9 +402,13 @@ Consistency is layered, and each layer has a different owner:
   that is a different surface type, and do not invent a new layout when a recipe exists. A
   genuinely new surface type gets its recipe defined in the design system first — the recipe
   belongs to the system, and the app adopts it for its own surfaces of that type.
-- **Interaction idioms**: report action results through `kisaki.notify` from the host so they
-  surface in the app's own toaster; keep only load and validation errors inline, matching the
-  app's dialog error state; settings dialogs use the draft + dirty-footer pattern.
+- **Interaction idioms**: a webview document owns its interaction feedback inline — action
+  failures land in the dialog's root alert, validation stays at the field, and successes read
+  from the refreshed UI state, never from a toast. `kisaki.notify` is reserved for host-initiated
+  outcomes that must not depend on the dialog being open (deeplink sign-in settling, background
+  sync failures, expiry warnings), with the integration name in the title; such flows also push a
+  `refreshRequested` signal into the open settings document so its state catches up. Settings
+  dialogs use the draft + dirty-footer pattern.
 
 Built-in extensions are bound by all four layers. Third-party ones are sandboxed and cannot be
 forced, but the bridge and the kit make the native result the default, and the layout and idiom

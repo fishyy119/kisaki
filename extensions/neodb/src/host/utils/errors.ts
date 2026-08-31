@@ -3,6 +3,7 @@ export type NeodbErrorCode =
   | 'auth_rejected'
   | 'auth_cancelled'
   | 'registration_failed'
+  | 'instance_unreachable'
   | 'neodb_not_found'
   | 'neodb_rate_limited'
   | 'neodb_rejected'

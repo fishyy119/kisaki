@@ -11,6 +11,8 @@ export const en = {
     relayUnavailable: 'The Kisaki OAuth relay is temporarily unavailable. Try again later.',
     loginSessionExpired: 'The Google sign-in session expired. Sign in again.',
     loginCallbackInvalid: 'The Google sign-in callback failed validation. Sign in again.',
+    loginDenied: 'The Google authorization was declined. Sign in again when ready.',
+    loginAuthorizeFailed: 'Google reported an authorization error. Sign in again.',
     noPendingLogin: 'No Google sign-in is waiting to complete',
     loginNotReady: 'The Google sign-in is not ready yet',
     operationCancelled: 'The operation was cancelled',
@@ -99,8 +101,7 @@ export const en = {
     },
 
     task: {
-      progress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
+      progress: ({ current, total }: { current: number; total: number }) => `${current} / ${total}`,
       running: 'Running',
       completed: 'Completed',
       failed: 'Failed',

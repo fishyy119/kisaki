@@ -33,6 +33,10 @@ export function createRelayError(failure: OAuthRelayFailure): GbooksExtensionErr
       return new GbooksExtensionError('auth_expired', m().errors.loginSessionExpired)
     case 'callback_invalid':
       return new GbooksExtensionError('auth_cancelled', m().errors.loginCallbackInvalid)
+    case 'authorize_denied':
+      return new GbooksExtensionError('auth_cancelled', m().errors.loginDenied)
+    case 'authorize_failed':
+      return new GbooksExtensionError('auth_cancelled', m().errors.loginAuthorizeFailed)
     case 'no_pending_login':
       return new GbooksExtensionError('auth_cancelled', m().errors.noPendingLogin)
   }

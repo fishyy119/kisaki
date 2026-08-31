@@ -15,6 +15,8 @@ export const ja: MalMessages = {
     idInvalid: ({ value }) => `「${value}」は有効な MyAnimeList ID ではありません`,
     loginStateMismatch:
       'MyAnimeList サインインのコールバック検証に失敗しました。再度サインインしてください。',
+    loginDenied: 'MyAnimeList の認可が拒否されました。準備ができたら再度サインインしてください。',
+    loginAuthorizeFailed: 'MyAnimeList が認可エラーを返しました。再度サインインしてください。',
     loginSessionExpired:
       'MyAnimeList サインインセッションの有効期限が切れました。再度サインインしてください。',
     noPendingLogin: '完了待ちの MyAnimeList サインインはありません',
@@ -75,8 +77,7 @@ export const ja: MalMessages = {
     descriptions: {
       'auth-check': 'アプリ起動時に MyAnimeList サインインを確認し、トークンの自動更新を維持します',
       'push-full-daily': '毎日早朝に、関連付け済みの全エントリを MyAnimeList リストへ送信します',
-      'import-refresh-weekly':
-        '毎週、リストのステータスとスコアを既存エントリへ再インポートします'
+      'import-refresh-weekly': '毎週、リストのステータスとスコアを既存エントリへ再インポートします'
     },
     status: {
       missing: '未作成',

@@ -30,6 +30,7 @@ const emit = defineEmits<{
 const clientIdInput = ref('')
 const clientSecretInput = ref('')
 const busyAction = ref<string | null>(null)
+const testPassed = ref(false)
 
 const canSave = computed(
   () => clientIdInput.value.trim().length > 0 && clientSecretInput.value.trim().length > 0
@@ -52,6 +53,7 @@ async function runAction(action: string, run: () => Promise<void>): Promise<void
 }
 
 function saveCredential(): void {
+  testPassed.value = false
   void runAction('save', async () => {
     await host.saveCredential(clientIdInput.value, clientSecretInput.value)
     clientIdInput.value = ''
@@ -60,13 +62,18 @@ function saveCredential(): void {
 }
 
 function clearCredential(): void {
+  testPassed.value = false
   void runAction('clear', async () => {
     await host.clearCredential()
   })
 }
 
 function testConnection(): void {
-  void runAction('test', () => host.testConnection())
+  testPassed.value = false
+  void runAction('test', async () => {
+    await host.testConnection()
+    testPassed.value = true
+  })
 }
 
 function openConsole(): void {
@@ -146,6 +153,12 @@ function openConsole(): void {
     </FieldGroup>
 
     <template #actions>
+      <span
+        v-if="testPassed"
+        class="text-xs text-muted-foreground"
+      >
+        {{ m.ui.credentials.testSucceeded }}
+      </span>
       <Button
         variant="outline"
         size="sm"

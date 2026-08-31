@@ -65,6 +65,8 @@ export const zhHans = {
     loginNotReady: 'Bangumi 登录尚未就绪',
     loginSessionExpired: 'Bangumi 登录会话已过期，请重新登录',
     loginCallbackInvalid: 'Bangumi 登录回调校验失败，请重新登录',
+    loginDenied: 'Bangumi 授权已被拒绝，请重新登录',
+    loginAuthorizeFailed: 'Bangumi 返回了授权错误，请重新登录',
     noPendingLogin: '没有等待完成的 Bangumi 登录',
 
     relayUnavailable: 'Kisaki OAuth 中继暂时不可用，请稍后再试',
@@ -291,7 +293,6 @@ export const zhHans = {
   ui: {
     loading: '正在加载 Bangumi 设置…',
     unavailable: 'Bangumi 设置不可用',
-    saved: '偏好已保存',
     unsavedChanges: '有未保存的更改',
     discardChanges: '放弃更改',
     savePreferences: '保存偏好',

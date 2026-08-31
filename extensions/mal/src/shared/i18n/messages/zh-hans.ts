@@ -14,6 +14,8 @@ export const zhHans: MalMessages = {
     baseUrlInvalid: '请输入 http 或 https 地址',
     idInvalid: ({ value }) => `“${value}”不是有效的 MyAnimeList ID`,
     loginStateMismatch: 'MyAnimeList 登录回调校验失败，请重新登录。',
+    loginDenied: 'MyAnimeList 授权已被拒绝，请重新登录。',
+    loginAuthorizeFailed: 'MyAnimeList 返回了授权错误，请重新登录。',
     loginSessionExpired: 'MyAnimeList 登录会话已过期，请重新登录。',
     noPendingLogin: '没有等待完成的 MyAnimeList 登录',
     loginNotReady: 'MyAnimeList 登录尚未就绪',
@@ -188,7 +190,8 @@ export const zhHans: MalMessages = {
 
     automation: {
       title: '推荐自动化',
-      description: '此处仅创建推荐的 MyAnimeList 模板；启用状态、触发器与历史在应用的自动化页面管理',
+      description:
+        '此处仅创建推荐的 MyAnimeList 模板；启用状态、触发器与历史在应用的自动化页面管理',
       create: '创建'
     },
 

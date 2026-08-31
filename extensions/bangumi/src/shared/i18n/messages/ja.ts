@@ -59,6 +59,8 @@ export const ja = {
       'Bangumi サインインセッションの有効期限が切れました。再度サインインしてください。',
     loginCallbackInvalid:
       'Bangumi サインインのコールバック検証に失敗しました。再度サインインしてください。',
+    loginDenied: 'Bangumi の認可が拒否されました。準備ができたら再度サインインしてください。',
+    loginAuthorizeFailed: 'Bangumi が認可エラーを返しました。再度サインインしてください。',
     noPendingLogin: '完了待ちの Bangumi サインインはありません',
 
     relayUnavailable: 'Kisaki OAuth リレーは一時的に利用できません。後でもう一度お試しください。',
@@ -301,7 +303,6 @@ export const ja = {
   ui: {
     loading: 'Bangumi 設定を読み込んでいます…',
     unavailable: 'Bangumi 設定は利用できません',
-    saved: '設定を保存しました',
     unsavedChanges: '未保存の変更',
     discardChanges: '変更を破棄',
     savePreferences: '設定を保存',

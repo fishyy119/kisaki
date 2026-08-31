@@ -32,7 +32,6 @@ export function createYmgalSettingsHostFunctions(
     async saveSettings(form: YmgalSettingsFormState): Promise<void> {
       const current = await runtime.settingsStore.get()
       await runtime.settingsStore.set(applyFormState(current, form))
-      await notifySuccess(runtime, m().ui.saved)
     },
 
     async saveCredential(clientId: string, clientSecret: string): Promise<YmgalCredentialState> {
@@ -46,14 +45,12 @@ export function createYmgalSettingsHostFunctions(
       // The cached token belongs to the previous client and would keep
       // authenticating as it until it expired.
       runtime.client.invalidateToken()
-      await notifySuccess(runtime, m().ui.credentials.saveSucceeded)
       return readCredentialState()
     },
 
     async clearCredential(): Promise<YmgalCredentialState> {
       await runtime.credentials.clear()
       runtime.client.invalidateToken()
-      await notifySuccess(runtime, m().ui.credentials.clearSucceeded)
       return readCredentialState()
     },
 
@@ -65,30 +62,14 @@ export function createYmgalSettingsHostFunctions(
         runtime.logger.warn('YMGal connection test failed.', toSafeErrorLog(error))
         throw error
       }
-
-      await notifySuccess(runtime, m().ui.credentials.testSucceeded)
     },
 
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
-      await notifySuccess(runtime, m().ui.preferences.resetSucceeded)
     },
 
     async openExternal(url: string): Promise<void> {
       await kisaki.runtime.openExternal(url)
     }
-  }
-}
-
-/**
- * Results are reported through the app's own notification surface, so an
- * extension action reads exactly like a native one. A failed notification is
- * cosmetic and must not fail the action that already succeeded.
- */
-async function notifySuccess(runtime: YmgalSettingsRuntime, title: string): Promise<void> {
-  try {
-    await kisaki.notify.success(title)
-  } catch (error) {
-    runtime.logger.warn('YMGal notification failed.', toSafeErrorLog(error))
   }
 }

@@ -26,7 +26,6 @@ export const ja: IgdbMessages = {
   ui: {
     loading: '読み込み中…',
     unavailable: 'IGDB の設定を読み込めませんでした',
-    saved: '設定を保存しました',
     savePreferences: '保存',
     discardChanges: '破棄',
     unsavedChanges: '未保存の変更',
@@ -48,8 +47,6 @@ export const ja: IgdbMessages = {
       save: 'クライアントを保存',
       clear: 'クライアントを削除',
       test: '接続テスト',
-      saveSucceeded: 'Twitch クライアントを保存しました',
-      clearSucceeded: 'Twitch クライアントを削除しました',
       testSucceeded: 'Twitch はクライアント認証情報を受け入れました',
       openConsole: 'dev.twitch.tv でアプリケーションを登録'
     },
@@ -75,8 +72,7 @@ export const ja: IgdbMessages = {
       retryUnit: '回',
       reset: '既定の設定に戻す',
       resetDescription:
-        'エンドポイントと設定が既定値に戻ります。Twitch クライアントは保持されます。',
-      resetSucceeded: '既定の設定に戻しました'
+        'エンドポイントと設定が既定値に戻ります。Twitch クライアントは保持されます。'
     }
   }
 }

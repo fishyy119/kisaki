@@ -12,6 +12,8 @@ export const en = {
     baseUrlInvalid: 'Enter an http or https address',
     idInvalid: ({ value }: { value: string }) => `"${value}" is not a valid MyAnimeList id`,
     loginStateMismatch: 'The MyAnimeList sign-in callback failed validation. Sign in again.',
+    loginDenied: 'The MyAnimeList authorization was declined. Sign in again when ready.',
+    loginAuthorizeFailed: 'MyAnimeList reported an authorization error. Sign in again.',
     loginSessionExpired: 'The MyAnimeList sign-in session expired. Sign in again.',
     noPendingLogin: 'No MyAnimeList sign-in is waiting to complete',
     loginNotReady: 'The MyAnimeList sign-in is not ready yet',
@@ -92,8 +94,7 @@ export const en = {
         'Verifies the MyAnimeList sign-in when the app starts and keeps the token refresh warm',
       'push-full-daily':
         'Pushes every linked entry to the MyAnimeList lists once a day in the early morning',
-      'import-refresh-weekly':
-        'Re-imports list status and scores onto existing entries once a week'
+      'import-refresh-weekly': 'Re-imports list status and scores onto existing entries once a week'
     },
     status: {
       missing: 'Not created',
@@ -129,8 +130,7 @@ export const en = {
     },
 
     task: {
-      progress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
+      progress: ({ current, total }: { current: number; total: number }) => `${current} / ${total}`,
       running: 'Running',
       completed: 'Completed',
       failed: 'Failed',

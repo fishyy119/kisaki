@@ -8,7 +8,7 @@ import { normalizeNeodbSettings } from './config/schema'
 import { m } from './i18n'
 import { registerNeodbJobCommands } from './jobs/commands'
 import { NeodbNovelProvider } from './media/novel/provider'
-import { registerNeodbSettingsUi } from './settings'
+import { registerNeodbSettingsUi, type NeodbSettingsUiHandle } from './settings'
 import { SyncEngine } from './sync/engine'
 import { SyncStateStore } from './sync/state'
 import { SyncSubscription } from './sync/subscription'
@@ -33,6 +33,7 @@ export default defineExtension({
     )
 
     const oauthFlowRef: { current?: NeodbOauthFlow } = {}
+    const settingsUiRef: { current?: NeodbSettingsUiHandle } = {}
 
     const deeplinkRegistration = context.contributions.deeplinkRoutes.register({
       id: 'oauth-callback',
@@ -47,6 +48,7 @@ export default defineExtension({
           await oauthFlow.completeFromDeeplink(event, context.abortSignal)
           const user = await client.getOwnUser({ signal: context.abortSignal })
           const userName = user.username?.trim() || 'unknown'
+          settingsUiRef.current?.notifyOauthSettled('completed')
           await notifyLoginSuccess(userName, context.logger)
           return {
             success: true,
@@ -56,6 +58,9 @@ export default defineExtension({
         } catch (error) {
           const message = toUserMessage(error)
           context.logger.warn('NeoDB OAuth callback failed.', toSafeErrorLog(error))
+          // A failed attempt can still consume the pending login, so the
+          // open dialog must re-read account state as well.
+          settingsUiRef.current?.notifyOauthSettled('failed')
           await notifyLoginFailure(message, context.logger)
           return { success: false, status: 'error', message }
         }
@@ -111,7 +116,7 @@ export default defineExtension({
       context.subscriptions.add(registration)
     }
 
-    registerNeodbSettingsUi(context, {
+    settingsUiRef.current = registerNeodbSettingsUi(context, {
       settingsStore,
       sessionStore,
       client,

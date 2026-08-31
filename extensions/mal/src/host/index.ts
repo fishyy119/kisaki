@@ -11,7 +11,7 @@ import { m } from './i18n'
 import { registerMalJobCommands } from './jobs/commands'
 import { MalAnimeProvider, MalComicProvider, MalNovelProvider } from './media/media-providers'
 import type { MalRuntime } from './media/runtime'
-import { registerMalSettingsUi } from './settings'
+import { registerMalSettingsUi, type MalSettingsUiHandle } from './settings'
 import { SyncEngine } from './sync/engine'
 import { SyncStateStore } from './sync/state'
 import { SyncSubscription } from './sync/subscription'
@@ -44,6 +44,7 @@ export default defineExtension({
     }
 
     const oauthFlowRef: { current?: MalOauthFlow } = {}
+    const settingsUiRef: { current?: MalSettingsUiHandle } = {}
 
     const deeplinkRegistration = context.contributions.deeplinkRoutes.register({
       id: 'oauth-callback',
@@ -58,6 +59,7 @@ export default defineExtension({
           await oauthFlow.completeFromDeeplink(event, context.abortSignal)
           const user = await official.getOwnUser({ signal: context.abortSignal })
           const userName = user.name?.trim() || String(user.id)
+          settingsUiRef.current?.notifyOauthSettled('completed')
           await notifyLoginSuccess(userName, context.logger)
           return {
             success: true,
@@ -67,6 +69,9 @@ export default defineExtension({
         } catch (error) {
           const message = toUserMessage(error)
           context.logger.warn('MAL OAuth callback failed.', toSafeErrorLog(error))
+          // A failed attempt can still consume the pending login, so the
+          // open dialog must re-read account state as well.
+          settingsUiRef.current?.notifyOauthSettled('failed')
           await notifyLoginFailure(message, context.logger)
           return { success: false, status: 'error', message }
         }
@@ -126,7 +131,7 @@ export default defineExtension({
       context.subscriptions.add(registration)
     }
 
-    registerMalSettingsUi(context, {
+    settingsUiRef.current = registerMalSettingsUi(context, {
       settingsStore,
       tokenStore,
       client: official,

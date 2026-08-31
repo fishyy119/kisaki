@@ -28,7 +28,6 @@ export const zhHant: TmdbMessages = {
   ui: {
     loading: '載入中…',
     unavailable: '無法載入 TMDB 設定',
-    saved: '偏好已儲存',
     savePreferences: '儲存',
     discardChanges: '放棄修改',
     unsavedChanges: '有未儲存的修改',
@@ -49,8 +48,6 @@ export const zhHant: TmdbMessages = {
       save: '儲存金鑰',
       clear: '移除金鑰',
       test: '測試連線',
-      saveSucceeded: 'API Key 已儲存',
-      clearSucceeded: 'API Key 已移除',
       testSucceeded: 'TMDB 已接受該 API Key',
       openSettings: '前往 themoviedb.org 申請金鑰'
     },
@@ -89,8 +86,7 @@ export const zhHant: TmdbMessages = {
       retryDescription: '遇到限流或伺服器錯誤後的額外嘗試次數',
       retryUnit: '次',
       reset: '還原預設設定',
-      resetDescription: '介面位址與偏好將還原為預設值，API Key 會保留',
-      resetSucceeded: '已還原預設設定'
+      resetDescription: '介面位址與偏好將還原為預設值，API Key 會保留'
     }
   }
 }

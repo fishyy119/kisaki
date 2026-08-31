@@ -23,7 +23,6 @@ export const zhHant: YmgalMessages = {
   ui: {
     loading: '載入中…',
     unavailable: '無法載入月幕設定',
-    saved: '偏好已儲存',
     savePreferences: '儲存',
     discardChanges: '放棄變更',
     unsavedChanges: '有未儲存的變更',
@@ -45,8 +44,6 @@ export const zhHant: YmgalMessages = {
       save: '儲存用戶端',
       clear: '改用共享用戶端',
       test: '測試連線',
-      saveSucceeded: '介面用戶端已儲存',
-      clearSucceeded: '已切回公共共享用戶端',
       testSucceeded: '月幕已接受該介面用戶端',
       openDeveloper: '前往 ymgal.games 申請用戶端'
     },
@@ -71,8 +68,7 @@ export const zhHant: YmgalMessages = {
       retryDescription: '遇到限流或伺服器錯誤後的額外嘗試次數',
       retryUnit: '次',
       reset: '還原預設設定',
-      resetDescription: '位址與偏好還原預設，用戶端憑證保留',
-      resetSucceeded: '已還原預設設定'
+      resetDescription: '位址與偏好還原預設，用戶端憑證保留'
     }
   }
 }

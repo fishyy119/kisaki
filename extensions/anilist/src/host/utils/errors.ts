@@ -33,6 +33,10 @@ export function createRelayError(failure: OAuthRelayFailure): AnilistExtensionEr
       return new AnilistExtensionError('auth_expired', m().errors.loginSessionExpired)
     case 'callback_invalid':
       return new AnilistExtensionError('auth_cancelled', m().errors.loginCallbackInvalid)
+    case 'authorize_denied':
+      return new AnilistExtensionError('auth_cancelled', m().errors.loginDenied)
+    case 'authorize_failed':
+      return new AnilistExtensionError('auth_cancelled', m().errors.loginAuthorizeFailed)
     case 'no_pending_login':
       return new AnilistExtensionError('auth_cancelled', m().errors.noPendingLogin)
   }

@@ -14,6 +14,8 @@ export const zhHant: MalMessages = {
     baseUrlInvalid: '請輸入 http 或 https 位址',
     idInvalid: ({ value }) => `「${value}」不是有效的 MyAnimeList ID`,
     loginStateMismatch: 'MyAnimeList 登入回呼驗證失敗，請重新登入。',
+    loginDenied: 'MyAnimeList 授權已被拒絕，請重新登入。',
+    loginAuthorizeFailed: 'MyAnimeList 回傳了授權錯誤，請重新登入。',
     loginSessionExpired: 'MyAnimeList 登入工作階段已過期，請重新登入。',
     noPendingLogin: '沒有等待完成的 MyAnimeList 登入',
     loginNotReady: 'MyAnimeList 登入尚未就緒',

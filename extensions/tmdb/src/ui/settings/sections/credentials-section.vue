@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const keyInput = ref('')
 const busyAction = ref<string | null>(null)
+const testPassed = ref(false)
 
 const modeLabel = computed(() =>
   props.credential.mode === 'bearer'
@@ -53,6 +54,7 @@ async function runAction(action: string, run: () => Promise<void>): Promise<void
 }
 
 function saveKey(): void {
+  testPassed.value = false
   void runAction('save', async () => {
     await host.saveApiKey(keyInput.value)
     keyInput.value = ''
@@ -60,13 +62,18 @@ function saveKey(): void {
 }
 
 function clearKey(): void {
+  testPassed.value = false
   void runAction('clear', async () => {
     await host.clearApiKey()
   })
 }
 
 function testConnection(): void {
-  void runAction('test', () => host.testConnection())
+  testPassed.value = false
+  void runAction('test', async () => {
+    await host.testConnection()
+    testPassed.value = true
+  })
 }
 
 function openApiSettings(): void {
@@ -132,6 +139,12 @@ function openApiSettings(): void {
 
     <template #actions>
       <div class="flex flex-wrap items-center gap-2">
+        <span
+          v-if="testPassed"
+          class="text-xs text-muted-foreground"
+        >
+          {{ m.ui.credentials.testSucceeded }}
+        </span>
         <Button
           variant="outline"
           size="sm"

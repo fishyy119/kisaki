@@ -15,6 +15,8 @@ export const ja: GbooksMessages = {
       'Google サインインセッションの有効期限が切れました。再度サインインしてください。',
     loginCallbackInvalid:
       'Google サインインのコールバック検証に失敗しました。再度サインインしてください。',
+    loginDenied: 'Google の認可が拒否されました。準備ができたら再度サインインしてください。',
+    loginAuthorizeFailed: 'Google が認可エラーを返しました。再度サインインしてください。',
     noPendingLogin: '完了待ちの Google サインインはありません',
     loginNotReady: 'Google サインインはまだ準備できていません',
     operationCancelled: '操作はキャンセルされました',

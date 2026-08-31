@@ -81,7 +81,6 @@ export const zhHans: VndbMessages = {
   ui: {
     loading: '加载中…',
     unavailable: '无法加载 VNDB 设置',
-    saved: '偏好已保存',
     savePreferences: '保存',
     discardChanges: '放弃更改',
     unsavedChanges: '有未保存的更改',
@@ -144,8 +143,6 @@ export const zhHans: VndbMessages = {
       save: '保存令牌',
       clear: '移除令牌',
       test: '测试连接',
-      saveSucceeded: '接口令牌已保存',
-      clearSucceeded: '接口令牌已移除',
       testSucceeded: 'VNDB 已接受该请求',
       openSettings: '前往 vndb.org 创建令牌',
       verify: '验证账号',
@@ -207,8 +204,7 @@ export const zhHans: VndbMessages = {
       actionsTitle: '维护操作',
       actionsDescription: '这些操作立即生效且不可撤销',
       reset: '恢复默认设置',
-      resetDescription: '地址与偏好恢复默认，令牌保留',
-      resetSucceeded: '已恢复默认设置'
+      resetDescription: '地址与偏好恢复默认，令牌保留'
     }
   }
 }

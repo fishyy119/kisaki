@@ -24,7 +24,6 @@ export const zhHant: IgdbMessages = {
   ui: {
     loading: '載入中…',
     unavailable: '無法載入 IGDB 設定',
-    saved: '偏好已儲存',
     savePreferences: '儲存',
     discardChanges: '放棄變更',
     unsavedChanges: '有未儲存的變更',
@@ -46,8 +45,6 @@ export const zhHant: IgdbMessages = {
       save: '儲存用戶端',
       clear: '移除用戶端',
       test: '測試連線',
-      saveSucceeded: 'Twitch 用戶端已儲存',
-      clearSucceeded: 'Twitch 用戶端已移除',
       testSucceeded: 'Twitch 已接受該用戶端憑證',
       openConsole: '前往 dev.twitch.tv 註冊應用程式'
     },
@@ -72,8 +69,7 @@ export const zhHant: IgdbMessages = {
       retryDescription: '遇到限流或伺服器錯誤後的額外嘗試次數',
       retryUnit: '次',
       reset: '還原預設設定',
-      resetDescription: '位址與偏好還原預設，Twitch 用戶端保留',
-      resetSucceeded: '已還原預設設定'
+      resetDescription: '位址與偏好還原預設，Twitch 用戶端保留'
     }
   }
 }

@@ -62,6 +62,8 @@ export const en = {
     loginNotReady: 'Bangumi sign-in is not ready yet',
     loginSessionExpired: 'The Bangumi sign-in session has expired. Sign in again.',
     loginCallbackInvalid: 'The Bangumi sign-in callback failed validation. Sign in again.',
+    loginDenied: 'The Bangumi authorization was declined. Sign in again when ready.',
+    loginAuthorizeFailed: 'Bangumi reported an authorization error. Sign in again.',
     noPendingLogin: 'No Bangumi sign-in is waiting to be completed',
 
     relayUnavailable: 'The Kisaki OAuth relay is temporarily unavailable. Try again later.',
@@ -299,7 +301,6 @@ export const en = {
   ui: {
     loading: 'Loading Bangumi settings..',
     unavailable: 'Bangumi settings are unavailable',
-    saved: 'Preferences saved',
     unsavedChanges: 'Unsaved changes',
     discardChanges: 'Discard changes',
     savePreferences: 'Save preferences',

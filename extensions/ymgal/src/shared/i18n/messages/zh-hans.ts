@@ -23,7 +23,6 @@ export const zhHans: YmgalMessages = {
   ui: {
     loading: '加载中…',
     unavailable: '无法加载月幕设置',
-    saved: '偏好已保存',
     savePreferences: '保存',
     discardChanges: '放弃更改',
     unsavedChanges: '有未保存的更改',
@@ -45,8 +44,6 @@ export const zhHans: YmgalMessages = {
       save: '保存客户端',
       clear: '改用共享客户端',
       test: '测试连接',
-      saveSucceeded: '接口客户端已保存',
-      clearSucceeded: '已切回公共共享客户端',
       testSucceeded: '月幕已接受该接口客户端',
       openDeveloper: '前往 ymgal.games 申请客户端'
     },
@@ -71,8 +68,7 @@ export const zhHans: YmgalMessages = {
       retryDescription: '遇到限流或服务端错误后的额外尝试次数',
       retryUnit: '次',
       reset: '恢复默认设置',
-      resetDescription: '地址与偏好恢复默认，客户端凭证保留',
-      resetSucceeded: '已恢复默认设置'
+      resetDescription: '地址与偏好恢复默认，客户端凭证保留'
     }
   }
 }

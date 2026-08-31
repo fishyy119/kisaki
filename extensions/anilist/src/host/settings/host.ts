@@ -61,6 +61,11 @@ export function createAnilistSettingsHostFunctions(
       return readAccountState()
     },
 
+    async reopenPendingAuthorize(): Promise<AnilistAccountState> {
+      await runtime.oauthFlow.reopenPendingAuthorize()
+      return readAccountState()
+    },
+
     async cancelPendingLogin(): Promise<AnilistAccountState> {
       await runtime.oauthFlow.cancelPending()
       return readAccountState()

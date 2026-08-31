@@ -50,15 +50,15 @@ surface type genuinely has no recipe, define the recipe once (document it here,
 add shared components where needed), then build the surface; whichever side meets
 the need first proposes, but the recipe belongs to the system and both sides use it.
 
-| Surface type              | Test                                                                                             | Recipe                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| Form                      | Fields to fill and submit, whatever the dialog's size                                            | Plain `FieldGroup`, no frame                            |
-| Multi-section settings    | Several titled groups of pure configuration on one resident surface                              | `SettingsSection` per group with the `rows` surface     |
-| Integration control panel | Account-backed integration surface mixing status, operations, and configuration                  | Left tab rail + fixed tab vocabulary (see below)        |
-| Data row list             | Entity rows with inline actions                                                                  | `border` + `divide-y` rows                              |
+| Surface type              | Test                                                                                              | Recipe                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Form                      | Fields to fill and submit, whatever the dialog's size                                             | Plain `FieldGroup`, no frame                           |
+| Multi-section settings    | Several titled groups of pure configuration on one resident surface                               | `SettingsSection` per group with the `rows` surface    |
+| Integration control panel | Account-backed integration surface mixing status, operations, and configuration                   | Left tab rail + fixed tab vocabulary (see below)       |
+| Data row list             | Entity rows with inline actions                                                                   | `border` + `divide-y` rows                             |
 | Section navigation        | Non-settings surfaces: up to 3 sections top horizontal `TabsList`, 5+ in a large dialog left rail | Category first; thresholds only where no category fits |
-| Detail page content       | Content-first sections                                                                           | `Section` with de-emphasized xs heading                 |
-| Report surface            | Data-dense read-only bands                                                                       | Full-bleed bands + `divide-y` (see Report surfaces)     |
+| Detail page content       | Content-first sections                                                                            | `Section` with de-emphasized xs heading                |
+| Report surface            | Data-dense read-only bands                                                                        | Full-bleed bands + `divide-y` (see Report surfaces)    |
 
 The line between a form and a multi-section settings surface is the presence of
 several groups, not the owner and not the surface's size. A dialog holding one flat
@@ -514,8 +514,11 @@ Content rules:
   light actions (test connection, restore defaults, external links).
 - The draft/save lifecycle keeps the `WebviewDialogShell` footer recipe:
   dirty hint left, discard + save right.
-- Preference edits save through the footer; immediate operations report through
-  task runs and host notifications.
+- Preference edits save through the footer; long-running operations report
+  through task runs. Action failures stay inline in the dialog's root alert and
+  successes read from the refreshed UI state; detached outcomes (deeplink
+  sign-in settling, background jobs) arrive as host notifications plus a
+  `refreshRequested` push into the open document.
 
 ### ListForm with Sub-Form Pattern
 

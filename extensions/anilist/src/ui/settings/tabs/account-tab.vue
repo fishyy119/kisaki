@@ -66,6 +66,12 @@ function completeLogin(): void {
   })
 }
 
+function reopenAuthorize(): void {
+  void runAction('reopen', async () => {
+    await host.reopenPendingAuthorize()
+  })
+}
+
 function cancelLogin(): void {
   void runAction('cancel', async () => {
     await host.cancelPendingLogin()
@@ -96,6 +102,7 @@ function verifyAccount(): void {
       <Field
         orientation="horizontal"
         :label="m.ui.account.statusLabel"
+        :description="props.account.loginPending ? m.ui.account.pendingHint : undefined"
       >
         <FieldContent class="flex-row items-center justify-end gap-2">
           <span
@@ -150,6 +157,21 @@ function verifyAccount(): void {
             class="size-3.5"
           />
           {{ m.ui.account.completeLogin }}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          :disabled="busyAction !== null"
+          @click="reopenAuthorize"
+        >
+          <Spinner v-if="busyAction === 'reopen'" />
+          <Icon
+            v-else
+            icon="icon-[mdi--open-in-new]"
+            class="size-3.5"
+          />
+          {{ m.ui.account.reopenAuthorize }}
         </Button>
         <Button
           variant="outline"

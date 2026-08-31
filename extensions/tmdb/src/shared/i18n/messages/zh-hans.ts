@@ -28,7 +28,6 @@ export const zhHans: TmdbMessages = {
   ui: {
     loading: '加载中…',
     unavailable: '无法加载 TMDB 设置',
-    saved: '偏好已保存',
     savePreferences: '保存',
     discardChanges: '放弃修改',
     unsavedChanges: '有未保存的修改',
@@ -49,8 +48,6 @@ export const zhHans: TmdbMessages = {
       save: '保存密钥',
       clear: '移除密钥',
       test: '测试连接',
-      saveSucceeded: 'API Key 已保存',
-      clearSucceeded: 'API Key 已移除',
       testSucceeded: 'TMDB 已接受该 API Key',
       openSettings: '前往 themoviedb.org 申请密钥'
     },
@@ -89,8 +86,7 @@ export const zhHans: TmdbMessages = {
       retryDescription: '遇到限流或服务端错误后的额外尝试次数',
       retryUnit: '次',
       reset: '恢复默认设置',
-      resetDescription: '接口地址与偏好将恢复为默认值，API Key 会保留',
-      resetSucceeded: '已恢复默认设置'
+      resetDescription: '接口地址与偏好将恢复为默认值，API Key 会保留'
     }
   }
 }

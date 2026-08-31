@@ -63,8 +63,7 @@ export const ja: VndbMessages = {
     descriptions: {
       'auth-check': 'アプリ起動時に VNDB トークンとそのリスト権限を確認します',
       'push-full-daily': '毎日早朝に、関連付け済みの全エントリを VNDB リストへ送信します',
-      'import-refresh-weekly':
-        '毎週、リストのステータスと投票を既存エントリへ再インポートします'
+      'import-refresh-weekly': '毎週、リストのステータスと投票を既存エントリへ再インポートします'
     },
     status: {
       missing: '未作成',
@@ -82,7 +81,6 @@ export const ja: VndbMessages = {
   ui: {
     loading: '読み込み中…',
     unavailable: 'VNDB の設定を読み込めませんでした',
-    saved: '設定を保存しました',
     savePreferences: '保存',
     discardChanges: '破棄',
     unsavedChanges: '未保存の変更',
@@ -145,8 +143,6 @@ export const ja: VndbMessages = {
       save: 'トークンを保存',
       clear: 'トークンを削除',
       test: '接続テスト',
-      saveSucceeded: 'API トークンを保存しました',
-      clearSucceeded: 'API トークンを削除しました',
       testSucceeded: 'VNDB はリクエストを受け入れました',
       openSettings: 'vndb.org でトークンを作成',
       verify: 'アカウントを確認',
@@ -215,8 +211,7 @@ export const ja: VndbMessages = {
       actionsTitle: 'メンテナンス操作',
       actionsDescription: 'これらの操作は直ちに反映され、元に戻せません',
       reset: '既定の設定に戻す',
-      resetDescription: 'エンドポイントと設定が既定値に戻ります。トークンは保持されます。',
-      resetSucceeded: '既定の設定に戻しました'
+      resetDescription: 'エンドポイントと設定が既定値に戻ります。トークンは保持されます。'
     }
   }
 }

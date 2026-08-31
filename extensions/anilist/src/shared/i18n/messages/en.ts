@@ -18,6 +18,8 @@ export const en = {
     relayUnavailable: 'The Kisaki OAuth relay is temporarily unavailable. Try again later.',
     loginSessionExpired: 'The AniList sign-in session has expired. Sign in again.',
     loginCallbackInvalid: 'The AniList sign-in callback failed validation. Sign in again.',
+    loginDenied: 'The AniList authorization was declined. Sign in again when ready.',
+    loginAuthorizeFailed: 'AniList reported an authorization error. Sign in again.',
     noPendingLogin: 'No AniList sign-in is waiting to be completed',
     loginNotReady: 'AniList sign-in is not ready yet',
     operationRunning: 'An AniList list operation is already running. Wait for it to finish.'
@@ -105,8 +107,7 @@ export const en = {
         'Verifies the AniList sign-in when the app starts and warns before the token expires',
       'push-full-daily':
         'Pushes every linked entry to the AniList lists once a day in the early morning',
-      'import-refresh-weekly':
-        'Re-imports list status and scores onto existing entries once a week'
+      'import-refresh-weekly': 'Re-imports list status and scores onto existing entries once a week'
     },
     status: {
       missing: 'Not created',
@@ -142,8 +143,7 @@ export const en = {
     },
 
     task: {
-      progress: ({ current, total }: { current: number; total: number }) =>
-        `${current} / ${total}`,
+      progress: ({ current, total }: { current: number; total: number }) => `${current} / ${total}`,
       running: 'Running',
       completed: 'Completed',
       failed: 'Failed',
@@ -191,6 +191,9 @@ export const en = {
       expiredLabel: 'Expired',
       login: 'Sign in with AniList',
       completeLogin: 'I have authorized',
+      reopenAuthorize: 'Reopen authorize page',
+      pendingHint:
+        'If the browser showed an error page, sign in at anilist.co first, then reopen the authorize page.',
       cancelLogin: 'Cancel sign-in',
       logout: 'Sign out',
       verify: 'Verify account',

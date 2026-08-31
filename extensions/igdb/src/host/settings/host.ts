@@ -34,7 +34,6 @@ export function createIgdbSettingsHostFunctions(
     async saveSettings(form: IgdbSettingsFormState): Promise<void> {
       const current = await runtime.settingsStore.get()
       await runtime.settingsStore.set(applyFormState(current, form))
-      await notifySuccess(runtime, m().ui.saved)
     },
 
     async saveCredential(clientId: string, clientSecret: string): Promise<IgdbCredentialState> {
@@ -48,14 +47,12 @@ export function createIgdbSettingsHostFunctions(
       // The cached token belongs to the previous client and would keep
       // authenticating as it until it expired.
       runtime.client.invalidateToken()
-      await notifySuccess(runtime, m().ui.credentials.saveSucceeded)
       return readCredentialState()
     },
 
     async clearCredential(): Promise<IgdbCredentialState> {
       await runtime.credentials.clear()
       runtime.client.invalidateToken()
-      await notifySuccess(runtime, m().ui.credentials.clearSucceeded)
       return readCredentialState()
     },
 
@@ -67,30 +64,14 @@ export function createIgdbSettingsHostFunctions(
         runtime.logger.warn('IGDB connection test failed.', toSafeErrorLog(error))
         throw error
       }
-
-      await notifySuccess(runtime, m().ui.credentials.testSucceeded)
     },
 
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
-      await notifySuccess(runtime, m().ui.preferences.resetSucceeded)
     },
 
     async openExternal(url: string): Promise<void> {
       await kisaki.runtime.openExternal(url)
     }
-  }
-}
-
-/**
- * Results are reported through the app's own notification surface, so an
- * extension action reads exactly like a native one. A failed notification is
- * cosmetic and must not fail the action that already succeeded.
- */
-async function notifySuccess(runtime: IgdbSettingsRuntime, title: string): Promise<void> {
-  try {
-    await kisaki.notify.success(title)
-  } catch (error) {
-    runtime.logger.warn('IGDB notification failed.', toSafeErrorLog(error))
   }
 }

@@ -81,7 +81,6 @@ export const zhHant: VndbMessages = {
   ui: {
     loading: '載入中…',
     unavailable: '無法載入 VNDB 設定',
-    saved: '偏好已儲存',
     savePreferences: '儲存',
     discardChanges: '放棄變更',
     unsavedChanges: '有未儲存的變更',
@@ -144,8 +143,6 @@ export const zhHant: VndbMessages = {
       save: '儲存權杖',
       clear: '移除權杖',
       test: '測試連線',
-      saveSucceeded: '介面權杖已儲存',
-      clearSucceeded: '介面權杖已移除',
       testSucceeded: 'VNDB 已接受該請求',
       openSettings: '前往 vndb.org 建立權杖',
       verify: '驗證帳號',
@@ -207,8 +204,7 @@ export const zhHant: VndbMessages = {
       actionsTitle: '維護操作',
       actionsDescription: '這些操作立即生效且無法復原',
       reset: '還原預設設定',
-      resetDescription: '位址與偏好還原預設，權杖保留',
-      resetSucceeded: '已還原預設設定'
+      resetDescription: '位址與偏好還原預設，權杖保留'
     }
   }
 }

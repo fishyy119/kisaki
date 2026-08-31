@@ -1,11 +1,11 @@
 <!--
 AniList Settings App is the webview root: tab navigation, preference draft
-lifecycle, and load/action error surfacing. Immediate actions live in tab
-components, and their successful results are reported by the host through the
-app's own notifications.
+lifecycle, host refresh handling, and inline error surfacing. Tab actions
+report failures through the root alert; detached outcomes (browser sign-in,
+background work) arrive as host notifications plus a pushed refresh.
 -->
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   Alert,
   Button,
@@ -24,7 +24,7 @@ import {
 } from '../../shared/settings'
 import { applySettingsForm, settingsForm, settingsFormsEqual, snapshotSettingsForm } from './form'
 import { m } from './i18n'
-import { host, toErrorMessage } from './rpc'
+import { host, onHostRefreshRequested, toErrorMessage } from './rpc'
 import OverviewTab from './tabs/overview-tab.vue'
 import AccountTab from './tabs/account-tab.vue'
 import SyncTab from './tabs/sync-tab.vue'
@@ -64,8 +64,17 @@ const isDirty = computed(
 // A rejected endpoint would silently fall back to the default on save.
 const isValid = computed(() => matchesHttpUrlFormat(settingsForm.graphqlUrl))
 
+let stopRefreshListener: (() => void) | undefined
+
 onMounted(() => {
+  stopRefreshListener = onHostRefreshRequested(() => {
+    void reload({ keepDraft: isDirty.value })
+  })
   void reload({ keepDraft: false })
+})
+
+onUnmounted(() => {
+  stopRefreshListener?.()
 })
 
 async function reload(options: { keepDraft: boolean }): Promise<void> {

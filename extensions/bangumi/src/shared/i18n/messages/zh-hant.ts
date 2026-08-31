@@ -65,6 +65,8 @@ export const zhHant = {
     loginNotReady: 'Bangumi 登入尚未就緒',
     loginSessionExpired: 'Bangumi 登入工作階段已過期，請重新登入',
     loginCallbackInvalid: 'Bangumi 登入回呼驗證失敗，請重新登入',
+    loginDenied: 'Bangumi 授權已被拒絕，請重新登入',
+    loginAuthorizeFailed: 'Bangumi 回傳了授權錯誤，請重新登入',
     noPendingLogin: '沒有等待完成的 Bangumi 登入',
 
     relayUnavailable: 'Kisaki OAuth 中繼暫時無法使用，請稍後再試',
@@ -292,7 +294,6 @@ export const zhHant = {
   ui: {
     loading: '正在載入 Bangumi 設定…',
     unavailable: 'Bangumi 設定無法使用',
-    saved: '偏好已儲存',
     unsavedChanges: '有未儲存的變更',
     discardChanges: '放棄變更',
     savePreferences: '儲存偏好',

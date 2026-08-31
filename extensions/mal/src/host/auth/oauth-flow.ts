@@ -65,6 +65,20 @@ export class MalOauthFlow {
   }
 
   async completeFromDeeplink(event: MalOauthCallbackEvent, signal?: AbortSignal): Promise<void> {
+    const callbackError = event.query.error?.trim()
+    if (callbackError) {
+      // MAL redirects back with `error` when the consent page declines; the
+      // pending PKCE material has nothing left to complete.
+      await this.deps.store.deletePendingLogin()
+      this.deps.logger.warn('MAL OAuth callback reported an authorize error.', {
+        error: callbackError.slice(0, 64)
+      })
+      throw new MalExtensionError(
+        'auth_cancelled',
+        callbackError === 'access_denied' ? m().errors.loginDenied : m().errors.loginAuthorizeFailed
+      )
+    }
+
     const code = event.query.code?.trim()
     const state = event.query.state?.trim()
     if (!code || !state) {

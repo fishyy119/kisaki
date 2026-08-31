@@ -17,6 +17,8 @@ export const ja: AnilistMessages = {
       'AniList サインインセッションの有効期限が切れました。再度サインインしてください。',
     loginCallbackInvalid:
       'AniList サインインのコールバック検証に失敗しました。再度サインインしてください。',
+    loginDenied: 'AniList の認可が拒否されました。準備ができたら再度サインインしてください。',
+    loginAuthorizeFailed: 'AniList が認可エラーを返しました。再度サインインしてください。',
     noPendingLogin: '完了待ちの AniList サインインはありません',
     loginNotReady: 'AniList サインインはまだ準備できていません',
     operationRunning: 'AniList リストの操作が既に実行中です。完了までお待ちください。'
@@ -83,8 +85,7 @@ export const ja: AnilistMessages = {
     descriptions: {
       'auth-check': 'アプリ起動時に AniList サインインを確認し、トークンの期限前に警告します',
       'push-full-daily': '毎日早朝に、関連付け済みの全エントリを AniList リストへ送信します',
-      'import-refresh-weekly':
-        '毎週、リストのステータスとスコアを既存エントリへ再インポートします'
+      'import-refresh-weekly': '毎週、リストのステータスとスコアを既存エントリへ再インポートします'
     },
     status: {
       missing: '未作成',
@@ -167,6 +168,9 @@ export const ja: AnilistMessages = {
       expiredLabel: '期限切れ',
       login: 'AniList でサインイン',
       completeLogin: '認可を完了しました',
+      reopenAuthorize: '認可ページを再度開く',
+      pendingHint:
+        'ブラウザにエラーページが表示された場合は、先に anilist.co にサインインしてから認可ページを再度開いてください。',
       cancelLogin: 'サインインをキャンセル',
       logout: 'サインアウト',
       verify: 'アカウントを確認',

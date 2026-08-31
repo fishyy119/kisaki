@@ -15,6 +15,8 @@ export const zhHant: AnilistMessages = {
     relayUnavailable: 'Kisaki OAuth 中繼暫時無法使用，請稍後再試',
     loginSessionExpired: 'AniList 登入工作階段已過期，請重新登入',
     loginCallbackInvalid: 'AniList 登入回呼驗證失敗，請重新登入',
+    loginDenied: 'AniList 授權已被拒絕，請重新登入',
+    loginAuthorizeFailed: 'AniList 回傳了授權錯誤，請重新登入',
     noPendingLogin: '沒有等待完成的 AniList 登入',
     loginNotReady: 'AniList 登入尚未就緒',
     operationRunning: '已有 AniList 清單操作在執行，請等待其完成'
@@ -30,7 +32,9 @@ export const zhHant: AnilistMessages = {
   auth: {
     expiresSoonTitle: 'AniList 登入即將過期',
     expiresSoon: ({ days }) =>
-      days > 0 ? `AniList 權杖將在 ${days} 天後過期，請重新登入以續期` : 'AniList 權杖已過期，請重新登入'
+      days > 0
+        ? `AniList 權杖將在 ${days} 天後過期，請重新登入以續期`
+        : 'AniList 權杖已過期，請重新登入'
   },
 
   sync: {
@@ -161,6 +165,8 @@ export const zhHant: AnilistMessages = {
       expiredLabel: '已過期',
       login: '使用 AniList 登入',
       completeLogin: '我已完成授權',
+      reopenAuthorize: '重新開啟授權頁',
+      pendingHint: '如瀏覽器顯示錯誤頁，請先登入 anilist.co，再重新開啟授權頁。',
       cancelLogin: '取消登入',
       logout: '登出',
       verify: '驗證帳號',

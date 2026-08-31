@@ -15,7 +15,7 @@ import {
 } from './media/media-providers'
 import { AnilistPersonProvider } from './media/person/provider'
 import type { AnilistRuntime } from './media/runtime'
-import { registerAnilistSettingsUi } from './settings'
+import { registerAnilistSettingsUi, type AnilistSettingsUiHandle } from './settings'
 import { SyncEngine } from './sync/engine'
 import { SyncStateStore } from './sync/state'
 import { SyncSubscription } from './sync/subscription'
@@ -49,6 +49,7 @@ export default defineExtension({
     })
 
     const oauthFlowRef: { current?: OAuthRelayFlow } = {}
+    const settingsUiRef: { current?: AnilistSettingsUiHandle } = {}
 
     const deeplinkRegistration = context.contributions.deeplinkRoutes.register({
       id: 'oauth-callback',
@@ -63,6 +64,7 @@ export default defineExtension({
           await oauthFlow.completeFromDeeplink(event)
           const viewer = await client.getViewer({ signal: context.abortSignal })
           const userName = viewer.name?.trim() || String(viewer.id)
+          settingsUiRef.current?.notifyOauthSettled('completed')
           await notifyLoginSuccess(userName, context.logger)
           return {
             success: true,
@@ -72,6 +74,9 @@ export default defineExtension({
         } catch (error) {
           const message = toUserMessage(error)
           context.logger.warn('AniList OAuth callback failed.', toSafeErrorLog(error))
+          // A failed attempt can still consume the pending session, so the
+          // open dialog must re-read account state as well.
+          settingsUiRef.current?.notifyOauthSettled('failed')
           await notifyLoginFailure(message, context.logger)
           return { success: false, status: 'error', message }
         }
@@ -142,7 +147,7 @@ export default defineExtension({
       context.subscriptions.add(registration)
     }
 
-    registerAnilistSettingsUi(context, {
+    settingsUiRef.current = registerAnilistSettingsUi(context, {
       settingsStore,
       tokenStore,
       client,

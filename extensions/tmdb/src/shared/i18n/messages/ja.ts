@@ -30,7 +30,6 @@ export const ja: TmdbMessages = {
   ui: {
     loading: '読み込み中…',
     unavailable: 'TMDB の設定を読み込めませんでした',
-    saved: '設定を保存しました',
     savePreferences: '保存',
     discardChanges: '破棄',
     unsavedChanges: '未保存の変更があります',
@@ -52,8 +51,6 @@ export const ja: TmdbMessages = {
       save: 'キーを保存',
       clear: 'キーを削除',
       test: '接続テスト',
-      saveSucceeded: 'API キーを保存しました',
-      clearSucceeded: 'API キーを削除しました',
       testSucceeded: 'TMDB は API キーを受け入れました',
       openSettings: 'themoviedb.org でキーを取得'
     },
@@ -94,8 +91,7 @@ export const ja: TmdbMessages = {
       retryDescription: 'レート制限やサーバーエラー後の追加試行回数',
       retryUnit: '回',
       reset: '既定の設定に戻す',
-      resetDescription: 'エンドポイントと設定は既定値に戻ります。API キーは保持されます。',
-      resetSucceeded: '既定の設定に戻しました'
+      resetDescription: 'エンドポイントと設定は既定値に戻ります。API キーは保持されます。'
     }
   }
 }

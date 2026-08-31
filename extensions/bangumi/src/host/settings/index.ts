@@ -14,7 +14,8 @@ export type { BangumiSettingsRuntime } from './runtime'
 const SETTINGS_DIALOG_ID = 'settings'
 
 export interface BangumiSettingsUiHandle {
-  notifyOauthCompleted(): void
+  /** Pushes a refresh into the open settings dialog after a deeplink sign-in settles. */
+  notifyOauthSettled(outcome: 'completed' | 'failed'): void
 }
 
 /**
@@ -65,8 +66,8 @@ export function registerBangumiSettingsUi(
   })
 
   return {
-    notifyOauthCompleted() {
-      session.pushRefresh('oauth-completed')
+    notifyOauthSettled(outcome) {
+      session.pushRefresh(`oauth-${outcome}`)
     }
   }
 }

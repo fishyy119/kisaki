@@ -35,6 +35,10 @@ export function createRelayError(failure: OAuthRelayFailure): BangumiExtensionEr
       return new BangumiExtensionError('auth_expired', m().errors.loginSessionExpired)
     case 'callback_invalid':
       return new BangumiExtensionError('auth_cancelled', m().errors.loginCallbackInvalid)
+    case 'authorize_denied':
+      return new BangumiExtensionError('auth_cancelled', m().errors.loginDenied)
+    case 'authorize_failed':
+      return new BangumiExtensionError('auth_cancelled', m().errors.loginAuthorizeFailed)
     case 'no_pending_login':
       return new BangumiExtensionError('auth_cancelled', m().errors.noPendingLogin)
   }

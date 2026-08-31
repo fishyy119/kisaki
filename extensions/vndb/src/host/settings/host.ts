@@ -39,7 +39,6 @@ export function createVndbSettingsHostFunctions(
     async saveSettings(form: VndbSettingsFormState): Promise<void> {
       const current = await runtime.settingsStore.get()
       await runtime.settingsStore.set(applyFormState(current, form))
-      await notifySuccess(runtime, m().ui.saved)
     },
 
     async saveToken(token: string): Promise<VndbCredentialState> {
@@ -49,13 +48,11 @@ export function createVndbSettingsHostFunctions(
       }
 
       await runtime.tokens.set(trimmed)
-      await notifySuccess(runtime, m().ui.account.saveSucceeded)
       return { configured: true }
     },
 
     async clearToken(): Promise<VndbCredentialState> {
       await runtime.tokens.clear()
-      await notifySuccess(runtime, m().ui.account.clearSucceeded)
       return { configured: false }
     },
 
@@ -67,8 +64,6 @@ export function createVndbSettingsHostFunctions(
         runtime.logger.warn('VNDB connection test failed.', toSafeErrorLog(error))
         throw error
       }
-
-      await notifySuccess(runtime, m().ui.account.testSucceeded)
     },
 
     async verifyAccount(): Promise<VndbAccountVerification> {
@@ -118,25 +113,11 @@ export function createVndbSettingsHostFunctions(
 
     async resetSettings(): Promise<void> {
       await runtime.settingsStore.reset()
-      await notifySuccess(runtime, m().ui.maintenance.resetSucceeded)
     },
 
     async openExternal(url: string): Promise<void> {
       await kisaki.runtime.openExternal(url)
     }
-  }
-}
-
-/**
- * Results are reported through the app's own notification surface, so an
- * extension action reads exactly like a native one. A failed notification is
- * cosmetic and must not fail the action that already succeeded.
- */
-async function notifySuccess(runtime: VndbSettingsRuntime, title: string): Promise<void> {
-  try {
-    await kisaki.notify.success(title)
-  } catch (error) {
-    runtime.logger.warn('VNDB notification failed.', toSafeErrorLog(error))
   }
 }
 

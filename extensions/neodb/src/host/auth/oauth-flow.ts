@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { isCancellationError } from '@kisaki3/extension-sdk'
 import type { ExtensionLogger, NetworkCapability } from '@kisaki3/extension-sdk'
 import type { NdAppRegistration, NdTokenResponse } from '../api/types'
 import type { NeodbSettingsStore } from '../config/schema'
@@ -84,6 +85,20 @@ export class NeodbOauthFlow {
   }
 
   async completeFromDeeplink(event: NeodbOauthCallbackEvent, signal?: AbortSignal): Promise<void> {
+    const callbackError = event.query.error?.trim()
+    if (callbackError) {
+      // The instance redirects back with `error` when authorization is
+      // declined; a retry re-registers the app anyway, so drop the pending.
+      await this.deps.store.deletePendingLogin()
+      this.deps.logger.warn('NeoDB OAuth callback reported an authorize error.', {
+        error: callbackError.slice(0, 64)
+      })
+      throw new NeodbExtensionError(
+        'auth_cancelled',
+        callbackError === 'access_denied' ? m().errors.loginDenied : m().errors.loginAuthorizeFailed
+      )
+    }
+
     const code = event.query.code?.trim()
     const state = event.query.state?.trim()
     if (!code || !state) {
@@ -141,26 +156,47 @@ export class NeodbOauthFlow {
       throw new NeodbExtensionError('auth_cancelled', m().errors.loginSessionExpired)
     }
 
-    const response = await this.deps.network.request<NdTokenResponse>(
-      {
-        url: `${pending.instanceUrl}/oauth/token`,
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded'
+    let response
+    try {
+      response = await this.deps.network.request<NdTokenResponse>(
+        {
+          url: `${pending.instanceUrl}/oauth/token`,
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            client_id: pending.clientId,
+            client_secret: pending.clientSecret,
+            redirect_uri: pending.redirectUri
+          }).toString(),
+          timeoutMs: AUTH_REQUEST_TIMEOUT_MS,
+          responseType: 'json'
         },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code,
-          client_id: pending.clientId,
-          client_secret: pending.clientSecret,
-          redirect_uri: pending.redirectUri
-        }).toString(),
-        timeoutMs: AUTH_REQUEST_TIMEOUT_MS,
-        responseType: 'json'
-      },
-      signal ? { signal } : {}
-    )
+        signal ? { signal } : {}
+      )
+    } catch (error) {
+      if (isCancellationError(error)) {
+        throw error
+      }
+      this.deps.logger.warn('NeoDB token exchange failed.', toSafeErrorLog(error))
+      throw new NeodbExtensionError('instance_unreachable', m().errors.instanceUnreachable, {
+        cause: error
+      })
+    }
+
+    if (!response.ok && response.status >= 500) {
+      this.deps.logger.warn('NeoDB token exchange hit a server failure.', {
+        status: response.status
+      })
+      throw new NeodbExtensionError(
+        'instance_unreachable',
+        m().errors.instanceUnavailable({ status: response.status })
+      )
+    }
 
     if (!response.ok || !response.data.access_token?.trim()) {
       this.deps.logger.warn('NeoDB token exchange failed.', { status: response.status })
@@ -203,10 +239,25 @@ export class NeodbOauthFlow {
         signal ? { signal } : {}
       )
     } catch (error) {
+      if (isCancellationError(error)) {
+        throw error
+      }
       this.deps.logger.warn('NeoDB app registration failed.', toSafeErrorLog(error))
-      throw new NeodbExtensionError('registration_failed', m().errors.registrationFailed, {
+      throw new NeodbExtensionError('instance_unreachable', m().errors.instanceUnreachable, {
         cause: error
       })
+    }
+
+    // A gateway or server failure is not a registration policy verdict; keep
+    // the retryable "instance unavailable" reading apart from a real reject.
+    if (!response.ok && response.status >= 500) {
+      this.deps.logger.warn('NeoDB app registration hit a server failure.', {
+        status: response.status
+      })
+      throw new NeodbExtensionError(
+        'instance_unreachable',
+        m().errors.instanceUnavailable({ status: response.status })
+      )
     }
 
     const clientId = response.ok ? response.data.client_id?.trim() : undefined

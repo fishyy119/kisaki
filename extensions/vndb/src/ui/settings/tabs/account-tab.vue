@@ -37,6 +37,7 @@ const emit = defineEmits<{
 const tokenInput = ref('')
 const account = ref<VndbAccountVerification | null>(null)
 const busyAction = ref<string | null>(null)
+const testPassed = ref(false)
 
 async function runAction(action: string, run: () => Promise<void>): Promise<void> {
   if (busyAction.value) {
@@ -55,6 +56,7 @@ async function runAction(action: string, run: () => Promise<void>): Promise<void
 }
 
 function saveToken(): void {
+  testPassed.value = false
   void runAction('save', async () => {
     await host.saveToken(tokenInput.value)
     tokenInput.value = ''
@@ -63,13 +65,18 @@ function saveToken(): void {
 
 function clearToken(): void {
   account.value = null
+  testPassed.value = false
   void runAction('clear', async () => {
     await host.clearToken()
   })
 }
 
 function testConnection(): void {
-  void runAction('test', () => host.testConnection())
+  testPassed.value = false
+  void runAction('test', async () => {
+    await host.testConnection()
+    testPassed.value = true
+  })
 }
 
 function verifyAccount(): void {
@@ -104,9 +111,7 @@ function openTokenSettings(): void {
         <FieldContent class="flex-row items-center justify-end gap-2">
           <Badge :variant="props.credential.configured ? 'success' : 'secondary'">
             {{
-              props.credential.configured
-                ? m.ui.account.configuredLabel
-                : m.ui.account.missingLabel
+              props.credential.configured ? m.ui.account.configuredLabel : m.ui.account.missingLabel
             }}
           </Badge>
         </FieldContent>
@@ -180,6 +185,12 @@ function openTokenSettings(): void {
     </FieldGroup>
 
     <template #actions>
+      <span
+        v-if="testPassed"
+        class="text-xs text-muted-foreground"
+      >
+        {{ m.ui.account.testSucceeded }}
+      </span>
       <Button
         variant="outline"
         size="sm"

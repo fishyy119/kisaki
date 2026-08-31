@@ -27,7 +27,6 @@ export const en = {
   ui: {
     loading: 'Loading…',
     unavailable: 'The YMGal settings could not be loaded',
-    saved: 'Preferences saved',
     savePreferences: 'Save',
     discardChanges: 'Discard',
     unsavedChanges: 'Unsaved changes',
@@ -49,8 +48,6 @@ export const en = {
       save: 'Save client',
       clear: 'Use shared client',
       test: 'Test connection',
-      saveSucceeded: 'The API client was saved',
-      clearSucceeded: 'Switched back to the shared public client',
       testSucceeded: 'YMGal accepted the API client',
       openDeveloper: 'Request a client on ymgal.games'
     },
@@ -76,8 +73,7 @@ export const en = {
       retryDescription: 'Extra attempts after a rate limit or a server error',
       retryUnit: 'attempts',
       reset: 'Restore default settings',
-      resetDescription: 'Endpoint and preferences return to their defaults. The client is kept.',
-      resetSucceeded: 'Default settings restored'
+      resetDescription: 'Endpoint and preferences return to their defaults. The client is kept.'
     }
   }
 }

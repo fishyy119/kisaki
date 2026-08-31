@@ -110,6 +110,8 @@ export interface AnilistSettingsHostFunctions {
   startLogin(): Promise<AnilistAccountState>
   /** Completes a pending sign-in when the deeplink hop was missed. */
   completePendingLogin(): Promise<AnilistAccountState>
+  /** Reopens the pending session's authorize page for a browser-side retry. */
+  reopenPendingAuthorize(): Promise<AnilistAccountState>
   cancelPendingLogin(): Promise<AnilistAccountState>
   logout(): Promise<AnilistAccountState>
   /** Validates the stored token against the Viewer query. */
@@ -123,4 +125,13 @@ export interface AnilistSettingsHostFunctions {
   createAutomation(kind: AnilistAutomationKind): Promise<void>
   resetSettings(): Promise<void>
   openExternal(url: string): Promise<void>
+}
+
+/**
+ * Functions the settings webview exposes to the extension host. The OAuth
+ * sign-in settles in the host through the deeplink, so account refreshes are
+ * pushed straight into the open document.
+ */
+export interface AnilistSettingsUiFunctions {
+  refreshRequested(reason: string): void
 }

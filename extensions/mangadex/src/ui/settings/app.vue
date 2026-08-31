@@ -1,8 +1,7 @@
 <!--
 MangaDex Settings App is the webview root: tab navigation, preference draft
-lifecycle, and load/action error surfacing. Immediate actions live in tab
-components, and their successful results are reported by the host through the
-app's own notifications.
+lifecycle, and inline error surfacing. Tab actions report failures through
+the root alert; successes read from the refreshed UI state.
 -->
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'

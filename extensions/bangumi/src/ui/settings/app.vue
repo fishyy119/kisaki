@@ -1,8 +1,8 @@
 <!--
 Bangumi Settings App is the webview root: tab navigation, preference draft
-lifecycle, and host refresh handling. Immediate actions live in tab components,
-and their successful results are reported by the host through the app's own
-notifications.
+lifecycle, host refresh handling, and inline error surfacing. Tab actions
+report failures through the root alert; detached outcomes (browser sign-in,
+background jobs) arrive as host notifications plus a pushed refresh.
 -->
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'

@@ -13,8 +13,14 @@ export const ja: NeodbMessages = {
     instanceUrlInvalid: 'http または https のアドレスを入力してください',
     idInvalid: ({ value }) => `「${value}」は有効な NeoDB ID ではありません`,
     registrationFailed: 'アプリはこのインスタンスに自己登録できませんでした',
+    instanceUnreachable: 'NeoDB インスタンスに接続できませんでした。後でもう一度お試しください。',
+    instanceUnavailable: ({ status }) =>
+      `NeoDB インスタンスは一時的に利用できません（HTTP ${status}）。後でもう一度お試しください。`,
     loginStateMismatch:
       'NeoDB サインインのコールバック検証に失敗しました。再度サインインしてください。',
+    loginDenied: 'NeoDB の認可が拒否されました。準備ができたら再度サインインしてください。',
+    loginAuthorizeFailed:
+      'NeoDB インスタンスが認可エラーを返しました。再度サインインしてください。',
     loginSessionExpired:
       'NeoDB サインインセッションの有効期限が切れました。再度サインインしてください。',
     noPendingLogin: '完了待ちの NeoDB サインインはありません',
@@ -76,8 +82,7 @@ export const ja: NeodbMessages = {
     descriptions: {
       'auth-check': 'アプリ起動時に NeoDB サインインを確認します',
       'push-full-daily': '毎日早朝に、関連付け済みの全エントリを NeoDB の本棚へ送信します',
-      'import-refresh-weekly':
-        '毎週、本棚のステータスと評価を既存エントリへ再インポートします'
+      'import-refresh-weekly': '毎週、本棚のステータスと評価を既存エントリへ再インポートします'
     },
     status: {
       missing: '未作成',
@@ -170,8 +175,7 @@ export const ja: NeodbMessages = {
     sync: {
       preferencesTitle: '自動送信の設定',
       syncEnabledLabel: '変更を自動送信',
-      syncEnabledDescription:
-        'NeoDB ID を持つエントリのステータスとスコアの変更を本棚へ送信します',
+      syncEnabledDescription: 'NeoDB ID を持つエントリのステータスとスコアの変更を本棚へ送信します',
       pushScoreLabel: 'スコアを含める',
       pushScoreDescription:
         'ローカルスコアを本棚の評価として書き込みます。スコアが空でも消去はされません。',
