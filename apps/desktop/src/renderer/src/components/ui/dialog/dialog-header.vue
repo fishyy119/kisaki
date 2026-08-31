@@ -10,7 +10,7 @@ const props = defineProps<{
 <template>
   <div
     data-slot="dialog-header"
-    :class="cn('px-4 py-3 border-b border-border', props.class)"
+    :class="cn('rounded-t-md border-b border-border bg-muted/30 px-4 py-3', props.class)"
   >
     <slot />
   </div>

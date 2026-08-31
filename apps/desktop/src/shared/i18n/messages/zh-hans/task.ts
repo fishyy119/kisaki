@@ -19,11 +19,9 @@ export const task = {
   toolbar: {
     searchActivePlaceholder: '搜索进行中的任务…',
     searchCompletedPlaceholder: '搜索完成记录…',
-    refreshing: '刷新中…',
     allCategories: '全部分类',
     allStatuses: '全部状态',
     refresh: '刷新',
-    refreshList: '刷新任务列表',
     clearCompleted: '清理完成记录'
   },
 

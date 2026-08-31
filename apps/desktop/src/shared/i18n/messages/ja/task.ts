@@ -19,11 +19,9 @@ export const task = {
   toolbar: {
     searchActivePlaceholder: '進行中のタスクを検索…',
     searchCompletedPlaceholder: '完了した記録を検索…',
-    refreshing: '更新中…',
     allCategories: 'すべてのカテゴリ',
     allStatuses: 'すべてのステータス',
     refresh: '更新',
-    refreshList: 'タスク一覧を更新',
     clearCompleted: '完了した記録を消去'
   },
 

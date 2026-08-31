@@ -19,11 +19,9 @@ export const task = {
   toolbar: {
     searchActivePlaceholder: '搜尋進行中的任務…',
     searchCompletedPlaceholder: '搜尋完成紀錄…',
-    refreshing: '重新整理中…',
     allCategories: '全部分類',
     allStatuses: '全部狀態',
     refresh: '重新整理',
-    refreshList: '重新整理任務清單',
     clearCompleted: '清理完成紀錄'
   },
 

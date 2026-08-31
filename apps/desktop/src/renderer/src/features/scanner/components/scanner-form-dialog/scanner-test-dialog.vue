@@ -191,7 +191,7 @@ function handleExclude(name: string) {
         <template v-else>
           <div class="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader class="bg-muted/50">
+              <TableHeader class="bg-muted/30">
                 <TableRow class="border-border">
                   <TableHead>{{ m.scanner.test.entityName }}</TableHead>
                   <TableHead v-if="hasRules">{{ m.scanner.test.extractedName }}</TableHead>

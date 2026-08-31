@@ -93,7 +93,7 @@ function handleToggleSortDirection() {
 </script>
 
 <template>
-  <div class="shrink-0 border-b border-border bg-muted/50 px-4 py-3">
+  <div class="shrink-0 border-b border-border bg-muted/30 px-4 py-3">
     <div class="flex items-center gap-3">
       <InputGroup class="max-w-xl flex-1">
         <InputGroupAddon>

@@ -60,7 +60,12 @@ const rowsSurfaceClass = [
           {{ props.description }}
         </p>
       </div>
-      <slot name="actions" />
+      <div
+        v-if="$slots.actions"
+        class="flex shrink-0 items-center gap-2"
+      >
+        <slot name="actions" />
+      </div>
     </header>
 
     <div

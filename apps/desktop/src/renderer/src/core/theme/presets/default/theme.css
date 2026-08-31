@@ -25,8 +25,11 @@
   --background: oklch(0.965 0.005 256);
   --foreground: oklch(0.21 0.03 260);
 
-  /* Surface - window chrome (titlebar, sidebar, page headers) recedes */
-  --surface: oklch(0.945 0.008 256);
+  /* Surface - window chrome (titlebar, sidebar, page headers) recedes.
+   * Calibrated against band chrome: toolbars/table headers paint bg-muted/30
+   * over the background plane (~L 0.95), so the ladder reads as three evenly
+   * spaced greys - background 0.965 / bands ~0.95 / surface 0.935. */
+  --surface: oklch(0.935 0.008 256);
   --surface-foreground: oklch(0.16 0.03 260);
 
   /* Popover/Dropdown - elevated planes go to near-white */

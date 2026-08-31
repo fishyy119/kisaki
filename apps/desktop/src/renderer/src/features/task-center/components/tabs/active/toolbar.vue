@@ -1,11 +1,13 @@
+<!--
+Active Task Run Toolbar renders the running tab's filter controls. It is a
+row inside the task-center band strip; the dialog owns the band chrome.
+-->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { TaskRunCategoryFilter, TaskRunStatusFilter } from '../../../types'
 import { Icon } from '@renderer/components/ui/icon'
-import { Button } from '@renderer/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
-import { Spinner } from '@renderer/components/ui/spinner'
 import {
   Select,
   SelectContent,
@@ -13,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
   TASK_RUN_ACTIVE_STATUS_OPTIONS,
   TASK_RUN_CATEGORY_OPTIONS,
@@ -23,22 +24,15 @@ import {
 
 interface Props {
   filteredCount: number
-  refreshing?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  refreshing: false
-})
+const props = defineProps<Props>()
 
 const { m } = useI18n()
 
 const search = defineModel<string>('search', { required: true })
 const category = defineModel<TaskRunCategoryFilter>('category', { required: true })
 const status = defineModel<TaskRunStatusFilter>('status', { required: true })
-
-const emit = defineEmits<{
-  refresh: []
-}>()
 
 const hasSearch = computed(() => search.value.trim().length > 0)
 
@@ -48,9 +42,11 @@ function clearSearch(): void {
 </script>
 
 <template>
-  <div class="shrink-0 border-b border-border bg-muted/50 px-4 py-2">
+  <div class="min-w-0 flex-1">
     <div class="flex items-center gap-3">
-      <InputGroup class="max-w-md flex-1">
+      <div class="min-w-2 flex-1" />
+
+      <InputGroup class="max-w-64 flex-1">
         <InputGroupAddon>
           <Icon
             icon="icon-[mdi--magnify]"
@@ -80,16 +76,6 @@ function clearSearch(): void {
       >
         {{ m.common.itemCount({ count: props.filteredCount }) }}
       </span>
-
-      <div
-        v-if="props.refreshing"
-        class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
-      >
-        <Spinner class="size-3.5" />
-        <span>{{ m.task.toolbar.refreshing }}</span>
-      </div>
-
-      <div class="min-w-2 flex-1" />
 
       <Select v-model="category">
         <SelectTrigger
@@ -128,24 +114,6 @@ function clearSearch(): void {
           </SelectItem>
         </SelectContent>
       </Select>
-
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            :disabled="props.refreshing"
-            :aria-label="m.task.toolbar.refreshList"
-            @click="emit('refresh')"
-          >
-            <Icon
-              icon="icon-[mdi--refresh]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{{ m.task.toolbar.refresh }}</TooltipContent>
-      </Tooltip>
     </div>
   </div>
 </template>

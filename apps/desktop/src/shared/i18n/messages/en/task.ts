@@ -17,11 +17,9 @@ export const task = {
   toolbar: {
     searchActivePlaceholder: 'Search active tasks…',
     searchCompletedPlaceholder: 'Search completed records…',
-    refreshing: 'Refreshing…',
     allCategories: 'All categories',
     allStatuses: 'All statuses',
     refresh: 'Refresh',
-    refreshList: 'Refresh task list',
     clearCompleted: 'Clear completed records'
   },
 

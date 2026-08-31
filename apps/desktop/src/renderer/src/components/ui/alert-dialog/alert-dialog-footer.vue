@@ -12,7 +12,7 @@ const props = defineProps<Props>()
 
 <template>
   <div
-    :class="cn('flex justify-end gap-2 px-4 py-3', props.class)"
+    :class="cn('flex justify-end gap-2 rounded-b-md border-t border-border bg-muted/20 px-4 py-3', props.class)"
     data-slot="alert-dialog-footer"
   >
     <slot />

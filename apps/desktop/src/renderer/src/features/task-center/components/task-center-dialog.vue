@@ -7,11 +7,15 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
+import { Button } from '@renderer/components/ui/button'
+import { Icon } from '@renderer/components/ui/icon'
+import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useTaskRunStore } from '@renderer/stores'
@@ -219,13 +223,38 @@ async function handleCancel(run: TaskRun): Promise<void> {
           v-model="selectedTab"
           class="flex h-[min(72vh,660px)] min-h-[420px] flex-col gap-0 overflow-hidden"
         >
-          <div class="shrink-0 border-b border-border px-4 py-2">
-            <TabsList>
+          <!-- Band strip shared by both tabs: scope switch + the selected tab's controls -->
+          <div
+            class="flex shrink-0 items-center gap-3 border-b border-border bg-muted/30 px-4 py-2"
+          >
+            <TabsList class="shrink-0">
               <TabsTrigger value="active">{{ m.task.tabActive }} ({{ activeCount }})</TabsTrigger>
               <TabsTrigger value="completed">
                 {{ m.task.tabCompleted }} ({{ completedCount }})
               </TabsTrigger>
             </TabsList>
+
+            <ActiveTaskRunToolbar
+              v-if="selectedTab === 'active'"
+              v-model:search="activeSearch"
+              v-model:category="activeCategoryFilter"
+              v-model:status="activeStatusFilter"
+              :filtered-count="filteredActiveRuns.length"
+            />
+            <CompletedTaskRunToolbar
+              v-else
+              v-model:search="completedSearch"
+              v-model:category="completedCategoryFilter"
+              v-model:status="completedStatusFilter"
+              :filtered-count="filteredCompletedRuns.length"
+            />
+          </div>
+
+          <div
+            v-if="error"
+            class="shrink-0 border-b border-border bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
+            {{ error }}
           </div>
 
           <TabsContent
@@ -233,22 +262,6 @@ async function handleCancel(run: TaskRun): Promise<void> {
             class="m-0 min-h-0 flex-1 overflow-hidden"
           >
             <div class="flex h-full flex-col">
-              <ActiveTaskRunToolbar
-                v-model:search="activeSearch"
-                v-model:category="activeCategoryFilter"
-                v-model:status="activeStatusFilter"
-                :filtered-count="filteredActiveRuns.length"
-                :refreshing="refreshing"
-                @refresh="handleRefresh"
-              />
-
-              <div
-                v-if="error"
-                class="border-b border-border bg-destructive/10 px-3 py-2 text-xs text-destructive"
-              >
-                {{ error }}
-              </div>
-
               <div class="min-h-0 flex-1">
                 <StateView
                   v-if="filteredActiveRuns.length === 0"
@@ -296,25 +309,6 @@ async function handleCancel(run: TaskRun): Promise<void> {
             class="m-0 min-h-0 flex-1 overflow-hidden"
           >
             <div class="flex h-full flex-col">
-              <CompletedTaskRunToolbar
-                v-model:search="completedSearch"
-                v-model:category="completedCategoryFilter"
-                v-model:status="completedStatusFilter"
-                :filtered-count="filteredCompletedRuns.length"
-                :completed-count="completedCount"
-                :refreshing="refreshing"
-                :clearing="clearing"
-                @refresh="handleRefresh"
-                @clear-completed="handleClearCompleted"
-              />
-
-              <div
-                v-if="error"
-                class="border-b border-border bg-destructive/10 px-3 py-2 text-xs text-destructive"
-              >
-                {{ error }}
-              </div>
-
               <div class="min-h-0 flex-1">
                 <StateView
                   v-if="filteredCompletedRuns.length === 0"
@@ -355,6 +349,32 @@ async function handleCancel(run: TaskRun): Promise<void> {
           </TabsContent>
         </Tabs>
       </DialogBody>
+
+      <!-- Dialog-global operations live in the footer, independent of the active tab -->
+      <DialogFooter>
+        <Button
+          variant="outline"
+          :disabled="completedCount === 0 || clearing"
+          @click="handleClearCompleted"
+        >
+          <Icon
+            icon="icon-[mdi--trash-can-outline]"
+            class="size-4"
+          />
+          {{ m.task.toolbar.clearCompleted }}
+        </Button>
+        <Button
+          variant="outline"
+          :disabled="refreshing"
+          @click="handleRefresh"
+        >
+          <Icon
+            icon="icon-[mdi--refresh]"
+            :class="cn('size-4', refreshing && 'animate-spin')"
+          />
+          {{ m.task.toolbar.refresh }}
+        </Button>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 

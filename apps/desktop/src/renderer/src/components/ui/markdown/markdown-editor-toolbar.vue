@@ -42,7 +42,7 @@ const { m } = useI18n()
 </script>
 
 <template>
-  <div :class="cn('flex items-center border-b border-border bg-muted/50 px-1.5 py-1', props.class)">
+  <div :class="cn('flex items-center border-b border-border bg-muted/30 px-1.5 py-1', props.class)">
     <div class="flex flex-wrap items-center gap-1">
       <Button
         variant="ghost"

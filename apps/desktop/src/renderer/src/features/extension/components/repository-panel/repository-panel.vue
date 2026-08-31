@@ -273,7 +273,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
 
 <template>
   <div class="flex flex-col h-full">
-    <div class="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border bg-muted/50">
+    <div class="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border bg-muted/30">
       <div class="flex-1">
         <div class="text-sm font-medium">{{ m.extension.repository.panelTitle }}</div>
         <div class="text-xs text-muted-foreground">

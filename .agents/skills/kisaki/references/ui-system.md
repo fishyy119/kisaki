@@ -48,14 +48,15 @@ surface type genuinely has no recipe, define the recipe once (document it here,
 add shared components where needed), then build the surface; whichever side meets
 the need first proposes, but the recipe belongs to the system and both sides use it.
 
-| Surface type           | Test                                                                                      | Recipe                                              |
-| ---------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Form                   | Fields to fill and submit, whatever the dialog's size                                     | Plain `FieldGroup`, no frame                        |
-| Multi-section settings | Several titled groups of settings living on one resident surface                          | `SettingsSection` per group with the `rows` surface |
-| Data row list          | Entity rows with inline actions                                                           | `border` + `divide-y` rows                          |
-| Section navigation     | Up to 3 sections: top horizontal `TabsList`. 5+ sections in a large dialog: left tab rail | Threshold-based, never owner-based                  |
-| Detail page content    | Content-first sections                                                                    | `Section` with de-emphasized xs heading             |
-| Report surface         | Data-dense read-only bands                                                                | Full-bleed bands + `divide-y` (see Report surfaces) |
+| Surface type              | Test                                                                                             | Recipe                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| Form                      | Fields to fill and submit, whatever the dialog's size                                            | Plain `FieldGroup`, no frame                            |
+| Multi-section settings    | Several titled groups of pure configuration on one resident surface                              | `SettingsSection` per group with the `rows` surface     |
+| Integration control panel | Account-backed integration surface mixing status, operations, and configuration                  | Left tab rail + fixed tab vocabulary (see below)        |
+| Data row list             | Entity rows with inline actions                                                                  | `border` + `divide-y` rows                              |
+| Section navigation        | Non-settings surfaces: up to 3 sections top horizontal `TabsList`, 5+ in a large dialog left rail | Category first; thresholds only where no category fits |
+| Detail page content       | Content-first sections                                                                           | `Section` with de-emphasized xs heading                 |
+| Report surface            | Data-dense read-only bands                                                                       | Full-bleed bands + `divide-y` (see Report surfaces)     |
 
 The line between a form and a multi-section settings surface is the presence of
 several groups, not the owner and not the surface's size. A dialog holding one flat
@@ -192,16 +193,19 @@ in between stay transparent. This keeps transmission uniform window-wide.
    paint the region you are - exactly once; never as a fill inside another
    plane, and never repainted by children.
 2. **Fill** (how far do I rise from my plane): relative tints only, direction
-   constant on every plane. Toolbars/filter bars `bg-muted/50` + border. Table
-   headers are `bg-muted/50` and always OUTSIDE the scroll container - nothing
-   is ever pinned over scrolling content. Every headered columnar list is a
-   real `Table`; the component owns the mechanism: `fixed-header` + `columns`
-   render header/rows/footer as separate tables sharing one colgroup, every
-   region reserving the scrollbar gutter, with band chrome (fill + border) on
-   the region wrappers so it covers the gutter strip. Content wells
-   `bg-muted/50`, controls `bg-muted` / `bg-secondary` / `bg-input`, hover
-   `bg-accent` (+ `/NN` for lighter states). Never use layer colors
-   (`bg-background/NN` etc.) as fills.
+   constant on every plane. Toolbars/filter bars `bg-muted/30` + border. Table
+   headers are `bg-muted/30` (footers `bg-muted/20`) and always OUTSIDE the
+   scroll container - nothing is ever pinned over scrolling content. Band
+   strength is calibrated with the light theme ladder (background 0.965 /
+   bands ~0.95 / surface 0.935): stronger tints land below the surface chrome
+   and the layers fuse. Every headered columnar list is a real `Table`; the
+   component owns the mechanism: `fixed-header` + `columns` render
+   header/rows/footer as separate tables sharing one colgroup, every region
+   reserving the scrollbar gutter, with band chrome (fill + border) on the
+   region wrappers so it covers the gutter strip. Content wells `bg-muted/50`,
+   controls `bg-muted` / `bg-secondary` / `bg-input`, hover `bg-accent`
+   (+ `/NN` for lighter states). Never use layer colors (`bg-background/NN`
+   etc.) as fills.
 3. **Emphasis** (what deserves attention): color only with meaning. `primary`
    for main actions/focus/selection, semantic colors for status, `--chart`
    for data; everything else stays neutral.
@@ -350,6 +354,16 @@ See `buttonVariants` in `components/ui/button.vue`:
 - No visual overlay/scrim: separation comes from shadow-modal + the elevation ladder
 - 100-150ms fade/zoom animation
 - Structure: `DialogHeader` → `DialogBody` → `DialogFooter`
+- Header/footer are apparatus strips and carry the band fill (header `bg-muted/30`,
+  footer `bg-muted/20`, rounded to the slab corners); the body stays bare. This is
+  fill, not a plane: apparatus is ink-shaded in light mode and lit in dark mode,
+  same as toolbar bands. Never fake slab chrome with `bg-surface`.
+- Scope maps to region in a tool dialog. Header: identity only (title + the
+  top-right close; action buttons would sit awkwardly beside it). Band strip:
+  tab-scoped controls - the scope switch plus the active tab's filters, with a
+  constant footprint so nothing shifts on tab switch. Footer: dialog-global
+  operations (refresh, bulk maintenance) as labeled buttons - the footer is the
+  dialog-level action zone and never varies with tabs.
 
 ### Empty / Loading / Error (StateView)
 
