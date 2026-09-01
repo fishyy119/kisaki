@@ -23,6 +23,7 @@ import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-di
 import { Button } from '@renderer/components/ui/button'
 import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { VirtualList } from '@renderer/components/ui/virtual'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
@@ -325,46 +326,50 @@ function handleRevealSpoilersConfirm() {
                   <h4 class="text-xs font-medium text-muted-foreground mb-2">
                     {{ roleLabels[role] }}
                   </h4>
-                  <div class="space-y-1">
-                    <ListItem
-                      v-for="({ link, spoiler, imageUrl }, index) in withSpoiler(
-                        groupedItems[role]!
-                      )"
-                      :key="link.id"
-                      :icon="
-                        spoiler.hidden
-                          ? 'icon-[mdi--eye-off-outline]'
-                          : getEntityIcon(spec.targetType)
-                      "
-                      :title="spoiler.name"
-                      :description="spoiler.note"
-                    >
-                      <template
-                        v-if="imageUrl && !spoiler.hidden"
-                        #leading
+                  <!-- A role can carry hundreds of links, so rows virtualize -->
+                  <VirtualList
+                    :items="withSpoiler(groupedItems[role]!)"
+                    :get-key="(entry) => entry.link.id"
+                    scroll-parent="auto"
+                    class="flex flex-col gap-1"
+                  >
+                    <template #item="{ item: { link, spoiler, imageUrl }, index }">
+                      <ListItem
+                        :icon="
+                          spoiler.hidden
+                            ? 'icon-[mdi--eye-off-outline]'
+                            : getEntityIcon(spec.targetType)
+                        "
+                        :title="spoiler.name"
+                        :description="spoiler.note"
                       >
-                        <CoverImage
-                          :src="imageUrl"
-                          :alt="spoiler.name"
-                          class="size-10 shrink-0 rounded-md border shadow-raised"
-                        />
-                      </template>
-                      <template
-                        v-if="!spoiler.hidden"
-                        #actions
-                      >
-                        <ListItemActions
-                          movable
-                          :is-first="index === 0"
-                          :is-last="index === groupedItems[role]!.length - 1"
-                          @move-up="handleMoveUp(role, index)"
-                          @move-down="handleMoveDown(role, index)"
-                          @edit="handleEdit(link)"
-                          @delete="deleteId = link.id"
-                        />
-                      </template>
-                    </ListItem>
-                  </div>
+                        <template
+                          v-if="imageUrl && !spoiler.hidden"
+                          #leading
+                        >
+                          <CoverImage
+                            :src="imageUrl"
+                            :alt="spoiler.name"
+                            class="size-10 shrink-0 rounded-md border shadow-raised"
+                          />
+                        </template>
+                        <template
+                          v-if="!spoiler.hidden"
+                          #actions
+                        >
+                          <ListItemActions
+                            movable
+                            :is-first="index === 0"
+                            :is-last="index === groupedItems[role]!.length - 1"
+                            @move-up="handleMoveUp(role, index)"
+                            @move-down="handleMoveDown(role, index)"
+                            @edit="handleEdit(link)"
+                            @delete="deleteId = link.id"
+                          />
+                        </template>
+                      </ListItem>
+                    </template>
+                  </VirtualList>
                 </div>
               </template>
             </template>

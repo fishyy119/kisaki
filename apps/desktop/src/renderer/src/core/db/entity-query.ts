@@ -6,7 +6,7 @@
  * are owned here; the row-type cast below is the module's one controlled
  * unsafe point.
  */
-import { and, count, eq, inArray, type SQL } from 'drizzle-orm'
+import { and, count, eq, inArray, sql, type SQL } from 'drizzle-orm'
 
 import type { AllEntityType } from '@shared/common'
 import {
@@ -114,6 +114,49 @@ export async function countEntities(
 
   const rows = await query
   return rows[0]?.value ?? 0
+}
+
+/** Projected picker row: what a selector or result list renders per entity. */
+export interface EntityPickerRow {
+  id: string
+  name: string
+  originalName: string | null
+  imageFile: string | null
+}
+
+/**
+ * Loads picker rows under the same scope/filter/sort semantics as
+ * `queryEntities`, projected to display columns so selectors never ship whole
+ * rows over IPC.
+ */
+export async function queryEntityPickerRows(
+  entityType: AllEntityType,
+  options: EntityQueryOptions
+): Promise<EntityPickerRow[]> {
+  const def = ENTITY_TABLES[entityType]
+
+  let query = db
+    .select({
+      id: def.idColumn,
+      name: def.nameColumn,
+      originalName: def.originalNameColumn ?? sql<string | null>`null`,
+      imageFile: def.imageColumn ?? sql<string | null>`null`
+    })
+    .from(def.table)
+    .$dynamic()
+    .orderBy(buildOrder(entityType, options))
+
+  const where = buildWhere(entityType, options)
+  if (where) query = query.where(where)
+  if (options.limit !== undefined) query = query.limit(options.limit)
+
+  const rows = await query
+  return rows.map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    originalName: (row.originalName as string | null) ?? null,
+    imageFile: (row.imageFile as string | null) ?? null
+  }))
 }
 
 export async function queryEntityIds(

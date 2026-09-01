@@ -28,8 +28,8 @@ export function useScanners(): ScannersView {
 
   const scanners = computed(() => data.value ?? [])
 
-  useDbChanges(({ table }) => {
-    if (table === 'scanners') refetch()
+  useDbChanges(({ tables }) => {
+    if (tables.has('scanners')) refetch()
   })
 
   return { scanners, error, isFetching, refetch }

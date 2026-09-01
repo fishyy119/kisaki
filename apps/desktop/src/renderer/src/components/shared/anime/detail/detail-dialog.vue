@@ -60,11 +60,12 @@ const state = useRenderState(isLoading, error, anime)
 
 const spoilerConfirmOpen = ref(false)
 
-useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'deleted') return
-  if (table === 'animes' && id === props.entityId) {
-    open.value = false
-  }
+useDbChanges(({ changes }) => {
+  const deleted = changes.some(
+    (change) =>
+      change.operation === 'deleted' && change.table === 'animes' && change.id === props.entityId
+  )
+  if (deleted) open.value = false
 })
 
 // =============================================================================

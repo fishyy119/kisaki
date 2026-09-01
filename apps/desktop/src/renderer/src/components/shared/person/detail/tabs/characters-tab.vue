@@ -9,6 +9,7 @@ import { usePerson } from '@renderer/composables/use-person'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
+import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { CharacterCard } from '@renderer/components/shared/character'
 import { useI18n } from '@renderer/composables'
 import {
@@ -35,6 +36,8 @@ const groupedCharacters = computed(() => {
   if (!hasCharacters.value) return {}
   return characters.value.reduce(
     (acc, link) => {
+      // A link whose character row is hidden or gone renders nothing
+      if (!link.character) return acc
       const role = link.role || 'other'
       if (!acc[role]) acc[role] = []
       acc[role].push(link)
@@ -96,20 +99,22 @@ const groupedCharacters = computed(() => {
             <h4 class="text-xs font-medium text-muted-foreground mb-2">
               {{ CHARACTER_PERSON_ROLE_LABELS[role] || role }}
             </h4>
-            <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
-              <template
-                v-for="link in groupedCharacters[role]"
-                :key="link.id"
-              >
+            <!-- A prolific voice credit can carry hundreds of characters -->
+            <VirtualGrid
+              :items="groupedCharacters[role]!"
+              :get-key="(link) => link.id"
+              scroll-parent="auto"
+              class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between"
+            >
+              <template #item="{ item: link }">
                 <CharacterCard
-                  v-if="link.character"
-                  :character="link.character"
+                  :character="link.character!"
                   size="sm"
                   align="left"
-                  @click="openEntity = { entityType: 'character', entityId: link.character.id }"
+                  @click="openEntity = { entityType: 'character', entityId: link.character!.id }"
                 />
               </template>
-            </div>
+            </VirtualGrid>
           </div>
         </template>
       </div>

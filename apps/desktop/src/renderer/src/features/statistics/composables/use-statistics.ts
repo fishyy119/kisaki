@@ -30,7 +30,8 @@ import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
-import { useDbChanges } from '@renderer/composables/use-db-changes'
+import { batchTouchesAny, useDbChanges } from '@renderer/composables/use-db-changes'
+import type { TableName } from '@shared/db/table-names'
 import {
   MEDIA_TYPES,
   UNIT_MEDIA_TYPES,
@@ -177,9 +178,9 @@ interface MediaStatisticsSource {
   collectionLinks: SQLiteTable & { collectionId: SQLiteColumn }
   collectionLinkEntityId: SQLiteColumn
   /** Session table name as reported by database change events */
-  sessionTable: string
+  sessionTable: TableName
   /** Media table name as reported by database change events */
-  entityTable: string
+  entityTable: TableName
 }
 
 const MEDIA_STATISTICS_SOURCES = {
@@ -221,10 +222,10 @@ const MEDIA_STATISTICS_SOURCES = {
   }
 } as const satisfies Record<MediaType, MediaStatisticsSource>
 
-const SESSION_TABLES = new Set<string>(
+const SESSION_TABLES = new Set<TableName>(
   MEDIA_TYPES.map((mediaType) => MEDIA_STATISTICS_SOURCES[mediaType].sessionTable)
 )
-const MEDIA_TABLES = new Set<string>(
+const MEDIA_TABLES = new Set<TableName>(
   MEDIA_TYPES.map((mediaType) => MEDIA_STATISTICS_SOURCES[mediaType].entityTable)
 )
 
@@ -240,7 +241,7 @@ interface UnitStatisticsSource {
   completedAt: SQLiteColumn
   entities: SQLiteTable & { id: SQLiteColumn; isNsfw: SQLiteColumn }
   /** Unit table name as reported by database change events */
-  unitTable: string
+  unitTable: TableName
 }
 
 const UNIT_STATISTICS_SOURCES = {
@@ -270,7 +271,7 @@ const UNIT_STATISTICS_SOURCES = {
   }
 } as const satisfies Record<UnitMediaType, UnitStatisticsSource>
 
-const UNIT_TABLES = new Set<string>(
+const UNIT_TABLES = new Set<TableName>(
   UNIT_MEDIA_TYPES.map((mediaType) => UNIT_STATISTICS_SOURCES[mediaType].unitTable)
 )
 
@@ -616,12 +617,15 @@ export function useStatisticsProvider(): StatisticsContext {
   const allTimeUnitCounts = computed(() => data.value?.allTime?.unitCounts ?? emptyUnitCounts())
 
   // Event listeners for auto-refresh
-  useDbChanges(({ operation, table }) => {
-    if (SESSION_TABLES.has(table) || UNIT_TABLES.has(table)) {
+  useDbChanges((batch) => {
+    if (batchTouchesAny(batch, SESSION_TABLES) || batchTouchesAny(batch, UNIT_TABLES)) {
       void refetch()
       return
     }
-    if (operation === 'updated' && MEDIA_TABLES.has(table)) void refetch()
+    const mediaUpdated = batch.changes.some(
+      (change) => change.operation === 'updated' && MEDIA_TABLES.has(change.table)
+    )
+    if (mediaUpdated) void refetch()
   })
 
   const context: StatisticsContext = {

@@ -13,7 +13,7 @@ import { usePreferencesStore } from '@renderer/stores'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
 import { getFilterRelevantTables } from '@shared/filter'
-import { useDbChanges } from '@renderer/composables/use-db-changes'
+import { batchTouchesAny, useDbChanges } from '@renderer/composables/use-db-changes'
 import {
   createEmptyContentEntityCounts,
   type ContentEntityCounts,
@@ -82,13 +82,15 @@ export function useFavorites() {
   // Every entity table feeds a count and a favorite flag; the browsed type's
   // filter tables feed the visible list.
   const relevantTables = computed(() => {
-    const tables = new Set<TableName>(CONTENT_ENTITY_TYPES.map((type) => ENTITY_TABLES[type].tableName))
+    const tables = new Set<TableName>(
+      CONTENT_ENTITY_TYPES.map((type) => ENTITY_TABLES[type].tableName)
+    )
     for (const table of getFilterRelevantTables(entityType.value)) tables.add(table)
     return tables
   })
 
-  useDbChanges(({ table }) => {
-    if (relevantTables.value.has(table)) refetch()
+  useDbChanges((batch) => {
+    if (batchTouchesAny(batch, relevantTables.value)) refetch()
   })
 
   return {

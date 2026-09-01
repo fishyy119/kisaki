@@ -30,6 +30,7 @@ import { Button } from '@renderer/components/ui/button'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { VirtualList } from '@renderer/components/ui/virtual'
 import { getEntityIcon } from '@renderer/utils/format'
 import CollectionEntitiesItemFormDialog from './entity-item-form-dialog.vue'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
@@ -299,34 +300,40 @@ const entityTypeModel = computed({
             </SegmentedControlItem>
           </SegmentedControl>
 
-          <!-- Entity list -->
-          <div class="space-y-1">
-            <StateView
-              v-if="!hasAnyItems"
-              state="empty"
-              :description="m.library.forms.emptyListHint({ label: config.label })"
-              class="py-8"
-            />
-            <ListItem
-              v-for="(link, index) in currentTypeLinks"
-              :key="link.id"
-              :icon="getEntityIcon(link.entityType)"
-              :title="link.entityName"
-              :description="link.note"
-            >
-              <template #actions>
-                <ListItemActions
-                  movable
-                  :is-first="index === 0"
-                  :is-last="index === currentTypeLinks.length - 1"
-                  @move-up="handleMoveUp(index)"
-                  @move-down="handleMoveDown(index)"
-                  @edit="handleEditClick(link)"
-                  @delete="deleteId = link.id"
-                />
-              </template>
-            </ListItem>
-          </div>
+          <!-- Entity list; large collections carry hundreds of members, so rows virtualize -->
+          <StateView
+            v-if="!hasAnyItems"
+            state="empty"
+            :description="m.library.forms.emptyListHint({ label: config.label })"
+            class="py-8"
+          />
+          <VirtualList
+            v-else
+            :items="currentTypeLinks"
+            :get-key="(link) => link.id"
+            scroll-parent="auto"
+            class="flex flex-col gap-1"
+          >
+            <template #item="{ item: link, index }">
+              <ListItem
+                :icon="getEntityIcon(link.entityType)"
+                :title="link.entityName"
+                :description="link.note"
+              >
+                <template #actions>
+                  <ListItemActions
+                    movable
+                    :is-first="index === 0"
+                    :is-last="index === currentTypeLinks.length - 1"
+                    @move-up="handleMoveUp(index)"
+                    @move-down="handleMoveDown(index)"
+                    @edit="handleEditClick(link)"
+                    @delete="deleteId = link.id"
+                  />
+                </template>
+              </ListItem>
+            </template>
+          </VirtualList>
         </DialogBody>
         <DialogFooter class="flex justify-between">
           <Button

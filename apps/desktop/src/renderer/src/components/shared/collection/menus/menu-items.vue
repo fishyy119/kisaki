@@ -50,9 +50,14 @@ const { data: collection, refetch } = useAsyncData(fetchCollection, {
   enabled: () => props.enabled
 })
 
-useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'updated') return
-  if (table === 'collections' && id === props.collectionId) refetch()
+useDbChanges(({ changes }) => {
+  const updated = changes.some(
+    (change) =>
+      change.operation === 'updated' &&
+      change.table === 'collections' &&
+      change.id === props.collectionId
+  )
+  if (updated) refetch()
 })
 
 const isDynamic = computed(() => collection.value?.isDynamic ?? false)

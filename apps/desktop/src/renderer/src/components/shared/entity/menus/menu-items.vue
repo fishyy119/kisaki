@@ -138,14 +138,18 @@ const extensionMenuInput = computed(
     }) as const
 )
 
-useDbChanges(({ operation, table: changedTable, id }) => {
+useDbChanges(({ changes, tables }) => {
   const linkTable = spec.value.collections.table
-  if (operation === 'updated') {
-    if (changedTable === spec.value.entityTable && id === props.entityId) refetch()
-    if (changedTable === linkTable || changedTable === 'collections') refetch()
-    return
-  }
-  if (changedTable === linkTable || changedTable === 'collections') refetch()
+  const shouldRefetch =
+    tables.has(linkTable) ||
+    tables.has('collections') ||
+    changes.some(
+      (change) =>
+        change.operation === 'updated' &&
+        change.table === spec.value.entityTable &&
+        change.id === props.entityId
+    )
+  if (shouldRefetch) refetch()
 })
 
 // Computed for displaying score

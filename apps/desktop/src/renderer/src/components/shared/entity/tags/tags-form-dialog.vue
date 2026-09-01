@@ -22,6 +22,7 @@ import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dial
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { Button } from '@renderer/components/ui/button'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { VirtualList } from '@renderer/components/ui/virtual'
 import { notify } from '@renderer/core/notify'
 import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import { createLogger } from '@renderer/core/log'
@@ -244,37 +245,43 @@ function handleRevealSpoilersConfirm() {
           <DialogTitle>{{ m.library.forms.editTags }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
-          <div class="space-y-1">
-            <StateView
-              v-if="items.length === 0"
-              state="empty"
-              :description="m.library.forms.emptyTagsHint"
-              class="py-8"
-            />
-            <ListItem
-              v-for="({ item, spoiler }, index) in displayItems"
-              v-else
-              :key="item.id"
-              :icon="spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('tag')"
-              :title="spoiler.name"
-              :description="spoiler.note"
-            >
-              <template
-                v-if="!spoiler.hidden"
-                #actions
+          <StateView
+            v-if="items.length === 0"
+            state="empty"
+            :description="m.library.forms.emptyTagsHint"
+            class="py-8"
+          />
+          <!-- An entry can carry hundreds of tag links, so rows virtualize -->
+          <VirtualList
+            v-else
+            :items="displayItems"
+            :get-key="(entry) => entry.item.id"
+            scroll-parent="auto"
+            class="flex flex-col gap-1"
+          >
+            <template #item="{ item: { item, spoiler }, index }">
+              <ListItem
+                :icon="spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('tag')"
+                :title="spoiler.name"
+                :description="spoiler.note"
               >
-                <ListItemActions
-                  movable
-                  :is-first="index === 0"
-                  :is-last="index === items.length - 1"
-                  @move-up="handleMoveUp(index)"
-                  @move-down="handleMoveDown(index)"
-                  @edit="handleEdit(item)"
-                  @delete="deleteIndex = index"
-                />
-              </template>
-            </ListItem>
-          </div>
+                <template
+                  v-if="!spoiler.hidden"
+                  #actions
+                >
+                  <ListItemActions
+                    movable
+                    :is-first="index === 0"
+                    :is-last="index === items.length - 1"
+                    @move-up="handleMoveUp(index)"
+                    @move-down="handleMoveDown(index)"
+                    @edit="handleEdit(item)"
+                    @delete="deleteIndex = index"
+                  />
+                </template>
+              </ListItem>
+            </template>
+          </VirtualList>
         </DialogBody>
         <DialogFooter class="flex justify-between">
           <Button

@@ -45,9 +45,12 @@ const { data: tag, refetch } = useAsyncData(fetchTag, {
   enabled: () => props.enabled
 })
 
-useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'updated') return
-  if (table === 'tags' && id === props.tagId) refetch()
+useDbChanges(({ changes }) => {
+  const updated = changes.some(
+    (change) =>
+      change.operation === 'updated' && change.table === 'tags' && change.id === props.tagId
+  )
+  if (updated) refetch()
 })
 
 const extensionMenuInput = computed(

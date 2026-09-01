@@ -46,10 +46,14 @@ const {
 } = useCollectionDialogProvider(() => props.entityId)
 const state = useRenderState(isLoading, error, collection)
 
-useDbChanges(({ operation, table, id }) => {
-  if (operation === 'deleted' && table === 'collections' && id === props.entityId) {
-    open.value = false
-  }
+useDbChanges(({ changes }) => {
+  const deleted = changes.some(
+    (change) =>
+      change.operation === 'deleted' &&
+      change.table === 'collections' &&
+      change.id === props.entityId
+  )
+  if (deleted) open.value = false
 })
 
 const openEntity = ref<EntityDetailTarget | null>(null)

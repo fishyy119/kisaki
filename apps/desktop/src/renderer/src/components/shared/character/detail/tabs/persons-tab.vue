@@ -9,6 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
+import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { PersonCard } from '@renderer/components/shared/person'
 import { useI18n } from '@renderer/composables'
 import {
@@ -46,6 +47,8 @@ const hasPersons = computed(() => persons.value.length > 0)
 const groupedPersons = computed(() => {
   return persons.value.reduce(
     (acc, link) => {
+      // A link whose person row is hidden or gone renders nothing
+      if (!link.person) return acc
       const role = link.role || 'other'
       if (!acc[role]) acc[role] = []
       acc[role].push(link)
@@ -107,20 +110,22 @@ const groupedPersons = computed(() => {
             <h4 class="text-xs font-medium text-muted-foreground mb-2">
               {{ PERSON_ROLE_LABELS[role] || role }}
             </h4>
-            <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
-              <template
-                v-for="link in groupedPersons[role]"
-                :key="link.id"
-              >
+            <!-- A popular character can carry hundreds of person links -->
+            <VirtualGrid
+              :items="groupedPersons[role]!"
+              :get-key="(link) => link.id"
+              scroll-parent="auto"
+              class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between"
+            >
+              <template #item="{ item: link }">
                 <PersonCard
-                  v-if="link.person"
-                  :person="link.person"
+                  :person="link.person!"
                   align="left"
                   size="sm"
-                  @click="openEntity = { entityType: 'person', entityId: link.person.id }"
+                  @click="openEntity = { entityType: 'person', entityId: link.person!.id }"
                 />
               </template>
-            </div>
+            </VirtualGrid>
           </div>
         </template>
       </div>

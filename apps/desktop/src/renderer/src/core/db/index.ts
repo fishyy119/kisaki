@@ -40,6 +40,8 @@ export {
   queryEntities,
   queryEntityIds,
   queryEntityNames,
+  queryEntityPickerRows,
   queryEntityRow,
+  type EntityPickerRow,
   type EntityQueryOptions
 } from './entity-query'

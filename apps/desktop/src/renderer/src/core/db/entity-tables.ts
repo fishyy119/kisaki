@@ -57,6 +57,10 @@ interface EntityTableDef {
   idColumn: SQLiteColumn
   nameColumn: SQLiteColumn
   isNsfwColumn: SQLiteColumn
+  /** Secondary display name; null when the entity carries none. */
+  originalNameColumn: SQLiteColumn | null
+  /** Cover/photo/logo attachment file; null when the entity carries no imagery. */
+  imageColumn: SQLiteColumn | null
 }
 
 export const ENTITY_TABLES = {
@@ -65,63 +69,81 @@ export const ENTITY_TABLES = {
     tableName: getTableName(games),
     idColumn: games.id,
     nameColumn: games.name,
-    isNsfwColumn: games.isNsfw
+    isNsfwColumn: games.isNsfw,
+    originalNameColumn: games.originalName,
+    imageColumn: games.coverFile
   },
   anime: {
     table: animes,
     tableName: getTableName(animes),
     idColumn: animes.id,
     nameColumn: animes.name,
-    isNsfwColumn: animes.isNsfw
+    isNsfwColumn: animes.isNsfw,
+    originalNameColumn: animes.originalName,
+    imageColumn: animes.coverFile
   },
   comic: {
     table: comics,
     tableName: getTableName(comics),
     idColumn: comics.id,
     nameColumn: comics.name,
-    isNsfwColumn: comics.isNsfw
+    isNsfwColumn: comics.isNsfw,
+    originalNameColumn: comics.originalName,
+    imageColumn: comics.coverFile
   },
   novel: {
     table: novels,
     tableName: getTableName(novels),
     idColumn: novels.id,
     nameColumn: novels.name,
-    isNsfwColumn: novels.isNsfw
+    isNsfwColumn: novels.isNsfw,
+    originalNameColumn: novels.originalName,
+    imageColumn: novels.coverFile
   },
   character: {
     table: characters,
     tableName: getTableName(characters),
     idColumn: characters.id,
     nameColumn: characters.name,
-    isNsfwColumn: characters.isNsfw
+    isNsfwColumn: characters.isNsfw,
+    originalNameColumn: characters.originalName,
+    imageColumn: characters.photoFile
   },
   person: {
     table: persons,
     tableName: getTableName(persons),
     idColumn: persons.id,
     nameColumn: persons.name,
-    isNsfwColumn: persons.isNsfw
+    isNsfwColumn: persons.isNsfw,
+    originalNameColumn: persons.originalName,
+    imageColumn: persons.photoFile
   },
   company: {
     table: companies,
     tableName: getTableName(companies),
     idColumn: companies.id,
     nameColumn: companies.name,
-    isNsfwColumn: companies.isNsfw
+    isNsfwColumn: companies.isNsfw,
+    originalNameColumn: companies.originalName,
+    imageColumn: companies.logoFile
   },
   collection: {
     table: collections,
     tableName: getTableName(collections),
     idColumn: collections.id,
     nameColumn: collections.name,
-    isNsfwColumn: collections.isNsfw
+    isNsfwColumn: collections.isNsfw,
+    originalNameColumn: null,
+    imageColumn: collections.coverFile
   },
   tag: {
     table: tags,
     tableName: getTableName(tags),
     idColumn: tags.id,
     nameColumn: tags.name,
-    isNsfwColumn: tags.isNsfw
+    isNsfwColumn: tags.isNsfw,
+    originalNameColumn: null,
+    imageColumn: null
   }
 } as const satisfies Record<AllEntityType, EntityTableDef>
 

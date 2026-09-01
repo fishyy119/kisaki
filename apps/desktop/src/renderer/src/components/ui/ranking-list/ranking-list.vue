@@ -16,6 +16,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { VirtualList } from '@renderer/components/ui/virtual'
+import RankingListRow from './ranking-list-row.vue'
 import RankingListRows from './ranking-list-rows.vue'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { RankingListProps } from './types'
@@ -88,11 +90,27 @@ const inlineColumns = computed(() => {
           <DialogTitle>{{ expandTitleText }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="max-h-[65vh] overflow-y-auto scrollbar-thin">
-          <RankingListRows
+          <!-- The full dataset can carry thousands of rows, so they virtualize -->
+          <VirtualList
             :items="props.items"
-            :max-value="maxValue"
-            :total-value="totalValue"
-          />
+            :get-key="(item) => item.id"
+            scroll-parent="auto"
+            class="flex flex-col"
+          >
+            <template #item="{ item, index }">
+              <!-- Bottom border on all but the last row keeps row heights uniform -->
+              <div
+                :class="index < props.items.length - 1 ? 'border-b border-border/60' : undefined"
+              >
+                <RankingListRow
+                  :item="item"
+                  :rank="index + 1"
+                  :max-value="maxValue"
+                  :total-value="totalValue"
+                />
+              </div>
+            </template>
+          </VirtualList>
         </DialogBody>
       </DialogContent>
     </Dialog>

@@ -16,7 +16,7 @@ import {
   COLLECTION_LINKS,
   type EntityRowMap
 } from '@renderer/core/db'
-import { useAsyncData, useDbChanges } from '@renderer/composables'
+import { batchTouchesAny, useAsyncData, useDbChanges } from '@renderer/composables'
 import { useLibraryExplorerStore } from '../stores'
 import { usePreferencesStore } from '@renderer/stores'
 import { createMembershipSort, getFilterRelevantTables, isMembershipSort } from '@shared/filter'
@@ -181,8 +181,8 @@ export function useExplorerList() {
     return tables
   })
 
-  useDbChanges(({ table }) => {
-    if (relevantTables.value.has(table)) refetch()
+  useDbChanges((batch) => {
+    if (batchTouchesAny(batch, relevantTables.value)) refetch()
   })
 
   // Computed data with default for UI rendering

@@ -33,7 +33,7 @@ import { entityRouteParam } from '@renderer/utils/entity-routes'
 import type { AllEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
 import { useAsyncData } from './use-async-data'
-import { useDbChanges } from './use-db-changes'
+import { batchTouchesAny, useDbChanges } from './use-db-changes'
 
 /** Global visibility preference every detail fetch filters by. */
 export interface EntityDetailView {
@@ -202,14 +202,19 @@ export function createEntityDetailContext<TData extends object, TParams extends 
   ): void {
     const relevantTables = computed(() => new Set(spec.relevantTables(data.value ?? null)))
 
-    useDbChanges(({ operation, table, id }) => {
-      if (relevantTables.value.has(table)) {
+    useDbChanges((batch) => {
+      if (batchTouchesAny(batch, relevantTables.value)) {
         refetch()
         return
       }
-      if (table === spec.entityTable && id === toValue(entityId) && operation !== 'inserted') {
-        refetch()
-      }
+      if (!batch.tables.has(spec.entityTable)) return
+
+      const id = toValue(entityId)
+      const ownRowChanged = batch.changes.some(
+        (change) =>
+          change.table === spec.entityTable && change.id === id && change.operation !== 'inserted'
+      )
+      if (ownRowChanged) refetch()
     })
   }
 

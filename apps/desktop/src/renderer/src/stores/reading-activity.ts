@@ -8,7 +8,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 
@@ -16,9 +16,9 @@ const log = createLogger('Activity')
 
 export const useReadingActivityStore = defineStore('readingActivity', () => {
   /** Open comic readers keyed by comicId, valued by the unit being read. */
-  const comics = ref(new Map<string, string>())
+  const comics = shallowRef(new Map<string, string>())
   /** Open novel readers keyed by novelId, valued by the volume being read. */
-  const novels = ref(new Map<string, string>())
+  const novels = shallowRef(new Map<string, string>())
   const initialized = ref(false)
 
   function isComicReading(comicId: string): boolean {

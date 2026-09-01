@@ -75,8 +75,8 @@ const { data: allTags, refetch } = useAsyncData(
   { watch: [showNsfw] }
 )
 
-useDbChanges(({ table }) => {
-  if (table === 'tags') refetch()
+useDbChanges(({ tables }) => {
+  if (tables.has('tags')) refetch()
 })
 
 const tagEntities = computed(() =>

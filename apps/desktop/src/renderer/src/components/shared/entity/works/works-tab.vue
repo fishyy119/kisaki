@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
 import { StateView } from '@renderer/components/ui/state-view'
+import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import EntityCard from '../card'
@@ -104,18 +105,24 @@ const editDialogOpen = computed({
         {{ m.library.entities[block.mediaType] }}
       </h4>
 
-      <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
-        <EntityCard
-          v-for="entry in block.entries"
-          :key="entry.key"
-          :entity-type="entry.mediaType"
-          :entity="entry.entity"
-          align="left"
-          size="sm"
-          :badge-label="entry.roleLabel"
-          @click="openEntity = { entityType: entry.mediaType, entityId: entry.entity.id }"
-        />
-      </div>
+      <!-- A prolific credit can carry hundreds of works, so the grid virtualizes -->
+      <VirtualGrid
+        :items="block.entries"
+        :get-key="(entry) => entry.key"
+        scroll-parent="auto"
+        class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between"
+      >
+        <template #item="{ item: entry }">
+          <EntityCard
+            :entity-type="entry.mediaType"
+            :entity="entry.entity"
+            align="left"
+            size="sm"
+            :badge-label="entry.roleLabel"
+            @click="openEntity = { entityType: entry.mediaType, entityId: entry.entity.id }"
+          />
+        </template>
+      </VirtualGrid>
     </div>
   </div>
 

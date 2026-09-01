@@ -69,8 +69,11 @@ const { data, isLoading, refetch } = useAsyncData(
 )
 
 // Listen for external changes
-useDbChanges(({ operation, table }) => {
-  if (table === 'scraper_profiles' && operation !== 'updated') refetch()
+useDbChanges(({ changes }) => {
+  const membershipChanged = changes.some(
+    (change) => change.table === 'scraper_profiles' && change.operation !== 'updated'
+  )
+  if (membershipChanged) refetch()
 })
 
 // Local state for editing

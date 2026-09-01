@@ -52,18 +52,19 @@ const {
   isLoading,
   error,
   params: { spoilersRevealed }
-} = useCharacterDialogProvider(
-  () => props.entityId
-)
+} = useCharacterDialogProvider(() => props.entityId)
 const state = useRenderState(isLoading, error, character)
 
 const spoilerConfirmOpen = ref(false)
 
-useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'deleted') return
-  if (table === 'characters' && id === props.entityId) {
-    open.value = false
-  }
+useDbChanges(({ changes }) => {
+  const deleted = changes.some(
+    (change) =>
+      change.operation === 'deleted' &&
+      change.table === 'characters' &&
+      change.id === props.entityId
+  )
+  if (deleted) open.value = false
 })
 
 const isScoreOpen = ref(false)

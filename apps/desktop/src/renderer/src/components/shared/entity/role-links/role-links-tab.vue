@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
+import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import EntityCard from '../card'
@@ -93,18 +94,24 @@ const grouped = computed(() => groupRoleLinks(props.items))
           <h4 class="text-xs font-medium text-muted-foreground mb-2">
             {{ props.roleLabels[role] || role }}
           </h4>
-          <div class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between">
-            <EntityCard
-              v-for="item in grouped[role]"
-              :key="item.id"
-              :entity-type="props.entityType"
-              :entity="item.entity!"
-              :subtitle="item.subtitle"
-              align="left"
-              size="sm"
-              @click="openEntity = { entityType: props.entityType, entityId: item.entity!.id }"
-            />
-          </div>
+          <!-- A role can carry hundreds of links, so the grid virtualizes -->
+          <VirtualGrid
+            :items="grouped[role]!"
+            :get-key="(item) => item.id"
+            scroll-parent="auto"
+            class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between"
+          >
+            <template #item="{ item }">
+              <EntityCard
+                :entity-type="props.entityType"
+                :entity="item.entity!"
+                :subtitle="item.subtitle"
+                align="left"
+                size="sm"
+                @click="openEntity = { entityType: props.entityType, entityId: item.entity!.id }"
+              />
+            </template>
+          </VirtualGrid>
         </div>
       </template>
     </div>

@@ -90,8 +90,8 @@ const {
 const state = useRenderState(isLoading, error, profiles)
 
 // Listen for profile changes
-useDbChanges((payload) => {
-  if (payload.table === 'scraper_profiles') refetch()
+useDbChanges(({ tables }) => {
+  if (tables.has('scraper_profiles')) refetch()
 })
 
 // Auto-select first profile when value is empty and loading is complete.

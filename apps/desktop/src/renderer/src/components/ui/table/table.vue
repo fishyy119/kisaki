@@ -51,7 +51,10 @@ const props = defineProps<{
       </table>
     </div>
 
-    <div :class="cn('min-h-0 grow overflow-y-auto [scrollbar-gutter:stable]', props.bodyClass)">
+    <div
+      data-slot="table-scroll-region"
+      :class="cn('min-h-0 grow overflow-y-auto [scrollbar-gutter:stable]', props.bodyClass)"
+    >
       <slot name="state" />
       <table
         data-slot="table"

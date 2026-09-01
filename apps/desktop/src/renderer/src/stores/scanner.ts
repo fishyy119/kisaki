@@ -5,7 +5,7 @@
  * the current app lifecycle.
  */
 
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import {
   isActiveScannerRunStatus,
@@ -18,7 +18,8 @@ import { createLogger } from '@renderer/core/log'
 const log = createLogger('Scanner')
 
 export const useScannerStore = defineStore('scanner', () => {
-  const scannerStates = ref(new Map<string, ScannerRunState>())
+  // States are replaced wholesale on every event; a shallow holder suffices.
+  const scannerStates = shallowRef(new Map<string, ScannerRunState>())
   const initialized = ref(false)
   const refreshing = ref(false)
   const error = ref<string | null>(null)

@@ -26,8 +26,8 @@ export function useShowcaseSections() {
   const { data, error, isFetching, refetch } = showcaseSectionsData()
 
   // Listen for DB events
-  useDbChanges(({ table }) => {
-    if (table === 'showcase_sections') refetch()
+  useDbChanges(({ tables }) => {
+    if (tables.has('showcase_sections')) refetch()
   })
 
   return {

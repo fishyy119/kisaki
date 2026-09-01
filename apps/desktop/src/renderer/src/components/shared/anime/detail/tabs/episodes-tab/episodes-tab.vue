@@ -11,6 +11,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Section } from '@renderer/components/ui/section'
 import { StateView } from '@renderer/components/ui/state-view'
+import { VirtualList } from '@renderer/components/ui/virtual'
 import { useAnimeFileSync } from '@renderer/composables'
 import { useAnime } from '@renderer/composables/use-anime'
 import { revealAnimeFile } from '@renderer/composables/use-anime-file-records'
@@ -145,19 +146,29 @@ const extraDetailOpen = computed({
         :description="m.anime.episodes.emptyHint"
         class="py-10"
       />
+      <!-- Long-running anime can carry 1000+ episodes, so rows virtualize -->
       <div
         v-else
-        class="rounded-md border divide-y overflow-hidden"
+        class="rounded-md border overflow-hidden"
       >
-        <AnimeDetailEpisodeItem
-          v-for="episode in episodes"
-          :key="episode.id"
-          :anime-id="anime.id"
-          :episode="episode"
-          @toggle-watched="toggleEpisodeWatched(episode)"
-          @open-folder="revealAnimeFile"
-          @open-detail="openEpisodeId = episode.id"
-        />
+        <VirtualList
+          :items="episodes"
+          :get-key="(episode) => episode.id"
+          scroll-parent="auto"
+          class="flex flex-col"
+        >
+          <template #item="{ item: episode, index }">
+            <div :class="index < episodes.length - 1 ? 'border-b' : undefined">
+              <AnimeDetailEpisodeItem
+                :anime-id="anime!.id"
+                :episode="episode"
+                @toggle-watched="toggleEpisodeWatched(episode)"
+                @open-folder="revealAnimeFile"
+                @open-detail="openEpisodeId = episode.id"
+              />
+            </div>
+          </template>
+        </VirtualList>
       </div>
     </Section>
 

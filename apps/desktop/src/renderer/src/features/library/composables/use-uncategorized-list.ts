@@ -22,7 +22,7 @@ import { getLibraryContextPath } from '@renderer/utils/library-context'
 import { CONTENT_ENTITY_TYPES, isContentEntityType, type ContentEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
 import { getFilterRelevantTables } from '@shared/filter'
-import { useDbChanges } from '@renderer/composables/use-db-changes'
+import { batchTouchesAny, useDbChanges } from '@renderer/composables/use-db-changes'
 import {
   createEmptyContentEntityCounts,
   type ContentEntityCounts,
@@ -124,8 +124,8 @@ export function useUncategorizedList() {
     return tables
   })
 
-  useDbChanges(({ table }) => {
-    if (relevantTables.value.has(table)) refetch()
+  useDbChanges((batch) => {
+    if (batchTouchesAny(batch, relevantTables.value)) refetch()
   })
 
   return {

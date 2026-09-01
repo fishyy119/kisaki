@@ -3,13 +3,13 @@
 
   Features:
   - Native CSS Grid layout (auto-fill, auto-fit, etc.)
-  - Dynamic row height measurement
-  - Auto-detects column count from actual DOM layout
-  - Supports parent container scrolling
+  - Dynamic measurement taken from the first rendered row (no hidden copies)
+  - Auto-detects column count from the resolved grid template
+  - Supports parent container scrolling ('auto' resolves the closest ancestor)
 
   @example
   ```vue
-  <VirtualGrid :items="games" :scroll-parent="scrollContainerRef">
+  <VirtualGrid :items="games" scroll-parent="auto">
     <template #item="{ item }">
       <GameCard :game="item" />
     </template>
@@ -20,7 +20,7 @@
 import { ref, computed, watch, onMounted, nextTick, toRef, type HTMLAttributes } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { cn } from '@renderer/utils/cn'
-import { useVirtualScrollParent } from './use-virtual-scroll-parent'
+import { useVirtualScrollParent, type VirtualScrollParent } from './use-virtual-scroll-parent'
 
 const props = withDefaults(
   defineProps<{
@@ -28,8 +28,8 @@ const props = withDefaults(
     items: T[]
     /** Custom key extractor, defaults to index */
     getKey?: (item: T, index: number) => string | number
-    /** External scroll parent element (for parent container scrolling) */
-    scrollParent?: HTMLElement | null
+    /** External scroll parent: element, 'auto' for closest scrollable ancestor */
+    scrollParent?: VirtualScrollParent
     /** Container/grid class - defaults to responsive auto-fill grid */
     class?: HTMLAttributes['class']
     /** Overscan row count for virtualizer */
@@ -52,7 +52,7 @@ defineSlots<{
 
 // Refs
 const containerRef = ref<HTMLDivElement>()
-const measureRowRef = ref<HTMLDivElement>()
+const rowsRef = ref<HTMLDivElement>()
 
 // State for dynamic measurement
 const columnCount = ref(1)
@@ -63,13 +63,13 @@ const measuredRowGap = ref(12)
 const rowCount = computed(() => Math.ceil(props.items.length / columnCount.value))
 
 // Scroll parent integration (must be before virtualizer to provide getScrollElement and scrollMargin)
-const { scrollMargin, getScrollElement, notifyLayoutChange } = useVirtualScrollParent({
-  containerRef,
-  scrollParent: toRef(props, 'scrollParent'),
-  observeRefs: [measureRowRef],
-  onMeasure: () => virtualizer.value.measure(),
-  onResize: measureLayout
-})
+const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange } =
+  useVirtualScrollParent({
+    containerRef,
+    scrollParent: toRef(props, 'scrollParent'),
+    onMeasure: () => virtualizer.value.measure(),
+    onResize: measureLayout
+  })
 
 // Virtualizer for rows
 const virtualizer = useVirtualizer(
@@ -96,41 +96,45 @@ function getRowItems(rowIndex: number): { item: T; index: number }[] {
 }
 
 /**
- * Measure actual column count and row height from rendered DOM.
+ * Column count of one live row element. The resolved `grid-template-columns`
+ * carries the actual track list even when only one item is rendered, which a
+ * child-position scan could never see.
+ */
+function detectColumnCount(row: HTMLElement): number {
+  const style = getComputedStyle(row)
+
+  if (style.display === 'grid' || style.display === 'inline-grid') {
+    const tracks = style.gridTemplateColumns.split(' ').filter((token) => token !== '').length
+    if (tracks > 0) return tracks
+  }
+
+  // Non-grid layout: count children sharing the first child's top edge
+  const children = row.children
+  if (children.length === 0) return 1
+  const firstTop = (children[0] as HTMLElement).offsetTop
+  let cols = 0
+  for (let i = 0; i < children.length; i++) {
+    if ((children[i] as HTMLElement).offsetTop !== firstTop) break
+    cols++
+  }
+  return Math.max(1, cols)
+}
+
+/**
+ * Measure column count, row height, and row gap from the first rendered row.
  */
 async function measureLayout() {
-  if (!measureRowRef.value || props.items.length === 0) return
+  if (props.items.length === 0) return
 
   await nextTick()
 
-  const measureRow = measureRowRef.value
-  const children = measureRow.children
+  const row = rowsRef.value?.firstElementChild as HTMLElement | null
+  const firstItem = row?.firstElementChild as HTMLElement | null
+  if (!row || !firstItem) return
 
-  if (children.length === 0) return
-
-  // Detect column count by checking how many items fit in first row
-  const firstItemTop = (children[0] as HTMLElement).offsetTop
-  let cols = 0
-
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i] as HTMLElement
-    if (child.offsetTop === firstItemTop) {
-      cols++
-    } else {
-      break
-    }
-  }
-
-  columnCount.value = Math.max(1, cols)
-
-  // Measure row height from first item
-  const firstItem = children[0] as HTMLElement
+  columnCount.value = detectColumnCount(row)
   measuredRowHeight.value = firstItem.offsetHeight
-
-  // Measure row gap from computed style
-  const computedStyle = getComputedStyle(measureRow)
-  const rowGapValue = parseFloat(computedStyle.rowGap) || 0
-  measuredRowGap.value = rowGapValue
+  measuredRowGap.value = parseFloat(getComputedStyle(row).rowGap) || 0
 
   virtualizer.value.measure()
   notifyLayoutChange()
@@ -164,22 +168,37 @@ defineExpose({
 <template>
   <div
     ref="containerRef"
-    :class="cn(!props.scrollParent && 'overflow-auto', 'relative')"
+    :class="cn(!resolvedParent && 'overflow-auto', 'relative')"
   >
     <slot
       v-if="props.items.length === 0"
       name="empty"
     />
 
-    <template v-else>
-      <!-- Hidden measurement row -->
+    <!-- Virtual list container -->
+    <div
+      v-else
+      ref="rowsRef"
+      :style="{
+        height: `${virtualizer.getTotalSize()}px`,
+        width: '100%',
+        position: 'relative'
+      }"
+    >
       <div
-        ref="measureRowRef"
-        :class="cn(props.class, 'invisible absolute top-0 left-0 w-full pointer-events-none')"
-        aria-hidden="true"
+        v-for="virtualRow in virtualizer.getVirtualItems()"
+        :key="String(virtualRow.key)"
+        :class="props.class"
+        :style="{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          transform: `translateY(${virtualRow.start - scrollMargin}px)`
+        }"
       >
         <template
-          v-for="(item, index) in props.items.slice(0, 20)"
+          v-for="{ item, index } in getRowItems(virtualRow.index)"
           :key="props.getKey?.(item, index) ?? index"
         >
           <slot
@@ -189,39 +208,6 @@ defineExpose({
           />
         </template>
       </div>
-
-      <!-- Virtual list container -->
-      <div
-        :style="{
-          height: `${virtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative'
-        }"
-      >
-        <div
-          v-for="virtualRow in virtualizer.getVirtualItems()"
-          :key="String(virtualRow.key)"
-          :class="props.class"
-          :style="{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            transform: `translateY(${virtualRow.start - scrollMargin}px)`
-          }"
-        >
-          <template
-            v-for="{ item, index } in getRowItems(virtualRow.index)"
-            :key="props.getKey?.(item, index) ?? index"
-          >
-            <slot
-              name="item"
-              :item="item"
-              :index="index"
-            />
-          </template>
-        </div>
-      </div>
-    </template>
+    </div>
   </div>
 </template>

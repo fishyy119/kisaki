@@ -78,29 +78,127 @@ function sortPageEntries(entries: string[]): string[] {
   return entries.sort(compareNaturalOrder)
 }
 
+/**
+ * Open zip handles most recently read from.
+ *
+ * Opening a zip parses its central directory, far too expensive to repeat per
+ * page turn. Reading interleaves at most a few files (the open book plus
+ * probes), so a small pool of live handles serves whole sessions; a handle is
+ * discarded once its file changes on disk, errors, sits idle, or the pool
+ * rotates past it — and closes only when no read holds it.
+ */
+interface ZipSession {
+  zip: InstanceType<typeof StreamZip.async>
+  size: number
+  mtimeMs: number
+  /** Reads in flight; a session never closes under an active read. */
+  active: number
+  /** Set when the session leaves the pool; the last read closes the handle. */
+  discarded: boolean
+  closed: boolean
+  idleTimer: NodeJS.Timeout
+}
+
+const ZIP_SESSION_IDLE_MS = 60_000
+const ZIP_SESSION_LIMIT = 4
+
+const zipSessions = new Map<string, ZipSession>()
+
+async function withZipSession<T>(
+  filePath: string,
+  use: (zip: InstanceType<typeof StreamZip.async>) => Promise<T>
+): Promise<T> {
+  const session = await acquireZipSession(filePath)
+  session.active += 1
+  try {
+    const result = await use(session.zip)
+    session.active -= 1
+    session.idleTimer.refresh()
+    maybeCloseZipSession(session)
+    return result
+  } catch (error) {
+    session.active -= 1
+    // A failed handle must not serve further reads; the next read reopens.
+    discardZipSession(filePath, session)
+    throw error
+  }
+}
+
+async function acquireZipSession(filePath: string): Promise<ZipSession> {
+  const stat = await fs.stat(filePath)
+  const size = stat.size
+  const mtimeMs = Math.trunc(stat.mtimeMs)
+
+  const existing = zipSessions.get(filePath)
+  if (existing) {
+    if (existing.size === size && existing.mtimeMs === mtimeMs) {
+      // Refresh recency so the open book's handle survives probe traffic
+      zipSessions.delete(filePath)
+      zipSessions.set(filePath, existing)
+      existing.idleTimer.refresh()
+      return existing
+    }
+    // The file changed under the handle; stale reads settle on the old one
+    discardZipSession(filePath, existing)
+  }
+
+  const session: ZipSession = {
+    zip: new StreamZip.async({ file: filePath }),
+    size,
+    mtimeMs,
+    active: 0,
+    discarded: false,
+    closed: false,
+    idleTimer: setTimeout(() => discardZipSession(filePath, session), ZIP_SESSION_IDLE_MS)
+  }
+  session.idleTimer.unref()
+  zipSessions.set(filePath, session)
+
+  if (zipSessions.size > ZIP_SESSION_LIMIT) {
+    for (const [oldPath, oldSession] of zipSessions) {
+      if (oldSession !== session && oldSession.active === 0) {
+        discardZipSession(oldPath, oldSession)
+        break
+      }
+    }
+  }
+
+  return session
+}
+
+/** Detaches one session from the pool; it closes once no read holds it. */
+function discardZipSession(filePath: string, session: ZipSession): void {
+  if (zipSessions.get(filePath) === session) {
+    zipSessions.delete(filePath)
+  }
+  session.discarded = true
+  maybeCloseZipSession(session)
+}
+
+function maybeCloseZipSession(session: ZipSession): void {
+  if (session.closed || !session.discarded || session.active > 0) return
+  session.closed = true
+  clearTimeout(session.idleTimer)
+  void session.zip.close().catch(() => {
+    // The handle is being discarded either way.
+  })
+}
+
 /** Ordered image entry names inside a zip container. */
 export async function listZipPages(filePath: string): Promise<string[]> {
-  const zip = new StreamZip.async({ file: filePath })
-  try {
+  return withZipSession(filePath, async (zip) => {
     const entries = await zip.entries()
     return sortPageEntries(
       Object.values(entries)
         .filter((entry) => !entry.isDirectory && isImageFile(entry.name))
         .map((entry) => entry.name)
     )
-  } finally {
-    await zip.close()
-  }
+  })
 }
 
 /** One page's bytes out of a zip container. */
 export async function readZipPage(filePath: string, entryName: string): Promise<Buffer> {
-  const zip = new StreamZip.async({ file: filePath })
-  try {
-    return await zip.entryData(entryName)
-  } finally {
-    await zip.close()
-  }
+  return withZipSession(filePath, (zip) => zip.entryData(entryName))
 }
 
 type RarExtractor = Awaited<ReturnType<typeof createExtractorFromData>>

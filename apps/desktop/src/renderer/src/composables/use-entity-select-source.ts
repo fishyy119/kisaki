@@ -4,14 +4,15 @@
  * Content-entity selects differ only in which entity they list, so the query,
  * NSFW visibility, change-feed refresh and combobox projection live here. Rows
  * arrive in the entity's default library order, so a picker lists entries the
- * same way the library does.
+ * same way the library does. Only display columns are loaded: a picker never
+ * needs whole rows.
  */
 
 import { computed, toValue, type ComputedRef, type MaybeRefOrGetter } from 'vue'
 import { storeToRefs } from 'pinia'
-import { ENTITY_TABLES, queryEntities } from '@renderer/core/db'
+import { ENTITY_TABLES, queryEntityPickerRows } from '@renderer/core/db'
 import { usePreferencesStore } from '@renderer/stores'
-import { getEntityImageUrl } from '@renderer/utils/entity-image'
+import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import type { VirtualizedComboboxEntity } from '@renderer/components/ui/virtualized-combobox'
 import type { ContentEntityType } from '@shared/common'
 import { useAsyncData } from './use-async-data'
@@ -24,12 +25,12 @@ export function useEntitySelectSource(
   const { showNsfw } = storeToRefs(usePreferencesStore())
 
   const { data, refetch } = useAsyncData(
-    () => queryEntities(entityType, { includeNsfw: showNsfw.value }),
+    () => queryEntityPickerRows(entityType, { includeNsfw: showNsfw.value }),
     { watch: [showNsfw] }
   )
 
-  useDbChanges(({ table }) => {
-    if (table === ENTITY_TABLES[entityType].tableName) refetch()
+  useDbChanges(({ tables }) => {
+    if (tables.has(ENTITY_TABLES[entityType].tableName)) refetch()
   })
 
   return computed(() => {
@@ -40,7 +41,9 @@ export function useEntitySelectSource(
         id: row.id,
         name: row.name,
         subText: row.originalName || undefined,
-        imageUrl: getEntityImageUrl(entityType, row, 'cover', { width: 100, height: 100 })
+        imageUrl: row.imageFile
+          ? getEntityAttachmentUrl(entityType, row.id, row.imageFile, { width: 100, height: 100 })
+          : null
       }))
   })
 }

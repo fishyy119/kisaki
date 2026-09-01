@@ -8,7 +8,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, shallowRef } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import type { PlaybackStatus } from '@shared/video'
@@ -42,11 +42,11 @@ export const useAnimeActivityStore = defineStore('animeActivity', () => {
   // ==========================================================================
 
   /** Watching entries keyed by animeId. */
-  const watching = ref(new Map<string, AnimeWatchingStatus>())
+  const watching = shallowRef(new Map<string, AnimeWatchingStatus>())
   /** Playing extras keyed by extraId. */
-  const playingExtras = ref(new Map<string, AnimeExtraPlayingStatus>())
+  const playingExtras = shallowRef(new Map<string, AnimeExtraPlayingStatus>())
   /** Live playback state keyed by sessionId (only tracked sessions). */
-  const playback = ref(new Map<string, AnimePlaybackState>())
+  const playback = shallowRef(new Map<string, AnimePlaybackState>())
   const initialized = ref(false)
 
   // ==========================================================================

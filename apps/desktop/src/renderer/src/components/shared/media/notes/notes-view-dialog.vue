@@ -48,11 +48,14 @@ const coverUrl = computed(() => {
   return getAttachmentUrl(store.value.tableName, note.value.id, note.value.coverFile)
 })
 
-useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'deleted') return
-  if (table === store.value.tableName && id === props.noteId) {
-    open.value = false
-  }
+useDbChanges(({ changes }) => {
+  const deleted = changes.some(
+    (change) =>
+      change.operation === 'deleted' &&
+      change.table === store.value.tableName &&
+      change.id === props.noteId
+  )
+  if (deleted) open.value = false
 })
 </script>
 

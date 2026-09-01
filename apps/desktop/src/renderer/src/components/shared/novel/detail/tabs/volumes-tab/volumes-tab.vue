@@ -10,6 +10,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Section } from '@renderer/components/ui/section'
 import { StateView } from '@renderer/components/ui/state-view'
+import { VirtualList } from '@renderer/components/ui/virtual'
 import { useNovelFileSync } from '@renderer/composables'
 import { useNovel } from '@renderer/composables/use-novel'
 import { toggleVolumeRead } from '@renderer/composables/use-novel-read'
@@ -120,18 +121,28 @@ async function handleOpenFolder(path: string): Promise<void> {
         :description="m.novel.volumes.emptyHint"
         class="py-10"
       />
+      <!-- Long series can carry hundreds of volumes, so rows virtualize -->
       <div
         v-else
-        class="rounded-md border divide-y overflow-hidden"
+        class="rounded-md border overflow-hidden"
       >
-        <NovelDetailVolumeItem
-          v-for="volume in volumes"
-          :key="volume.id"
-          :volume="volume"
-          @toggle-read="toggleVolumeRead(volume)"
-          @open-folder="handleOpenFolder"
-          @show-detail="detailVolumeId = volume.id"
-        />
+        <VirtualList
+          :items="volumes"
+          :get-key="(volume) => volume.id"
+          scroll-parent="auto"
+          class="flex flex-col"
+        >
+          <template #item="{ item: volume, index }">
+            <div :class="index < volumes.length - 1 ? 'border-b' : undefined">
+              <NovelDetailVolumeItem
+                :volume="volume"
+                @toggle-read="toggleVolumeRead(volume)"
+                @open-folder="handleOpenFolder"
+                @show-detail="detailVolumeId = volume.id"
+              />
+            </div>
+          </template>
+        </VirtualList>
       </div>
     </Section>
 

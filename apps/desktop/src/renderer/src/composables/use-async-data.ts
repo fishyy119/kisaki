@@ -3,9 +3,18 @@
  *
  * Provides loading states, error handling, and automatic refetching
  * when dependencies change.
+ *
+ * Data is held shallowly: results are replaced wholesale, never mutated in
+ * place, so consumers derive with computed() instead of deep reactivity.
+ *
+ * Runs coalesce: while a fetch is in flight, further requests queue exactly
+ * one trailing rerun instead of issuing overlapping fetches, so bursts of
+ * invalidations cost at most one extra round trip. Input changes (watched
+ * dependencies, enable transitions) additionally supersede the in-flight run
+ * so a result computed from stale inputs never lands.
  */
 
-import { ref, watch, onUnmounted, toValue, type Ref, type MaybeRefOrGetter } from 'vue'
+import { ref, shallowRef, watch, onUnmounted, toValue, type Ref, type MaybeRefOrGetter } from 'vue'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('AsyncData')
@@ -64,7 +73,7 @@ export function useAsyncData<T>(
   const { watch: watchSources, immediate = true, enabled = true } = options
 
   // State
-  const data = ref<T>() as Ref<T | undefined>
+  const data = shallowRef<T | undefined>(undefined)
   const isLoading = ref(false)
   const isFetching = ref(false)
   const error = ref<string | null>(null)
@@ -73,23 +82,16 @@ export function useAsyncData<T>(
   // Track successful fetches for isLoading calculation
   let hasSucceeded = false
 
-  // AbortController for cancellation
-  let abortController: AbortController | null = null
+  // Run coordination: one in-flight run, at most one queued trailing rerun.
+  let activeController: AbortController | null = null
+  let chain: Promise<void> | null = null
+  let rerunQueued = false
+  let disposed = false
 
-  async function execute(): Promise<void> {
-    // Check if enabled
-    if (!toValue(enabled)) return
-
-    // Cancel previous request
-    if (abortController) {
-      abortController.abort()
-    }
-    // This run's own controller: a newer run replaces the shared one while
-    // this fetch is still in flight, so supersession is checked against it.
+  async function runFetch(): Promise<void> {
     const controller = new AbortController()
-    abortController = controller
+    activeController = controller
 
-    // Set loading states
     if (!hasSucceeded) {
       isLoading.value = true
     }
@@ -99,7 +101,7 @@ export function useAsyncData<T>(
     try {
       const result = await fetcher(controller.signal)
 
-      // A newer run superseded this one; its result must not land
+      // A superseding request aborted this run; its result must not land
       if (controller.signal.aborted) return
 
       data.value = result
@@ -114,12 +116,43 @@ export function useAsyncData<T>(
       error.value = err.message
       log.error('Fetch failed.', e)
     } finally {
-      // The superseding run owns the loading flags now
-      if (!controller.signal.aborted) {
+      if (activeController === controller) {
+        activeController = null
+      }
+      // A superseding or queued run owns the loading flags now
+      if (!controller.signal.aborted && !rerunQueued) {
         isLoading.value = false
         isFetching.value = false
       }
     }
+  }
+
+  /**
+   * Requests a run. While one is in flight the request folds into a single
+   * trailing rerun; `supersede` additionally aborts the in-flight run so a
+   * result computed from outdated inputs never lands.
+   */
+  function execute(request: { supersede: boolean } = { supersede: false }): Promise<void> {
+    if (!toValue(enabled) || disposed) return Promise.resolve()
+
+    if (chain) {
+      if (request.supersede) activeController?.abort()
+      rerunQueued = true
+      return chain
+    }
+
+    chain = (async () => {
+      try {
+        do {
+          rerunQueued = false
+          await runFetch()
+        } while (rerunQueued && !disposed && toValue(enabled))
+      } finally {
+        chain = null
+      }
+    })()
+
+    return chain
   }
 
   // Watch enabled state - fetch when it becomes true
@@ -127,27 +160,27 @@ export function useAsyncData<T>(
     () => toValue(enabled),
     (newEnabled, oldEnabled) => {
       if (newEnabled && !oldEnabled) {
-        execute()
+        void execute({ supersede: true })
       }
     }
   )
 
-  // Watch dependencies
+  // Watch dependencies; a dependency change invalidates the in-flight run
   if (watchSources && watchSources.length > 0) {
     watch(
       watchSources.map((s) => () => toValue(s)),
-      execute,
+      () => void execute({ supersede: true }),
       { immediate }
     )
   } else if (immediate) {
-    execute()
+    void execute({ supersede: true })
   }
 
   // Cleanup on unmount
   onUnmounted(() => {
-    if (abortController) {
-      abortController.abort()
-    }
+    disposed = true
+    rerunQueued = false
+    activeController?.abort()
   })
 
   return {
@@ -156,6 +189,6 @@ export function useAsyncData<T>(
     isFetching,
     error,
     fetchId,
-    refetch: execute
+    refetch: () => execute()
   }
 }

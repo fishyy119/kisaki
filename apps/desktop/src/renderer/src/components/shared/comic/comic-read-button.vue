@@ -96,8 +96,8 @@ watch(
   { immediate: true }
 )
 
-useDbChanges(({ table }) => {
-  if (table === 'comic_chapters') void refreshProgress()
+useDbChanges(({ tables }) => {
+  if (tables.has('comic_chapters')) void refreshProgress()
 })
 
 // Transitional phases keep the action label; the spinner alone signals progress.

@@ -1,44 +1,74 @@
 /**
  * Library Search Composable
  *
- * Provides FTS-backed search across all entity types in the library.
+ * Provides FTS-backed search across all content entity types in the library.
  * Uses SQLite FTS5 with prefix matching for responsive search.
+ *
+ * Hits are bounded per type and projected to what a result row renders (id,
+ * name, thumbnail file), so a broad query never ships whole tables over IPC.
  */
 
-import { ref, watch, computed, toValue, onUnmounted, type MaybeRefOrGetter } from 'vue'
+import { computed, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue'
 import { sql, and, eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
-import { games, animes, comics, novels, characters, persons, companies } from '@shared/db'
-import type { Game, Anime, Comic, Novel, Character, Person, Company } from '@shared/db'
-import { buildFtsMatchText, normalizeSearchText } from '@shared/search'
 import { storeToRefs } from 'pinia'
+import { db, ENTITY_TABLES } from '@renderer/core/db'
+import { buildFtsMatchText, normalizeSearchText } from '@shared/search'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { useAsyncData } from '@renderer/composables/use-async-data'
+import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
 import { usePreferencesStore } from '@renderer/stores'
-import { createLogger } from '@renderer/core/log'
-
-const log = createLogger('Library')
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface LibrarySearchResult {
-  games: Game[]
-  animes: Anime[]
-  comics: Comic[]
-  novels: Novel[]
-  characters: Character[]
-  persons: Person[]
-  companies: Company[]
+/** One search hit, carrying exactly what a result row renders. */
+export interface LibrarySearchHit {
+  id: string
+  name: string
+  /** Cover/photo/logo attachment file for the result thumbnail. */
+  imageFile: string | null
 }
 
-const EMPTY_RESULT: LibrarySearchResult = {
-  games: [],
-  animes: [],
-  comics: [],
-  novels: [],
-  characters: [],
-  persons: [],
-  companies: []
+export type LibrarySearchResult = Record<ContentEntityType, LibrarySearchHit[]>
+
+/** Hits kept per entity type; a search surface lists candidates, not tables. */
+const SEARCH_RESULT_LIMIT = 50
+
+function createEmptyResult(): LibrarySearchResult {
+  return Object.fromEntries(
+    CONTENT_ENTITY_TYPES.map((entityType) => [entityType, [] as LibrarySearchHit[]])
+  ) as LibrarySearchResult
+}
+
+async function searchEntityType(
+  entityType: ContentEntityType,
+  searchTerm: string,
+  showNsfw: boolean
+): Promise<LibrarySearchHit[]> {
+  const def = ENTITY_TABLES[entityType]
+  const fts = sql.raw(`${def.tableName}_fts`)
+
+  const rows = await db
+    .select({
+      id: def.idColumn,
+      name: def.nameColumn,
+      imageFile: def.imageColumn ?? sql<string | null>`null`
+    })
+    .from(def.table)
+    .where(
+      and(
+        sql`${def.table}.rowid IN (SELECT rowid FROM ${fts} WHERE ${fts} MATCH ${searchTerm})`,
+        showNsfw ? undefined : eq(def.isNsfwColumn, false)
+      )
+    )
+    .limit(SEARCH_RESULT_LIMIT)
+
+  return rows.map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    imageFile: (row.imageFile as string | null) ?? null
+  }))
 }
 
 // =============================================================================
@@ -46,187 +76,58 @@ const EMPTY_RESULT: LibrarySearchResult = {
 // =============================================================================
 
 /**
- * Composable for searching across all entity types using FTS5
+ * Composable for searching across all content entity types using FTS5
  *
  * @param query - Search query string (reactive)
  * @param debounceMs - Debounce delay in milliseconds (default: 300)
- * @returns Search results grouped by entity type and loading state
+ * @returns Search results grouped by entity type and fetching state
  */
-export function useLibrarySearch(query: MaybeRefOrGetter<string>, debounceMs = 300) {
-  const results = ref<LibrarySearchResult>(EMPTY_RESULT)
-  const isLoading = ref(false)
-  const preferencesStore = usePreferencesStore()
-  const { showNsfw } = storeToRefs(preferencesStore)
+export function useLibrarySearch(
+  query: MaybeRefOrGetter<string>,
+  debounceMs = 300
+): {
+  results: ComputedRef<LibrarySearchResult>
+  isLoading: Ref<boolean>
+  hasResults: ComputedRef<boolean>
+  query: Ref<string>
+} {
+  const { showNsfw } = storeToRefs(usePreferencesStore())
 
-  // Debounced query
-  const debouncedQuery = ref('')
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null
-
-  // Track fetch version to handle race conditions
-  let fetchVersion = 0
-
-  // Watch query and debounce
-  watch(
-    () => toValue(query),
-    (newQuery) => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer)
-      }
-      debounceTimer = setTimeout(() => {
-        debouncedQuery.value = normalizeSearchText(newQuery) ?? ''
-      }, debounceMs)
-    },
-    { immediate: true }
+  const debouncedQuery = useDebouncedRef(
+    computed(() => normalizeSearchText(toValue(query)) ?? ''),
+    debounceMs
   )
 
-  // Perform search when debounced query changes
-  watch(
-    [debouncedQuery, showNsfw],
-    async ([searchQuery]) => {
-      if (!searchQuery) {
-        results.value = EMPTY_RESULT
-        isLoading.value = false
-        return
-      }
+  const { data, isFetching } = useAsyncData(
+    async () => {
+      const text = debouncedQuery.value
+      if (!text) return createEmptyResult()
 
-      const currentVersion = ++fetchVersion
-      const searchTerm = buildFtsMatchText(searchQuery)
-      if (!searchTerm) {
-        results.value = EMPTY_RESULT
-        isLoading.value = false
-        return
-      }
-      isLoading.value = true
+      const searchTerm = buildFtsMatchText(text)
+      if (!searchTerm) return createEmptyResult()
 
-      try {
-        // Parallel FTS queries for all entity types
-        const [
-          gamesResult,
-          animesResult,
-          comicsResult,
-          novelsResult,
-          charactersResult,
-          personsResult,
-          companiesResult
-        ] = await Promise.all([
-          // Games search
-          db
-            .select()
-            .from(games)
-            .where(
-              and(
-                sql`${games}.rowid IN (SELECT rowid FROM games_fts WHERE games_fts MATCH ${searchTerm})`,
-                showNsfw.value ? undefined : eq(games.isNsfw, false)
-              )
-            ),
+      const perType = await Promise.all(
+        CONTENT_ENTITY_TYPES.map((entityType) =>
+          searchEntityType(entityType, searchTerm, showNsfw.value)
+        )
+      )
 
-          // Animes search
-          db
-            .select()
-            .from(animes)
-            .where(
-              and(
-                sql`${animes}.rowid IN (SELECT rowid FROM animes_fts WHERE animes_fts MATCH ${searchTerm})`,
-                showNsfw.value ? undefined : eq(animes.isNsfw, false)
-              )
-            ),
-
-          // Comics search
-          db
-            .select()
-            .from(comics)
-            .where(
-              and(
-                sql`${comics}.rowid IN (SELECT rowid FROM comics_fts WHERE comics_fts MATCH ${searchTerm})`,
-                showNsfw.value ? undefined : eq(comics.isNsfw, false)
-              )
-            ),
-
-          // Novels search
-          db
-            .select()
-            .from(novels)
-            .where(
-              and(
-                sql`${novels}.rowid IN (SELECT rowid FROM novels_fts WHERE novels_fts MATCH ${searchTerm})`,
-                showNsfw.value ? undefined : eq(novels.isNsfw, false)
-              )
-            ),
-
-          // Characters search
-          db
-            .select()
-            .from(characters)
-            .where(
-              and(
-                sql`${characters}.rowid IN (SELECT rowid FROM characters_fts WHERE characters_fts MATCH ${searchTerm})`,
-                showNsfw.value ? undefined : eq(characters.isNsfw, false)
-              )
-            ),
-
-          // Persons search
-          db
-            .select()
-            .from(persons)
-            .where(
-              and(
-                sql`${persons}.rowid IN (SELECT rowid FROM persons_fts WHERE persons_fts MATCH ${searchTerm})`,
-                showNsfw.value ? undefined : eq(persons.isNsfw, false)
-              )
-            ),
-
-          // Companies search
-          db
-            .select()
-            .from(companies)
-            .where(
-              and(
-                sql`${companies}.rowid IN (SELECT rowid FROM companies_fts WHERE companies_fts MATCH ${searchTerm})`,
-                showNsfw.value ? undefined : eq(companies.isNsfw, false)
-              )
-            )
-        ])
-
-        // Only update if this is still the latest search
-        if (currentVersion === fetchVersion) {
-          results.value = {
-            games: gamesResult,
-            animes: animesResult,
-            comics: comicsResult,
-            novels: novelsResult,
-            characters: charactersResult,
-            persons: personsResult,
-            companies: companiesResult
-          }
-        }
-      } catch (error) {
-        log.error('Search failed:', error)
-        if (currentVersion === fetchVersion) {
-          results.value = EMPTY_RESULT
-        }
-      } finally {
-        if (currentVersion === fetchVersion) {
-          isLoading.value = false
-        }
-      }
+      return Object.fromEntries(
+        CONTENT_ENTITY_TYPES.map((entityType, index) => [entityType, perType[index]!])
+      ) as LibrarySearchResult
     },
-    { immediate: true }
+    { watch: [debouncedQuery, showNsfw] }
   )
 
-  // Cleanup on unmount
-  onUnmounted(() => {
-    if (debounceTimer) {
-      clearTimeout(debounceTimer)
-    }
-  })
+  const results = computed(() => data.value ?? createEmptyResult())
 
   const hasResults = computed(() =>
-    Object.values(results.value).some((entities) => entities.length > 0)
+    CONTENT_ENTITY_TYPES.some((entityType) => results.value[entityType].length > 0)
   )
 
   return {
     results,
-    isLoading,
+    isLoading: isFetching,
     hasResults,
     query: debouncedQuery
   }

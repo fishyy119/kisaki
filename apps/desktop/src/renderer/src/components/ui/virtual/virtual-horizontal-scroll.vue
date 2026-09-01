@@ -2,10 +2,10 @@
   VirtualHorizontalScroll - Virtualized horizontal scroll with dynamic measurement
 
   Features:
-  - Dynamic item width measurement
+  - Dynamic item width measurement from the first rendered item
   - Horizontal virtual scrolling
   - Scroll navigation controls (scrollLeft/scrollRight)
-  - Supports parent container scrolling
+  - Supports parent container scrolling ('auto' resolves the closest ancestor)
 
   @example
   ```vue
@@ -29,7 +29,7 @@ import {
 } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { cn } from '@renderer/utils/cn'
-import { useVirtualScrollParent } from './use-virtual-scroll-parent'
+import { useVirtualScrollParent, type VirtualScrollParent } from './use-virtual-scroll-parent'
 
 const props = withDefaults(
   defineProps<{
@@ -37,8 +37,8 @@ const props = withDefaults(
     items: T[]
     /** Custom key extractor, defaults to index */
     getKey?: (item: T, index: number) => string | number
-    /** External scroll parent element */
-    scrollParent?: HTMLElement | null
+    /** External scroll parent: element, 'auto' for closest scrollable ancestor */
+    scrollParent?: VirtualScrollParent
     /** Container class - defaults to flex with gap */
     class?: HTMLAttributes['class']
     /** Overscan count for virtualizer */
@@ -66,7 +66,7 @@ defineSlots<{
 
 // Refs
 const containerRef = ref<HTMLDivElement>()
-const measureRef = ref<HTMLDivElement>()
+const rowsRef = ref<HTMLDivElement>()
 
 // State
 const measuredItemWidth = ref(128)
@@ -76,17 +76,17 @@ const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 
 // Scroll parent integration (must be before virtualizer to provide getScrollElement and scrollMargin)
-const { scrollMargin, getScrollElement, notifyLayoutChange } = useVirtualScrollParent({
-  containerRef,
-  scrollParent: toRef(props, 'scrollParent'),
-  observeRefs: [measureRef],
-  horizontal: true,
-  onMeasure: () => virtualizer.value.measure(),
-  onResize: () => {
-    measureLayout()
-    updateScrollState()
-  }
-})
+const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange } =
+  useVirtualScrollParent({
+    containerRef,
+    scrollParent: toRef(props, 'scrollParent'),
+    horizontal: true,
+    onMeasure: () => virtualizer.value.measure(),
+    onResize: () => {
+      measureLayout()
+      updateScrollState()
+    }
+  })
 
 // Horizontal virtualizer
 const virtualizer = useVirtualizer(
@@ -101,22 +101,25 @@ const virtualizer = useVirtualizer(
 )
 
 /**
- * Measure actual item dimensions from rendered DOM.
+ * Measure item dimensions from the first rendered item and the gap from the
+ * rows container, which carries the caller's layout class (children are
+ * absolutely positioned, so the class only contributes its gap value).
  */
 async function measureLayout() {
-  if (!measureRef.value || props.items.length === 0) return
+  if (props.items.length === 0) return
 
   await nextTick()
 
-  const firstItem = measureRef.value.firstElementChild as HTMLElement | null
-  if (!firstItem) return
+  const rows = rowsRef.value
+  // Measure the slot content, not the positioning wrapper around it
+  const firstItem = rows?.firstElementChild?.firstElementChild as HTMLElement | null
+  if (!rows || !firstItem) return
 
   measuredItemWidth.value = firstItem.offsetWidth
   measuredItemHeight.value = firstItem.offsetHeight
 
-  const computedStyle = getComputedStyle(measureRef.value)
-  const gapValue = parseFloat(computedStyle.columnGap) || parseFloat(computedStyle.gap) || 0
-  measuredGap.value = gapValue
+  const computedStyle = getComputedStyle(rows)
+  measuredGap.value = parseFloat(computedStyle.columnGap) || parseFloat(computedStyle.gap) || 0
 
   virtualizer.value.measure()
   notifyLayoutChange()
@@ -203,7 +206,7 @@ defineExpose({
 <template>
   <div
     ref="containerRef"
-    :class="cn(!props.scrollParent && 'overflow-x-auto scrollbar-hide', 'relative')"
+    :class="cn(!resolvedParent && 'overflow-x-auto scrollbar-hide', 'relative')"
     :style="{
       scrollbarWidth: 'none',
       msOverflowStyle: 'none',
@@ -215,50 +218,37 @@ defineExpose({
       name="empty"
     />
 
-    <template v-else>
-      <!-- Hidden measurement element -->
+    <!-- Virtual list container; the class supplies the gap being measured -->
+    <div
+      v-else
+      ref="rowsRef"
+      :class="props.class"
+      :style="{
+        width: `${virtualizer.getTotalSize()}px`,
+        height: '100%',
+        position: 'relative'
+      }"
+    >
       <div
-        ref="measureRef"
-        :class="cn(props.class, 'invisible absolute top-0 left-0 pointer-events-none')"
-        aria-hidden="true"
-      >
-        <slot
-          v-if="props.items[0]"
-          name="item"
-          :item="props.items[0]"
-          :index="0"
-        />
-      </div>
-
-      <!-- Virtual list container -->
-      <div
+        v-for="virtualItem in virtualizer.getVirtualItems()"
+        :key="
+          props.getKey?.(props.items[virtualItem.index]!, virtualItem.index) ??
+          String(virtualItem.key)
+        "
         :style="{
-          width: `${virtualizer.getTotalSize()}px`,
+          position: 'absolute',
+          top: 0,
+          left: 0,
           height: '100%',
-          position: 'relative'
+          transform: `translateX(${virtualItem.start - scrollMargin}px)`
         }"
       >
-        <div
-          v-for="virtualItem in virtualizer.getVirtualItems()"
-          :key="
-            props.getKey?.(props.items[virtualItem.index]!, virtualItem.index) ??
-            String(virtualItem.key)
-          "
-          :style="{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '100%',
-            transform: `translateX(${virtualItem.start - scrollMargin}px)`
-          }"
-        >
-          <slot
-            name="item"
-            :item="props.items[virtualItem.index]!"
-            :index="virtualItem.index"
-          />
-        </div>
+        <slot
+          name="item"
+          :item="props.items[virtualItem.index]!"
+          :index="virtualItem.index"
+        />
       </div>
-    </template>
+    </div>
   </div>
 </template>

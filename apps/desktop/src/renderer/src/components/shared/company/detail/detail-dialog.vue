@@ -42,18 +42,17 @@ const {
   isLoading,
   error,
   params: { spoilersRevealed }
-} = useCompanyDialogProvider(
-  () => props.entityId
-)
+} = useCompanyDialogProvider(() => props.entityId)
 const state = useRenderState(isLoading, error, company)
 
 const spoilerConfirmOpen = ref(false)
 
-useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'deleted') return
-  if (table === 'companies' && id === props.entityId) {
-    open.value = false
-  }
+useDbChanges(({ changes }) => {
+  const deleted = changes.some(
+    (change) =>
+      change.operation === 'deleted' && change.table === 'companies' && change.id === props.entityId
+  )
+  if (deleted) open.value = false
 })
 
 const isScoreOpen = ref(false)

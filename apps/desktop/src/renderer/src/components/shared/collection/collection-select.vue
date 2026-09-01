@@ -83,8 +83,8 @@ const { data: allCollections, refetch } = useAsyncData(
   { watch: [showNsfw] }
 )
 
-useDbChanges(({ table }) => {
-  if (table === 'collections') refetch()
+useDbChanges(({ tables }) => {
+  if (tables.has('collections')) refetch()
 })
 
 // Build entity list: optional "none" + all collections

@@ -21,6 +21,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { Button } from '@renderer/components/ui/button'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { VirtualList } from '@renderer/components/ui/virtual'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
@@ -192,35 +193,39 @@ async function handleSave() {
             :description="m.library.forms.castEmptyHint"
             class="py-8"
           />
-          <div
+          <!-- An entry can carry hundreds of cast credits, so rows virtualize -->
+          <VirtualList
             v-else
-            class="space-y-1"
+            :items="items"
+            :get-key="(item) => item.id"
+            scroll-parent="auto"
+            class="flex flex-col gap-1"
           >
-            <ListItem
-              v-for="item in items"
-              :key="item.id"
-              icon="icon-[mdi--ghost-outline]"
-              :title="item.characterName"
-              :description="item.note || item.personName"
-            >
-              <template
-                v-if="characterImageUrl(item)"
-                #leading
+            <template #item="{ item }">
+              <ListItem
+                icon="icon-[mdi--ghost-outline]"
+                :title="item.characterName"
+                :description="item.note || item.personName"
               >
-                <CoverImage
-                  :src="characterImageUrl(item)!"
-                  :alt="item.characterName"
-                  class="size-10 shrink-0 rounded-md border shadow-raised"
-                />
-              </template>
-              <template #actions>
-                <ListItemActions
-                  @edit="handleEdit(item)"
-                  @delete="deleteId = item.id"
-                />
-              </template>
-            </ListItem>
-          </div>
+                <template
+                  v-if="characterImageUrl(item)"
+                  #leading
+                >
+                  <CoverImage
+                    :src="characterImageUrl(item)!"
+                    :alt="item.characterName"
+                    class="size-10 shrink-0 rounded-md border shadow-raised"
+                  />
+                </template>
+                <template #actions>
+                  <ListItemActions
+                    @edit="handleEdit(item)"
+                    @delete="deleteId = item.id"
+                  />
+                </template>
+              </ListItem>
+            </template>
+          </VirtualList>
         </DialogBody>
         <DialogFooter class="flex justify-between">
           <Button

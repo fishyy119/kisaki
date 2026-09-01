@@ -58,7 +58,9 @@ export function matchesTaskRunQuery(run: TaskRun, query?: TaskRunListQuery): boo
 }
 
 export function cloneTaskRun(run: TaskRun): TaskRun {
-  return JSON.parse(JSON.stringify(run)) as TaskRun
+  // TaskRun is plain JSON data (timestamps are numbers), so a structured
+  // clone is a safe and cheaper snapshot than a JSON round trip.
+  return structuredClone(run)
 }
 
 export function applyListLimit<T>(items: T[], limit: number | undefined): T[] {

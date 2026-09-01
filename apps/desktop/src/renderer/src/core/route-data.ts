@@ -77,6 +77,11 @@ export function defineRouteData<T>(
   let currentRoute: RouteLocationNormalizedGeneric | null = null
   let runId = 0
 
+  // Refetch coalescing: while one refetch is in flight, further requests fold
+  // into a single trailing rerun instead of issuing overlapping fetches.
+  let refetchChain: Promise<void> | null = null
+  let rerunQueued = false
+
   async function run(route: RouteLocationNormalizedGeneric, isNavigation: boolean): Promise<void> {
     const id = ++runId
     isFetching.value = true
@@ -99,12 +104,31 @@ export function defineRouteData<T>(
 
   async function load(route: RouteLocationNormalizedGeneric): Promise<void> {
     currentRoute = route
+    // A fresh navigation supersedes any pending refetch intent
+    rerunQueued = false
     await run(route, true)
   }
 
-  async function refetch(): Promise<void> {
-    if (!currentRoute) return
-    await run(currentRoute, false)
+  function refetch(): Promise<void> {
+    if (!currentRoute) return Promise.resolve()
+
+    if (refetchChain) {
+      rerunQueued = true
+      return refetchChain
+    }
+
+    refetchChain = (async () => {
+      try {
+        do {
+          rerunQueued = false
+          await run(currentRoute!, false)
+        } while (rerunQueued)
+      } finally {
+        refetchChain = null
+      }
+    })()
+
+    return refetchChain
   }
 
   const use = (): UseRouteDataReturn<T> => ({ data, error, isFetching, refetch })

@@ -5,7 +5,7 @@
  * source of truth; every task-run event carries a complete snapshot.
  */
 
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import type { TaskRun, TaskRunFinalStatus, TaskRunStatus } from '@shared/task-run'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
@@ -24,10 +24,12 @@ const ACTIVE_STATUSES = new Set<TaskRunStatus>([
 const FINAL_STATUSES = new Set<TaskRunStatus>(['completed', 'failed', 'cancelled'])
 
 export const useTaskRunStore = defineStore('task-run', () => {
-  const runs = ref(new Map<string, TaskRun>())
+  // Runs are replaced wholesale on every event, so a shallow holder sees
+  // every change without deep-proxying each snapshot.
+  const runs = shallowRef(new Map<string, TaskRun>())
   const initialized = ref(false)
   const refreshing = ref(false)
-  const pendingControlRunIds = ref(new Set<string>())
+  const pendingControlRunIds = shallowRef(new Set<string>())
   const error = ref<string | null>(null)
 
   let listenersRegistered = false

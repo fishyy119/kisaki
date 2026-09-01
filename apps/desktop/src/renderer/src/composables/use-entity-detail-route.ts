@@ -36,10 +36,14 @@ export function useEntityDetailRoute(
     void router.replace(LIBRARY_HOME_PATH)
   }
 
-  useDbChanges(({ operation, table, id }) => {
-    if (operation === 'deleted' && table === tableName && id === toValue(entityId)) {
-      exit()
-    }
+  useDbChanges(({ changes }) => {
+    const deleted = changes.some(
+      (change) =>
+        change.operation === 'deleted' &&
+        change.table === tableName &&
+        change.id === toValue(entityId)
+    )
+    if (deleted) exit()
   })
 
   useIpc('library:entity-merged', (_e, event) => {

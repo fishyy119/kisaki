@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -199,6 +200,50 @@ const isQueryActive = computed(
 
 const ISSUE_TABLE_COLUMNS = ['', '8rem', '22%', '24%', '16%', '7rem']
 
+// =============================================================================
+// Issue rows virtualization
+//
+// A failed bulk scan can report hundreds of issues; rows virtualize with
+// spacer rows so the native table layout (shared colgroup) stays intact.
+// =============================================================================
+
+/** Must match the issue row's fixed height: h-14 (56px) + 1px border. */
+const ISSUE_ROW_HEIGHT_PX = 57
+
+const issueTableWrap = ref<HTMLElement | null>(null)
+const issueScrollRegion = ref<HTMLElement | null>(null)
+
+watch(
+  issueTableWrap,
+  (wrap) => {
+    issueScrollRegion.value =
+      wrap?.querySelector<HTMLElement>('[data-slot="table-scroll-region"]') ?? null
+  },
+  { flush: 'post' }
+)
+
+const issueVirtualizer = useVirtualizer(
+  computed(() => {
+    const scrollElement = issueScrollRegion.value
+    return {
+      count: filteredIssueRows.value.length,
+      getScrollElement: () => scrollElement,
+      estimateSize: () => ISSUE_ROW_HEIGHT_PX,
+      overscan: 8
+    }
+  })
+)
+
+const issueVirtualRows = computed(() => issueVirtualizer.value.getVirtualItems())
+const issueVisibleRows = computed(() =>
+  issueVirtualRows.value.map((virtualRow) => filteredIssueRows.value[virtualRow.index]!)
+)
+const issuePadTop = computed(() => issueVirtualRows.value[0]?.start ?? 0)
+const issuePadBottom = computed(() => {
+  const lastRow = issueVirtualRows.value.at(-1)
+  return issueVirtualizer.value.getTotalSize() - (lastRow?.end ?? 0)
+})
+
 async function handleOpenPath(path: string) {
   try {
     await ipcManager.invoke('native:open-path', { path, ensure: 'folder' })
@@ -234,10 +279,11 @@ const MEDIA_TABLE_NAMES = new Set<string>(
   MEDIA_TYPES.map((mediaType) => ENTITY_TABLES[mediaType].tableName)
 )
 
-useDbChanges(({ operation, table }) => {
-  if (operation === 'updated' && MEDIA_TABLE_NAMES.has(table)) {
-    refetchRelatedEntityNames()
-  }
+useDbChanges(({ changes }) => {
+  const mediaUpdated = changes.some(
+    (change) => change.operation === 'updated' && MEDIA_TABLE_NAMES.has(change.table)
+  )
+  if (mediaUpdated) refetchRelatedEntityNames()
 })
 </script>
 
@@ -310,6 +356,7 @@ useDbChanges(({ operation, table }) => {
 
         <div
           v-else
+          ref="issueTableWrap"
           class="min-h-0 flex-1"
         >
           <Table
@@ -330,10 +377,15 @@ useDbChanges(({ operation, table }) => {
             </template>
 
             <TableBody>
+              <tr
+                v-if="issuePadTop > 0"
+                aria-hidden="true"
+                :style="{ height: `${issuePadTop}px` }"
+              />
               <TableRow
-                v-for="row in filteredIssueRows"
+                v-for="row in issueVisibleRows"
                 :key="`${row.scannerId}:${row.issue.id}`"
-                class="border-border"
+                class="h-14 border-border"
               >
                 <TableCell>
                   <div class="flex min-w-0 items-center gap-2">
@@ -418,6 +470,11 @@ useDbChanges(({ operation, table }) => {
                   </div>
                 </TableCell>
               </TableRow>
+              <tr
+                v-if="issuePadBottom > 0"
+                aria-hidden="true"
+                :style="{ height: `${issuePadBottom}px` }"
+              />
             </TableBody>
           </Table>
         </div>

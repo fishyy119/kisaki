@@ -30,8 +30,8 @@ export function useCollectionsList() {
   const { showNsfw } = storeToRefs(usePreferencesStore())
   watch(showNsfw, () => void refetch())
 
-  useDbChanges(({ table }) => {
-    if (table === 'collections') refetch()
+  useDbChanges(({ tables }) => {
+    if (tables.has('collections')) refetch()
   })
 
   return {

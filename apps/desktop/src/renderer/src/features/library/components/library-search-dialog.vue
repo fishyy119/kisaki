@@ -21,10 +21,9 @@ import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { useLibrarySearch, type LibrarySearchResult } from '../composables'
-import type { EntityRowMap } from '@renderer/core/db'
+import { useLibrarySearch, type LibrarySearchHit } from '../composables'
 import { cn } from '@renderer/utils/cn'
-import { getEntityImageUrl } from '@renderer/utils/entity-image'
+import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { getEntityIcon } from '@renderer/utils/format'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
@@ -33,25 +32,11 @@ import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 // Types
 // =============================================================================
 
-type SearchResultItem = EntityRowMap[ContentEntityType]
-
 interface ColumnConfig {
   type: ContentEntityType
   title: string
   emptyText: string
 }
-
-/** Which result list of the search response belongs to each entity type. */
-const RESULT_LISTS: Record<ContentEntityType, (result: LibrarySearchResult) => SearchResultItem[]> =
-  {
-    game: (result) => result.games,
-    anime: (result) => result.animes,
-    comic: (result) => result.comics,
-    novel: (result) => result.novels,
-    character: (result) => result.characters,
-    person: (result) => result.persons,
-    company: (result) => result.companies
-  }
 
 const { m } = useI18n()
 
@@ -89,7 +74,7 @@ const prevDebouncedQuery = ref('')
 // Build flattened list of all results with column info for keyboard navigation
 const flatResults = computed(() => {
   return COLUMNS.value.flatMap((config, columnIndex) => {
-    const items = RESULT_LISTS[config.type](results.value)
+    const items = results.value[config.type]
     return items.map((item, itemIndex) => ({
       item,
       type: config.type,
@@ -117,8 +102,9 @@ const totalResultCount = computed(() =>
 // Methods
 // =============================================================================
 
-function getThumbnailUrl(item: SearchResultItem, type: ContentEntityType): string | null {
-  return getEntityImageUrl(type, item, 'cover', { width: 100, height: 100 })
+function getThumbnailUrl(item: LibrarySearchHit, type: ContentEntityType): string | null {
+  if (!item.imageFile) return null
+  return getEntityAttachmentUrl(type, item.id, item.imageFile, { width: 100, height: 100 })
 }
 
 function handleResultClick(type: ContentEntityType, id: string) {
@@ -210,7 +196,7 @@ function handleKeyDown(e: KeyboardEvent) {
 }
 
 function getColumnItems(config: ColumnConfig) {
-  return RESULT_LISTS[config.type](results.value)
+  return results.value[config.type]
 }
 
 function getGlobalIndex(columnIndex: number, itemIndex: number) {

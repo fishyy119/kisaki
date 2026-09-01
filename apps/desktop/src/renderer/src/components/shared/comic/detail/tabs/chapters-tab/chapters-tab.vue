@@ -11,6 +11,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Section } from '@renderer/components/ui/section'
 import { StateView } from '@renderer/components/ui/state-view'
+import { VirtualList } from '@renderer/components/ui/virtual'
 import { useComicFileSync } from '@renderer/composables'
 import { useComic } from '@renderer/composables/use-comic'
 import { toggleChapterRead } from '@renderer/composables/use-comic-read'
@@ -121,18 +122,28 @@ async function handleOpenFolder(path: string): Promise<void> {
         :description="m.comic.chapters.emptyHint"
         class="py-10"
       />
+      <!-- Long serializations can carry 1000+ chapters, so rows virtualize -->
       <div
         v-else
-        class="rounded-md border divide-y overflow-hidden"
+        class="rounded-md border overflow-hidden"
       >
-        <ComicDetailChapterItem
-          v-for="chapter in chapters"
-          :key="chapter.id"
-          :chapter="chapter"
-          @toggle-read="toggleChapterRead(chapter)"
-          @open-folder="handleOpenFolder"
-          @show-detail="detailChapterId = chapter.id"
-        />
+        <VirtualList
+          :items="chapters"
+          :get-key="(chapter) => chapter.id"
+          scroll-parent="auto"
+          class="flex flex-col"
+        >
+          <template #item="{ item: chapter, index }">
+            <div :class="index < chapters.length - 1 ? 'border-b' : undefined">
+              <ComicDetailChapterItem
+                :chapter="chapter"
+                @toggle-read="toggleChapterRead(chapter)"
+                @open-folder="handleOpenFolder"
+                @show-detail="detailChapterId = chapter.id"
+              />
+            </div>
+          </template>
+        </VirtualList>
       </div>
     </Section>
 

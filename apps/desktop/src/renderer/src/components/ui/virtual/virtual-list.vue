@@ -3,12 +3,12 @@
 
   Features:
   - Vertical virtual scrolling for fixed-height items
-  - Supports parent container scrolling
-  - Dynamic item height measurement
+  - Supports parent container scrolling ('auto' resolves the closest ancestor)
+  - Dynamic item height measurement from the first rendered item
 
   @example
   ```vue
-  <VirtualList :items="entities" :scroll-parent="scrollContainerRef">
+  <VirtualList :items="entities" scroll-parent="auto">
     <template #item="{ item, index }">
       <ListItem :entity="item" />
     </template>
@@ -19,7 +19,7 @@
 import { ref, computed, onMounted, watch, nextTick, toRef, type HTMLAttributes } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { cn } from '@renderer/utils/cn'
-import { useVirtualScrollParent } from './use-virtual-scroll-parent'
+import { useVirtualScrollParent, type VirtualScrollParent } from './use-virtual-scroll-parent'
 
 const props = withDefaults(
   defineProps<{
@@ -27,8 +27,8 @@ const props = withDefaults(
     items: T[]
     /** Custom key extractor, defaults to index */
     getKey?: (item: T, index: number) => string | number
-    /** External scroll parent element (for parent container scrolling) */
-    scrollParent?: HTMLElement | null
+    /** External scroll parent: element, 'auto' for closest scrollable ancestor */
+    scrollParent?: VirtualScrollParent
     /** Container class - defaults to flex column with small gap */
     class?: HTMLAttributes['class']
     /** Overscan count for virtualizer */
@@ -51,20 +51,20 @@ defineSlots<{
 
 // Refs
 const containerRef = ref<HTMLDivElement>()
-const measureRef = ref<HTMLDivElement>()
+const rowsRef = ref<HTMLDivElement>()
 
 // State
 const measuredItemHeight = ref(24)
 const measuredGap = ref(2)
 
 // Scroll parent integration (must be before virtualizer to provide getScrollElement and scrollMargin)
-const { scrollMargin, getScrollElement, notifyLayoutChange } = useVirtualScrollParent({
-  containerRef,
-  scrollParent: toRef(props, 'scrollParent'),
-  observeRefs: [measureRef],
-  onMeasure: () => virtualizer.value.measure(),
-  onResize: measureLayout
-})
+const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange } =
+  useVirtualScrollParent({
+    containerRef,
+    scrollParent: toRef(props, 'scrollParent'),
+    onMeasure: () => virtualizer.value.measure(),
+    onResize: measureLayout
+  })
 
 // Virtualizer
 const virtualizer = useVirtualizer(
@@ -78,21 +78,24 @@ const virtualizer = useVirtualizer(
 )
 
 /**
- * Measure actual item height from rendered DOM.
+ * Measure item height from the first rendered item and the gap from the rows
+ * container, which carries the caller's layout class (children are absolutely
+ * positioned, so the class only contributes its gap value).
  */
 async function measureLayout() {
-  if (!measureRef.value || props.items.length === 0) return
+  if (props.items.length === 0) return
 
   await nextTick()
 
-  const firstItem = measureRef.value.firstElementChild as HTMLElement | null
-  if (!firstItem) return
+  const rows = rowsRef.value
+  // Measure the slot content, not the positioning wrapper around it
+  const firstItem = rows?.firstElementChild?.firstElementChild as HTMLElement | null
+  if (!rows || !firstItem) return
 
   measuredItemHeight.value = firstItem.offsetHeight
 
-  const computedStyle = getComputedStyle(measureRef.value)
-  const gapValue = parseFloat(computedStyle.rowGap) || parseFloat(computedStyle.gap) || 0
-  measuredGap.value = gapValue
+  const computedStyle = getComputedStyle(rows)
+  measuredGap.value = parseFloat(computedStyle.rowGap) || parseFloat(computedStyle.gap) || 0
 
   virtualizer.value.measure()
   notifyLayoutChange()
@@ -125,57 +128,44 @@ defineExpose({
 <template>
   <div
     ref="containerRef"
-    :class="cn(!props.scrollParent && 'overflow-auto', 'relative')"
+    :class="cn(!resolvedParent && 'overflow-auto', 'relative')"
   >
     <slot
       v-if="props.items.length === 0"
       name="empty"
     />
 
-    <template v-else>
-      <!-- Hidden measurement element -->
+    <!-- Virtual list container; the class supplies the gap being measured -->
+    <div
+      v-else
+      ref="rowsRef"
+      :class="props.class"
+      :style="{
+        height: `${virtualizer.getTotalSize()}px`,
+        width: '100%',
+        position: 'relative'
+      }"
+    >
       <div
-        ref="measureRef"
-        :class="cn(props.class, 'invisible absolute top-0 left-0 w-full pointer-events-none')"
-        aria-hidden="true"
-      >
-        <slot
-          v-if="props.items[0]"
-          name="item"
-          :item="props.items[0]"
-          :index="0"
-        />
-      </div>
-
-      <!-- Virtual list container -->
-      <div
+        v-for="virtualItem in virtualizer.getVirtualItems()"
+        :key="
+          props.getKey?.(props.items[virtualItem.index]!, virtualItem.index) ??
+          String(virtualItem.key)
+        "
         :style="{
-          height: `${virtualizer.getTotalSize()}px`,
+          position: 'absolute',
+          top: 0,
+          left: 0,
           width: '100%',
-          position: 'relative'
+          transform: `translateY(${virtualItem.start - scrollMargin}px)`
         }"
       >
-        <div
-          v-for="virtualItem in virtualizer.getVirtualItems()"
-          :key="
-            props.getKey?.(props.items[virtualItem.index]!, virtualItem.index) ??
-            String(virtualItem.key)
-          "
-          :style="{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            transform: `translateY(${virtualItem.start - scrollMargin}px)`
-          }"
-        >
-          <slot
-            name="item"
-            :item="props.items[virtualItem.index]!"
-            :index="virtualItem.index"
-          />
-        </div>
+        <slot
+          name="item"
+          :item="props.items[virtualItem.index]!"
+          :index="virtualItem.index"
+        />
       </div>
-    </template>
+    </div>
   </div>
 </template>

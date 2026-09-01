@@ -6,7 +6,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, shallowRef } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 
@@ -24,7 +24,8 @@ export const useGameActivityStore = defineStore('gameActivity', () => {
   // State
   // ==========================================================================
 
-  const statuses = ref(new Map<string, GameActivityStatus>())
+  // Statuses are replaced wholesale on every event; a shallow holder suffices.
+  const statuses = shallowRef(new Map<string, GameActivityStatus>())
   const initialized = ref(false)
 
   // ==========================================================================

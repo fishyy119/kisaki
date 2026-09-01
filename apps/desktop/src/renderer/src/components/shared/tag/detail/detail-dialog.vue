@@ -19,12 +19,7 @@ import {
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { StateView } from '@renderer/components/ui/state-view'
 import { EntityDetailDialog, type EntityDetailTarget } from '@renderer/components/shared/entity'
-import {
-  useDbChanges,
-  useI18n,
-  useRenderState,
-  useTagDialogProvider
-} from '@renderer/composables'
+import { useDbChanges, useI18n, useRenderState, useTagDialogProvider } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ContentEntityType } from '@shared/common'
 import TagDetailActions from './detail-actions.vue'
@@ -48,10 +43,12 @@ const {
 } = useTagDialogProvider(() => props.entityId)
 const state = useRenderState(isLoading, error, tag)
 
-useDbChanges(({ operation, table, id }) => {
-  if (operation === 'deleted' && table === 'tags' && id === props.entityId) {
-    open.value = false
-  }
+useDbChanges(({ changes }) => {
+  const deleted = changes.some(
+    (change) =>
+      change.operation === 'deleted' && change.table === 'tags' && change.id === props.entityId
+  )
+  if (deleted) open.value = false
 })
 
 const openEntity = ref<EntityDetailTarget | null>(null)

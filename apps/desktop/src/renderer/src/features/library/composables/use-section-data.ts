@@ -8,7 +8,7 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { storeToRefs } from 'pinia'
 import { queryEntities, type EntityRowMap } from '@renderer/core/db'
-import { useAsyncData, useDbChanges } from '@renderer/composables'
+import { batchTouchesAny, useAsyncData, useDbChanges } from '@renderer/composables'
 import { getFilterRelevantTables } from '@shared/filter'
 import type { ShowcaseSection } from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
@@ -57,8 +57,10 @@ export function useSectionData(section: MaybeRefOrGetter<ShowcaseSection>) {
   })
 
   // Listen for entity and relation link changes
-  useDbChanges(({ table }) => {
-    if (getFilterRelevantTables(sectionEntityType.value).includes(table)) refetch()
+  const relevantTables = computed(() => getFilterRelevantTables(sectionEntityType.value))
+
+  useDbChanges((batch) => {
+    if (batchTouchesAny(batch, relevantTables.value)) refetch()
   })
 
   return {

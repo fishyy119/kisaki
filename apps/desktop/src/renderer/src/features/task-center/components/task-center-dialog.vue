@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import type { TaskRun } from '@shared/task-run'
 import { StateView } from '@renderer/components/ui/state-view'
 import {
@@ -70,6 +71,51 @@ const filteredCompletedRuns = computed(() =>
     )
   )
 )
+
+// =============================================================================
+// Completed rows virtualization
+//
+// History holds up to 500 final runs; rows virtualize with spacer rows so the
+// native table layout (shared colgroup) stays intact. Row height is fixed by
+// the row component (h-16 plus its bottom border).
+// =============================================================================
+
+/** Must match CompletedTaskRunRow's fixed height: h-16 (64px) + 1px border. */
+const COMPLETED_ROW_HEIGHT_PX = 65
+
+const completedTableWrap = ref<HTMLElement | null>(null)
+const completedScrollRegion = ref<HTMLElement | null>(null)
+
+watch(
+  completedTableWrap,
+  (wrap) => {
+    completedScrollRegion.value =
+      wrap?.querySelector<HTMLElement>('[data-slot="table-scroll-region"]') ?? null
+  },
+  { flush: 'post' }
+)
+
+const completedVirtualizer = useVirtualizer(
+  computed(() => {
+    const scrollElement = completedScrollRegion.value
+    return {
+      count: filteredCompletedRuns.value.length,
+      getScrollElement: () => scrollElement,
+      estimateSize: () => COMPLETED_ROW_HEIGHT_PX,
+      overscan: 8
+    }
+  })
+)
+
+const completedVirtualRows = computed(() => completedVirtualizer.value.getVirtualItems())
+const completedVisibleRuns = computed(() =>
+  completedVirtualRows.value.map((virtualRow) => filteredCompletedRuns.value[virtualRow.index]!)
+)
+const completedPadTop = computed(() => completedVirtualRows.value[0]?.start ?? 0)
+const completedPadBottom = computed(() => {
+  const lastRow = completedVirtualRows.value.at(-1)
+  return completedVirtualizer.value.getTotalSize() - (lastRow?.end ?? 0)
+})
 const activeDetailsRun = computed(() => {
   const id = activeDetailsRunId.value
   if (!id) return null
@@ -318,33 +364,48 @@ async function handleCancel(run: TaskRun): Promise<void> {
                   :description="m.task.noCompletedRecords"
                   class="h-full min-h-48"
                 />
-                <Table
+                <div
                   v-else
-                  fixed-header
-                  :columns="COMPLETED_RUN_TABLE_COLUMNS"
-                  body-class="overflow-x-hidden"
+                  ref="completedTableWrap"
+                  class="h-full"
                 >
-                  <template #header>
-                    <TableHeader>
-                      <TableRow class="h-8">
-                        <TableHead class="pl-4">{{ m.task.table.task }}</TableHead>
-                        <TableHead>{{ m.task.table.result }}</TableHead>
-                        <TableHead>{{ m.task.table.status }}</TableHead>
-                        <TableHead class="pr-4 text-right">{{ m.task.table.actions }}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                  </template>
+                  <Table
+                    fixed-header
+                    :columns="COMPLETED_RUN_TABLE_COLUMNS"
+                    body-class="overflow-x-hidden"
+                  >
+                    <template #header>
+                      <TableHeader>
+                        <TableRow class="h-8">
+                          <TableHead class="pl-4">{{ m.task.table.task }}</TableHead>
+                          <TableHead>{{ m.task.table.result }}</TableHead>
+                          <TableHead>{{ m.task.table.status }}</TableHead>
+                          <TableHead class="pr-4 text-right">{{ m.task.table.actions }}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                    </template>
 
-                  <TableBody>
-                    <CompletedTaskRunRow
-                      v-for="run in filteredCompletedRuns"
-                      :key="run.id"
-                      :run="run"
-                      @details="openCompletedDetailsDialog"
-                      @delete="handleDeleteCompleted"
-                    />
-                  </TableBody>
-                </Table>
+                    <TableBody>
+                      <tr
+                        v-if="completedPadTop > 0"
+                        aria-hidden="true"
+                        :style="{ height: `${completedPadTop}px` }"
+                      />
+                      <CompletedTaskRunRow
+                        v-for="run in completedVisibleRuns"
+                        :key="run.id"
+                        :run="run"
+                        @details="openCompletedDetailsDialog"
+                        @delete="handleDeleteCompleted"
+                      />
+                      <tr
+                        v-if="completedPadBottom > 0"
+                        aria-hidden="true"
+                        :style="{ height: `${completedPadBottom}px` }"
+                      />
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
           </TabsContent>

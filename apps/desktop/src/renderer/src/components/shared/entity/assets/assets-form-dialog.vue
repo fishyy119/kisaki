@@ -63,11 +63,14 @@ const {
 })
 
 // Listen for entity updates
-useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'updated') return
-  if (table === spec.value.attachmentTable && id === props.entityId) {
-    refetch()
-  }
+useDbChanges(({ changes }) => {
+  const entryUpdated = changes.some(
+    (change) =>
+      change.operation === 'updated' &&
+      change.table === spec.value.attachmentTable &&
+      change.id === props.entityId
+  )
+  if (entryUpdated) refetch()
 })
 
 const selectedSlot = computed(() =>

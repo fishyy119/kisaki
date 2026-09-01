@@ -204,7 +204,9 @@ export class AutomationStore {
       automationId: automation.id,
       limit: HISTORY_LIMIT
     })
-    return JSON.parse(JSON.stringify({ ...automation, history })) as Automation
+    // Automation is plain JSON data (timestamps are numbers), so a structured
+    // clone is a safe and cheaper snapshot than a JSON round trip.
+    return structuredClone({ ...automation, history })
   }
 }
 
