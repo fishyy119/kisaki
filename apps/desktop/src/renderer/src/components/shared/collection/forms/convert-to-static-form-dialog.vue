@@ -21,9 +21,16 @@ import {
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
-import { db, queryEntityIds, insertCollectionLinks, deleteCollectionLinks } from '@renderer/core/db'
+import {
+  db,
+  queryEntityIds,
+  buildDynamicCollectionScope,
+  insertCollectionLinks,
+  deleteCollectionLinks
+} from '@renderer/core/db'
 import { collections, type DynamicCollectionConfig } from '@shared/db'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
+import { createMembershipSort } from '@shared/filter'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
@@ -90,12 +97,11 @@ async function materializeDynamicCollection(config: DynamicCollectionConfig) {
     const entityConfig = config[entityType]
     if (!entityConfig.enabled) continue
 
-    // Materialization snapshots the full result set regardless of the
-    // current NSFW visibility preference.
+    // Materialization snapshots the full result set in the configured order,
+    // regardless of the current NSFW visibility preference.
     const entityIds = await queryEntityIds(entityType, {
-      filter: entityConfig.filter,
-      sortField: entityConfig.sortField,
-      sortDirection: entityConfig.sortDirection,
+      scope: buildDynamicCollectionScope(entityType, entityConfig),
+      sort: createMembershipSort(),
       includeNsfw: true
     })
 

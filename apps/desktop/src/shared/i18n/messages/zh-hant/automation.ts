@@ -81,9 +81,7 @@ export const automation = {
     sourceAll: '全部來源',
     sourceApp: '應用程式',
     sourceExtension: '擴充功能',
-    searchPlaceholder: '搜尋自動化…',
-    ascending: '升冪',
-    descending: '降冪'
+    searchPlaceholder: '搜尋自動化…'
   },
 
   form: {

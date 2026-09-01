@@ -16,4 +16,4 @@ export {
 } from './forms'
 
 // Detail
-export { CollectionDetailContent, CollectionDetailDialog } from './detail'
+export { CollectionDetailActions, CollectionDetailContent, CollectionDetailDialog } from './detail'

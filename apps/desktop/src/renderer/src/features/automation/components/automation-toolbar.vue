@@ -1,12 +1,16 @@
 <!--
-Automation Toolbar owns local filtering and sorting controls.
+Automation Toolbar
+The band's single query row: search and hit count, then the status button
+group, source select, and sort control.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { ButtonGroup } from '@renderer/components/ui/button-group'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
+import { SearchInput } from '@renderer/components/ui/search-input'
+import { SortControl, type SortOption } from '@renderer/components/ui/sort-control'
+import { Toolbar, ToolbarRow } from '@renderer/components/ui/toolbar'
 import {
   Select,
   SelectContent,
@@ -68,7 +72,7 @@ const statusOptions = computed<
   }
 ])
 
-const sortOptions = computed<{ value: AutomationSortField; label: string }[]>(() => [
+const sortOptions = computed<SortOption<AutomationSortField>[]>(() => [
   { value: 'createdAt', label: m.value.automation.toolbar.sortCreatedAt },
   { value: 'name', label: m.value.automation.toolbar.sortName },
   { value: 'lastRunAt', label: m.value.automation.toolbar.sortLastRunAt },
@@ -81,45 +85,27 @@ const sourceOptions = computed<{ value: AutomationSourceFilter; label: string }[
   { value: 'extension', label: m.value.automation.toolbar.sourceExtension }
 ])
 
-const hasSearch = computed(() => searchQuery.value.trim().length > 0)
-
-function handleClearSearch() {
-  searchQuery.value = ''
-}
-
-function handleToggleSortDirection() {
-  sortDirection.value = sortDirection.value === 'desc' ? 'asc' : 'desc'
-}
+const isQueryActive = computed(
+  () =>
+    searchQuery.value.trim().length > 0 ||
+    statusFilter.value !== 'all' ||
+    sourceFilter.value !== 'all'
+)
 </script>
 
 <template>
-  <div class="shrink-0 border-b border-border bg-muted/30 px-4 py-3">
-    <div class="flex items-center gap-3">
-      <InputGroup class="max-w-xl flex-1">
-        <InputGroupAddon>
-          <Icon
-            icon="icon-[mdi--magnify]"
-            class="size-4"
-          />
-        </InputGroupAddon>
-        <InputGroupInput
-          v-model="searchQuery"
-          :placeholder="m.automation.toolbar.searchPlaceholder"
-        />
-        <InputGroupAddon
-          v-if="hasSearch"
-          align="inline-end"
-          class="cursor-pointer"
-          @click="handleClearSearch"
-        >
-          <Icon
-            icon="icon-[mdi--close]"
-            class="size-4 text-muted-foreground hover:text-foreground"
-          />
-        </InputGroupAddon>
-      </InputGroup>
-
-      <span class="shrink-0 text-xs text-muted-foreground">
+  <Toolbar>
+    <ToolbarRow>
+      <SearchInput
+        v-model="searchQuery"
+        :placeholder="m.automation.toolbar.searchPlaceholder"
+        size="sm"
+        class="max-w-xl flex-1"
+      />
+      <span
+        v-if="isQueryActive"
+        class="shrink-0 text-xs text-muted-foreground"
+      >
         {{ m.common.itemCount({ count: props.filteredCount }) }}
       </span>
 
@@ -167,50 +153,12 @@ function handleToggleSortDirection() {
         </SelectContent>
       </Select>
 
-      <ButtonGroup>
-        <Select v-model="sortField">
-          <SelectTrigger
-            size="sm"
-            class="w-28 border-r-0 focus:border-border"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              v-for="option in sortOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              @click="handleToggleSortDirection"
-            >
-              <Icon
-                :icon="
-                  sortDirection === 'asc'
-                    ? 'icon-[mdi--sort-ascending]'
-                    : 'icon-[mdi--sort-descending]'
-                "
-                class="size-4"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {{
-              sortDirection === 'asc'
-                ? m.automation.toolbar.ascending
-                : m.automation.toolbar.descending
-            }}
-          </TooltipContent>
-        </Tooltip>
-      </ButtonGroup>
-    </div>
-  </div>
+      <SortControl
+        v-model:field="sortField"
+        v-model:direction="sortDirection"
+        :options="sortOptions"
+        size="sm"
+      />
+    </ToolbarRow>
+  </Toolbar>
 </template>

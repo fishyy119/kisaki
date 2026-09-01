@@ -60,7 +60,7 @@ export const library = {
     status: '狀態',
     playDuration: '遊玩時長',
     lastActiveAt: '最近遊玩',
-    order: '排序',
+    order: '自訂順序',
     format: '類型',
     totalEpisodes: '總話數',
     totalSeasons: '總季數',
@@ -723,8 +723,6 @@ export const library = {
     enabledTypesCount: ({ count }: { count: number }) => `已啟用 ${count} 個類型`,
     filterLabel: '篩選',
     sortLabel: '排序：',
-    sortAsc: '升冪',
-    sortDesc: '降冪',
     dynamicConfigHint: '已啟用但未設定篩選條件的類型將包含該類型的全部項目',
     filterConfigUpdated: '篩選設定已更新',
 
@@ -768,18 +766,24 @@ export const library = {
     collectionsEmptyDescription: '建立合集來整理你的媒體庫',
     favoritesTitle: '喜歡',
     favoritesEmpty: ({ label }: { label: string }) => `暫無喜歡的${label}`,
-    uncategorizedTitle: ({ label }: { label: string }) => `未分類${label}`,
+    uncategorizedTitle: '未分類',
     uncategorizedEmpty: ({ label }: { label: string }) => `所有${label}都已分類`,
     dynamicCollection: '動態合集'
   },
 
+  browse: {
+    membershipOrder: {
+      collection: '合集順序',
+      tag: '標籤順序',
+      configured: '設定順序',
+      default: '預設順序'
+    },
+    noMatchTitle: '無符合結果',
+    noMatchDescription: '調整搜尋或篩選條件',
+    clearQuery: '清除搜尋與篩選'
+  },
+
   explorer: {
-    filter: '篩選',
-    sort: '排序',
-    sortAsc: '升冪',
-    sortDesc: '降冪',
-    overrideCollectionSort: '覆蓋合集內排序',
-    searchPlaceholder: '搜尋…',
     filteredResults: '篩選結果',
     noMatch: '無符合結果',
     emptyList: ({ label }: { label: string }) => `暫無${label}`,
@@ -839,8 +843,6 @@ export const library = {
       displayCount: '顯示數量',
       displayCountUnlimited: '不限',
       sort: '排序',
-      sortAsc: '升冪',
-      sortDesc: '降冪',
       filters: '篩選條件',
       filtersSetCount: ({ count }: { count: number }) => `已設定 ${count} 個條件`,
       filtersClickToSet: '點選設定篩選條件…'

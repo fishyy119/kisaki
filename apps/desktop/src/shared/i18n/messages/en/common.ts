@@ -64,6 +64,12 @@ export const common = {
   loadFailed: 'Load failed',
   operationFailed: 'Operation failed',
 
+  // Sorting
+  sort: 'Sort',
+  sortAscending: 'Ascending',
+  sortDescending: 'Descending',
+  sortDirectionFixed: 'Direction is fixed for this order',
+
   // Placeholders and empty values
   emptyValue: '—',
   searchPlaceholder: 'Search',

@@ -84,7 +84,10 @@ export function useAsyncData<T>(
     if (abortController) {
       abortController.abort()
     }
-    abortController = new AbortController()
+    // This run's own controller: a newer run replaces the shared one while
+    // this fetch is still in flight, so supersession is checked against it.
+    const controller = new AbortController()
+    abortController = controller
 
     // Set loading states
     if (!hasSucceeded) {
@@ -94,10 +97,10 @@ export function useAsyncData<T>(
     error.value = null
 
     try {
-      const result = await fetcher(abortController.signal)
+      const result = await fetcher(controller.signal)
 
-      // Check if aborted
-      if (abortController.signal.aborted) return
+      // A newer run superseded this one; its result must not land
+      if (controller.signal.aborted) return
 
       data.value = result
       hasSucceeded = true
@@ -105,13 +108,17 @@ export function useAsyncData<T>(
     } catch (e) {
       // Ignore abort errors
       if (e instanceof Error && e.name === 'AbortError') return
+      if (controller.signal.aborted) return
 
       const err = e instanceof Error ? e : new Error(String(e))
       error.value = err.message
       log.error('Fetch failed.', e)
     } finally {
-      isLoading.value = false
-      isFetching.value = false
+      // The superseding run owns the loading flags now
+      if (!controller.signal.aborted) {
+        isLoading.value = false
+        isFetching.value = false
+      }
     }
   }
 

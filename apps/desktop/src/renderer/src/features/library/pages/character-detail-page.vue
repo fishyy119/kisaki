@@ -44,7 +44,11 @@ const { m } = useI18n()
 // Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const { character, error, spoilersRevealed } = useCharacterRouteProvider()
+const {
+  character,
+  error,
+  params: { spoilersRevealed }
+} = useCharacterRouteProvider()
 
 const spoilerConfirmOpen = ref(false)
 

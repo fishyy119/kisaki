@@ -14,8 +14,10 @@ export const collectionFilterUiSpec: ComputedRef<FilterUiSpec<typeof collectionF
         { key: 'createdAt', label: m.library.fields.addedDate, kind: 'date' }
       ],
       sortOptions: [
+        // The user's own arrangement is the collection list's primary order,
+        // like a membership order: first, and without a direction.
+        { key: 'order', label: m.library.fields.order, directionFixed: true },
         { key: 'name', label: m.library.fields.name },
-        { key: 'order', label: m.library.fields.order },
         { key: 'createdAt', label: m.library.fields.addedDate }
       ]
     }

@@ -1,58 +1,140 @@
 /**
  * Composable: useUncategorizedList
  *
- * Route-loaded list of entities not assigned to any collection.
- * The entity type comes from the route param.
+ * Route-loaded browse surface of the entities no visible collection holds.
+ * The browsed type is the route's (the explorer links here per type), so a
+ * type switch navigates; the rest of the list query lives beside the loader.
  */
 
-import { computed, watch } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { COLLECTION_LINKS, ENTITY_TABLES, db, queryEntities } from '@renderer/core/db'
+import {
+  COLLECTION_LINKS,
+  ENTITY_TABLES,
+  buildUncategorizedScope,
+  countEntities,
+  queryEntities
+} from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { getLibraryContextPath } from '@renderer/utils/library-context'
+import { CONTENT_ENTITY_TYPES, isContentEntityType, type ContentEntityType } from '@shared/common'
+import type { TableName } from '@shared/db/table-names'
+import { getFilterRelevantTables } from '@shared/filter'
 import { useDbChanges } from '@renderer/composables/use-db-changes'
-import type { ContentEntityData } from '@renderer/composables/content-entities'
+import {
+  createEmptyContentEntityCounts,
+  type ContentEntityCounts,
+  type ContentEntityData
+} from '@renderer/composables/content-entities'
+import {
+  createEntityListQuery,
+  switchEntityListType,
+  type EntityListQuery
+} from '@renderer/composables/entity-list-query'
+
+interface UncategorizedData {
+  counts: ContentEntityCounts
+  entityType: ContentEntityType
+  entities: ContentEntityData[]
+}
 
 async function fetchUncategorized(
   entityType: ContentEntityType,
+  query: EntityListQuery,
   showNsfw: boolean
-): Promise<ContentEntityData[]> {
-  const link = COLLECTION_LINKS[entityType]
+): Promise<UncategorizedData> {
+  const counts = createEmptyContentEntityCounts()
+  await Promise.all(
+    CONTENT_ENTITY_TYPES.map(async (type) => {
+      counts[type] = await countEntities(type, {
+        scope: buildUncategorizedScope(type, showNsfw),
+        includeNsfw: showNsfw
+      })
+    })
+  )
 
-  const linkedRows = await db.selectDistinct({ id: link.entityIdColumn }).from(link.table)
-  const linkedIds = linkedRows.map((row) => row.id as string)
+  const entities = await queryEntities(entityType, {
+    scope: buildUncategorizedScope(entityType, showNsfw),
+    search: query.search,
+    filter: query.filter,
+    sort: query.sort,
+    includeNsfw: showNsfw
+  })
 
-  return queryEntities(entityType, { excludeIds: linkedIds, includeNsfw: showNsfw })
+  return { counts, entityType, entities }
 }
 
-export const uncategorizedListData = defineRouteData((route) => {
-  const entityType = (route.params.entityType as ContentEntityType) || 'game'
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  return fetchUncategorized(entityType, showNsfw.value)
-})
+// The list query lives beside the loader so the navigation-time fetch reads a
+// consistent value; the browsed type follows the route and resets the
+// type-bound parts of the query whenever it changes.
+const routeQuery = shallowRef<EntityListQuery>(createEntityListQuery(null))
+
+/** `null` when the route names no content entity type. */
+export const uncategorizedListData = defineRouteData(
+  async (route): Promise<UncategorizedData | null> => {
+    const param = route.params.entityType
+    if (typeof param !== 'string' || !isContentEntityType(param)) return null
+
+    if (routeQuery.value.entityType !== param) {
+      routeQuery.value = switchEntityListType(routeQuery.value, param)
+    }
+    const { showNsfw } = storeToRefs(usePreferencesStore())
+    return fetchUncategorized(param, routeQuery.value, showNsfw.value)
+  }
+)
 
 export function useUncategorizedList() {
+  const router = useRouter()
   const { data, error, isFetching, refetch } = uncategorizedListData()
 
   const { showNsfw } = storeToRefs(usePreferencesStore())
   watch(showNsfw, () => void refetch())
 
+  const query = computed({
+    get: () => routeQuery.value,
+    set: (next: EntityListQuery) => {
+      // The browsed type is the route's: a type switch navigates, and the
+      // loader re-reads the query for the new type.
+      if (next.entityType !== null && next.entityType !== routeQuery.value.entityType) {
+        void router.replace(getLibraryContextPath({ kind: 'uncategorized' }, next.entityType))
+        return
+      }
+      routeQuery.value = next
+      void refetch()
+    }
+  })
+
+  /** `null` while the route names no content entity type. */
+  const entityType = computed(() => data.value?.entityType ?? null)
+
+  // Membership changes on either side move rows in and out; the browsed
+  // type's filter tables feed the visible list.
+  const relevantTables = computed(() => {
+    const tables = new Set<TableName>()
+    for (const type of CONTENT_ENTITY_TYPES) {
+      tables.add(ENTITY_TABLES[type].tableName)
+      tables.add(COLLECTION_LINKS[type].tableName)
+    }
+    tables.add('collections')
+    if (entityType.value) {
+      for (const table of getFilterRelevantTables(entityType.value)) tables.add(table)
+    }
+    return tables
+  })
+
   useDbChanges(({ table }) => {
-    if (isRelevantTable(table)) refetch()
+    if (relevantTables.value.has(table)) refetch()
   })
 
   return {
-    entities: computed(() => data.value ?? []),
+    entities: computed(() => data.value?.entities ?? []),
+    counts: computed(() => data.value?.counts ?? createEmptyContentEntityCounts()),
+    entityType,
+    query,
     error,
     isFetching,
     refetch
   }
-}
-
-/** Membership changes on either side move rows in and out of the list. */
-function isRelevantTable(table: string): boolean {
-  return CONTENT_ENTITY_TYPES.some(
-    (type) => table === ENTITY_TABLES[type].tableName || table === COLLECTION_LINKS[type].tableName
-  )
 }

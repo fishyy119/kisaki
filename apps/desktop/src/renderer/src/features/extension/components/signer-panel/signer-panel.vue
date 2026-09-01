@@ -1,11 +1,10 @@
 <!--
-Extension Signer Panel manages extension-scoped signer trust.
+Extension Signer Panel manages extension-scoped signer trust: the list and
+its row operations. The manual refresh lives in the header actions component.
 Boundary: calls signer trust IPC only; trust remains scoped by extension id.
 -->
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
-import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
@@ -93,27 +92,6 @@ async function handleRemoveSigner(): Promise<void> {
 
 <template>
   <div class="flex h-full flex-col">
-    <div class="shrink-0 flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-3">
-      <div class="flex-1">
-        <div class="text-sm font-medium">{{ m.extension.signer.panelTitle }}</div>
-        <div class="text-xs text-muted-foreground">
-          {{ m.extension.signer.panelSummary({ count: signerList.length }) }}
-        </div>
-      </div>
-
-      <Button
-        variant="outline"
-        size="sm"
-        @click="refetch"
-      >
-        <Icon
-          icon="icon-[mdi--refresh]"
-          class="size-4"
-        />
-        {{ m.common.refresh }}
-      </Button>
-    </div>
-
     <div class="flex-1 overflow-auto">
       <StateView
         v-if="error"

@@ -46,7 +46,12 @@ const open = defineModel<boolean>('open', { default: false })
 // =============================================================================
 
 const personId = computed(() => props.entityId)
-const { person, isLoading, error, spoilersRevealed } = usePersonDialogProvider(personId)
+const {
+  person,
+  isLoading,
+  error,
+  params: { spoilersRevealed }
+} = usePersonDialogProvider(personId)
 const state = useRenderState(isLoading, error, person)
 
 const spoilerConfirmOpen = ref(false)

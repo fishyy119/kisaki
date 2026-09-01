@@ -1,13 +1,15 @@
 <!--
-Browse Extension Filter Bar controls catalog search and repository filters.
+Browse Extension Filter Bar is the discover band: the category scope row,
+then the query row with search, repository, compatibility, and sort.
 Boundary: owns filter inputs, while results are fetched by the panel.
 -->
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
 import { Button } from '@renderer/components/ui/button'
-import { ButtonGroup } from '@renderer/components/ui/button-group'
+import { SearchInput } from '@renderer/components/ui/search-input'
+import { SortControl, type SortOption } from '@renderer/components/ui/sort-control'
+import { Toolbar, ToolbarRow } from '@renderer/components/ui/toolbar'
 import {
   Select,
   SelectContent,
@@ -20,11 +22,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { cn } from '@renderer/utils/cn'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables/use-async-data'
-import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../../stores'
 import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki3/extension-api'
+import type { SortDirection } from '@shared/common'
 
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, string> = {
@@ -36,7 +38,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 const { m } = useI18n()
 
-const SORT_OPTIONS = computed<{ value: DiscoverExtensionSortField; label: string }[]>(() => [
+const SORT_OPTIONS = computed<SortOption<DiscoverExtensionSortField>[]>(() => [
   { value: 'relevance', label: m.value.extension.discover.sortRelevance },
   { value: 'name', label: m.value.extension.discover.sortName },
   { value: 'publishedAt', label: m.value.extension.discover.sortPublishedAt },
@@ -58,23 +60,20 @@ const enabledRepositories = computed(() =>
   repositoriesList.value.filter((repository) => repository.state === 'enabled')
 )
 
-// Debounced search: auto-trigger search when input changes
-const debouncedSearchInput = useDebouncedRef(() => store.searchInput, 300)
-
-// Trigger search when debounced value changes
-watch(debouncedSearchInput, () => {
-  store.triggerSearch()
-})
-
-// Computed models for v-model binding
-const searchInputModel = computed({
-  get: () => store.searchInput,
-  set: (v: string | number | undefined) => store.setSearchInput(String(v ?? ''))
+// The search input debounces; every model change is already a committed query
+const searchModel = computed({
+  get: () => store.searchQuery,
+  set: (value: string) => store.setSearchQuery(value)
 })
 
 const sortFieldModel = computed({
   get: () => store.sortField,
-  set: (v: DiscoverExtensionSortField) => store.setSortField(v)
+  set: (value: DiscoverExtensionSortField) => store.setSortField(value)
+})
+
+const sortDirectionModel = computed({
+  get: () => store.sortDirection,
+  set: (value: SortDirection) => store.setSortDirection(value)
 })
 
 const categoryModel = computed({
@@ -87,44 +86,41 @@ const repositoryModel = computed({
   get: () => store.selectedRepositoryId ?? 'all',
   set: (value: string) => store.setSelectedRepositoryId(value === 'all' ? null : value)
 })
-
-function handleToggleSortDirection() {
-  store.setSortDirection(store.sortDirection === 'desc' ? 'asc' : 'desc')
-}
 </script>
 
 <template>
-  <div class="shrink-0 flex flex-col gap-3 px-4 py-3 border-b border-border bg-muted/30">
-    <!-- Top row: Search + Repository + Sort -->
-    <div class="flex items-center gap-3">
-      <!-- Search input with button -->
-      <div class="flex items-center gap-2 flex-1 max-w-xl">
-        <InputGroup class="flex-1">
-          <InputGroupAddon>
-            <Icon
-              icon="icon-[mdi--magnify]"
-              class="size-4"
-            />
-          </InputGroupAddon>
-          <InputGroupInput
-            v-model="searchInputModel"
-            :placeholder="m.extension.discover.searchPlaceholder"
+  <Toolbar>
+    <ToolbarRow>
+      <SegmentedControl v-model="categoryModel">
+        <SegmentedControlItem value="all">
+          <Icon
+            icon="icon-[mdi--view-grid-outline]"
+            class="size-3.5"
           />
-          <InputGroupAddon
-            v-if="store.searchInput"
-            class="cursor-pointer"
-            align="inline-end"
-            @click="store.clearSearch"
-          >
-            <Icon
-              icon="icon-[mdi--close]"
-              class="size-4 text-muted-foreground hover:text-foreground"
-            />
-          </InputGroupAddon>
-        </InputGroup>
-      </div>
+          {{ m.extension.discover.allCategories }}
+        </SegmentedControlItem>
+        <SegmentedControlItem
+          v-for="cat in EXTENSION_CATEGORIES"
+          :key="cat.id"
+          :value="cat.id"
+        >
+          <Icon
+            :icon="CATEGORY_ICONS[cat.id]!"
+            class="size-3.5"
+          />
+          {{ cat.label }}
+        </SegmentedControlItem>
+      </SegmentedControl>
+    </ToolbarRow>
 
-      <!-- Spacer -->
+    <ToolbarRow>
+      <SearchInput
+        v-model="searchModel"
+        :placeholder="m.extension.discover.searchPlaceholder"
+        size="sm"
+        class="max-w-xl flex-1"
+      />
+
       <div class="flex-1" />
 
       <!-- Repository selector -->
@@ -137,7 +133,7 @@ function handleToggleSortDirection() {
             icon="icon-[mdi--source-branch]"
             class="size-4 text-muted-foreground"
           />
-          <SelectValue class="leading-none" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{{ m.extension.discover.allRepositories }}</SelectItem>
@@ -174,74 +170,12 @@ function handleToggleSortDirection() {
         </TooltipContent>
       </Tooltip>
 
-      <!-- Sort controls: Select + Direction toggle -->
-      <ButtonGroup>
-        <Select v-model="sortFieldModel">
-          <SelectTrigger
-            size="sm"
-            class="border-r-0 focus:border-border"
-          >
-            <SelectValue class="leading-none" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              v-for="option in SORT_OPTIONS"
-              :key="option.value"
-              :value="option.value"
-              class="leading-none"
-            >
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              @click="handleToggleSortDirection"
-            >
-              <Icon
-                :icon="
-                  store.sortDirection === 'asc'
-                    ? 'icon-[mdi--sort-ascending]'
-                    : 'icon-[mdi--sort-descending]'
-                "
-                class="size-4 transition-transform"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {{
-              store.sortDirection === 'asc'
-                ? m.extension.discover.ascending
-                : m.extension.discover.descending
-            }}
-          </TooltipContent>
-        </Tooltip>
-      </ButtonGroup>
-    </div>
-
-    <!-- Bottom row: Category filter -->
-    <SegmentedControl v-model="categoryModel">
-      <SegmentedControlItem value="all">
-        <Icon
-          icon="icon-[mdi--view-grid-outline]"
-          class="size-3.5"
-        />
-        {{ m.extension.discover.allCategories }}
-      </SegmentedControlItem>
-      <SegmentedControlItem
-        v-for="cat in EXTENSION_CATEGORIES"
-        :key="cat.id"
-        :value="cat.id"
-      >
-        <Icon
-          :icon="CATEGORY_ICONS[cat.id]!"
-          class="size-3.5"
-        />
-        {{ cat.label }}
-      </SegmentedControlItem>
-    </SegmentedControl>
-  </div>
+      <SortControl
+        v-model:field="sortFieldModel"
+        v-model:direction="sortDirectionModel"
+        :options="SORT_OPTIONS"
+        size="sm"
+      />
+    </ToolbarRow>
+  </Toolbar>
 </template>

@@ -60,7 +60,7 @@ export const library = {
     status: '状态',
     playDuration: '游玩时长',
     lastActiveAt: '最近游玩',
-    order: '排序',
+    order: '自定义顺序',
     format: '类型',
     totalEpisodes: '总话数',
     totalSeasons: '总季数',
@@ -723,8 +723,6 @@ export const library = {
     enabledTypesCount: ({ count }: { count: number }) => `已启用 ${count} 个类型`,
     filterLabel: '筛选',
     sortLabel: '排序：',
-    sortAsc: '升序',
-    sortDesc: '降序',
     dynamicConfigHint: '已启用但未设置筛选条件的类型将包含该类型的全部项目',
     filterConfigUpdated: '筛选配置已更新',
 
@@ -768,18 +766,24 @@ export const library = {
     collectionsEmptyDescription: '创建合集来整理你的媒体库',
     favoritesTitle: '喜欢',
     favoritesEmpty: ({ label }: { label: string }) => `暂无喜欢的${label}`,
-    uncategorizedTitle: ({ label }: { label: string }) => `未分类${label}`,
+    uncategorizedTitle: '未分类',
     uncategorizedEmpty: ({ label }: { label: string }) => `所有${label}都已分类`,
     dynamicCollection: '动态合集'
   },
 
+  browse: {
+    membershipOrder: {
+      collection: '合集顺序',
+      tag: '标签顺序',
+      configured: '配置顺序',
+      default: '默认顺序'
+    },
+    noMatchTitle: '无匹配结果',
+    noMatchDescription: '调整搜索或筛选条件',
+    clearQuery: '清除搜索与筛选'
+  },
+
   explorer: {
-    filter: '筛选',
-    sort: '排序',
-    sortAsc: '升序',
-    sortDesc: '降序',
-    overrideCollectionSort: '覆盖合集内排序',
-    searchPlaceholder: '搜索…',
     filteredResults: '筛选结果',
     noMatch: '无匹配结果',
     emptyList: ({ label }: { label: string }) => `暂无${label}`,
@@ -839,8 +843,6 @@ export const library = {
       displayCount: '显示数量',
       displayCountUnlimited: '不限',
       sort: '排序',
-      sortAsc: '升序',
-      sortDesc: '降序',
       filters: '筛选条件',
       filtersSetCount: ({ count }: { count: number }) => `已设置 ${count} 个条件`,
       filtersClickToSet: '点击设置筛选条件…'

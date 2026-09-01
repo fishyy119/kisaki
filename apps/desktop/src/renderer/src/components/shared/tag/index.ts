@@ -11,4 +11,4 @@ export { TagContextMenu, TagMenuItems, TagDropdownMenu } from './menus'
 export { TagInfoFormDialog } from './forms'
 
 // Detail
-export { TagDetailContent, TagDetailDialog } from './detail'
+export { TagDetailActions, TagDetailContent, TagDetailDialog } from './detail'

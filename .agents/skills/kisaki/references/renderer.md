@@ -67,11 +67,13 @@ Rules:
 ### Entity Detail Providers (Dual Surface)
 
 The provider/consumer shell is owned once by `composables/entity-context.ts`:
-`createEntityDetailContext(spec)` builds the route loader (with cross-entry spoiler reset), the
+`createEntityDetailContext(spec)` builds the route loader (with cross-entry params reset), the
 dialog provider, the computed projection over the spec's `empty` shape, db-change invalidation,
-and the injected consumer. A `use-<entity>.ts` file declares only the spec — entity type, fetch
-function, empty projection, owned tables, entity table — and re-exports the factory's typed
-entries; the detail-route param derives from the entity type through the entity route grammar
+and the injected consumer. A `use-<entity>.ts` file declares only the spec — `entityType`,
+`empty` projection, `initialParams()`, `fetch(id, params, view)` (view carries the NSFW
+preference), `relevantTables(data)` (decided by the loaded data, so a resolved type or an
+active filter widens the set), and `entityTable` — and re-exports the factory's typed entries;
+the detail-route param derives from the entity type through the entity route grammar
 (`utils/entity-routes.ts`). Add a new entity detail surface by writing that spec, never by
 re-implementing the shell.
 
@@ -82,8 +84,12 @@ one shared fetcher, context assembly, and db-event sync:
 - `useGameDialogProvider(gameId)` - dialog surface; `useAsyncData` after mount.
 
 Both provide the same context; child components consume `useGame()` and cannot tell which
-surface they are on. Spoiler/tab state is owned by the provider (`spoilersRevealed` ref in the
-return value); toggling triggers an SWR refetch.
+surface they are on. In-page fetch parameters come back as `params`: one writable computed per
+spec param key; a set replaces the params holder wholesale and triggers a non-blocking SWR
+refetch. The seven content entities share `EntitySpoilerParams` (`params.spoilersRevealed`);
+the organizer surfaces (`use-tag`, `use-collection`) ride the same factory with
+`params.query: EntityListQuery` driving their browse band. Route-surface params live beside
+the loader and reset when a different entry loads; dialog params are instance-local.
 
 ## Naming & Organization Conventions
 
@@ -106,8 +112,8 @@ return value); toggling triggers an SWR refetch.
 - File: keep immediate-local context.
   - Preferred: `<parent>-<semantic>[-<role>]`
   - Allowed: `<semantic>-<role>` (when role already implies parent)
-  - Good: `features/library/explorer/toolbar/toolbar-search.vue`
-  - Avoid: `features/library/explorer/toolbar/library-explorer-toolbar-search.vue`
+  - Good: `features/library/explorer/toolbar/toolbar-nav.vue`
+  - Avoid: `features/library/explorer/toolbar/library-explorer-toolbar-nav.vue`
 
 ### Export & Import Gate
 

@@ -361,8 +361,9 @@ copy-paste.
 - Keep the type and its payload correlated by construction: a generic parameter plus `EntityRowMap[T]`
   ties `entityType` to `entity`, so no caller can pair one entity's id with another's row.
 - `as` on an entity payload is allowed only inside the single generic mechanism that owns that
-  correlation, with a comment saying why (`queryEntities`, `queryTaggedEntities`, `EntityCard`'s
-  target pair). Call sites never cast: a cast at a call site means the mechanism above it is missing.
+  correlation, with a comment saying why (`queryEntities` and the entity-scope builders,
+  `EntityCard`'s target pair). Call sites never cast: a cast at a call site means the mechanism
+  above it is missing.
 - Template dispatch narrows a discriminated union and ends with `assertNever`, so a new entity type
   fails to compile instead of rendering nothing. A bare `v-else` tail in a dispatch chain is a
   defect — it renders some other entity's component for the unhandled type.

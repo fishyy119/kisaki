@@ -44,6 +44,11 @@ type FilterUiFieldDefFor<TField> = TField extends {
 export interface FilterUiSortOption<TKey extends string = string> {
   key: TKey
   label: string
+  /**
+   * The field is an order of its own (a manual arrangement); a direction on
+   * it is meaningless, so sort controls pin it to ascending.
+   */
+  directionFixed?: boolean
 }
 
 /**

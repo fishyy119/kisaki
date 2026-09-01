@@ -62,6 +62,12 @@ export const common = {
   loadFailed: '読み込みに失敗しました',
   operationFailed: '操作に失敗しました',
 
+  // Sorting
+  sort: '並べ替え',
+  sortAscending: '昇順',
+  sortDescending: '降順',
+  sortDirectionFixed: 'この並び順は方向が固定です',
+
   // Placeholders and empty values
   emptyValue: '—',
   searchPlaceholder: '検索',

@@ -10,6 +10,7 @@ import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 
 import type { AllEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
+import { MEMBERSHIP_SORT_KEY } from './sort'
 
 /** How a date field is stored: epoch-ms integer or PartialDate JSON. */
 export type DateColumnMode = 'timestampMs' | 'partialDate'
@@ -83,6 +84,9 @@ export function defineFilterQuerySpec<const TInput extends FilterQuerySpecInput>
 
   const sortByKey = new Map<string, FilterQuerySortDef>()
   for (const def of input.sort.fields) {
+    if (def.key === MEMBERSHIP_SORT_KEY) {
+      throw new Error(`Sort key is reserved for scope order: ${def.key}`)
+    }
     if (sortByKey.has(def.key)) {
       throw new Error(`Duplicate sort key: ${def.key}`)
     }

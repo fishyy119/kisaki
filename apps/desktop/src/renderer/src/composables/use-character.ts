@@ -24,11 +24,14 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import type { MediaType } from '@shared/common'
 import {
   createEntityDetailContext,
+  createEntitySpoilerParams,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntitySpoilerParams
 } from './entity-context'
 
 // =============================================================================
@@ -61,7 +64,10 @@ export interface CharacterCastEntry {
 }
 
 export type CharacterContext = EntityDetailContext<CharacterData>
-export type CharacterProviderReturn = EntityDetailProviderReturn<CharacterData>
+export type CharacterProviderReturn = EntityDetailProviderReturn<
+  CharacterData,
+  EntitySpoilerParams
+>
 
 // =============================================================================
 // Data Fetcher
@@ -225,7 +231,7 @@ async function fetchCharacterData(
 // Context Wiring
 // =============================================================================
 
-const CHARACTER_LINK_TABLES = [
+const CHARACTER_LINK_TABLES: readonly TableName[] = [
   'character_tag_links',
   'game_character_links',
   'anime_character_links',
@@ -236,7 +242,7 @@ const CHARACTER_LINK_TABLES = [
   'character_person_links'
 ]
 
-const characterDetail = createEntityDetailContext<CharacterData>({
+const characterDetail = createEntityDetailContext<CharacterData, EntitySpoilerParams>({
   entityType: 'character',
   empty: {
     character: null,
@@ -248,8 +254,9 @@ const characterDetail = createEntityDetailContext<CharacterData>({
     persons: [],
     cast: []
   },
-  fetch: (id, view) => fetchCharacterData(id, view.spoilersRevealed, view.showNsfw),
-  ownedTables: CHARACTER_LINK_TABLES,
+  initialParams: createEntitySpoilerParams,
+  fetch: (id, params, view) => fetchCharacterData(id, params.spoilersRevealed, view.showNsfw),
+  relevantTables: () => CHARACTER_LINK_TABLES,
   entityTable: 'characters'
 })
 

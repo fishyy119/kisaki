@@ -69,7 +69,11 @@ const { exit } = useEntityDetailRoute('novel', novelId)
 // Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const { novel, error, spoilersRevealed } = useNovelRouteProvider()
+const {
+  novel,
+  error,
+  params: { spoilersRevealed }
+} = useNovelRouteProvider()
 
 const spoilerConfirmOpen = ref(false)
 

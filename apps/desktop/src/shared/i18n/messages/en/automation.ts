@@ -83,9 +83,7 @@ export const automation = {
     sourceAll: 'All sources',
     sourceApp: 'App',
     sourceExtension: 'Extension',
-    searchPlaceholder: 'Search automations…',
-    ascending: 'Ascending',
-    descending: 'Descending'
+    searchPlaceholder: 'Search automations…'
   },
 
   form: {

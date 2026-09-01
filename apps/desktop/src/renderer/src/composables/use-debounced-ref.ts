@@ -22,7 +22,10 @@
 
 import { ref, watch, onUnmounted, type Ref, type MaybeRefOrGetter, toValue } from 'vue'
 
-export function useDebouncedRef<T>(source: MaybeRefOrGetter<T>, delay: number): Ref<T> {
+export function useDebouncedRef<T>(
+  source: MaybeRefOrGetter<T>,
+  delay: MaybeRefOrGetter<number>
+): Ref<T> {
   const debouncedValue = ref(toValue(source)) as Ref<T>
 
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -35,7 +38,7 @@ export function useDebouncedRef<T>(source: MaybeRefOrGetter<T>, delay: number): 
       }
       timer = setTimeout(() => {
         debouncedValue.value = newValue
-      }, delay)
+      }, toValue(delay))
     }
   )
 

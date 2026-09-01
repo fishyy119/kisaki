@@ -19,13 +19,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@renderer/components/ui/select'
+import { SortControl, type SortOption } from '@renderer/components/ui/sort-control'
 import { FilterDialog, getFilterUiSpec } from '@renderer/components/shared/filter'
 import { useAsyncData } from '@renderer/composables'
 import { cn } from '@renderer/utils/cn'
@@ -129,8 +123,12 @@ const currentEntityFilter = computed({
   }
 })
 
-function getSortOptions(type: ContentEntityType) {
-  return getFilterUiSpec(type).value.sortOptions
+function getSortOptions(type: ContentEntityType): SortOption[] {
+  return getFilterUiSpec(type).value.sortOptions.map((option) => ({
+    value: option.key,
+    label: option.label,
+    directionFixed: option.directionFixed
+  }))
 }
 
 // Initialize config when dialog opens
@@ -228,7 +226,7 @@ function createSortFieldModel(type: ContentEntityType) {
 function createSortDirectionModel(type: ContentEntityType) {
   return computed({
     get: () => localConfig.value[type].sortDirection,
-    set: (v: string) => updateEntityConfig(type, { sortDirection: v as SortDirection })
+    set: (v: SortDirection) => updateEntityConfig(type, { sortDirection: v })
   })
 }
 
@@ -325,29 +323,11 @@ const sortDirectionModels = createModelsByEntityType(createSortDirectionModel)
 
               <!-- Sort controls -->
               <span class="text-xs text-muted-foreground">{{ m.library.forms.sortLabel }}</span>
-              <Select v-model="sortFieldModels[type].value">
-                <SelectTrigger class="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="field in getSortOptions(type)"
-                    :key="field.key"
-                    :value="field.key"
-                  >
-                    {{ field.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Select v-model="sortDirectionModels[type].value">
-                <SelectTrigger class="w-16">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="asc">{{ m.library.forms.sortAsc }}</SelectItem>
-                  <SelectItem value="desc">{{ m.library.forms.sortDesc }}</SelectItem>
-                </SelectContent>
-              </Select>
+              <SortControl
+                v-model:field="sortFieldModels[type].value"
+                v-model:direction="sortDirectionModels[type].value"
+                :options="getSortOptions(type)"
+              />
             </div>
           </div>
 

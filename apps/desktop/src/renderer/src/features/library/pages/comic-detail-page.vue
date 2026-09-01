@@ -69,7 +69,11 @@ const { exit } = useEntityDetailRoute('comic', comicId)
 // Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const { comic, error, spoilersRevealed } = useComicRouteProvider()
+const {
+  comic,
+  error,
+  params: { spoilersRevealed }
+} = useComicRouteProvider()
 
 const spoilerConfirmOpen = ref(false)
 

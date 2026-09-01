@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { SortControl, type SortOption } from '@renderer/components/ui/sort-control'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { FilterDialog, getFilterUiSpec } from '@renderer/components/shared/filter'
@@ -56,11 +57,6 @@ const ITEM_SIZES = computed(() => [
   { value: 'md', label: m.value.library.showcase.form.cardSizeMd },
   { value: 'lg', label: m.value.library.showcase.form.cardSizeLg },
   { value: 'xl', label: m.value.library.showcase.form.cardSizeXl }
-])
-
-const SORT_DIRECTIONS = computed(() => [
-  { value: 'asc', label: m.value.library.showcase.form.sortAsc },
-  { value: 'desc', label: m.value.library.showcase.form.sortDesc }
 ])
 
 const OPEN_MODES = computed<{ value: SectionOpenMode; label: string }[]>(() => [
@@ -139,17 +135,24 @@ watch(
 // =============================================================================
 
 const uiSpec = computed(() => getFilterUiSpec(formData.value.entityType).value)
-const sortFields = computed(() => uiSpec.value.sortOptions)
+const sortFields = computed<SortOption[]>(() =>
+  uiSpec.value.sortOptions.map((option) => ({
+    value: option.key,
+    label: option.label,
+    directionFixed: option.directionFixed
+  }))
+)
 const activeFilterCount = computed(() => countConditions(formData.value.filter))
 
 // Watch for entity type changes - update sort field and reset filter
 watch(
   () => formData.value.entityType,
   (newEntityType, oldEntityType) => {
-    // Update sort field if current one is not available for new entity type
+    // A sort field the new type does not declare falls back to the type's
+    // primary option (the first in its spec)
     const fields = getFilterUiSpec(newEntityType).value.sortOptions
     if (!fields.find((f) => f.key === formData.value.sortField)) {
-      formData.value.sortField = 'name'
+      formData.value.sortField = fields[0]?.key ?? 'name'
     }
 
     // Reset filter when entity type changes (since fields are different)
@@ -324,36 +327,12 @@ watch(open, (newOpen, oldOpen) => {
             <Field>
               <FieldLabel>{{ m.library.showcase.form.sort }}</FieldLabel>
               <FieldContent>
-                <div class="flex gap-2">
-                  <Select v-model="formData.sortField">
-                    <SelectTrigger class="flex-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="f in sortFields"
-                        :key="f.key"
-                        :value="f.key"
-                      >
-                        {{ f.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select v-model="formData.sortDirection">
-                    <SelectTrigger class="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="d in SORT_DIRECTIONS"
-                        :key="d.value"
-                        :value="d.value"
-                      >
-                        {{ d.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <SortControl
+                  v-model:field="formData.sortField"
+                  v-model:direction="formData.sortDirection"
+                  :options="sortFields"
+                  class="w-full"
+                />
               </FieldContent>
             </Field>
 

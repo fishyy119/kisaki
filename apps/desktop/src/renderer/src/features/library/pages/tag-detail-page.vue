@@ -2,29 +2,23 @@
 /**
  * Tag Detail Page
  *
- * Full page view for tag detail, used by routing.
- * Uses TagProvider for data management and shared TagDetailContent.
+ * Full page view of a tag: identity and operations in the header, the browse
+ * surface below. Data settles during navigation through the tag route loader.
  */
 
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Icon } from '@renderer/components/ui/icon'
-import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
+import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { StateView } from '@renderer/components/ui/state-view'
-import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
-import {
-  TagDetailContent,
-  TagDropdownMenu,
-  TagInfoFormDialog
-} from '@renderer/components/shared/tag'
+import { TagDetailActions, TagDetailContent } from '@renderer/components/shared/tag'
 import { useEntityDetailRoute, useTagRouteProvider } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { formatLibraryContext } from '@renderer/utils/library-context'
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/common'
 
 const { m } = useI18n()
 
@@ -43,32 +37,20 @@ const { exit } = useEntityDetailRoute('tag', tagId)
 // Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const { tag, entityType, entityCounts, setEntityType, error } = useTagRouteProvider()
-
-// =============================================================================
-// State
-// =============================================================================
-
-const editDialogOpen = ref(false)
-const scrollContainerRef = ref<HTMLElement>()
-
-// =============================================================================
-// Computed
-// =============================================================================
-
-const entityTypeModel = computed({
-  get: () => entityType.value,
-  set: (value: ContentEntityType) => setEntityType(value)
-})
+const {
+  tag,
+  error,
+  params: { query }
+} = useTagRouteProvider()
 
 // =============================================================================
 // Actions
 // =============================================================================
 
-function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
+function handleOpen(entityType: ContentEntityType, entityId: string) {
   if (!tag.value) return
   router.push({
-    path: getEntityDetailPath(payload.type, payload.id),
+    path: getEntityDetailPath(entityType, entityId),
     query: { from: formatLibraryContext({ kind: 'tag', tagId: tag.value.id }) }
   })
 }
@@ -103,9 +85,8 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
   <!-- Content -->
   <div
     v-else
-    class="h-full flex flex-col w-full"
+    class="flex h-full w-full flex-col"
   >
-    <!-- Header -->
     <PageHeader>
       <PageHeaderTitle
         :title="tag.name"
@@ -120,53 +101,14 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
       </Badge>
 
       <template #actions>
-        <!-- Entity type segmented control -->
-        <SegmentedControl v-model="entityTypeModel">
-          <SegmentedControlItem
-            v-for="type in CONTENT_ENTITY_TYPES"
-            :key="type"
-            :value="type"
-          >
-            {{ m.library.entities[type] }}
-            <span
-              v-if="entityCounts[type] > 0"
-              class="ml-1 text-xs text-muted-foreground"
-            >
-              ({{ entityCounts[type] }})
-            </span>
-          </SegmentedControlItem>
-        </SegmentedControl>
-
-        <Button
-          variant="secondary"
-          size="sm"
-          @click="editDialogOpen = true"
-        >
-          <Icon
-            icon="icon-[mdi--pencil-outline]"
-            class="size-4 mr-1.5"
-          />
-          {{ m.common.edit }}
-        </Button>
-        <TagDropdownMenu :tag-id="tag.id" />
+        <TagDetailActions :tag-id="tag.id" />
       </template>
     </PageHeader>
 
-    <!-- Main content -->
-    <div
-      ref="scrollContainerRef"
-      class="flex-1 overflow-auto bg-background p-4"
-    >
-      <TagDetailContent
-        :scroll-parent="scrollContainerRef"
-        @entity-click="handleEntityClick"
-      />
-    </div>
+    <TagDetailContent
+      v-model:query="query"
+      class="min-h-0 flex-1 bg-background"
+      @open="handleOpen"
+    />
   </div>
-
-  <TagInfoFormDialog
-    v-if="editDialogOpen && tagId"
-    v-model:open="editDialogOpen"
-    :tag-id="tagId"
-  />
 </template>

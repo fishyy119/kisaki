@@ -213,8 +213,6 @@ export const extension = {
     allRepositories: 'All repositories',
     compatibleOnly: 'Show compatible versions only',
     allCompatibility: 'Show all compatibility states',
-    ascending: 'Ascending',
-    descending: 'Descending',
     allCategories: 'All',
     unknownAuthor: 'Unknown author',
     sourceCount: ({ count }: { count: number }) => (count === 1 ? '1 source' : `${count} sources`),
@@ -258,8 +256,6 @@ export const extension = {
     checkUpdates: 'Check for updates',
     showAll: 'Show all',
     showUpdatesOnly: 'Show updates only',
-    ascending: 'Ascending',
-    descending: 'Descending',
     updatesAvailable: 'Updates available',
     updatesAvailableCount: ({ count }: { count: number }) =>
       count === 1 ? '1 extension can be updated' : `${count} extensions can be updated`,
@@ -362,11 +358,6 @@ export const extension = {
     disabledFeedback: 'Repository disabled',
     deleted: 'Repository deleted',
     operationFailed: 'Repository operation failed',
-    panelTitle: 'Extension repositories',
-    panelSummary: ({ count }: { count: number }) =>
-      count === 1
-        ? '1 repository; discovery catalogs merge by priority'
-        : `${count} repositories; discovery catalogs merge by priority`,
     refreshAll: 'Refresh all',
     addOfficial: 'Add official repository',
     add: 'Add repository',
@@ -416,11 +407,6 @@ export const extension = {
     localConfirmation: 'Local confirmation',
     revoked: 'Signature trust revoked',
     revokeFailed: 'Could not revoke the signature trust',
-    panelTitle: 'Signature trust',
-    panelSummary: ({ count }: { count: number }) =>
-      count === 1
-        ? '1 extension-level signature fingerprint'
-        : `${count} extension-level signature fingerprints`,
     emptyTitle: 'No trusted signature fingerprints',
     sourceLine: ({ value }: { value: string }) => `Source: ${value}`,
     trustedAtLine: ({ value }: { value: string }) => `Trusted: ${value}`,

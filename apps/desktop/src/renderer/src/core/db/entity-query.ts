@@ -1,47 +1,58 @@
 /**
  * Entity query executor.
  *
- * Single renderer-side implementation for filter/search/sort entity queries.
- * NSFW visibility, filter + search composition, and ordering are owned here;
- * the row-type cast below is the module's one controlled unsafe point.
+ * Single renderer-side implementation for scoped filter/search/sort entity
+ * queries. NSFW visibility, scope + filter + search composition, and ordering
+ * are owned here; the row-type cast below is the module's one controlled
+ * unsafe point.
  */
-import { and, count, eq, inArray, notInArray, type SQL } from 'drizzle-orm'
+import { and, count, eq, inArray, type SQL } from 'drizzle-orm'
 
-import type { AllEntityType, SortDirection } from '@shared/common'
+import type { AllEntityType } from '@shared/common'
 import {
   buildFilterConditions,
   buildOrderBy,
   getFilterQuerySpec,
+  isMembershipSort,
+  type EntitySort,
+  type FilterQuerySpec,
   type FilterState
 } from '@shared/filter'
 import { buildSearchCondition, getSearchQuerySpec } from '@shared/search'
+import type { EntityScope } from './entity-scope'
 import { ENTITY_TABLES, type EntityRowMap } from './entity-tables'
 import { db } from './proxy'
 
 export interface EntityQueryOptions {
+  /** What the surface fixes before the user's query applies; always AND-ed. */
+  scope?: EntityScope
   filter?: FilterState
   search?: string | null
-  sortField?: string
-  sortDirection?: SortDirection
+  /**
+   * Omitted: the spec default order. Membership: the scope's own order, or
+   * the spec default when the scope has none; its direction is ignored.
+   */
+  sort?: EntitySort
   limit?: number
-  /** Rows to leave out, such as entries already picked or already grouped. */
-  excludeIds?: readonly string[]
   includeNsfw: boolean
 }
 
 function buildWhere(entityType: AllEntityType, options: EntityQueryOptions): SQL | undefined {
+  const spec = getFilterQuerySpec(entityType)
   const parts: SQL[] = []
 
+  if (options.scope?.where) parts.push(options.scope.where)
+  if (options.scope?.filter) {
+    const scopeWhere = buildFilterConditions(spec, options.scope.filter)
+    if (scopeWhere) parts.push(scopeWhere)
+  }
   if (options.filter) {
-    const filterWhere = buildFilterConditions(getFilterQuerySpec(entityType), options.filter)
+    const filterWhere = buildFilterConditions(spec, options.filter)
     if (filterWhere) parts.push(filterWhere)
   }
   if (options.search) {
     const searchWhere = buildSearchCondition(getSearchQuerySpec(entityType), options.search)
     if (searchWhere) parts.push(searchWhere)
-  }
-  if (options.excludeIds && options.excludeIds.length > 0) {
-    parts.push(notInArray(ENTITY_TABLES[entityType].idColumn, [...options.excludeIds]))
   }
   if (!options.includeNsfw) {
     parts.push(eq(ENTITY_TABLES[entityType].isNsfwColumn, false))
@@ -51,13 +62,17 @@ function buildWhere(entityType: AllEntityType, options: EntityQueryOptions): SQL
   return and(...parts)
 }
 
+function buildDefaultOrder(spec: FilterQuerySpec): SQL {
+  return buildOrderBy(spec, spec.sort.defaultKey, 'asc')
+}
+
 function buildOrder(entityType: AllEntityType, options: EntityQueryOptions): SQL {
   const spec = getFilterQuerySpec(entityType)
-  return buildOrderBy(
-    spec,
-    options.sortField ?? spec.sort.defaultKey,
-    options.sortDirection ?? 'asc'
-  )
+  const sort = options.sort
+
+  if (!sort) return buildDefaultOrder(spec)
+  if (isMembershipSort(sort)) return options.scope?.order ?? buildDefaultOrder(spec)
+  return buildOrderBy(spec, sort.key, sort.direction)
 }
 
 export async function queryEntities<T extends AllEntityType>(
@@ -88,7 +103,7 @@ export async function queryEntityRow<T extends AllEntityType>(
 
 export async function countEntities(
   entityType: AllEntityType,
-  options: Omit<EntityQueryOptions, 'sortField' | 'sortDirection' | 'limit'>
+  options: Omit<EntityQueryOptions, 'sort' | 'limit'>
 ): Promise<number> {
   const def = ENTITY_TABLES[entityType]
 

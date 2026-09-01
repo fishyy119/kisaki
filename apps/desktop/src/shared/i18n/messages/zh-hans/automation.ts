@@ -81,9 +81,7 @@ export const automation = {
     sourceAll: '全部来源',
     sourceApp: '应用',
     sourceExtension: '扩展',
-    searchPlaceholder: '搜索自动化…',
-    ascending: '升序',
-    descending: '降序'
+    searchPlaceholder: '搜索自动化…'
   },
 
   form: {

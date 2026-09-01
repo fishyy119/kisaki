@@ -24,11 +24,14 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
 import {
   createEntityDetailContext,
+  createEntitySpoilerParams,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntitySpoilerParams
 } from './entity-context'
 
 // =============================================================================
@@ -53,7 +56,7 @@ export interface ComicData {
 }
 
 export type ComicContext = EntityDetailContext<ComicData>
-export type ComicProviderReturn = EntityDetailProviderReturn<ComicData>
+export type ComicProviderReturn = EntityDetailProviderReturn<ComicData, EntitySpoilerParams>
 
 // =============================================================================
 // Data Fetcher
@@ -200,7 +203,7 @@ async function attachChapterFiles(chapters: ComicChapter[]): Promise<ComicChapte
 // Context Wiring
 // =============================================================================
 
-const COMIC_OWNED_TABLES = [
+const COMIC_OWNED_TABLES: readonly TableName[] = [
   'comic_chapters',
   'comic_chapter_files',
   'comic_notes',
@@ -212,7 +215,7 @@ const COMIC_OWNED_TABLES = [
   'media_relations'
 ]
 
-const comicDetail = createEntityDetailContext<ComicData>({
+const comicDetail = createEntityDetailContext<ComicData, EntitySpoilerParams>({
   entityType: 'comic',
   empty: {
     comic: null,
@@ -225,8 +228,9 @@ const comicDetail = createEntityDetailContext<ComicData>({
     relations: [],
     sessions: []
   },
-  fetch: (id, view) => fetchComicData(id, view.spoilersRevealed, view.showNsfw),
-  ownedTables: COMIC_OWNED_TABLES,
+  initialParams: createEntitySpoilerParams,
+  fetch: (id, params, view) => fetchComicData(id, params.spoilersRevealed, view.showNsfw),
+  relevantTables: () => COMIC_OWNED_TABLES,
   entityTable: 'comics'
 })
 

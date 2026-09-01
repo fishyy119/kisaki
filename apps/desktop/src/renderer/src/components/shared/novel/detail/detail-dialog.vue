@@ -50,7 +50,12 @@ const open = defineModel<boolean>('open', { default: false })
 // =============================================================================
 
 const novelId = computed(() => props.entityId)
-const { novel, isLoading, error, spoilersRevealed } = useNovelDialogProvider(novelId)
+const {
+  novel,
+  isLoading,
+  error,
+  params: { spoilersRevealed }
+} = useNovelDialogProvider(novelId)
 const state = useRenderState(isLoading, error, novel)
 
 const spoilerConfirmOpen = ref(false)

@@ -1,5 +1,11 @@
 export { default as EntityCard } from './card'
 export { EntityAssetsFormDialog } from './assets'
+export {
+  EntityBrowseGrid,
+  EntityBrowsePanel,
+  EntityBrowseTabs,
+  EntityBrowseToolbar
+} from './browse'
 export { EntityDetailDialog, type EntityDetailTarget } from './detail'
 export { EntityDeleteFormDialog, EntityBatchDeleteFormDialog } from './delete'
 export { EntityMergeDialog } from './merge'

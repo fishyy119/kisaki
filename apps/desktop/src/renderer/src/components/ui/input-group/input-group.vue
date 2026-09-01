@@ -4,20 +4,24 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@renderer/utils/cn'
 
 interface Props {
+  /** Control size step; the group sizes its inner input with it. */
+  size?: 'default' | 'sm'
   class?: HTMLAttributes['class']
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { size: 'default' })
 </script>
 
 <template>
   <div
     data-slot="input-group"
     role="group"
+    :data-size="props.size"
     :class="
       cn(
         'group/input-group relative flex w-full items-center rounded-md border border-border bg-input transition-colors',
         'h-7 min-w-0 has-[>textarea]:h-auto',
+        props.size === 'sm' && 'h-6 [&>input]:h-full [&>input]:text-xs',
 
         // Variants based on alignment
         'has-[>[data-align=inline-start]]:[&>input]:pl-2',

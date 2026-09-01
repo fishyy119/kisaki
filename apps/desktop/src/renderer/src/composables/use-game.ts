@@ -23,11 +23,14 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
 import {
   createEntityDetailContext,
+  createEntitySpoilerParams,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntitySpoilerParams
 } from './entity-context'
 
 // =============================================================================
@@ -58,7 +61,7 @@ export interface GameCastEntry extends GameCastLink {
 }
 
 export type GameContext = EntityDetailContext<GameData>
-export type GameProviderReturn = EntityDetailProviderReturn<GameData>
+export type GameProviderReturn = EntityDetailProviderReturn<GameData, EntitySpoilerParams>
 
 // =============================================================================
 // Data Fetcher
@@ -187,7 +190,7 @@ async function fetchGameData(
 // Context Wiring
 // =============================================================================
 
-const GAME_OWNED_TABLES = [
+const GAME_OWNED_TABLES: readonly TableName[] = [
   'game_notes',
   'game_sessions',
   'game_tag_links',
@@ -198,7 +201,7 @@ const GAME_OWNED_TABLES = [
   'media_relations'
 ]
 
-const gameDetail = createEntityDetailContext<GameData>({
+const gameDetail = createEntityDetailContext<GameData, EntitySpoilerParams>({
   entityType: 'game',
   empty: {
     game: null,
@@ -211,8 +214,9 @@ const gameDetail = createEntityDetailContext<GameData>({
     relations: [],
     sessions: []
   },
-  fetch: (id, view) => fetchGameData(id, view.spoilersRevealed, view.showNsfw),
-  ownedTables: GAME_OWNED_TABLES,
+  initialParams: createEntitySpoilerParams,
+  fetch: (id, params, view) => fetchGameData(id, params.spoilersRevealed, view.showNsfw),
+  relevantTables: () => GAME_OWNED_TABLES,
   entityTable: 'games'
 })
 

@@ -61,7 +61,11 @@ const { exit } = useEntityDetailRoute('game', gameId)
 // Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const { game, error, spoilersRevealed } = useGameRouteProvider()
+const {
+  game,
+  error,
+  params: { spoilersRevealed }
+} = useGameRouteProvider()
 
 const spoilerConfirmOpen = ref(false)
 

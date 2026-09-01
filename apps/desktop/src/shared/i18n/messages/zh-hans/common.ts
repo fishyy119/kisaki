@@ -62,6 +62,12 @@ export const common = {
   loadFailed: '加载失败',
   operationFailed: '操作失败',
 
+  // Sorting
+  sort: '排序',
+  sortAscending: '升序',
+  sortDescending: '降序',
+  sortDirectionFixed: '此排序方向固定',
+
   // Placeholders and empty values
   emptyValue: '—',
   searchPlaceholder: '搜索',

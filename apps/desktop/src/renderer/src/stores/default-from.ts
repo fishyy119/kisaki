@@ -24,7 +24,13 @@ import { ref, readonly, watch, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 import { and, eq, type SQL } from 'drizzle-orm'
-import { db, queryEntityIds, COLLECTION_LINKS, ENTITY_TABLES } from '@renderer/core/db'
+import {
+  db,
+  queryEntityIds,
+  buildDynamicCollectionScope,
+  COLLECTION_LINKS,
+  ENTITY_TABLES
+} from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { formatLibraryContext } from '@renderer/utils/library-context'
 import { getFilterRelevantTables } from '@shared/filter'
@@ -226,10 +232,9 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
     const entityConfig = dynamicConfig[entityType]
     if (!entityConfig.enabled) return []
 
+    // Membership only: the order of the ids is irrelevant to the map.
     return await queryEntityIds(entityType, {
-      filter: entityConfig.filter,
-      sortField: entityConfig.sortField,
-      sortDirection: entityConfig.sortDirection,
+      scope: buildDynamicCollectionScope(entityType, entityConfig),
       includeNsfw: showNsfw.value
     })
   }

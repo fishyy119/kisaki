@@ -44,7 +44,11 @@ const { exit } = useEntityDetailRoute('company', companyId)
 
 const { m } = useI18n()
 
-const { company, error, spoilersRevealed } = useCompanyRouteProvider()
+const {
+  company,
+  error,
+  params: { spoilersRevealed }
+} = useCompanyRouteProvider()
 
 const spoilerConfirmOpen = ref(false)
 

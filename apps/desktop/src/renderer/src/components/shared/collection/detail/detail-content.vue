@@ -1,86 +1,58 @@
 <!--
   CollectionDetailContent
-
-  Content area for collection detail views (page and dialog).
-  Uses CollectionProvider context for data.
-  Cards have built-in lazy loading.
+  Browse surface of a collection: its members, one content type at a time,
+  under the list query the host owns. A dynamic collection only offers the
+  types it is configured for. Shared by the page and the dialog.
 -->
 <script setup lang="ts">
-import { computed } from 'vue'
-import { VirtualGrid } from '@renderer/components/ui/virtual'
-import { EntityCard } from '@renderer/components/shared'
-import { StateView } from '@renderer/components/ui/state-view'
-import { useCollection, useRenderState } from '@renderer/composables'
-import type { ContentEntityData } from '@renderer/composables'
+import { computed, type HTMLAttributes } from 'vue'
+import { EntityBrowsePanel } from '@renderer/components/shared/entity'
+import { useCollection, useI18n, type EntityListQuery } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { ContentEntityType } from '@shared/common'
-import { useI18n } from '@renderer/composables'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+
+interface Props {
+  class?: HTMLAttributes['class']
+}
+
+const props = defineProps<Props>()
+
+const query = defineModel<EntityListQuery>('query', { required: true })
+
+const emit = defineEmits<{
+  open: [entityType: ContentEntityType, id: string]
+}>()
 
 const { m } = useI18n()
 
-interface Props {
-  scrollParent?: HTMLElement | null
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  scrollParent: null
-})
-
-const { collection, entities, entityType, isLoading, error } = useCollection()
-const state = useRenderState(isLoading, error, collection)
+const { collection, entities, entityType, counts, configuredTypes } = useCollection()
 
 const entityLabel = computed(() => m.value.library.entities[entityType.value])
 
-const emit = defineEmits<{
-  (
-    e: 'entity-click',
-    payload: { type: ContentEntityType; id: string; entity: ContentEntityData }
-  ): void
-}>()
+const disabledTypes = computed(() =>
+  CONTENT_ENTITY_TYPES.filter((type) => !configuredTypes.value.includes(type))
+)
 
-function handleItemClick(entity: ContentEntityData) {
-  if (state.value !== 'success') return
-  emit('entity-click', { type: entityType.value, id: entity.id, entity })
-}
+const membershipLabel = computed(() =>
+  collection.value?.isDynamic
+    ? m.value.library.browse.membershipOrder.configured
+    : m.value.library.browse.membershipOrder.collection
+)
 </script>
 
 <template>
-  <!-- Loading / Error / Not Found -->
-  <StateView
-    v-if="state === 'loading' || state === 'error' || state === 'not-found'"
-    :state="state"
-    :error="error"
-    :icon="getEntityIcon('collection')"
-    :title="m.library.detail.notFoundTitle({ label: m.library.entities.collection })"
-    :description="m.library.detail.notFoundDescription({ label: m.library.entities.collection })"
-    class="h-full"
+  <EntityBrowsePanel
+    v-if="collection"
+    v-model:query="query"
+    :class="props.class"
+    :entity-type="entityType"
+    :entities="entities"
+    :counts="counts"
+    :disabled-types="disabledTypes"
+    :membership-label="membershipLabel"
+    :empty-icon="getEntityIcon('collection')"
+    :empty-title="m.library.detail.collectionEmptyTitle({ label: entityLabel })"
+    :empty-description="m.library.detail.collectionEmptyDescription({ label: entityLabel })"
+    @open="(type, id) => emit('open', type, id)"
   />
-
-  <!-- Empty state -->
-  <StateView
-    v-else-if="state === 'success' && entities.length === 0"
-    state="empty"
-    :icon="getEntityIcon(entityType)"
-    :title="m.library.detail.collectionEmptyTitle({ label: entityLabel })"
-    :description="m.library.detail.collectionEmptyDescription({ label: entityLabel })"
-    class="h-full"
-  />
-
-  <!-- Content -->
-  <VirtualGrid
-    v-else-if="state === 'success'"
-    :items="entities"
-    :get-key="(item) => item.id"
-    :scroll-parent="props.scrollParent"
-    class="grid grid-cols-[repeat(auto-fill,8rem)] gap-3 justify-between"
-  >
-    <template #item="{ item }">
-      <EntityCard
-        :entity-type="entityType"
-        :entity="item"
-        class="w-full"
-        @click="handleItemClick(item)"
-      />
-    </template>
-  </VirtualGrid>
 </template>

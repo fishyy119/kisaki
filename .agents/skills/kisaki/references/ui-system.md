@@ -198,9 +198,10 @@ in between stay transparent. This keeps transmission uniform window-wide.
    paint the region you are - exactly once; never as a fill inside another
    plane, and never repainted by children.
 2. **Fill** (how far do I rise from my plane): relative tints only, direction
-   constant on every plane. Toolbars/filter bars `bg-muted/30` + border. Table
-   headers are `bg-muted/30` (footers `bg-muted/20`) and always OUTSIDE the
-   scroll container - nothing is ever pinned over scrolling content. Band
+   constant on every plane. Toolbars/filter bars are the `Toolbar` component,
+   which owns the band chrome (`bg-muted/30` + border) - see the Band recipe.
+   Table headers are `bg-muted/30` (footers `bg-muted/20`) and always OUTSIDE
+   the scroll container - nothing is ever pinned over scrolling content. Band
    strength is calibrated with the light theme ladder (background 0.965 /
    bands ~0.95 / surface 0.935): stronger tints land below the surface chrome
    and the layers fuse. Every headered columnar list is a real `Table`; the
@@ -364,11 +365,51 @@ See `buttonVariants` in `components/ui/button.vue`:
   fill, not a plane: apparatus is ink-shaded in light mode and lit in dark mode,
   same as toolbar bands. Never fake slab chrome with `bg-surface`.
 - Scope maps to region in a tool dialog. Header: identity only (title + the
-  top-right close; action buttons would sit awkwardly beside it). Band strip:
-  tab-scoped controls - the scope switch plus the active tab's filters, with a
-  constant footprint so nothing shifts on tab switch. Footer: dialog-global
-  operations (refresh, bulk maintenance) as labeled buttons - the footer is the
-  dialog-level action zone and never varies with tabs.
+  top-right close; action buttons would sit awkwardly beside it). Band: a
+  `Toolbar` at the top of the body - the scope row above the active tab's
+  query row (see the Band recipe), with a constant footprint so nothing
+  shifts on tab switch. Footer: dialog-global operations (refresh, bulk
+  maintenance) as labeled buttons - the footer is the dialog-level action
+  zone and never varies with tabs.
+
+### Band (Toolbar)
+
+Every strip of query controls under a page or dialog header is the `Toolbar`
+component (`components/ui/toolbar`): it owns the band chrome (`bg-muted/30` +
+`border-b`) and stacks `ToolbarRow`s. No surface hand-builds the strip.
+
+The band chrome is fill, not a plane: the host must paint the pane under the
+band region (a page wraps band + body in one `bg-background` region, as the
+automation page and `EntityBrowsePanel` hosts do; a dialog's band sits on the
+opaque `bg-dialog` slab). A band over an unpainted container leaks the raw
+lightbox layers through the fill.
+
+- Row order: the scope row (which body of content - tabs with icon + label +
+  count) sits above the query row (what to see inside it). A surface without
+  a scope switch keeps only the query row.
+- Query row order is fixed: `SearchInput` (`flex-1`) → match count (only
+  while a query is active) → enum filters / `SortControl` → `FilterTrigger`.
+- `ToolbarRow` is a container query root: tab labels collapse to icon +
+  tooltip below the width threshold (the explorer rail is the consumer).
+- Operations (check updates, refresh, clear) never enter the band - they
+  belong to page `#actions` or the `DialogFooter`.
+- `SearchInput` owns the search debounce (default 200ms; clearing commits at
+  once; an outside model reset replaces the draft). `SortControl` is the one
+  sort control - field select + direction toggle sharing one options list,
+  `compact` folds both into an icon-triggered menu for narrow rails. An
+  option that is an order of its own (membership, a manual arrangement)
+  declares `directionFixed`: it sits first in its list, pins the direction
+  to ascending, and disables the toggle. `FilterTrigger` opens the shared
+  `FilterPanel` over a `FilterState` and is how entity lists filter; admin
+  lists (status / source / category enums) keep their own enum controls.
+- A band row is one size step: every control on it takes `size="sm"`
+  (`SearchInput`, `SortControl`, selects, `icon-sm` buttons). The same
+  components at their default size serve forms - the form sort field is the
+  default-size `SortControl`.
+- Content entity surfaces do not assemble the band by hand either:
+  `EntityBrowsePanel` / `EntityBrowseToolbar` compose it over one
+  `EntityListQuery` (tabs with counts, search, hit count, membership-first
+  sort, filter).
 
 ### Empty / Loading / Error (StateView)
 

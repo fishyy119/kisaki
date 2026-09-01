@@ -12,11 +12,7 @@ export {
   LibraryExplorerGroup,
   LibraryExplorerListItem,
   LibraryExplorerFooter,
-  LibraryExplorerToolbarNav,
-  LibraryExplorerToolbarTabs,
-  LibraryExplorerToolbarSearch,
-  LibraryExplorerToolbarSort,
-  LibraryExplorerToolbarFilter
+  LibraryExplorerToolbarNav
 } from './explorer'
 
 // Showcase

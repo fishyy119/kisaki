@@ -34,7 +34,7 @@ const releaseRequest = ref<ExtensionCreateRepositoryReleasePlanRequest | null>(n
 const releaseDialogOpen = ref(false)
 const queryKey = computed(() =>
   [
-    store.searchTrigger,
+    store.searchQuery,
     store.selectedRepositoryId ?? 'all',
     store.selectedCategory ?? 'all',
     store.compatibleOnly ? 'compatible' : 'any',

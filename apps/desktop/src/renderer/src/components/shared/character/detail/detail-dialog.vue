@@ -47,7 +47,12 @@ const open = defineModel<boolean>('open', { required: true })
 // Provider
 // =============================================================================
 
-const { character, isLoading, error, spoilersRevealed } = useCharacterDialogProvider(
+const {
+  character,
+  isLoading,
+  error,
+  params: { spoilersRevealed }
+} = useCharacterDialogProvider(
   () => props.entityId
 )
 const state = useRenderState(isLoading, error, character)

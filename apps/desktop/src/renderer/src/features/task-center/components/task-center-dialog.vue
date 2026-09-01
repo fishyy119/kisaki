@@ -13,6 +13,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
+import { Toolbar, ToolbarRow } from '@renderer/components/ui/toolbar'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { cn } from '@renderer/utils/cn'
@@ -223,16 +224,16 @@ async function handleCancel(run: TaskRun): Promise<void> {
           v-model="selectedTab"
           class="flex h-[min(72vh,660px)] min-h-[420px] flex-col gap-0 overflow-hidden"
         >
-          <!-- Band strip shared by both tabs: scope switch + the selected tab's controls -->
-          <div
-            class="flex shrink-0 items-center gap-3 border-b border-border bg-muted/30 px-4 py-2"
-          >
-            <TabsList class="shrink-0">
-              <TabsTrigger value="active">{{ m.task.tabActive }} ({{ activeCount }})</TabsTrigger>
-              <TabsTrigger value="completed">
-                {{ m.task.tabCompleted }} ({{ completedCount }})
-              </TabsTrigger>
-            </TabsList>
+          <!-- Band shared by both tabs: the scope row, then the selected tab's query row -->
+          <Toolbar>
+            <ToolbarRow>
+              <TabsList class="shrink-0">
+                <TabsTrigger value="active">{{ m.task.tabActive }} ({{ activeCount }})</TabsTrigger>
+                <TabsTrigger value="completed">
+                  {{ m.task.tabCompleted }} ({{ completedCount }})
+                </TabsTrigger>
+              </TabsList>
+            </ToolbarRow>
 
             <ActiveTaskRunToolbar
               v-if="selectedTab === 'active'"
@@ -248,7 +249,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
               v-model:status="completedStatusFilter"
               :filtered-count="filteredCompletedRuns.length"
             />
-          </div>
+          </Toolbar>
 
           <div
             v-if="error"

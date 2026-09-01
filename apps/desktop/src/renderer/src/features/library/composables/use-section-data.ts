@@ -31,8 +31,7 @@ export function useSectionData(section: MaybeRefOrGetter<ShowcaseSection>) {
     const s = toValue(section)
     return await queryEntities(s.entityType, {
       filter: s.filter,
-      sortField: s.sortField,
-      sortDirection: s.sortDirection,
+      sort: { key: s.sortField, direction: s.sortDirection },
       limit: s.limit ?? undefined,
       includeNsfw: showNsfw.value
     })

@@ -24,11 +24,14 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import type { MediaType } from '@shared/common'
 import {
   createEntityDetailContext,
+  createEntitySpoilerParams,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntitySpoilerParams
 } from './entity-context'
 
 // =============================================================================
@@ -62,7 +65,7 @@ export interface PersonCastEntry {
 }
 
 export type PersonContext = EntityDetailContext<PersonData>
-export type PersonProviderReturn = EntityDetailProviderReturn<PersonData>
+export type PersonProviderReturn = EntityDetailProviderReturn<PersonData, EntitySpoilerParams>
 
 // =============================================================================
 // Data Fetcher
@@ -224,7 +227,7 @@ async function fetchPersonData(
 // Context Wiring
 // =============================================================================
 
-const PERSON_LINK_TABLES = [
+const PERSON_LINK_TABLES: readonly TableName[] = [
   'person_tag_links',
   'game_person_links',
   'anime_person_links',
@@ -235,7 +238,7 @@ const PERSON_LINK_TABLES = [
   'character_person_links'
 ]
 
-const personDetail = createEntityDetailContext<PersonData>({
+const personDetail = createEntityDetailContext<PersonData, EntitySpoilerParams>({
   entityType: 'person',
   empty: {
     person: null,
@@ -247,8 +250,9 @@ const personDetail = createEntityDetailContext<PersonData>({
     characters: [],
     cast: []
   },
-  fetch: (id, view) => fetchPersonData(id, view.spoilersRevealed, view.showNsfw),
-  ownedTables: PERSON_LINK_TABLES,
+  initialParams: createEntitySpoilerParams,
+  fetch: (id, params, view) => fetchPersonData(id, params.spoilersRevealed, view.showNsfw),
+  relevantTables: () => PERSON_LINK_TABLES,
   entityTable: 'persons'
 })
 

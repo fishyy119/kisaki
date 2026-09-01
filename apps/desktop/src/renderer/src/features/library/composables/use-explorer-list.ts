@@ -10,6 +10,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   db,
+  buildDynamicCollectionScope,
   queryEntities,
   queryEntityIds,
   COLLECTION_LINKS,
@@ -18,7 +19,7 @@ import {
 import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { useLibraryExplorerStore } from '../stores'
 import { usePreferencesStore } from '@renderer/stores'
-import { getFilterRelevantTables } from '@shared/filter'
+import { createMembershipSort, getFilterRelevantTables, isMembershipSort } from '@shared/filter'
 import type { ContentEntityType } from '@shared/common'
 
 // =============================================================================
@@ -47,21 +48,22 @@ export interface ExplorerListData {
 
 export function useExplorerList() {
   const store = useLibraryExplorerStore()
-  const { activeEntityType, search, filter, sortField, sortDirection, overrideCollectionOrder } =
-    storeToRefs(store)
+  const { activeEntityType, query } = storeToRefs(store)
 
   const preferencesStore = usePreferencesStore()
   const { showNsfw } = storeToRefs(preferencesStore)
 
   async function fetchExplorerData(): Promise<ExplorerListData> {
     const entityType = activeEntityType.value
+    // Membership: each group keeps its collection's own order and the base
+    // list falls to the spec default; a field key ranks every list alike.
+    const keepsCollectionOrder = isMembershipSort(query.value.sort)
 
     // Fetch entities matching the current search/filter/sort
     const entities = await queryEntities(entityType, {
-      filter: filter.value,
-      search: search.value,
-      sortField: sortField.value,
-      sortDirection: sortDirection.value,
+      filter: query.value.filter,
+      search: query.value.search,
+      sort: query.value.sort,
       includeNsfw: showNsfw.value
     })
 
@@ -84,6 +86,8 @@ export function useExplorerList() {
     // Lookup maps: entity by id, and global sort rank by id
     const entityMap = new Map(entities.map((e) => [e.id, e]))
     const rankById = new Map(entities.map((e, index) => [e.id, index]))
+    const byRank = (a: EntityData, b: EntityData) =>
+      (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0)
 
     // Group entities by collection
     const linkedEntityIds = new Set<string>()
@@ -91,7 +95,7 @@ export function useExplorerList() {
 
     for (const collection of allCollections) {
       if (collection.isDynamic) {
-        // Dynamic collection: query ids based on filter config, then
+        // Dynamic collection: query ids in the configured order, then
         // intersect with the current search/filter result set
         const dynamicConfig = collection.dynamicConfig
         if (!dynamicConfig) continue
@@ -100,15 +104,15 @@ export function useExplorerList() {
         if (!entityConfig.enabled) continue
 
         const dynamicIds = await queryEntityIds(entityType, {
-          filter: entityConfig.filter,
-          sortField: entityConfig.sortField,
-          sortDirection: entityConfig.sortDirection,
+          scope: buildDynamicCollectionScope(entityType, entityConfig),
+          sort: createMembershipSort(),
           includeNsfw: showNsfw.value
         })
 
         const filteredEntities = dynamicIds
           .map((id) => entityMap.get(id))
           .filter((entity): entity is EntityData => entity !== undefined)
+        if (!keepsCollectionOrder) filteredEntities.sort(byRank)
 
         if (filteredEntities.length > 0) {
           collectionGroups.push({
@@ -132,15 +136,12 @@ export function useExplorerList() {
           if (entity) collectionEntities.push(entity)
         }
 
-        // Sort based on override preference
-        if (overrideCollectionOrder.value) {
-          // Use global sort order from the main list
-          collectionEntities.sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0))
-        } else {
-          // Use collection internal order (orderInCollection)
+        if (keepsCollectionOrder) {
           collectionEntities.sort(
             (a, b) => (entityOrderMap.get(a.id) ?? 0) - (entityOrderMap.get(b.id) ?? 0)
           )
+        } else {
+          collectionEntities.sort(byRank)
         }
 
         if (collectionEntities.length > 0) {
@@ -166,17 +167,9 @@ export function useExplorerList() {
     }
   }
 
-  // Fetch on mount and when filter/sort changes
+  // Fetch on mount and on any query change (the query replaces wholesale)
   const { data, isLoading, isFetching, refetch } = useAsyncData(fetchExplorerData, {
-    watch: [
-      activeEntityType,
-      search,
-      filter,
-      sortField,
-      sortDirection,
-      overrideCollectionOrder,
-      showNsfw
-    ]
+    watch: [query, showNsfw]
   })
 
   // Listen for DB events: entity table, relation link tables (filters and

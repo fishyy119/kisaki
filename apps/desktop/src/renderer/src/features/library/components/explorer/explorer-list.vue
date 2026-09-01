@@ -18,8 +18,7 @@ import { useLibraryExplorerStore } from '../../stores'
 import { useExplorerList } from '../../composables'
 import LibraryExplorerGroup from './explorer-group.vue'
 import LibraryExplorerListItem from './explorer-list-item.vue'
-import { hasConditions } from '@shared/filter'
-import { hasActiveSearch } from '@shared/search'
+import { hasActiveEntityListQuery } from '@renderer/composables/entity-list-query'
 import { toExplorerSelectionKey } from '../../utils/explorer-selection'
 import { useI18n } from '@renderer/composables/use-i18n'
 
@@ -33,14 +32,14 @@ function toCollectionFrom(collectionId: string): string {
 
 const store = useLibraryExplorerStore()
 const defaultFromStore = useDefaultFromStore()
-const { activeEntityType, search, filter, collapsedIds } = storeToRefs(store)
+const { activeEntityType, query, collapsedIds } = storeToRefs(store)
 const { data, rawData, isLoading } = useExplorerList()
 const state = useRenderState(isLoading, null, rawData)
 
 // Inject scroll container from parent
 const scrollContainer = inject<Ref<HTMLElement | undefined>>('explorerScrollContainer')
 
-const isFiltering = computed(() => hasActiveSearch(search.value) || hasConditions(filter.value))
+const isFiltering = computed(() => hasActiveEntityListQuery(query.value))
 
 const hasData = computed(
   () => data.value.collections.length > 0 || data.value.uncategorized.length > 0

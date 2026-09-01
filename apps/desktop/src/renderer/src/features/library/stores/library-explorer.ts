@@ -1,15 +1,19 @@
 /**
  * Library Explorer Store
  *
- * Manages explorer panel state including entity browsing, filtering,
- * search, and UI preferences with partial persistence.
+ * Manages explorer panel state: the browse query (one EntityListQuery, like
+ * every other browse surface), row selection, and UI preferences with
+ * partial persistence. The explorer always shows a concrete type, so the
+ * query's `entityType` is never null here.
  */
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { ContentEntityType, SortDirection } from '@shared/common'
-import type { FilterState } from '@shared/filter'
-import { createEmptyFilter } from '@shared/filter'
+import { computed, ref, shallowRef } from 'vue'
+import {
+  createEntityListQuery,
+  switchEntityListType,
+  type EntityListQuery
+} from '@renderer/composables/entity-list-query'
 
 const DEFAULT_EXPLORER_WIDTH = 220
 
@@ -17,14 +21,15 @@ export const useLibraryExplorerStore = defineStore(
   'libraryExplorer',
   () => {
     // ========================================================================
-    // State - Browsing (not persisted)
+    // State - Browsing (only the sort inside the query is persisted)
     // ========================================================================
 
-    const activeEntityType = ref<ContentEntityType>('game')
-    const search = ref('')
-    const filter = ref<FilterState>(createEmptyFilter())
+    const query = shallowRef<EntityListQuery>(createEntityListQuery('game'))
     const selectedKeys = ref<string[]>([])
     const selectionAnchorKey = ref<string | null>(null)
+
+    /** Concrete by construction; the fallback only satisfies the query contract. */
+    const activeEntityType = computed(() => query.value.entityType ?? 'game')
 
     // ========================================================================
     // State - UI Preferences (persisted)
@@ -32,9 +37,6 @@ export const useLibraryExplorerStore = defineStore(
 
     const explorerWidth = ref(DEFAULT_EXPLORER_WIDTH)
     const collapsedIds = ref<string[]>([])
-    const sortField = ref('name')
-    const sortDirection = ref<SortDirection>('asc')
-    const overrideCollectionOrder = ref(false)
 
     // ========================================================================
     // Actions
@@ -47,6 +49,17 @@ export const useLibraryExplorerStore = defineStore(
     function clearSelection() {
       selectedKeys.value = []
       selectionAnchorKey.value = null
+    }
+
+    /**
+     * Replaces the browse query wholesale. A type switch drops the selection;
+     * the type-bound query resets are the caller's, through
+     * `switchEntityListType`.
+     */
+    function setQuery(next: EntityListQuery) {
+      const typeChanged = next.entityType !== query.value.entityType
+      query.value = next
+      if (typeChanged) clearSelection()
     }
 
     function setSelection(keys: string[], anchorKey: string | null = null) {
@@ -144,25 +157,6 @@ export const useLibraryExplorerStore = defineStore(
       }
     }
 
-    function setActiveEntityType(type: ContentEntityType) {
-      activeEntityType.value = type
-      search.value = ''
-      filter.value = createEmptyFilter()
-      clearSelection()
-    }
-
-    function setSearch(value: string) {
-      search.value = value
-    }
-
-    function setFilter(newFilter: FilterState) {
-      filter.value = newFilter
-    }
-
-    function clearFilter() {
-      filter.value = createEmptyFilter()
-    }
-
     function setExplorerWidth(width: number) {
       explorerWidth.value = width
     }
@@ -179,37 +173,17 @@ export const useLibraryExplorerStore = defineStore(
       explorerWidth.value = DEFAULT_EXPLORER_WIDTH
     }
 
-    function setSort(field: string, direction: SortDirection) {
-      sortField.value = field
-      sortDirection.value = direction
-    }
-
-    function toggleSortDirection() {
-      sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-    }
-
-    function toggleOverrideCollectionOrder() {
-      overrideCollectionOrder.value = !overrideCollectionOrder.value
-    }
-
     return {
       // State - Browsing
+      query,
       activeEntityType,
-      search,
-      filter,
       selectedKeys,
       selectionAnchorKey,
       // State - UI Preferences
       explorerWidth,
       collapsedIds,
-      sortField,
-      sortDirection,
-      overrideCollectionOrder,
       // Actions
-      setActiveEntityType,
-      setSearch,
-      setFilter,
-      clearFilter,
+      setQuery,
       clearSelection,
       setSelection,
       toggleSelection,
@@ -220,21 +194,19 @@ export const useLibraryExplorerStore = defineStore(
       pruneSelection,
       setExplorerWidth,
       toggleCollapsed,
-      resetExplorerWidth,
-      setSort,
-      toggleSortDirection,
-      toggleOverrideCollectionOrder
+      resetExplorerWidth
     }
   },
   {
     persist: {
-      pick: [
-        'explorerWidth',
-        'collapsedIds',
-        'sortField',
-        'sortDirection',
-        'overrideCollectionOrder'
-      ]
+      pick: ['explorerWidth', 'collapsedIds', 'query.sort'],
+      afterHydrate: ({ store }) => {
+        // The persisted sort may name a field the launch type does not
+        // declare; re-entering the same type runs the shared retention rule
+        // (membership and declared keys survive, anything else falls back).
+        // Search and filter are fresh at this point, so nothing else moves.
+        store.setQuery(switchEntityListType(store.query, store.activeEntityType))
+      }
     }
   }
 )

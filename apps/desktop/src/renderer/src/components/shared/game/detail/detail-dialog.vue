@@ -50,7 +50,12 @@ const open = defineModel<boolean>('open', { default: false })
 // =============================================================================
 
 const gameId = computed(() => props.entityId)
-const { game, isLoading, error, spoilersRevealed } = useGameDialogProvider(gameId)
+const {
+  game,
+  isLoading,
+  error,
+  params: { spoilersRevealed }
+} = useGameDialogProvider(gameId)
 const state = useRenderState(isLoading, error, game)
 
 const spoilerConfirmOpen = ref(false)

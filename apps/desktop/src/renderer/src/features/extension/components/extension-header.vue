@@ -1,9 +1,11 @@
 <!--
 Extension Header renders extension manager navigation and actions.
-Boundary: emits commands and does not fetch extension data.
+Boundary: emits shell commands; each route's own operations come from that
+panel's actions component, mounted here only while its route is active.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -13,6 +15,9 @@ import {
   type PageHeaderNavItem
 } from '@renderer/components/ui/page-header'
 import { useI18n } from '@renderer/composables/use-i18n'
+import InstalledPanelActions from './installed-panel/installed-panel-actions.vue'
+import RepositoryPanelActions from './repository-panel/repository-panel-actions.vue'
+import SignerPanelActions from './signer-panel/signer-panel-actions.vue'
 import { EXTENSION_ROUTE_NAMES } from '../routes'
 
 interface Props {
@@ -34,6 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const { m } = useI18n()
+const route = useRoute()
 
 const showPendingIndicator = computed(() => props.hasPendingReload && !props.reloadingExtensionHost)
 const reloadButtonTitle = computed(() =>
@@ -77,6 +83,11 @@ const navItems = computed<PageHeaderNavItem[]>(() => [
 
     <!-- Right: Actions -->
     <template #actions>
+      <!-- Route-scoped operations, owned by each panel's actions component -->
+      <InstalledPanelActions v-if="route.name === EXTENSION_ROUTE_NAMES.installed" />
+      <RepositoryPanelActions v-else-if="route.name === EXTENSION_ROUTE_NAMES.repositories" />
+      <SignerPanelActions v-else-if="route.name === EXTENSION_ROUTE_NAMES.signers" />
+
       <Button
         variant="outline"
         size="sm"

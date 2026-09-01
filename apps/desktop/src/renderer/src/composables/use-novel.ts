@@ -24,11 +24,14 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
 import {
   createEntityDetailContext,
+  createEntitySpoilerParams,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntitySpoilerParams
 } from './entity-context'
 
 // =============================================================================
@@ -53,7 +56,7 @@ export interface NovelData {
 }
 
 export type NovelContext = EntityDetailContext<NovelData>
-export type NovelProviderReturn = EntityDetailProviderReturn<NovelData>
+export type NovelProviderReturn = EntityDetailProviderReturn<NovelData, EntitySpoilerParams>
 
 // =============================================================================
 // Data Fetcher
@@ -196,7 +199,7 @@ async function attachVolumeFiles(volumes: NovelVolume[]): Promise<NovelVolumeEnt
 // Context Wiring
 // =============================================================================
 
-const NOVEL_OWNED_TABLES = [
+const NOVEL_OWNED_TABLES: readonly TableName[] = [
   'novel_volumes',
   'novel_volume_files',
   'novel_notes',
@@ -208,7 +211,7 @@ const NOVEL_OWNED_TABLES = [
   'media_relations'
 ]
 
-const novelDetail = createEntityDetailContext<NovelData>({
+const novelDetail = createEntityDetailContext<NovelData, EntitySpoilerParams>({
   entityType: 'novel',
   empty: {
     novel: null,
@@ -221,8 +224,9 @@ const novelDetail = createEntityDetailContext<NovelData>({
     relations: [],
     sessions: []
   },
-  fetch: (id, view) => fetchNovelData(id, view.spoilersRevealed, view.showNsfw),
-  ownedTables: NOVEL_OWNED_TABLES,
+  initialParams: createEntitySpoilerParams,
+  fetch: (id, params, view) => fetchNovelData(id, params.spoilersRevealed, view.showNsfw),
+  relevantTables: () => NOVEL_OWNED_TABLES,
   entityTable: 'novels'
 })
 

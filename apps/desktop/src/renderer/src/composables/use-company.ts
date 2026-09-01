@@ -23,10 +23,13 @@ import type {
 } from '@shared/db/schema'
 import { COMPANY_RELATION_TYPE_INVERSE, type CompanyRelationType } from '@shared/db'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import {
   createEntityDetailContext,
+  createEntitySpoilerParams,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntitySpoilerParams
 } from './entity-context'
 
 // =============================================================================
@@ -56,7 +59,7 @@ export interface CompanyData {
 }
 
 export type CompanyContext = EntityDetailContext<CompanyData>
-export type CompanyProviderReturn = EntityDetailProviderReturn<CompanyData>
+export type CompanyProviderReturn = EntityDetailProviderReturn<CompanyData, EntitySpoilerParams>
 
 // =============================================================================
 // Data Fetcher
@@ -184,7 +187,7 @@ async function fetchCompanyData(
 // Context Wiring
 // =============================================================================
 
-const COMPANY_LINK_TABLES = [
+const COMPANY_LINK_TABLES: readonly TableName[] = [
   'company_tag_links',
   'game_company_links',
   'anime_company_links',
@@ -193,7 +196,7 @@ const COMPANY_LINK_TABLES = [
   'company_relations'
 ]
 
-const companyDetail = createEntityDetailContext<CompanyData>({
+const companyDetail = createEntityDetailContext<CompanyData, EntitySpoilerParams>({
   entityType: 'company',
   empty: {
     company: null,
@@ -204,8 +207,9 @@ const companyDetail = createEntityDetailContext<CompanyData>({
     novels: [],
     relations: []
   },
-  fetch: (id, view) => fetchCompanyData(id, view.spoilersRevealed, view.showNsfw),
-  ownedTables: COMPANY_LINK_TABLES,
+  initialParams: createEntitySpoilerParams,
+  fetch: (id, params, view) => fetchCompanyData(id, params.spoilersRevealed, view.showNsfw),
+  relevantTables: () => COMPANY_LINK_TABLES,
   entityTable: 'companies'
 })
 

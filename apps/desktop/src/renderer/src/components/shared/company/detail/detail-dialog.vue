@@ -37,7 +37,12 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const { company, isLoading, error, spoilersRevealed } = useCompanyDialogProvider(
+const {
+  company,
+  isLoading,
+  error,
+  params: { spoilersRevealed }
+} = useCompanyDialogProvider(
   () => props.entityId
 )
 const state = useRenderState(isLoading, error, company)

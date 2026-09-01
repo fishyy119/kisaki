@@ -21,14 +21,20 @@ export {
 } from './collection-links'
 export {
   TAG_LINKS,
-  countTaggedEntities,
   queryEntityTagLinks,
-  queryTaggedEntities,
   replaceEntityTagLinks,
   type EntityTagLink,
   type TagLinkDef,
   type TagLinkRow
 } from './tag-links'
+export {
+  FAVORITES_SCOPE,
+  buildCollectionMembershipScope,
+  buildDynamicCollectionScope,
+  buildTagMembershipScope,
+  buildUncategorizedScope,
+  type EntityScope
+} from './entity-scope'
 export {
   countEntities,
   queryEntities,

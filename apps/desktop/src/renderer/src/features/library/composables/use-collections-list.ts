@@ -5,7 +5,7 @@
  */
 
 import { computed, watch } from 'vue'
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
@@ -15,10 +15,13 @@ import { useDbChanges } from '@renderer/composables/use-db-changes'
 
 export const collectionsListData = defineRouteData(async () => {
   const { showNsfw } = storeToRefs(usePreferencesStore())
+  // The user's own arrangement is the canonical collection order, matching
+  // the explorer's group order.
   return await db
     .select()
     .from(collections)
     .where(showNsfw.value ? undefined : eq(collections.isNsfw, false))
+    .orderBy(asc(collections.order))
 })
 
 export function useCollectionsList() {

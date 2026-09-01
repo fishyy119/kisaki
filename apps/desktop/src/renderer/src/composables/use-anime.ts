@@ -27,11 +27,14 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
 import {
   createEntityDetailContext,
+  createEntitySpoilerParams,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntitySpoilerParams
 } from './entity-context'
 
 // =============================================================================
@@ -74,7 +77,7 @@ export interface AnimeCastEntry extends AnimeCastLink {
 }
 
 export type AnimeContext = EntityDetailContext<AnimeData>
-export type AnimeProviderReturn = EntityDetailProviderReturn<AnimeData>
+export type AnimeProviderReturn = EntityDetailProviderReturn<AnimeData, EntitySpoilerParams>
 
 // =============================================================================
 // Data Fetcher
@@ -276,7 +279,7 @@ async function attachExtraFiles(extras: AnimeExtra[]): Promise<AnimeExtraEntry[]
 // Context Wiring
 // =============================================================================
 
-const ANIME_OWNED_TABLES = [
+const ANIME_OWNED_TABLES: readonly TableName[] = [
   'anime_episodes',
   'anime_episode_files',
   'anime_extras',
@@ -291,7 +294,7 @@ const ANIME_OWNED_TABLES = [
   'media_relations'
 ]
 
-const animeDetail = createEntityDetailContext<AnimeData>({
+const animeDetail = createEntityDetailContext<AnimeData, EntitySpoilerParams>({
   entityType: 'anime',
   empty: {
     anime: null,
@@ -306,8 +309,9 @@ const animeDetail = createEntityDetailContext<AnimeData>({
     relations: [],
     sessions: []
   },
-  fetch: (id, view) => fetchAnimeData(id, view.spoilersRevealed, view.showNsfw),
-  ownedTables: ANIME_OWNED_TABLES,
+  initialParams: createEntitySpoilerParams,
+  fetch: (id, params, view) => fetchAnimeData(id, params.spoilersRevealed, view.showNsfw),
+  relevantTables: () => ANIME_OWNED_TABLES,
   entityTable: 'animes'
 })
 

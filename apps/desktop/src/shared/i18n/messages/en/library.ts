@@ -74,7 +74,7 @@ export const library = {
     status: 'Status',
     playDuration: 'Play time',
     lastActiveAt: 'Last played',
-    order: 'Order',
+    order: 'Custom order',
     format: 'Format',
     totalEpisodes: 'Episode count',
     totalSeasons: 'Season count',
@@ -773,8 +773,6 @@ export const library = {
       `${count} ${count === 1 ? 'type' : 'types'} enabled`,
     filterLabel: 'Filters',
     sortLabel: 'Sort:',
-    sortAsc: 'Ascending',
-    sortDesc: 'Descending',
     dynamicConfigHint: 'Enabled types without filter conditions include every item of that type',
     filterConfigUpdated: 'Filter settings updated',
 
@@ -820,19 +818,25 @@ export const library = {
     collectionsEmptyDescription: 'Create collections to organize your library',
     favoritesTitle: 'Favorites',
     favoritesEmpty: ({ label }: { label: string }) => `No favorite ${label.toLowerCase()}s yet`,
-    uncategorizedTitle: ({ label }: { label: string }) => `Uncategorized ${label.toLowerCase()}s`,
+    uncategorizedTitle: 'Uncategorized',
     uncategorizedEmpty: ({ label }: { label: string }) =>
       `All ${label.toLowerCase()}s are categorized`,
     dynamicCollection: 'Dynamic collection'
   },
 
+  browse: {
+    membershipOrder: {
+      collection: 'Collection order',
+      tag: 'Tag order',
+      configured: 'Configured order',
+      default: 'Default order'
+    },
+    noMatchTitle: 'No matches',
+    noMatchDescription: 'Adjust the search or filters',
+    clearQuery: 'Clear search and filters'
+  },
+
   explorer: {
-    filter: 'Filter',
-    sort: 'Sort',
-    sortAsc: 'Ascending',
-    sortDesc: 'Descending',
-    overrideCollectionSort: 'Override collection sort',
-    searchPlaceholder: 'Search…',
     filteredResults: 'Filtered results',
     noMatch: 'No matches',
     emptyList: ({ label }: { label: string }) => `No ${label.toLowerCase()}s yet`,
@@ -893,8 +897,6 @@ export const library = {
       displayCount: 'Display count',
       displayCountUnlimited: 'Unlimited',
       sort: 'Sort',
-      sortAsc: 'Ascending',
-      sortDesc: 'Descending',
       filters: 'Filters',
       filtersSetCount: ({ count }: { count: number }) =>
         count === 1 ? '1 condition set' : `${count} conditions set`,

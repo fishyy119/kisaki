@@ -44,6 +44,9 @@ export { defineFilterQuerySpec } from './spec'
 
 export { buildFilterConditions, buildOrderBy } from './builder'
 
+export type { EntitySort } from './sort'
+export { MEMBERSHIP_SORT_KEY, createMembershipSort, isMembershipSort } from './sort'
+
 export { getFilterQuerySpec, getFilterRelevantTables } from './specs/registry'
 export { gameFilterQuerySpec } from './specs/game'
 export { animeFilterQuerySpec } from './specs/anime'

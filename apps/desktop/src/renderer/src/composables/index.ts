@@ -6,6 +6,15 @@ export {
   type ContentEntityCounts,
   type ContentEntityData
 } from './content-entities'
+export {
+  clearEntityListQuery,
+  createEntityListQuery,
+  hasActiveEntityListQuery,
+  resolveEntityListType,
+  switchEntityListType,
+  type EntityListQuery,
+  type OrganizerDetailParams
+} from './entity-list-query'
 
 // Core composables
 export { useAmbientLight } from './use-ambient-light'
@@ -37,10 +46,13 @@ export {
 // Entity data composables (Provider/Consumer pattern)
 export {
   createEntityDetailContext,
+  createEntitySpoilerParams,
   type EntityDetailContext,
+  type EntityDetailParams,
   type EntityDetailProviderReturn,
   type EntityDetailSpec,
-  type EntityDetailView
+  type EntityDetailView,
+  type EntitySpoilerParams
 } from './entity-context'
 export {
   gameDetailData,
@@ -103,12 +115,12 @@ export { useNovelReading, type NovelReading } from './use-novel-reading'
 export { useReaderChrome, type ReaderChrome, type ReaderPanelTab } from './use-reader-chrome'
 export { useReadingClock } from './use-reading-clock'
 export {
-  CollectionKey,
   collectionDetailData,
   useCollection,
   useCollectionDialogProvider,
   useCollectionRouteProvider,
-  type CollectionContext
+  type CollectionContext,
+  type CollectionProviderReturn
 } from './use-collection'
 export {
   personDetailData,
@@ -138,10 +150,10 @@ export {
   type CompanyRelationEntry
 } from './use-company'
 export {
-  TagKey,
   tagDetailData,
   useTag,
   useTagDialogProvider,
   useTagRouteProvider,
-  type TagContext
+  type TagContext,
+  type TagProviderReturn
 } from './use-tag'

@@ -2,7 +2,8 @@
  * Discover Extension Store
  *
  * Pinia store for extension marketplace UI state.
- * Manages search, filtering, sorting, and repository selection.
+ * Manages search, filtering, sorting, and repository selection. The search
+ * input owns its own debounce, so every committed value here is a query.
  */
 
 import { ref } from 'vue'
@@ -16,14 +17,8 @@ export type DiscoverExtensionSortField =
 export const useDiscoverExtensionStore = defineStore(
   'discoverExtension',
   () => {
-    // Search input value (for controlled input)
-    const searchInput = ref('')
-
-    // Committed search query (triggers actual search)
+    // Committed search query
     const searchQuery = ref('')
-
-    // Search trigger counter (increments to trigger search)
-    const searchTrigger = ref(0)
 
     // Selected repository for browsing (null = all enabled repositories)
     const selectedRepositoryId = ref<string | null>(null)
@@ -39,19 +34,8 @@ export const useDiscoverExtensionStore = defineStore(
     const sortDirection = ref<SortDirection>('desc')
 
     // Actions
-    function setSearchInput(input: string) {
-      searchInput.value = input
-    }
-
-    function triggerSearch() {
-      searchQuery.value = searchInput.value
-      searchTrigger.value++
-    }
-
-    function clearSearch() {
-      searchInput.value = ''
-      searchQuery.value = ''
-      searchTrigger.value++
+    function setSearchQuery(query: string) {
+      searchQuery.value = query
     }
 
     function setSelectedRepositoryId(repositoryId: string | null) {
@@ -79,38 +63,22 @@ export const useDiscoverExtensionStore = defineStore(
       sortDirection.value = direction
     }
 
-    function resetFilters() {
-      searchInput.value = ''
-      searchQuery.value = ''
-      searchTrigger.value++
-      selectedCategory.value = null
-      selectedRepositoryId.value = null
-      compatibleOnly.value = true
-      sortField.value = 'relevance'
-      sortDirection.value = 'desc'
-    }
-
     return {
       // State
-      searchInput,
       searchQuery,
-      searchTrigger,
       selectedRepositoryId,
       selectedCategory,
       compatibleOnly,
       sortField,
       sortDirection,
       // Actions
-      setSearchInput,
-      triggerSearch,
-      clearSearch,
+      setSearchQuery,
       setSelectedRepositoryId,
       setSelectedCategory,
       setCompatibleOnly,
       setSortField,
       setSortDirection,
-      setSort,
-      resetFilters
+      setSort
     }
   },
   {

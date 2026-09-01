@@ -14,7 +14,8 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Badge } from '@renderer/components/ui/badge'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
+import { SearchInput } from '@renderer/components/ui/search-input'
+import { Toolbar, ToolbarRow } from '@renderer/components/ui/toolbar'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
 import {
   Dialog,
@@ -192,13 +193,11 @@ const filteredIssueRows = computed(() => {
 })
 
 const issueCount = computed(() => issueRows.value.length)
-const hasSearch = computed(() => searchQuery.value.trim().length > 0)
+const isQueryActive = computed(
+  () => searchQuery.value.trim().length > 0 || issueTypeFilter.value !== 'all'
+)
 
 const ISSUE_TABLE_COLUMNS = ['', '8rem', '22%', '24%', '16%', '7rem']
-
-function handleClearSearch() {
-  searchQuery.value = ''
-}
 
 async function handleOpenPath(path: string) {
   try {
@@ -258,66 +257,60 @@ useDbChanges(({ operation, table }) => {
         </DialogDescription>
       </DialogHeader>
 
-      <DialogBody class="flex max-h-[68vh] flex-col gap-3 overflow-hidden">
-        <div class="flex shrink-0 items-center gap-2">
-          <InputGroup class="min-w-0 flex-1">
-            <InputGroupAddon>
-              <Icon
-                icon="icon-[mdi--magnify]"
-                class="size-4"
-              />
-            </InputGroupAddon>
-            <InputGroupInput
+      <!-- Full-bleed body: rounded to the slab corner since no footer follows -->
+      <DialogBody class="flex max-h-[68vh] flex-col overflow-hidden rounded-b-md p-0">
+        <Toolbar>
+          <ToolbarRow>
+            <SearchInput
               v-model="searchQuery"
               :placeholder="m.scanner.issues.searchPlaceholder"
-            />
-            <InputGroupAddon
-              v-if="hasSearch"
-              align="inline-end"
-              class="cursor-pointer"
-              @click="handleClearSearch"
-            >
-              <Icon
-                icon="icon-[mdi--close]"
-                class="size-4 text-muted-foreground hover:text-foreground"
-              />
-            </InputGroupAddon>
-          </InputGroup>
-
-          <Select v-model="issueTypeFilter">
-            <SelectTrigger
               size="sm"
-              class="w-36"
+              class="max-w-xl flex-1"
+            />
+            <span
+              v-if="isQueryActive"
+              class="shrink-0 text-xs text-muted-foreground"
             >
-              <span class="truncate">
-                {{
-                  issueTypeOptions.find((option) => option.value === issueTypeFilter)?.label ??
-                  m.scanner.issues.allTypes
-                }}
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                v-for="option in issueTypeOptions"
-                :key="option.value"
-                :value="option.value"
+              {{ m.common.itemCount({ count: filteredIssueRows.length }) }}
+            </span>
+
+            <div class="flex-1" />
+
+            <Select v-model="issueTypeFilter">
+              <SelectTrigger
+                size="sm"
+                class="w-36"
               >
-                {{ option.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+                <span class="truncate">
+                  {{
+                    issueTypeOptions.find((option) => option.value === issueTypeFilter)?.label ??
+                    m.scanner.issues.allTypes
+                  }}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="option in issueTypeOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </ToolbarRow>
+        </Toolbar>
 
         <StateView
           v-if="filteredIssueRows.length === 0"
           state="empty"
           :description="m.scanner.issues.noMatch"
-          class="h-40 rounded-md border border-border"
+          class="h-full min-h-48"
         />
 
         <div
           v-else
-          class="min-h-0 flex-1 overflow-hidden rounded-md border border-border"
+          class="min-h-0 flex-1"
         >
           <Table
             fixed-header

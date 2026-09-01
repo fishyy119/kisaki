@@ -2,95 +2,99 @@
 /**
  * Uncategorized Page
  *
- * Displays entities that are not assigned to any collection.
+ * Browse surface of the entities no visible collection holds: counts per
+ * content type in the band, the browsed type (the route's) below.
  */
 
-import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { StateView } from '@renderer/components/ui/state-view'
-import { VirtualGrid } from '@renderer/components/ui/virtual'
-import { EntityCard } from '@renderer/components/shared'
-import type { ContentEntityData } from '@renderer/composables'
+import { EntityBrowsePanel } from '@renderer/components/shared/entity'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
-import { formatLibraryContext } from '@renderer/utils/library-context'
+import { LIBRARY_HOME_PATH, formatLibraryContext } from '@renderer/utils/library-context'
 import type { ContentEntityType } from '@shared/common'
 import { useUncategorizedList } from '../composables'
-import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-// =============================================================================
-// Route
-// =============================================================================
-
-const route = useRoute()
 const router = useRouter()
-const scrollContainerRef = ref<HTMLElement>()
-
-const entityType = computed(() => (route.params.entityType as ContentEntityType) || 'game')
 
 // =============================================================================
 // Data (settled during navigation by the route loader)
 // =============================================================================
 
-const { entities } = useUncategorizedList()
+const { entities, counts, entityType, query, error } = useUncategorizedList()
+
+const entityLabel = computed(() =>
+  entityType.value ? m.value.library.entities[entityType.value] : ''
+)
 
 // =============================================================================
 // Actions
 // =============================================================================
 
-function handleEntityClick(entity: ContentEntityData) {
+function handleOpen(type: ContentEntityType, entityId: string) {
   router.push({
-    path: getEntityDetailPath(entityType.value, entity.id),
+    path: getEntityDetailPath(type, entityId),
     query: { from: formatLibraryContext({ kind: 'uncategorized' }) }
   })
+}
+
+function exit() {
+  void router.replace(LIBRARY_HOME_PATH)
 }
 </script>
 
 <template>
-  <div class="h-full flex flex-col w-full">
-    <!-- Header -->
+  <!-- Error / Not Found (data settles before navigation confirms) -->
+  <StateView
+    v-if="error"
+    state="error"
+    :error="error"
+    class="h-full bg-background"
+  />
+  <StateView
+    v-else-if="!entityType"
+    state="not-found"
+    icon="icon-[mdi--folder-question-outline]"
+    :title="m.app.notFound.title"
+    class="h-full bg-background"
+  >
+    <template #actions>
+      <Button
+        variant="secondary"
+        @click="exit"
+      >
+        {{ m.app.notFound.backToLibrary }}
+      </Button>
+    </template>
+  </StateView>
+
+  <!-- Content -->
+  <div
+    v-else
+    class="flex h-full w-full flex-col"
+  >
     <PageHeader>
       <PageHeaderTitle
-        :title="m.library.pages.uncategorizedTitle({ label: m.library.entities[entityType] })"
+        :title="m.library.pages.uncategorizedTitle"
         icon="icon-[mdi--folder-question-outline]"
-      >
-        {{ m.library.counts[entityType]({ count: entities.length }) }}
-      </PageHeaderTitle>
+      />
     </PageHeader>
 
-    <!-- Content -->
-    <div
-      ref="scrollContainerRef"
-      class="flex-1 overflow-auto bg-background p-4"
-    >
-      <!-- Empty state -->
-      <StateView
-        v-if="entities.length === 0"
-        state="empty"
-        icon="icon-[mdi--check-circle-outline]"
-        :description="m.library.pages.uncategorizedEmpty({ label: m.library.entities[entityType] })"
-        class="h-full"
-      />
-
-      <!-- Grid -->
-      <VirtualGrid
-        v-else
-        :items="entities"
-        :get-key="(item) => item.id"
-        :scroll-parent="scrollContainerRef"
-        class="grid grid-cols-[repeat(auto-fill,8rem)] gap-3 justify-between"
-      >
-        <template #item="{ item }">
-          <EntityCard
-            :entity-type="entityType"
-            :entity="item"
-            size="md"
-            @click="handleEntityClick(item)"
-          />
-        </template>
-      </VirtualGrid>
-    </div>
+    <EntityBrowsePanel
+      v-model:query="query"
+      class="min-h-0 flex-1 bg-background"
+      :entity-type="entityType"
+      :entities="entities"
+      :counts="counts"
+      :membership-label="m.library.browse.membershipOrder.default"
+      empty-icon="icon-[mdi--check-circle-outline]"
+      :empty-description="m.library.pages.uncategorizedEmpty({ label: entityLabel })"
+      @open="handleOpen"
+    />
   </div>
 </template>

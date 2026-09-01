@@ -9,10 +9,12 @@ export const collectionFilterQuerySpec = defineFilterQuerySpec({
     { key: 'createdAt', kind: 'date', mode: 'timestampMs', column: collections.createdAt }
   ],
   sort: {
-    defaultKey: 'name',
+    // The user's own arrangement is the canonical collection order (the
+    // explorer groups and the collections page both walk it).
+    defaultKey: 'order',
     fields: [
-      { key: 'name', kind: 'column', column: collections.name },
       { key: 'order', kind: 'column', column: collections.order },
+      { key: 'name', kind: 'column', column: collections.name },
       { key: 'createdAt', kind: 'column', column: collections.createdAt }
     ]
   }

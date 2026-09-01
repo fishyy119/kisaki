@@ -1,41 +1,31 @@
 <!--
 Extension Installed Panel renders installed extension management.
-Boundary: owns installed extension list, update checks, and update actions.
+Boundary: owns the installed extension list and its filtering; update checks
+and their state live in the installed extension store.
 -->
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { StateView } from '@renderer/components/ui/state-view'
-import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
-import { createLogger } from '@renderer/core/log'
-import { notify } from '@renderer/core/notify'
+import { ipcManager } from '@renderer/core/ipc'
 import { resolveExtensionText } from '@renderer/core/extensions'
 import { useI18n } from '@renderer/composables/use-i18n'
 import ExtensionInstalledPanelCard from './installed-panel-card.vue'
 import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
 import { useInstalledExtensionStore } from '../../stores'
 import { installedExtensionsData } from '../../composables'
-import type {
-  ExtensionAutomaticUpdateRunState,
-  ExtensionUpdateCheckResult
-} from '@shared/extension'
-
-const log = createLogger('Extension')
 
 const store = useInstalledExtensionStore()
+const { updates } = storeToRefs(store)
 const { m } = useI18n()
-const updateCheck = ref<ExtensionUpdateCheckResult>({ updates: [], unavailable: [] })
-const automaticUpdateRun = ref<ExtensionAutomaticUpdateRunState>(createIdleAutomaticUpdateRun())
-const checkingUpdates = ref(false)
 
 // Data settled during navigation by the route loader
 const { data: extensions, error, refetch } = installedExtensionsData()
 
 const extensionsList = computed(() => extensions.value ?? [])
-const updates = computed(() => updateCheck.value.updates)
 
 let unsubscribeInstallationsChanged: (() => void) | null = null
 let unsubscribeRuntimeStateChanged: (() => void) | null = null
-let unsubscribeAutomaticUpdateRunChanged: (() => void) | null = null
 
 onMounted(() => {
   unsubscribeInstallationsChanged = ipcManager.on('extension:installations-changed', () => {
@@ -44,19 +34,11 @@ onMounted(() => {
   unsubscribeRuntimeStateChanged = ipcManager.on('extension:runtime-state-changed', () => {
     void refetch()
   })
-  unsubscribeAutomaticUpdateRunChanged = ipcManager.on(
-    'extension:automatic-update-run-changed',
-    (_event, state) => {
-      automaticUpdateRun.value = state
-    }
-  )
-  void refreshAutomaticUpdateRun()
 })
 
 onUnmounted(() => {
   unsubscribeInstallationsChanged?.()
   unsubscribeRuntimeStateChanged?.()
-  unsubscribeAutomaticUpdateRunChanged?.()
 })
 
 function getUpdateInfo(extensionId: string) {
@@ -64,50 +46,12 @@ function getUpdateInfo(extensionId: string) {
 }
 
 async function refreshInstalledCatalog() {
-  resetUpdateCheck()
+  store.resetUpdateCheck()
   await refetch()
 }
 
 async function handleRefresh() {
   await refreshInstalledCatalog()
-}
-
-async function handleCheckUpdates() {
-  checkingUpdates.value = true
-  try {
-    const result = unwrapIpcData(await ipcManager.invoke('extension:check-updates'))
-    updateCheck.value = result
-    if (result.updates.length > 0) {
-      notify.info(
-        m.value.extension.installed.updatesAvailable,
-        m.value.extension.installed.updatesAvailableCount({ count: result.updates.length })
-      )
-    } else {
-      notify.info(m.value.extension.installed.noUpdates)
-    }
-  } catch (error) {
-    log.error('Failed to check updates:', error)
-    notify.error(
-      m.value.extension.installed.checkUpdatesFailed,
-      error instanceof Error ? error.message : String(error)
-    )
-  } finally {
-    checkingUpdates.value = false
-  }
-}
-
-async function refreshAutomaticUpdateRun() {
-  try {
-    automaticUpdateRun.value = unwrapIpcData(
-      await ipcManager.invoke('extension:get-automatic-update-run')
-    )
-  } catch (error) {
-    log.error('Failed to load automatic update state:', error)
-  }
-}
-
-function resetUpdateCheck() {
-  updateCheck.value = { updates: [], unavailable: [] }
 }
 
 // Filter and sort extensions
@@ -164,27 +108,12 @@ const filteredExtensions = computed(() => {
 
   return result
 })
-
-function createIdleAutomaticUpdateRun(): ExtensionAutomaticUpdateRunState {
-  return {
-    status: 'idle',
-    trigger: 'startup',
-    startedAt: null,
-    finishedAt: null,
-    results: []
-  }
-}
 </script>
 
 <template>
   <div class="flex flex-col h-full">
     <!-- Filter Bar -->
-    <ExtensionInstalledPanelFilterBar
-      :update-count="updates.length"
-      :checking-updates="checkingUpdates"
-      :automatic-update-run="automaticUpdateRun"
-      @check-updates="handleCheckUpdates"
-    />
+    <ExtensionInstalledPanelFilterBar />
 
     <!-- Extension Grid -->
     <div class="flex-1 overflow-auto">

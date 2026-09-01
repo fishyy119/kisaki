@@ -1,34 +1,34 @@
 <!--
   TagDetailDialog
-  Dialog view for tag details.
-  Shows entities with this tag, supports entity type switching.
+  Dialog view of a tag: identity in the header, the browse surface in a
+  fixed-height body so the band never shifts, the tag's operations in the
+  footer.
 -->
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { getEntityIcon } from '@renderer/utils/format'
-import { EntityDetailDialog, type EntityDetailTarget } from '@renderer/components/shared/entity'
-import { useDbChanges, useRenderState, useTagDialogProvider } from '@renderer/composables'
+import { Badge } from '@renderer/components/ui/badge'
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogBody,
-  DialogFooter
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@renderer/components/ui/dialog'
-import { StateView } from '@renderer/components/ui/state-view'
-import { Button } from '@renderer/components/ui/button'
-import { Badge } from '@renderer/components/ui/badge'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
-import { TagDropdownMenu } from '../menus'
-import { TagInfoFormDialog } from '../forms'
+import { StateView } from '@renderer/components/ui/state-view'
+import { EntityDetailDialog, type EntityDetailTarget } from '@renderer/components/shared/entity'
+import {
+  useDbChanges,
+  useI18n,
+  useRenderState,
+  useTagDialogProvider
+} from '@renderer/composables'
+import { getEntityIcon } from '@renderer/utils/format'
+import type { ContentEntityType } from '@shared/common'
+import TagDetailActions from './detail-actions.vue'
 import TagDetailContent from './detail-content.vue'
-import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
-import { useI18n } from '@renderer/composables'
-
-const { m } = useI18n()
 
 interface Props {
   entityId: string
@@ -38,43 +38,32 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-// Use TagProvider
-const { tag, entityType, setEntityType, isLoading, error } = useTagDialogProvider(
-  () => props.entityId
-)
+const { m } = useI18n()
+
+const {
+  tag,
+  isLoading,
+  error,
+  params: { query }
+} = useTagDialogProvider(() => props.entityId)
 const state = useRenderState(isLoading, error, tag)
 
 useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'deleted') return
-  if (table === 'tags' && id === props.entityId) {
+  if (operation === 'deleted' && table === 'tags' && id === props.entityId) {
     open.value = false
   }
 })
 
-// Edit dialog state
-const editDialogOpen = ref(false)
-
-// Scroll container ref for VirtualGrid (access via $el)
-const dialogBodyRef = ref<InstanceType<typeof DialogBody>>()
-
-type EntityClickPayload = { type: ContentEntityType; id: string }
-
 const openEntity = ref<EntityDetailTarget | null>(null)
 
-function handleEntityClick(payload: EntityClickPayload) {
-  openEntity.value = { entityType: payload.type, entityId: payload.id }
+function handleOpen(entityType: ContentEntityType, entityId: string) {
+  openEntity.value = { entityType, entityId }
 }
-
-// Entity type for tabs v-model
-const entityTypeModel = computed({
-  get: () => entityType.value,
-  set: (value: string) => setEntityType(value as ContentEntityType)
-})
 </script>
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl max-h-[90vh] flex flex-col">
+    <DialogContent class="flex max-w-4xl flex-col">
       <!-- Loading / Error / Not Found -->
       <DialogBody v-if="state !== 'success'">
         <StateView
@@ -87,7 +76,6 @@ const entityTypeModel = computed({
         />
       </DialogBody>
 
-      <!-- Content -->
       <template v-else-if="tag">
         <DialogHeader>
           <div class="flex items-center gap-2">
@@ -109,61 +97,24 @@ const entityTypeModel = computed({
           <MarkdownContent
             v-if="tag.description"
             :content="tag.description"
-            class="text-sm text-muted-foreground mt-1 line-clamp-2 prose-p:my-0"
+            class="mt-1 line-clamp-2 text-sm text-muted-foreground prose-p:my-0"
           />
         </DialogHeader>
 
-        <DialogBody
-          ref="dialogBodyRef"
-          class="flex-1 min-h-0 overflow-auto"
-        >
+        <DialogBody class="flex h-[min(72vh,660px)] flex-col p-0">
           <TagDetailContent
-            :scroll-parent="dialogBodyRef?.$el"
-            @entity-click="handleEntityClick"
+            v-model:query="query"
+            class="min-h-0 flex-1"
+            @open="handleOpen"
           />
         </DialogBody>
 
         <DialogFooter>
-          <div class="flex items-center justify-between w-full">
-            <!-- Left: Entity type tabs -->
-            <SegmentedControl v-model="entityTypeModel">
-              <SegmentedControlItem
-                v-for="type in CONTENT_ENTITY_TYPES"
-                :key="type"
-                :value="type"
-              >
-                {{ m.library.entities[type] }}
-              </SegmentedControlItem>
-            </SegmentedControl>
-
-            <!-- Right: Action buttons -->
-            <div class="flex items-center gap-2">
-              <!-- Edit button -->
-              <Button
-                variant="secondary"
-                size="sm"
-                @click="editDialogOpen = true"
-              >
-                <Icon
-                  icon="icon-[mdi--pencil-outline]"
-                  class="size-4 mr-1.5"
-                />
-                {{ m.common.edit }}
-              </Button>
-              <TagDropdownMenu :tag-id="tag.id" />
-            </div>
-          </div>
+          <TagDetailActions :tag-id="tag.id" />
         </DialogFooter>
       </template>
     </DialogContent>
   </Dialog>
-
-  <!-- Edit dialog -->
-  <TagInfoFormDialog
-    v-if="editDialogOpen"
-    v-model:open="editDialogOpen"
-    :tag-id="props.entityId"
-  />
 
   <!-- Detail dialog of the clicked entity -->
   <EntityDetailDialog v-model:target="openEntity" />

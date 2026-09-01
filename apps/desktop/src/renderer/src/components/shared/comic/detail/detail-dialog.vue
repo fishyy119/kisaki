@@ -50,7 +50,12 @@ const open = defineModel<boolean>('open', { default: false })
 // =============================================================================
 
 const comicId = computed(() => props.entityId)
-const { comic, isLoading, error, spoilersRevealed } = useComicDialogProvider(comicId)
+const {
+  comic,
+  isLoading,
+  error,
+  params: { spoilersRevealed }
+} = useComicDialogProvider(comicId)
 const state = useRenderState(isLoading, error, comic)
 
 const spoilerConfirmOpen = ref(false)

@@ -3,9 +3,10 @@
  *
  * Every content entity owns its own `<entity>_tag_links` table with
  * entity-named anchor and order columns. Both directions of the relation read
- * this one declaration: the tags of an entity, and the entities of a tag.
+ * this one declaration: the tags of an entity here, and the entities of a tag
+ * through the tag membership scope in `entity-scope`.
  */
-import { and, asc, count, eq, getTableColumns, getTableName, type SQL } from 'drizzle-orm'
+import { asc, eq, getTableName } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 
 import type { ContentEntityType } from '@shared/common'
@@ -20,7 +21,6 @@ import {
   personTagLinks,
   tags
 } from '@shared/db'
-import { ENTITY_TABLES, type EntityRowMap } from './entity-tables'
 import { db } from './proxy'
 
 /** A tag link row to write, before it is named for its link table. */
@@ -199,52 +199,4 @@ export async function replaceEntityTagLinks(
   await db
     .insert(def.table)
     .values(rows.map((row, index) => def.buildInsertValue(entityId, row, index)) as never[])
-}
-
-function buildTagMemberWhere(
-  def: TagLinkDef,
-  entityType: ContentEntityType,
-  tagId: string,
-  includeNsfw: boolean
-): SQL | undefined {
-  const parts: SQL[] = [eq(def.tagIdColumn, tagId)]
-  if (!includeNsfw) parts.push(eq(ENTITY_TABLES[entityType].isNsfwColumn, false))
-  return and(...parts)
-}
-
-/** Counts the entities of one type that carry the tag. */
-export async function countTaggedEntities(
-  entityType: ContentEntityType,
-  tagId: string,
-  includeNsfw: boolean
-): Promise<number> {
-  const def = TAG_LINKS[entityType]
-  const entity = ENTITY_TABLES[entityType]
-
-  const rows = await db
-    .select({ value: count() })
-    .from(def.table)
-    .innerJoin(entity.table, eq(def.entityIdColumn, entity.idColumn))
-    .where(buildTagMemberWhere(def, entityType, tagId, includeNsfw))
-
-  return Number(rows[0]?.value ?? 0)
-}
-
-/** Reads the entities of one type that carry the tag, in the tag's own order. */
-export async function queryTaggedEntities<T extends ContentEntityType>(
-  entityType: T,
-  tagId: string,
-  includeNsfw: boolean
-): Promise<EntityRowMap[T][]> {
-  const def = TAG_LINKS[entityType]
-  const entity = ENTITY_TABLES[entityType]
-
-  const rows = await db
-    .select(getTableColumns(entity.table))
-    .from(def.table)
-    .innerJoin(entity.table, eq(def.entityIdColumn, entity.idColumn))
-    .where(buildTagMemberWhere(def, entityType, tagId, includeNsfw))
-    .orderBy(asc(def.orderInTagColumn))
-
-  return rows as EntityRowMap[T][]
 }

@@ -60,7 +60,7 @@ export const library = {
     status: 'ステータス',
     playDuration: 'プレイ時間',
     lastActiveAt: '最終プレイ',
-    order: '並び順',
+    order: 'カスタム順序',
     format: '種別',
     totalEpisodes: '話数',
     totalSeasons: 'シーズン数',
@@ -737,8 +737,6 @@ export const library = {
     enabledTypesCount: ({ count }: { count: number }) => `${count} 種類を有効化`,
     filterLabel: 'フィルター',
     sortLabel: '並び順：',
-    sortAsc: '昇順',
-    sortDesc: '降順',
     dynamicConfigHint:
       '有効化されているがフィルター条件が未設定の種類は、その種類のすべての項目を含みます',
     filterConfigUpdated: 'フィルター設定を更新しました',
@@ -783,18 +781,24 @@ export const library = {
     collectionsEmptyDescription: 'コレクションを作成してライブラリを整理しましょう',
     favoritesTitle: 'お気に入り',
     favoritesEmpty: ({ label }: { label: string }) => `お気に入りの${label}はまだありません`,
-    uncategorizedTitle: ({ label }: { label: string }) => `未分類の${label}`,
+    uncategorizedTitle: '未分類',
     uncategorizedEmpty: ({ label }: { label: string }) => `すべての${label}が分類済みです`,
     dynamicCollection: 'ダイナミックコレクション'
   },
 
+  browse: {
+    membershipOrder: {
+      collection: 'コレクション順',
+      tag: 'タグ順',
+      configured: '設定順',
+      default: '既定順'
+    },
+    noMatchTitle: '一致する結果がありません',
+    noMatchDescription: '検索条件やフィルターを調整してください',
+    clearQuery: '検索とフィルターをクリア'
+  },
+
   explorer: {
-    filter: 'フィルター',
-    sort: '並べ替え',
-    sortAsc: '昇順',
-    sortDesc: '降順',
-    overrideCollectionSort: 'コレクション内の並び順を上書き',
-    searchPlaceholder: '検索…',
     filteredResults: 'フィルター結果',
     noMatch: '一致する結果がありません',
     emptyList: ({ label }: { label: string }) => `${label}はまだありません`,
@@ -854,8 +858,6 @@ export const library = {
       displayCount: '表示数',
       displayCountUnlimited: '無制限',
       sort: '並べ替え',
-      sortAsc: '昇順',
-      sortDesc: '降順',
       filters: 'フィルター条件',
       filtersSetCount: ({ count }: { count: number }) => `${count} 件の条件を設定済み`,
       filtersClickToSet: 'クリックしてフィルター条件を設定…'

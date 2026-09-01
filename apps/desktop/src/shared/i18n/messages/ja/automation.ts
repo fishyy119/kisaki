@@ -83,9 +83,7 @@ export const automation = {
     sourceAll: 'すべてのソース',
     sourceApp: 'アプリ',
     sourceExtension: '拡張機能',
-    searchPlaceholder: '自動化を検索…',
-    ascending: '昇順',
-    descending: '降順'
+    searchPlaceholder: '自動化を検索…'
   },
 
   form: {

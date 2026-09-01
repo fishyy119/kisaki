@@ -69,7 +69,11 @@ const { exit } = useEntityDetailRoute('anime', animeId)
 // Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const { anime, error, spoilersRevealed } = useAnimeRouteProvider()
+const {
+  anime,
+  error,
+  params: { spoilersRevealed }
+} = useAnimeRouteProvider()
 
 const spoilerConfirmOpen = ref(false)
 

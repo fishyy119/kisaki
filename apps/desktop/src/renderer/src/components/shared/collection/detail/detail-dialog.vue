@@ -1,84 +1,67 @@
 <!--
   CollectionDetailDialog
-
-  Dialog view for collection details.
-  Supports entity type switching and editing entities.
+  Dialog view of a collection: identity in the header, the browse surface in
+  a fixed-height body so the band never shifts, the collection's operations
+  in the footer.
 -->
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { EntityDetailDialog, type EntityDetailTarget } from '@renderer/components/shared/entity'
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogBody,
-  DialogFooter
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@renderer/components/ui/dialog'
 import { StateView } from '@renderer/components/ui/state-view'
-import { Button } from '@renderer/components/ui/button'
-import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
+import { EntityDetailDialog, type EntityDetailTarget } from '@renderer/components/shared/entity'
+import {
+  useCollectionDialogProvider,
+  useDbChanges,
+  useI18n,
+  useRenderState
+} from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useCollectionDialogProvider, useDbChanges, useRenderState } from '@renderer/composables'
-import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
+import type { ContentEntityType } from '@shared/common'
+import CollectionDetailActions from './detail-actions.vue'
 import CollectionDetailContent from './detail-content.vue'
-import { CollectionDropdownMenu } from '../menus'
-import { CollectionEntitiesFormDialog } from '../forms'
-import { useI18n } from '@renderer/composables'
-
-const { m } = useI18n()
 
 interface Props {
   entityId: string
 }
 
 const props = defineProps<Props>()
+
 const open = defineModel<boolean>('open', { required: true })
 
-// Establish provider
-const { collection, entityType, entityCounts, setEntityType, isLoading, error } =
-  useCollectionDialogProvider(() => props.entityId)
+const { m } = useI18n()
+
+const {
+  collection,
+  isLoading,
+  error,
+  params: { query }
+} = useCollectionDialogProvider(() => props.entityId)
 const state = useRenderState(isLoading, error, collection)
 
 useDbChanges(({ operation, table, id }) => {
-  if (operation !== 'deleted') return
-  if (table === 'collections' && id === props.entityId) {
+  if (operation === 'deleted' && table === 'collections' && id === props.entityId) {
     open.value = false
   }
 })
 
-// Edit entities dialog state
-const editEntitiesOpen = ref(false)
-
-// Scroll container ref for VirtualGrid (access via $el)
-const dialogBodyRef = ref<InstanceType<typeof DialogBody>>()
-
-type EntityClickPayload = { type: ContentEntityType; id: string }
-
 const openEntity = ref<EntityDetailTarget | null>(null)
 
-function handleEntityClick(payload: EntityClickPayload) {
-  openEntity.value = { entityType: payload.type, entityId: payload.id }
+function handleOpen(entityType: ContentEntityType, entityId: string) {
+  openEntity.value = { entityType, entityId }
 }
-
-const editEntitiesOpenComputed = computed({
-  get: () => editEntitiesOpen.value,
-  set: (value) => {
-    editEntitiesOpen.value = value
-  }
-})
-
-// Computed model for entityType to use with v-model
-const entityTypeModel = computed({
-  get: () => entityType.value,
-  set: (value: ContentEntityType) => setEntityType(value)
-})
 </script>
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl max-h-[90vh] flex flex-col">
+    <DialogContent class="flex max-w-4xl flex-col">
       <!-- Loading / Error / Not Found -->
       <DialogBody v-if="state !== 'success'">
         <StateView
@@ -93,72 +76,42 @@ const entityTypeModel = computed({
         />
       </DialogBody>
 
-      <!-- Content -->
       <template v-else-if="collection">
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
+          <div class="flex items-center gap-2">
+            <DialogTitle class="flex items-center gap-2">
+              <Icon
+                :icon="getEntityIcon('collection')"
+                class="size-4 text-muted-foreground"
+              />
+              {{ collection.name }}
+            </DialogTitle>
             <Icon
-              :icon="getEntityIcon('collection')"
-              class="size-4 text-muted-foreground"
+              v-if="collection.isDynamic"
+              icon="icon-[mdi--lightning-bolt]"
+              class="size-4 shrink-0 text-muted-foreground"
+              :title="m.library.pages.dynamicCollection"
             />
-            {{ collection.name }}
-          </DialogTitle>
+          </div>
         </DialogHeader>
-        <DialogBody
-          ref="dialogBodyRef"
-          class="flex-1 min-h-0 overflow-auto"
-        >
+
+        <DialogBody class="flex h-[min(72vh,660px)] flex-col p-0">
           <CollectionDetailContent
-            :scroll-parent="dialogBodyRef?.$el"
-            @entity-click="handleEntityClick"
+            v-model:query="query"
+            class="min-h-0 flex-1"
+            @open="handleOpen"
           />
         </DialogBody>
-        <DialogFooter>
-          <div class="flex items-center justify-between w-full">
-            <!-- Left: Entity type tabs -->
-            <SegmentedControl v-model="entityTypeModel">
-              <SegmentedControlItem
-                v-for="type in CONTENT_ENTITY_TYPES"
-                :key="type"
-                :value="type"
-              >
-                {{ m.library.entities[type] }}
-                <span
-                  v-if="entityCounts[type] > 0"
-                  class="ml-1 text-muted-foreground"
-                >
-                  ({{ entityCounts[type] }})
-                </span>
-              </SegmentedControlItem>
-            </SegmentedControl>
 
-            <!-- Right: Action buttons -->
-            <div class="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                @click="editEntitiesOpen = true"
-              >
-                <Icon
-                  icon="icon-[mdi--format-list-numbered]"
-                  class="size-4 mr-1.5"
-                />
-                {{ m.library.menu.editContent }}
-              </Button>
-              <CollectionDropdownMenu :collection-id="collection!.id" />
-            </div>
-          </div>
+        <DialogFooter>
+          <CollectionDetailActions
+            :collection-id="collection.id"
+            :is-dynamic="collection.isDynamic"
+          />
         </DialogFooter>
       </template>
     </DialogContent>
   </Dialog>
-
-  <!-- Edit entities dialog -->
-  <CollectionEntitiesFormDialog
-    v-if="editEntitiesOpen"
-    v-model:open="editEntitiesOpenComputed"
-    :collection-id="props.entityId"
-  />
 
   <!-- Detail dialog of the clicked entity -->
   <EntityDetailDialog v-model:target="openEntity" />
