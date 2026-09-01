@@ -30,7 +30,9 @@ import { AutomationService } from './services/automation'
 import { TaskRunService } from './services/task-run'
 
 // Bootstrap (pre-ready modules)
-import { registerAppSchemes, DEEPLINK_SCHEME } from './bootstrap/protocol'
+import { DEEPLINK_SCHEME } from '@shared/deeplink'
+import { registerAppSchemes } from './bootstrap/protocol'
+import { installDeeplinkCapture } from './bootstrap/deeplink-capture'
 import { detectPortableMode, setupPortableIpc } from './bootstrap/portable'
 import { getBootstrapArgs, setupBootstrapArgsIpc } from './bootstrap/args'
 import { bootstrapHooks, APP_SHUTDOWN_SETTLE_BUDGET_MS } from './bootstrap/hooks'
@@ -93,6 +95,10 @@ const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
   app.quit()
 }
+
+// Buffer open-url deeplinks that arrive before the deeplink service exists
+// (macOS delivers them even before app.whenReady() on URL-triggered starts).
+installDeeplinkCapture()
 
 // Setup userData path before app is ready
 // In dev build: use local dev/app folder
@@ -175,17 +181,9 @@ async function onAppReady(): Promise<void> {
     log.error('Startup automations failed.', error)
   })
 
-  // Mark deeplink service as ready and process any pending deeplinks
-  const deeplinkService = container.get('deeplink')
-  deeplinkService.markReady()
-
-  // Handle deeplink from startup arguments (Windows/Linux)
-  const startupDeeplink = process.argv.find((arg) => arg.startsWith(`${DEEPLINK_SCHEME}://`))
-  if (startupDeeplink) {
-    deeplinkService.handleDeeplink(startupDeeplink).catch((error) => {
-      log.error('Failed to handle startup deeplink.', error)
-    })
-  }
+  // Every deeplink route owner has registered; dispatch queued and startup
+  // deeplinks (the service scans process.argv itself).
+  container.get('deeplink').markReady()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

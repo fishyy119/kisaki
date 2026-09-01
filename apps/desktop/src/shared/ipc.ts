@@ -160,13 +160,7 @@ import type { ComicBookmark, NovelBookmark, NovelHighlight } from './db'
 import type { DbChangeSummary } from './db/changes'
 import type { LibraryEntityMergedEvent } from './library'
 import type { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
-import type {
-  DeeplinkResult,
-  DeeplinkRouteInfo,
-  DeeplinkNavigatePayload,
-  DeeplinkAuthCallbackPayload,
-  DeeplinkAuthErrorPayload
-} from './deeplink'
+import type { DeeplinkOpenPayload } from './deeplink'
 import type { BootstrapArgs } from './bootstrap'
 import type {
   AnimeExtraPlayingState,
@@ -740,10 +734,6 @@ export interface IpcMainHandlers {
   'holdings:attach-comic-chapter-file': (params: ComicChapterFileAttachParams) => IpcVoidResult
   'holdings:sync-novel': (params: NovelFileSyncParams) => IpcResult<NovelFileSyncResult>
   'holdings:attach-novel-volume-file': (params: NovelVolumeFileAttachParams) => IpcVoidResult
-
-  // Deeplink
-  'deeplink:handle': (url: string) => IpcResult<DeeplinkResult>
-  'deeplink:list-routes': () => IpcResult<DeeplinkRouteInfo[]>
 }
 
 /**
@@ -818,7 +808,5 @@ export interface IpcRendererEvents {
   'extension:webview-message': [event: ExtensionWebviewMessageEvent]
 
   // Deeplink events (main → renderer)
-  'deeplink:navigate': [DeeplinkNavigatePayload]
-  'deeplink:auth-callback': [DeeplinkAuthCallbackPayload]
-  'deeplink:auth-error': [DeeplinkAuthErrorPayload]
+  'deeplink:open': [DeeplinkOpenPayload]
 }

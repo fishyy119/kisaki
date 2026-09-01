@@ -1,4 +1,16 @@
-import type { DeeplinkParamMap } from '@shared/deeplink'
+/**
+ * Deeplink route pattern grammar — the single implementation shared by the
+ * main router, the extension contribution points on both sides of the host
+ * boundary, and the renderer destination table.
+ *
+ * A pattern is a `/`-joined sequence of exactly three segment kinds:
+ * - literal:    matches itself
+ * - `:name`     matches one segment, captured as a param
+ * - `*name`     matches the rest of the path (final segment only)
+ *
+ * Matching is most-specific-wins: literals outrank params, params outrank
+ * wildcards; ties break by registration order.
+ */
 
 const PARAM_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
 
@@ -10,13 +22,44 @@ type DeeplinkRouteSegment =
 export interface CompiledDeeplinkRoutePattern {
   pattern: string
   segments: readonly DeeplinkRouteSegment[]
+  /** Specificity: higher wins. Literal 100, param 10, wildcard -1000. */
   score: number
 }
 
-export interface DeeplinkRouteMatch {
-  path: string
-  params: DeeplinkParamMap
-}
+// =============================================================================
+// Typed params derived from the pattern string
+// =============================================================================
+
+type TrimLeadingSlash<TValue extends string> = TValue extends `/${infer TRest}`
+  ? TrimLeadingSlash<TRest>
+  : TValue
+
+type SegmentParamName<TSegment extends string> = TSegment extends `:${infer TName}`
+  ? TName extends ''
+    ? never
+    : TName
+  : TSegment extends `*${infer TName}`
+    ? TName extends ''
+      ? never
+      : TName
+    : never
+
+type RouteParamNames<TPattern extends string> =
+  TrimLeadingSlash<TPattern> extends ''
+    ? never
+    : TrimLeadingSlash<TPattern> extends `${infer THead}/${infer TTail}`
+      ? SegmentParamName<THead> | RouteParamNames<TTail>
+      : SegmentParamName<TrimLeadingSlash<TPattern>>
+
+export type DeeplinkRouteParams<TPattern extends string> = string extends TPattern
+  ? Record<string, string>
+  : [RouteParamNames<TPattern>] extends [never]
+    ? Record<never, never>
+    : { [TName in RouteParamNames<TPattern>]: string }
+
+// =============================================================================
+// Compile and match
+// =============================================================================
 
 export function compileDeeplinkRoutePattern(pattern: string): CompiledDeeplinkRoutePattern {
   const normalized = normalizeDeeplinkRoutePattern(pattern)
@@ -31,36 +74,26 @@ export function compileDeeplinkRoutePattern(pattern: string): CompiledDeeplinkRo
   }
 }
 
+/** Validates pattern grammar; throws on malformed patterns. */
 export function normalizeDeeplinkRoutePattern(pattern: string): string {
   return normalizeRoutePath(pattern, { allowParams: true })
 }
 
+/** Decodes and validates a concrete path; throws on malformed paths. */
 export function normalizeDeeplinkRoutePath(path: string): string {
   return normalizeRoutePath(path, { allowParams: false })
 }
 
-export function matchDeeplinkRoutePath(
+/**
+ * Matches a normalized path (every path produced by `parseDeeplinkUrl` is)
+ * against a compiled pattern, returning captured params or null.
+ */
+export function matchDeeplinkRoutePattern(
   compiled: CompiledDeeplinkRoutePattern,
   path: string
-): DeeplinkParamMap | null {
-  return matchDeeplinkRoutePathInfo(compiled, path)?.params ?? null
-}
-
-export function matchDeeplinkRoutePathInfo(
-  compiled: CompiledDeeplinkRoutePattern,
-  path: string
-): DeeplinkRouteMatch | null {
-  const normalizedPath = normalizeDeeplinkRoutePath(path)
-  const params = matchNormalizedDeeplinkRoutePath(compiled, normalizedPath)
-  return params ? { path: normalizedPath, params } : null
-}
-
-export function matchNormalizedDeeplinkRoutePath(
-  compiled: CompiledDeeplinkRoutePattern,
-  normalizedPath: string
-): DeeplinkParamMap | null {
-  const pathSegments = splitRoutePath(normalizedPath)
-  const params: DeeplinkParamMap = {}
+): Record<string, string> | null {
+  const pathSegments = splitRoutePath(path)
+  const params: Record<string, string> = {}
 
   for (let routeIndex = 0, pathIndex = 0; routeIndex < compiled.segments.length; routeIndex++) {
     const routeSegment = compiled.segments[routeIndex]!
@@ -92,6 +125,10 @@ export function matchNormalizedDeeplinkRoutePath(
 
   return pathSegments.length === compiled.segments.length ? params : null
 }
+
+// =============================================================================
+// Internals
+// =============================================================================
 
 function normalizeRoutePath(path: string, options: { allowParams: boolean }): string {
   const normalized = path.trim()

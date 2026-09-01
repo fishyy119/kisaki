@@ -20,6 +20,7 @@ export interface MainWindowApi {
   minimize(): void
   toggleMaximize(): void
   closeByConfiguredAction(): void
+  whenRendererReady(timeoutMs: number): Promise<boolean>
 }
 
 interface MainWindowControllerDeps {
@@ -35,6 +36,8 @@ export class MainWindowController implements MainWindowApi {
   private mainWindowCloseAction: MainWindowCloseAction = 'exit'
   private isQuitting = false
   private onDocumentGone: ((cause: MainWindowDocumentGoneCause) => void) | undefined
+  private rendererReady = false
+  private rendererReadyWaiters: Array<(ready: boolean) => void> = []
 
   init(deps: MainWindowControllerDeps): void {
     this.ipcService = deps.ipcService
@@ -173,16 +176,30 @@ export class MainWindowController implements MainWindowApi {
       if (this.window === mainWindow) {
         this.window = null
       }
+      this.rendererReady = false
       this.onDocumentGone?.('closed')
     })
 
     // A navigation (including reloads) or a crashed renderer ends the
     // document that owned interactive sessions; owners must release them.
     mainWindow.webContents.on('did-navigate', () => {
+      this.rendererReady = false
       this.onDocumentGone?.('navigated')
     })
     mainWindow.webContents.on('render-process-gone', () => {
+      this.rendererReady = false
       this.onDocumentGone?.('render-process-gone')
+    })
+
+    // Script execution precedes the load event, so renderer-side listeners
+    // installed during module init are guaranteed to exist by this point.
+    mainWindow.webContents.on('did-finish-load', () => {
+      this.rendererReady = true
+      const waiters = this.rendererReadyWaiters
+      this.rendererReadyWaiters = []
+      for (const resolve of waiters) {
+        resolve(true)
+      }
     })
 
     if (isDev && rendererDevServerUrl) {
@@ -216,6 +233,29 @@ export class MainWindowController implements MainWindowApi {
 
   isFocused(): boolean {
     return this.window !== null && !this.window.isDestroyed() && this.window.isFocused()
+  }
+
+  /**
+   * Resolves true once the renderer document has finished loading (and can
+   * therefore receive IPC events), or false when the timeout elapses first.
+   * Reloads and crashes reset readiness until the next successful load.
+   */
+  whenRendererReady(timeoutMs: number): Promise<boolean> {
+    if (this.rendererReady) {
+      return Promise.resolve(true)
+    }
+
+    return new Promise<boolean>((resolve) => {
+      const waiter = (ready: boolean): void => {
+        clearTimeout(timer)
+        resolve(ready)
+      }
+      const timer = setTimeout(() => {
+        this.rendererReadyWaiters = this.rendererReadyWaiters.filter((entry) => entry !== waiter)
+        resolve(false)
+      }, timeoutMs)
+      this.rendererReadyWaiters.push(waiter)
+    })
   }
 
   private require(): BrowserWindow {

@@ -1,71 +1,77 @@
 /**
- * Deeplink Handler
+ * Deeplink destinations.
  *
- * Handles deeplink events from the main process in the renderer.
+ * The renderer half of `kisaki://open/<destination>`: the curated external
+ * vocabulary of navigable places. Every entry is a deliberate API decision —
+ * destination names are user vocabulary that stays stable across internal
+ * route refactors, and raw route paths are never exposed. Unknown
+ * destinations are this module's feedback to own, because only the renderer
+ * knows the vocabulary.
  */
 
 import type { Router } from 'vue-router'
+import { isAllEntityType } from '@shared/common'
+import { compileDeeplinkRoutePattern, matchDeeplinkRoutePattern } from '@shared/deeplink'
+import { getEntityDetailPath, LIBRARY_HOME_PATH } from '@renderer/utils/entity-routes'
 import { ipcManager } from './ipc'
-import { createLogger } from '@renderer/core/log'
+import { notify } from './notify'
+import { messages } from './i18n'
+import { createLogger } from './log'
 
 const log = createLogger('Deeplink')
 
+type DestinationResolver = (params: Record<string, string>) => string | null
+
 /**
- * Setup deeplink event handlers.
- * Should be called during app initialization; the app entry injects the
- * router so this module stays free of a static dependency on the singleton.
+ * Destination vocabulary → internal route location. Entity destinations
+ * derive from the shared entity-type enum, so new entity types join without
+ * deeplink work; every other entry is added one deliberate line at a time.
  */
-export function setupDeeplinkHandlers(router: Router): void {
-  // Handle navigation events
-  ipcManager.on('deeplink:navigate', (_, { route, query }) => {
-    log.info('Navigating to route.', { route })
-    router.push({ path: route, query })
-  })
+const DESTINATIONS: Record<string, DestinationResolver> = {
+  '/': () => LIBRARY_HOME_PATH,
+  '/:entityType/:id': ({ entityType, id }) =>
+    entityType && id && isAllEntityType(entityType) ? getEntityDetailPath(entityType, id) : null,
+  '/library': () => LIBRARY_HOME_PATH,
+  '/statistics': () => '/statistics',
+  '/scanner': () => '/scanner',
+  '/automation': () => '/automation',
+  '/extension': () => '/extension'
+}
 
-  // Handle auth callback events
-  ipcManager.on('deeplink:auth-callback', (_, { provider, code, state }) => {
-    log.info('Auth callback received.', { provider })
-    // Emit a custom event that auth-related components can listen to
-    window.dispatchEvent(
-      new CustomEvent('kisaki:auth-callback', {
-        detail: { provider, code, state }
-      })
-    )
-  })
+const compiledDestinations = Object.entries(DESTINATIONS)
+  .map(([pattern, resolve]) => ({ compiled: compileDeeplinkRoutePattern(pattern), resolve }))
+  .sort((left, right) => right.compiled.score - left.compiled.score)
 
-  // Handle auth error events
-  ipcManager.on('deeplink:auth-error', (_, { provider, error, errorDescription }) => {
-    log.error('Auth callback failed.', { provider, error })
-    // Emit a custom event that auth-related components can listen to
-    window.dispatchEvent(
-      new CustomEvent('kisaki:auth-error', {
-        detail: { provider, error, errorDescription }
-      })
-    )
-  })
-
-  log.info('Handlers initialized')
+function resolveDestination(path: string): string | null {
+  for (const { compiled, resolve } of compiledDestinations) {
+    const params = matchDeeplinkRoutePattern(compiled, path)
+    if (params) {
+      return resolve(params)
+    }
+  }
+  return null
 }
 
 /**
- * Trigger a deeplink from the renderer process.
- * Useful for testing or programmatic deeplink handling.
+ * Listens for `deeplink:open` events from the main process. Must run during
+ * synchronous renderer init: the main process gates sends on document load,
+ * and script execution precedes the load event.
  */
-export async function handleDeeplink(url: string): Promise<boolean> {
-  const result = await ipcManager.invoke('deeplink:handle', url)
-  if (result.success) {
-    return result.data.success
-  }
-  return false
-}
+export function setupDeeplink(router: Router): void {
+  ipcManager.on('deeplink:open', (_, { path }) => {
+    const target = resolveDestination(path)
+    if (!target) {
+      log.warn('Unknown deeplink destination.', { destinationPath: path })
+      notify.error(
+        messages.value.deeplink.unknownDestinationTitle,
+        messages.value.deeplink.unknownDestinationMessage
+      )
+      return
+    }
 
-/**
- * Get all registered deeplink route patterns.
- */
-export async function getDeeplinkRoutes(): Promise<string[]> {
-  const result = await ipcManager.invoke('deeplink:list-routes')
-  if (result.success) {
-    return result.data.map((route) => route.pattern)
-  }
-  return []
+    log.info('Opening deeplink destination.', { destinationPath: path, target })
+    router.push(target).catch((error) => {
+      log.warn('Destination navigation failed.', error)
+    })
+  })
 }

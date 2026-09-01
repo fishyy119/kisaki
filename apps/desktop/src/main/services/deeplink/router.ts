@@ -1,28 +1,42 @@
-import type {
-  DeeplinkResult,
-  DeeplinkRouteContext,
-  DeeplinkRouteHandler,
-  ParsedDeeplink
-} from './types'
 import {
   compileDeeplinkRoutePattern,
-  matchDeeplinkRoutePathInfo,
-  type CompiledDeeplinkRoutePattern
-} from './route-pattern'
+  matchDeeplinkRoutePattern,
+  type CompiledDeeplinkRoutePattern,
+  type DeeplinkRequest
+} from '@shared/deeplink'
+import type {
+  DeeplinkOutcome,
+  DeeplinkRouteContext,
+  DeeplinkRouteHandler,
+  DeeplinkRouteOptions
+} from './types'
 
 interface DeeplinkRouteRecord {
   compiled: CompiledDeeplinkRoutePattern
   handler: DeeplinkRouteHandler
+  options: DeeplinkRouteOptions
   order: number
 }
 
+export interface DeeplinkRouteMatch {
+  pattern: string
+  focus: boolean
+  execute(): Promise<DeeplinkOutcome>
+}
+
+/**
+ * The single routing table of the `kisaki://` URL space. Route owners
+ * (the deeplink service, domain services, the extension system) register
+ * their patterns here; matching is most-specific-wins.
+ */
 export class DeeplinkRouter {
   private routes: DeeplinkRouteRecord[] = []
   private nextOrder = 0
 
   register<const TPattern extends string>(
     pattern: TPattern,
-    handler: DeeplinkRouteHandler<TPattern>
+    handler: DeeplinkRouteHandler<TPattern>,
+    options: DeeplinkRouteOptions
   ): () => void {
     const compiled = compileDeeplinkRoutePattern(pattern)
     if (this.routes.some((route) => route.compiled.pattern === compiled.pattern)) {
@@ -32,56 +46,53 @@ export class DeeplinkRouter {
     const record: DeeplinkRouteRecord = {
       compiled,
       handler: handler as unknown as DeeplinkRouteHandler,
+      options,
       order: this.nextOrder++
     }
     this.routes.push(record)
-    this.sortRoutes()
+    this.routes.sort(
+      (left, right) => right.compiled.score - left.compiled.score || left.order - right.order
+    )
 
     return () => {
       this.routes = this.routes.filter((route) => route !== record)
     }
   }
 
-  unregister(pattern: string): void {
-    const compiled = compileDeeplinkRoutePattern(pattern)
-    this.routes = this.routes.filter((route) => route.compiled.pattern !== compiled.pattern)
-  }
-
-  async route(deeplink: ParsedDeeplink): Promise<DeeplinkResult> {
+  match(request: DeeplinkRequest): DeeplinkRouteMatch | null {
     for (const route of this.routes) {
-      const match = matchDeeplinkRoutePathInfo(route.compiled, deeplink.path)
-      if (!match) {
+      const params = matchDeeplinkRoutePattern(route.compiled, request.path)
+      if (!params) {
         continue
       }
 
       const context: DeeplinkRouteContext = {
-        ...deeplink,
-        path: match.path,
+        ...request,
         pattern: route.compiled.pattern,
-        params: match.params
+        params
       }
-      return route.handler.handle(context)
+      return {
+        pattern: route.compiled.pattern,
+        focus: route.options.focus,
+        execute: () => executeRoute(route, context)
+      }
     }
 
+    return null
+  }
+}
+
+/** Handler failures become failed outcomes; the service logs them once. */
+async function executeRoute(
+  route: DeeplinkRouteRecord,
+  context: DeeplinkRouteContext
+): Promise<DeeplinkOutcome> {
+  try {
+    return await route.handler(context)
+  } catch (error) {
     return {
-      success: false,
-      path: deeplink.path,
-      message: `No deeplink route matched: ${deeplink.path}`
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Deeplink route handler failed.'
     }
-  }
-
-  listRoutes(): { pattern: string }[] {
-    return this.routes.map((route) => ({ pattern: route.compiled.pattern }))
-  }
-
-  hasRoute(pattern: string): boolean {
-    const compiled = compileDeeplinkRoutePattern(pattern)
-    return this.routes.some((route) => route.compiled.pattern === compiled.pattern)
-  }
-
-  private sortRoutes(): void {
-    this.routes.sort(
-      (left, right) => right.compiled.score - left.compiled.score || left.order - right.order
-    )
   }
 }

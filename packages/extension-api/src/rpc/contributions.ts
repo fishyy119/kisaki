@@ -76,6 +76,8 @@ export interface DeeplinkRouteRegistrationInfo {
   id: string
   path: string
   urlPattern: string
+  /** Whether a matching deeplink surfaces the main window before handling. */
+  focus: boolean
 }
 
 export interface GameScraperProviderRegistrationInfo {

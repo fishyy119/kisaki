@@ -125,7 +125,6 @@ export default defineExtension({
           settingsUiRef.current?.notifyOauthSettled('completed')
           await notifyLoginSuccess(account.nickname, context.logger)
           return {
-            success: true,
             status: 'handled',
             message: m().oauth.loginCompleted({ nickname: account.nickname })
           }
@@ -137,8 +136,7 @@ export default defineExtension({
           settingsUiRef.current?.notifyOauthSettled('failed')
           await notifyLoginFailure(message, context.logger)
           return {
-            success: false,
-            status: 'error',
+            status: 'failed',
             message
           }
         }

@@ -409,7 +409,7 @@ change in the library. Two contracts hold the seam together:
 
 | File/Directory | Used By                          | Purpose                                   |
 | -------------- | -------------------------------- | ----------------------------------------- |
-| `handlers/`    | activity, deeplink, scraper      | Per-media handlers or route handlers      |
+| `handlers/`    | activity, scraper                | Per-media handlers                        |
 | `types.ts`     | db, deeplink, extension, process | Service-specific type definitions         |
 | `ipc.ts`       | Any service with IPC channels    | IPC registration using `wrapIpc` helpers  |
 | `router.ts`    | deeplink                         | URL route definitions (deeplink-specific) |

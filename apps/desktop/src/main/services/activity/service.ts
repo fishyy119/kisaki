@@ -15,7 +15,7 @@ import { AnimeActivityHandler } from './handlers/anime'
 import { GameActivityHandler } from './handlers/game'
 import { createActivityHooks } from './hooks'
 import { registerActivityIpc } from './ipc'
-import { ActivityLaunchRoute, LAUNCH_DEEPLINK_ROUTE } from './launch-route'
+import { createLaunchRoute, LAUNCH_DEEPLINK_ROUTE } from './launch-route'
 import { ReadingMarks } from './marks'
 import { ComicReadingAdapter } from './reading/comic'
 import { ReadingCoordinator } from './reading/coordinator'
@@ -72,12 +72,14 @@ export class ActivityService implements IService<'activity'> {
     registerActivityIpc(this, ipc)
 
     // Launching is an activity action, so activity owns the route that triggers
-    // it; the deeplink router stays free of domain vocabulary.
+    // it; the deeplink router stays free of domain vocabulary. The launched
+    // engine takes the screen itself, so the route never steals focus.
     this.unregisterLaunchRoute = container
       .get('deeplink')
       .router.register(
         LAUNCH_DEEPLINK_ROUTE,
-        new ActivityLaunchRoute(this, container.get('notify'), i18n)
+        createLaunchRoute(this, container.get('notify'), i18n),
+        { focus: false }
       )
 
     log.info('Initialized')

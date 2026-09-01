@@ -8,7 +8,10 @@
  * - kisaki-extension-ui:// - Serves packaged and proxied development extension UI assets
  * - kisaki-extension-file:// - Serves installed extension package files (icons)
  * - kisaki-webview-font:// - Serves app fonts to extension webview documents
- * - kisaki:// - Deeplink protocol for external triggers
+ *
+ * The kisaki:// deeplink scheme is not registered here: its constant lives in
+ * `@shared/deeplink` and the main entry registers it via
+ * app.setAsDefaultProtocolClient().
  *
  * Custom schemes must be registered before app.whenReady().
  * Their handlers are set up by the owning services.
@@ -22,14 +25,10 @@ const ATTACHMENT_SCHEME = 'attachment'
 const EXTENSION_ICON_SCHEME = 'kisaki-extension-icon'
 const EXTENSION_UI_SCHEME = 'kisaki-extension-ui'
 const EXTENSION_FILE_SCHEME = 'kisaki-extension-file'
-const DEEPLINK_SCHEME = 'kisaki'
 
 /**
  * Register schemes as privileged.
  * Must be called before app.whenReady().
- *
- * Note: kisaki:// deeplink scheme is registered via app.setAsDefaultProtocolClient()
- * in the main entry point, not here.
  */
 export function registerAppSchemes(): void {
   protocol.registerSchemesAsPrivileged([
@@ -108,4 +107,4 @@ export function registerAppSchemes(): void {
   ])
 }
 
-export { DEEPLINK_SCHEME, EXTENSION_FILE_SCHEME, EXTENSION_ICON_SCHEME, EXTENSION_UI_SCHEME }
+export { EXTENSION_FILE_SCHEME, EXTENSION_ICON_SCHEME, EXTENSION_UI_SCHEME }

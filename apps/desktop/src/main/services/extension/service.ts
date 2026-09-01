@@ -87,6 +87,9 @@ export class ExtensionService implements IService<'extension'> {
   private packageRecovery!: ExtensionPackageRecovery
   private contributionSnapshotEmitQueued = false
   private readonly operationMutex = new Mutex()
+  private readonly runtimeStateListeners = new Set<
+    (extensionId: string, state: ExtensionRuntimeState) => void
+  >()
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const rootDir = resolveInsideRoot(app.getPath('userData'), 'extensions')
@@ -191,6 +194,10 @@ export class ExtensionService implements IService<'extension'> {
       command: container.get('command'),
       scraper: container.get('scraper'),
       deeplink: container.get('deeplink'),
+      notify: container.get('notify'),
+      i18n: container.get('i18n'),
+      waitForExtensionRunning: (extensionId, timeoutMs) =>
+        this.waitForExtensionRunning(extensionId, timeoutMs),
       moduleHooks: {
         bootstrap: bootstrapHooks,
         db: dbService.hooks,
@@ -319,6 +326,10 @@ export class ExtensionService implements IService<'extension'> {
   private emitRuntimeStateChanged(extensionId: string, state: ExtensionRuntimeState): void {
     this.installations.handleRuntimeStateChanged(extensionId, state)
 
+    for (const listener of [...this.runtimeStateListeners]) {
+      listener(extensionId, state)
+    }
+
     const runtimeInfo = this.installations.getRuntimeInfo(extensionId, state)
     if (!runtimeInfo) {
       return
@@ -327,6 +338,43 @@ export class ExtensionService implements IService<'extension'> {
     this.ipc.send('extension:runtime-state-changed', {
       extensionId,
       ...runtimeInfo
+    })
+  }
+
+  /**
+   * Resolves true once the extension's runtime reaches `running`, false when
+   * it settles in a terminal non-running state, is not an enabled
+   * installation, or the timeout elapses. Serves deeplink dispatch racing an
+   * extension that is still activating.
+   */
+  private waitForExtensionRunning(extensionId: string, timeoutMs: number): Promise<boolean> {
+    if (this.runtime.getRuntimeState(extensionId)?.status === 'running') {
+      return Promise.resolve(true)
+    }
+
+    const entry = this.installations.get(extensionId)
+    if (!entry?.enabled) {
+      return Promise.resolve(false)
+    }
+
+    return new Promise<boolean>((resolve) => {
+      const settle = (ready: boolean): void => {
+        clearTimeout(timer)
+        this.runtimeStateListeners.delete(listener)
+        resolve(ready)
+      }
+      const listener = (changedId: string, state: ExtensionRuntimeState): void => {
+        if (changedId !== extensionId) {
+          return
+        }
+        if (state.status === 'running') {
+          settle(true)
+        } else if (state.status === 'failed' || state.status === 'stopped') {
+          settle(false)
+        }
+      }
+      const timer = setTimeout(() => settle(false), timeoutMs)
+      this.runtimeStateListeners.add(listener)
     })
   }
 

@@ -1,29 +1,22 @@
 import type { DeeplinkRouteContribution } from './contracts'
-import { validateJsonValue } from '../../shared/json'
 import type { ValidationIssue } from '../../shared/validation'
 import {
   isPlainObject,
-  validateOptionalEnumString,
+  validateOptionalBoolean,
   validateOptionalString,
-  validateRequiredBoolean,
+  validateRequiredEnumString,
   validateRequiredFunction,
   validateRequiredString,
   validateUnknownKeys
 } from '../../shared/validation'
 
-const DEEPLINK_ROUTE_CONTRIBUTION_KEYS = new Set<string>(['id', 'path', 'handle'])
+const DEEPLINK_ROUTE_CONTRIBUTION_KEYS = new Set<string>(['id', 'path', 'focus', 'handle'])
 
-const DEEPLINK_ROUTE_HANDLE_EVENT_KEYS = new Set<string>([
-  'path',
-  'pattern',
-  'params',
-  'query',
-  'rawUrl'
-])
+const DEEPLINK_ROUTE_HANDLE_EVENT_KEYS = new Set<string>(['path', 'pattern', 'params', 'query'])
 
-const DEEPLINK_ROUTE_HANDLE_RESULT_KEYS = new Set<string>(['success', 'status', 'message', 'data'])
+const DEEPLINK_ROUTE_HANDLE_RESULT_KEYS = new Set<string>(['status', 'message'])
 
-const DEEPLINK_ROUTE_HANDLE_RESULT_STATUS_VALUES = ['handled', 'ignored', 'error'] as const
+const DEEPLINK_ROUTE_HANDLE_RESULT_STATUS_VALUES = ['handled', 'failed'] as const
 
 function validateDeeplinkPath(value: unknown, path: string): ValidationIssue[] {
   const issues = validateRequiredString(value, path, {
@@ -105,6 +98,10 @@ export function validateDeeplinkRouteContributionShape(value: unknown): Validati
       valueMessage: 'Contribution id must be a non-empty string.'
     }),
     ...validateDeeplinkRoutePattern(value.path, '$.path'),
+    ...validateOptionalBoolean(value.focus, '$.focus').map((issue) => ({
+      ...issue,
+      message: 'focus must be a boolean when provided.'
+    })),
     ...validateRequiredFunction(value.handle, '$.handle').map((issue) => ({
       ...issue,
       message: 'handle must be a function.'
@@ -120,11 +117,7 @@ export function validateDeeplinkRouteHandleEvent(value: unknown): ValidationIssu
   const issues: ValidationIssue[] = [
     ...validateUnknownKeys(value, DEEPLINK_ROUTE_HANDLE_EVENT_KEYS),
     ...validateDeeplinkPath(value.path, '$.path'),
-    ...validateDeeplinkRoutePattern(value.pattern, '$.pattern'),
-    ...validateRequiredString(value.rawUrl, '$.rawUrl', {
-      trim: true,
-      valueMessage: 'rawUrl must be a non-empty string.'
-    })
+    ...validateDeeplinkRoutePattern(value.pattern, '$.pattern')
   ]
 
   issues.push(...validateStringRecord(value.params, '$.params', 'params'))
@@ -155,28 +148,18 @@ export function validateDeeplinkRouteHandleResult(value: unknown): ValidationIss
     return [{ path: '$', message: 'Deeplink route handle result must be an object.' }]
   }
 
-  const issues: ValidationIssue[] = [
+  return [
     ...validateUnknownKeys(value, DEEPLINK_ROUTE_HANDLE_RESULT_KEYS),
-    ...validateRequiredBoolean(value.success, '$.success').map((issue) => ({
-      ...issue,
-      message: 'success must be a boolean.'
-    })),
-    ...validateOptionalEnumString(
+    ...validateRequiredEnumString(
       value.status,
       '$.status',
       DEEPLINK_ROUTE_HANDLE_RESULT_STATUS_VALUES,
-      'status must be one of handled, ignored, or error when provided.'
+      'status must be either handled or failed.'
     ),
     ...validateOptionalString(value.message, '$.message', {
       typeMessage: 'message must be a string when provided.'
     })
   ]
-
-  if (value.data !== undefined) {
-    issues.push(...validateJsonValue(value.data, '$.data'))
-  }
-
-  return issues
 }
 
 export function isDeeplinkRouteContribution(value: unknown): value is DeeplinkRouteContribution {

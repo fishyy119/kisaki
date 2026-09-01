@@ -34,6 +34,11 @@ export class WindowService implements INonDomainService<'window'> {
     this.mainWindow.markQuitting()
   }
 
+  /** Single-instance UX: a second launch surfaces the existing window. */
+  private readonly onSecondInstance = (): void => {
+    this.mainWindow.focus()
+  }
+
   private readonly onBrowserWindowCreated = (
     _event: Electron.Event,
     window: BrowserWindow
@@ -54,6 +59,7 @@ export class WindowService implements INonDomainService<'window'> {
     registerWindowIpc(this, ipcService)
     app.on('before-quit', this.onBeforeQuit)
     app.on('browser-window-created', this.onBrowserWindowCreated)
+    app.on('second-instance', this.onSecondInstance)
 
     log.info('Initialized')
   }
@@ -61,6 +67,7 @@ export class WindowService implements INonDomainService<'window'> {
   async dispose(): Promise<void> {
     app.off('before-quit', this.onBeforeQuit)
     app.off('browser-window-created', this.onBrowserWindowCreated)
+    app.off('second-instance', this.onSecondInstance)
 
     this.tray.dispose()
     this.mainWindow.dispose()

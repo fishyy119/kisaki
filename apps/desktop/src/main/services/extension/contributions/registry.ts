@@ -19,8 +19,10 @@ import type { BootstrapHooks } from '@main/bootstrap/hooks'
 import type { CommandService } from '@main/services/command'
 import type { DbHooks } from '@main/services/db/hooks'
 import type { DeeplinkService } from '@main/services/deeplink'
+import type { I18nService } from '@main/services/i18n'
 import type { I18nHooks } from '@main/services/i18n/hooks'
 import type { IngestHooks } from '@main/services/ingest/hooks'
+import type { NotifyService } from '@main/services/notify'
 import type { ActivityHooks } from '@main/services/activity'
 import type { ScannerHooks } from '@main/services/scanner/hooks'
 import type { ScraperService } from '@main/services/scraper'
@@ -64,7 +66,10 @@ export interface ExtensionModuleHookSurfaces {
 export interface ExtensionContributionRegistryOptions extends ExtensionContributionPointOptions {
   command: CommandService
   deeplink: DeeplinkService
+  notify: NotifyService
+  i18n: I18nService
   scraper: ScraperService
+  waitForExtensionRunning(extensionId: string, timeoutMs: number): Promise<boolean>
   moduleHooks: ExtensionModuleHookSurfaces
   sendEventToHost<K extends MainToHostRpcEvent>(
     name: K,
@@ -97,7 +102,10 @@ export class ExtensionContributionRegistry {
     this.themes = new ExtensionThemeContributionPoint(base)
     this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionPoint({
       ...base,
-      deeplink: options.deeplink
+      deeplink: options.deeplink,
+      notify: options.notify,
+      i18n: options.i18n,
+      waitForExtensionRunning: options.waitForExtensionRunning
     })
     this.scraperProviders = new ExtensionScraperProviderContributionPoint({
       ...base,

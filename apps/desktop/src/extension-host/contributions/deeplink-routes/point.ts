@@ -7,6 +7,7 @@ import {
   validateDeeplinkRouteHandleEvent,
   validateDeeplinkRouteHandleResult
 } from '@kisaki3/extension-api'
+import { buildExtensionDeeplinkUrl, normalizeDeeplinkRoutePattern } from '@shared/deeplink'
 import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
@@ -30,7 +31,7 @@ export class HostDeeplinkRouteContributionPoint {
       )
     }
 
-    const path = normalizeDeeplinkPath(contribution.path)
+    const path = normalizeExtensionDeeplinkRoutePath(contribution.path)
     for (const route of runtime.deeplinkRoutes.values()) {
       if (route.path === path) {
         throw new Error(
@@ -43,7 +44,7 @@ export class HostDeeplinkRouteContributionPoint {
       ...contribution,
       path
     } as unknown as DeeplinkRouteContribution)
-    const urlPattern = `kisaki://ext/${scope.extensionId}${path}`
+    const urlPattern = buildExtensionDeeplinkUrl(scope.extensionId, path)
     const request = this.options.rpc.requestMain(
       'contributions.deeplinkRoutes.register',
       {
@@ -51,7 +52,8 @@ export class HostDeeplinkRouteContributionPoint {
         route: {
           id: contribution.id,
           path,
-          urlPattern
+          urlPattern,
+          focus: contribution.focus ?? true
         }
       },
       this.options.getRequestOptions(scope)
@@ -138,28 +140,8 @@ export class HostDeeplinkRouteContributionPoint {
   }
 }
 
-function normalizeDeeplinkPath(path: string): string {
-  const normalized = path.trim()
-  if (!normalized.startsWith('/')) {
-    throw new Error(`Extension deeplink route path "${path}" must start with "/".`)
-  }
-
-  if (normalized.includes('?') || normalized.includes('#') || /^[a-z][a-z0-9+.-]*:/i.test(path)) {
-    throw new Error(
-      `Extension deeplink route path "${path}" must not include query, hash, or a full URL.`
-    )
-  }
-
-  if (
-    normalized.includes('\\') ||
-    normalized.split('/').some((segment) => segment === '..') ||
-    (normalized.length > 1 &&
-      normalized.split('/').some((segment, index) => index > 0 && segment === ''))
-  ) {
-    throw new Error(
-      `Extension deeplink route path "${path}" must not include backslashes, empty segments, or "..".`
-    )
-  }
+function normalizeExtensionDeeplinkRoutePath(path: string): string {
+  const normalized = normalizeDeeplinkRoutePattern(path)
 
   if (normalized === '/ext' || normalized.startsWith('/ext/')) {
     throw new Error('Extension deeplink route path must not include the host "/ext" namespace.')

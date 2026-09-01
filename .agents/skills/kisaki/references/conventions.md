@@ -792,7 +792,7 @@ Kisaki provides a unified `notify` API that is callable from both main and rende
     errors for unexpected ones, and log detail once at the layer that owns the context.
   - Folder names do not decide this; ownership does. `activity/handlers/game.ts` is a shared
     capability (play button, deeplinks, automations) and must not notify;
-    `deeplink/handlers/launch.ts` is the entry adapter of one flow and owns its notifications.
+    `activity/launch-route.ts` is the entry adapter of one flow and owns its notifications.
 - Keep `ipc.handle(...)` functions as **thin adapters**: forward typed arguments to a service/use-case method + map to `IpcResult`.
   - Do not add runtime shape parsers for internal main-app IPC calls; put necessary safety and business invariants in the owning service/domain module.
   - Do not embed business workflows (DB lookups, process management, orchestration) directly inside anonymous IPC handlers.

@@ -6,6 +6,7 @@ import { automation } from './automation'
 import { app } from './app'
 import { comic } from './comic'
 import { common } from './common'
+import { deeplink } from './deeplink'
 import { extension } from './extension'
 import { filter } from './filter'
 import { game } from './game'
@@ -32,6 +33,7 @@ export const ja = {
   app,
   comic,
   common,
+  deeplink,
   extension,
   filter,
   game,

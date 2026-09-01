@@ -1,4 +1,4 @@
-import type { Disposable, MaybePromise, JsonValue } from '../../shared'
+import type { Disposable, MaybePromise } from '../../shared'
 
 export type DeeplinkRouteParamMap = Record<string, string>
 
@@ -30,27 +30,38 @@ export type DeeplinkRouteParams<TPattern extends string> = string extends TPatte
     : { [TName in RouteParamNames<TPattern>]: string }
 
 export interface DeeplinkRouteHandleEvent<TPattern extends string = string> {
+  /** Route path relative to the extension's namespace, e.g. `/oauth-callback`. */
   path: string
   pattern: TPattern
   params: DeeplinkRouteParams<TPattern>
+  /** Query payload of the deeplink; values are untrusted external input. */
   query: DeeplinkRouteParamMap
-  rawUrl: string
 }
 
+/**
+ * Outcome of handling a deeplink. It feeds the host's logging only; user
+ * feedback for a failure belongs to the extension, which owns the flow.
+ */
 export interface DeeplinkRouteHandleResult {
-  success: boolean
-  status?: 'handled' | 'ignored' | 'error' | undefined
+  status: 'handled' | 'failed'
   message?: string | undefined
-  data?: JsonValue | undefined
 }
 
 export interface DeeplinkRouteContribution<TPattern extends string = string> {
   id: string
+  /** Route pattern relative to `kisaki://ext/<extensionId>`, e.g. `/oauth-callback`. */
   path: TPattern
+  /**
+   * Whether a matching deeplink brings the main window to the foreground
+   * before the route runs. Defaults to true, which fits user-facing bounces
+   * such as OAuth callbacks; machine-facing routes opt out.
+   */
+  focus?: boolean | undefined
   handle(event: DeeplinkRouteHandleEvent<TPattern>): MaybePromise<DeeplinkRouteHandleResult>
 }
 
 export interface DeeplinkRouteRegistration extends Disposable {
+  /** Absolute deeplink URL of the route, e.g. usable as an OAuth callback URL. */
   readonly urlPattern: string
 }
 

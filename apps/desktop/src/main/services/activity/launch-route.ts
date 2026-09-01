@@ -2,23 +2,21 @@
  * `kisaki://launch/*` route: starts consumption of an entry, whichever engine
  * that entry uses.
  *
- * The route lives with the service that owns the action. Activity registers it
- * on the deeplink router at init, so the platform-level router never needs to
- * know what a launch means.
+ * The route lives with the service that owns the action. Activity registers
+ * it on the deeplink router at init, so the platform-level router never needs
+ * to know what a launch means. As the entry adapter of the launch flow it
+ * owns the user notifications for unexpected outcomes; `open` and `launch`
+ * stay orthogonal, so launching never navigates or focuses the main window.
  *
  * Supported URLs:
- * - kisaki://launch/{mediaType}/{entityId}
+ * - kisaki://launch/game/{gameId}
  * - kisaki://launch/anime/{animeId}?episode={episodeId}
  * - kisaki://launch/comic/{comicId}?chapter={chapterId}
  * - kisaki://launch/novel/{novelId}?volume={volumeId}
  */
 
 import { createLogger } from '@main/log'
-import type {
-  DeeplinkResult,
-  DeeplinkRouteContext,
-  DeeplinkRouteHandler
-} from '@main/services/deeplink'
+import type { DeeplinkOutcome, DeeplinkRouteHandler } from '@main/services/deeplink'
 import type { NotifyService } from '@main/services/notify'
 import type { I18nService } from '@main/services/i18n'
 import type { AnimeWatchResult, GameLaunchResult, ReadingResult } from '@shared/activity'
@@ -28,165 +26,98 @@ const log = createLogger('Activity')
 
 export const LAUNCH_DEEPLINK_ROUTE = '/launch/:mediaType/:entityId' as const
 
-type LaunchDeeplinkContext = DeeplinkRouteContext<typeof LAUNCH_DEEPLINK_ROUTE>
+export function createLaunchRoute(
+  activity: ActivityService,
+  notify: NotifyService,
+  i18n: I18nService
+): DeeplinkRouteHandler<typeof LAUNCH_DEEPLINK_ROUTE> {
+  /** A deeplink launch has no button state, so anything unexpected is toasted. */
+  function notifyLaunchOutcome(result: GameLaunchResult): void {
+    const messages = i18n.messages.activity
 
-export class ActivityLaunchRoute implements DeeplinkRouteHandler<typeof LAUNCH_DEEPLINK_ROUTE> {
-  constructor(
-    private readonly activity: ActivityService,
-    private readonly notify: NotifyService,
-    private readonly i18n: I18nService
-  ) {}
-
-  async handle(deeplink: LaunchDeeplinkContext): Promise<DeeplinkResult> {
-    const { mediaType, entityId } = deeplink.params
-
-    switch (mediaType) {
-      case 'game':
-        return this.launchGame(entityId, deeplink)
-      case 'anime':
-        return this.watchAnime(entityId, deeplink)
-      case 'comic':
-        return this.readComic(entityId, deeplink)
-      case 'novel':
-        return this.readNovel(entityId, deeplink)
-      default:
-        return {
-          success: false,
-          path: deeplink.path,
-          pattern: deeplink.pattern,
-          message: `Launch is not supported for media type: ${mediaType}`
-        }
+    switch (result.status) {
+      case 'detected':
+        return
+      case 'cancelled':
+        notify.warning(messages.launchCancelledTitle)
+        return
+      case 'unconfirmed':
+        notify.warning(messages.launchRequestedTitle, messages[result.reason])
+        return
+      case 'failed':
+        notify.error(messages.launchFailedTitle, messages.errors[result.reason])
     }
   }
 
-  private async launchGame(
-    gameId: string,
-    deeplink: LaunchDeeplinkContext
-  ): Promise<DeeplinkResult> {
-    const result = await this.activity.game.launch(gameId)
-    this.notifyLaunchOutcome(result)
+  async function launchGame(gameId: string): Promise<DeeplinkOutcome> {
+    const result = await activity.game.launch(gameId)
+    notifyLaunchOutcome(result)
 
     if (result.status !== 'detected') {
       log.warn('Game launch was not confirmed via deeplink.', {
         gameId,
         resultStatus: result.status
       })
-      return {
-        success: false,
-        path: deeplink.path,
-        pattern: deeplink.pattern,
-        message: getLaunchDeeplinkMessage(gameId, result),
-        data: { mediaType: 'game', entityId: gameId, launch: result }
-      }
+      return { status: 'failed', message: getLaunchDeeplinkMessage(gameId, result) }
     }
 
     log.info('Game launch confirmed via deeplink.', { gameId, processPid: result.pid })
-
-    return {
-      success: true,
-      path: deeplink.path,
-      pattern: deeplink.pattern,
-      message: `Launch confirmed: ${gameId}`,
-      data: { mediaType: 'game', entityId: gameId, launch: result }
-    }
+    return { status: 'handled' }
   }
 
-  private async watchAnime(
-    animeId: string,
-    deeplink: LaunchDeeplinkContext
-  ): Promise<DeeplinkResult> {
-    const episodeId = deeplink.query.episode
-    const result = await this.activity.anime.watch(animeId, episodeId)
+  async function watchAnime(animeId: string, episodeId?: string): Promise<DeeplinkOutcome> {
+    const result = await activity.anime.watch(animeId, episodeId)
 
     if (result.status === 'failed') {
-      this.notify.error(
-        this.i18n.messages.activity.watchFailedTitle,
-        this.i18n.messages.activity.errors[result.reason]
+      notify.error(
+        i18n.messages.activity.watchFailedTitle,
+        i18n.messages.activity.errors[result.reason]
       )
       log.warn('Anime watch failed via deeplink.', { animeId, reason: result.reason })
-      return {
-        success: false,
-        path: deeplink.path,
-        pattern: deeplink.pattern,
-        message: getWatchDeeplinkMessage(animeId, result),
-        data: { mediaType: 'anime', entityId: animeId, watch: result }
-      }
+      return { status: 'failed', message: getWatchDeeplinkMessage(animeId, result) }
     }
 
     log.info('Anime watch started via deeplink.', { animeId, episodeId: result.episodeId })
-
-    return {
-      success: true,
-      path: deeplink.path,
-      pattern: deeplink.pattern,
-      message: getWatchDeeplinkMessage(animeId, result),
-      data: { mediaType: 'anime', entityId: animeId, watch: result }
-    }
+    return { status: 'handled' }
   }
 
-  private async readComic(
-    comicId: string,
-    deeplink: LaunchDeeplinkContext
-  ): Promise<DeeplinkResult> {
-    return this.readEntry('comic', comicId, deeplink.query.chapter, deeplink)
-  }
-
-  private async readNovel(
-    novelId: string,
-    deeplink: LaunchDeeplinkContext
-  ): Promise<DeeplinkResult> {
-    return this.readEntry('novel', novelId, deeplink.query.volume, deeplink)
-  }
-
-  private async readEntry(
+  function readEntry(
     media: 'comic' | 'novel',
     entryId: string,
-    unitId: string | undefined,
-    deeplink: LaunchDeeplinkContext
-  ): Promise<DeeplinkResult> {
-    const result = this.activity.reading.read(media, entryId, unitId)
+    unitId: string | undefined
+  ): DeeplinkOutcome {
+    const result = activity.reading.read(media, entryId, unitId)
 
     if (result.status === 'failed') {
-      this.notify.error(
-        this.i18n.messages.activity.readFailedTitle,
-        this.i18n.messages.activity.errors[result.reason]
+      notify.error(
+        i18n.messages.activity.readFailedTitle,
+        i18n.messages.activity.errors[result.reason]
       )
       log.warn('Read failed via deeplink.', { media, entryId, reason: result.reason })
-      return {
-        success: false,
-        path: deeplink.path,
-        pattern: deeplink.pattern,
-        message: `Read failed: ${entryId} (${result.reason})`,
-        data: { mediaType: media, entityId: entryId, read: result }
-      }
+      return { status: 'failed', message: getReadDeeplinkMessage(entryId, result) }
     }
 
     log.info('Reader opened via deeplink.', { media, entryId, unitId: result.unitId })
-
-    return {
-      success: true,
-      path: deeplink.path,
-      pattern: deeplink.pattern,
-      message: getReadDeeplinkMessage(entryId, result),
-      data: { mediaType: media, entityId: entryId, read: result }
-    }
+    return { status: 'handled' }
   }
 
-  /** A deeplink launch has no button state, so anything unexpected is toasted. */
-  private notifyLaunchOutcome(result: GameLaunchResult): void {
-    const messages = this.i18n.messages.activity
+  return async (context) => {
+    const { mediaType, entityId } = context.params
 
-    switch (result.status) {
-      case 'detected':
-        return
-      case 'cancelled':
-        this.notify.warning(messages.launchCancelledTitle)
-        return
-      case 'unconfirmed':
-        this.notify.warning(messages.launchRequestedTitle, messages[result.reason])
-        return
-      case 'failed':
-        this.notify.error(messages.launchFailedTitle, messages.errors[result.reason])
+    switch (mediaType) {
+      case 'game':
+        return launchGame(entityId)
+      case 'anime':
+        return watchAnime(entityId, context.query.episode)
+      case 'comic':
+        return readEntry('comic', entityId, context.query.chapter)
+      case 'novel':
+        return readEntry('novel', entityId, context.query.volume)
+      default:
+        return {
+          status: 'failed',
+          message: `Launch is not supported for media type: ${mediaType}`
+        }
     }
   }
 }

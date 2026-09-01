@@ -14,7 +14,7 @@ import {
   setupExtensionWebviewNavigation,
   setupExtensionWebviewStore
 } from './core/extensions'
-import { setupDeeplinkHandlers } from './core/deeplink'
+import { setupDeeplink } from './core/deeplink'
 import { libraryRoutes, libraryFromAutofillGuard } from './features/library/routes'
 import { statisticsRoutes } from './features/statistics/routes'
 import { scannerRoutes } from './features/scanner/routes'
@@ -96,6 +96,10 @@ async function initMainWindowRenderer() {
   const router = createAppRouter()
   app.use(router)
 
+  // Deeplink destinations must listen before load finishes: the main process
+  // gates `deeplink:open` sends on the document's load event.
+  setupDeeplink(router)
+
   // Global error handler
   app.config.errorHandler = (err, _instance, info) => {
     log.error('Vue Error:', err, info)
@@ -111,9 +115,6 @@ async function initMainWindowRenderer() {
   // Deferred to idle time to avoid blocking first paint
   // ===========================================================================
   requestIdleCallback(async () => {
-    // Deeplink handlers (must be set up early to receive events)
-    setupDeeplinkHandlers(router)
-
     // Extension contribution snapshot sync.
     setupExtensionContributionStore()
     void refreshExtensionContributionSnapshot().catch((error) => {
