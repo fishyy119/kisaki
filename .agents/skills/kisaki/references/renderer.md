@@ -134,9 +134,12 @@ export type { ButtonProps } from './types'
 Routing is layered so every dependency arrow points one way; each layer's placement encodes
 the rule it enforces:
 
-1. **Grammar** (`utils/entity-routes.ts`, `utils/library-context.ts`): pure URL contracts.
-   Entity detail path patterns and param names have this single source; the manifest, the
-   entity specs, and every page that links to a detail view derive from it.
+1. **Grammar** (`utils/entity-routes.ts`, `utils/explorer-context.ts`): pure URL contracts.
+   Entity detail path patterns, param names, and route names have this single source; the
+   manifest, the entity specs, and every page that links to a detail view derive from it.
+   The `from` query on content detail routes is an explorer instance address
+   (`collection:<id>` | `uncategorized`), never a provenance record: surfaces without an
+   explorer address navigate without `from` and the autofill guard fills the canonical one.
 2. **Kernel** (`core/route-data.ts`): `defineRouteData` and the `installRouteData` guard.
    `core/` has zero `features/*` imports; the kernel knows nothing about concrete routes.
 3. **Feature manifests** (`features/<feature>/routes.ts`): each feature owns its

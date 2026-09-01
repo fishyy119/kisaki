@@ -840,7 +840,8 @@ export const library = {
     filteredResults: 'Filtered results',
     noMatch: 'No matches',
     emptyList: ({ label }: { label: string }) => `No ${label.toLowerCase()}s yet`,
-    uncategorized: 'Uncategorized'
+    uncategorized: 'Uncategorized',
+    locate: 'Locate current item'
   },
 
   search: {

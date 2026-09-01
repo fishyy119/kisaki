@@ -4,10 +4,20 @@
 
 export {
   useExplorerList,
+  useExplorerListProvider,
   type EntityData,
   type CollectionGroup,
-  type ExplorerListData
+  type ExplorerListData,
+  type ExplorerListContext
 } from './use-explorer-list'
+export {
+  useExplorerLocator,
+  useExplorerLocatorProvider,
+  FILTERED_LIST_VIEW_ID,
+  UNCATEGORIZED_GROUP_ID,
+  type ExplorerLocator,
+  type ExplorerListViewHandle
+} from './use-explorer-locator'
 export {
   useShowcaseSections,
   showcaseSectionsData,

@@ -58,7 +58,7 @@ const measuredItemHeight = ref(24)
 const measuredGap = ref(2)
 
 // Scroll parent integration (must be before virtualizer to provide getScrollElement and scrollMargin)
-const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange } =
+const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange, updateScrollMargin } =
   useVirtualScrollParent({
     containerRef,
     scrollParent: toRef(props, 'scrollParent'),
@@ -116,7 +116,15 @@ watch(
 
 // Expose methods
 defineExpose({
+  /**
+   * Correct at call time, not a frame later: the mount-scheduled margin
+   * update runs in a rAF, so a programmatic scroll refreshes the margin
+   * synchronously and pushes it straight into the virtualizer — the reactive
+   * options path only applies it on the next flush.
+   */
   scrollToIndex: (index: number, options?: { align?: 'start' | 'center' | 'end' }) => {
+    updateScrollMargin()
+    virtualizer.value.setOptions({ ...virtualizer.value.options, scrollMargin: scrollMargin.value })
     virtualizer.value.scrollToIndex(index, options)
   },
   virtualizer,

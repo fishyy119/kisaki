@@ -20,7 +20,7 @@ import { statisticsRoutes } from './features/statistics/routes'
 import { scannerRoutes } from './features/scanner/routes'
 import { automationRoutes } from './features/automation/routes'
 import { extensionRoutes } from './features/extension/routes'
-import { LIBRARY_HOME_PATH } from './utils/library-context'
+import { LIBRARY_HOME_PATH } from './utils/entity-routes'
 import {
   useAnimeActivityStore,
   useGameActivityStore,

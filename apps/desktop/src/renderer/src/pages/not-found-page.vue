@@ -10,7 +10,7 @@ import { RouterLink } from 'vue-router'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { LIBRARY_HOME_PATH } from '@renderer/utils/library-context'
+import { LIBRARY_HOME_PATH } from '@renderer/utils/entity-routes'
 
 const { m } = useI18n()
 </script>

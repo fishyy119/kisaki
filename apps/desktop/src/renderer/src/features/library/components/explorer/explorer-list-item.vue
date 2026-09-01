@@ -3,11 +3,21 @@
  * ExplorerListItem - Single entity item
  *
  * Renders a single entity in the explorer list with lazy-loaded images.
- * Each entity is wrapped with its corresponding context menu.
+ * Each entity is wrapped with its corresponding context menu. The row whose
+ * key matches the locator's current instance carries the active highlight
+ * and reports its element for viewport tracking.
  */
 
-import { computed, inject, type Component, type ComputedRef } from 'vue'
-import { RouterLink, useRoute, type LocationQuery } from 'vue-router'
+import {
+  computed,
+  inject,
+  useTemplateRef,
+  watch,
+  type Component,
+  type ComponentPublicInstance,
+  type ComputedRef
+} from 'vue'
+import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { EntityContextMenu, EntityBatchContextMenu } from '@renderer/components/shared/entity'
@@ -15,6 +25,7 @@ import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { useLibraryExplorerStore } from '../../stores'
+import { useExplorerLocator } from '../../composables'
 import { parseExplorerSelectionKey, toExplorerSelectionKey } from '../../utils/explorer-selection'
 import type { EntityData } from '../../composables'
 import type { ContentEntityType } from '@shared/common'
@@ -29,6 +40,7 @@ const props = defineProps<Props>()
 
 const store = useLibraryExplorerStore()
 const { selectedKeys } = storeToRefs(store)
+const locator = useExplorerLocator()
 
 const visibleSelectionKeys = inject<ComputedRef<string[]>>(
   'explorerVisibleSelectionKeys',
@@ -49,44 +61,27 @@ const detailPath = computed(() => getEntityDetailPath(props.entityType, props.en
 
 const linkQuery = computed(() => ({ from: props.from }))
 
-const route = useRoute()
+/** This row stands for the entity of the active detail route. */
+const isCurrent = computed(() => locator.currentInstanceKey.value === rowKey.value)
 
-function isStrictQueryMatch(actual: LocationQuery, expected: Record<string, string>) {
-  const actualKeys = Object.keys(actual)
-  const expectedKeys = Object.keys(expected)
+// While current, report the rendered element so the locator can track
+// whether the active row is inside the scroll viewport. RouterLink's own
+// instance type omits $el, so the ref types against the generic instance.
+const linkRef = useTemplateRef<ComponentPublicInstance>('link')
 
-  if (actualKeys.length !== expectedKeys.length) {
-    return false
-  }
-
-  actualKeys.sort()
-  expectedKeys.sort()
-
-  for (let index = 0; index < actualKeys.length; index++) {
-    if (actualKeys[index] !== expectedKeys[index]) {
-      return false
-    }
-  }
-
-  return actualKeys.every((key) => {
-    const actualValue = actual[key]
-    const expectedValue = expected[key]
-
-    if (Array.isArray(actualValue)) {
-      return actualValue.length === 1 && actualValue[0] === expectedValue
-    }
-
-    return actualValue === expectedValue
-  })
-}
-
-const isStrictActive = computed(() => {
-  if (route.path !== detailPath.value) {
-    return false
-  }
-
-  return isStrictQueryMatch(route.query, linkQuery.value)
+const rowElement = computed<HTMLElement | null>(() => {
+  const el = linkRef.value?.$el as unknown
+  return el instanceof HTMLElement ? el : null
 })
+
+watch(
+  [isCurrent, rowElement],
+  ([current, el], _previous, onCleanup) => {
+    if (!current || !el) return
+    onCleanup(locator.registerCurrentRow(el))
+  },
+  { immediate: true }
+)
 
 const imageUrl = computed(() =>
   getEntityImageUrl(props.entityType, props.entity, 'icon', { width: 100, height: 100 })
@@ -136,9 +131,10 @@ function handleClick(e: MouseEvent) {
     @deleted="store.clearSelection()"
   >
     <RouterLink
+      ref="link"
       :to="{ path: detailPath, query: linkQuery }"
-      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/50"
-      :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
+      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-current]:text-accent-foreground [&.is-current]:bg-accent [&.is-current]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/50"
+      :class="{ 'is-current': isCurrent, 'is-selected': isSelected && !isCurrent }"
       @click="handleClick"
     >
       <img

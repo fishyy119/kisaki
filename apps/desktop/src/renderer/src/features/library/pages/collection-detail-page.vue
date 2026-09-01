@@ -26,7 +26,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
-import { formatLibraryContext } from '@renderer/utils/library-context'
+import { formatExplorerContext } from '@renderer/utils/explorer-context'
 import type { ContentEntityType } from '@shared/common'
 
 const { m } = useI18n()
@@ -67,7 +67,7 @@ function handleOpen(entityType: ContentEntityType, entityId: string) {
   router.push({
     path: getEntityDetailPath(entityType, entityId),
     query: {
-      from: formatLibraryContext({ kind: 'collection', collectionId: collection.value.id })
+      from: formatExplorerContext({ kind: 'collection', collectionId: collection.value.id })
     }
   })
 }

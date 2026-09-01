@@ -13,8 +13,8 @@ import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header
 import { StateView } from '@renderer/components/ui/state-view'
 import { EntityBrowsePanel } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { getEntityDetailPath } from '@renderer/utils/entity-routes'
-import { LIBRARY_HOME_PATH, formatLibraryContext } from '@renderer/utils/library-context'
+import { getEntityDetailPath, LIBRARY_HOME_PATH } from '@renderer/utils/entity-routes'
+import { formatExplorerContext } from '@renderer/utils/explorer-context'
 import type { ContentEntityType } from '@shared/common'
 import { useUncategorizedList } from '../composables'
 
@@ -39,7 +39,7 @@ const entityLabel = computed(() =>
 function handleOpen(type: ContentEntityType, entityId: string) {
   router.push({
     path: getEntityDetailPath(type, entityId),
-    query: { from: formatLibraryContext({ kind: 'uncategorized' }) }
+    query: { from: formatExplorerContext({ kind: 'uncategorized' }) }
   })
 }
 

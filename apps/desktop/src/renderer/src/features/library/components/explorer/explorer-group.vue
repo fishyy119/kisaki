@@ -6,7 +6,7 @@
  * Shows lightning icon for dynamic collections.
  */
 
-import { computed, inject, type Ref } from 'vue'
+import { computed, inject, useTemplateRef, watch, type Ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
@@ -14,11 +14,12 @@ import { VirtualList } from '@renderer/components/ui/virtual'
 import { CollectionContextMenu } from '@renderer/components/shared/collection'
 import { cn } from '@renderer/utils/cn'
 import {
-  formatLibraryContext,
-  getLibraryContextPath,
-  type LibraryContext
-} from '@renderer/utils/library-context'
+  formatExplorerContext,
+  getExplorerContextPath,
+  type ExplorerContext
+} from '@renderer/utils/explorer-context'
 import { useLibraryExplorerStore } from '../../stores'
+import { useExplorerLocator, type ExplorerListViewHandle } from '../../composables'
 import LibraryExplorerListItem from './explorer-list-item.vue'
 import type { CollectionGroup } from '../../composables'
 import type { ContentEntityType } from '@shared/common'
@@ -42,18 +43,27 @@ const scrollContainer = inject<Ref<HTMLElement | undefined>>('explorerScrollCont
 
 const store = useLibraryExplorerStore()
 const { collapsedIds } = storeToRefs(store)
+const locator = useExplorerLocator()
 
 const isCollapsed = computed(() => collapsedIds.value.includes(props.group.id))
 
-const groupContext = computed<LibraryContext>(() =>
+const groupContext = computed<ExplorerContext>(() =>
   props.isUncategorized
     ? { kind: 'uncategorized' }
     : { kind: 'collection', collectionId: props.group.id }
 )
 
-const groupFrom = computed(() => formatLibraryContext(groupContext.value))
+const groupFrom = computed(() => formatExplorerContext(groupContext.value))
 
-const linkTarget = computed(() => getLibraryContextPath(groupContext.value, props.entityType))
+const linkTarget = computed(() => getExplorerContextPath(groupContext.value, props.entityType))
+
+// The group's list is a scroll target of the locator, addressed by its from token
+const listView = useTemplateRef<ExplorerListViewHandle>('listView')
+
+watch([listView, groupFrom], ([view, from], _previous, onCleanup) => {
+  if (!view) return
+  onCleanup(locator.registerListView(from, view))
+})
 
 function handleToggleClick(e: MouseEvent) {
   e.preventDefault()
@@ -150,6 +160,7 @@ function handleGroupRowClick(e: MouseEvent) {
     <!-- Virtualized entity list -->
     <VirtualList
       v-if="!isCollapsed && props.group.entities.length > 0"
+      ref="listView"
       :items="props.group.entities"
       :scroll-parent="scrollContainer"
       class="flex flex-col gap-0.5"

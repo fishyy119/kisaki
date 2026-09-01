@@ -20,6 +20,7 @@ import { Section } from '@renderer/components/ui/section'
 import { StateView } from '@renderer/components/ui/state-view'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { getEntityIcon } from '@renderer/utils/format'
 
 interface Props {
@@ -61,7 +62,8 @@ const items = computed<RankingListItem[]>(() =>
       sort.value === 'time'
         ? f.value.duration(item.totalDuration)
         : m.value.statistics.hero.timesValue({ count: item.sessionCount }),
-    icon: getEntityIcon('collection')
+    icon: getEntityIcon('collection'),
+    to: getEntityDetailPath('collection', item.id)
   }))
 )
 </script>

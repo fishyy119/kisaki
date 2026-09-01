@@ -21,6 +21,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { getEntityIcon } from '@renderer/utils/format'
 
 interface Props {
@@ -72,7 +73,9 @@ const items = computed<RankingListItem[]>(() =>
               height: 64
             })
           : undefined,
-      icon: entity ? getEntityIcon(entity.mediaType) : undefined
+      icon: entity ? getEntityIcon(entity.mediaType) : undefined,
+      // Orphan sessions (entity gone) stay as plain rows
+      to: entity ? getEntityDetailPath(entity.mediaType, entity.id) : undefined
     }
   })
 )

@@ -6,16 +6,22 @@
  * Uses virtualization for filter mode flat list.
  */
 
-import { computed, inject, provide, watch, type Ref } from 'vue'
+import { computed, inject, provide, useTemplateRef, watch, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualList } from '@renderer/components/ui/virtual'
 import { useRenderState } from '@renderer/composables'
 import { useDefaultFromStore } from '@renderer/stores'
 import { getEntityIcon } from '@renderer/utils/format'
-import { formatLibraryContext } from '@renderer/utils/library-context'
+import { formatExplorerContext } from '@renderer/utils/explorer-context'
 import { useLibraryExplorerStore } from '../../stores'
-import { useExplorerList } from '../../composables'
+import {
+  useExplorerList,
+  useExplorerLocator,
+  FILTERED_LIST_VIEW_ID,
+  UNCATEGORIZED_GROUP_ID,
+  type ExplorerListViewHandle
+} from '../../composables'
 import LibraryExplorerGroup from './explorer-group.vue'
 import LibraryExplorerListItem from './explorer-list-item.vue'
 import { hasActiveEntityListQuery } from '@renderer/composables/entity-list-query'
@@ -24,16 +30,17 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const UNCATEGORIZED_FROM = formatLibraryContext({ kind: 'uncategorized' })
+const UNCATEGORIZED_FROM = formatExplorerContext({ kind: 'uncategorized' })
 
 function toCollectionFrom(collectionId: string): string {
-  return formatLibraryContext({ kind: 'collection', collectionId })
+  return formatExplorerContext({ kind: 'collection', collectionId })
 }
 
 const store = useLibraryExplorerStore()
 const defaultFromStore = useDefaultFromStore()
 const { activeEntityType, query, collapsedIds } = storeToRefs(store)
-const { data, rawData, isLoading } = useExplorerList()
+const { data, rawData, allEntities, isLoading } = useExplorerList()
+const locator = useExplorerLocator()
 const state = useRenderState(isLoading, null, rawData)
 
 // Inject scroll container from parent
@@ -50,16 +57,12 @@ watch(isFiltering, (value, oldValue) => {
   store.clearSelection()
 })
 
-// Deduplicated flat list for filter mode
-const allEntities = computed(() => {
-  const seenIds = new Set<string>()
-  return [...data.value.collections.flatMap((c) => c.entities), ...data.value.uncategorized].filter(
-    (entity) => {
-      if (seenIds.has(entity.id)) return false
-      seenIds.add(entity.id)
-      return true
-    }
-  )
+// The filter-mode flat list is a scroll target of the locator too
+const filteredListView = useTemplateRef<ExplorerListViewHandle>('filteredListView')
+
+watch(filteredListView, (view, _previous, onCleanup) => {
+  if (!view) return
+  onCleanup(locator.registerListView(FILTERED_LIST_VIEW_ID, view))
 })
 
 const visibleSelectionKeys = computed(() => {
@@ -77,7 +80,7 @@ const visibleSelectionKeys = computed(() => {
     keys.push(...group.entities.map((e) => toExplorerSelectionKey(from, e.id)))
   }
 
-  if (!collapsedIds.value.includes('__uncategorized__')) {
+  if (!collapsedIds.value.includes(UNCATEGORIZED_GROUP_ID)) {
     keys.push(
       ...data.value.uncategorized.map((e) => toExplorerSelectionKey(UNCATEGORIZED_FROM, e.id))
     )
@@ -149,6 +152,7 @@ const currentConfig = computed(() => ({
       </div>
       <VirtualList
         v-if="allEntities.length > 0"
+        ref="filteredListView"
         :items="allEntities"
         :scroll-parent="scrollContainer"
         class="flex flex-col gap-0.5"
@@ -199,7 +203,7 @@ const currentConfig = computed(() => ({
       <LibraryExplorerGroup
         v-if="data.uncategorized.length > 0"
         :group="{
-          id: '__uncategorized__',
+          id: UNCATEGORIZED_GROUP_ID,
           name: m.library.explorer.uncategorized,
           coverFile: null,
           isDynamic: false,

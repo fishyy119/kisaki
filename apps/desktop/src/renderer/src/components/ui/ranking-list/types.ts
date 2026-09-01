@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 
 export interface RankingListItem {
   id: string
@@ -11,6 +12,8 @@ export interface RankingListItem {
   coverUrl?: string
   /** Iconify class fallback when no cover is available */
   icon?: string
+  /** Detail route of the ranked subject; the row renders as a link when present */
+  to?: RouteLocationRaw
 }
 
 export interface RankingListProps {

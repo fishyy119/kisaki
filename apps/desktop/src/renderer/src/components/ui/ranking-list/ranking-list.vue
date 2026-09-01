@@ -107,6 +107,7 @@ const inlineColumns = computed(() => {
                   :rank="index + 1"
                   :max-value="maxValue"
                   :total-value="totalValue"
+                  @navigate="dialogOpen = false"
                 />
               </div>
             </template>

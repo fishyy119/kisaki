@@ -802,7 +802,8 @@ export const library = {
     filteredResults: 'フィルター結果',
     noMatch: '一致する結果がありません',
     emptyList: ({ label }: { label: string }) => `${label}はまだありません`,
-    uncategorized: '未分類'
+    uncategorized: '未分類',
+    locate: '現在の項目に移動'
   },
 
   search: {

@@ -3,10 +3,12 @@
   One ranked row: rank, optional cover/icon, name over a share bar, and value
   with share-of-total on the right. Bar and share are relative to the full
   dataset (maxValue/totalValue), so a sliced or virtualized view stays
-  truthful.
+  truthful. Rows carrying a `to` render as router links.
 -->
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
+import { cn } from '@renderer/utils/cn'
 import type { RankingListItem } from './types'
 
 const props = defineProps<{
@@ -17,6 +19,11 @@ const props = defineProps<{
   maxValue: number
   /** Share denominator (period total supplied by the list owner) */
   totalValue: number
+}>()
+
+const emit = defineEmits<{
+  /** Emitted when a linked row is clicked (before navigation lands) */
+  navigate: []
 }>()
 
 function barWidth(value: number): string {
@@ -31,7 +38,17 @@ function shareText(value: number): string {
 </script>
 
 <template>
-  <div class="flex items-center gap-3 py-2">
+  <component
+    :is="props.item.to ? RouterLink : 'div'"
+    v-bind="props.item.to ? { to: props.item.to } : {}"
+    :class="
+      cn(
+        'flex items-center gap-3 py-2',
+        props.item.to && '-mx-2 rounded-md px-2 transition-colors hover:bg-accent/50'
+      )
+    "
+    @click="props.item.to && emit('navigate')"
+  >
     <span class="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
       {{ props.rank }}
     </span>
@@ -69,5 +86,5 @@ function shareText(value: number): string {
         {{ shareText(props.item.value) }}
       </div>
     </div>
-  </div>
+  </component>
 </template>

@@ -12,7 +12,6 @@ import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header
 import { EntityBrowsePanel } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
-import { formatLibraryContext } from '@renderer/utils/library-context'
 import type { ContentEntityType } from '@shared/common'
 import { useFavorites } from '../composables'
 
@@ -33,10 +32,9 @@ const entityLabel = computed(() => m.value.library.entities[entityType.value])
 // =============================================================================
 
 function handleOpen(type: ContentEntityType, entityId: string) {
-  router.push({
-    path: getEntityDetailPath(type, entityId),
-    query: { from: formatLibraryContext({ kind: 'favorites' }) }
-  })
+  // No `from`: favorites is not an explorer-addressable context, so the
+  // autofill guard supplies the canonical one.
+  router.push(getEntityDetailPath(type, entityId))
 }
 </script>
 

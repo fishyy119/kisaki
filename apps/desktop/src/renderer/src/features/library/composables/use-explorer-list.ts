@@ -1,12 +1,16 @@
 /**
- * Composable: useExplorerList
+ * Explorer list data.
  *
- * Fetches entity list data for the LibraryExplorer component.
- * Applies search and filter from the explorer store.
- * Supports both static collections (link-based) and dynamic collections (filter-based).
+ * Fetches the entity list the LibraryExplorer shows, applying search and
+ * filter from the explorer store. Supports both static collections
+ * (link-based) and dynamic collections (filter-based).
+ *
+ * Provider/consumer: the explorer root creates the state once and provides
+ * it; list, footer, and locator all read the same fetch instead of issuing
+ * their own.
  */
 
-import { computed } from 'vue'
+import { computed, inject, provide, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   db,
@@ -42,11 +46,25 @@ export interface ExplorerListData {
   totalCount: number
 }
 
+export interface ExplorerListContext {
+  /** Fetched data with an empty default, always safe to render from. */
+  data: ComputedRef<ExplorerListData>
+  /** Raw fetch result; undefined until the first fetch lands. */
+  rawData: Ref<ExplorerListData | undefined>
+  /** Deduplicated flat list across all groups; the filter-mode row source. */
+  allEntities: ComputedRef<EntityData[]>
+  isLoading: Ref<boolean>
+  isFetching: Ref<boolean>
+  refetch: () => Promise<void>
+}
+
+const ExplorerListKey: InjectionKey<ExplorerListContext> = Symbol('explorerList')
+
 // =============================================================================
 // Composable
 // =============================================================================
 
-export function useExplorerList() {
+function createExplorerList(): ExplorerListContext {
   const store = useLibraryExplorerStore()
   const { activeEntityType, query } = storeToRefs(store)
 
@@ -190,13 +208,44 @@ export function useExplorerList() {
     () => data.value ?? { collections: [], uncategorized: [], totalCount: 0 }
   )
 
+  // Deduplicated flat list: the same entity appears once per containing
+  // collection in the grouped view, but the filter-mode view is per entity.
+  const allEntities = computed(() => {
+    const seenIds = new Set<string>()
+    return [
+      ...explorerData.value.collections.flatMap((c) => c.entities),
+      ...explorerData.value.uncategorized
+    ].filter((entity) => {
+      if (seenIds.has(entity.id)) return false
+      seenIds.add(entity.id)
+      return true
+    })
+  })
+
   return {
     data: explorerData,
     rawData: data,
+    allEntities,
     isLoading,
     isFetching,
     refetch
   }
+}
+
+/** Creates the explorer list state and provides it to the explorer subtree. */
+export function useExplorerListProvider(): ExplorerListContext {
+  const context = createExplorerList()
+  provide(ExplorerListKey, context)
+  return context
+}
+
+/** Consumes the provided explorer list state. */
+export function useExplorerList(): ExplorerListContext {
+  const context = inject(ExplorerListKey)
+  if (!context) {
+    throw new Error('useExplorerList() must be used inside a LibraryExplorer subtree')
+  }
+  return context
 }
 
 // =============================================================================

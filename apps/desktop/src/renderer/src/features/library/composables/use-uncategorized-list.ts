@@ -18,7 +18,7 @@ import {
 } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
-import { getLibraryContextPath } from '@renderer/utils/library-context'
+import { getExplorerContextPath } from '@renderer/utils/explorer-context'
 import { CONTENT_ENTITY_TYPES, isContentEntityType, type ContentEntityType } from '@shared/common'
 import type { TableName } from '@shared/db/table-names'
 import { getFilterRelevantTables } from '@shared/filter'
@@ -98,7 +98,7 @@ export function useUncategorizedList() {
       // The browsed type is the route's: a type switch navigates, and the
       // loader re-reads the query for the new type.
       if (next.entityType !== null && next.entityType !== routeQuery.value.entityType) {
-        void router.replace(getLibraryContextPath({ kind: 'uncategorized' }, next.entityType))
+        void router.replace(getExplorerContextPath({ kind: 'uncategorized' }, next.entityType))
         return
       }
       routeQuery.value = next

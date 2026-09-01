@@ -13,6 +13,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { mediaTypeOfEntityKey, useStatistics } from '../composables'
 import { getPreviousPeriodLabel } from '../period'
@@ -27,6 +28,7 @@ import {
 import { parseLocalDateKey } from '@renderer/utils/datetime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
+import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { UNIT_MEDIA_TYPES, type MediaType } from '@shared/common'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 
@@ -204,7 +206,9 @@ const mostPlayed = computed(() => {
             width: 184,
             height: 256
           })
-        : null
+        : null,
+    // Orphan sessions (entity gone) render as a plain block
+    to: entity ? getEntityDetailPath(entity.mediaType, entity.id) : null
   }
 })
 
@@ -446,8 +450,13 @@ const facts = computed<HeroFact[]>(() => [...reportFacts.value, ...unitFacts.val
          without data) so the band height stays stable. Column width matches
          the cover, so the block hugs the page's right edge while cover and
          caption share one left edge; the caption sinks to the column bottom
-         so its baseline aligns with the fact row. -->
-    <div class="flex w-21.5 shrink-0 flex-col justify-between gap-y-2">
+         so its baseline aligns with the fact row. Links to the entry's
+         detail page when the entity is still around. -->
+    <component
+      :is="mostPlayed?.to ? RouterLink : 'div'"
+      v-bind="mostPlayed?.to ? { to: mostPlayed.to } : {}"
+      class="flex w-21.5 shrink-0 flex-col justify-between gap-y-2"
+    >
       <img
         v-if="mostPlayed?.coverUrl"
         :src="mostPlayed.coverUrl"
@@ -465,8 +474,12 @@ const facts = computed<HeroFact[]>(() => [...reportFacts.value, ...unitFacts.val
       </div>
       <div class="text-right">
         <div class="text-xs text-muted-foreground">{{ m.statistics.hero.mostPlayed }}</div>
-        <div class="mt-0.5 truncate text-sm font-medium">{{ mostPlayed?.name ?? '-' }}</div>
+        <div class="mt-0.5 truncate text-sm font-medium">
+          <span :class="mostPlayed?.to ? 'hover:underline' : undefined">
+            {{ mostPlayed?.name ?? '-' }}
+          </span>
+        </div>
       </div>
-    </div>
+    </component>
   </div>
 </template>

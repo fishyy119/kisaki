@@ -32,7 +32,7 @@ import {
   ENTITY_TABLES
 } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
-import { formatLibraryContext } from '@renderer/utils/library-context'
+import { formatExplorerContext } from '@renderer/utils/explorer-context'
 import { getFilterRelevantTables } from '@shared/filter'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 import type { Collection } from '@shared/db/schema'
@@ -101,11 +101,11 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
     if (dynamicEntry) return toCollectionFrom(dynamicEntry)
 
     // Neither: uncategorized
-    return formatLibraryContext({ kind: 'uncategorized' })
+    return formatExplorerContext({ kind: 'uncategorized' })
   }
 
   function toCollectionFrom(entry: FromEntry): string {
-    return formatLibraryContext({ kind: 'collection', collectionId: entry.collectionId })
+    return formatExplorerContext({ kind: 'collection', collectionId: entry.collectionId })
   }
 
   /**

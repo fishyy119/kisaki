@@ -787,7 +787,8 @@ export const library = {
     filteredResults: '筛选结果',
     noMatch: '无匹配结果',
     emptyList: ({ label }: { label: string }) => `暂无${label}`,
-    uncategorized: '未分类'
+    uncategorized: '未分类',
+    locate: '定位当前条目'
   },
 
   search: {

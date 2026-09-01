@@ -17,7 +17,6 @@ import { useEntityDetailRoute, useTagRouteProvider } from '@renderer/composables
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
-import { formatLibraryContext } from '@renderer/utils/library-context'
 import type { ContentEntityType } from '@shared/common'
 
 const { m } = useI18n()
@@ -49,10 +48,9 @@ const {
 
 function handleOpen(entityType: ContentEntityType, entityId: string) {
   if (!tag.value) return
-  router.push({
-    path: getEntityDetailPath(entityType, entityId),
-    query: { from: formatLibraryContext({ kind: 'tag', tagId: tag.value.id }) }
-  })
+  // No `from`: a tag is not an explorer-addressable context, so the autofill
+  // guard supplies the canonical one.
+  router.push(getEntityDetailPath(entityType, entityId))
 }
 </script>
 

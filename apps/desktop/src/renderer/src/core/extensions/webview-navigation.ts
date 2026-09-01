@@ -1,6 +1,6 @@
 import { watch } from 'vue'
 import type { Router } from 'vue-router'
-import { LIBRARY_HOME_PATH } from '@renderer/utils/library-context'
+import { LIBRARY_HOME_PATH } from '@renderer/utils/entity-routes'
 import { extensionWebviewStore } from './webviews'
 
 // Route contract of the extension declared page surface. The webview runtime

@@ -14,15 +14,14 @@ import type {
   RouteLocationNormalizedGeneric,
   RouteRecordRaw
 } from 'vue-router'
-import {
-  ALL_ENTITY_TYPES,
-  CONTENT_ENTITY_TYPES,
-  type AllEntityType,
-  type ContentEntityType
-} from '@shared/common'
+import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/common'
 import type { RouteDataHandle } from '@renderer/core/route-data'
-import { entityRouteParam, getEntityDetailRoutePattern } from '@renderer/utils/entity-routes'
-import { LIBRARY_HOME_PATH } from '@renderer/utils/library-context'
+import {
+  entityDetailRouteName,
+  getEntityDetailRoutePattern,
+  matchContentEntityDetailRoute,
+  LIBRARY_HOME_PATH
+} from '@renderer/utils/entity-routes'
 import { useDefaultFromStore } from '@renderer/stores'
 import { gameDetailData } from '@renderer/composables/use-game'
 import { animeDetailData } from '@renderer/composables/use-anime'
@@ -60,10 +59,6 @@ const ENTITY_DETAIL_ROUTES = {
   tag: { page: () => import('./pages/tag-detail-page.vue'), loader: tagDetailData }
 } satisfies Record<AllEntityType, { page: () => Promise<unknown>; loader: RouteDataHandle }>
 
-function entityDetailRouteName(entityType: AllEntityType): string {
-  return `${entityType}-detail`
-}
-
 const entityDetailRoutes: RouteRecordRaw[] = ALL_ENTITY_TYPES.map((entityType) => ({
   path: getEntityDetailRoutePattern(entityType),
   name: entityDetailRouteName(entityType),
@@ -75,10 +70,6 @@ const entityDetailRoutes: RouteRecordRaw[] = ALL_ENTITY_TYPES.map((entityType) =
 // =============================================================================
 // Browse-context autofill guard
 // =============================================================================
-
-const DETAIL_ROUTE_ENTITY_TYPES = new Map<string, ContentEntityType>(
-  CONTENT_ENTITY_TYPES.map((entityType) => [entityDetailRouteName(entityType), entityType])
-)
 
 /**
  * Auto-fill the `from` browse-context query on content entity detail routes.
@@ -92,14 +83,10 @@ const DETAIL_ROUTE_ENTITY_TYPES = new Map<string, ContentEntityType>(
 export function libraryFromAutofillGuard(
   to: RouteLocationNormalizedGeneric
 ): NavigationGuardReturn {
-  const entityType =
-    typeof to.name === 'string' ? DETAIL_ROUTE_ENTITY_TYPES.get(to.name) : undefined
-  if (!entityType || to.query.from) return true
+  const match = matchContentEntityDetailRoute(to)
+  if (!match || to.query.from) return true
 
-  const entityId = to.params[entityRouteParam(entityType)]
-  if (typeof entityId !== 'string' || entityId === '') return true
-
-  const defaultFrom = useDefaultFromStore().getFrom(entityType, entityId)
+  const defaultFrom = useDefaultFromStore().getFrom(match.entityType, match.entityId)
   return { ...to, query: { ...to.query, from: defaultFrom } }
 }
 

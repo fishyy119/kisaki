@@ -160,6 +160,12 @@ export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
     resolvedParent,
     getScrollElement,
     scheduleScrollMarginUpdate,
+    /**
+     * Synchronous margin refresh for callers that need correct scroll math
+     * right now (programmatic scrolls); the rAF-throttled path only serves
+     * scroll/resize churn.
+     */
+    updateScrollMargin,
     /** Notify sibling components that layout has changed */
     notifyLayoutChange: () => {
       const parent = resolvedParent.value
