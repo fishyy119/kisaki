@@ -200,7 +200,8 @@ in between stay transparent. This keeps transmission uniform window-wide.
 2. **Fill** (how far do I rise from my plane): relative tints only, direction
    constant on every plane. Toolbars/filter bars are the `Toolbar` component,
    which owns the band chrome (`bg-muted/30` + border) - see the Band recipe.
-   Table headers are `bg-muted/30` (footers `bg-muted/20`) and always OUTSIDE
+   Table headers and footers are `bg-muted/30` (band chrome is one calibrated
+   value; near-equal tints read as mistakes, not hierarchy) and always OUTSIDE
    the scroll container - nothing is ever pinned over scrolling content. Band
    strength is calibrated with the light theme ladder (background 0.965 /
    bands ~0.95 / surface 0.935): stronger tints land below the surface chrome
@@ -359,11 +360,21 @@ See `buttonVariants` in `components/ui/button.vue`:
 - `bg-dialog` (opaque slab) + `border` + `rounded-md` + `shadow-modal`
 - No visual overlay/scrim: separation comes from shadow-modal + the elevation ladder
 - 100-150ms fade/zoom animation
-- Structure: `DialogHeader` → `DialogBody` → `DialogFooter`
-- Header/footer are apparatus strips and carry the band fill (header `bg-muted/30`,
-  footer `bg-muted/20`, rounded to the slab corners); the body stays bare. This is
-  fill, not a plane: apparatus is ink-shaded in light mode and lit in dark mode,
-  same as toolbar bands. Never fake slab chrome with `bg-surface`.
+- Two roles, one unconditional look each:
+  - `Dialog` is a workbench window (forms, toolbars, scrollable lists).
+    Structure: `DialogHeader` → `DialogBody` → `DialogFooter`; header and
+    footer are apparatus strips and carry the band fill (`bg-muted/30` +
+    border, rounded to the slab corners); the body stays bare. The footer
+    band does work here: it caps scrolled content and closes the frame.
+    This is fill, not a plane: apparatus is ink-shaded in light mode and lit
+    in dark mode, same as toolbar bands. Never fake slab chrome with
+    `bg-surface`.
+  - `AlertDialog` is a prompt (momentary, text-first, never scrolls, always
+    small). Titlebar band only; the footer is a bare spacing row (no fill,
+    no separator - `px-4 pb-4 pt-2`). Bottom apparatus inverts the
+    band/body proportion on a small slab, and a separator above buttons
+    only does work when content can scroll under it - a prompt's never
+    does.
 - Scope maps to region in a tool dialog. Header: identity only (title + the
   top-right close; action buttons would sit awkwardly beside it). Band: a
   `Toolbar` at the top of the body - the scope row above the active tab's

@@ -73,7 +73,7 @@ const props = defineProps<{
 
     <div
       v-if="$slots.footer"
-      class="shrink-0 overflow-hidden border-t border-border bg-muted/20 [scrollbar-gutter:stable] [&_tr]:border-0"
+      class="shrink-0 overflow-hidden border-t border-border bg-muted/30 [scrollbar-gutter:stable] [&_tr]:border-0"
     >
       <table
         data-slot="table"
