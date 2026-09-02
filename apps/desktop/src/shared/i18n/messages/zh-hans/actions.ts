@@ -5,6 +5,7 @@ export const actions = {
   add: '添加',
   apply: '应用',
   back: '返回',
+  backToTop: '返回顶部',
   browse: '浏览…',
   cancel: '取消',
   clear: '清除',

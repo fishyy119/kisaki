@@ -5,6 +5,7 @@ export const actions = {
   add: '追加',
   apply: '適用',
   back: '戻る',
+  backToTop: 'トップへ戻る',
   browse: '参照…',
   cancel: 'キャンセル',
   clear: 'クリア',

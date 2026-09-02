@@ -9,6 +9,7 @@
 
 import { ref, computed, provide } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { BackToTop } from '@renderer/components/ui/back-to-top'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { StateView } from '@renderer/components/ui/state-view'
@@ -57,38 +58,42 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
     </PageHeader>
 
     <!-- Content -->
-    <div
-      ref="scrollContainerRef"
-      class="flex-1 overflow-auto bg-background"
-    >
-      <StateView
-        v-if="visibleSections.length === 0"
-        state="empty"
-        icon="icon-[mdi--view-dashboard-outline]"
-        :title="m.library.showcase.emptyTitle"
-        :description="m.library.showcase.emptyDescription"
-        class="h-full p-8"
-      >
-        <template #actions>
-          <Button @click="isManagerOpen = true">
-            <Icon
-              icon="icon-[mdi--plus]"
-              class="size-4"
-            />
-            {{ m.library.showcase.addFirstSection }}
-          </Button>
-        </template>
-      </StateView>
+    <div class="relative flex min-h-0 flex-1 flex-col">
       <div
-        v-else
-        class="p-4 space-y-4"
+        ref="scrollContainerRef"
+        class="min-h-0 flex-1 overflow-auto bg-background"
       >
-        <LibraryShowcaseSection
-          v-for="section in visibleSections"
-          :key="section.id"
-          :section="section"
-        />
+        <StateView
+          v-if="visibleSections.length === 0"
+          state="empty"
+          icon="icon-[mdi--view-dashboard-outline]"
+          :title="m.library.showcase.emptyTitle"
+          :description="m.library.showcase.emptyDescription"
+          class="h-full p-8"
+        >
+          <template #actions>
+            <Button @click="isManagerOpen = true">
+              <Icon
+                icon="icon-[mdi--plus]"
+                class="size-4"
+              />
+              {{ m.library.showcase.addFirstSection }}
+            </Button>
+          </template>
+        </StateView>
+        <div
+          v-else
+          class="p-4 space-y-4"
+        >
+          <LibraryShowcaseSection
+            v-for="section in visibleSections"
+            :key="section.id"
+            :section="section"
+          />
+        </div>
       </div>
+
+      <BackToTop :target="scrollContainerRef" />
     </div>
 
     <!-- Sections manager dialog -->

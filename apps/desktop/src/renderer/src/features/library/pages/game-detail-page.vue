@@ -9,6 +9,7 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
+import { BackToTop } from '@renderer/components/ui/back-to-top'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
@@ -77,6 +78,7 @@ useAmbientLight(() =>
 // State
 // =============================================================================
 
+const scrollRef = ref<HTMLElement>()
 const scoreDialogOpen = ref(false)
 const isPendingFavorite = ref(false)
 const isPendingStatus = ref(false)
@@ -317,8 +319,15 @@ const canOpenGameDir = computed(() => {
     </PageHeader>
 
     <!-- Main content -->
-    <div class="flex-1 overflow-auto bg-background p-4">
-      <GameDetailContent />
+    <div class="relative flex min-h-0 flex-1 flex-col">
+      <div
+        ref="scrollRef"
+        class="min-h-0 flex-1 overflow-auto bg-background p-4"
+      >
+        <GameDetailContent />
+      </div>
+
+      <BackToTop :target="scrollRef" />
     </div>
 
     <!-- Score dialog -->

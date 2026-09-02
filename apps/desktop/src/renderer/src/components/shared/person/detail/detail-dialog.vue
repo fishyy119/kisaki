@@ -3,7 +3,8 @@
   Dialog view for person details.
 -->
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, useTemplateRef } from 'vue'
+import { BackToTop } from '@renderer/components/ui/back-to-top'
 import { Icon } from '@renderer/components/ui/icon'
 import { cn } from '@renderer/utils/cn'
 import { getEntityIcon } from '@renderer/utils/format'
@@ -70,6 +71,8 @@ useDbChanges(({ changes }) => {
 
 const isScoreOpen = ref(false)
 const isPendingFavorite = ref(false)
+
+const bodyRef = useTemplateRef<InstanceType<typeof DialogBody>>('body')
 
 // =============================================================================
 // Computed
@@ -149,9 +152,15 @@ function handleRevealSpoilersConfirm() {
             {{ person.name }}
           </DialogTitle>
         </DialogHeader>
-        <DialogBody class="flex-1 min-h-0 overflow-auto p-4">
-          <PersonDetailContent />
-        </DialogBody>
+        <div class="relative flex min-h-0 flex-1 flex-col">
+          <DialogBody
+            ref="body"
+            class="min-h-0 flex-1 overflow-auto p-4"
+          >
+            <PersonDetailContent />
+          </DialogBody>
+          <BackToTop :target="bodyRef?.$el" />
+        </div>
         <DialogFooter>
           <div class="flex items-center justify-end w-full">
             <!-- Right: Score, Favorite, More -->

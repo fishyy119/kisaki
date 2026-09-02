@@ -7,6 +7,7 @@
 -->
 <script setup lang="ts">
 import { computed, ref, type HTMLAttributes } from 'vue'
+import { BackToTop } from '@renderer/components/ui/back-to-top'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import type { ContentEntityCounts, ContentEntityData } from '@renderer/composables/content-entities'
@@ -69,45 +70,49 @@ function handleClearQuery() {
       :filtered-count="props.entities.length"
     />
 
-    <div
-      ref="scrollRef"
-      class="min-h-0 flex-1 overflow-auto p-4"
-    >
-      <StateView
-        v-if="props.entities.length === 0 && isQueryActive"
-        state="empty"
-        icon="icon-[mdi--filter-off-outline]"
-        :title="m.library.browse.noMatchTitle"
-        :description="m.library.browse.noMatchDescription"
-        class="h-full"
+    <div class="relative flex min-h-0 flex-1 flex-col">
+      <div
+        ref="scrollRef"
+        class="min-h-0 flex-1 overflow-auto p-4"
       >
-        <template #actions>
-          <Button
-            variant="outline"
-            size="sm"
-            @click="handleClearQuery"
-          >
-            {{ m.library.browse.clearQuery }}
-          </Button>
-        </template>
-      </StateView>
+        <StateView
+          v-if="props.entities.length === 0 && isQueryActive"
+          state="empty"
+          icon="icon-[mdi--filter-off-outline]"
+          :title="m.library.browse.noMatchTitle"
+          :description="m.library.browse.noMatchDescription"
+          class="h-full"
+        >
+          <template #actions>
+            <Button
+              variant="outline"
+              size="sm"
+              @click="handleClearQuery"
+            >
+              {{ m.library.browse.clearQuery }}
+            </Button>
+          </template>
+        </StateView>
 
-      <StateView
-        v-else-if="props.entities.length === 0"
-        state="empty"
-        :icon="props.emptyIcon ?? getEntityIcon(props.entityType)"
-        :title="props.emptyTitle"
-        :description="props.emptyDescription"
-        class="h-full"
-      />
+        <StateView
+          v-else-if="props.entities.length === 0"
+          state="empty"
+          :icon="props.emptyIcon ?? getEntityIcon(props.entityType)"
+          :title="props.emptyTitle"
+          :description="props.emptyDescription"
+          class="h-full"
+        />
 
-      <EntityBrowseGrid
-        v-else
-        :entity-type="props.entityType"
-        :entities="props.entities"
-        :scroll-parent="scrollRef"
-        @open="(entityType, id) => emit('open', entityType, id)"
-      />
+        <EntityBrowseGrid
+          v-else
+          :entity-type="props.entityType"
+          :entities="props.entities"
+          :scroll-parent="scrollRef"
+          @open="(entityType, id) => emit('open', entityType, id)"
+        />
+      </div>
+
+      <BackToTop :target="scrollRef" />
     </div>
   </div>
 </template>

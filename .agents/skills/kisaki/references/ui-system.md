@@ -15,6 +15,8 @@
 - `extensions/bangumi/src/ui/settings/app.vue` - Integration control panel (rail shell)
   reference implementation
 - `apps/desktop/src/renderer/src/components/ui/icon.vue` - Icon component
+- `apps/desktop/src/renderer/src/components/ui/back-to-top/` - Back-to-top scroll aid (overlay
+  component + the `useBackToTop` calibration its footer home shares)
 - `apps/desktop/src/renderer/src/components/shared/game/game-forms/game-characters-form-dialog/` - ListForm pattern reference
 
 ## Design Language
@@ -454,6 +456,75 @@ centered div, an icon, and a muted paragraph:
 - Inline placeholders inside a detail-page section are a different device:
   `Section` / `SectionScroll` render `emptyText` as an italic xs line.
 
+### Back To Top (scroll aid)
+
+Scroll aids are transient controls that answer one question about a scroll
+region and exist only while the answer is useful: the explorer's locate button
+("where is the current entry") and `BackToTop` ("back to the start"). They are
+not band chrome - the "nothing is pinned over scrolling content" rule governs
+strips (headers, toolbars, table heads), not these - and they carry no
+entrance animation: they appear and disappear by `v-if`, the way locate always
+has.
+
+`components/ui/back-to-top` is one device with one calibration
+(`useBackToTop`) and two homes:
+
+- **Footer home.** A surface that already owns a footer strip (today only the
+  library explorer, whose footer exists for its count) renders the button in
+  that strip, at the right edge beside locate, through `useBackToTop`.
+- **Overlay home.** Every other qualifying surface mounts `BackToTop`: one
+  `size-7` button styled as an opaque slab (`bg-popover` + `border` +
+  `shadow-overlay`) in the bottom-right corner of the scroll viewport. It has
+  no hover state - a hover fill would either replace the slab plane with an
+  alpha tint or need a nested element; the control is a static fixture while it
+  exists and keeps only the mandatory `focus-visible` ring.
+- **Never build a footer for it.** Chrome must earn its place with resident
+  content; a strip that only carries a transient control is an empty line and a
+  permanent 32px tax on surfaces whose vertical space is the content. Should a
+  surface grow a footer for real resident content, the button moves in.
+
+The device is calibrated once and exposes no options: it shows once the region
+is scrolled past two viewport heights (short content never shows it), and the
+jump is instant (a desktop control jumps; virtualized rows are estimates and a
+long smooth scroll through unmeasured rows judders). Both homes share the
+glyph (`BACK_TO_TOP_ICON`).
+
+Overlay host contract - a positioned flex column that exactly frames the
+scroll viewport, the scroll container inside it as its flex item, the overlay
+as the sibling. Nested flex, not a percentage height: a column flex item under
+an auto-height container (a `max-h` dialog) is not a definite size for
+percentages, so `h-full` there would stop the body scrolling. The box is layout
+only; the scroll container still paints its plane:
+
+```vue
+<div class="relative flex min-h-0 flex-1 flex-col">
+  <div ref="scrollRef" class="min-h-0 flex-1 overflow-auto bg-background p-4">…</div>
+  <BackToTop :target="scrollRef" />
+</div>
+```
+
+In a detail dialog the box wraps `DialogBody` (bound through its exposed
+`$el`) so the overlay stays inside the body region and never sits on the
+`DialogFooter`.
+
+Where it belongs is decided by surface type, not per page. It serves unbounded
+library content regions - regions whose length grows with the collection:
+content browse grids (`EntityBrowsePanel`, so favorites, uncategorized,
+collection and tag detail on both surfaces), the collections and showcase
+pages, the explorer list, and every entity detail body (page and dialog
+alike). It is excluded from:
+
+- **Readers** - scroll position is reading position; the reader's own chrome
+  (page, chapter, progress) navigates.
+- **Report surfaces** - bounded compositions whose page grid owns every line;
+  a floating slab would sit on the data bands.
+- **Admin lists and tool dialogs** (extensions, scanner, automation, task
+  center, settings) - bounded working sets with their own filters.
+- **Forms and list-editing dialogs** - bounded (`max-h`), and a form should be
+  short.
+- **Widget-scale scrolling** (`SectionScroll`, popovers, selects, command
+  lists) - not a region.
+
 ### Form
 
 Standard dialog form structure:
@@ -764,6 +835,7 @@ Zero JS runtime, CSS mask-based.
 - UI wrapper: `useForwardPropsEmits`, `inheritAttrs: false`, `data-slot`
 - Animation: `data-[state=open]:animate-in`, `fade-in`, `zoom-in`
 - Form: `FieldGroup`, `FieldLabel`, `FieldContent`
+- Scroll aids: `BackToTop`, `useBackToTop`, `BACK_TO_TOP_ICON`, `showLocateButton`
 
 ## Constraints
 

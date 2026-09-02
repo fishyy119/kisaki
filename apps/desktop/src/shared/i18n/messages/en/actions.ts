@@ -3,6 +3,7 @@ export const actions = {
   add: 'Add',
   apply: 'Apply',
   back: 'Back',
+  backToTop: 'Back to top',
   browse: 'Browse…',
   cancel: 'Cancel',
   clear: 'Clear',
