@@ -45,7 +45,7 @@ import {
 } from '@renderer/components/ui/select'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { EntitySearcher, type EntitySearcherSelection } from '../searcher'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { IDENTITY_STORES } from '../identities/identity-tables'
 import { METADATA_UPDATE_SPECS } from './update-specs'
 
@@ -351,7 +351,7 @@ async function handleSubmit() {
               :disabled="isSubmitting"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"

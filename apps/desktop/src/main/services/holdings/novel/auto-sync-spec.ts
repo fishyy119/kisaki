@@ -11,9 +11,12 @@ import type { DbService } from '@main/services/db'
 import { novels } from '@shared/db'
 import type { AutoSyncSpec } from '../auto-sync'
 import { isNovelBookFile } from './recognition'
-import { MAX_NOVEL_WALK_DEPTH, type NovelFileSyncHandler } from './sync'
+import { MAX_NOVEL_WALK_DEPTH, type NovelFileSyncCoordinator } from './sync'
 
-export function novelAutoSyncSpec(dbService: DbService, sync: NovelFileSyncHandler): AutoSyncSpec {
+export function novelAutoSyncSpec(
+  dbService: DbService,
+  sync: NovelFileSyncCoordinator
+): AutoSyncSpec {
   return {
     mediaType: 'novel',
     entryTable: 'novels',
@@ -21,9 +24,9 @@ export function novelAutoSyncSpec(dbService: DbService, sync: NovelFileSyncHandl
     matchesFile: isNovelBookFile,
     readDirectories: () =>
       dbService.client
-        .select({ id: novels.id, dirPath: novels.novelDirPath })
+        .select({ id: novels.id, dirPath: novels.dirPath })
         .from(novels)
-        .where(isNotNull(novels.novelDirPath))
+        .where(isNotNull(novels.dirPath))
         .all(),
     sync: async (novelId) => {
       const result = await sync.sync({ novelId })

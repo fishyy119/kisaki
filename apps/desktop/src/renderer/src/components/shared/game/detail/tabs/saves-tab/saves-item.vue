@@ -70,7 +70,7 @@ const { m, f } = useI18n()
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.common.edit"
+        :tooltip="m.actions.edit"
         @click="emit('edit')"
       >
         <Icon
@@ -82,7 +82,7 @@ const { m, f } = useI18n()
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.common.delete"
+        :tooltip="m.actions.delete"
         class="hover:text-destructive"
         @click="emit('delete')"
       >

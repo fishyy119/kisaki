@@ -31,6 +31,7 @@
  *   not be empty, contain separators, or be `..`.
  */
 
+import type { AllEntityType, MediaType } from '@shared/entity-types'
 import { normalizeDeeplinkRoutePath } from './pattern'
 
 export const DEEPLINK_SCHEME = 'kisaki'
@@ -85,6 +86,16 @@ export function parseDeeplinkUrl(url: string): DeeplinkRequest | null {
 /** Absolute deeplink URL of an extension route, e.g. for OAuth callbacks. */
 export function buildExtensionDeeplinkUrl(extensionId: string, path: string): string {
   return `${DEEPLINK_SCHEME}://ext/${extensionId}${path}`
+}
+
+/** Absolute deeplink URL that shows an entity's detail destination. */
+export function buildOpenDeeplinkUrl(entityType: AllEntityType, entityId: string): string {
+  return `${DEEPLINK_SCHEME}://open/${entityType}/${encodeURIComponent(entityId)}`
+}
+
+/** Absolute deeplink URL that starts consuming a media entry. */
+export function buildLaunchDeeplinkUrl(mediaType: MediaType, entityId: string): string {
+  return `${DEEPLINK_SCHEME}://launch/${mediaType}/${encodeURIComponent(entityId)}`
 }
 
 /** Main → renderer payload of the `open` namespace (`deeplink:open`). */

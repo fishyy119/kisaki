@@ -5,7 +5,7 @@ import type {
   ExtensionUpdateCheckResult
 } from '@shared/extension'
 import type { ExtensionInstalledEntry } from '../types'
-import type { ExtensionApplyReleaseApproval, ExtensionInstallerManager } from '../installer'
+import type { ExtensionApplyReleaseApproval, ExtensionInstaller } from '../install'
 import type { ExtensionRepositoryManager } from '../repositories'
 import type { ExtensionUpdatePlan } from './planner'
 import { ExtensionUpdatePlanner } from './planner'
@@ -13,14 +13,14 @@ import { ExtensionUpdatePlanner } from './planner'
 const log = createLogger('Extension')
 
 export interface ExtensionUpdateManagerOptions {
-  installer: ExtensionInstallerManager
+  installer: ExtensionInstaller
   repositories: ExtensionRepositoryManager
   updatePlanner: ExtensionUpdatePlanner
   onAutomaticUpdateRunChanged?: (state: ExtensionAutomaticUpdateRunState) => void
 }
 
 export class ExtensionUpdateManager {
-  private readonly installer: ExtensionInstallerManager
+  private readonly installer: ExtensionInstaller
   private readonly repositories: ExtensionRepositoryManager
   private readonly updatePlanner: ExtensionUpdatePlanner
   private readonly onAutomaticUpdateRunChanged?: (state: ExtensionAutomaticUpdateRunState) => void

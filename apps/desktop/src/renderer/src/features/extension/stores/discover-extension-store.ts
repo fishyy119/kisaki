@@ -9,7 +9,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ExtensionCategory } from '@kisaki3/extension-api'
-import type { SortDirection } from '@shared/common'
+import type { SortDirection } from '@shared/filter'
 
 export type DiscoverExtensionSortField =
   'relevance' | 'name' | 'updatedAt' | 'publishedAt' | 'repositoryPriority'

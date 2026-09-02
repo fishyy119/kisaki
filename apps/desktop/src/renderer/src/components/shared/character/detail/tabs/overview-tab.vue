@@ -190,27 +190,27 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
                 {{ alias }}
               </div>
             </dd>
-            <dd v-else>{{ m.common.emptyValue }}</dd>
+            <dd v-else>{{ m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.gender }}</dt>
-            <dd>{{ character.gender ? GENDER_LABELS[character.gender] : m.common.emptyValue }}</dd>
+            <dd>{{ character.gender ? GENDER_LABELS[character.gender] : m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.birthDate }}</dt>
-            <dd>{{ character.birthDate ? f.date(character.birthDate) : m.common.emptyValue }}</dd>
+            <dd>{{ character.birthDate ? f.date(character.birthDate) : m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.age }}</dt>
             <dd>
               {{
                 character.age !== null
                   ? m.library.detail.ageValue({ age: character.age })
-                  : m.common.emptyValue
+                  : m.values.emptyValue
               }}
             </dd>
             <dt class="text-muted-foreground">{{ m.library.fields.bloodType }}</dt>
             <dd>
               {{
-                character.bloodType ? BLOOD_TYPE_LABELS[character.bloodType] : m.common.emptyValue
+                character.bloodType ? BLOOD_TYPE_LABELS[character.bloodType] : m.values.emptyValue
               }}
             </dd>
             <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
-            <dd>{{ character.createdAt ? f.date(character.createdAt) : m.common.emptyValue }}</dd>
+            <dd>{{ character.createdAt ? f.date(character.createdAt) : m.values.emptyValue }}</dd>
           </dl>
         </Section>
 
@@ -223,11 +223,11 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
         >
           <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
             <dt class="text-muted-foreground">{{ m.library.fields.height }}</dt>
-            <dd>{{ character.height !== null ? `${character.height}cm` : m.common.emptyValue }}</dd>
+            <dd>{{ character.height !== null ? `${character.height}cm` : m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.weight }}</dt>
-            <dd>{{ character.weight !== null ? `${character.weight}kg` : m.common.emptyValue }}</dd>
+            <dd>{{ character.weight !== null ? `${character.weight}kg` : m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.measurements }}</dt>
-            <dd>{{ threeSizes ?? m.common.emptyValue }}</dd>
+            <dd>{{ threeSizes ?? m.values.emptyValue }}</dd>
             <!--
               Cup applies to a subset of characters, so an empty value means
               inapplicable rather than unknown; the row renders only when filled.

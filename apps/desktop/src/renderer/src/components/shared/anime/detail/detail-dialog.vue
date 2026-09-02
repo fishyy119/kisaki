@@ -94,7 +94,7 @@ async function handleToggleFavorite() {
         : m.value.library.feedback.favoriteAdded
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -115,16 +115,16 @@ function handleRevealSpoilersConfirm() {
 async function handleOpenFolder() {
   if (state.value !== 'success') return
   const current = anime.value!
-  if (!current.animeDirPath) {
+  if (!current.dirPath) {
     notify.error(m.value.anime.detail.animeDirNotSet)
     return
   }
-  await ipcManager.invoke('native:open-path', { path: current.animeDirPath, ensure: 'folder' })
+  await ipcManager.invoke('native:open-path', { path: current.dirPath, ensure: 'folder' })
 }
 
 const canOpenAnimeDir = computed(() => {
   if (state.value !== 'success') return false
-  return !!anime.value?.animeDirPath
+  return !!anime.value?.dirPath
 })
 </script>
 

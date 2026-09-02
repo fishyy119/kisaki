@@ -71,7 +71,7 @@ export function createMangadexSettingsHostFunctions(
     verifyAccount,
 
     async listComicProfiles(): Promise<MangadexProfileOption[]> {
-      const profiles = await kisaki.scrapers.profiles.list({ mediaType: 'comic' })
+      const profiles = await kisaki.scrapers.profiles.list({ entityType: 'comic' })
       return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
     },
 

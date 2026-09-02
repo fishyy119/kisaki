@@ -5,7 +5,7 @@
  * state inside Vue components:
  *
  *   const { m, f } = useI18n()
- *   // template: {{ m.common.save }}  {{ f.date(game.releaseDate) }}
+ *   // template: {{ m.actions.save }}  {{ f.date(game.releaseDate) }}
  */
 
 import type { ComputedRef, ShallowRef } from 'vue'

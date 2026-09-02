@@ -30,12 +30,8 @@ import {
   AutomationRow,
   AutomationToolbar
 } from '../components'
-import type {
-  AutomationSortDirection,
-  AutomationSortField,
-  AutomationSourceFilter,
-  AutomationStatusFilter
-} from '../types'
+import type { SortDirection } from '@shared/filter'
+import type { AutomationSortField, AutomationSourceFilter, AutomationStatusFilter } from '../types'
 
 const log = createLogger('Automation')
 
@@ -47,7 +43,7 @@ const searchQuery = ref('')
 const statusFilter = ref<AutomationStatusFilter>('all')
 const sourceFilter = ref<AutomationSourceFilter>('all')
 const sortField = ref<AutomationSortField>('createdAt')
-const sortDirection = ref<AutomationSortDirection>('desc')
+const sortDirection = ref<SortDirection>('desc')
 
 const busyAutomationIds = ref(new Set<string>())
 const formDialogOpen = ref(false)
@@ -423,12 +419,12 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
           {{ m.automation.page.deleteDescription({ name: pendingDeleteAutomation?.name ?? '' }) }}
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <AlertDialogCancel :disabled="deleting">{{ m.common.cancel }}</AlertDialogCancel>
+          <AlertDialogCancel :disabled="deleting">{{ m.actions.cancel }}</AlertDialogCancel>
           <AlertDialogAction
             :disabled="deleting"
             @click="handleDeleteConfirmed"
           >
-            {{ deleting ? m.automation.page.deleting : m.common.delete }}
+            {{ deleting ? m.automation.page.deleting : m.actions.delete }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

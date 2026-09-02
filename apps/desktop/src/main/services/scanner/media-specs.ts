@@ -10,9 +10,9 @@
 import type { DbService } from '@main/services/db'
 import type { HoldingsService } from '@main/services/holdings'
 import type { IngestService } from '@main/services/ingest'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import type { ExternalId } from '@shared/identity'
-import type { ExistingReason, IngestWarning } from '@shared/ingest/common'
+import type { ExistingReason, IngestWarning } from '@shared/ingest/results'
 import type { Messages } from '@shared/i18n'
 
 /** Identity resolved for one discovered directory before it is added. */
@@ -81,10 +81,10 @@ function toSeed(match: ScannerEntityMatch): { name: string; knownIds?: ExternalI
 
 export const SCANNER_MEDIA_SPECS = {
   game: {
-    findExistingByPath: (deps, path) => deps.dbService.entityFinder.findExisting('game', { path }),
+    findExistingByPath: (deps, path) => deps.dbService.finder.findExisting('game', { path }),
     addDirect: async (deps, match, options) => {
       const result = await deps.ingestService.add.game.addDirect(toSeed(match), {
-        gameDirPath: options.entityPath,
+        dirPath: options.entityPath,
         targetCollectionId: options.targetCollectionId,
         signal: options.signal
       })
@@ -92,7 +92,7 @@ export const SCANNER_MEDIA_SPECS = {
     },
     addFromScraper: async (deps, profileId, match, options) => {
       const result = await deps.ingestService.add.game.addFromScraper(profileId, toSeed(match), {
-        gameDirPath: options.entityPath,
+        dirPath: options.entityPath,
         targetCollectionId: options.targetCollectionId,
         signal: options.signal
       })
@@ -100,10 +100,10 @@ export const SCANNER_MEDIA_SPECS = {
     }
   },
   anime: {
-    findExistingByPath: (deps, path) => deps.dbService.entityFinder.findExisting('anime', { path }),
+    findExistingByPath: (deps, path) => deps.dbService.finder.findExisting('anime', { path }),
     addDirect: async (deps, match, options) => {
       const result = await deps.ingestService.add.anime.addDirect(toSeed(match), {
-        animeDirPath: options.entityPath,
+        dirPath: options.entityPath,
         targetCollectionId: options.targetCollectionId,
         signal: options.signal
       })
@@ -111,7 +111,7 @@ export const SCANNER_MEDIA_SPECS = {
     },
     addFromScraper: async (deps, profileId, match, options) => {
       const result = await deps.ingestService.add.anime.addFromScraper(profileId, toSeed(match), {
-        animeDirPath: options.entityPath,
+        dirPath: options.entityPath,
         targetCollectionId: options.targetCollectionId,
         signal: options.signal
       })
@@ -125,10 +125,10 @@ export const SCANNER_MEDIA_SPECS = {
     }
   },
   comic: {
-    findExistingByPath: (deps, path) => deps.dbService.entityFinder.findExisting('comic', { path }),
+    findExistingByPath: (deps, path) => deps.dbService.finder.findExisting('comic', { path }),
     addDirect: async (deps, match, options) => {
       const result = await deps.ingestService.add.comic.addDirect(toSeed(match), {
-        comicDirPath: options.entityPath,
+        dirPath: options.entityPath,
         targetCollectionId: options.targetCollectionId,
         signal: options.signal
       })
@@ -136,7 +136,7 @@ export const SCANNER_MEDIA_SPECS = {
     },
     addFromScraper: async (deps, profileId, match, options) => {
       const result = await deps.ingestService.add.comic.addFromScraper(profileId, toSeed(match), {
-        comicDirPath: options.entityPath,
+        dirPath: options.entityPath,
         targetCollectionId: options.targetCollectionId,
         signal: options.signal
       })
@@ -150,10 +150,10 @@ export const SCANNER_MEDIA_SPECS = {
     }
   },
   novel: {
-    findExistingByPath: (deps, path) => deps.dbService.entityFinder.findExisting('novel', { path }),
+    findExistingByPath: (deps, path) => deps.dbService.finder.findExisting('novel', { path }),
     addDirect: async (deps, match, options) => {
       const result = await deps.ingestService.add.novel.addDirect(toSeed(match), {
-        novelDirPath: options.entityPath,
+        dirPath: options.entityPath,
         targetCollectionId: options.targetCollectionId,
         signal: options.signal
       })
@@ -161,7 +161,7 @@ export const SCANNER_MEDIA_SPECS = {
     },
     addFromScraper: async (deps, profileId, match, options) => {
       const result = await deps.ingestService.add.novel.addFromScraper(profileId, toSeed(match), {
-        novelDirPath: options.entityPath,
+        dirPath: options.entityPath,
         targetCollectionId: options.targetCollectionId,
         signal: options.signal
       })

@@ -6,7 +6,7 @@
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData } from '@renderer/composables'
 import {
@@ -27,7 +27,7 @@ import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { CastMediaType } from '@shared/common'
+import type { CastMediaType } from '@shared/entity-types'
 import { CAST_SPECS, type CastRow } from './cast-specs'
 import CastItemFormDialog, { type CastItemData } from './cast-item-form-dialog.vue'
 
@@ -109,7 +109,7 @@ function characterImageUrl(item: CastItem): string | null {
 
 function handleAddNew() {
   editingItem.value = {
-    id: nanoid(),
+    id: newId(),
     characterId: '',
     characterName: '',
     characterImage: null,
@@ -159,7 +159,7 @@ async function handleSave() {
         note: item.note || null
       }))
     )
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Cast save failed:', error)
@@ -244,13 +244,13 @@ async function handleSave() {
               :disabled="isSaving"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </div>
         </DialogFooter>

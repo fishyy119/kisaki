@@ -214,11 +214,11 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
                 {{ alias }}
               </div>
             </dd>
-            <dd v-else>{{ m.common.emptyValue }}</dd>
+            <dd v-else>{{ m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
-            <dd>{{ game.releaseDate ? f.date(game.releaseDate) : m.common.emptyValue }}</dd>
+            <dd>{{ game.releaseDate ? f.date(game.releaseDate) : m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
-            <dd>{{ game.createdAt ? f.date(game.createdAt) : m.common.emptyValue }}</dd>
+            <dd>{{ game.createdAt ? f.date(game.createdAt) : m.values.emptyValue }}</dd>
           </dl>
         </Section>
 

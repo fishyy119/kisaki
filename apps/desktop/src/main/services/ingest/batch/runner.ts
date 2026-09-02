@@ -3,26 +3,31 @@
  *
  * Owns the parts of a batch run that carry no entity semantics: task-run
  * lifecycle, duplicate root ids, per-item cancellation checkpoints, counters,
- * bounded failures and warnings, and progress reporting. Entities supply row
- * loading, remote search, and the single-item update.
+ * bounded failures and warnings, and progress reporting. Per-entity facts come
+ * from `INGEST_BATCH_SPECS` (rows and match selection) and from the drivers the
+ * service binds per entity (remote search and the single-item update).
  *
  * Cancellation is checked between items only; once an item's update commits it
  * runs to completion.
  */
 
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { createLogger } from '@main/log'
 import type { I18nService } from '@main/services/i18n'
+import type { ScrapeSearchResultOf } from '@main/services/scraper'
 import { isCancellation, type TaskRunHandle, type TaskRunService } from '@main/services/task-run'
-import { createIngestRun } from '../run/task-run'
-import type { ExternalId } from '@shared/identity'
+import type * as schema from '@shared/db/schema'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { IngestUpdateResult } from '@shared/ingest'
 import {
   mergeUpdateLookupKnownIds,
   type IngestBatchUpdateRequest,
   type IngestUpdateRequest
 } from '@shared/ingest/update'
-import type { TaskRunContentEntity, TaskRunStartResult } from '@shared/task-run'
+import type { TaskRunStartResult } from '@shared/task-run'
 import { throwIfIngestAborted } from '../run/abort'
+import { createIngestRun } from '../run/task-run'
+import type { IngestUpdateSurfaceOf } from '../update'
 import {
   createBatchTaskRunWarnings,
   getBatchRowQueryName,
@@ -31,6 +36,8 @@ import {
   pushBoundedItemWarning,
   reportBatchProgress
 } from './reporting'
+import { loadIngestBatchRows } from './rows'
+import { INGEST_BATCH_SPECS } from './specs'
 import type {
   IngestBatchCounters,
   IngestBatchFailure,
@@ -41,66 +48,68 @@ import type {
 
 const log = createLogger('Ingest')
 
-/** Minimum a provider search result must carry to drive a batch update. */
-export interface IngestBatchSearchMatch {
-  name: string
-  originalName?: string
-  externalIds: ExternalId[]
+/** The two service calls a batch needs per entity, bound by the ingest service. */
+export interface IngestBatchDriver<T extends ContentEntityType> {
+  search(
+    profileId: string,
+    query: string,
+    signal: AbortSignal | undefined
+  ): Promise<ScrapeSearchResultOf<T>[]>
+  update(
+    request: IngestUpdateRequest<IngestUpdateSurfaceOf<T>>,
+    signal: AbortSignal | undefined
+  ): Promise<IngestUpdateResult>
 }
 
-export interface IngestBatchUpdateSpec<TSurface extends string> {
-  entity: TaskRunContentEntity
-  request: IngestBatchUpdateRequest<TSurface>
-  loadRows: (ids: string[]) => IngestBatchUpdateRow[]
-  /**
-   * Finds the provider entry the row should be rebound to, or null when the
-   * search offers none. Which entry fits is the entity's own knowledge: one work
-   * can span many provider entries, and only the entity holds the facts that
-   * tell them apart.
-   */
-  findMatch: (
-    row: IngestBatchUpdateRow,
-    queryName: string,
-    signal: AbortSignal | undefined
-  ) => Promise<IngestBatchSearchMatch | null>
-  update: (
-    request: IngestUpdateRequest<TSurface>,
-    signal: AbortSignal | undefined
-  ) => Promise<IngestUpdateResult>
+export type IngestBatchDrivers = { [T in ContentEntityType]: IngestBatchDriver<T> }
+
+export type IngestBatchUpdateRequestOf<T extends ContentEntityType> = IngestBatchUpdateRequest<
+  IngestUpdateSurfaceOf<T>
+>
+
+export interface IngestBatchUpdateRunnerDeps {
+  db: BetterSQLite3Database<typeof schema>
+  taskRun: TaskRunService
+  i18n: I18nService
+  drivers: IngestBatchDrivers
+}
+
+interface IngestBatchPlan<T extends ContentEntityType> {
+  entity: T
+  request: IngestBatchUpdateRequestOf<T>
+  driver: IngestBatchDriver<T>
 }
 
 export class IngestBatchUpdateRunner {
-  constructor(
-    private readonly taskRunService: TaskRunService,
-    private readonly i18nService: I18nService
-  ) {}
+  constructor(private readonly deps: IngestBatchUpdateRunnerDeps) {}
 
-  start<TSurface extends string>(spec: IngestBatchUpdateSpec<TSurface>): TaskRunStartResult {
-    const rootIds = requireBatchRootIds(spec.request)
-    const messages = this.i18nService.messages
-    const subjectLabel = messages.ingest.batch.subjectCount({
-      entity: spec.entity,
-      count: rootIds.length
-    })
+  start<T extends ContentEntityType>(
+    entity: T,
+    request: IngestBatchUpdateRequestOf<T>
+  ): TaskRunStartResult {
+    const rootIds = requireBatchRootIds(request)
+    const messages = this.deps.i18n.messages
+    const subjectLabel = messages.ingest.batch.subjectCount({ entity, count: rootIds.length })
 
-    const run = createIngestRun(this.taskRunService, {
-      operation: `ingest.${spec.entity}.batchUpdate`,
-      title: messages.ingest.batch.title({ entity: spec.entity }),
+    const run = createIngestRun(this.deps.taskRun, {
+      operation: `ingest.${entity}.batchUpdate`,
+      title: messages.ingest.batch.title({ entity }),
       label: subjectLabel,
-      subject: { type: spec.entity },
+      subject: { type: entity },
       initiator: undefined
     })
 
-    void this.execute(run, spec, rootIds)
+    void this.execute(run, { entity, request, driver: this.deps.drivers[entity] }, rootIds)
     return { runId: run.id, createdAt: run.createdAt }
   }
 
-  private async execute<TSurface extends string>(
+  private async execute<T extends ContentEntityType>(
     run: TaskRunHandle,
-    spec: IngestBatchUpdateSpec<TSurface>,
+    plan: IngestBatchPlan<T>,
     rootIds: string[]
   ): Promise<void> {
-    const messages = this.i18nService.messages
+    const { entity } = plan
+    const messages = this.deps.i18n.messages
     const counters: IngestBatchCounters = { succeeded: 0, failed: 0, skipped: 0, warnings: 0 }
     const failures: IngestBatchFailure[] = []
     const itemWarnings: IngestBatchItemWarning[] = []
@@ -131,9 +140,9 @@ export class IngestBatchUpdateRunner {
 
     try {
       run.start()
-      progress('searching', 0, messages.ingest.batch.preparingList({ entity: spec.entity }))
+      progress('searching', 0, messages.ingest.batch.preparingList({ entity }))
 
-      const rows = spec.loadRows(rootIds)
+      const rows = loadIngestBatchRows(this.deps.db, INGEST_BATCH_SPECS[entity].rows, rootIds)
       counters.skipped = total - rows.length
       let processed = counters.skipped
 
@@ -143,7 +152,7 @@ export class IngestBatchUpdateRunner {
         progress('searching', processed, queryName)
 
         try {
-          const result = await this.updateItem(spec, row, queryName, run, () =>
+          const result = await this.updateItem(plan, row, queryName, run, () =>
             progress('updating', processed, queryName)
           )
 
@@ -166,7 +175,7 @@ export class IngestBatchUpdateRunner {
           const message = getSafeBatchError(error)
           pushBoundedFailure(failures, { entityId: row.id, name: queryName, error: message })
           log.warn('Batch metadata update item failed.', {
-            entity: spec.entity,
+            entity,
             entityId: row.id,
             name: queryName,
             message
@@ -180,8 +189,8 @@ export class IngestBatchUpdateRunner {
       run.complete({
         title:
           counters.failed > 0
-            ? messages.ingest.batch.completedWithFailuresTitle({ entity: spec.entity })
-            : messages.ingest.batch.completedTitle({ entity: spec.entity }),
+            ? messages.ingest.batch.completedWithFailuresTitle({ entity })
+            : messages.ingest.batch.completedTitle({ entity }),
         summary: messages.ingest.batch.resultSummary({
           succeeded: counters.succeeded,
           failed: counters.failed,
@@ -214,26 +223,27 @@ export class IngestBatchUpdateRunner {
     }
   }
 
-  private async updateItem<TSurface extends string>(
-    spec: IngestBatchUpdateSpec<TSurface>,
+  private async updateItem<T extends ContentEntityType>(
+    plan: IngestBatchPlan<T>,
     row: IngestBatchUpdateRow,
     queryName: string,
     run: TaskRunHandle,
     onUpdateStart: () => void
   ): Promise<IngestUpdateResult> {
+    const { entity, request, driver } = plan
     const signal = run.context.signal
     throwIfIngestAborted(signal)
-    const match = await spec.findMatch(row, queryName, signal)
+    const results = await driver.search(request.profileId, queryName, signal)
     throwIfIngestAborted(signal)
 
+    const match = INGEST_BATCH_SPECS[entity].selectMatch(this.deps.db, row, results)
     if (!match) {
-      throw new Error(this.i18nService.messages.ingest.batch.noSearchResults)
+      throw new Error(this.deps.i18n.messages.ingest.batch.noSearchResults)
     }
 
     onUpdateStart()
 
-    const request = spec.request
-    return spec.update(
+    return driver.update(
       {
         rootId: row.id,
         profileId: request.profileId,

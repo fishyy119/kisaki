@@ -16,7 +16,7 @@ import { getOpenComicDialogOptions } from '@renderer/utils/dialog'
 import { comicChapterFiles, type ComicChapterFile } from '@shared/db'
 import { useI18n } from './use-i18n'
 
-const log = createLogger('Comic')
+const log = createLogger('Library')
 
 export interface ComicFileRecords {
   isAttaching: Ref<boolean>
@@ -108,7 +108,7 @@ export function useComicFileRecords(
       notify.success(m.value.comic.files.fileRemoved)
     } catch (error) {
       log.error('Remove file record failed:', error)
-      notify.error(m.value.common.deleteFailed)
+      notify.error(m.value.feedback.deleteFailed)
     }
   }
 

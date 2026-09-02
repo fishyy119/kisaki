@@ -11,7 +11,7 @@ import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ENTITY_TABLES } from '@renderer/core/db'
 import { getEntityDetailPath, LIBRARY_HOME_PATH } from '@renderer/utils/entity-routes'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { useDbChanges } from './use-db-changes'
 import { useIpc } from './use-ipc'
 

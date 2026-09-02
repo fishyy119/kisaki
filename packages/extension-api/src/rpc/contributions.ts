@@ -43,7 +43,7 @@ import type {
   PersonSearchResult,
   ScraperCapability,
   ScraperLookup,
-  ScraperMediaType,
+  ScraperEntityType,
   ScraperSessionResult
 } from '../contributions/scraper-providers'
 import type { ThemeContribution } from '../contributions/themes'
@@ -179,9 +179,9 @@ export interface CommandExecuteResponse {
   output?: Exclude<CommandContributionExecuteResult, void> | undefined
 }
 
-type ScraperProviderScopedRpcParamsFor<TMediaType extends ScraperMediaType> =
+type ScraperProviderScopedRpcParamsFor<TEntityType extends ScraperEntityType> =
   ExtensionScopedRpcParams & {
-    mediaType: TMediaType
+    entityType: TEntityType
     providerId: string
   }
 
@@ -196,31 +196,31 @@ export type ScraperProviderScopedRpcParams =
 
 export type ScraperProviderRegisterRequest =
   | (ExtensionScopedRpcParams & {
-      mediaType: 'game'
+      entityType: 'game'
       provider: GameScraperProviderRegistrationInfo
     })
   | (ExtensionScopedRpcParams & {
-      mediaType: 'anime'
+      entityType: 'anime'
       provider: AnimeScraperProviderRegistrationInfo
     })
   | (ExtensionScopedRpcParams & {
-      mediaType: 'comic'
+      entityType: 'comic'
       provider: ComicScraperProviderRegistrationInfo
     })
   | (ExtensionScopedRpcParams & {
-      mediaType: 'novel'
+      entityType: 'novel'
       provider: NovelScraperProviderRegistrationInfo
     })
   | (ExtensionScopedRpcParams & {
-      mediaType: 'person'
+      entityType: 'person'
       provider: PersonScraperProviderRegistrationInfo
     })
   | (ExtensionScopedRpcParams & {
-      mediaType: 'company'
+      entityType: 'company'
       provider: CompanyScraperProviderRegistrationInfo
     })
   | (ExtensionScopedRpcParams & {
-      mediaType: 'character'
+      entityType: 'character'
       provider: CharacterScraperProviderRegistrationInfo
     })
 
@@ -257,13 +257,13 @@ export type ScraperProviderSearchRequest =
     })
 
 export type ScraperProviderSearchResponse =
-  | { mediaType: 'game'; results: readonly GameSearchResult[] }
-  | { mediaType: 'anime'; results: readonly AnimeSearchResult[] }
-  | { mediaType: 'comic'; results: readonly ComicSearchResult[] }
-  | { mediaType: 'novel'; results: readonly NovelSearchResult[] }
-  | { mediaType: 'person'; results: readonly PersonSearchResult[] }
-  | { mediaType: 'company'; results: readonly CompanySearchResult[] }
-  | { mediaType: 'character'; results: readonly CharacterSearchResult[] }
+  | { entityType: 'game'; results: readonly GameSearchResult[] }
+  | { entityType: 'anime'; results: readonly AnimeSearchResult[] }
+  | { entityType: 'comic'; results: readonly ComicSearchResult[] }
+  | { entityType: 'novel'; results: readonly NovelSearchResult[] }
+  | { entityType: 'person'; results: readonly PersonSearchResult[] }
+  | { entityType: 'company'; results: readonly CompanySearchResult[] }
+  | { entityType: 'character'; results: readonly CharacterSearchResult[] }
 
 export type ScraperProviderResolveRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & {
@@ -296,13 +296,13 @@ export type ScraperProviderResolveRequest =
     })
 
 export type ScraperProviderResolveResponse =
-  | { mediaType: 'game'; target: IdResolvedTarget | null }
-  | { mediaType: 'anime'; target: IdResolvedTarget | null }
-  | { mediaType: 'comic'; target: IdResolvedTarget | null }
-  | { mediaType: 'novel'; target: IdResolvedTarget | null }
-  | { mediaType: 'person'; target: IdResolvedTarget | null }
-  | { mediaType: 'company'; target: IdResolvedTarget | null }
-  | { mediaType: 'character'; target: IdResolvedTarget | null }
+  | { entityType: 'game'; target: IdResolvedTarget | null }
+  | { entityType: 'anime'; target: IdResolvedTarget | null }
+  | { entityType: 'comic'; target: IdResolvedTarget | null }
+  | { entityType: 'novel'; target: IdResolvedTarget | null }
+  | { entityType: 'person'; target: IdResolvedTarget | null }
+  | { entityType: 'company'; target: IdResolvedTarget | null }
+  | { entityType: 'character'; target: IdResolvedTarget | null }
 
 export type ScraperProviderSessionOpenRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & {
@@ -335,13 +335,13 @@ export type ScraperProviderSessionOpenRequest =
     })
 
 export type ScraperProviderSessionOpenResponse =
-  | { mediaType: 'game'; sessionId: string }
-  | { mediaType: 'anime'; sessionId: string }
-  | { mediaType: 'comic'; sessionId: string }
-  | { mediaType: 'novel'; sessionId: string }
-  | { mediaType: 'person'; sessionId: string }
-  | { mediaType: 'company'; sessionId: string }
-  | { mediaType: 'character'; sessionId: string }
+  | { entityType: 'game'; sessionId: string }
+  | { entityType: 'anime'; sessionId: string }
+  | { entityType: 'comic'; sessionId: string }
+  | { entityType: 'novel'; sessionId: string }
+  | { entityType: 'person'; sessionId: string }
+  | { entityType: 'company'; sessionId: string }
+  | { entityType: 'character'; sessionId: string }
 
 export type ScraperProviderSessionGetRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & {
@@ -374,13 +374,13 @@ export type ScraperProviderSessionGetRequest =
     })
 
 export type ScraperProviderSessionGetResponse =
-  | { mediaType: 'game'; result: ScraperSessionResult<GameSessionResultMap> }
-  | { mediaType: 'anime'; result: ScraperSessionResult<AnimeSessionResultMap> }
-  | { mediaType: 'comic'; result: ScraperSessionResult<ComicSessionResultMap> }
-  | { mediaType: 'novel'; result: ScraperSessionResult<NovelSessionResultMap> }
-  | { mediaType: 'person'; result: ScraperSessionResult<PersonSessionResultMap> }
-  | { mediaType: 'company'; result: ScraperSessionResult<CompanySessionResultMap> }
-  | { mediaType: 'character'; result: ScraperSessionResult<CharacterSessionResultMap> }
+  | { entityType: 'game'; result: ScraperSessionResult<GameSessionResultMap> }
+  | { entityType: 'anime'; result: ScraperSessionResult<AnimeSessionResultMap> }
+  | { entityType: 'comic'; result: ScraperSessionResult<ComicSessionResultMap> }
+  | { entityType: 'novel'; result: ScraperSessionResult<NovelSessionResultMap> }
+  | { entityType: 'person'; result: ScraperSessionResult<PersonSessionResultMap> }
+  | { entityType: 'company'; result: ScraperSessionResult<CompanySessionResultMap> }
+  | { entityType: 'character'; result: ScraperSessionResult<CharacterSessionResultMap> }
 
 export type ScraperProviderSessionCloseRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & { sessionId: string })

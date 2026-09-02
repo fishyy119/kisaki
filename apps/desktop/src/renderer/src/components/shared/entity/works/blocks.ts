@@ -7,7 +7,7 @@
  * only ever render as a card badge, so links keep their stored order.
  */
 
-import { MEDIA_TYPES, type MediaType } from '@shared/common'
+import { MEDIA_TYPES, type MediaType } from '@shared/entity-types'
 import type { Anime, Comic, Game, Novel } from '@shared/db'
 import type { LinkViewKey } from '../links'
 

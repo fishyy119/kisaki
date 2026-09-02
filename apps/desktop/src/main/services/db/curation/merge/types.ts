@@ -1,10 +1,10 @@
 import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
 import type { EntityMergeChangeKind } from '@shared/entity-merge'
 import type { ExternalId } from '@shared/identity'
 import type { DbContext } from '../../types'
-import type { ExternalIdLinkTable } from '../../helper/external-id'
+import type { ExternalIdLinkTable } from '../../identity/external-id'
 
 /**
  * A row read through a runtime table reference. Merge configs erase the

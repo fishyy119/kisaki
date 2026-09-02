@@ -10,7 +10,7 @@
 
 import type { I18nService } from '@main/services/i18n'
 import { isCancellation, type TaskRunHandle, type TaskRunService } from '@main/services/task-run'
-import type { ContentEntityType, MediaType } from '@shared/common'
+import type { ContentEntityType, MediaType } from '@shared/entity-types'
 import type { ExternalId } from '@shared/identity'
 import type { TaskRunInitiator, TaskRunStartResult } from '@shared/task-run'
 import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
@@ -19,7 +19,7 @@ import { reportIngestProgress } from '../run/progress'
 import { createIngestRun, toTaskRunWarnings } from '../run/task-run'
 import type { IngestOperationOptions, IngestTaskRunOptions } from '../types'
 import { normalizeLookup } from '../normalization'
-import { addEntityToCollection, normalizeIngestLookupInput, requireScrapedBundle } from './common'
+import { addEntityToCollection, normalizeIngestLookupInput, requireScrapedBundle } from './shared'
 import type {
   IngestAddDeps,
   IngestAddLookup,

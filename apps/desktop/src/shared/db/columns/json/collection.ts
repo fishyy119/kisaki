@@ -1,6 +1,7 @@
 import { customType } from 'drizzle-orm/sqlite-core'
 
-import { CONTENT_ENTITY_TYPES, type SortDirection } from '@shared/common'
+import { CONTENT_ENTITY_TYPES } from '@shared/entity-types'
+import type { SortDirection } from '@shared/filter/sort'
 import { parseFilterState } from '@shared/filter/normalization'
 import { createEmptyFilter } from '@shared/filter/state'
 import type { DynamicCollectionConfig, DynamicEntityConfig } from '../../contracts/json'

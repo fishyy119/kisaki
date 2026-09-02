@@ -1,7 +1,8 @@
 import type { ExtensionRuntimeHandle } from '@kisaki3/extension-api'
+import type { ContentEntityType } from '@shared/entity-types'
 import { createLogger } from '@main/log'
 import type { ExtensionScraperProviderRegistrationInfo } from '@shared/extension'
-import { createExtensionScraperProviderId, type ScraperMediaType } from '@shared/scraper'
+import { createExtensionScraperProviderId } from '@shared/scraper'
 import type {
   AnimeScraperProvider,
   CharacterScraperProvider,
@@ -32,7 +33,7 @@ const log = createLogger('Extension')
 const SCRAPER_DOMAINS = {
   game: {
     kind: 'games',
-    mediaType: 'game',
+    entityType: 'game',
     registerWithScraper: (scraper, provider) =>
       scraper.game.registerProvider(provider as GameScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
@@ -40,7 +41,7 @@ const SCRAPER_DOMAINS = {
   },
   anime: {
     kind: 'animes',
-    mediaType: 'anime',
+    entityType: 'anime',
     registerWithScraper: (scraper, provider) =>
       scraper.anime.registerProvider(provider as AnimeScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
@@ -48,7 +49,7 @@ const SCRAPER_DOMAINS = {
   },
   comic: {
     kind: 'comics',
-    mediaType: 'comic',
+    entityType: 'comic',
     registerWithScraper: (scraper, provider) =>
       scraper.comic.registerProvider(provider as ComicScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
@@ -56,7 +57,7 @@ const SCRAPER_DOMAINS = {
   },
   novel: {
     kind: 'novels',
-    mediaType: 'novel',
+    entityType: 'novel',
     registerWithScraper: (scraper, provider) =>
       scraper.novel.registerProvider(provider as NovelScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
@@ -64,7 +65,7 @@ const SCRAPER_DOMAINS = {
   },
   person: {
     kind: 'persons',
-    mediaType: 'person',
+    entityType: 'person',
     registerWithScraper: (scraper, provider) =>
       scraper.person.registerProvider(provider as PersonScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
@@ -72,7 +73,7 @@ const SCRAPER_DOMAINS = {
   },
   company: {
     kind: 'companies',
-    mediaType: 'company',
+    entityType: 'company',
     registerWithScraper: (scraper, provider) =>
       scraper.company.registerProvider(provider as CompanyScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
@@ -80,13 +81,13 @@ const SCRAPER_DOMAINS = {
   },
   character: {
     kind: 'characters',
-    mediaType: 'character',
+    entityType: 'character',
     registerWithScraper: (scraper, provider) =>
       scraper.character.registerProvider(provider as CharacterScraperProvider),
     unregisterFromScraper: (scraper, registryProviderId) =>
       scraper.character.unregisterProvider(registryProviderId)
   }
-} satisfies Record<ScraperMediaType, ScraperDomain>
+} satisfies Record<ContentEntityType, ScraperDomain>
 
 export class ExtensionScraperProviderContributionPoint {
   private readonly registrations = new Map<string, ScraperRegistration>()
@@ -95,18 +96,18 @@ export class ExtensionScraperProviderContributionPoint {
 
   registerProvider(
     runtimeHandle: ExtensionRuntimeHandle,
-    mediaType: ScraperMediaType,
+    entityType: ContentEntityType,
     provider: ScraperProviderRegistration
   ): Promise<void> {
-    return this.register(runtimeHandle, provider, this.requireDomain(mediaType))
+    return this.register(runtimeHandle, provider, this.requireDomain(entityType))
   }
 
   unregisterProvider(
     runtimeHandle: ExtensionRuntimeHandle,
-    mediaType: ScraperMediaType,
+    entityType: ContentEntityType,
     providerId: string
   ): Promise<void> {
-    return this.unregister(runtimeHandle, providerId, this.requireDomain(mediaType))
+    return this.unregister(runtimeHandle, providerId, this.requireDomain(entityType))
   }
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
@@ -137,12 +138,12 @@ export class ExtensionScraperProviderContributionPoint {
     return [...this.registrations.values()]
       .map((registration) => ({
         ...toContributionOwnerInfo(registration.owner),
-        mediaType: registration.mediaType,
+        entityType: registration.entityType,
         provider: registration.provider
       }))
       .sort(
         (left, right) =>
-          left.mediaType.localeCompare(right.mediaType) ||
+          left.entityType.localeCompare(right.entityType) ||
           left.provider.id.localeCompare(right.provider.id)
       )
   }
@@ -152,7 +153,7 @@ export class ExtensionScraperProviderContributionPoint {
       .filter((registration) => registration.owner.extension.id === extensionId)
       .map((registration) => ({
         domain: 'scraper providers',
-        detail: `${registration.mediaType}:${registration.provider.id}`
+        detail: `${registration.entityType}:${registration.provider.id}`
       }))
   }
 
@@ -164,11 +165,11 @@ export class ExtensionScraperProviderContributionPoint {
     const owner = requireContributionOwner(this.options, runtimeHandle)
     const registration: ScraperRegistration = {
       owner,
-      mediaType: domain.mediaType,
+      entityType: domain.entityType,
       provider,
       registryProviderId: createExtensionScraperProviderId(owner.extension.id, provider.id)
     }
-    const key = getScraperKey(runtimeHandle, domain.mediaType, provider.id)
+    const key = getScraperKey(runtimeHandle, domain.entityType, provider.id)
     const previous = this.registrations.get(key)
     if (previous) {
       this.registrations.delete(key)
@@ -184,7 +185,7 @@ export class ExtensionScraperProviderContributionPoint {
     providerId: string,
     domain: ScraperDomain
   ): Promise<void> {
-    const key = getScraperKey(runtimeHandle, domain.mediaType, providerId)
+    const key = getScraperKey(runtimeHandle, domain.entityType, providerId)
     const registration = this.registrations.get(key)
     if (!registration) {
       return
@@ -208,7 +209,7 @@ export class ExtensionScraperProviderContributionPoint {
     registration: ScraperRegistration
   ): Promise<void> {
     try {
-      await this.requireDomain(registration.mediaType).unregisterFromScraper(
+      await this.requireDomain(registration.entityType).unregisterFromScraper(
         this.options.scraper,
         registration.registryProviderId
       )
@@ -219,12 +220,12 @@ export class ExtensionScraperProviderContributionPoint {
     }
   }
 
-  private requireDomain(mediaType: ScraperMediaType): ScraperDomain {
+  private requireDomain(entityType: ContentEntityType): ScraperDomain {
     // The media type crosses the RPC boundary, so genuinely unknown strings
     // can still arrive at runtime despite the compile-time union.
-    const domain: ScraperDomain | undefined = SCRAPER_DOMAINS[mediaType]
+    const domain: ScraperDomain | undefined = SCRAPER_DOMAINS[entityType]
     if (!domain) {
-      throw new Error(`Unknown scraper media type "${mediaType}".`)
+      throw new Error(`Unknown scraper media type "${entityType}".`)
     }
 
     return domain

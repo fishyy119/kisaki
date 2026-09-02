@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { eq, and } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { notify } from '@renderer/core/notify'
 import { db, attachment } from '@renderer/core/db'
 import {
@@ -21,7 +21,7 @@ import {
 } from '@shared/db'
 import { useAsyncData, useStagedImagePick } from '@renderer/composables'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import {
   Dialog,
   DialogContent,
@@ -182,7 +182,7 @@ async function handleSubmit() {
       }
       notify.success(m.value.library.forms.collectionUpdated)
     } else {
-      const newCollectionId = nanoid()
+      const newCollectionId = newId()
       const isDynamic = isStaticCreateLocked.value ? false : formData.value.isDynamic
       await db.insert(collections).values({
         id: newCollectionId,
@@ -215,7 +215,7 @@ async function handleSubmit() {
             })
             if (!existing?.id) {
               await db.insert(collectionGameLinks).values({
-                id: nanoid(),
+                id: newId(),
                 collectionId: newCollectionId,
                 gameId: entityId
               })
@@ -236,7 +236,7 @@ async function handleSubmit() {
             })
             if (!existing?.id) {
               await db.insert(collectionAnimeLinks).values({
-                id: nanoid(),
+                id: newId(),
                 collectionId: newCollectionId,
                 animeId: entityId
               })
@@ -257,7 +257,7 @@ async function handleSubmit() {
             })
             if (!existing?.id) {
               await db.insert(collectionCharacterLinks).values({
-                id: nanoid(),
+                id: newId(),
                 collectionId: newCollectionId,
                 characterId: entityId
               })
@@ -278,7 +278,7 @@ async function handleSubmit() {
             })
             if (!existing?.id) {
               await db.insert(collectionPersonLinks).values({
-                id: nanoid(),
+                id: newId(),
                 collectionId: newCollectionId,
                 personId: entityId
               })
@@ -299,7 +299,7 @@ async function handleSubmit() {
             })
             if (!existing?.id) {
               await db.insert(collectionCompanyLinks).values({
-                id: nanoid(),
+                id: newId(),
                 collectionId: newCollectionId,
                 companyId: entityId
               })
@@ -452,13 +452,13 @@ const canSubmit = computed(() => formData.value.name.trim())
               :disabled="isSubmitting"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSubmitting || !canSubmit"
             >
-              {{ isEditMode ? m.common.save : m.common.create }}
+              {{ isEditMode ? m.actions.save : m.actions.create }}
             </Button>
           </DialogFooter>
         </Form>

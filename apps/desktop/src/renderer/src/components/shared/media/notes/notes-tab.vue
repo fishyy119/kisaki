@@ -12,7 +12,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { useI18n } from '@renderer/composables/use-i18n'
 import MediaNotesItem from './notes-item.vue'
 import MediaNotesViewDialog from './notes-view-dialog.vue'
@@ -97,7 +97,7 @@ async function handleDelete(noteId: string) {
     notify.success(m.value.library.notes.noteDeleted)
   } catch (error) {
     log.error('Delete note failed:', error)
-    notify.error(m.value.common.deleteFailed)
+    notify.error(m.value.feedback.deleteFailed)
   } finally {
     deleteTargetId.value = null
   }
@@ -190,7 +190,7 @@ async function reorder(noteId: string, direction: -1 | 1) {
             {{ m.library.notes.newNote }}
           </Button>
           <span class="text-xs text-muted-foreground">{{
-            m.common.itemCount({ count: displayNotes.length })
+            m.values.itemCount({ count: displayNotes.length })
           }}</span>
         </div>
       </div>

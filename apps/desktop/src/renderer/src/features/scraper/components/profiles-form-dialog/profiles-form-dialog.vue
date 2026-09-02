@@ -8,11 +8,12 @@
 -->
 <script setup lang="ts">
 import type { ScraperProfile } from '@shared/db'
-import { CONTENT_ENTITY_TYPES } from '@shared/common'
+import { CONTENT_ENTITY_TYPES } from '@shared/entity-types'
 
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
+import { copyToClipboard } from '@renderer/core/clipboard'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
@@ -134,7 +135,7 @@ const updateSuggestions = computed(() => {
     const recommendation = materializeRecipe(
       recipe,
       group,
-      providersByType.value[profile.mediaType]
+      providersByType.value[profile.entityType]
     )
     if (!recommendation) continue
 
@@ -156,10 +157,10 @@ const updateSuggestions = computed(() => {
 
 // Profiles grouped into media-type sections, in registry order; empty types are dropped.
 const profileGroups = computed(() =>
-  CONTENT_ENTITY_TYPES.map((mediaType) => ({
-    mediaType,
-    label: m.value.library.entities[mediaType],
-    profiles: profiles.value.filter((profile) => profile.mediaType === mediaType)
+  CONTENT_ENTITY_TYPES.map((entityType) => ({
+    entityType,
+    label: m.value.library.entities[entityType],
+    profiles: profiles.value.filter((profile) => profile.entityType === entityType)
   })).filter((group) => group.profiles.length > 0)
 )
 
@@ -343,7 +344,7 @@ async function handleSave() {
           .set({
             name: profile.name,
             description: profile.description,
-            mediaType: profile.mediaType,
+            entityType: profile.entityType,
             recipeId: profile.recipeId,
             dismissedRecipeFingerprint: profile.dismissedRecipeFingerprint,
             searchProviderId: profile.searchProviderId,
@@ -355,10 +356,10 @@ async function handleSave() {
       }
     }
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch {
-    notify.error(m.value.common.saveFailed)
+    notify.error(m.value.feedback.saveFailed)
   } finally {
     isSaving.value = false
   }
@@ -374,7 +375,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
     profile,
     providerDisplay: getScraperProviderDisplay(
       profile.searchProviderId,
-      providersByType.value[profile.mediaType],
+      providersByType.value[profile.entityType],
       ['search']
     )
   }))
@@ -412,7 +413,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
             <!-- Group profiles by media type -->
             <div
               v-for="group in profileGroups"
-              :key="group.mediaType"
+              :key="group.entityType"
             >
               <h4 class="text-xs font-medium text-muted-foreground mb-1">
                 {{ group.label }}
@@ -421,7 +422,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
                 <ListItem
                   v-for="{ profile, providerDisplay } in withProviderDisplay(group.profiles)"
                   :key="profile.id"
-                  :icon="getEntityIcon(profile.mediaType)"
+                  :icon="getEntityIcon(profile.entityType)"
                 >
                   <div class="flex min-w-0 items-center gap-1.5">
                     <span class="text-sm font-medium truncate">
@@ -466,7 +467,21 @@ function withProviderDisplay(list: ScraperProfile[]) {
                       @move-down="handleMoveDown(getGlobalIndex(profile))"
                       @edit="handleEdit(profile)"
                       @delete="handleDeleteRequest(profile.id)"
-                    />
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        class="size-7"
+                        :tooltip="m.scraper.profiles.copyId"
+                        @click="copyToClipboard(profile.id)"
+                      >
+                        <Icon
+                          icon="icon-[mdi--content-copy]"
+                          class="size-4"
+                        />
+                      </Button>
+                    </ListItemActions>
                   </template>
                 </ListItem>
               </div>
@@ -491,14 +506,14 @@ function withProviderDisplay(list: ScraperProfile[]) {
               variant="outline"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="button"
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ isSaving ? m.common.saving : m.common.save }}
+              {{ isSaving ? m.states.saving : m.actions.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -529,7 +544,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
     v-model:open="updateDialogOpen"
     :profile="updateCandidate.profile"
     :recommendation="updateCandidate.recommendation"
-    :providers="providersByType[updateCandidate.profile.mediaType]"
+    :providers="providersByType[updateCandidate.profile.entityType]"
     @apply="handleApplyUpdate"
     @dismiss="handleDismissUpdate"
   />

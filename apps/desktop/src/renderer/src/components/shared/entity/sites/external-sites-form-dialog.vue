@@ -35,7 +35,7 @@ import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import EntityExternalSiteItemFormDialog from './external-site-item-form-dialog.vue'
 
 const { m } = useI18n()
@@ -102,7 +102,7 @@ async function handleSave() {
       externalSites: validSites.length > 0 ? validSites : null
     })
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -222,13 +222,13 @@ function handleCancel() {
               variant="outline"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -254,9 +254,9 @@ function handleCancel() {
         m.library.forms.deleteLinkConfirmDescription
       }}</AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogCancel>{{ m.actions.cancel }}</AlertDialogCancel>
         <AlertDialogAction @click="deleteIndex !== null && handleRemoveSite(deleteIndex)">
-          {{ m.common.delete }}
+          {{ m.actions.delete }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

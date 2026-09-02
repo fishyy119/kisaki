@@ -22,7 +22,7 @@ import { Input } from '@renderer/components/ui/input'
 import { StateView } from '@renderer/components/ui/state-view'
 import { ScraperProviderSelect } from '@renderer/components/shared/scraper'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { ENTITY_ASSET_SPECS } from './asset-specs'
 
 const { m } = useI18n()
@@ -181,7 +181,7 @@ watch(selectedProviderId, () => {
                 icon="icon-[mdi--magnify]"
                 class="size-4"
               />
-              {{ m.common.search }}
+              {{ m.actions.search }}
             </Button>
           </div>
 
@@ -256,7 +256,7 @@ watch(selectedProviderId, () => {
             variant="outline"
             @click="handleClose"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button
             :disabled="!selectedUrl || isImporting"

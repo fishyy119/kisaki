@@ -17,12 +17,12 @@ import {
 } from '@renderer/components/ui/dialog'
 import { StateView } from '@renderer/components/ui/state-view'
 import { useAsyncData } from '@renderer/composables'
-import { markChaptersRead, readUnreadChapterCount } from '@renderer/composables/use-comic-read'
+import { markChaptersRead, readUnreadChapterCount } from '@renderer/composables/comic-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 
-const log = createLogger('Comic')
+const log = createLogger('Library')
 
 interface Props {
   comicId: string

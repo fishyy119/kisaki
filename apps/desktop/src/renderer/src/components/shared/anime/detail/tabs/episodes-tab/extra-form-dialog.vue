@@ -36,7 +36,7 @@ import { notify } from '@renderer/core/notify'
 import { getOpenVideoDialogOptions } from '@renderer/utils/dialog'
 import { animeExtras, ANIME_EXTRA_TYPE_VALUES, type AnimeExtraType } from '@shared/db'
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 interface Props {
   animeId: string
@@ -167,7 +167,7 @@ async function saveEdit(): Promise<void> {
                     variant="outline"
                     @click="handlePickFile"
                   >
-                    {{ m.common.browse }}
+                    {{ m.actions.browse }}
                   </Button>
                 </div>
               </FieldContent>
@@ -211,13 +211,13 @@ async function saveEdit(): Promise<void> {
             :disabled="isSaving"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button
             type="submit"
             :disabled="!canSave"
           >
-            {{ m.common.save }}
+            {{ m.actions.save }}
           </Button>
         </DialogFooter>
       </Form>

@@ -91,7 +91,7 @@ const items = computed<RankingListItem[]>(() =>
       v-else
       state="empty"
       size="sm"
-      :description="m.common.noData"
+      :description="m.values.noData"
       class="h-24"
     />
   </Section>

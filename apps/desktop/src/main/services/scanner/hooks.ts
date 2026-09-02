@@ -11,7 +11,7 @@ import {
   type NotifyHook,
   type WaterfallHook
 } from '@main/hooks'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import type { ExternalId } from '@shared/identity'
 import type { EntityEntry, ScannerRunFinishedStatus } from '@shared/scanner'
 

@@ -21,7 +21,7 @@ import { GameDetailDialog } from '@renderer/components/shared/game'
 import { NovelDetailDialog } from '@renderer/components/shared/novel'
 import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagDetailDialog } from '@renderer/components/shared/tag'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 
 export const DETAIL_DIALOGS: Record<AllEntityType, () => Component> = {
   game: () => GameDetailDialog,

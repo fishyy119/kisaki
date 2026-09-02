@@ -1,13 +1,14 @@
 import type { Messages } from '../schema'
+import { actions } from './actions'
 import { activity } from './activity'
-import { adder } from './adder'
+import { addEntry } from './add-entry'
 import { anime } from './anime'
 import { automation } from './automation'
 import { app } from './app'
 import { comic } from './comic'
-import { common } from './common'
 import { deeplink } from './deeplink'
 import { extension } from './extension'
+import { feedback } from './feedback'
 import { filter } from './filter'
 import { game } from './game'
 import { ingest } from './ingest'
@@ -20,21 +21,25 @@ import { reader } from './reader'
 import { scanner } from './scanner'
 import { scraper } from './scraper'
 import { settings } from './settings'
+import { sorting } from './sorting'
+import { states } from './states'
 import { statistics } from './statistics'
 import { task } from './task'
 import { ui } from './ui'
 import { updater } from './updater'
+import { values } from './values'
 
 export const ja = {
+  actions,
   activity,
-  adder,
+  addEntry,
   anime,
   automation,
   app,
   comic,
-  common,
   deeplink,
   extension,
+  feedback,
   filter,
   game,
   ingest,
@@ -47,8 +52,11 @@ export const ja = {
   scanner,
   scraper,
   settings,
+  sorting,
+  states,
   statistics,
   task,
   ui,
-  updater
+  updater,
+  values
 } satisfies Messages

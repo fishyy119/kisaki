@@ -20,7 +20,7 @@ export {
   assessRecipeAvailability,
   computeRecipeFingerprint,
   getRecipeById,
-  getRecipesForMediaType,
+  getRecipesForEntityType,
   materializeRecipe,
   resolveRecipeLanguageGroup,
   SCRAPER_RECIPES,

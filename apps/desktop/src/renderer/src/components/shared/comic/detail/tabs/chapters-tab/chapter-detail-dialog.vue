@@ -23,7 +23,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Separator } from '@renderer/components/ui/separator'
 import { useComic, type ComicChapterEntry } from '@renderer/composables/use-comic'
 import { revealComicFile, useComicFileRecords } from '@renderer/composables/use-comic-file-records'
-import { toggleChapterRead } from '@renderer/composables/use-comic-read'
+import { toggleChapterRead } from '@renderer/composables/comic-completion'
 import { useComicReading } from '@renderer/composables/use-comic-reading'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
@@ -36,7 +36,7 @@ import ComicReadButton from '../../../comic-read-button.vue'
 import ComicChapterFormDialog from './chapter-form-dialog.vue'
 import ComicFileRecordList from './file-record-list.vue'
 
-const log = createLogger('Comic')
+const log = createLogger('Library')
 
 interface Props {
   comicId: string
@@ -73,7 +73,7 @@ const title = computed(() => {
   if (entry.volumeNumber !== null) {
     return m.value.comic.chapters.unnamedVolume({ number: formatUnitNumber(entry.volumeNumber) })
   }
-  return m.value.common.emptyValue
+  return m.value.values.emptyValue
 })
 
 const coverUrl = computed(() => {
@@ -89,7 +89,7 @@ const isRead = computed(() => chapter.value?.read === true)
 const readAtText = computed(() => {
   const entry = chapter.value
   if (!entry?.read) return m.value.comic.chapters.unread
-  return entry.readAt ? f.value.dateTime(entry.readAt) : m.value.common.emptyValue
+  return entry.readAt ? f.value.dateTime(entry.readAt) : m.value.values.emptyValue
 })
 
 const { isAttaching, attachFile, setPrimary, removeFile, saveNote } = useComicFileRecords(chapter)
@@ -107,7 +107,7 @@ async function handleDeleteChapter(): Promise<void> {
     open.value = false
   } catch (error) {
     log.error('Comic unit delete failed:', error)
-    notify.error(m.value.common.deleteFailed)
+    notify.error(m.value.feedback.deleteFailed)
   }
 }
 </script>
@@ -154,7 +154,7 @@ async function handleDeleteChapter(): Promise<void> {
             <div class="grid grid-cols-[auto_1fr] gap-3">
               <dt class="text-muted-foreground">{{ m.comic.chapters.releaseDate }}</dt>
               <dd>
-                {{ chapter.releaseDate ? f.date(chapter.releaseDate) : m.common.emptyValue }}
+                {{ chapter.releaseDate ? f.date(chapter.releaseDate) : m.values.emptyValue }}
               </dd>
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-3">

@@ -15,7 +15,7 @@ import { notify } from '@renderer/core/notify'
 import { useReadingActivityStore } from '@renderer/stores'
 import { useI18n } from './use-i18n'
 
-const log = createLogger('Novel')
+const log = createLogger('Library')
 
 export interface NovelReading {
   isReading: ComputedRef<boolean>

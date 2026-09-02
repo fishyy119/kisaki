@@ -3,4 +3,4 @@
  */
 
 export { comicAutoSyncSpec } from './auto-sync-spec'
-export { ComicFileSyncHandler } from './sync'
+export { ComicFileSyncCoordinator } from './sync'

@@ -1,3 +1,4 @@
+import type { ContentEntityType } from '@shared/entity-types'
 import type {
   AnimeScraperProviderRegistrationInfo,
   CharacterScraperProviderRegistrationInfo,
@@ -33,7 +34,6 @@ import type {
   ExtensionRegistryReleaseEngines,
   ExtensionRegistrySigningAlgorithm
 } from '@kisaki3/extension-registry'
-import type { ScraperMediaType } from '@shared/scraper'
 import type { ExtensionInstallationSource } from './installation-source'
 
 export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package'
@@ -453,7 +453,7 @@ export interface ExtensionDeeplinkRouteRegistrationInfo extends ExtensionContrib
 }
 
 export interface ExtensionScraperProviderRegistrationInfo extends ExtensionContributionOwnerInfo {
-  mediaType: ScraperMediaType
+  entityType: ContentEntityType
   provider:
     | GameScraperProviderRegistrationInfo
     | AnimeScraperProviderRegistrationInfo

@@ -8,7 +8,7 @@ import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { db, updateEntityRows } from '@renderer/core/db'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { useAsyncData } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import {
@@ -149,7 +149,7 @@ async function handleSave() {
   try {
     const newTotalDuration = sessionsDuration.value + untrackedMs.value
     await updateEntityRows(props.mediaType, [props.entityId], { totalDuration: newTotalDuration })
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -166,7 +166,7 @@ async function handleDeleteSession(sessionId: string) {
     notify.success(labels.value.recordDeleted)
   } catch (error) {
     log.error('Delete session failed:', error)
-    notify.error(m.value.common.deleteFailed)
+    notify.error(m.value.feedback.deleteFailed)
   } finally {
     deleteId.value = null
   }
@@ -327,13 +327,13 @@ const minutesModel = computed({
               variant="outline"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -360,9 +360,9 @@ const minutesModel = computed({
       </AlertDialogHeader>
       <AlertDialogDescription>{{ labels.deleteRecordDescription }}</AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogCancel>{{ m.actions.cancel }}</AlertDialogCancel>
         <AlertDialogAction @click="deleteId && handleDeleteSession(deleteId)">
-          {{ m.common.delete }}
+          {{ m.actions.delete }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

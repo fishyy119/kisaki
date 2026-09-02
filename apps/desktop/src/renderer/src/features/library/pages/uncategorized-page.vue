@@ -15,7 +15,7 @@ import { EntityBrowsePanel } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityDetailPath, LIBRARY_HOME_PATH } from '@renderer/utils/entity-routes'
 import { formatExplorerContext } from '@renderer/utils/explorer-context'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { useUncategorizedList } from '../composables'
 
 const { m } = useI18n()

@@ -1,0 +1,36 @@
+import type { Messages } from '../schema'
+
+/** Generic action labels: buttons and menu items every feature shares. */
+export const actions = {
+  add: '追加',
+  apply: '適用',
+  back: '戻る',
+  browse: '参照…',
+  cancel: 'キャンセル',
+  clear: 'クリア',
+  close: '閉じる',
+  confirm: '確認',
+  copy: 'コピー',
+  create: '作成',
+  delete: '削除',
+  edit: '編集',
+  export: 'エクスポート',
+  import: 'インポート',
+  moveDown: '下へ移動',
+  moveUp: '上へ移動',
+  next: '次へ',
+  open: '開く',
+  preview: 'プレビュー',
+  previous: '前へ',
+  refresh: '更新',
+  remove: '削除',
+  rename: '名前を変更',
+  reset: 'リセット',
+  retry: '再試行',
+  save: '保存',
+  search: '検索',
+  select: '選択',
+  selectAll: 'すべて選択',
+  view: '表示',
+  sort: '並べ替え'
+} satisfies Messages['actions']

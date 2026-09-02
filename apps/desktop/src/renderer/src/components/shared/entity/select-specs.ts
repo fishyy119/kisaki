@@ -21,7 +21,7 @@ import { GameSelect } from '@renderer/components/shared/game'
 import { NovelSelect } from '@renderer/components/shared/novel'
 import { PersonSelect } from '@renderer/components/shared/person'
 import { TagSelect } from '@renderer/components/shared/tag'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 
 export interface EntitySelectSpec {
   component: () => Component

@@ -195,23 +195,23 @@ const companyItems = computed<RoleLinkItem[]>(() =>
                 {{ alias }}
               </div>
             </dd>
-            <dd v-else>{{ m.common.emptyValue }}</dd>
+            <dd v-else>{{ m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.format }}</dt>
             <dd>{{ m.library.animeFormat[anime.format] }}</dd>
             <!-- A film is watched in one sitting, so its runtime is the fact an
                  episode count would only restate. -->
             <template v-if="isFilm">
               <dt class="text-muted-foreground">{{ m.library.fields.runtime }}</dt>
-              <dd>{{ runtimeMs ? f.duration(runtimeMs) : m.common.emptyValue }}</dd>
+              <dd>{{ runtimeMs ? f.duration(runtimeMs) : m.values.emptyValue }}</dd>
             </template>
             <template v-else>
               <dt class="text-muted-foreground">{{ m.library.fields.totalEpisodes }}</dt>
-              <dd>{{ anime.totalEpisodes ?? m.common.emptyValue }}</dd>
+              <dd>{{ anime.totalEpisodes ?? m.values.emptyValue }}</dd>
             </template>
             <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
-            <dd>{{ anime.releaseDate ? f.date(anime.releaseDate) : m.common.emptyValue }}</dd>
+            <dd>{{ anime.releaseDate ? f.date(anime.releaseDate) : m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
-            <dd>{{ anime.createdAt ? f.date(anime.createdAt) : m.common.emptyValue }}</dd>
+            <dd>{{ anime.createdAt ? f.date(anime.createdAt) : m.values.emptyValue }}</dd>
           </dl>
         </Section>
 

@@ -17,7 +17,7 @@ import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/utils/cn'
 import { cva } from 'class-variance-authority'
 import type { ScraperCapability } from '@shared/scraper'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { getScraperProviderDisplay } from './provider-display'
 import { fetchScraperProviders } from './use-scraper-providers'
 
@@ -156,7 +156,7 @@ watch(model, (providerId) => {
     v-if="state === 'loading'"
     :class="cn('flex items-center gap-2 h-7', props.class)"
   >
-    <span class="text-xs text-muted-foreground">{{ m.common.loading }}</span>
+    <span class="text-xs text-muted-foreground">{{ m.states.loading }}</span>
   </div>
 
   <!-- Normal select -->

@@ -4,7 +4,7 @@
 -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { notify } from '@renderer/core/notify'
 import { queryEntityRow } from '@renderer/core/db'
 import {
@@ -20,7 +20,7 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { ENTITY_SELECT_SPECS } from '@renderer/components/shared/entity'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -91,7 +91,7 @@ function handleSubmit() {
     return
   }
   emit('submit', {
-    id: props.initialData?.id || nanoid(),
+    id: props.initialData?.id || newId(),
     entityId: formData.value.entityId,
     entityName: formData.value.entityName || 'Unknown',
     entityType: props.entityType,
@@ -154,9 +154,9 @@ const selectSpec = computed(() => ENTITY_SELECT_SPECS[props.entityType])
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.save }}</Button>
+          <Button type="submit">{{ m.actions.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

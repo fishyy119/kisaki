@@ -16,7 +16,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 import { createLogger } from '@main/log'
-import { isProbeCurrent, readFileStat, SyncPassQueue, type FileStat } from '../reconcile'
+import { isProbeCurrent, readFileStat, SyncPassQueue, type FileStat } from '../sync-pass'
 import { reconcileUnitFiles, type UnitReconcileSpec } from '../unit-reconcile'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
 import type { VideoProbe } from '@main/services/video'
@@ -44,7 +44,7 @@ import type {
 import { animeUnitIdentityKey } from '@shared/metadata'
 import type { AudioTrack, SubtitleTrack, VideoFileInfo } from '@shared/video'
 import { and, eq, inArray } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   classifyReleaseFile,
   isExtraDirectoryName,
@@ -186,7 +186,7 @@ const ANIME_EPISODE_RECONCILE_SPEC: UnitReconcileSpec<
     }
   },
   insertUnit: (tx, animeId, candidate, values, order) => {
-    const id = nanoid()
+    const id = newId()
     const row: NewAnimeEpisode = {
       id,
       animeId,
@@ -211,7 +211,7 @@ const ANIME_EPISODE_RECONCILE_SPEC: UnitReconcileSpec<
       isPrimary
     } satisfies Omit<NewAnimeEpisodeFile, 'id'>
     tx.insert(animeEpisodeFiles)
-      .values({ id: nanoid(), ...fileValues })
+      .values({ id: newId(), ...fileValues })
       .run()
   },
   updateFile: (tx, fileId, unitId, candidate, values, isPrimary) => {
@@ -254,7 +254,7 @@ function toProbedFileValues(stat: FileStat, info: VideoFileInfo | null): ProbedF
   }
 }
 
-export class AnimeFileSyncHandler {
+export class AnimeFileSyncCoordinator {
   private readonly passes = new SyncPassQueue<AnimeFileSyncResult>()
 
   constructor(
@@ -275,7 +275,7 @@ export class AnimeFileSyncHandler {
   private async runSync(params: AnimeFileSyncOptions): Promise<AnimeFileSyncResult> {
     const { animeId, signal } = params
     const animeRow = this.readAnimeSyncConfig(animeId)
-    const dirPath = params.dirPath ?? animeRow?.animeDirPath
+    const dirPath = params.dirPath ?? animeRow?.dirPath
 
     if (!dirPath) {
       throw new Error('Anime has no library directory to scan')
@@ -393,7 +393,7 @@ export class AnimeFileSyncHandler {
 
       tx.insert(animeEpisodeFiles)
         .values({
-          id: nanoid(),
+          id: newId(),
           episodeId,
           path: filePath,
           ...toProbedFileValues(stat, info),
@@ -462,7 +462,7 @@ export class AnimeFileSyncHandler {
           .all()
         const nextOrder = siblings.reduce((max, row) => Math.max(max, row.orderInAnime + 1), 0)
 
-        extraId = nanoid()
+        extraId = newId()
         tx.insert(animeExtras)
           .values({
             id: extraId,
@@ -483,7 +483,7 @@ export class AnimeFileSyncHandler {
 
       tx.insert(animeExtraFiles)
         .values({
-          id: nanoid(),
+          id: newId(),
           extraId,
           path: filePath,
           ...toProbedFileValues(stat, info),
@@ -518,13 +518,13 @@ export class AnimeFileSyncHandler {
   }
 
   private readAnimeSyncConfig(animeId: string): {
-    animeDirPath: string | null
+    dirPath: string | null
     episodeFileNumberOffset: number
     format: AnimeFormat
   } | null {
     const [row] = this.dbService.client
       .select({
-        animeDirPath: animes.animeDirPath,
+        dirPath: animes.dirPath,
         episodeFileNumberOffset: animes.episodeFileNumberOffset,
         format: animes.format
       })
@@ -715,7 +715,7 @@ export class AnimeFileSyncHandler {
         continue
       }
 
-      const extraId = nanoid()
+      const extraId = newId()
       tx.insert(animeExtras)
         .values({
           id: extraId,
@@ -733,7 +733,7 @@ export class AnimeFileSyncHandler {
         isPrimary: true
       } satisfies Omit<NewAnimeExtraFile, 'id'>
       tx.insert(animeExtraFiles)
-        .values({ id: nanoid(), ...fileValues })
+        .values({ id: newId(), ...fileValues })
         .run()
     }
 

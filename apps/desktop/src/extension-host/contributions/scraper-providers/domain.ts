@@ -1,13 +1,13 @@
 import type {
   HostToMainRpcRequestMap,
   RpcParams,
-  ScraperMediaType,
   ScraperProviderContext,
   ScraperProviderResolveRequest,
   ScraperProviderSearchRequest,
   ScraperProviderSessionOpenRequest,
   ValidationIssue
 } from '@kisaki3/extension-api'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { HostContributionScope } from '../types'
 import type { LoadedExtensionRuntime } from '../../registry'
 import type { HostToMainScraperProviderRpcDescriptor } from './descriptors'
@@ -49,12 +49,12 @@ export interface ScraperSessionRecord<TSession extends { dispose?(): Promise<voi
 }
 
 export interface ScraperDomain<
-  TMediaType extends ScraperMediaType,
+  TEntityType extends ContentEntityType,
   TSlot extends string,
   TSession extends ScraperSessionLike<TSlot>,
   TProvider extends ScraperProviderLike<TSlot, TSession>
 > {
-  mediaType: TMediaType
+  entityType: TEntityType
   label: string
   rpc: HostToMainScraperProviderRpcDescriptor
   slots: readonly TSlot[]

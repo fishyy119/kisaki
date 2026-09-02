@@ -1,3 +1,4 @@
+import type { ContentEntityType } from '@shared/entity-types'
 import type {
   AnimeScraperProvider,
   CardActionContribution,
@@ -28,7 +29,6 @@ import type {
   KisakiApi,
   NovelScraperProvider,
   PersonScraperProvider,
-  ScraperMediaType,
   ScraperProviderRegistration,
   ThemeRegistration,
   ThemeContribution,
@@ -38,17 +38,17 @@ import type {
   WebviewPageRegistration
 } from '@kisaki3/extension-api'
 
-export type ScraperProviderFor<TMediaType extends ScraperMediaType> = TMediaType extends 'game'
+export type ScraperProviderFor<TEntityType extends ContentEntityType> = TEntityType extends 'game'
   ? GameScraperProvider
-  : TMediaType extends 'anime'
+  : TEntityType extends 'anime'
     ? AnimeScraperProvider
-    : TMediaType extends 'comic'
+    : TEntityType extends 'comic'
       ? ComicScraperProvider
-      : TMediaType extends 'novel'
+      : TEntityType extends 'novel'
         ? NovelScraperProvider
-        : TMediaType extends 'person'
+        : TEntityType extends 'person'
           ? PersonScraperProvider
-          : TMediaType extends 'company'
+          : TEntityType extends 'company'
             ? CompanyScraperProvider
             : CharacterScraperProvider
 
@@ -90,10 +90,10 @@ export interface ExtensionSdkBridge {
     scope: ActiveExtensionScope,
     action: CardActionContribution
   ): CardActionRegistration
-  registerScraperProvider<TMediaType extends ScraperMediaType>(
+  registerScraperProvider<TEntityType extends ContentEntityType>(
     scope: ActiveExtensionScope,
-    mediaType: TMediaType,
-    provider: ScraperProviderFor<TMediaType>
+    entityType: TEntityType,
+    provider: ScraperProviderFor<TEntityType>
   ): ScraperProviderRegistration
   registerDeeplinkRoute<const TPattern extends string>(
     scope: ActiveExtensionScope,

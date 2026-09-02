@@ -1,6 +1,6 @@
 /** Novel volume row persistence shared by the first-write and re-scrape flows. */
 
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import { novelVolumeExternalIds, novelVolumes } from '@shared/db'
 import type { NovelVolumeInfo } from '@shared/metadata'
@@ -38,7 +38,7 @@ export function insertNovelVolumeRow(
   volume: NovelVolumeInfo,
   orderInNovel: number
 ): string {
-  const volumeId = nanoid()
+  const volumeId = newId()
   tx.insert(novelVolumes)
     .values({
       id: volumeId,

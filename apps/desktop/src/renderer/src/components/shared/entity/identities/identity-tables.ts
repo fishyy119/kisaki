@@ -17,7 +17,7 @@ import {
   novelExternalIds,
   personExternalIds
 } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 export interface ExternalIdRow {
   id: string

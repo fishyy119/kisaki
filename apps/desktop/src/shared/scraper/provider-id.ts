@@ -2,7 +2,7 @@
  * Scraper provider ids are media-scoped.
  *
  * A provider id identifies a provider inside one scraper media registry and is
- * interpreted together with the profile or request mediaType. Extension-backed
+ * interpreted together with the profile or request entityType. Extension-backed
  * providers add the extension namespace here, but not the media type.
  */
 

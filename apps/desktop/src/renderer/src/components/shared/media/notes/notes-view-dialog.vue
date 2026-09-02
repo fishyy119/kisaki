@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAsyncData, useDbChanges } from '@renderer/composables'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import {
   Dialog,
   DialogContent,
@@ -87,7 +87,7 @@ useDbChanges(({ changes }) => {
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.close }}
+            {{ m.actions.close }}
           </Button>
         </DialogFooter>
       </template>
@@ -123,9 +123,9 @@ useDbChanges(({ changes }) => {
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.close }}
+            {{ m.actions.close }}
           </Button>
-          <Button @click="emit('edit')">{{ m.common.edit }}</Button>
+          <Button @click="emit('edit')">{{ m.actions.edit }}</Button>
         </DialogFooter>
       </template>
     </DialogContent>

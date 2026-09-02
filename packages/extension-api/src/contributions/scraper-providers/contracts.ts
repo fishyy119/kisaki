@@ -24,7 +24,7 @@ import type {
 } from '../../shared/library'
 import type { LibraryMediaType } from '../../capabilities/library/graph'
 
-export const SCRAPER_MEDIA_TYPES = [
+export const SCRAPER_ENTITY_TYPES = [
   'game',
   'anime',
   'comic',
@@ -34,7 +34,7 @@ export const SCRAPER_MEDIA_TYPES = [
   'character'
 ] as const
 
-export type ScraperMediaType = (typeof SCRAPER_MEDIA_TYPES)[number]
+export type ScraperEntityType = (typeof SCRAPER_ENTITY_TYPES)[number]
 
 /**
  * Layer a search result sits at, when the provider states one.

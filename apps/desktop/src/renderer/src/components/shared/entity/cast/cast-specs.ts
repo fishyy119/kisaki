@@ -10,7 +10,7 @@
 import { asc, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { animeCastLinks, gameCastLinks } from '@shared/db'
-import type { CastMediaType } from '@shared/common'
+import type { CastMediaType } from '@shared/entity-types'
 
 export interface CastRow {
   id: string

@@ -104,6 +104,36 @@ export interface ReadingAdapter {
   notifyEnded(entryId: string, unitId: string, readTimeSeconds: number): void
 }
 
+/** The live-state shape each reading media reports to the renderer. */
+interface ReadingStates {
+  comic: ComicReadingState
+  novel: NovelReadingState
+}
+
+const READING_STATE_OF: {
+  [TMedia in ReadingMedia]: (entryId: string, unitId: string) => ReadingStates[TMedia]
+} = {
+  comic: (entryId, unitId) => ({ comicId: entryId, chapterId: unitId }),
+  novel: (entryId, unitId) => ({ novelId: entryId, volumeId: unitId })
+}
+
+/**
+ * The reading operations of one media type, bound so callers address the
+ * activity service per media (`activity.comic`, `activity.novel`) exactly as
+ * they address game and anime.
+ */
+export interface ReadingApi<TMedia extends ReadingMedia> {
+  /**
+   * Starts reading an entry. Without a unit the next unread one with a
+   * readable file is chosen; a file id narrows reading to that version.
+   */
+  read(entryId: string, unitId?: string, fileId?: string): ReadingResult
+  /** Stops reading by closing the entry's reader window. */
+  stop(entryId: string): ReadingStopResult
+  /** Live reading states, letting a reloaded renderer resynchronize. */
+  listReading(): ReadingStates[TMedia][]
+}
+
 interface ReadingSession {
   media: ReadingMedia
   entryId: string
@@ -128,6 +158,16 @@ export class ReadingCoordinator {
     private readonly adapters: Record<ReadingMedia, ReadingAdapter>
   ) {
     this.tapReaderHooks()
+  }
+
+  /** The per-media face the activity service exposes as `activity.<media>`. */
+  forMedia<TMedia extends ReadingMedia>(media: TMedia): ReadingApi<TMedia> {
+    return {
+      read: (entryId, unitId, fileId) => this.read(media, entryId, unitId, fileId),
+      stop: (entryId) => this.stop(media, entryId),
+      listReading: () =>
+        this.statesOf(media).map(({ entryId, unitId }) => READING_STATE_OF[media](entryId, unitId))
+    }
   }
 
   /**
@@ -216,22 +256,6 @@ export class ReadingCoordinator {
       return { status: 'stopped' }
     }
     return { status: 'failed', reason: 'notReading' }
-  }
-
-  /** Live comic reading states, letting a reloaded renderer resynchronize. */
-  listComicReading(): ComicReadingState[] {
-    return this.statesOf('comic').map(({ entryId, unitId }) => ({
-      comicId: entryId,
-      chapterId: unitId
-    }))
-  }
-
-  /** Live novel reading states, letting a reloaded renderer resynchronize. */
-  listNovelReading(): NovelReadingState[] {
-    return this.statesOf('novel').map(({ entryId, unitId }) => ({
-      novelId: entryId,
-      volumeId: unitId
-    }))
   }
 
   dispose(): void {

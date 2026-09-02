@@ -31,7 +31,7 @@ Cross-process communication uses three explicit mechanisms. There is no generic 
 // Request-response (invoke/handle)
 interface IpcMainHandlers {
   'db:execute': (params: DbExecuteParams) => IpcResult<DbExecuteResult>
-  'notify:show': (options: NotifyOptions) => IpcVoidResult
+  'notification:show': (options: NotifyOptions) => IpcVoidResult
   // ...
 }
 
@@ -189,10 +189,22 @@ after commit. Hooks never run inside a transaction. Hook points only expose work
 input data, decisions, results; internal intermediate representations never become hook points.
 
 **Naming**: hook point properties on module hook surfaces use lowerCamelCase workflow names
-(`committing`, `committed`, `entryDiscovered`, `sessionEnding`). Use `created`/`updated`/`deleted`
+(`committing`, `committed`, `entryDiscovered`, `gamePlayEnding`). Use `created`/`updated`/`deleted`
 semantics for persisted entity lifecycle, `-ing` forms for pre-write participation points, and
 `started`/`finished`/`ended` for runtime lifecycle. Reserve `:` for IPC channel names and dotted
 lowercase ids for public extension hook point ids (`ingest.game.committing`).
+
+Dotted ids follow `<root>.<subject>.<event>`. Families keyed by entity type use the entity as the
+subject segment and a per-entity verb where the domain has one: `ingest.<entity>.committing`,
+`scraper.<entity>.searched`, `activity.<media>.<verb>.<edge>` with `game.play`, `anime.watch`,
+`comic.read`, `novel.read` and edges `started` / `ending` / `ended` (plus `activity.game.launching`
+before the process starts). The umbrella word never steals a member's verb: `play` is game's verb,
+so the consumption umbrella is `activity`.
+
+**Catalogs derive from the union.** The public hook catalog, its contract map, and the main-process
+bindings are generated from the entity-type constants with template-literal id types
+(`` `ingest.${LibraryEntityType}.${IngestHookEdge}` ``) and checked with `satisfies`, so a missing
+entity entry is a compile error rather than a silent gap.
 
 ### Hook Id Roots
 
@@ -200,9 +212,10 @@ The dotted id is a public, extension-facing contract, so its first segment is ch
 rather than for whoever happens to dispatch it. Two roots are allowed, and nothing else:
 
 - **Service root** (default): the dispatching service's id, e.g. `video.session.progress`,
-  `scanner.run.started`, `ingest.<entity>.committing`, `reader.unit.opened`, `process.started`,
-  `extension.enabled`. Use this whenever the event is about that service's own work.
-- **Topic root** (closed whitelist): `app.*`, `library.*`, `play.*`. These name a subject the whole
+  `scanner.run.started`, `ingest.<entity>.committing`, `activity.game.play.started`,
+  `reader.unit.opened`, `process.started`, `extension.enabled`. Use this whenever the event is about
+  that service's own work.
+- **Topic root** (closed whitelist): `app.*`, `library.*`. These name a subject the whole
   application shares, so they must not move when internal ownership does — `app.theme.changed` should
   survive theme handling relocating out of the window service. Any service may dispatch a topic-root
   hook: `window` dispatches `app.theme.changed`, `i18n` dispatches `app.ui-locale.changed`, `db`
@@ -215,12 +228,12 @@ Whitelist meanings, so a new hook lands in the right root:
 | ----------- | --------------------------------------------------------------------------------------------- |
 | `app.*`     | Application-wide lifecycle and preferences (ready, shutting down, theme, ui-locale, settings) |
 | `library.*` | The catalog itself: entity changes, merges                                                    |
-| `play.*`    | Consumption of an entry by the user, in any vertical: launching a game, watching, reading     |
 
-`play.*` deliberately covers watching and reading as well as launching: to an extension author the
-interesting event is "the user started consuming this entry", and one root keeps that subscribable
-without knowing which engine runs it. Adding a fourth topic root needs the same test the first three
-pass: the subject outlives any single service's ownership of it.
+Consumption hooks (`activity.*`) are a service root: the activity service is the permanent business
+owner of "the user is consuming this entry" in every vertical, so the service id and the topic word
+coincide and one root keeps launching, watching, and reading subscribable without knowing which
+engine runs them. Adding a third topic root needs the same test the first two pass: the subject
+outlives any single service's ownership of it.
 
 ## TaskRun IPC State Source
 

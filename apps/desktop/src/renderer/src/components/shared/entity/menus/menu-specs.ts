@@ -9,9 +9,9 @@
 
 import { and, eq, inArray } from 'drizzle-orm'
 import { defineAsyncComponent, type Component } from 'vue'
-import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
-import { shouldOfferReadCatchUp as shouldOfferComicReadCatchUp } from '@renderer/composables/use-comic-read'
-import { shouldOfferReadCatchUp as shouldOfferNovelReadCatchUp } from '@renderer/composables/use-novel-read'
+import { shouldOfferWatchCatchUp } from '@renderer/composables/anime-completion'
+import { shouldOfferReadCatchUp as shouldOfferComicReadCatchUp } from '@renderer/composables/comic-completion'
+import { shouldOfferReadCatchUp as shouldOfferNovelReadCatchUp } from '@renderer/composables/novel-completion'
 import { db } from '@renderer/core/db'
 import type { Messages } from '@shared/i18n'
 import type { TableName } from '@shared/db/table-names'
@@ -30,7 +30,7 @@ import {
   novels,
   type MediaStatus
 } from '@shared/db'
-import type { ContentEntityType, MediaType } from '@shared/common'
+import type { ContentEntityType, MediaType } from '@shared/entity-types'
 
 /*
  * Media-specific dialog components load lazily: the entity domain must not
@@ -192,7 +192,7 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
       path: async (entityId) => {
         const game = await db.query.games.findFirst({ where: eq(games.id, entityId) })
         if (!game) return null
-        if (game.gameDirPath) return game.gameDirPath
+        if (game.dirPath) return game.dirPath
         if (game.launcherMode === 'file' && game.launcherPath) return game.launcherPath
         return null
       }
@@ -278,7 +278,7 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
       label: (m) => m.anime.detail.openAnimeDir,
       path: async (entityId) => {
         const anime = await db.query.animes.findFirst({ where: eq(animes.id, entityId) })
-        return anime?.animeDirPath ?? null
+        return anime?.dirPath ?? null
       }
     },
     extraDialogs: [
@@ -362,7 +362,7 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
       label: (m) => m.comic.detail.openComicDir,
       path: async (entityId) => {
         const comic = await db.query.comics.findFirst({ where: eq(comics.id, entityId) })
-        return comic?.comicDirPath ?? null
+        return comic?.dirPath ?? null
       }
     },
     extraDialogs: [
@@ -446,7 +446,7 @@ export const MENU_SPECS: Record<ContentEntityType, MenuSpec> = {
       label: (m) => m.novel.detail.openNovelDir,
       path: async (entityId) => {
         const novel = await db.query.novels.findFirst({ where: eq(novels.id, entityId) })
-        return novel?.novelDirPath ?? null
+        return novel?.dirPath ?? null
       }
     },
     extraDialogs: [

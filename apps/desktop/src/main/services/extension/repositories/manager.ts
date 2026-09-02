@@ -17,7 +17,7 @@ import type {
   ExtensionRegistryManifest,
   ExtensionRegistryReleaseKind
 } from '@kisaki3/extension-registry'
-import type { ExtensionIconManager } from '../assets'
+import type { ExtensionIconServer } from '../assets'
 import { ExtensionRepositoryAggregator } from './aggregate'
 import { ExtensionRepositoryFetcher } from './fetcher'
 import { ExtensionRepositoryStore } from './store'
@@ -43,7 +43,7 @@ const log = createLogger('Extension')
 export interface ExtensionRepositoryManagerOptions {
   store: ExtensionRepositoryStore
   fetcher: ExtensionRepositoryFetcher
-  iconManager: ExtensionIconManager
+  iconServer: ExtensionIconServer
   taskRun: TaskRunService
   i18n: I18nService
   apiVersion: string
@@ -56,7 +56,7 @@ export interface ExtensionRepositoryManagerOptions {
 export class ExtensionRepositoryManager {
   private readonly store: ExtensionRepositoryStore
   private readonly fetcher: ExtensionRepositoryFetcher
-  private readonly iconManager: ExtensionIconManager
+  private readonly iconServer: ExtensionIconServer
   private readonly refreshRunner: ExtensionRepositoryRefreshRunner
   private readonly aggregator: ExtensionRepositoryAggregator
   private readonly apiVersion: string
@@ -73,7 +73,7 @@ export class ExtensionRepositoryManager {
   constructor(options: ExtensionRepositoryManagerOptions) {
     this.store = options.store
     this.fetcher = options.fetcher
-    this.iconManager = options.iconManager
+    this.iconServer = options.iconServer
     this.apiVersion = options.apiVersion
     this.allowInsecureLocalUrls = options.allowInsecureLocalUrls ?? false
     this.getInstalledVersions = options.getInstalledVersions
@@ -81,7 +81,7 @@ export class ExtensionRepositoryManager {
     this.onCatalogChanged = options.onCatalogChanged
     this.aggregator = new ExtensionRepositoryAggregator({
       apiVersion: options.apiVersion,
-      resolveIconUrl: (icon) => this.iconManager.getIconUrl(icon)
+      resolveIconUrl: (icon) => this.iconServer.getIconUrl(icon)
     })
     this.refreshRunner = new ExtensionRepositoryRefreshRunner({
       taskRun: options.taskRun,
@@ -398,7 +398,7 @@ export class ExtensionRepositoryManager {
 
   private rebuildCatalog(): void {
     this.catalog = this.aggregator.aggregate(this.listCatalogRepositories())
-    this.iconManager.setAvailableIcons('catalog', collectCatalogIcons(this.catalog))
+    this.iconServer.setAvailableIcons('catalog', collectCatalogIcons(this.catalog))
   }
 
   private toRepositoryInfo(row: ExtensionRepositoryRow): ExtensionRepositoryInfo {

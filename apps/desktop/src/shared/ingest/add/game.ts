@@ -1,13 +1,13 @@
 import type { GameScraperLookup } from '@shared/scraper'
 import type { ExternalId } from '@shared/identity'
-import type { IngestAddResult } from '../common'
+import type { IngestAddResult } from '../results'
 
 export interface IngestAddGameResult extends IngestAddResult {
   gameId: string
 }
 
 export interface IngestAddGameFromScraperOptions {
-  gameDirPath?: string
+  dirPath?: string
   gameFilePath?: string
   targetCollectionId?: string
 }

@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { animes, games, settings } from '@shared/db'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
@@ -38,11 +38,11 @@ const emit = defineEmits<{
 const SCANNER_IGNORE_SOURCES: Partial<Record<AllEntityType, (id: string) => Promise<string>>> = {
   game: async (id) => {
     const game = await db.query.games.findFirst({ where: eq(games.id, id) })
-    return folderNameOf(game?.gameDirPath)
+    return folderNameOf(game?.dirPath)
   },
   anime: async (id) => {
     const anime = await db.query.animes.findFirst({ where: eq(animes.id, id) })
-    return folderNameOf(anime?.animeDirPath)
+    return folderNameOf(anime?.dirPath)
   }
 }
 

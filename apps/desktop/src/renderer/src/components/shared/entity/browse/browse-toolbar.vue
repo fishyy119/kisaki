@@ -17,7 +17,8 @@ import {
   type EntityListQuery
 } from '@renderer/composables/entity-list-query'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { ContentEntityType, SortDirection } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
+import type { SortDirection } from '@shared/filter'
 import { MEMBERSHIP_SORT_KEY, type FilterState } from '@shared/filter'
 import EntityBrowseTabs from './browse-tabs.vue'
 
@@ -112,7 +113,7 @@ const sortDirectionModel = computed({
         v-if="isQueryActive"
         class="shrink-0 text-xs text-muted-foreground"
       >
-        {{ m.common.itemCount({ count: props.filteredCount }) }}
+        {{ m.values.itemCount({ count: props.filteredCount }) }}
       </span>
 
       <div class="flex-1" />

@@ -100,7 +100,7 @@ async function handleToggleFavorite() {
         : m.value.library.feedback.favoriteAdded
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }

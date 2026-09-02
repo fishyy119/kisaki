@@ -34,7 +34,7 @@ import {
 import { ipcManager } from '@renderer/core/ipc'
 import { formatExplorerContext } from '@renderer/utils/explorer-context'
 import { getFilterRelevantTables } from '@shared/filter'
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'

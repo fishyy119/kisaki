@@ -19,7 +19,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
-import { getScraperSlotsForMediaType } from '@shared/scraper'
+import { getScraperSlotsForEntityType } from '@shared/scraper'
 import type { MaterializedRecipe, ScraperProviderInfo } from '@renderer/components/shared/scraper'
 
 interface Props {
@@ -70,7 +70,7 @@ const diffRows = computed<DiffRow[]>(() => {
     })
   }
 
-  for (const slot of getScraperSlotsForMediaType(props.profile.mediaType)) {
+  for (const slot of getScraperSlotsForEntityType(props.profile.entityType)) {
     const before = describeProviders(props.profile.slotConfigs[slot])
     const after = describeProviders(props.recommendation.slotConfigs[slot])
     if (before !== after) {
@@ -144,7 +144,7 @@ function handleApply() {
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button @click="handleApply">
             {{ m.scraper.recipeUpdate.apply }}

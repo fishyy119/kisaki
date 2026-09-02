@@ -266,9 +266,9 @@ function fileFacts(file: ComicChapterFile): string[] {
               variant="outline"
               @click="noteDialogOpen = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
-            <Button type="submit">{{ m.common.save }}</Button>
+            <Button type="submit">{{ m.actions.save }}</Button>
           </DialogFooter>
         </Form>
       </DialogContent>

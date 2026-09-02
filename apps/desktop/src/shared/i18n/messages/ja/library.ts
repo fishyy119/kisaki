@@ -348,6 +348,11 @@ export const library = {
     unsetFavorite: 'お気に入りを解除',
     openGameDir: 'ゲームフォルダーを開く',
     launchConfig: '起動設定',
+    createDesktopShortcut: 'デスクトップにショートカットを作成',
+    copy: 'コピー',
+    copyId: 'ID',
+    copyPageLink: 'ページリンク',
+    copyLaunchLink: '起動リンク',
     media: 'メディア管理',
     updateMetadata: 'メタデータを更新',
     manageExternalIds: '外部 ID を管理',
@@ -379,6 +384,10 @@ export const library = {
     gameDirNotSet: 'ゲームフォルダーが設定されていません',
     openGameDirFailed: 'ゲームフォルダーを開けません',
     pickFileFailed: 'ファイルの選択に失敗しました',
+    shortcutCreated: 'デスクトップにショートカットを作成しました',
+    shortcutCreatedWithoutIcon:
+      'デスクトップにショートカットを作成しました（このプラットフォームはカスタムアイコンに対応していません）',
+    shortcutFailed: 'デスクトップにショートカットを作成できませんでした',
     deletedSummary: ({ items }: { items: string[] }) =>
       items.length > 0 ? `${items.join('、')}を削除しました` : '削除しました',
     nameAndMore: ({ name, count }: { name: string; count: number }) => `${name} など ${count} 件`

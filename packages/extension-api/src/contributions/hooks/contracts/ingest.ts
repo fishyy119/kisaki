@@ -1,6 +1,7 @@
 import type { IngestWarning } from '../../../capabilities/ingest'
+import type { LibraryContentEntityType } from '../../../capabilities/library/entities'
 import type { ExternalId } from '../../../shared'
-import type { HookPointSpec } from './point'
+import type { HookKind, HookPointSpec } from './point'
 
 export interface IngestCommittingPayload {
   name: string
@@ -27,37 +28,34 @@ export interface IngestUpdatedPayload {
 }
 
 /**
- * Ingest hook points.
- *
- * `committing`/`updating` are veto points dispatched before the persist
- * transaction; `committed`/`updated` are notify points fired after commit.
+ * The four ingest edges every content entity type reports, with their kinds.
+ * `committing` / `updating` are veto points dispatched before the persist
+ * transaction; `committed` / `updated` are notify points fired after commit.
  */
-export interface IngestHookPoints {
-  'ingest.game.committing': HookPointSpec<'veto', IngestCommittingPayload>
-  'ingest.game.committed': HookPointSpec<'notify', IngestCommittedPayload>
-  'ingest.game.updating': HookPointSpec<'veto', IngestUpdatingPayload>
-  'ingest.game.updated': HookPointSpec<'notify', IngestUpdatedPayload>
-  /** Anime ingest currently supports add only, so it has no update points. */
-  'ingest.anime.committing': HookPointSpec<'veto', IngestCommittingPayload>
-  'ingest.anime.committed': HookPointSpec<'notify', IngestCommittedPayload>
-  'ingest.comic.committing': HookPointSpec<'veto', IngestCommittingPayload>
-  'ingest.comic.committed': HookPointSpec<'notify', IngestCommittedPayload>
-  'ingest.comic.updating': HookPointSpec<'veto', IngestUpdatingPayload>
-  'ingest.comic.updated': HookPointSpec<'notify', IngestUpdatedPayload>
-  'ingest.novel.committing': HookPointSpec<'veto', IngestCommittingPayload>
-  'ingest.novel.committed': HookPointSpec<'notify', IngestCommittedPayload>
-  'ingest.novel.updating': HookPointSpec<'veto', IngestUpdatingPayload>
-  'ingest.novel.updated': HookPointSpec<'notify', IngestUpdatedPayload>
-  'ingest.person.committing': HookPointSpec<'veto', IngestCommittingPayload>
-  'ingest.person.committed': HookPointSpec<'notify', IngestCommittedPayload>
-  'ingest.person.updating': HookPointSpec<'veto', IngestUpdatingPayload>
-  'ingest.person.updated': HookPointSpec<'notify', IngestUpdatedPayload>
-  'ingest.company.committing': HookPointSpec<'veto', IngestCommittingPayload>
-  'ingest.company.committed': HookPointSpec<'notify', IngestCommittedPayload>
-  'ingest.company.updating': HookPointSpec<'veto', IngestUpdatingPayload>
-  'ingest.company.updated': HookPointSpec<'notify', IngestUpdatedPayload>
-  'ingest.character.committing': HookPointSpec<'veto', IngestCommittingPayload>
-  'ingest.character.committed': HookPointSpec<'notify', IngestCommittedPayload>
-  'ingest.character.updating': HookPointSpec<'veto', IngestUpdatingPayload>
-  'ingest.character.updated': HookPointSpec<'notify', IngestUpdatedPayload>
+export const INGEST_HOOK_EDGE_KINDS = {
+  committing: 'veto',
+  committed: 'notify',
+  updating: 'veto',
+  updated: 'notify'
+} as const satisfies Record<string, HookKind>
+
+export type IngestHookEdge = keyof typeof INGEST_HOOK_EDGE_KINDS
+
+interface IngestEdgeSpecs {
+  committing: HookPointSpec<'veto', IngestCommittingPayload>
+  committed: HookPointSpec<'notify', IngestCommittedPayload>
+  updating: HookPointSpec<'veto', IngestUpdatingPayload>
+  updated: HookPointSpec<'notify', IngestUpdatedPayload>
+}
+
+export type IngestHookPointId = `ingest.${LibraryContentEntityType}.${IngestHookEdge}`
+
+/**
+ * Ingest hook points: one full edge set per content entity type, derived from
+ * the entity union so no type can silently miss an edge.
+ */
+export type IngestHookPoints = {
+  [TId in IngestHookPointId]: TId extends `ingest.${string}.${infer TEdge extends IngestHookEdge}`
+    ? IngestEdgeSpecs[TEdge]
+    : never
 }

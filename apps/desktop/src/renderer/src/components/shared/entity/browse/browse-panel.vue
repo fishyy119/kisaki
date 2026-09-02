@@ -18,7 +18,7 @@ import {
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import EntityBrowseGrid from './browse-grid.vue'
 import EntityBrowseToolbar from './browse-toolbar.vue'
 

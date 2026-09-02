@@ -5,7 +5,7 @@ import type { DbService } from '@main/services/db'
 import type { I18nService } from '@main/services/i18n'
 import type { IngestService } from '@main/services/ingest'
 import type { NetworkService } from '@main/services/network'
-import type { NotifyService } from '@main/services/notify'
+import type { NotificationService } from '@main/services/notification'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunService } from '@main/services/task-run'
 import type { ExtensionHostRpcClient } from '../runtime'
@@ -29,7 +29,7 @@ export interface ExtensionCapabilityGatewayOptions {
   i18n: I18nService
   ingest: IngestService
   network: NetworkService
-  notify: NotifyService
+  notification: NotificationService
   scraper: ScraperService
   taskRun: TaskRunService
   webviewSessions: ExtensionWebviewSessionManager
@@ -62,7 +62,7 @@ export class ExtensionCapabilityGateway {
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
     this.notify = new ExtensionNotifyCapabilityProvider({
-      notify: options.notify,
+      notification: options.notification,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
     this.runtime = new ExtensionRuntimeCapabilityProvider({

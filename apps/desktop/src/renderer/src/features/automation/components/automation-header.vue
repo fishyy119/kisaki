@@ -36,7 +36,7 @@ const { m } = useI18n()
       <Button
         variant="secondary"
         size="icon-sm"
-        :tooltip="m.common.refresh"
+        :tooltip="m.actions.refresh"
         :disabled="props.refreshing"
         @click="emit('refresh')"
       >

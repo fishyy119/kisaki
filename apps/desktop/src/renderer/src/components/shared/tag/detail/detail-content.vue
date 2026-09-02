@@ -8,7 +8,7 @@ import { computed, type HTMLAttributes } from 'vue'
 import { EntityBrowsePanel } from '@renderer/components/shared/entity'
 import { useI18n, useTag, type EntityListQuery } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 interface Props {
   class?: HTMLAttributes['class']

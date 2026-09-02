@@ -1,6 +1,6 @@
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { readRequiredEnv, resolveWorkspacePath, run } from './common'
+import { readRequiredEnv, resolveWorkspacePath, run } from './shared'
 
 const extensionDir = resolveWorkspacePath(readRequiredEnv('PUBLISH_EXTENSION_DIR'))
 const workspaceDir = readRequiredEnv('GITHUB_WORKSPACE')

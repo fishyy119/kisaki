@@ -133,9 +133,10 @@ import type {
   ExtensionUpdateCheckResult,
   ExtensionUpdatePolicyRequest
 } from './extension'
-import type { NotifyOptions } from './notify'
+import type { NotifyOptions } from './notification'
 import type { UiLocale, UiLocaleState } from './i18n'
-import type { AppTheme } from './common'
+import type { AppTheme } from './theme'
+import type { MediaType } from './entity-types'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type {
   TaskRun,
@@ -250,10 +251,10 @@ export type ExtractIpcData<T> = T extends IpcSuccess<infer D> ? D : never
 export interface IpcMainListeners {
   ping: [string]
   'app:theme-changed': [theme: AppTheme]
-  'notify:native': [NotifyOptions]
-  'notify:auto': [NotifyOptions]
-  'notify:action': [event: { toastId: string; actionId: string }]
-  'notify:closed': [event: { toastId: string }]
+  'notification:native': [NotifyOptions]
+  'notification:auto': [NotifyOptions]
+  'notification:action': [event: { toastId: string; actionId: string }]
+  'notification:closed': [event: { toastId: string }]
   'window:set-tray-menu-height': [height: number]
   'window:set-main-window-close-action': [action: MainWindowCloseAction]
 }
@@ -630,8 +631,8 @@ export interface IpcMainHandlers {
   'native:get-auto-launch': () => IpcResult<boolean>
   'native:set-auto-launch': (enabled: boolean) => IpcVoidResult
 
-  // Attachment
-  'attachment:crop-to-temp': (
+  // Image
+  'image:crop-to-temp': (
     input: AttachmentInput,
     cropRegion: CropRegion,
     options?: {
@@ -640,9 +641,14 @@ export interface IpcMainHandlers {
     }
   ) => IpcResult<string>
   /** Downscaled data URL of a not-yet-imported image, for staged form previews. */
-  'attachment:read-image-preview': (input: AttachmentInput) => IpcResult<string>
+  'image:read-preview': (input: AttachmentInput) => IpcResult<string>
 
-  // Save backup
+  // Attachment workflows
+  /** Writes a desktop shortcut that opens the entry's launch deeplink. */
+  'attachment:create-launch-shortcut': (
+    mediaType: MediaType,
+    entityId: string
+  ) => IpcResult<{ path: string; iconApplied: boolean }>
   'attachment:create-game-save-backup': (gameId: string, note?: string) => IpcResult<SaveBackup>
   'attachment:delete-game-save-backup': (gameId: string, backupAt: number) => IpcVoidResult
   'attachment:restore-game-save-backup': (gameId: string, backupAt: number) => IpcVoidResult
@@ -789,10 +795,10 @@ export interface IpcRendererEvents {
   'task-run:changed': [run: TaskRun]
   'task-run:deleted': [payload: { runId: string }]
 
-  'notify:show': [NotifyOptions & { toastId?: string }]
-  'notify:loading': [{ toastId: string; title: string; message?: string }]
-  'notify:update': [{ toastId: string } & NotifyOptions]
-  'notify:dismiss': [{ toastId?: string }]
+  'notification:show': [NotifyOptions & { toastId?: string }]
+  'notification:loading': [{ toastId: string; title: string; message?: string }]
+  'notification:update': [{ toastId: string } & NotifyOptions]
+  'notification:dismiss': [{ toastId?: string }]
 
   // Extension contribution refresh (main -> renderer)
   'extension:repositories-changed': []

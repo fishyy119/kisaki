@@ -52,7 +52,7 @@ export function useStagedImagePick(): StagedImagePick {
     previewUrl.value = null
 
     // Preview failures degrade to the path text; the save path re-reads the file.
-    const preview = await ipcManager.invoke('attachment:read-image-preview', { kind: 'path', path })
+    const preview = await ipcManager.invoke('image:read-preview', { kind: 'path', path })
     if (mode.value !== 'set' || pickedPath.value !== path) return
     if (preview.success) {
       previewUrl.value = preview.data

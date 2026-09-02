@@ -3,7 +3,7 @@
  * (game/anime/comic/novel/character/person/company/collection/tag) across
  * menus, searchers, selects, detail views, and form dialogs.
  */
-import type { MediaType } from '../../../common'
+import type { MediaType } from '../../../entity-types'
 import type { MediaStatus } from '../../../db/contracts/enums'
 
 /** All media-status copy in one media-indexed shape for generic lookups. */
@@ -364,6 +364,11 @@ export const library = {
     unsetFavorite: 'Remove favorite',
     openGameDir: 'Open game folder',
     launchConfig: 'Launch settings',
+    createDesktopShortcut: 'Create desktop shortcut',
+    copy: 'Copy',
+    copyId: 'ID',
+    copyPageLink: 'Page link',
+    copyLaunchLink: 'Launch link',
     media: 'Manage media',
     updateMetadata: 'Update metadata',
     manageExternalIds: 'Manage external IDs',
@@ -395,6 +400,9 @@ export const library = {
     gameDirNotSet: 'Game folder is not set',
     openGameDirFailed: 'Could not open the game folder',
     pickFileFailed: 'Could not pick a file',
+    shortcutCreated: 'Desktop shortcut created',
+    shortcutCreatedWithoutIcon: 'Desktop shortcut created (this platform ignores custom icons)',
+    shortcutFailed: 'Could not create the desktop shortcut',
     deletedSummary: ({ items }: { items: string[] }) =>
       items.length > 0 ? `Deleted ${items.join(', ')}` : 'Deleted',
     nameAndMore: ({ name, count }: { name: string; count: number }) =>

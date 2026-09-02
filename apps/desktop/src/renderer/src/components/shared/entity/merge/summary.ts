@@ -6,7 +6,7 @@
  * vocabulary and lives here; imagery comes from the shared entity image facts.
  */
 
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { queryEntityRow, type EntityRowMap } from '@renderer/core/db'
 import { messages } from '@renderer/core/i18n'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'

@@ -30,7 +30,8 @@ import { createEmptyFilter, countConditions, type FilterState } from '@shared/fi
 import { notify } from '@renderer/core/notify'
 import type { SectionLayout, SectionItemSize, SectionOpenMode } from '@shared/db'
 import type { ShowcaseSectionFormItem } from './types'
-import { ALL_ENTITY_TYPES, type AllEntityType, type SortDirection } from '@shared/common'
+import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/entity-types'
+import type { SortDirection } from '@shared/filter'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -367,9 +368,9 @@ watch(open, (newOpen, oldOpen) => {
             variant="outline"
             @click="handleCancel"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.confirm }}</Button>
+          <Button type="submit">{{ m.actions.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

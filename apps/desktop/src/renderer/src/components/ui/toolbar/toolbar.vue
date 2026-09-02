@@ -19,10 +19,7 @@ const props = defineProps<Props>()
   <div
     data-slot="toolbar"
     :class="
-      cn(
-        'flex shrink-0 flex-col gap-2 border-b border-border bg-muted/30 px-4 py-2',
-        props.class
-      )
+      cn('flex shrink-0 flex-col gap-2 border-b border-border bg-muted/30 px-4 py-2', props.class)
     "
   >
     <slot />

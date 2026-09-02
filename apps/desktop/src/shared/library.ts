@@ -18,7 +18,7 @@ import type {
 import type { DynamicCollectionConfig, PartialDate, ExternalSite } from './db/contracts/json'
 import type { MediaRelationType } from './db/contracts/media-relations'
 import type { ExternalId } from './identity'
-import type { AllEntityType, MediaType } from './common'
+import type { AllEntityType, MediaType } from './entity-types'
 
 /**
  * Entity types the change feed reports on.

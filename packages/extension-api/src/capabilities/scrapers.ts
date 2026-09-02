@@ -1,5 +1,5 @@
 import type { ContentLocale } from '../shared'
-import type { ScraperMediaType } from '../contributions/scraper-providers'
+import type { ScraperEntityType } from '../contributions/scraper-providers'
 
 export interface ScraperProfileProviderSlot {
   slot: string
@@ -10,14 +10,14 @@ export interface ScraperProfileSummary {
   id: string
   name: string
   description: string | null
-  mediaType: ScraperMediaType
+  entityType: ScraperEntityType
   searchProviderId: string
   defaultLocale: ContentLocale | null
   providerSlots: readonly ScraperProfileProviderSlot[]
 }
 
 export interface ScraperProfileListQuery {
-  mediaType?: ScraperMediaType | undefined
+  entityType?: ScraperEntityType | undefined
 }
 
 export interface ScraperProfilesCapability {

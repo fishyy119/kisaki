@@ -6,7 +6,7 @@
  */
 
 import { ref, computed, watch } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import type { NameExtractionRule } from '@shared/db'
 import { getNameExtractionPresets } from './name-extraction-rule-presets'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -97,7 +97,7 @@ function handleAdd() {
   const rulesToAdd: NameExtractionRule[] = getNameExtractionPresets()
     .filter((preset) => selectedIds.value.has(preset.id))
     .map((preset) => ({
-      id: nanoid(),
+      id: newId(),
       description: preset.name,
       pattern: preset.pattern,
       enabled: true
@@ -155,7 +155,7 @@ function handleCancel() {
           variant="outline"
           @click="handleCancel"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="selectedIds.size === 0"

@@ -1,4 +1,4 @@
-import { commandSucceeds, readRequiredEnv, run } from './common'
+import { commandSucceeds, readRequiredEnv, run } from './shared'
 
 const tag = readRequiredEnv('PUBLISH_TAG')
 const extensionId = readRequiredEnv('PUBLISH_EXTENSION_ID')

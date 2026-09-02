@@ -8,7 +8,7 @@ import {
   type IngestUpdateSelection,
   type IngestUpdateSurfaceKey,
   type IngestUpdateSurfaceKeysByGroup
-} from './common'
+} from './model'
 
 export const GAME_UPDATE_SURFACES = defineIngestUpdateSurfaces([
   { key: 'name', group: 'core', cardinality: 'singular' },

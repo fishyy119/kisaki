@@ -37,7 +37,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Tag')
+const log = createLogger('Library')
 
 interface Props {
   tagId: string
@@ -112,7 +112,7 @@ async function handleSubmit() {
         isNsfw: formData.value.isNsfw
       })
       .where(eq(tags.id, props.tagId))
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -179,13 +179,13 @@ async function handleSubmit() {
               :disabled="isSaving"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving || !canSubmit"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

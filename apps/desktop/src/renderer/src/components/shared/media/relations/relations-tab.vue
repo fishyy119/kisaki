@@ -16,7 +16,7 @@ import {
 } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { MediaRelationEntry } from '@renderer/core/db/media-relations'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { MEDIA_RELATION_TYPES } from '@shared/db'
 import MediaRelationsFormDialog from './relations-form-dialog/relations-form-dialog.vue'
 

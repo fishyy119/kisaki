@@ -42,86 +42,82 @@ export function registerActivityIpc(service: ActivityService, ipc: IpcService): 
   )
 
   ipc.handle('activity:read-comic', async (_, comicId, chapterId, fileId) =>
-    wrapIpc(() => service.reading.read('comic', comicId, chapterId, fileId))
+    wrapIpc(() => service.comic.read(comicId, chapterId, fileId))
   )
 
   ipc.handle('activity:stop-comic', async (_, comicId) =>
-    wrapIpc(() => service.reading.stop('comic', comicId))
+    wrapIpc(() => service.comic.stop(comicId))
   )
 
   ipc.handle('activity:read-novel', async (_, novelId, volumeId, fileId) =>
-    wrapIpc(() => service.reading.read('novel', novelId, volumeId, fileId))
+    wrapIpc(() => service.novel.read(novelId, volumeId, fileId))
   )
 
   ipc.handle('activity:stop-novel', async (_, novelId) =>
-    wrapIpc(() => service.reading.stop('novel', novelId))
+    wrapIpc(() => service.novel.stop(novelId))
   )
 
-  ipc.handle('activity:list-comic-reading', async () =>
-    wrapIpc(() => service.reading.listComicReading())
-  )
+  ipc.handle('activity:list-comic-reading', async () => wrapIpc(() => service.comic.listReading()))
 
-  ipc.handle('activity:list-novel-reading', async () =>
-    wrapIpc(() => service.reading.listNovelReading())
-  )
+  ipc.handle('activity:list-novel-reading', async () => wrapIpc(() => service.novel.listReading()))
 
   ipc.handle('activity:list-novel-bookmarks', async (event, novelId) =>
-    wrapIpc(() => service.marks.listNovelBookmarks(senderWindowId(event), novelId))
+    wrapIpc(() => service.readingMarks.listNovelBookmarks(senderWindowId(event), novelId))
   )
 
   ipc.handle('activity:create-novel-bookmark', async (event, input) =>
-    wrapIpc(() => service.marks.createNovelBookmark(senderWindowId(event), input))
+    wrapIpc(() => service.readingMarks.createNovelBookmark(senderWindowId(event), input))
   )
 
   ipc.handle('activity:update-novel-bookmark', async (event, id, updates) =>
     wrapIpcVoid(() => {
-      service.marks.updateNovelBookmark(senderWindowId(event), id, updates)
+      service.readingMarks.updateNovelBookmark(senderWindowId(event), id, updates)
     })
   )
 
   ipc.handle('activity:delete-novel-bookmark', async (event, id) =>
     wrapIpcVoid(() => {
-      service.marks.deleteNovelBookmark(senderWindowId(event), id)
+      service.readingMarks.deleteNovelBookmark(senderWindowId(event), id)
     })
   )
 
   ipc.handle('activity:list-novel-highlights', async (event, novelId) =>
-    wrapIpc(() => service.marks.listNovelHighlights(senderWindowId(event), novelId))
+    wrapIpc(() => service.readingMarks.listNovelHighlights(senderWindowId(event), novelId))
   )
 
   ipc.handle('activity:create-novel-highlight', async (event, input) =>
-    wrapIpc(() => service.marks.createNovelHighlight(senderWindowId(event), input))
+    wrapIpc(() => service.readingMarks.createNovelHighlight(senderWindowId(event), input))
   )
 
   ipc.handle('activity:update-novel-highlight', async (event, id, updates) =>
     wrapIpcVoid(() => {
-      service.marks.updateNovelHighlight(senderWindowId(event), id, updates)
+      service.readingMarks.updateNovelHighlight(senderWindowId(event), id, updates)
     })
   )
 
   ipc.handle('activity:delete-novel-highlight', async (event, id) =>
     wrapIpcVoid(() => {
-      service.marks.deleteNovelHighlight(senderWindowId(event), id)
+      service.readingMarks.deleteNovelHighlight(senderWindowId(event), id)
     })
   )
 
   ipc.handle('activity:list-comic-bookmarks', async (event, comicId) =>
-    wrapIpc(() => service.marks.listComicBookmarks(senderWindowId(event), comicId))
+    wrapIpc(() => service.readingMarks.listComicBookmarks(senderWindowId(event), comicId))
   )
 
   ipc.handle('activity:toggle-comic-bookmark', async (event, input) =>
-    wrapIpc(() => service.marks.toggleComicBookmark(senderWindowId(event), input))
+    wrapIpc(() => service.readingMarks.toggleComicBookmark(senderWindowId(event), input))
   )
 
   ipc.handle('activity:update-comic-bookmark', async (event, id, updates) =>
     wrapIpcVoid(() => {
-      service.marks.updateComicBookmark(senderWindowId(event), id, updates)
+      service.readingMarks.updateComicBookmark(senderWindowId(event), id, updates)
     })
   )
 
   ipc.handle('activity:delete-comic-bookmark', async (event, id) =>
     wrapIpcVoid(() => {
-      service.marks.deleteComicBookmark(senderWindowId(event), id)
+      service.readingMarks.deleteComicBookmark(senderWindowId(event), id)
     })
   )
 }

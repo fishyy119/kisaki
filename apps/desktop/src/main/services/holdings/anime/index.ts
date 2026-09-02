@@ -3,6 +3,6 @@
  */
 
 export { animeAutoSyncSpec } from './auto-sync-spec'
-export { AnimeFileSyncHandler, MAX_WALK_DEPTH } from './sync'
+export { AnimeFileSyncCoordinator, MAX_WALK_DEPTH } from './sync'
 export type { AnimeFileSyncOptions } from './sync'
 export { isVideoFile } from './recognition'

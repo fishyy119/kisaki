@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { ensureFile, readRequiredEnv, writeGithubOutput } from './common'
+import { ensureFile, readRequiredEnv, writeGithubOutput } from './shared'
 
 const extensionId = readRequiredEnv('PUBLISH_EXTENSION_ID')
 const version = readRequiredEnv('PUBLISH_VERSION')

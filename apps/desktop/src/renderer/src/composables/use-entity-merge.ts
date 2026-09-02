@@ -1,5 +1,5 @@
 import { ref, toValue, type MaybeRefOrGetter } from 'vue'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { EntityMergeResult } from '@shared/entity-merge'
 import { mergeEntities } from '@renderer/core/db'
 

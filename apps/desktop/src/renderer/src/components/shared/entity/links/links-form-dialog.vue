@@ -6,7 +6,7 @@
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData } from '@renderer/composables'
 import {
@@ -163,7 +163,7 @@ async function handleSave() {
     for (const role of spec.value.roleOrder) {
       groupedItems.value[role]!.forEach((link, index) => {
         rows.push({
-          id: link.isNew ? nanoid() : link.id,
+          id: link.isNew ? newId() : link.id,
           targetId: link.targetId,
           role: link.role,
           note: link.note || null,
@@ -175,7 +175,7 @@ async function handleSave() {
     }
     await spec.value.replace(props.entityId, rows)
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
@@ -220,7 +220,7 @@ function handleEdit(item: LinkItem) {
 
 function handleAddNew() {
   editingItem.value = {
-    id: nanoid(),
+    id: newId(),
     targetId: '',
     targetName: '',
     targetImage: null,
@@ -401,13 +401,13 @@ function handleRevealSpoilersConfirm() {
               variant="outline"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </div>
         </DialogFooter>

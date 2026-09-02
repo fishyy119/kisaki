@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { MEDIA_NOTE_STORES, type MediaNoteRow } from './store'
@@ -77,7 +77,7 @@ const coverUrl = computed(() => {
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.common.open"
+        :tooltip="m.actions.open"
         @click="emit('open')"
       >
         <Icon
@@ -89,7 +89,7 @@ const coverUrl = computed(() => {
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.common.moveUp"
+        :tooltip="m.actions.moveUp"
         :disabled="!props.canMoveUp"
         @click="emit('moveUp')"
       >
@@ -102,7 +102,7 @@ const coverUrl = computed(() => {
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.common.moveDown"
+        :tooltip="m.actions.moveDown"
         :disabled="!props.canMoveDown"
         @click="emit('moveDown')"
       >
@@ -115,7 +115,7 @@ const coverUrl = computed(() => {
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.common.edit"
+        :tooltip="m.actions.edit"
         @click="emit('edit')"
       >
         <Icon
@@ -127,7 +127,7 @@ const coverUrl = computed(() => {
       <Button
         variant="ghost"
         size="icon-sm"
-        :tooltip="m.common.delete"
+        :tooltip="m.actions.delete"
         class="hover:text-destructive"
         @click="emit('delete')"
       >

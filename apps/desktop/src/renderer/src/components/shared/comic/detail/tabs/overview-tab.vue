@@ -188,17 +188,17 @@ const companyItems = computed<RoleLinkItem[]>(() =>
                 {{ alias }}
               </div>
             </dd>
-            <dd v-else>{{ m.common.emptyValue }}</dd>
+            <dd v-else>{{ m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.format }}</dt>
             <dd>{{ m.library.comicFormat[comic.format] }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.totalVolumes }}</dt>
-            <dd>{{ comic.totalVolumes ?? m.common.emptyValue }}</dd>
+            <dd>{{ comic.totalVolumes ?? m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.totalChapters }}</dt>
-            <dd>{{ comic.totalChapters ?? m.common.emptyValue }}</dd>
+            <dd>{{ comic.totalChapters ?? m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
-            <dd>{{ comic.releaseDate ? f.date(comic.releaseDate) : m.common.emptyValue }}</dd>
+            <dd>{{ comic.releaseDate ? f.date(comic.releaseDate) : m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
-            <dd>{{ comic.createdAt ? f.date(comic.createdAt) : m.common.emptyValue }}</dd>
+            <dd>{{ comic.createdAt ? f.date(comic.createdAt) : m.values.emptyValue }}</dd>
           </dl>
         </Section>
 

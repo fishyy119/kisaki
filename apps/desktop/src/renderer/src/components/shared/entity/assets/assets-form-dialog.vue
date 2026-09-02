@@ -23,7 +23,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { ENTITY_ASSET_SPECS } from './asset-specs'
 import AssetSearchFormDialog from './asset-search-form-dialog.vue'
 import AssetCropFormDialog from './asset-crop-form-dialog.vue'
@@ -272,7 +272,7 @@ function handleClose() {
                     icon="icon-[mdi--delete-outline]"
                     class="size-4"
                   />
-                  {{ m.common.delete }}
+                  {{ m.actions.delete }}
                 </Button>
               </template>
             </div>
@@ -284,7 +284,7 @@ function handleClose() {
             variant="outline"
             @click="handleClose"
           >
-            {{ m.common.close }}
+            {{ m.actions.close }}
           </Button>
         </DialogFooter>
       </template>

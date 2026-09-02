@@ -8,8 +8,8 @@
  */
 
 import { and, asc, eq } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
-import type { MediaType } from '@shared/common'
+import { newId } from '@shared/id'
+import type { MediaType } from '@shared/entity-types'
 import {
   getMediaRelationTypeRules,
   mediaRelations,
@@ -209,7 +209,7 @@ function replaceOutgoingRows(
   if (rows.length === 0) return
 
   const values: NewMediaRelation[] = rows.map((row, orderInFrom) => ({
-    id: nanoid(),
+    id: newId(),
     fromType: mediaType,
     fromId: entityId,
     toType: row.toType,

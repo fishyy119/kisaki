@@ -14,7 +14,7 @@ import { ENTITY_TABLES, queryEntityPickerRows } from '@renderer/core/db'
 import { usePreferencesStore } from '@renderer/stores'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import type { VirtualizedComboboxEntity } from '@renderer/components/ui/virtualized-combobox'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { useAsyncData } from './use-async-data'
 import { useDbChanges } from './use-db-changes'
 

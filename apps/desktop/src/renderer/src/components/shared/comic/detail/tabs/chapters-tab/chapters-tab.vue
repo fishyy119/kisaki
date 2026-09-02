@@ -14,7 +14,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualList } from '@renderer/components/ui/virtual'
 import { useComicFileSync } from '@renderer/composables'
 import { useComic } from '@renderer/composables/use-comic'
-import { toggleChapterRead } from '@renderer/composables/use-comic-read'
+import { toggleChapterRead } from '@renderer/composables/comic-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
@@ -34,7 +34,7 @@ const detailChapterId = ref<string | null>(null)
 
 const readCount = computed(() => chapters.value.filter((chapter) => chapter.read).length)
 
-const canSyncFiles = computed(() => !!comic.value?.comicDirPath)
+const canSyncFiles = computed(() => !!comic.value?.dirPath)
 
 const detailDialogOpen = computed({
   get: () => detailChapterId.value !== null,
@@ -46,7 +46,7 @@ const detailDialogOpen = computed({
 async function handleSyncFiles(): Promise<void> {
   const current = comic.value
   if (!current) return
-  if (!current.comicDirPath) {
+  if (!current.dirPath) {
     notify.error(m.value.comic.detail.comicDirNotSet)
     return
   }

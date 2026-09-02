@@ -18,7 +18,7 @@ export class ExtensionScrapersCapabilityProvider {
   listProfiles(runtimeHandle: string, query?: ScraperProfileListQuery): ScraperProfileSummary[] {
     this.requireRuntime(runtimeHandle)
     return this.options.scraper.profiles
-      .list(query ? { mediaType: query.mediaType } : undefined)
+      .list(query ? { entityType: query.entityType } : undefined)
       .map((profile) => toPublicScraperProfileSummary(profile))
   }
 
@@ -43,7 +43,7 @@ function toPublicScraperProfileSummary(profile: AppScraperProfileSummary): Scrap
     id: profile.id,
     name: profile.name,
     description: profile.description,
-    mediaType: profile.mediaType,
+    entityType: profile.entityType,
     searchProviderId: profile.searchProviderId,
     defaultLocale: profile.defaultLocale,
     providerSlots: profile.providerSlots.map((slot) => ({

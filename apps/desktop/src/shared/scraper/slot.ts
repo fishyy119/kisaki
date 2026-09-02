@@ -26,7 +26,7 @@ import type {
   SlotStrategy,
   UnmatchedEntityPolicy
 } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { ExternalId } from '@shared/identity'
 import type { ContentLocale } from '@shared/i18n'
 import {
@@ -39,15 +39,13 @@ import {
   PERSON_SCRAPER_SLOTS
 } from '@shared/db'
 
-export type ScraperMediaType = ContentEntityType
-
 export type RelationCollectionScraperSlot = 'characters' | 'persons' | 'companies'
 
 export type SlotConfigForSlot<S extends ScraperSlot> = S extends RelationCollectionScraperSlot
   ? RelationCollectionSlotConfig
   : BasicSlotConfig
 
-export interface ScraperSlotConfigsByMediaType {
+export interface ScraperSlotConfigsByEntityType {
   game: GameScraperSlotConfigs
   anime: AnimeScraperSlotConfigs
   comic: ComicScraperSlotConfigs
@@ -57,7 +55,8 @@ export interface ScraperSlotConfigsByMediaType {
   character: CharacterScraperSlotConfigs
 }
 
-export type SlotConfigsForMediaType<T extends ScraperMediaType> = ScraperSlotConfigsByMediaType[T]
+export type SlotConfigsForEntityType<T extends ContentEntityType> =
+  ScraperSlotConfigsByEntityType[T]
 
 export const SLOT_STRATEGIES = ['first', 'enrich'] as const satisfies readonly SlotStrategy[]
 export const UNMATCHED_ENTITY_POLICIES = [
@@ -176,16 +175,20 @@ function normalizeBasicSlotConfig(value: unknown): BasicSlotConfig | null {
   }
 }
 
-export function getScraperSlotsForMediaType(mediaType: 'game'): readonly GameScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: 'anime'): readonly AnimeScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: 'comic'): readonly ComicScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: 'novel'): readonly NovelScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: 'person'): readonly PersonScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: 'company'): readonly CompanyScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: 'character'): readonly CharacterScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readonly ScraperSlot[]
-export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readonly ScraperSlot[] {
-  switch (mediaType) {
+export function getScraperSlotsForEntityType(entityType: 'game'): readonly GameScraperSlot[]
+export function getScraperSlotsForEntityType(entityType: 'anime'): readonly AnimeScraperSlot[]
+export function getScraperSlotsForEntityType(entityType: 'comic'): readonly ComicScraperSlot[]
+export function getScraperSlotsForEntityType(entityType: 'novel'): readonly NovelScraperSlot[]
+export function getScraperSlotsForEntityType(entityType: 'person'): readonly PersonScraperSlot[]
+export function getScraperSlotsForEntityType(entityType: 'company'): readonly CompanyScraperSlot[]
+export function getScraperSlotsForEntityType(
+  entityType: 'character'
+): readonly CharacterScraperSlot[]
+export function getScraperSlotsForEntityType(entityType: ContentEntityType): readonly ScraperSlot[]
+export function getScraperSlotsForEntityType(
+  entityType: ContentEntityType
+): readonly ScraperSlot[] {
+  switch (entityType) {
     case 'game':
       return GAME_SCRAPER_SLOTS
     case 'anime':
@@ -210,48 +213,48 @@ export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readon
  * and provider priorities are reindexed into a stable 0-based sequence.
  */
 export function normalizeSlotConfigs(
-  mediaType: 'game',
+  entityType: 'game',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): GameScraperSlotConfigs
 export function normalizeSlotConfigs(
-  mediaType: 'anime',
+  entityType: 'anime',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): AnimeScraperSlotConfigs
 export function normalizeSlotConfigs(
-  mediaType: 'comic',
+  entityType: 'comic',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): ComicScraperSlotConfigs
 export function normalizeSlotConfigs(
-  mediaType: 'novel',
+  entityType: 'novel',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): NovelScraperSlotConfigs
 export function normalizeSlotConfigs(
-  mediaType: 'person',
+  entityType: 'person',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): PersonScraperSlotConfigs
 export function normalizeSlotConfigs(
-  mediaType: 'company',
+  entityType: 'company',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): CompanyScraperSlotConfigs
 export function normalizeSlotConfigs(
-  mediaType: 'character',
+  entityType: 'character',
   slotConfigs: ScraperSlotConfigs | null | undefined
 ): CharacterScraperSlotConfigs
-export function normalizeSlotConfigs<T extends ScraperMediaType>(
-  mediaType: T,
+export function normalizeSlotConfigs<T extends ContentEntityType>(
+  entityType: T,
   slotConfigs: ScraperSlotConfigs | null | undefined
-): SlotConfigsForMediaType<T>
-export function normalizeSlotConfigs<T extends ScraperMediaType>(
-  mediaType: T,
+): SlotConfigsForEntityType<T>
+export function normalizeSlotConfigs<T extends ContentEntityType>(
+  entityType: T,
   slotConfigs: ScraperSlotConfigs | null | undefined
-): SlotConfigsForMediaType<T> {
+): SlotConfigsForEntityType<T> {
   const normalized = {} as Record<string, SlotConfig>
 
-  for (const slot of getScraperSlotsForMediaType(mediaType)) {
+  for (const slot of getScraperSlotsForEntityType(entityType)) {
     normalized[slot] = normalizeSlotConfig(slot, slotConfigs?.[slot])
   }
 
-  return normalized as SlotConfigsForMediaType<T>
+  return normalized as SlotConfigsForEntityType<T>
 }
 
 // =============================================================================
@@ -390,67 +393,67 @@ export function createEmptySlotConfig<S extends ScraperSlot>(slot: S): SlotConfi
  * Only adds the provider to slots it actually supports.
  */
 export function createSlotConfigs(
-  mediaType: 'game',
+  entityType: 'game',
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): GameScraperSlotConfigs
 export function createSlotConfigs(
-  mediaType: 'anime',
+  entityType: 'anime',
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): AnimeScraperSlotConfigs
 export function createSlotConfigs(
-  mediaType: 'comic',
+  entityType: 'comic',
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): ComicScraperSlotConfigs
 export function createSlotConfigs(
-  mediaType: 'novel',
+  entityType: 'novel',
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): NovelScraperSlotConfigs
 export function createSlotConfigs(
-  mediaType: 'person',
+  entityType: 'person',
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): PersonScraperSlotConfigs
 export function createSlotConfigs(
-  mediaType: 'company',
+  entityType: 'company',
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): CompanyScraperSlotConfigs
 export function createSlotConfigs(
-  mediaType: 'character',
+  entityType: 'character',
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
 ): CharacterScraperSlotConfigs
-export function createSlotConfigs<T extends ScraperMediaType>(
-  mediaType: T,
+export function createSlotConfigs<T extends ContentEntityType>(
+  entityType: T,
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
-): SlotConfigsForMediaType<T>
-export function createSlotConfigs<T extends ScraperMediaType>(
-  mediaType: T,
+): SlotConfigsForEntityType<T>
+export function createSlotConfigs<T extends ContentEntityType>(
+  entityType: T,
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: ContentLocale
-): SlotConfigsForMediaType<T> {
+): SlotConfigsForEntityType<T> {
   const configs = {} as Record<string, SlotConfig>
 
-  for (const slot of getScraperSlotsForMediaType(mediaType)) {
+  for (const slot of getScraperSlotsForEntityType(entityType)) {
     const supportsSlot = capabilities.includes(slot)
     configs[slot] = supportsSlot
       ? createSlotConfig(slot, [providerId], { locale })
       : createEmptySlotConfig(slot)
   }
 
-  return configs as SlotConfigsForMediaType<T>
+  return configs as SlotConfigsForEntityType<T>
 }

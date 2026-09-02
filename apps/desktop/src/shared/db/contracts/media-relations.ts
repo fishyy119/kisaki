@@ -13,7 +13,7 @@
  * same character; neither becomes an edge type here.
  */
 
-import type { MediaType } from '../../common'
+import type { MediaType } from '../../entity-types'
 
 export const MEDIA_RELATION_TYPES = [
   'sequel',

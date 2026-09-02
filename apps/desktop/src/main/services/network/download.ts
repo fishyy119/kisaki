@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { createWriteStream } from 'node:fs'
 import path from 'node:path'
 import { Readable, Transform } from 'node:stream'
@@ -35,10 +35,7 @@ export class NetworkDownloader {
   async toFile(url: string, destPath: string, options: FetchOptions = {}): Promise<void> {
     const retries = options.retries ?? DEFAULT_NETWORK_RETRY_COUNT
     const attemptOptions: FetchOptions = { ...options, retries: 0 }
-    const tempPath = path.join(
-      path.dirname(destPath),
-      `.${path.basename(destPath)}.${randomUUID()}.tmp`
-    )
+    const tempPath = path.join(path.dirname(destPath), `.${path.basename(destPath)}.${newId()}.tmp`)
 
     await executeWithNetworkRetry(
       async () => {

@@ -1,4 +1,4 @@
-import { readRequiredEnv, writeGithubOutput } from './common'
+import { readRequiredEnv, writeGithubOutput } from './shared'
 import { getReleaseMetadata, parseReleaseTag } from './targets'
 
 const tag = readRequiredEnv('RELEASE_TAG')

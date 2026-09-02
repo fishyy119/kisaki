@@ -1,6 +1,6 @@
 /** Comic unit row persistence shared by the first-write and re-scrape flows. */
 
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import { comicChapterExternalIds, comicChapters } from '@shared/db'
 import type { ComicChapterInfo } from '@shared/metadata'
@@ -38,7 +38,7 @@ export function insertComicChapterRow(
   chapter: ComicChapterInfo,
   orderInComic: number
 ): string {
-  const chapterId = nanoid()
+  const chapterId = newId()
   tx.insert(comicChapters)
     .values({
       id: chapterId,

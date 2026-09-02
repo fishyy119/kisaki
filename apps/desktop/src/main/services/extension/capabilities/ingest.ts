@@ -327,7 +327,7 @@ function toAppAddGameFromScraperOptions(
   }
 
   return {
-    gameDirPath: readOptionalNonEmptyString(options.gameDirPath, 'ingest add options.gameDirPath'),
+    dirPath: readOptionalNonEmptyString(options.dirPath, 'ingest add options.dirPath'),
     gameFilePath: readOptionalNonEmptyString(
       options.gameFilePath,
       'ingest add options.gameFilePath'
@@ -339,7 +339,7 @@ function toAppAddGameFromScraperOptions(
   }
 }
 
-const ADD_GAME_OPTION_KEYS = new Set<string>(['gameDirPath', 'gameFilePath', 'targetCollectionId'])
+const ADD_GAME_OPTION_KEYS = new Set<string>(['dirPath', 'gameFilePath', 'targetCollectionId'])
 
 function toAppAddAnimeFromScraperOptions(
   options: IngestAddAnimeFromScraperOptions | undefined
@@ -359,10 +359,7 @@ function toAppAddAnimeFromScraperOptions(
   }
 
   return {
-    animeDirPath: readOptionalNonEmptyString(
-      options.animeDirPath,
-      'ingest add options.animeDirPath'
-    ),
+    dirPath: readOptionalNonEmptyString(options.dirPath, 'ingest add options.dirPath'),
     targetCollectionId: readOptionalNonEmptyString(
       options.targetCollectionId,
       'ingest add options.targetCollectionId'
@@ -370,7 +367,7 @@ function toAppAddAnimeFromScraperOptions(
   }
 }
 
-const ADD_ANIME_OPTION_KEYS = new Set<string>(['animeDirPath', 'targetCollectionId'])
+const ADD_ANIME_OPTION_KEYS = new Set<string>(['dirPath', 'targetCollectionId'])
 
 function toAppAddComicFromScraperOptions(
   options: IngestAddComicFromScraperOptions | undefined
@@ -390,10 +387,7 @@ function toAppAddComicFromScraperOptions(
   }
 
   return {
-    comicDirPath: readOptionalNonEmptyString(
-      options.comicDirPath,
-      'ingest add options.comicDirPath'
-    ),
+    dirPath: readOptionalNonEmptyString(options.dirPath, 'ingest add options.dirPath'),
     targetCollectionId: readOptionalNonEmptyString(
       options.targetCollectionId,
       'ingest add options.targetCollectionId'
@@ -401,7 +395,7 @@ function toAppAddComicFromScraperOptions(
   }
 }
 
-const ADD_COMIC_OPTION_KEYS = new Set<string>(['comicDirPath', 'targetCollectionId'])
+const ADD_COMIC_OPTION_KEYS = new Set<string>(['dirPath', 'targetCollectionId'])
 
 function toAppAddNovelFromScraperOptions(
   options: IngestAddNovelFromScraperOptions | undefined
@@ -421,10 +415,7 @@ function toAppAddNovelFromScraperOptions(
   }
 
   return {
-    novelDirPath: readOptionalNonEmptyString(
-      options.novelDirPath,
-      'ingest add options.novelDirPath'
-    ),
+    dirPath: readOptionalNonEmptyString(options.dirPath, 'ingest add options.dirPath'),
     targetCollectionId: readOptionalNonEmptyString(
       options.targetCollectionId,
       'ingest add options.targetCollectionId'
@@ -432,7 +423,7 @@ function toAppAddNovelFromScraperOptions(
   }
 }
 
-const ADD_NOVEL_OPTION_KEYS = new Set<string>(['novelDirPath', 'targetCollectionId'])
+const ADD_NOVEL_OPTION_KEYS = new Set<string>(['dirPath', 'targetCollectionId'])
 
 function createExtensionTaskRunInitiator(metadata: ExtensionRuntimeMetadata): TaskRunInitiator {
   return {

@@ -1,4 +1,4 @@
-import { commandSucceeds, configureGitHubActionsAuthor, readRequiredEnv, run } from './common'
+import { commandSucceeds, configureGitHubActionsAuthor, readRequiredEnv, run } from './shared'
 
 const extensionId = readRequiredEnv('PUBLISH_EXTENSION_ID')
 const version = readRequiredEnv('PUBLISH_VERSION')

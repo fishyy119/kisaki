@@ -9,7 +9,7 @@
 
 import { messages } from '@renderer/core/i18n'
 import type { Messages } from '@shared/i18n'
-import { MEDIA_TYPES, type AllEntityType, type MediaType } from '@shared/common'
+import { MEDIA_TYPES, type AllEntityType, type MediaType } from '@shared/entity-types'
 import type { FilterState } from '@shared/filter'
 import { createEmptyFilter } from '@shared/filter'
 import type { SectionLayout, SectionItemSize } from '@shared/db'

@@ -8,7 +8,7 @@ import {
   type MaybeRefOrGetter,
   type Ref
 } from 'vue'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { EntityDeleteResult } from '@shared/entity-delete'
 import { deleteEntities, previewEntityDelete } from '@renderer/core/db'
 import { messages } from '@renderer/core/i18n'
@@ -62,7 +62,7 @@ export function useEntityDelete(options: UseEntityDeleteOptions) {
     if (count.value <= 1) return firstName.value
     return firstName.value
       ? messages.value.library.feedback.nameAndMore({ name: firstName.value, count: count.value })
-      : messages.value.common.itemCount({ count: count.value })
+      : messages.value.values.itemCount({ count: count.value })
   })
   const previewNames = computed(() =>
     items.value

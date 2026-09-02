@@ -1,4 +1,4 @@
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { parseExtensionScraperProviderId } from '@shared/scraper'
 import type {
   AnimeScraperProviderInfo,

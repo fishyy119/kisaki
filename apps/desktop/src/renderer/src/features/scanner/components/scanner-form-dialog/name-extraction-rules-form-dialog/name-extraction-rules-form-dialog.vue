@@ -10,7 +10,7 @@
  */
 
 import { ref, computed, watch } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import type { NameExtractionRule } from '@shared/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -92,7 +92,7 @@ watch(
 
 function handleAddNew() {
   editingRule.value = {
-    id: nanoid(),
+    id: newId(),
     description: '',
     pattern: '',
     enabled: true
@@ -235,13 +235,13 @@ function handleSave() {
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button
             type="button"
             @click="handleSave"
           >
-            {{ m.common.save }}
+            {{ m.actions.save }}
           </Button>
         </div>
       </DialogFooter>

@@ -348,6 +348,11 @@ export const library = {
     unsetFavorite: '取消喜欢',
     openGameDir: '打开游戏目录',
     launchConfig: '启动配置',
+    createDesktopShortcut: '创建桌面快捷方式',
+    copy: '复制',
+    copyId: 'ID',
+    copyPageLink: '页面链接',
+    copyLaunchLink: '启动链接',
     media: '媒体管理',
     updateMetadata: '更新元数据',
     manageExternalIds: '管理外部 ID',
@@ -379,6 +384,9 @@ export const library = {
     gameDirNotSet: '游戏目录未设置',
     openGameDirFailed: '无法打开游戏目录',
     pickFileFailed: '选择文件失败',
+    shortcutCreated: '已创建桌面快捷方式',
+    shortcutCreatedWithoutIcon: '已创建桌面快捷方式（当前平台不支持自定义图标）',
+    shortcutFailed: '无法创建桌面快捷方式',
     deletedSummary: ({ items }: { items: string[] }) =>
       items.length > 0 ? `已删除 ${items.join('、')}` : '已删除',
     nameAndMore: ({ name, count }: { name: string; count: number }) => `${name} 等 ${count} 项`

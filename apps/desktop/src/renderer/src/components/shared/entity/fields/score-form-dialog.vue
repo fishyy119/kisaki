@@ -25,7 +25,7 @@ import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { dbScoreToDisplay, displayScoreToDb } from '@renderer/utils/format'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 const { m } = useI18n()
 
@@ -92,7 +92,7 @@ async function handleSubmit() {
       score: displayScoreToDb(score.value)
     })
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -144,7 +144,7 @@ function handleClear() {
                       :disabled="score === ''"
                       @click="handleClear"
                     >
-                      {{ m.common.clear }}
+                      {{ m.actions.clear }}
                     </Button>
                   </div>
                   <p class="text-xs text-muted-foreground mt-1.5">
@@ -161,13 +161,13 @@ function handleClear() {
               :disabled="isSaving"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

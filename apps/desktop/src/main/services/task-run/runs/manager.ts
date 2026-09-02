@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { performance } from 'node:perf_hooks'
 import { createLogger } from '@main/log'
 import type { IpcService } from '@main/services/ipc'
@@ -57,7 +57,7 @@ export class TaskRunManager {
     }
 
     const now = Date.now()
-    const id = randomUUID()
+    const id = newId()
     const controller = new AbortController()
     const context = new DefaultTaskRunContext(id, controller.signal, this)
     const run: TaskRun = {

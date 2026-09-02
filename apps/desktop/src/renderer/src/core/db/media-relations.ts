@@ -8,7 +8,7 @@
  */
 import { and, asc, eq, inArray } from 'drizzle-orm'
 
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import {
   MEDIA_RELATION_TYPE_INVERSE,
   mediaRelations,

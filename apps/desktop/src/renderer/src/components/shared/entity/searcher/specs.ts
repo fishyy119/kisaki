@@ -8,7 +8,7 @@
  */
 
 import { ipcManager } from '@renderer/core/ipc'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { I18nFormatters, Messages } from '@shared/i18n'
 import type { IpcResult } from '@shared/ipc'
 import type {
@@ -87,7 +87,7 @@ function originalNameColumn<TResult extends { originalName?: string }>(
   return {
     width,
     header: (m) => m.library.searcher.columnOriginalName,
-    cell: (result, m) => result.originalName || m.common.emptyValue
+    cell: (result, m) => result.originalName || m.values.emptyValue
   }
 }
 
@@ -103,7 +103,7 @@ function grainColumn<TResult extends { grain?: MediaEntryGrain }>(): SearcherCol
     width: '4rem',
     header: (m) => m.library.searcher.columnGrain,
     cell: (result, m) =>
-      result.grain ? m.library.mediaEntryGrain[result.grain] : m.common.emptyValue
+      result.grain ? m.library.mediaEntryGrain[result.grain] : m.values.emptyValue
   }
 }
 
@@ -117,7 +117,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
         width: '7.5rem',
         header: (m) => m.library.searcher.columnReleaseDate,
         cell: (result, m, f) =>
-          result.releaseDate ? f.date(result.releaseDate) : m.common.emptyValue
+          result.releaseDate ? f.date(result.releaseDate) : m.values.emptyValue
       }
     ],
     // The picked row states which release this is, so providers without a known
@@ -135,13 +135,13 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
         width: '5rem',
         header: (m) => m.library.fields.format,
         cell: (result, m) =>
-          result.format ? m.library.animeFormat[result.format] : m.common.emptyValue
+          result.format ? m.library.animeFormat[result.format] : m.values.emptyValue
       },
       {
         width: '7.5rem',
         header: (m) => m.library.searcher.columnReleaseDate,
         cell: (result, m, f) =>
-          result.releaseDate ? f.date(result.releaseDate) : m.common.emptyValue
+          result.releaseDate ? f.date(result.releaseDate) : m.values.emptyValue
       }
     ],
     buildLookup: (base, result) => ({
@@ -161,14 +161,14 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
         width: '5rem',
         header: (m) => m.library.fields.format,
         cell: (result, m) =>
-          result.format ? m.library.comicFormat[result.format] : m.common.emptyValue
+          result.format ? m.library.comicFormat[result.format] : m.values.emptyValue
       },
       grainColumn(),
       {
         width: '7.5rem',
         header: (m) => m.library.searcher.columnReleaseDate,
         cell: (result, m, f) =>
-          result.releaseDate ? f.date(result.releaseDate) : m.common.emptyValue
+          result.releaseDate ? f.date(result.releaseDate) : m.values.emptyValue
       }
     ],
     buildLookup: (base, result) => ({
@@ -186,14 +186,14 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
         width: '5rem',
         header: (m) => m.library.fields.format,
         cell: (result, m) =>
-          result.format ? m.library.novelFormat[result.format] : m.common.emptyValue
+          result.format ? m.library.novelFormat[result.format] : m.values.emptyValue
       },
       grainColumn(),
       {
         width: '7.5rem',
         header: (m) => m.library.searcher.columnReleaseDate,
         cell: (result, m, f) =>
-          result.releaseDate ? f.date(result.releaseDate) : m.common.emptyValue
+          result.releaseDate ? f.date(result.releaseDate) : m.values.emptyValue
       }
     ],
     buildLookup: (base, result) => ({
@@ -210,7 +210,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
       {
         width: '8rem',
         header: (m) => m.library.searcher.columnBirth,
-        cell: (result, m, f) => (result.birthDate ? f.date(result.birthDate) : m.common.emptyValue)
+        cell: (result, m, f) => (result.birthDate ? f.date(result.birthDate) : m.values.emptyValue)
       }
     ],
     buildLookup: (base) => base
@@ -223,12 +223,12 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
       {
         width: '7rem',
         header: (m) => m.library.searcher.columnBirth,
-        cell: (result, m, f) => (result.birthDate ? f.date(result.birthDate) : m.common.emptyValue)
+        cell: (result, m, f) => (result.birthDate ? f.date(result.birthDate) : m.values.emptyValue)
       },
       {
         width: '7rem',
         header: (m) => m.library.searcher.columnDeath,
-        cell: (result, m, f) => (result.deathDate ? f.date(result.deathDate) : m.common.emptyValue)
+        cell: (result, m, f) => (result.deathDate ? f.date(result.deathDate) : m.values.emptyValue)
       }
     ],
     buildLookup: (base) => base
@@ -242,7 +242,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
         width: '8rem',
         header: (m) => m.library.searcher.columnFounded,
         cell: (result, m, f) =>
-          result.foundedDate ? f.date(result.foundedDate) : m.common.emptyValue
+          result.foundedDate ? f.date(result.foundedDate) : m.values.emptyValue
       }
     ],
     buildLookup: (base) => base

@@ -6,7 +6,7 @@
  */
 
 import { ref, watch } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import type { NameExtractionRule } from '@shared/db'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
@@ -82,7 +82,7 @@ function handleSubmit() {
   if (!formData.value.description.trim() || !formData.value.pattern.trim()) return
 
   emit('save', {
-    id: props.rule?.id || nanoid(),
+    id: props.rule?.id || newId(),
     description: formData.value.description.trim(),
     pattern: formData.value.pattern.trim(),
     enabled: props.rule?.enabled ?? true
@@ -136,9 +136,9 @@ function handleSubmit() {
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.confirm }}</Button>
+          <Button type="submit">{{ m.actions.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

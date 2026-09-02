@@ -45,7 +45,7 @@ export async function createSteamAutomation(kind: SteamAutomationKind): Promise<
 
   // The import creates entries, so the template bakes in a game profile; the
   // args stay editable on the app automation page afterwards.
-  const profiles = await kisaki.scrapers.profiles.list({ mediaType: 'game' })
+  const profiles = await kisaki.scrapers.profiles.list({ entityType: 'game' })
   const profile = profiles[0]
   if (!profile) {
     throw new SteamExtensionError('profile_required', m().errors.profileRequired)

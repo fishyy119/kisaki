@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
 import { queryEntityTagLinks, replaceEntityTagLinks } from '@renderer/core/db'
 import { useAsyncData } from '@renderer/composables'
@@ -27,7 +27,7 @@ import { notify } from '@renderer/core/notify'
 import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import EntityTagItemFormDialog from './tag-item-form-dialog.vue'
 
 const { m } = useI18n()
@@ -125,14 +125,14 @@ async function handleSave() {
       props.entityType,
       props.entityId,
       items.value.map((item) => ({
-        id: item.isNew ? nanoid() : item.id,
+        id: item.isNew ? newId() : item.id,
         tagId: item.tagId,
         note: item.note || null,
         isSpoiler: item.isSpoiler
       }))
     )
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
@@ -169,7 +169,7 @@ function handleEdit(item: TagItem) {
 
 function handleAddNew() {
   editingItem.value = {
-    id: nanoid(),
+    id: newId(),
     tagId: '',
     tagName: '',
     note: '',
@@ -309,13 +309,13 @@ function handleRevealSpoilersConfirm() {
               variant="outline"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </div>
         </DialogFooter>

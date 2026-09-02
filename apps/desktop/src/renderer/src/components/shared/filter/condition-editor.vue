@@ -180,8 +180,8 @@ const dateRangeValue = computed({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="true">{{ m.common.yes }}</SelectItem>
-          <SelectItem value="false">{{ m.common.no }}</SelectItem>
+          <SelectItem value="true">{{ m.states.yes }}</SelectItem>
+          <SelectItem value="false">{{ m.states.no }}</SelectItem>
         </SelectContent>
       </Select>
 

@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { SectionScroll } from '@renderer/components/ui/section'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import EntityCard from '../card'
 import { flattenWorks, type WorksBlock } from './blocks'
 

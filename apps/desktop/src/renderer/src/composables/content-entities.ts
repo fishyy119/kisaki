@@ -7,7 +7,7 @@
  */
 
 import type { EntityRowMap } from '@renderer/core/db'
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 
 /** Union type for content entities */
 export type ContentEntityData = EntityRowMap[ContentEntityType]

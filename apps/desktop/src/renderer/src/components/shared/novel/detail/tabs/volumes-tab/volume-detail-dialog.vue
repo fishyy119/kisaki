@@ -23,7 +23,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Separator } from '@renderer/components/ui/separator'
 import { useNovel, type NovelVolumeEntry } from '@renderer/composables/use-novel'
 import { revealNovelFile, useNovelFileRecords } from '@renderer/composables/use-novel-file-records'
-import { toggleVolumeRead } from '@renderer/composables/use-novel-read'
+import { toggleVolumeRead } from '@renderer/composables/novel-completion'
 import { useNovelReading } from '@renderer/composables/use-novel-reading'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
@@ -36,7 +36,7 @@ import NovelReadButton from '../../../novel-read-button.vue'
 import NovelFileRecordList from './file-record-list.vue'
 import NovelVolumeFormDialog from './volume-form-dialog.vue'
 
-const log = createLogger('Novel')
+const log = createLogger('Library')
 
 interface Props {
   novelId: string
@@ -68,7 +68,7 @@ const title = computed(() => {
   if (entry.volumeNumber !== null) {
     return m.value.novel.volumes.unnamed({ number: formatUnitNumber(entry.volumeNumber) })
   }
-  return m.value.common.emptyValue
+  return m.value.values.emptyValue
 })
 
 const coverUrl = computed(() => {
@@ -84,7 +84,7 @@ const isRead = computed(() => volume.value?.read === true)
 const readAtText = computed(() => {
   const entry = volume.value
   if (!entry?.read) return m.value.novel.volumes.unread
-  return entry.readAt ? f.value.dateTime(entry.readAt) : m.value.common.emptyValue
+  return entry.readAt ? f.value.dateTime(entry.readAt) : m.value.values.emptyValue
 })
 
 const resumePercent = computed(() =>
@@ -106,7 +106,7 @@ async function handleDeleteVolume(): Promise<void> {
     open.value = false
   } catch (error) {
     log.error('Novel volume delete failed:', error)
-    notify.error(m.value.common.deleteFailed)
+    notify.error(m.value.feedback.deleteFailed)
   }
 }
 </script>
@@ -144,7 +144,7 @@ async function handleDeleteVolume(): Promise<void> {
           <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="grid grid-cols-[auto_1fr] gap-3">
               <dt class="text-muted-foreground">{{ m.novel.volumes.releaseDate }}</dt>
-              <dd>{{ volume.releaseDate ? f.date(volume.releaseDate) : m.common.emptyValue }}</dd>
+              <dd>{{ volume.releaseDate ? f.date(volume.releaseDate) : m.values.emptyValue }}</dd>
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-3">
               <dt class="text-muted-foreground">{{ m.novel.volumes.readCount }}</dt>

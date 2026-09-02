@@ -3,7 +3,7 @@
  *
  * Owns three layers that a synchronous SQLite connection cannot separate:
  * - infrastructure: connection, migrations, change capture, SQL execution;
- * - library-graph transaction core (`curation`, `helper`), whose operations must
+ * - library-graph transaction core (`curation`, `identity`), whose operations must
  *   see every entity table inside one transaction;
  * - row-attached bytes (`attachment`), whose lifetime follows its owning row.
  *
@@ -25,7 +25,7 @@ import { normalizeKeyText } from '@shared/identity'
 import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import { AttachmentStore, ThumbnailStore, registerAttachmentProtocol } from './attachment'
 import { EntityDeleteCoordinator, EntityMergeCoordinator } from './curation'
-import { EntityFinderHelper } from './helper'
+import { EntityFinder } from './identity'
 import { FtsStore } from './fts'
 import { TriggerStore, dropAllTriggers } from './trigger'
 import { DbChangeFeed } from './feed'
@@ -56,7 +56,7 @@ export class DbService implements INonDomainService<'db'> {
   // First-level capabilities
   attachment!: AttachmentStore
   private thumbnail!: ThumbnailStore
-  entityFinder!: EntityFinderHelper
+  finder!: EntityFinder
   curation!: DbCuration
   fts!: FtsStore
   sql!: SqlExecutor
@@ -123,7 +123,7 @@ export class DbService implements INonDomainService<'db'> {
     // Initialize first-level capabilities
     this.thumbnail = new ThumbnailStore()
     this.attachment = new AttachmentStore(this.client, this.storageDir, this.thumbnail, network)
-    this.entityFinder = new EntityFinderHelper(this.client)
+    this.finder = new EntityFinder(this.client)
     this.curation = {
       merge: new EntityMergeCoordinator(this.client, this.attachment, this.hooks, ipc),
       delete: new EntityDeleteCoordinator(this.client)

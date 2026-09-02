@@ -17,7 +17,7 @@ import {
   normalizePersonCore,
   pickFirstUrl,
   upsertPersonNode
-} from './common'
+} from './shared'
 
 interface PendingCharacterPersonLink {
   characterIdentityKey: string

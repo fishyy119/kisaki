@@ -1,4 +1,4 @@
-import { readRequiredEnv, writeGithubOutput } from './common'
+import { readRequiredEnv, writeGithubOutput } from './shared'
 
 const PUBLISH_TAG_PATTERN = /^([a-z0-9][a-z0-9.-]*)-v([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)$/
 

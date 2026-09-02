@@ -83,7 +83,7 @@ export function createVndbSettingsHostFunctions(
     },
 
     async listGameProfiles(): Promise<VndbGameProfileOption[]> {
-      const profiles = await kisaki.scrapers.profiles.list({ mediaType: 'game' })
+      const profiles = await kisaki.scrapers.profiles.list({ entityType: 'game' })
       return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
     },
 

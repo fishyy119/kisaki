@@ -1,13 +1,14 @@
-export { AnimeBatchHandler } from './anime'
-export { CharacterBatchHandler } from './character'
-export { ComicBatchHandler } from './comic'
-export { CompanyBatchHandler } from './company'
-export { GameBatchHandler } from './game'
-export { NovelBatchHandler } from './novel'
-export { PersonBatchHandler } from './person'
+export {
+  IngestBatchUpdateRunner,
+  type IngestBatchDriver,
+  type IngestBatchDrivers,
+  type IngestBatchUpdateRequestOf
+} from './runner'
+export { INGEST_BATCH_SPECS, type IngestBatchEntitySpec } from './specs'
 export type {
   IngestBatchCounters,
   IngestBatchFailure,
   IngestBatchResult,
+  IngestBatchSearchMatch,
   IngestBatchUpdateRow
 } from './types'

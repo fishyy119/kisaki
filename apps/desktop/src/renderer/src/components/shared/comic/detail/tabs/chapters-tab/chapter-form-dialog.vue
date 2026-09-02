@@ -34,7 +34,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Comic')
+const log = createLogger('Library')
 
 interface Props {
   comicId: string
@@ -140,7 +140,7 @@ async function handleSubmit() {
       })
     }
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Unit save failed:', error)
@@ -158,7 +158,7 @@ async function handleDelete() {
     open.value = false
   } catch (error) {
     log.error('Unit delete failed:', error)
-    notify.error(m.value.common.deleteFailed)
+    notify.error(m.value.feedback.deleteFailed)
   }
 }
 </script>
@@ -255,13 +255,13 @@ async function handleDelete() {
                   :disabled="isSaving"
                   @click="open = false"
                 >
-                  {{ m.common.cancel }}
+                  {{ m.actions.cancel }}
                 </Button>
                 <Button
                   type="submit"
                   :disabled="isSaving"
                 >
-                  {{ m.common.save }}
+                  {{ m.actions.save }}
                 </Button>
               </div>
             </div>

@@ -82,7 +82,7 @@ const packageStatusLabel = computed(() => {
       return m.value.extension.installed.statusMissingPackage
   }
 
-  return m.value.common.unknown
+  return m.value.states.unknown
 })
 const runtimeStatusLabel = computed(() => {
   if (!props.extension.enabled || props.extension.status !== 'ready') {
@@ -100,7 +100,7 @@ const runtimeStatusLabel = computed(() => {
       return m.value.extension.installed.runtimeStopped
   }
 
-  return m.value.common.unknown
+  return m.value.states.unknown
 })
 const updatePolicyLabel = computed(() => {
   switch (props.extension.updatePolicy ?? 'manual') {
@@ -112,7 +112,7 @@ const updatePolicyLabel = computed(() => {
       return m.value.extension.policy.pinned
   }
 
-  return m.value.common.unknown
+  return m.value.states.unknown
 })
 
 watch(iconUrl, () => {
@@ -133,7 +133,7 @@ function formatDate(value: string | null | undefined): string {
 }
 
 function formatBoolean(value: boolean | null | undefined): string {
-  return value ? m.value.common.yes : m.value.common.no
+  return value ? m.value.states.yes : m.value.states.no
 }
 
 function diagnosticSeverityLabel(severity: string): string {
@@ -467,7 +467,7 @@ function diagnosticSeverityClass(severity: string): string {
           variant="outline"
           @click="open = false"
         >
-          {{ m.common.close }}
+          {{ m.actions.close }}
         </Button>
       </DialogFooter>
     </DialogContent>

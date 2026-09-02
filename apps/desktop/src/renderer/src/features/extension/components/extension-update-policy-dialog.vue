@@ -145,7 +145,7 @@ function currentIncludePreviewUpdates(): boolean {
           :disabled="saving"
           @click="open = false"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="saving"
@@ -155,7 +155,7 @@ function currentIncludePreviewUpdates(): boolean {
             v-if="saving"
             class="size-4"
           />
-          {{ m.common.save }}
+          {{ m.actions.save }}
         </Button>
       </DialogFooter>
     </DialogContent>

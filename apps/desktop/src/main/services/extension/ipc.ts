@@ -1,6 +1,6 @@
 import type { IpcService } from '@main/services/ipc'
 import { wrapIpc, wrapIpcVoid } from '@main/services/ipc'
-import { createApplyReleaseCommandFromRequest } from './installer'
+import { createApplyReleaseCommandFromRequest } from './install'
 import type { ExtensionService } from './service'
 
 export function registerExtensionIpc(service: ExtensionService, ipc: IpcService): void {

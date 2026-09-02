@@ -7,7 +7,6 @@
 // Slot utilities and universal types
 export {
   type ScraperCapability,
-  type ScraperMediaType,
   type ScraperLookup,
   type ScraperImageSlot,
   type GameImageSlot,
@@ -15,7 +14,7 @@ export {
   type ComicImageSlot,
   type NovelImageSlot,
   type SlotConfigForSlot,
-  type SlotConfigsForMediaType,
+  type SlotConfigsForEntityType,
   type RelationCollectionScraperSlot,
   GAME_IMAGE_SLOTS,
   ANIME_IMAGE_SLOTS,
@@ -35,7 +34,7 @@ export {
   createSlotConfig,
   createEmptySlotConfig,
   createSlotConfigs,
-  getScraperSlotsForMediaType,
+  getScraperSlotsForEntityType,
   normalizeSlotConfigs
 } from './slot'
 

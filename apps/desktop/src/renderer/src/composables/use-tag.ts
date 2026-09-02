@@ -15,7 +15,7 @@ import {
   queryEntities,
   queryEntityRow
 } from '@renderer/core/db'
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { Tag } from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
 import { getFilterRelevantTables } from '@shared/filter'

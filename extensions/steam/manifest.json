@@ -16,6 +16,6 @@
   "homepage": "https://store.steampowered.com",
   "keywords": ["steam", "game", "scraper", "import"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.14"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

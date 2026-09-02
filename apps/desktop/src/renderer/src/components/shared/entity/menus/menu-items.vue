@@ -20,7 +20,8 @@ import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-
 import { usePreferencesStore } from '@renderer/stores'
 import { collections, type MediaStatus } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
-import type { ContentEntityType } from '@shared/common'
+import { isMediaType, type ContentEntityType } from '@shared/entity-types'
+import EntityCopyMenuItems from './copy-menu-items.vue'
 import { MENU_SPECS, type MenuStatusSection } from './menu-specs'
 
 const log = createLogger('Library')
@@ -59,6 +60,9 @@ const emit = defineEmits<{
 
 const spec = computed(() => MENU_SPECS[props.entityType])
 const table = computed(() => ENTITY_TABLES[props.entityType].table)
+
+/** Desktop shortcuts launch a consumable entry, so media only. */
+const mediaType = computed(() => (isMediaType(props.entityType) ? props.entityType : null))
 
 type CollectionData = { id: string; name: string }
 
@@ -224,7 +228,7 @@ async function handleToggleFavorite() {
         : m.value.library.feedback.favoriteAdded
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   }
 }
 
@@ -240,7 +244,7 @@ async function handleToggleNsfw() {
         : m.value.library.feedback.nsfwMarked
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   }
 }
 
@@ -251,8 +255,26 @@ async function handleOpenDir() {
     ensure: 'folder'
   })
   if (!result.success) {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   }
+}
+
+async function handleCreateDesktopShortcut() {
+  if (!mediaType.value) return
+  const result = await ipcManager.invoke(
+    'attachment:create-launch-shortcut',
+    mediaType.value,
+    props.entityId
+  )
+  if (!result.success) {
+    notify.error(m.value.library.feedback.shortcutFailed)
+    return
+  }
+  notify.success(
+    result.data.iconApplied
+      ? m.value.library.feedback.shortcutCreated
+      : m.value.library.feedback.shortcutCreatedWithoutIcon
+  )
 }
 </script>
 
@@ -437,6 +459,19 @@ async function handleOpenDir() {
       {{ spec.dir.label(m) }}
     </component>
 
+    <!-- Desktop launch shortcut (media entries only) -->
+    <component
+      :is="props.components.Item"
+      v-if="mediaType"
+      @select="handleCreateDesktopShortcut"
+    >
+      <Icon
+        icon="icon-[mdi--rocket-launch-outline]"
+        class="size-4"
+      />
+      {{ m.library.menu.createDesktopShortcut }}
+    </component>
+
     <!-- Media-specific dialog entries -->
     <component
       :is="props.components.Item"
@@ -505,6 +540,14 @@ async function handleOpenDir() {
 
     <component :is="props.components.Separator" />
 
+    <EntityCopyMenuItems
+      :entity-type="props.entityType"
+      :entity-id="props.entityId"
+      :components="props.components"
+    />
+
+    <component :is="props.components.Separator" />
+
     <!-- Delete -->
     <component
       :is="props.components.Item"
@@ -515,7 +558,7 @@ async function handleOpenDir() {
         icon="icon-[mdi--delete-outline]"
         class="size-4"
       />
-      {{ m.common.delete }}
+      {{ m.actions.delete }}
     </component>
   </template>
 </template>

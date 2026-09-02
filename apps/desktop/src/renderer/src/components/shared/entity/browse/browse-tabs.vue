@@ -13,9 +13,9 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import {
   CONTENT_ENTITY_TYPES,
-  isContentEntityType,
+  parseContentEntityType,
   type ContentEntityType
-} from '@shared/common'
+} from '@shared/entity-types'
 
 interface Props {
   counts?: ContentEntityCounts | null
@@ -35,7 +35,8 @@ const { m } = useI18n()
 const entityTypeModel = computed({
   get: () => model.value,
   set: (value: string) => {
-    if (isContentEntityType(value)) model.value = value
+    const entityType = parseContentEntityType(value)
+    if (entityType) model.value = entityType
   }
 })
 </script>

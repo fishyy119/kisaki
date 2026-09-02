@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { asc, eq } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { db } from '@renderer/core/db'
 import { showcaseSections } from '@shared/db'
 import { useAsyncData, useRenderState } from '@renderer/composables'
@@ -31,7 +31,8 @@ import LibraryShowcaseSectionPresetsDialog from './section-presets-dialog.vue'
 import { notify } from '@renderer/core/notify'
 import type { SectionLayout, SectionItemSize, SectionOpenMode } from '@shared/db'
 import type { ShowcaseSectionFormItem } from './types'
-import type { AllEntityType, ContentEntityType, SortDirection } from '@shared/common'
+import type { AllEntityType, ContentEntityType } from '@shared/entity-types'
+import type { SortDirection } from '@shared/filter'
 import { createEmptyFilter, parseFilterState } from '@shared/filter'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
@@ -121,7 +122,7 @@ async function handleSave() {
     for (const item of toInsert) {
       const index = items.value.indexOf(item)
       await db.insert(showcaseSections).values({
-        id: nanoid(),
+        id: newId(),
         entityType: item.entityType,
         name: item.name,
         order: index,
@@ -200,7 +201,7 @@ function handleEdit(item: ShowcaseSectionFormItem) {
 
 function handleAddNew() {
   editingItem.value = {
-    id: nanoid(),
+    id: newId(),
     entityType: 'game' as ContentEntityType,
     name: '',
     order: items.value.length,
@@ -343,13 +344,13 @@ function handleClose() {
               variant="outline"
               @click="handleClose"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ isSaving ? m.common.saving : m.common.save }}
+              {{ isSaving ? m.states.saving : m.actions.save }}
             </Button>
           </div>
         </DialogFooter>

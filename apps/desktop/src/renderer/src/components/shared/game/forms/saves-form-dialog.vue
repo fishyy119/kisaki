@@ -107,7 +107,7 @@ function handleCancel() {
             :disabled="isSaving"
             @click="handleCancel"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button
             type="submit"
@@ -118,7 +118,7 @@ function handleCancel() {
               icon="icon-[mdi--loading]"
               class="size-4 animate-spin mr-1.5"
             />
-            {{ m.common.save }}
+            {{ m.actions.save }}
           </Button>
         </DialogFooter>
       </Form>

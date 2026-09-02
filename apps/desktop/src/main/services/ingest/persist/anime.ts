@@ -8,7 +8,7 @@ import type {
 import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
 import type { AnimeEpisodeInfo } from '@shared/metadata'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   animeCastLinks,
   animeCharacterLinks,
@@ -47,9 +47,9 @@ import {
   resolveOrderedLinks
 } from './links'
 import type { PersistAnimeGraphResult } from './types'
-import type { PersonIngestPersistHandler } from './person'
-import type { CompanyIngestPersistHandler } from './company'
-import type { CharacterIngestPersistHandler } from './character'
+import type { PersonPersister } from './person'
+import type { CompanyPersister } from './company'
+import type { CharacterPersister } from './character'
 import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
@@ -192,12 +192,12 @@ function resolveAnimeCharacterLinks(params: {
   })
 }
 
-export class AnimeIngestPersistHandler {
+export class AnimePersister {
   constructor(
     private readonly dbService: DbService,
-    private readonly personPersist: PersonIngestPersistHandler,
-    private readonly companyPersist: CompanyIngestPersistHandler,
-    private readonly characterPersist: CharacterIngestPersistHandler,
+    private readonly personPersist: PersonPersister,
+    private readonly companyPersist: CompanyPersister,
+    private readonly characterPersist: CharacterPersister,
     private readonly i18nService: I18nService
   ) {}
 
@@ -391,7 +391,7 @@ export class AnimeIngestPersistHandler {
     }
 
     const core = node.core
-    const animeId = nanoid()
+    const animeId = newId()
     const newAnime: NewAnime = {
       id: animeId,
       name: core.name,
@@ -400,9 +400,7 @@ export class AnimeIngestPersistHandler {
       releaseDate: core.releaseDate,
       description: core.description,
       externalSites: core.externalSites || [],
-      animeDirPath: options?.animeDirPath
-        ? normalizeLibraryDirPath(options.animeDirPath)
-        : undefined
+      dirPath: options?.dirPath ? normalizeLibraryDirPath(options.dirPath) : undefined
     }
     if (core.format) {
       newAnime.format = core.format
@@ -431,10 +429,10 @@ export class AnimeIngestPersistHandler {
     options: AnimePersistOptions | undefined,
     tx: DbContext
   ): { animeId: string; existingReason: 'path' | 'externalId' } | undefined {
-    if (options?.animeDirPath) {
-      const existingByPath = this.dbService.entityFinder.findExisting(
+    if (options?.dirPath) {
+      const existingByPath = this.dbService.finder.findExisting(
         'anime',
-        { path: options.animeDirPath },
+        { path: options.dirPath },
         tx
       )
       if (existingByPath) {
@@ -444,11 +442,7 @@ export class AnimeIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExisting(
-        'anime',
-        { externalIds },
-        tx
-      )
+      const existingByExternalId = this.dbService.finder.findExisting('anime', { externalIds }, tx)
       if (existingByExternalId) {
         return { animeId: existingByExternalId.id, existingReason: 'externalId' }
       }
@@ -537,7 +531,7 @@ export class AnimeIngestPersistHandler {
     if (!targetCollectionId) return
 
     const collectionLink: NewCollectionAnimeLink = {
-      id: nanoid(),
+      id: newId(),
       collectionId: targetCollectionId,
       animeId,
       orderInCollection: 0

@@ -16,7 +16,7 @@ import path from 'node:path'
 
 import { createLogger } from '@main/log'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
-import { readFileStat, SyncPassQueue, unnamedUnitGroupKey } from '../reconcile'
+import { readFileStat, SyncPassQueue, unnamedUnitGroupKey } from '../sync-pass'
 import { reconcileUnitFiles, type UnitReconcileSpec } from '../unit-reconcile'
 import {
   novelSessions,
@@ -36,7 +36,7 @@ import type {
 } from '@shared/holdings'
 import { isNumberedNovelVolume, novelUnitIdentityKey } from '@shared/metadata'
 import { and, eq, inArray } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { isNovelBookFile, recognizeNovelVolume, type NovelVolumeCandidate } from './recognition'
 
 const log = createLogger('Holdings')
@@ -98,7 +98,7 @@ const NOVEL_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
   rowKey: volumeRowKey,
   fileGroupKey: (filePath, volume) => unnamedUnitGroupKey(filePath, volume.name ?? ''),
   insertUnit: (tx, novelId, candidate, _values, order) => {
-    const id = nanoid()
+    const id = newId()
     const row: NewNovelVolume = {
       id,
       novelId,
@@ -121,7 +121,7 @@ const NOVEL_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
       isPrimary
     } satisfies Omit<NewNovelVolumeFile, 'id'>
     tx.insert(novelVolumeFiles)
-      .values({ id: nanoid(), ...fileValues })
+      .values({ id: newId(), ...fileValues })
       .run()
   },
   updateFile: (tx, fileId, unitId, candidate, values, isPrimary) => {
@@ -148,7 +148,7 @@ const NOVEL_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
     )
 }
 
-export class NovelFileSyncHandler {
+export class NovelFileSyncCoordinator {
   private readonly passes = new SyncPassQueue<NovelFileSyncResult>()
 
   constructor(private readonly dbService: DbService) {}
@@ -254,7 +254,7 @@ export class NovelFileSyncHandler {
 
       tx.insert(novelVolumeFiles)
         .values({
-          id: nanoid(),
+          id: newId(),
           volumeId,
           path: filePath,
           fileSize: stat.size,
@@ -292,13 +292,13 @@ export class NovelFileSyncHandler {
 
   private readNovelDirPath(novelId: string): string | null {
     const [row] = this.dbService.client
-      .select({ novelDirPath: novels.novelDirPath })
+      .select({ dirPath: novels.dirPath })
       .from(novels)
       .where(eq(novels.id, novelId))
       .limit(1)
       .all()
 
-    return row?.novelDirPath ?? null
+    return row?.dirPath ?? null
   }
 
   private readManualFiles(novelId: string): Array<{ path: string }> {

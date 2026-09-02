@@ -55,7 +55,7 @@ function reloadApp() {
           class="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
           @click="resetError"
         >
-          {{ m.common.retry }}
+          {{ m.actions.retry }}
         </button>
         <button
           class="px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80"

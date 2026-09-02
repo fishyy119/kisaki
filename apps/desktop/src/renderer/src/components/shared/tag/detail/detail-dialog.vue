@@ -21,7 +21,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { EntityDetailDialog, type EntityDetailTarget } from '@renderer/components/shared/entity'
 import { useDbChanges, useI18n, useRenderState, useTagDialogProvider } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import TagDetailActions from './detail-actions.vue'
 import TagDetailContent from './detail-content.vue'
 

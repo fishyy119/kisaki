@@ -8,15 +8,15 @@
   paths hand a draft to the profile editor.
 -->
 <script setup lang="ts">
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { ContentLocale } from '@shared/i18n'
 import type { ScraperProfile } from '@shared/db'
 
 import { computed, ref, watch } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
 import { useI18n } from '@renderer/composables'
-import { createSlotConfigs, getScraperSlotsForMediaType } from '@shared/scraper'
+import { createSlotConfigs, getScraperSlotsForEntityType } from '@shared/scraper'
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ import { getEntityIcon } from '@renderer/utils/format'
 import type { ScraperProviderInfo } from './provider-display'
 import { useScraperProviders } from './use-scraper-providers'
 import {
-  getRecipesForMediaType,
+  getRecipesForEntityType,
   resolveRecipeLanguageGroup,
   type ScraperRecipe
 } from './recipes/recipes'
@@ -45,12 +45,12 @@ interface Props {
   /** `recipes` hides the provider and blank paths (for quick-create hosts). */
   mode?: 'full' | 'recipes'
   /** Locks the dialog to one media type and skips the type step. */
-  mediaType?: ContentEntityType
+  entityType?: ContentEntityType
 }
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'full',
-  mediaType: undefined
+  entityType: undefined
 })
 
 const open = defineModel<boolean>('open', { required: true })
@@ -64,7 +64,7 @@ const { m, locale } = useI18n()
 
 type CreationPath = 'recipes' | 'provider' | 'blank'
 
-const selectedMediaType = ref<ContentEntityType | null>(null)
+const selectedEntityType = ref<ContentEntityType | null>(null)
 const path = ref<CreationPath>('recipes')
 const confirmingRecipe = ref<ScraperRecipe | null>(null)
 const profileName = ref('')
@@ -73,13 +73,13 @@ const contentLocale = ref<ContentLocale | null>(null)
 // The provider lists are the availability ground truth for every path.
 const { data: providersByType, isLoading } = useScraperProviders({ enabled: () => open.value })
 
-const mediaTypeOptions = computed<{ value: ContentEntityType; label: string }[]>(() =>
+const entityTypeOptions = computed<{ value: ContentEntityType; label: string }[]>(() =>
   CONTENT_ENTITY_TYPES.map((value) => ({ value, label: m.value.library.entities[value] }))
 )
 
 const currentProviders = computed<ScraperProviderInfo[]>(() => {
-  if (!selectedMediaType.value || !providersByType.value) return []
-  return providersByType.value[selectedMediaType.value] ?? []
+  if (!selectedEntityType.value || !providersByType.value) return []
+  return providersByType.value[selectedEntityType.value] ?? []
 })
 
 const searchProviders = computed(() =>
@@ -95,9 +95,9 @@ const languageGroup = computed(() =>
 
 // Recipe cards for the selected media type, with live availability.
 const recipeCards = computed(() => {
-  if (!selectedMediaType.value) return []
+  if (!selectedEntityType.value) return []
   const group = resolveRecipeLanguageGroup(defaultContentLocale.value)
-  return getRecipesForMediaType(selectedMediaType.value).map((recipe) => {
+  return getRecipesForEntityType(selectedEntityType.value).map((recipe) => {
     const copy = recipe.copy(m.value)
     const availability = assessRecipeAvailability(recipe, group, currentProviders.value)
     return { recipe, copy, availability }
@@ -113,9 +113,9 @@ const confirmedMaterialization = computed(() => {
 
 const slotPreview = computed(() => {
   const materialized = confirmedMaterialization.value
-  if (!materialized || !selectedMediaType.value) return []
+  if (!materialized || !selectedEntityType.value) return []
 
-  return getScraperSlotsForMediaType(selectedMediaType.value)
+  return getScraperSlotsForEntityType(selectedEntityType.value)
     .map((slotName) => {
       const config = materialized.slotConfigs[slotName]
       const providerLabels = (config?.providers ?? [])
@@ -138,7 +138,7 @@ const slotPreview = computed(() => {
 watch(
   () => open.value,
   (isOpen) => {
-    selectedMediaType.value = props.mediaType ?? null
+    selectedEntityType.value = props.entityType ?? null
     if (!isOpen) {
       path.value = 'recipes'
       confirmingRecipe.value = null
@@ -149,8 +149,8 @@ watch(
   { immediate: true }
 )
 
-function handleMediaTypeSelected(mediaType: ContentEntityType) {
-  selectedMediaType.value = mediaType
+function handleEntityTypeSelected(entityType: ContentEntityType) {
+  selectedEntityType.value = entityType
   path.value = 'recipes'
 }
 
@@ -169,10 +169,10 @@ function handleConfirmRecipe() {
   emit(
     'create',
     {
-      id: nanoid(),
+      id: newId(),
       name: profileName.value.trim() || recipe.copy(m.value).name,
       description: recipe.copy(m.value).description,
-      mediaType: materialized.mediaType,
+      entityType: materialized.entityType,
       recipeId: materialized.recipeId,
       dismissedRecipeFingerprint: null,
       searchProviderId: materialized.searchProviderId,
@@ -188,23 +188,23 @@ function handleConfirmRecipe() {
 }
 
 function handleProviderSelected(provider: ScraperProviderInfo) {
-  if (!selectedMediaType.value) return
+  if (!selectedEntityType.value) return
 
   const seeded = path.value === 'provider'
   emit(
     'create',
     {
-      id: nanoid(),
+      id: newId(),
       name: '',
       description: null,
-      mediaType: selectedMediaType.value,
+      entityType: selectedEntityType.value,
       recipeId: null,
       dismissedRecipeFingerprint: null,
       searchProviderId: provider.id,
       defaultLocale: null,
       slotConfigs: seeded
-        ? createSlotConfigs(selectedMediaType.value, provider.id, [...provider.capabilities])
-        : createSlotConfigs(selectedMediaType.value, provider.id, []),
+        ? createSlotConfigs(selectedEntityType.value, provider.id, [...provider.capabilities])
+        : createSlotConfigs(selectedEntityType.value, provider.id, []),
       order: 0,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -219,19 +219,19 @@ function handleBack() {
     confirmingRecipe.value = null
     return
   }
-  if (!props.mediaType) {
-    selectedMediaType.value = null
+  if (!props.entityType) {
+    selectedEntityType.value = null
   }
 }
 
 const showBack = computed(
-  () => confirmingRecipe.value !== null || (selectedMediaType.value !== null && !props.mediaType)
+  () => confirmingRecipe.value !== null || (selectedEntityType.value !== null && !props.entityType)
 )
 
 const dialogTitle = computed(() => {
   if (confirmingRecipe.value) return m.value.scraper.newProfile.confirmTitle
-  if (selectedMediaType.value) return m.value.scraper.newProfile.pathTitle
-  return m.value.scraper.profiles.newTitleMediaType
+  if (selectedEntityType.value) return m.value.scraper.newProfile.pathTitle
+  return m.value.scraper.profiles.newTitleEntityType
 })
 </script>
 
@@ -249,17 +249,17 @@ const dialogTitle = computed(() => {
         />
 
         <!-- Step 1: media type -->
-        <template v-else-if="!selectedMediaType">
+        <template v-else-if="!selectedEntityType">
           <p class="text-sm text-muted-foreground mb-4">
-            {{ m.scraper.profiles.newMediaTypeHint }}
+            {{ m.scraper.profiles.newEntityTypeHint }}
           </p>
           <div class="space-y-1">
             <button
-              v-for="option in mediaTypeOptions"
+              v-for="option in entityTypeOptions"
               :key="option.value"
               type="button"
               class="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors text-left"
-              @click="() => handleMediaTypeSelected(option.value)"
+              @click="() => handleEntityTypeSelected(option.value)"
             >
               <div class="size-10 rounded-md bg-muted flex items-center justify-center shrink-0">
                 <Icon
@@ -451,21 +451,21 @@ const dialogTitle = computed(() => {
             icon="icon-[mdi--arrow-left]"
             class="size-4 mr-1"
           />
-          {{ m.common.back }}
+          {{ m.actions.back }}
         </Button>
         <div class="flex-1" />
         <Button
           variant="outline"
           @click="open = false"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           v-if="confirmingRecipe"
           :disabled="!confirmedMaterialization"
           @click="handleConfirmRecipe"
         >
-          {{ m.common.create }}
+          {{ m.actions.create }}
         </Button>
       </DialogFooter>
     </DialogContent>

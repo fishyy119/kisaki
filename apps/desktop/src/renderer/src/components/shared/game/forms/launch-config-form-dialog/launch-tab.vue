@@ -27,7 +27,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const gameDirPath = defineModel<string>('gameDirPath', { required: true })
+const dirPath = defineModel<string>('dirPath', { required: true })
 const launcherMode = defineModel<GameLauncherMode>('launcherMode', { required: true })
 const launcherPath = defineModel<string>('launcherPath', { required: true })
 
@@ -56,7 +56,7 @@ async function handleSelectGameDirPath() {
     properties: ['openDirectory']
   })
   if (result.success && result.data && !result.data.canceled && result.data.filePaths[0]) {
-    gameDirPath.value = result.data.filePaths[0]
+    dirPath.value = result.data.filePaths[0]
   }
 }
 
@@ -77,8 +77,8 @@ async function handleSelectLauncherPath() {
       <FieldContent>
         <div class="flex gap-2">
           <Input
-            v-model="gameDirPath"
-            :placeholder="m.common.notSet"
+            v-model="dirPath"
+            :placeholder="m.states.notSet"
           />
           <Button
             type="button"
@@ -134,7 +134,7 @@ async function handleSelectLauncherPath() {
           <Input
             v-model="launcherPath"
             :placeholder="
-              launcherMode === 'url' ? m.game.launchConfig.urlPlaceholder : m.common.notSet
+              launcherMode === 'url' ? m.game.launchConfig.urlPlaceholder : m.states.notSet
             "
           />
           <Button

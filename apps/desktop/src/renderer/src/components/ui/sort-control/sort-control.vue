@@ -29,7 +29,7 @@ import {
 } from '@renderer/components/ui/select'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
-import type { SortDirection } from '@shared/common'
+import type { SortDirection } from '@shared/filter'
 import type { SortOption } from './types'
 
 interface Props {
@@ -74,8 +74,8 @@ const directionIcon = computed(() =>
 
 /** A disabled toggle explains itself instead of naming a direction it ignores. */
 const directionTooltip = computed(() => {
-  if (isDirectionFixed.value) return m.value.common.sortDirectionFixed
-  return direction.value === 'asc' ? m.value.common.sortAscending : m.value.common.sortDescending
+  if (isDirectionFixed.value) return m.value.sorting.directionFixed
+  return direction.value === 'asc' ? m.value.sorting.ascending : m.value.sorting.descending
 })
 
 function handleToggleDirection() {
@@ -90,7 +90,7 @@ function handleToggleDirection() {
         variant="outline"
         :size="buttonSize"
         :class="cn('text-muted-foreground', props.class)"
-        :title="m.common.sort"
+        :title="m.actions.sort"
       >
         <Icon
           :icon="directionIcon"
@@ -120,13 +120,13 @@ function handleToggleDirection() {
           value="asc"
           :disabled="isDirectionFixed"
         >
-          {{ m.common.sortAscending }}
+          {{ m.sorting.ascending }}
         </DropdownMenuRadioItem>
         <DropdownMenuRadioItem
           value="desc"
           :disabled="isDirectionFixed"
         >
-          {{ m.common.sortDescending }}
+          {{ m.sorting.descending }}
         </DropdownMenuRadioItem>
       </DropdownMenuRadioGroup>
     </DropdownMenuContent>
@@ -143,7 +143,7 @@ function handleToggleDirection() {
       <SelectTrigger
         :size="props.size"
         class="min-w-32 flex-1 focus:border-border"
-        :title="m.common.sort"
+        :title="m.actions.sort"
       >
         <SelectValue />
       </SelectTrigger>

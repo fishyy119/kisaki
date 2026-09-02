@@ -2,7 +2,7 @@ import { buildEntityCanonicalIdentityKey } from '@shared/identity'
 import type { CorePersonMetadata } from '@shared/metadata'
 import type { ScrapedPersonBundle, ScraperLookup } from '@shared/scraper'
 import type { IngestPersonGraph } from './types'
-import { firstNonEmpty, mergeExternalIds, normalizePersonCore, pickFirstUrl } from './common'
+import { firstNonEmpty, mergeExternalIds, normalizePersonCore, pickFirstUrl } from './shared'
 
 function toPersonRootCore(bundle: ScrapedPersonBundle, lookup: ScraperLookup): CorePersonMetadata {
   const normalized = normalizePersonCore({

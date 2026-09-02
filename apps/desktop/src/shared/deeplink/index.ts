@@ -1,4 +1,10 @@
-export { DEEPLINK_SCHEME, buildExtensionDeeplinkUrl, parseDeeplinkUrl } from './contracts'
+export {
+  DEEPLINK_SCHEME,
+  buildExtensionDeeplinkUrl,
+  buildLaunchDeeplinkUrl,
+  buildOpenDeeplinkUrl,
+  parseDeeplinkUrl
+} from './contracts'
 export type { DeeplinkOpenPayload, DeeplinkQuery, DeeplinkRequest } from './contracts'
 export {
   compileDeeplinkRoutePattern,

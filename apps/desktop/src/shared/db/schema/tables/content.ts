@@ -47,7 +47,7 @@ export const games = sqliteTable(
     launcherPath: text('launcher_path'),
     monitorMode: gameMonitorMode('monitor_mode').notNull().default('folder'),
     monitorPath: text('monitor_path'),
-    gameDirPath: text('game_dir_path'),
+    dirPath: text('dir_path'),
     isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
     descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
   },
@@ -116,7 +116,7 @@ export const animes = sqliteTable(
     episodeFileNumberOffset: integer('episode_file_number_offset').notNull().default(0),
     lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
     totalDuration: integer('total_duration').notNull().default(0),
-    animeDirPath: text('anime_dir_path'),
+    dirPath: text('dir_path'),
     isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
     descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
   },
@@ -188,7 +188,7 @@ export const comics = sqliteTable(
     totalChapters: integer('total_chapters'),
     lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
     totalDuration: integer('total_duration').notNull().default(0),
-    comicDirPath: text('comic_dir_path'),
+    dirPath: text('dir_path'),
     isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
     descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
   },
@@ -253,7 +253,7 @@ export const novels = sqliteTable(
     totalVolumes: integer('total_volumes'),
     lastActiveAt: integer('last_active_at', { mode: 'timestamp_ms' }),
     totalDuration: integer('total_duration').notNull().default(0),
-    novelDirPath: text('novel_dir_path'),
+    dirPath: text('dir_path'),
     isNsfw: integer('is_nsfw', { mode: 'boolean' }).notNull().default(false),
     descriptionInlineFiles: stringArrayJson('description_inline_files').notNull().default([])
   },

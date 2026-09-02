@@ -40,7 +40,7 @@ function formatIdList(field: FilterUiFieldDef, values: string[]): string {
     if (labels.length <= 2) return labels.join(', ')
     return m.value.filter.summaryAndMore({ first: labels[0]!, count: labels.length })
   }
-  return m.value.common.itemCount({ count: values.length })
+  return m.value.values.itemCount({ count: values.length })
 }
 
 function formatCondition(condition: FilterCondition): string | null {
@@ -51,7 +51,7 @@ function formatCondition(condition: FilterCondition): string | null {
 
   switch (condition.op) {
     case 'is':
-      return `${field.label}: ${condition.value ? m.value.common.yes : m.value.common.no}`
+      return `${field.label}: ${condition.value ? m.value.states.yes : m.value.states.no}`
     case 'anyOf':
     case 'noneOf':
     case 'hasAnyOf':
@@ -135,7 +135,7 @@ const entries = computed(() =>
       size="sm"
       @click="emit('clear')"
     >
-      {{ m.common.clear }}
+      {{ m.actions.clear }}
     </Button>
   </div>
 </template>

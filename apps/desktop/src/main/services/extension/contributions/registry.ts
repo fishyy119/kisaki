@@ -22,7 +22,7 @@ import type { DeeplinkService } from '@main/services/deeplink'
 import type { I18nService } from '@main/services/i18n'
 import type { I18nHooks } from '@main/services/i18n/hooks'
 import type { IngestHooks } from '@main/services/ingest/hooks'
-import type { NotifyService } from '@main/services/notify'
+import type { NotificationService } from '@main/services/notification'
 import type { ActivityHooks } from '@main/services/activity'
 import type { ScannerHooks } from '@main/services/scanner/hooks'
 import type { ScraperService } from '@main/services/scraper'
@@ -36,10 +36,10 @@ import { ExtensionDeeplinkRouteContributionPoint } from './deeplink-routes'
 import { ExtensionEntityMenuContributionPoint } from './entity-menus'
 import {
   ExtensionHookContributionPoint,
+  bindActivityHookPoints,
   bindAppHookPoints,
   bindIngestHookPoints,
   bindLibraryHookPoints,
-  bindPlayHookPoints,
   bindScannerHookPoints,
   bindScraperHookPoints
 } from './hooks'
@@ -66,7 +66,7 @@ export interface ExtensionModuleHookSurfaces {
 export interface ExtensionContributionRegistryOptions extends ExtensionContributionPointOptions {
   command: CommandService
   deeplink: DeeplinkService
-  notify: NotifyService
+  notification: NotificationService
   i18n: I18nService
   scraper: ScraperService
   waitForExtensionRunning(extensionId: string, timeoutMs: number): Promise<boolean>
@@ -103,7 +103,7 @@ export class ExtensionContributionRegistry {
     this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionPoint({
       ...base,
       deeplink: options.deeplink,
-      notify: options.notify,
+      notification: options.notification,
       i18n: options.i18n,
       waitForExtensionRunning: options.waitForExtensionRunning
     })
@@ -125,7 +125,7 @@ export class ExtensionContributionRegistry {
     bindScraperHookPoints(surfaces.scraper, this.hooks)
     bindIngestHookPoints(surfaces.ingest, this.hooks)
     bindScannerHookPoints(surfaces.scanner, this.hooks)
-    bindPlayHookPoints(surfaces.activity, this.hooks)
+    bindActivityHookPoints(surfaces.activity, this.hooks)
     bindLibraryHookPoints(surfaces.db, this.hooks)
     bindAppHookPoints(surfaces.bootstrap, surfaces.db, surfaces.i18n, surfaces.window, this.hooks)
   }
@@ -175,16 +175,16 @@ export class ExtensionContributionRegistry {
     )
     rpc.handleHostRequest(
       'contributions.scraperProviders.register',
-      async ({ runtimeHandle, mediaType, provider }) => {
-        await this.scraperProviders.registerProvider(runtimeHandle, mediaType, provider)
+      async ({ runtimeHandle, entityType, provider }) => {
+        await this.scraperProviders.registerProvider(runtimeHandle, entityType, provider)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
       'contributions.scraperProviders.unregister',
-      async ({ runtimeHandle, mediaType, providerId }) => {
-        await this.scraperProviders.unregisterProvider(runtimeHandle, mediaType, providerId)
+      async ({ runtimeHandle, entityType, providerId }) => {
+        await this.scraperProviders.unregisterProvider(runtimeHandle, entityType, providerId)
         this.notifyChanged()
         return {}
       }

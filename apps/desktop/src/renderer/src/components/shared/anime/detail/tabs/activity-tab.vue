@@ -24,13 +24,13 @@ const episodeNames = computed(
 
 function formatEpisodeName(episode: { episodeNumber: number | null; name: string | null }): string {
   if (episode.name) return episode.name
-  if (episode.episodeNumber === null) return m.value.common.emptyValue
+  if (episode.episodeNumber === null) return m.value.values.emptyValue
   return m.value.anime.episodes.unnamed({ number: String(episode.episodeNumber) })
 }
 
 function sessionTitle(session: { episodeId?: string | null }): string {
-  if (!session.episodeId) return m.value.common.emptyValue
-  return episodeNames.value.get(session.episodeId) ?? m.value.common.emptyValue
+  if (!session.episodeId) return m.value.values.emptyValue
+  return episodeNames.value.get(session.episodeId) ?? m.value.values.emptyValue
 }
 </script>
 

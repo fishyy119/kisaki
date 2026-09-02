@@ -32,7 +32,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Company')
+const log = createLogger('Library')
 
 interface Props {
   companyId: string
@@ -99,7 +99,7 @@ async function handleSubmit() {
         foundedDate
       })
       .where(eq(companies.id, props.companyId))
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -184,13 +184,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

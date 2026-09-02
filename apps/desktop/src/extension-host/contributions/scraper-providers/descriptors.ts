@@ -7,9 +7,9 @@ import {
   NOVEL_SCRAPER_SLOTS,
   PERSON_SCRAPER_SLOTS,
   type HostToMainRpcMethod,
-  type MainToHostRpcMethod,
-  type ScraperMediaType
+  type MainToHostRpcMethod
 } from '@kisaki3/extension-api'
+import type { ContentEntityType } from '@shared/entity-types'
 
 export interface MainToHostScraperProviderRpcDescriptor {
   search: Extract<MainToHostRpcMethod, 'contributions.scraperProviders.search'>
@@ -45,4 +45,4 @@ export const SCRAPER_PROVIDER_SLOTS = {
   person: PERSON_SCRAPER_SLOTS,
   company: COMPANY_SCRAPER_SLOTS,
   character: CHARACTER_SCRAPER_SLOTS
-} as const satisfies Record<ScraperMediaType, readonly string[]>
+} as const satisfies Record<ContentEntityType, readonly string[]>

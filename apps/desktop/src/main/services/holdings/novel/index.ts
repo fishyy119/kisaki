@@ -3,4 +3,4 @@
  */
 
 export { novelAutoSyncSpec } from './auto-sync-spec'
-export { NovelFileSyncHandler } from './sync'
+export { NovelFileSyncCoordinator } from './sync'

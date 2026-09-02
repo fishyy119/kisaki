@@ -86,10 +86,9 @@ export {
   readUnwatchedEpisodeCounts,
   shouldOfferWatchCatchUp,
   toggleEpisodeWatched,
-  useAnimeWatch,
-  type AnimeWatch,
   type UnwatchedEpisodeCounts
-} from './use-anime-watch'
+} from './anime-completion'
+export { useAnimeWatching, type AnimeWatching } from './use-anime-watching'
 export {
   comicDetailData,
   useComic,
@@ -102,6 +101,12 @@ export {
 export { useComicFileSync } from './use-comic-file-sync'
 export { useComicReading, type ComicReading } from './use-comic-reading'
 export {
+  markChaptersRead,
+  readUnreadChapterCount,
+  shouldOfferReadCatchUp as shouldOfferComicReadCatchUp,
+  toggleChapterRead
+} from './comic-completion'
+export {
   novelDetailData,
   useNovel,
   useNovelDialogProvider,
@@ -112,6 +117,12 @@ export {
 } from './use-novel'
 export { useNovelFileSync } from './use-novel-file-sync'
 export { useNovelReading, type NovelReading } from './use-novel-reading'
+export {
+  markVolumesRead,
+  readUnreadVolumeCount,
+  shouldOfferReadCatchUp as shouldOfferNovelReadCatchUp,
+  toggleVolumeRead
+} from './novel-completion'
 export { useReaderChrome, type ReaderChrome, type ReaderPanelTab } from './use-reader-chrome'
 export { useReadingClock } from './use-reading-clock'
 export {

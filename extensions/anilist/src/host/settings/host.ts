@@ -133,7 +133,7 @@ export function createAnilistSettingsHostFunctions(
 async function listProfiles(
   mediaType: 'anime' | 'comic' | 'novel'
 ): Promise<AnilistProfileOption[]> {
-  const profiles = await kisaki.scrapers.profiles.list({ mediaType })
+  const profiles = await kisaki.scrapers.profiles.list({ entityType: mediaType })
   return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
 }
 

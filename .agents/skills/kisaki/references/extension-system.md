@@ -7,8 +7,8 @@
 - `apps/desktop/src/main/services/extension/service.ts` - Main extension service
 - `apps/desktop/src/main/services/extension/installations/view.ts` - Installed extension aggregation from SQLite installation records and package manifests
 - `apps/desktop/src/main/services/extension/installations/store.ts` - SQLite-backed installation records
-- `apps/desktop/src/main/services/extension/installer/manager.ts` - Repository and local `.kisx` package install orchestration
-- `apps/desktop/src/main/services/extension/installer/planner.ts` - Install plan creation, risk reporting, and signer confirmation checks
+- `apps/desktop/src/main/services/extension/install/installer.ts` - Repository and local `.kisx` package install orchestration
+- `apps/desktop/src/main/services/extension/install/planner.ts` - Install plan creation, risk reporting, and signer confirmation checks
 - `apps/desktop/src/main/services/extension/packages/` - Package layout, verification, download, extraction, commit, recovery, operation cancellation, and icons
 - `apps/desktop/src/main/services/extension/packages/preparer.ts` - Low-level repository/local package preparation for an existing package operation
 - `apps/desktop/src/main/services/extension/packages/commit.ts` - Active package and installation row commit/removal
@@ -46,10 +46,10 @@ Keep extension responsibilities split by process and transport boundary:
 - `repositories/**` owns repository configuration, manifest fetching, snapshot persistence, icon proxying, and in-memory catalog aggregation. Repository manifests are remote declarations, not installed-state facts.
 - `installations/**` owns SQLite-backed installation rows and the installed DTO assembled from DB rows, package manifests, built-ins, dev extensions, and runtime state.
 - `packages/**` owns path confinement, `.kisx` download, hash/signature/package verification, extraction, active-package commit/removal, startup recovery, operation cancellation, and extension icon serving. It does not own install/update business policy, signer trust decisions, or runtime lifecycle.
-- `installer/**` owns renderer-facing install plans and all repository/local package mutation orchestration, including the package replacement path used by updates. Main returns risks and plan fingerprints; renderer performs confirmation.
+- `install/**` owns renderer-facing install plans and all repository/local package mutation orchestration, including the package replacement path used by updates. Main returns risks and plan fingerprints; renderer performs confirmation.
 - `updates/**` owns update candidate selection, preview-update/pin compatibility, signer trust eligibility, and automatic-update filtering. It delegates execution to the public installer command and must not import installer private split files such as confirmation, preparation, source snapshot, or signer trust helpers.
 - `signers/**` owns extension-scoped signer trust. Trusting one fingerprint for one extension never grants global signer trust.
-- `installations/view.ts`, `installations/store.ts`, `installer/planner.ts`, `packages/preparer.ts`, `packages/manifest.ts`, `packages/layout.ts`, `packages/commit.ts`, `packages/recovery.ts`, `packages/integrity.ts`, `repositories/manager.ts`, `updates/planner.ts`, `reload-watcher.ts`, and `@shared/extension/path-confinement` are single-purpose helpers. Keep scan, installation records, package validation, repository download, and path safety logic out of anonymous IPC handlers.
+- `installations/view.ts`, `installations/store.ts`, `install/planner.ts`, `packages/preparer.ts`, `packages/manifest.ts`, `packages/layout.ts`, `packages/commit.ts`, `packages/recovery.ts`, `packages/integrity.ts`, `repositories/manager.ts`, `updates/planner.ts`, `reload-watcher.ts`, and `@shared/extension/path-confinement` are single-purpose helpers. Keep scan, installation records, package validation, repository download, and path safety logic out of anonymous IPC handlers.
 - `runtime/manager.ts` owns the desired-vs-loaded runtime state machine for the shared extension host. `runtime/host-controller.ts`, `runtime/rpc-client.ts`, `runtime/storage.ts`, and `runtime/secrets.ts` are runtime infrastructure, not contribution or capability logic. The wire protocol itself lives in `@extension-host/protocol` because both processes speak it.
 - `src/extension-host/**` is a separate utility-process program with its own bundle. It loads extension entries, builds the SDK bridge, normalizes extension-owned contributions, and talks back to main through typed RPC only. It must not import Electron or `@main`, and main may import only `@extension-host/protocol`; both constraints are enforced by lint.
 - `capabilities/**` are main-side adapters for host-owned services that extensions call through `kisaki.*`. Capability providers are stateless extension-direction boundaries: runtime-handle auth, untrusted-DTO validation, and forwarding to the owning app service or module. Renderer-facing state, renderer callbacks, and renderer IPC never live in a capability provider.
@@ -118,7 +118,7 @@ the general single-file-versus-folder rule instead (see `architecture.md`).
 
 ### Naming Rules
 
-- Main facade and helpers use `Extension*`: `ExtensionService`, `ExtensionInstallationManager`, `ExtensionInstallerManager`, `ExtensionUpdateManager`, `ExtensionRepositoryManager`, `ExtensionSignerTrustManager`, `ExtensionReloadWatcher`.
+- Main facade and helpers use `Extension*`: `ExtensionService`, `ExtensionInstallationManager`, `ExtensionInstaller`, `ExtensionUpdateManager`, `ExtensionRepositoryManager`, `ExtensionSignerTrustManager`, `ExtensionReloadWatcher`. `Manager` marks the lifecycle owner of a set of live instances (installations, updates, repositories, runtimes); an object that performs one workflow takes its own role noun (`ExtensionInstaller`, `ExtensionLibraryGraphRunner`, `ExtensionIconServer`).
 - The capability aggregate is `ExtensionCapabilityGateway` in `capabilities/gateway.ts`. Capability adapters use `Extension<Capability>CapabilityProvider` when they expose app-owned services to the extension runtime; `capabilities/library/provider.ts` is the public entry for the split library capability. Do not use `*Provider` for internal capability subdomain stores such as library entities, relations, or attachments.
 - The contribution aggregate is `ExtensionContributionRegistry` in `contributions/registry.ts`. Main-process contribution point folders use `point.ts` and `Extension<ContributionPointSingular>ContributionPoint`, and expose stable verbs such as `register`, `unregister`, `getSnapshot`, `releaseRuntime`, and `releaseAll` as applicable.
 - The webview session owner is `ExtensionWebviewSessionManager` in `webviews.ts`; the `kisaki.webviews` capability provider stays a stateless adapter in front of it.
@@ -238,14 +238,16 @@ derived from the `ExtensionHookPoints` map per point id.
 ### Contracts
 
 - Point ids take either the dispatching service's id as root or one of the closed topic roots
-  `app.*` / `library.*` / `play.*`. See "Hook Id Roots" in [ipc-events.md](ipc-events.md); the
-  contract files below are grouped by that root, which is why `play.ts` holds every consumption
-  vertical and `app.ts` holds events several services dispatch.
+  `app.*` / `library.*`. See "Hook Id Roots" in [ipc-events.md](ipc-events.md); the contract files
+  below are grouped by that root, which is why `activity.ts` holds every consumption vertical and
+  `app.ts` holds events several services dispatch.
 - Public contracts live in `packages/extension-api/src/contributions/hooks/` split by domain:
-  `contracts/scraper.ts`, `ingest.ts`, `scanner.ts`, `play.ts`, `library.ts`, `app.ts`,
+  `contracts/scraper.ts`, `ingest.ts`, `scanner.ts`, `activity.ts`, `library.ts`, `app.ts`,
   `extension.ts`, plus `contracts/point.ts` for kind primitives.
 - `catalog.ts` composes the single `ExtensionHookPoints` type map (point id → kind + payload) and
-  the runtime `EXTENSION_HOOK_POINTS` descriptor table used for validation and kind dispatch.
+  the runtime `EXTENSION_HOOK_POINTS` descriptor table used for validation and kind dispatch. Both
+  derive their per-entity families from the entity-type constants with template-literal ids and
+  `satisfies` checks, so adding an entity type cannot leave a family incomplete.
 - The scraper domain reuses the public DTOs from `contributions/scraper-providers` (such as
   `ScrapedGameBundle`, `ScraperLookup`); hook contracts do not invent parallel DTOs.
 - RPC methods: `contributions.hooks.register/unregister` (host→main),
@@ -255,11 +257,11 @@ derived from the `ExtensionHookPoints` map per point id.
 ### Kind Semantics
 
 - **waterfall** - ordered value transformation: `scraper.<type>.lookup|searched|collected`,
-  `scanner.entry.discovered|matched`, `play.game.launching`, `play.game.session.ending`.
+  `scanner.entry.discovered|matched`, `activity.game.launching`, `activity.game.play.ending`.
 - **veto** - ordered gatekeeping before a write; the first `{ veto: true, reason? }` aborts the
   workflow with a stable error: `ingest.<type>.committing|updating`, `library.entity-merging`.
 - **notify** - after-the-fact notification: `ingest.<type>.committed|updated`,
-  `scanner.run.started|finished`, `play.game.session.started|ended`, `library.changed`,
+  `scanner.run.started|finished`, `activity.<media>.<verb>.started|ended`, `library.changed`,
   `library.entity-merged`, `app.ready`, `app.settings.changed`, `app.ui-locale.changed`,
   `app.theme.changed`, `extension.enabled|disabled`.
 - **awaited notify** - declared in the catalog as notify with `await: true`; the workflow awaits
@@ -312,7 +314,7 @@ Rules:
 - Declaration and implementation must agree in both directions: declaring `search` without
   implementing it, or implementing it without declaring it, fails validation on both the public
   (`packages/extension-api/src/contributions/scraper-providers/validation.ts`) and app
-  (`handlers/common/registry.ts`) side. The main-side adapter omits the method entirely for a
+  (`scraper/shared/registry.ts`) side. The main-side adapter omits the method entirely for a
   provider that does not declare the capability.
 - A profile whose `searchProviderId` names a provider without `search` fails with a
   `ScrapeFailure('provider-unavailable', ...)`; renderer search-source pickers already filter on
@@ -470,7 +472,7 @@ kisx registry add-release artifacts/example-0.0.1.kisx --manifest registry/manif
 
 ## Search Patterns
 
-- Services: `ExtensionService`, `ExtensionRepositoryManager`, `ExtensionInstallerManager`, `ExtensionUpdateManager`, `RuntimeManager`, `ExtensionContributionRegistry`
+- Services: `ExtensionService`, `ExtensionRepositoryManager`, `ExtensionInstaller`, `ExtensionUpdateManager`, `RuntimeManager`, `ExtensionContributionRegistry`
 - IPC: `extension:search-catalog`, `extension:list-repositories`, `extension:install-release`, `extension:check-updates`, `extension:get-automatic-update-run`, `extension:get-installed-packages`, `extension:list-trusted-signers`, `extension:contributions-changed`, `extension:resolve-settings-panel`
 - Host bridge: `runtime.storage.*`, `runtime.secrets.*`, `contributions.*`, `capabilities.*`, `capabilities.taskRuns.*`, `capabilities.automations.*`, `runtimeHandle`
 - Hooks: `context.hooks.on`, `ExtensionHookPoints`, `EXTENSION_HOOK_POINTS`, `contributions.hooks.invoke`, `ExtensionHookContributionPoint`, `HostHooksContributionPoint`, `bindings/`

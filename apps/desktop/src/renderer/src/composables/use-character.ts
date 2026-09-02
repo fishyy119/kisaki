@@ -25,7 +25,7 @@ import type {
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import {
   createEntityDetailContext,
   createEntitySpoilerParams,
@@ -64,10 +64,7 @@ export interface CharacterCastEntry {
 }
 
 export type CharacterContext = EntityDetailContext<CharacterData>
-export type CharacterProviderReturn = EntityDetailProviderReturn<
-  CharacterData,
-  EntitySpoilerParams
->
+export type CharacterProviderReturn = EntityDetailProviderReturn<CharacterData, EntitySpoilerParams>
 
 // =============================================================================
 // Data Fetcher

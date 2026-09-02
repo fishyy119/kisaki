@@ -6,7 +6,7 @@ import type {
 } from '@shared/ingest/add'
 import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   characterPersonLinks,
   collectionCharacterLinks,
@@ -21,7 +21,7 @@ import type { IngestCharacterGraph, IngestCharacterNode, IngestCharacterPersonLi
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { requireOwnerIdentity, requirePersistedId, resolveOrderedLinks } from './links'
 import { pickFirstAssetUrl, type PersistCharacterGraphResult } from './types'
-import type { PersonIngestPersistHandler } from './person'
+import type { PersonPersister } from './person'
 import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
@@ -63,10 +63,10 @@ function resolveCharacterPersonLinks(params: {
   })
 }
 
-export class CharacterIngestPersistHandler {
+export class CharacterPersister {
   constructor(
     private readonly dbService: DbService,
-    private readonly personPersist: PersonIngestPersistHandler,
+    private readonly personPersist: PersonPersister,
     private readonly i18nService: I18nService
   ) {}
 
@@ -169,7 +169,7 @@ export class CharacterIngestPersistHandler {
     }
 
     const core = node.core
-    const characterId = nanoid()
+    const characterId = newId()
     const newCharacter: NewCharacter = {
       id: characterId,
       name: core.name,
@@ -250,7 +250,7 @@ export class CharacterIngestPersistHandler {
     const core = node.core
 
     if (core.externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExisting(
+      const existingByExternalId = this.dbService.finder.findExisting(
         'character',
         { externalIds: core.externalIds },
         tx

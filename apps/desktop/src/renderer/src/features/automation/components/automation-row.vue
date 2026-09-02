@@ -176,7 +176,7 @@ const enabledModel = computed({
         <Button
           size="icon-sm"
           variant="ghost"
-          :tooltip="m.common.edit"
+          :tooltip="m.actions.edit"
           :disabled="props.busy || props.running"
           @click="emit('edit')"
         >
@@ -190,7 +190,7 @@ const enabledModel = computed({
           size="icon-sm"
           variant="ghost"
           class="hover:text-destructive"
-          :tooltip="m.common.delete"
+          :tooltip="m.actions.delete"
           :disabled="props.busy || props.running"
           @click="emit('delete')"
         >

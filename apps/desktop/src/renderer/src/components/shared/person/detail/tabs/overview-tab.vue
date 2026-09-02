@@ -160,13 +160,13 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
                 {{ alias }}
               </div>
             </dd>
-            <dd v-else>{{ m.common.emptyValue }}</dd>
+            <dd v-else>{{ m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.gender }}</dt>
             <dd>
-              {{ person.gender ? GENDER_LABELS[person.gender] : m.common.emptyValue }}
+              {{ person.gender ? GENDER_LABELS[person.gender] : m.values.emptyValue }}
             </dd>
             <dt class="text-muted-foreground">{{ m.library.fields.birthDate }}</dt>
-            <dd>{{ person.birthDate ? f.date(person.birthDate) : m.common.emptyValue }}</dd>
+            <dd>{{ person.birthDate ? f.date(person.birthDate) : m.values.emptyValue }}</dd>
             <!--
               A death date does not apply to the living, so an empty value means
               inapplicable rather than unknown; the row renders only when filled.
@@ -176,7 +176,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
               <dd>{{ f.date(person.deathDate) }}</dd>
             </template>
             <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
-            <dd>{{ person.createdAt ? f.date(person.createdAt) : m.common.emptyValue }}</dd>
+            <dd>{{ person.createdAt ? f.date(person.createdAt) : m.values.emptyValue }}</dd>
           </dl>
         </Section>
 

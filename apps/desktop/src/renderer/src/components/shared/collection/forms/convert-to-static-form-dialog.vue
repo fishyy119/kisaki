@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,14 +29,14 @@ import {
   deleteCollectionLinks
 } from '@renderer/core/db'
 import { collections, type DynamicCollectionConfig } from '@shared/db'
-import { CONTENT_ENTITY_TYPES } from '@shared/common'
+import { CONTENT_ENTITY_TYPES } from '@shared/entity-types'
 import { createMembershipSort } from '@shared/filter'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Collection')
+const log = createLogger('Library')
 
 interface Props {
   collectionId: string
@@ -108,7 +108,7 @@ async function materializeDynamicCollection(config: DynamicCollectionConfig) {
     await insertCollectionLinks(
       entityType,
       entityIds.map((entityId, index) => ({
-        id: nanoid(),
+        id: newId(),
         collectionId,
         entityId,
         note: null,
@@ -158,7 +158,7 @@ async function handleConfirm() {
         </template>
       </AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="isConverting">{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogCancel :disabled="isConverting">{{ m.actions.cancel }}</AlertDialogCancel>
         <AlertDialogAction
           :disabled="isConverting || isLoading || !canConvert"
           @click="handleConfirm"

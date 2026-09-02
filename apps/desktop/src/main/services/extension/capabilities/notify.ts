@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import type {
   ExtensionRuntimeMetadata,
   NotificationHandle,
@@ -13,8 +13,8 @@ import {
   createValidationError,
   normalizeCapabilityError
 } from '@kisaki3/extension-api'
-import type { NotifyService } from '@main/services/notify'
-import type { NotifyOptions as SharedNotifyOptions } from '@shared/notify'
+import type { NotificationService } from '@main/services/notification'
+import type { NotifyOptions as SharedNotifyOptions } from '@shared/notification'
 
 const NOTIFICATION_KINDS: readonly NotificationKind[] = [
   'success',
@@ -29,7 +29,7 @@ const NOTIFY_MODES: readonly NotifyMode[] = ['toast', 'native', 'auto']
 const NOTIFY_OPTION_KEYS = new Set<string>(['message', 'mode', 'id', 'closable'])
 
 export interface ExtensionNotifyCapabilityProviderOptions {
-  notify: NotifyService
+  notification: NotificationService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
@@ -54,9 +54,9 @@ export class ExtensionNotifyCapabilityProvider {
       }
 
       const handleId =
-        this.options.notify.show(normalized.notifyOptions, normalized.requestedId) ??
+        this.options.notification.show(normalized.notifyOptions, normalized.requestedId) ??
         normalized.requestedId ??
-        nanoid()
+        newId()
 
       this.trackHandle(runtimeHandle, handleId)
       return { id: handleId }
@@ -76,7 +76,7 @@ export class ExtensionNotifyCapabilityProvider {
 
     try {
       const normalized = normalizeOptions(title, options, kind)
-      this.options.notify.update(id, normalized.notifyOptions)
+      this.options.notification.update(id, normalized.notifyOptions)
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to update the notification.')
     }
@@ -86,7 +86,7 @@ export class ExtensionNotifyCapabilityProvider {
     this.requireOwnedHandle(runtimeHandle, id)
 
     try {
-      this.options.notify.dismiss(id)
+      this.options.notification.dismiss(id)
       this.untrackHandle(runtimeHandle, id)
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to dismiss the notification.')
@@ -101,7 +101,7 @@ export class ExtensionNotifyCapabilityProvider {
 
     for (const id of [...handles]) {
       try {
-        this.options.notify.dismiss(id)
+        this.options.notification.dismiss(id)
       } catch {
         // Best-effort cleanup; renderer/native state may already be gone.
       } finally {

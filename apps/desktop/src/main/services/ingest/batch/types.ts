@@ -9,6 +9,13 @@ export interface IngestBatchUpdateRow {
   externalIds: ExternalId[]
 }
 
+/** Minimum a provider search result must carry to drive a batch update. */
+export interface IngestBatchSearchMatch {
+  name: string
+  originalName?: string
+  externalIds: ExternalId[]
+}
+
 export interface IngestBatchFailure {
   entityId?: string
   name?: string

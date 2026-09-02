@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import type { CommandService } from '@main/services/command'
 import type {
   Automation,
@@ -183,7 +183,7 @@ function createRecord(input: {
   error?: unknown
 }): AutomationRunHistoryRecord {
   return {
-    id: randomUUID(),
+    id: newId(),
     automationId: input.automation.id,
     automationNameSnapshot: input.automation.name,
     owner: input.automation.owner,

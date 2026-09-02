@@ -8,7 +8,7 @@ import { computed, ref, watch, toRef } from 'vue'
 import { useAsyncData, useInlineAttachments, useStagedImagePick } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { animeNotes, comicNotes, gameNotes, novelNotes } from '@shared/db'
 import {
   Dialog,
@@ -179,11 +179,11 @@ async function handleSubmit() {
     }
 
     didSave.value = true
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Save note failed:', error)
-    notify.error(m.value.common.saveFailed)
+    notify.error(m.value.feedback.saveFailed)
   } finally {
     isSaving.value = false
   }
@@ -262,7 +262,7 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
@@ -273,7 +273,7 @@ function handleCancel() {
                 icon="icon-[mdi--loading]"
                 class="size-4 animate-spin mr-1.5"
               />
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

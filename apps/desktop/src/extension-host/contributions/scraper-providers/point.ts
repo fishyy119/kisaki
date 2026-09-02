@@ -1,4 +1,5 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
+import type { ContentEntityType } from '@shared/entity-types'
 import {
   createCancellationError,
   type AnimeScraperProvider,
@@ -22,7 +23,6 @@ import {
   type PersonScraperProvider,
   type PersonScraperSession,
   type PersonScraperSlot,
-  type ScraperMediaType,
   type ScraperProviderRegistration,
   type ScraperProviderResolveRequest,
   type ScraperProviderResolveResponse,
@@ -70,17 +70,17 @@ import type {
 } from './domain'
 import { toScraperProviderRegistration } from './registrations'
 
-type ScraperProviderInput<TMediaType extends ScraperMediaType> = TMediaType extends 'game'
+type ScraperProviderInput<TEntityType extends ContentEntityType> = TEntityType extends 'game'
   ? GameScraperProvider
-  : TMediaType extends 'anime'
+  : TEntityType extends 'anime'
     ? AnimeScraperProvider
-    : TMediaType extends 'comic'
+    : TEntityType extends 'comic'
       ? ComicScraperProvider
-      : TMediaType extends 'novel'
+      : TEntityType extends 'novel'
         ? NovelScraperProvider
-        : TMediaType extends 'person'
+        : TEntityType extends 'person'
           ? PersonScraperProvider
-          : TMediaType extends 'company'
+          : TEntityType extends 'company'
             ? CompanyScraperProvider
             : CharacterScraperProvider
 
@@ -142,7 +142,7 @@ export class HostScraperProviderContributionPoint {
   constructor(options: HostContributionDomainOptions) {
     this.options = options
     this.gameDomain = {
-      mediaType: 'game',
+      entityType: 'game',
       label: 'Game',
       rpc: HOST_TO_MAIN_SCRAPER_RPC,
       slots: SCRAPER_PROVIDER_SLOTS.game,
@@ -155,12 +155,12 @@ export class HostScraperProviderContributionPoint {
       validateSessionResults: validateGameScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'game',
+        entityType: 'game',
         provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.game)
       }),
       toUnregistration: (scope, providerId) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'game',
+        entityType: 'game',
         providerId
       }),
       register: (scope, provider) =>
@@ -169,7 +169,7 @@ export class HostScraperProviderContributionPoint {
         this.options.registry.unregisterScraperProvider(scope.extensionId, 'game', providerId)
     }
     this.animeDomain = {
-      mediaType: 'anime',
+      entityType: 'anime',
       label: 'Anime',
       rpc: HOST_TO_MAIN_SCRAPER_RPC,
       slots: SCRAPER_PROVIDER_SLOTS.anime,
@@ -182,12 +182,12 @@ export class HostScraperProviderContributionPoint {
       validateSessionResults: validateAnimeScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'anime',
+        entityType: 'anime',
         provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.anime)
       }),
       toUnregistration: (scope, providerId) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'anime',
+        entityType: 'anime',
         providerId
       }),
       register: (scope, provider) =>
@@ -196,7 +196,7 @@ export class HostScraperProviderContributionPoint {
         this.options.registry.unregisterScraperProvider(scope.extensionId, 'anime', providerId)
     }
     this.comicDomain = {
-      mediaType: 'comic',
+      entityType: 'comic',
       label: 'Comic',
       rpc: HOST_TO_MAIN_SCRAPER_RPC,
       slots: SCRAPER_PROVIDER_SLOTS.comic,
@@ -209,12 +209,12 @@ export class HostScraperProviderContributionPoint {
       validateSessionResults: validateComicScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'comic',
+        entityType: 'comic',
         provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.comic)
       }),
       toUnregistration: (scope, providerId) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'comic',
+        entityType: 'comic',
         providerId
       }),
       register: (scope, provider) =>
@@ -223,7 +223,7 @@ export class HostScraperProviderContributionPoint {
         this.options.registry.unregisterScraperProvider(scope.extensionId, 'comic', providerId)
     }
     this.novelDomain = {
-      mediaType: 'novel',
+      entityType: 'novel',
       label: 'Novel',
       rpc: HOST_TO_MAIN_SCRAPER_RPC,
       slots: SCRAPER_PROVIDER_SLOTS.novel,
@@ -236,12 +236,12 @@ export class HostScraperProviderContributionPoint {
       validateSessionResults: validateNovelScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'novel',
+        entityType: 'novel',
         provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.novel)
       }),
       toUnregistration: (scope, providerId) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'novel',
+        entityType: 'novel',
         providerId
       }),
       register: (scope, provider) =>
@@ -250,7 +250,7 @@ export class HostScraperProviderContributionPoint {
         this.options.registry.unregisterScraperProvider(scope.extensionId, 'novel', providerId)
     }
     this.personDomain = {
-      mediaType: 'person',
+      entityType: 'person',
       label: 'Person',
       rpc: HOST_TO_MAIN_SCRAPER_RPC,
       slots: SCRAPER_PROVIDER_SLOTS.person,
@@ -263,12 +263,12 @@ export class HostScraperProviderContributionPoint {
       validateSessionResults: validatePersonScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'person',
+        entityType: 'person',
         provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.person)
       }),
       toUnregistration: (scope, providerId) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'person',
+        entityType: 'person',
         providerId
       }),
       register: (scope, provider) =>
@@ -277,7 +277,7 @@ export class HostScraperProviderContributionPoint {
         this.options.registry.unregisterScraperProvider(scope.extensionId, 'person', providerId)
     }
     this.companyDomain = {
-      mediaType: 'company',
+      entityType: 'company',
       label: 'Company',
       rpc: HOST_TO_MAIN_SCRAPER_RPC,
       slots: SCRAPER_PROVIDER_SLOTS.company,
@@ -290,12 +290,12 @@ export class HostScraperProviderContributionPoint {
       validateSessionResults: validateCompanyScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'company',
+        entityType: 'company',
         provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.company)
       }),
       toUnregistration: (scope, providerId) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'company',
+        entityType: 'company',
         providerId
       }),
       register: (scope, provider) =>
@@ -304,7 +304,7 @@ export class HostScraperProviderContributionPoint {
         this.options.registry.unregisterScraperProvider(scope.extensionId, 'company', providerId)
     }
     this.characterDomain = {
-      mediaType: 'character',
+      entityType: 'character',
       label: 'Character',
       rpc: HOST_TO_MAIN_SCRAPER_RPC,
       slots: SCRAPER_PROVIDER_SLOTS.character,
@@ -317,12 +317,12 @@ export class HostScraperProviderContributionPoint {
       validateSessionResults: validateCharacterScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'character',
+        entityType: 'character',
         provider: toScraperProviderRegistration(provider, SCRAPER_PROVIDER_SLOTS.character)
       }),
       toUnregistration: (scope, providerId) => ({
         runtimeHandle: scope.runtimeHandle,
-        mediaType: 'character',
+        entityType: 'character',
         providerId
       }),
       register: (scope, provider) =>
@@ -334,47 +334,47 @@ export class HostScraperProviderContributionPoint {
 
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: ScraperMediaType,
-    provider: ScraperProviderInput<ScraperMediaType>
+    entityType: ContentEntityType,
+    provider: ScraperProviderInput<ContentEntityType>
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: 'game',
+    entityType: 'game',
     provider: GameScraperProvider
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: 'anime',
+    entityType: 'anime',
     provider: AnimeScraperProvider
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: 'comic',
+    entityType: 'comic',
     provider: ComicScraperProvider
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: 'novel',
+    entityType: 'novel',
     provider: NovelScraperProvider
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: 'person',
+    entityType: 'person',
     provider: PersonScraperProvider
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: 'company',
+    entityType: 'company',
     provider: CompanyScraperProvider
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: 'character',
+    entityType: 'character',
     provider: CharacterScraperProvider
   ): ScraperProviderRegistration
   registerScraperProvider(
     scope: HostContributionScope,
-    mediaType: ScraperMediaType,
+    entityType: ContentEntityType,
     provider:
       | GameScraperProvider
       | AnimeScraperProvider
@@ -384,7 +384,7 @@ export class HostScraperProviderContributionPoint {
       | CompanyScraperProvider
       | CharacterScraperProvider
   ): ScraperProviderRegistration {
-    switch (mediaType) {
+    switch (entityType) {
       case 'game':
         return this.registerProvider(scope, provider as GameScraperProvider, this.gameDomain)
       case 'anime':
@@ -410,7 +410,7 @@ export class HostScraperProviderContributionPoint {
     request: ScraperProviderSearchRequest,
     signal: AbortSignal
   ): Promise<ScraperProviderSearchResponse> {
-    switch (request.mediaType) {
+    switch (request.entityType) {
       case 'game':
         return this.searchProvider(this.gameDomain, request, signal)
       case 'anime':
@@ -432,7 +432,7 @@ export class HostScraperProviderContributionPoint {
     request: ScraperProviderResolveRequest,
     signal: AbortSignal
   ): Promise<ScraperProviderResolveResponse> {
-    switch (request.mediaType) {
+    switch (request.entityType) {
       case 'game':
         return this.resolveProvider(this.gameDomain, request, signal)
       case 'anime':
@@ -454,7 +454,7 @@ export class HostScraperProviderContributionPoint {
     request: ScraperProviderSessionOpenRequest,
     signal: AbortSignal
   ): Promise<ScraperProviderSessionOpenResponse> {
-    switch (request.mediaType) {
+    switch (request.entityType) {
       case 'game':
         return this.openProviderSession(this.gameDomain, request, signal)
       case 'anime':
@@ -476,7 +476,7 @@ export class HostScraperProviderContributionPoint {
     request: ScraperProviderSessionGetRequest,
     signal: AbortSignal
   ): Promise<ScraperProviderSessionGetResponse> {
-    switch (request.mediaType) {
+    switch (request.entityType) {
       case 'game':
         return this.getProviderSession(this.gameDomain, request, signal)
       case 'anime':
@@ -495,7 +495,7 @@ export class HostScraperProviderContributionPoint {
   }
 
   async closeSession(request: ScraperProviderSessionCloseRequest): Promise<void> {
-    switch (request.mediaType) {
+    switch (request.entityType) {
       case 'game':
         await this.closeProviderSession(this.gameDomain, request)
         return
@@ -545,14 +545,14 @@ export class HostScraperProviderContributionPoint {
   }
 
   private registerProvider<
-    TMediaType extends ScraperMediaType,
+    TEntityType extends ContentEntityType,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
     scope: HostContributionScope,
     provider: TProvider,
-    domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>
+    domain: ScraperDomain<TEntityType, TSlot, TSession, TProvider>
   ): ScraperProviderRegistration {
     const issues = domain.validate(provider)
     if (issues.length > 0) {
@@ -608,15 +608,15 @@ export class HostScraperProviderContributionPoint {
   }
 
   private async searchProvider<
-    TMediaType extends ScraperMediaType,
+    TEntityType extends ContentEntityType,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderSearchRequest, { mediaType: TMediaType }>,
+    domain: ScraperDomain<TEntityType, TSlot, TSession, TProvider>,
+    request: Extract<ScraperProviderSearchRequest, { entityType: TEntityType }>,
     signal: AbortSignal
-  ): Promise<Extract<ScraperProviderSearchResponse, { mediaType: TMediaType }>> {
+  ): Promise<Extract<ScraperProviderSearchResponse, { entityType: TEntityType }>> {
     const { runtime, provider } = this.requireProvider(
       domain,
       request.runtimeHandle,
@@ -643,21 +643,21 @@ export class HostScraperProviderContributionPoint {
     )
 
     return {
-      mediaType: domain.mediaType,
+      entityType: domain.entityType,
       results
-    } as unknown as Extract<ScraperProviderSearchResponse, { mediaType: TMediaType }>
+    } as unknown as Extract<ScraperProviderSearchResponse, { entityType: TEntityType }>
   }
 
   private async resolveProvider<
-    TMediaType extends ScraperMediaType,
+    TEntityType extends ContentEntityType,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderResolveRequest, { mediaType: TMediaType }>,
+    domain: ScraperDomain<TEntityType, TSlot, TSession, TProvider>,
+    request: Extract<ScraperProviderResolveRequest, { entityType: TEntityType }>,
     signal: AbortSignal
-  ): Promise<Extract<ScraperProviderResolveResponse, { mediaType: TMediaType }>> {
+  ): Promise<Extract<ScraperProviderResolveResponse, { entityType: TEntityType }>> {
     const { runtime, provider } = this.requireProvider(
       domain,
       request.runtimeHandle,
@@ -677,21 +677,21 @@ export class HostScraperProviderContributionPoint {
     )
 
     return {
-      mediaType: domain.mediaType,
+      entityType: domain.entityType,
       target: target as Awaited<ReturnType<TProvider['resolve']>>
-    } as unknown as Extract<ScraperProviderResolveResponse, { mediaType: TMediaType }>
+    } as unknown as Extract<ScraperProviderResolveResponse, { entityType: TEntityType }>
   }
 
   private async openProviderSession<
-    TMediaType extends ScraperMediaType,
+    TEntityType extends ContentEntityType,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderSessionOpenRequest, { mediaType: TMediaType }>,
+    domain: ScraperDomain<TEntityType, TSlot, TSession, TProvider>,
+    request: Extract<ScraperProviderSessionOpenRequest, { entityType: TEntityType }>,
     signal: AbortSignal
-  ): Promise<Extract<ScraperProviderSessionOpenResponse, { mediaType: TMediaType }>> {
+  ): Promise<Extract<ScraperProviderSessionOpenResponse, { entityType: TEntityType }>> {
     const { runtime, provider } = this.requireProvider(
       domain,
       request.runtimeHandle,
@@ -739,25 +739,25 @@ export class HostScraperProviderContributionPoint {
       throw createCancellationError('The scraper session open request was cancelled.')
     }
 
-    const sessionId = randomUUID()
+    const sessionId = newId()
     domain.sessions.set(sessionId, record)
 
-    return { mediaType: domain.mediaType, sessionId } as unknown as Extract<
+    return { entityType: domain.entityType, sessionId } as unknown as Extract<
       ScraperProviderSessionOpenResponse,
-      { mediaType: TMediaType }
+      { entityType: TEntityType }
     >
   }
 
   private async getProviderSession<
-    TMediaType extends ScraperMediaType,
+    TEntityType extends ContentEntityType,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderSessionGetRequest, { mediaType: TMediaType }>,
+    domain: ScraperDomain<TEntityType, TSlot, TSession, TProvider>,
+    request: Extract<ScraperProviderSessionGetRequest, { entityType: TEntityType }>,
     signal: AbortSignal
-  ): Promise<Extract<ScraperProviderSessionGetResponse, { mediaType: TMediaType }>> {
+  ): Promise<Extract<ScraperProviderSessionGetResponse, { entityType: TEntityType }>> {
     const record = this.requireSession(domain.sessions, request)
     const runtime = this.requireRuntime(record.runtimeHandle)
     const results = await this.options.runInExtensionContext(
@@ -774,30 +774,30 @@ export class HostScraperProviderContributionPoint {
     )
 
     return {
-      mediaType: domain.mediaType,
+      entityType: domain.entityType,
       result: results as Awaited<ReturnType<TSession['get']>>
-    } as unknown as Extract<ScraperProviderSessionGetResponse, { mediaType: TMediaType }>
+    } as unknown as Extract<ScraperProviderSessionGetResponse, { entityType: TEntityType }>
   }
 
   private async closeProviderSession<
-    TMediaType extends ScraperMediaType,
+    TEntityType extends ContentEntityType,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderSessionCloseRequest, { mediaType: TMediaType }>
+    domain: ScraperDomain<TEntityType, TSlot, TSession, TProvider>,
+    request: Extract<ScraperProviderSessionCloseRequest, { entityType: TEntityType }>
   ): Promise<void> {
     await this.closeStoredSession(domain.sessions, request.sessionId)
   }
 
   private requireProvider<
-    TMediaType extends ScraperMediaType,
+    TEntityType extends ContentEntityType,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
+    domain: ScraperDomain<TEntityType, TSlot, TSession, TProvider>,
     runtimeHandle: string,
     providerId: string
   ): { runtime: LoadedExtensionRuntime; provider: TProvider } {
@@ -811,12 +811,12 @@ export class HostScraperProviderContributionPoint {
   }
 
   private assertValidProviderOutput<
-    TMediaType extends ScraperMediaType,
+    TEntityType extends ContentEntityType,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
+    domain: ScraperDomain<TEntityType, TSlot, TSession, TProvider>,
     runtime: LoadedExtensionRuntime,
     providerId: string,
     operation: string,

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { readOptionalEnv, readRequiredEnv } from './common'
+import { readOptionalEnv, readRequiredEnv } from './shared'
 import { getReleaseTargetDefinition, readReleaseTarget } from './targets'
 
 const previousTag = readOptionalEnv('PREVIOUS_TAG')

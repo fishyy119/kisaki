@@ -6,9 +6,9 @@
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { getMediaRelationTypeRules, type MediaRelationType } from '@shared/db'
-import { MEDIA_TYPES } from '@shared/common'
+import { MEDIA_TYPES } from '@shared/entity-types'
 import {
   Dialog,
   DialogContent,
@@ -243,9 +243,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.confirm }}</Button>
+          <Button type="submit">{{ m.actions.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

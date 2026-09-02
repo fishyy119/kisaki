@@ -46,12 +46,12 @@ const { m } = useI18n()
       </AlertDialogDescription>
 
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="props.removing">{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogCancel :disabled="props.removing">{{ m.actions.cancel }}</AlertDialogCancel>
         <AlertDialogAction
           :disabled="props.removing"
           @click.prevent="emit('confirm')"
         >
-          {{ props.removing ? m.extension.repository.removeDialog.deleting : m.common.delete }}
+          {{ props.removing ? m.extension.repository.removeDialog.deleting : m.actions.delete }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

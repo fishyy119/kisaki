@@ -8,7 +8,7 @@
  */
 
 import { ENTITY_TABLES, type EntityRowMap } from '@renderer/core/db'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { getAttachmentUrl, type ThumbnailOptions } from './attachment'
 
 /**

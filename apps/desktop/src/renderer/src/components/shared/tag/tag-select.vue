@@ -7,7 +7,7 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
@@ -127,14 +127,14 @@ async function handleCreate(name: string) {
   }
 
   // Create new tag
-  const newId = nanoid()
-  await db.insert(tags).values({ id: newId, name: trimmedName, normalizedName: trimmedName })
+  const tagId = newId()
+  await db.insert(tags).values({ id: tagId, name: trimmedName, normalizedName: trimmedName })
 
   // Auto-select the new tag
   if (props.multiple) {
-    selectedIdsModel.value = [...selectedIds.value, newId]
+    selectedIdsModel.value = [...selectedIds.value, tagId]
   } else {
-    modelValue.value = newId
+    modelValue.value = tagId
   }
 }
 </script>

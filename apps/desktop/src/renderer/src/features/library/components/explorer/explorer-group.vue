@@ -22,7 +22,7 @@ import { useLibraryExplorerStore } from '../../stores'
 import { useExplorerLocator, type ExplorerListViewHandle } from '../../composables'
 import LibraryExplorerListItem from './explorer-list-item.vue'
 import type { CollectionGroup } from '../../composables'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { toExplorerSelectionKey } from '../../utils/explorer-selection'
 import { useI18n } from '@renderer/composables/use-i18n'
 

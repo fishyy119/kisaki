@@ -35,10 +35,10 @@ import type { TableName } from '@shared/db/table-names'
 import {
   MEDIA_TYPES,
   UNIT_MEDIA_TYPES,
-  isMediaType,
+  parseMediaType,
   type MediaType,
   type UnitMediaType
-} from '@shared/common'
+} from '@shared/entity-types'
 import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
@@ -78,8 +78,7 @@ function buildEntityKey(mediaType: MediaType, id: string): string {
 
 /** Media type segment of an entity key; this module owns the key format. */
 export function mediaTypeOfEntityKey(entityKey: string): MediaType | null {
-  const prefix = entityKey.slice(0, entityKey.indexOf(':'))
-  return isMediaType(prefix) ? prefix : null
+  return parseMediaType(entityKey.slice(0, entityKey.indexOf(':')))
 }
 
 /** Media scope of a report; `all` merges every media type. */

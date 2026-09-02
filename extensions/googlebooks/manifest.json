@@ -16,6 +16,6 @@
   "homepage": "https://books.google.com",
   "keywords": ["google-books", "novel", "book", "scraper", "import"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.14"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

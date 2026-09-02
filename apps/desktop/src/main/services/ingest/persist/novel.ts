@@ -8,7 +8,7 @@ import type {
 import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
 import type { NovelVolumeInfo } from '@shared/metadata'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   characterPersonLinks,
   collectionNovelLinks,
@@ -44,9 +44,9 @@ import {
   resolveOrderedLinks
 } from './links'
 import type { PersistNovelGraphResult } from './types'
-import type { PersonIngestPersistHandler } from './person'
-import type { CompanyIngestPersistHandler } from './company'
-import type { CharacterIngestPersistHandler } from './character'
+import type { PersonPersister } from './person'
+import type { CompanyPersister } from './company'
+import type { CharacterPersister } from './character'
 import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
@@ -162,12 +162,12 @@ function resolveNovelCharacterLinks(params: {
   })
 }
 
-export class NovelIngestPersistHandler {
+export class NovelPersister {
   constructor(
     private readonly dbService: DbService,
-    private readonly personPersist: PersonIngestPersistHandler,
-    private readonly companyPersist: CompanyIngestPersistHandler,
-    private readonly characterPersist: CharacterIngestPersistHandler,
+    private readonly personPersist: PersonPersister,
+    private readonly companyPersist: CompanyPersister,
+    private readonly characterPersist: CharacterPersister,
     private readonly i18nService: I18nService
   ) {}
 
@@ -345,7 +345,7 @@ export class NovelIngestPersistHandler {
     }
 
     const core = node.core
-    const novelId = nanoid()
+    const novelId = newId()
     const newNovel: NewNovel = {
       id: novelId,
       name: core.name,
@@ -354,9 +354,7 @@ export class NovelIngestPersistHandler {
       releaseDate: core.releaseDate,
       description: core.description,
       externalSites: core.externalSites || [],
-      novelDirPath: options?.novelDirPath
-        ? normalizeLibraryDirPath(options.novelDirPath)
-        : undefined
+      dirPath: options?.dirPath ? normalizeLibraryDirPath(options.dirPath) : undefined
     }
     if (core.format) {
       newNovel.format = core.format
@@ -385,10 +383,10 @@ export class NovelIngestPersistHandler {
     options: NovelPersistOptions | undefined,
     tx: DbContext
   ): { novelId: string; existingReason: 'path' | 'externalId' } | undefined {
-    if (options?.novelDirPath) {
-      const existingByPath = this.dbService.entityFinder.findExisting(
+    if (options?.dirPath) {
+      const existingByPath = this.dbService.finder.findExisting(
         'novel',
-        { path: options.novelDirPath },
+        { path: options.dirPath },
         tx
       )
       if (existingByPath) {
@@ -398,11 +396,7 @@ export class NovelIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExisting(
-        'novel',
-        { externalIds },
-        tx
-      )
+      const existingByExternalId = this.dbService.finder.findExisting('novel', { externalIds }, tx)
       if (existingByExternalId) {
         return { novelId: existingByExternalId.id, existingReason: 'externalId' }
       }
@@ -491,7 +485,7 @@ export class NovelIngestPersistHandler {
     if (!targetCollectionId) return
 
     const collectionLink: NewCollectionNovelLink = {
-      id: nanoid(),
+      id: newId(),
       collectionId: targetCollectionId,
       novelId,
       orderInCollection: 0

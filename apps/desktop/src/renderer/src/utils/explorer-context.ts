@@ -13,13 +13,12 @@
  * default-from, so a well-formed URL always carries an addressable context.
  */
 
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { getEntityDetailPath, LIBRARY_HOME_PATH } from './entity-routes'
 
 /** Browse contexts the explorer can address. */
 export type ExplorerContext =
-  | { kind: 'collection'; collectionId: string }
-  | { kind: 'uncategorized' }
+  { kind: 'collection'; collectionId: string } | { kind: 'uncategorized' }
 
 /** Token to store in a detail route's `from` query. */
 export function formatExplorerContext(context: ExplorerContext): string {

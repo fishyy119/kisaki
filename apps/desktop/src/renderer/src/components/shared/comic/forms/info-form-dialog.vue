@@ -48,7 +48,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Comic')
+const log = createLogger('Library')
 
 interface Props {
   comicId: string
@@ -69,7 +69,7 @@ const DIRECTION_UNSET = 'default'
 type DirectionChoice = ComicReadingDirection | typeof DIRECTION_UNSET
 
 const DIRECTION_OPTIONS = computed<{ value: DirectionChoice; label: string }[]>(() => [
-  { value: DIRECTION_UNSET, label: m.value.common.emptyValue },
+  { value: DIRECTION_UNSET, label: m.value.values.emptyValue },
   ...COMIC_READING_DIRECTION_VALUES.map((value) => ({
     value,
     label: m.value.library.readingDirection[value]
@@ -177,7 +177,7 @@ async function handleSubmit() {
       })
       .where(eq(comics.id, props.comicId))
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -330,13 +330,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

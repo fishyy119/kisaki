@@ -1,0 +1,36 @@
+import type { Messages } from '../schema'
+
+/** Generic action labels: buttons and menu items every feature shares. */
+export const actions = {
+  add: '新增',
+  apply: '套用',
+  back: '返回',
+  browse: '瀏覽…',
+  cancel: '取消',
+  clear: '清除',
+  close: '關閉',
+  confirm: '確認',
+  copy: '複製',
+  create: '建立',
+  delete: '刪除',
+  edit: '編輯',
+  export: '匯出',
+  import: '匯入',
+  moveDown: '下移',
+  moveUp: '上移',
+  next: '下一步',
+  open: '開啟',
+  preview: '預覽',
+  previous: '上一步',
+  refresh: '重新整理',
+  remove: '移除',
+  rename: '重新命名',
+  reset: '重設',
+  retry: '重試',
+  save: '儲存',
+  search: '搜尋',
+  select: '選取',
+  selectAll: '全選',
+  view: '檢視',
+  sort: '排序'
+} satisfies Messages['actions']

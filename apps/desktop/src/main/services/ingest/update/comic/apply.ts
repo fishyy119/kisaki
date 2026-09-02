@@ -1,7 +1,7 @@
 import { eq, inArray } from 'drizzle-orm'
 import { comicExternalIdLink, requireExternalIdsAvailable, type DbContext } from '@main/services/db'
 import {
-  IngestPersistHandlers,
+  IngestPersisters,
   insertComicChapterExternalIds,
   insertComicChapterRow
 } from '../../persist'
@@ -258,7 +258,7 @@ export function applyComicPlan(
   tx: DbContext,
   comicId: string,
   plan: ComicUpdatePlan,
-  persistHandlers: IngestPersistHandlers
+  persisters: IngestPersisters
 ): UpdateLinkApplyResult<ComicLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, comicExternalIdLink, [comicId], plan.externalIds)
@@ -293,7 +293,7 @@ export function applyComicPlan(
     ? applyMediaLinkGraph({
         tx,
         entityId: comicId,
-        persistHandlers,
+        persisters,
         nodes: relationGraph,
         person: {
           kind: 'comicPerson',

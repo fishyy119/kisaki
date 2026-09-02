@@ -7,7 +7,7 @@ import {
   type LibraryEntityType,
   type LibraryLinkKind,
   type LibraryMediaStatus,
-  type ScraperMediaType
+  type ScraperEntityType
 } from '@kisaki3/extension-sdk'
 import { m } from '../../i18n'
 import { readBangumiSubjectIdFromExternalIds } from '../../identity/subject-ref'
@@ -62,7 +62,7 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   readonly supportsImportWrite = true
 
   abstract readonly scope: BangumiMediaScope
-  abstract readonly localMediaType: ScraperMediaType
+  abstract readonly localMediaType: ScraperEntityType
 
   protected abstract readonly entityType: LibraryEntityType
   protected abstract readonly tagLinkKind: LibraryLinkKind
@@ -75,7 +75,7 @@ export abstract class BangumiLocalMediaAdapter implements LocalMediaAdapter {
   ) {}
 
   async listProfiles() {
-    return kisaki.scrapers.profiles.list({ mediaType: this.localMediaType })
+    return kisaki.scrapers.profiles.list({ entityType: this.localMediaType })
   }
 
   async subscribeLocalChanges(listener: LocalMediaChangeListener): Promise<Disposable> {

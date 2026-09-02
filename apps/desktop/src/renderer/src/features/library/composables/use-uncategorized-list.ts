@@ -19,7 +19,11 @@ import {
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
 import { getExplorerContextPath } from '@renderer/utils/explorer-context'
-import { CONTENT_ENTITY_TYPES, isContentEntityType, type ContentEntityType } from '@shared/common'
+import {
+  CONTENT_ENTITY_TYPES,
+  parseContentEntityType,
+  type ContentEntityType
+} from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
 import { getFilterRelevantTables } from '@shared/filter'
 import { batchTouchesAny, useDbChanges } from '@renderer/composables/use-db-changes'
@@ -75,13 +79,14 @@ const routeQuery = shallowRef<EntityListQuery>(createEntityListQuery(null))
 export const uncategorizedListData = defineRouteData(
   async (route): Promise<UncategorizedData | null> => {
     const param = route.params.entityType
-    if (typeof param !== 'string' || !isContentEntityType(param)) return null
+    const entityType = typeof param === 'string' ? parseContentEntityType(param) : null
+    if (!entityType) return null
 
-    if (routeQuery.value.entityType !== param) {
-      routeQuery.value = switchEntityListType(routeQuery.value, param)
+    if (routeQuery.value.entityType !== entityType) {
+      routeQuery.value = switchEntityListType(routeQuery.value, entityType)
     }
     const { showNsfw } = storeToRefs(usePreferencesStore())
-    return fetchUncategorized(param, routeQuery.value, showNsfw.value)
+    return fetchUncategorized(entityType, routeQuery.value, showNsfw.value)
   }
 )
 

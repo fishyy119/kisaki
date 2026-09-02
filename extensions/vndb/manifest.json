@@ -16,6 +16,6 @@
   "homepage": "https://vndb.org",
   "keywords": ["vndb", "game", "visual-novel", "galgame", "scraper", "sync"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.14"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

@@ -16,6 +16,6 @@
   "homepage": "https://mangadex.org",
   "keywords": ["mangadex", "comic", "manga", "scraper", "sync"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.14"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

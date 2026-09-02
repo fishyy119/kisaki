@@ -115,9 +115,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.confirm }}</Button>
+          <Button type="submit">{{ m.actions.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

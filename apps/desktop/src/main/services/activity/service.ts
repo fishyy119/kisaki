@@ -4,21 +4,22 @@
  * Business owner of media consumption: which entity is being consumed right
  * now, how a consumption action starts and stops, and what a finished session
  * records. Technical mechanics live in the `process`, `video`, and `reader`
- * services. Game and anime keep explicit per-media handlers; the two reading
- * media share one coordinator over per-media table adapters, because reading
- * is a closed pair with identical session mechanics.
+ * services. Every media type is addressed as `activity.<media>`: game and anime
+ * have their own coordinators, while comic and novel are two faces of one
+ * reading coordinator over per-media adapters, because reading is a closed pair
+ * with identical session mechanics.
  */
 
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import { AnimeActivityHandler } from './handlers/anime'
-import { GameActivityHandler } from './handlers/game'
+import { AnimeActivityCoordinator } from './anime/coordinator'
+import { GameActivityCoordinator } from './game/coordinator'
 import { createActivityHooks } from './hooks'
 import { registerActivityIpc } from './ipc'
 import { createLaunchRoute, LAUNCH_DEEPLINK_ROUTE } from './launch-route'
-import { ReadingMarks } from './marks'
 import { ComicReadingAdapter } from './reading/comic'
-import { ReadingCoordinator } from './reading/coordinator'
+import { ReadingCoordinator, type ReadingApi } from './reading/coordinator'
+import { ReadingMarks } from './reading/marks'
 import { NovelReadingAdapter } from './reading/novel'
 
 const log = createLogger('Activity')
@@ -31,7 +32,7 @@ export class ActivityService implements IService<'activity'> {
     'i18n',
     'ipc',
     'native',
-    'notify',
+    'notification',
     'process',
     'video',
     'reader',
@@ -39,11 +40,14 @@ export class ActivityService implements IService<'activity'> {
   ] as const satisfies readonly ServiceName[]
   readonly hooks = createActivityHooks()
 
-  game!: GameActivityHandler
-  anime!: AnimeActivityHandler
-  reading!: ReadingCoordinator
-  marks!: ReadingMarks
+  game!: GameActivityCoordinator
+  anime!: AnimeActivityCoordinator
+  comic!: ReadingApi<'comic'>
+  novel!: ReadingApi<'novel'>
+  /** Bookmarks and highlights made from reader windows. */
+  readingMarks!: ReadingMarks
 
+  private reading!: ReadingCoordinator
   private unregisterLaunchRoute?: () => void
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
@@ -52,22 +56,24 @@ export class ActivityService implements IService<'activity'> {
     const i18n = container.get('i18n')
     const reader = container.get('reader')
 
-    this.game = new GameActivityHandler(
+    this.game = new GameActivityCoordinator(
       db,
       container.get('process'),
       container.get('native'),
       i18n,
       ipc,
-      container.get('attachment').game,
+      container.get('attachment').game.saves,
       this.hooks
     )
 
-    this.anime = new AnimeActivityHandler(db, container.get('video'), ipc, this.hooks)
+    this.anime = new AnimeActivityCoordinator(db, container.get('video'), ipc, this.hooks)
     this.reading = new ReadingCoordinator(reader, {
       comic: new ComicReadingAdapter(db, i18n, ipc, this.hooks),
       novel: new NovelReadingAdapter(db, i18n, ipc, this.hooks)
     })
-    this.marks = new ReadingMarks(db, reader)
+    this.comic = this.reading.forMedia('comic')
+    this.novel = this.reading.forMedia('novel')
+    this.readingMarks = new ReadingMarks(db, reader)
 
     registerActivityIpc(this, ipc)
 
@@ -78,7 +84,7 @@ export class ActivityService implements IService<'activity'> {
       .get('deeplink')
       .router.register(
         LAUNCH_DEEPLINK_ROUTE,
-        createLaunchRoute(this, container.get('notify'), i18n),
+        createLaunchRoute(this, container.get('notification'), i18n),
         { focus: false }
       )
 

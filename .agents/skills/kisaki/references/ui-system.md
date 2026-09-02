@@ -602,7 +602,7 @@ watch(data, (d) => {
 })
 
 function handleAddNew() {
-  editingItem.value = { id: nanoid() /* defaults */ }
+  editingItem.value = { id: newId() /* defaults */ }
   isAddMode.value = true
   itemFormOpen.value = true
 }

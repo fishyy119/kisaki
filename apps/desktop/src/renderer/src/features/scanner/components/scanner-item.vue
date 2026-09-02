@@ -424,7 +424,7 @@ async function handleOpenPath() {
         <Button
           variant="ghost"
           size="icon-sm"
-          :tooltip="m.common.edit"
+          :tooltip="m.actions.edit"
           :disabled="isBusy"
           @click="isEditDialogOpen = true"
         >
@@ -437,7 +437,7 @@ async function handleOpenPath() {
         <Button
           variant="ghost"
           size="icon-sm"
-          :tooltip="m.common.delete"
+          :tooltip="m.actions.delete"
           :disabled="isBusy"
           class="hover:text-destructive"
           @click="isDeleteDialogOpen = true"
@@ -461,8 +461,8 @@ async function handleOpenPath() {
         {{ m.scanner.item.deleteDescription({ name: props.scanner.name }) }}
       </AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
-        <AlertDialogAction @click="handleDelete">{{ m.common.delete }}</AlertDialogAction>
+        <AlertDialogCancel>{{ m.actions.cancel }}</AlertDialogCancel>
+        <AlertDialogAction @click="handleDelete">{{ m.actions.delete }}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

@@ -126,7 +126,7 @@ export function createGbooksSettingsHostFunctions(
 }
 
 async function listProfiles(mediaType: 'novel' | 'comic'): Promise<GbooksProfileOption[]> {
-  const profiles = await kisaki.scrapers.profiles.list({ mediaType })
+  const profiles = await kisaki.scrapers.profiles.list({ entityType: mediaType })
   return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
 }
 

@@ -14,7 +14,7 @@ import {
   validateRequiredEnumString,
   validateUnknownKeys
 } from '../../../shared/validation'
-import { isRecord, throwIfValidationIssues, validateLibraryEntityReference } from './common'
+import { isRecord, throwIfValidationIssues, validateLibraryEntityReference } from './shared'
 
 const RELATION_CREATE_KEYS = new Set<string>(['from', 'to', 'type', 'note', 'order'])
 const RELATION_SELECTOR_KEYS = new Set<string>(['from', 'to', 'type'])

@@ -26,7 +26,7 @@ import { cn } from '@renderer/utils/cn'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import { getEntityIcon } from '@renderer/utils/format'
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 
 // =============================================================================
 // Types

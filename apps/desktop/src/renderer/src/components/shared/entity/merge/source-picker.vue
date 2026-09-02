@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { useI18n } from '@renderer/composables'
 import { ENTITY_SELECT_SPECS } from '../select-specs'
 

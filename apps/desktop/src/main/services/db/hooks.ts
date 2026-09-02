@@ -7,7 +7,7 @@
  */
 
 import { createNotifyHook, createVetoHook, type NotifyHook, type VetoHook } from '@main/hooks'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { DbChangeSummary } from '@shared/db/changes'
 import type { LibraryChangedPayload, LibraryEntityMergedEvent } from '@shared/library'
 

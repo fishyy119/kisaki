@@ -25,13 +25,13 @@ const volumeNames = computed(
 
 function formatVolumeName(volume: { volumeNumber: number | null; name: string | null }): string {
   if (volume.name) return volume.name
-  if (volume.volumeNumber === null) return m.value.common.emptyValue
+  if (volume.volumeNumber === null) return m.value.values.emptyValue
   return m.value.novel.volumes.unnamed({ number: formatUnitNumber(volume.volumeNumber) })
 }
 
 function sessionTitle(session: { volumeId?: string | null }): string {
-  if (!session.volumeId) return m.value.common.emptyValue
-  return volumeNames.value.get(session.volumeId) ?? m.value.common.emptyValue
+  if (!session.volumeId) return m.value.values.emptyValue
+  return volumeNames.value.get(session.volumeId) ?? m.value.values.emptyValue
 }
 </script>
 

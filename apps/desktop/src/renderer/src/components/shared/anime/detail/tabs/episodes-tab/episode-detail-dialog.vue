@@ -24,7 +24,8 @@ import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dial
 import { Separator } from '@renderer/components/ui/separator'
 import { useAnime, type AnimeEpisodeEntry } from '@renderer/composables/use-anime'
 import { revealAnimeFile, useAnimeFileRecords } from '@renderer/composables/use-anime-file-records'
-import { toggleEpisodeWatched, useAnimeWatch } from '@renderer/composables/use-anime-watch'
+import { toggleEpisodeWatched } from '@renderer/composables/anime-completion'
+import { useAnimeWatching } from '@renderer/composables/use-anime-watching'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -38,7 +39,7 @@ import AnimeEpisodeFormDialog from './episode-form-dialog.vue'
 import AnimeFileRecordList from './file-record-list.vue'
 import { MediaPlaybackProgress } from '@renderer/components/shared/media'
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 interface Props {
   animeId: string
@@ -66,7 +67,7 @@ const title = computed(() => {
     entry.episodeNumber === null
       ? null
       : m.value.anime.episodes.unnamed({ number: formatUnitNumber(entry.episodeNumber) })
-  return entry.name ?? numbered ?? m.value.common.emptyValue
+  return entry.name ?? numbered ?? m.value.values.emptyValue
 })
 
 const stillUrl = computed(() => {
@@ -82,7 +83,7 @@ const isWatched = computed(() => episode.value?.watched === true)
 const watchedAtText = computed(() => {
   const entry = episode.value
   if (!entry?.watched) return m.value.anime.episodes.unwatched
-  return entry.watchedAt ? f.value.dateTime(entry.watchedAt) : m.value.common.emptyValue
+  return entry.watchedAt ? f.value.dateTime(entry.watchedAt) : m.value.values.emptyValue
 })
 
 async function handleToggleWatched(): Promise<void> {
@@ -101,7 +102,7 @@ const {
   isPauseActionPending,
   togglePause,
   watch: watchEpisode
-} = useAnimeWatch(
+} = useAnimeWatching(
   () => props.animeId,
   () => props.episodeId
 )
@@ -131,7 +132,7 @@ async function handleDeleteEpisode(): Promise<void> {
     open.value = false
   } catch (error) {
     log.error('Episode delete failed:', error)
-    notify.error(m.value.common.deleteFailed)
+    notify.error(m.value.feedback.deleteFailed)
   }
 }
 </script>
@@ -182,12 +183,12 @@ async function handleDeleteEpisode(): Promise<void> {
           <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="grid grid-cols-[auto_1fr] gap-3">
               <dt class="text-muted-foreground">{{ m.anime.episodes.airDate }}</dt>
-              <dd>{{ episode.airDate ? f.date(episode.airDate) : m.common.emptyValue }}</dd>
+              <dd>{{ episode.airDate ? f.date(episode.airDate) : m.values.emptyValue }}</dd>
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-3">
               <dt class="text-muted-foreground">{{ m.library.fields.watchDuration }}</dt>
               <dd>
-                {{ episode.durationMs ? f.duration(episode.durationMs) : m.common.emptyValue }}
+                {{ episode.durationMs ? f.duration(episode.durationMs) : m.values.emptyValue }}
               </dd>
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-3">

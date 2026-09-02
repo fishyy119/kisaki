@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { pipeline } from 'node:stream/promises'
 import { mkdir, rm, stat } from 'node:fs/promises'
@@ -125,7 +125,7 @@ export async function persistSaveBackup(
     throw createValidationError('Save backup attachment path must point to a file.')
   }
 
-  const fileName = `${randomUUID()}${inferSafeExtension(attachment)}`
+  const fileName = `${newId()}${inferSafeExtension(attachment)}`
   const targetPath = db.attachment.getPath('games', gameId, fileName)
   await mkdir(path.dirname(targetPath), { recursive: true })
 

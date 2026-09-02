@@ -2,7 +2,7 @@
  * Scanner run and result types
  */
 
-import type { MediaType } from './common'
+import type { MediaType } from './entity-types'
 
 /**
  * Represents a detected entity from directory scanning.

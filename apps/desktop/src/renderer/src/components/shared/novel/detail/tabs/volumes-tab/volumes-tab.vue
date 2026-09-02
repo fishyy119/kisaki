@@ -13,7 +13,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualList } from '@renderer/components/ui/virtual'
 import { useNovelFileSync } from '@renderer/composables'
 import { useNovel } from '@renderer/composables/use-novel'
-import { toggleVolumeRead } from '@renderer/composables/use-novel-read'
+import { toggleVolumeRead } from '@renderer/composables/novel-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
@@ -33,7 +33,7 @@ const detailVolumeId = ref<string | null>(null)
 
 const readCount = computed(() => volumes.value.filter((volume) => volume.read).length)
 
-const canSyncFiles = computed(() => !!novel.value?.novelDirPath)
+const canSyncFiles = computed(() => !!novel.value?.dirPath)
 
 const detailDialogOpen = computed({
   get: () => detailVolumeId.value !== null,
@@ -45,7 +45,7 @@ const detailDialogOpen = computed({
 async function handleSyncFiles(): Promise<void> {
   const current = novel.value
   if (!current) return
-  if (!current.novelDirPath) {
+  if (!current.dirPath) {
     notify.error(m.value.novel.detail.novelDirNotSet)
     return
   }

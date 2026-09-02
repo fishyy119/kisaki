@@ -7,7 +7,7 @@ import type {
 } from '@shared/ingest/add'
 import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   characterPersonLinks,
   collectionGameLinks,
@@ -45,9 +45,9 @@ import {
   resolveOrderedLinks
 } from './links'
 import type { PersistGameGraphResult } from './types'
-import type { PersonIngestPersistHandler } from './person'
-import type { CompanyIngestPersistHandler } from './company'
-import type { CharacterIngestPersistHandler } from './character'
+import type { PersonPersister } from './person'
+import type { CompanyPersister } from './company'
+import type { CharacterPersister } from './character'
 import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
@@ -190,12 +190,12 @@ function resolveGameCharacterLinks(params: {
   })
 }
 
-export class GameIngestPersistHandler {
+export class GamePersister {
   constructor(
     private readonly dbService: DbService,
-    private readonly personPersist: PersonIngestPersistHandler,
-    private readonly companyPersist: CompanyIngestPersistHandler,
-    private readonly characterPersist: CharacterIngestPersistHandler,
+    private readonly personPersist: PersonPersister,
+    private readonly companyPersist: CompanyPersister,
+    private readonly characterPersist: CharacterPersister,
     private readonly i18nService: I18nService
   ) {}
 
@@ -392,7 +392,7 @@ export class GameIngestPersistHandler {
     }
 
     const gameCore = node.core
-    const gameId = nanoid()
+    const gameId = newId()
     const newGame: NewGame = {
       id: gameId,
       name: gameCore.name,
@@ -401,7 +401,7 @@ export class GameIngestPersistHandler {
       releaseDate: gameCore.releaseDate,
       description: gameCore.description,
       externalSites: gameCore.externalSites || [],
-      gameDirPath: options?.gameDirPath ? normalizeLibraryDirPath(options.gameDirPath) : undefined,
+      dirPath: options?.dirPath ? normalizeLibraryDirPath(options.dirPath) : undefined,
       launcherPath: options?.gameFilePath
     }
 
@@ -425,10 +425,10 @@ export class GameIngestPersistHandler {
     options: GamePersistOptions | undefined,
     tx: DbContext
   ): { gameId: string; existingReason: 'path' | 'externalId' } | undefined {
-    if (options?.gameDirPath) {
-      const existingByPath = this.dbService.entityFinder.findExisting(
+    if (options?.dirPath) {
+      const existingByPath = this.dbService.finder.findExisting(
         'game',
-        { path: options.gameDirPath },
+        { path: options.dirPath },
         tx
       )
       if (existingByPath) {
@@ -438,11 +438,7 @@ export class GameIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExisting(
-        'game',
-        { externalIds },
-        tx
-      )
+      const existingByExternalId = this.dbService.finder.findExisting('game', { externalIds }, tx)
       if (existingByExternalId) {
         return { gameId: existingByExternalId.id, existingReason: 'externalId' }
       }
@@ -502,7 +498,7 @@ export class GameIngestPersistHandler {
     if (!targetCollectionId) return
 
     const collectionLink: NewCollectionGameLink = {
-      id: nanoid(),
+      id: newId(),
       collectionId: targetCollectionId,
       gameId,
       orderInCollection: 0

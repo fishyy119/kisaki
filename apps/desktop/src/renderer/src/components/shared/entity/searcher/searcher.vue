@@ -30,7 +30,7 @@ import {
   TableCell
 } from '@renderer/components/ui/table'
 import { ScraperProfileSelect, useSearchProviderSource } from '@renderer/components/shared/scraper'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { EntitySearcherSelection } from './selection'
 import { SEARCHER_SPECS, type ScraperLookupMap, type SearchResultMap } from './specs'
 
@@ -228,7 +228,7 @@ const entityIdModel = computed({
               icon="icon-[mdi--magnify]"
               class="size-4"
             />
-            {{ m.common.search }}
+            {{ m.actions.search }}
           </Button>
         </div>
       </FieldContent>

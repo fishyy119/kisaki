@@ -4,7 +4,7 @@ Boundary: selecting an option deletes the related entity itself, not just the li
 -->
 <script setup lang="ts">
 import { useId } from 'vue'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { EntityDeletePreviewOption } from '@shared/entity-delete'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'

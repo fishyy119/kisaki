@@ -8,7 +8,11 @@
  */
 
 import type { RouteLocationNormalizedGeneric } from 'vue-router'
-import { CONTENT_ENTITY_TYPES, type AllEntityType, type ContentEntityType } from '@shared/common'
+import {
+  CONTENT_ENTITY_TYPES,
+  type AllEntityType,
+  type ContentEntityType
+} from '@shared/entity-types'
 
 export const LIBRARY_HOME_PATH = '/library'
 

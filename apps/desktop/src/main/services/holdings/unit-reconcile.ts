@@ -14,7 +14,7 @@
  */
 
 import type { DbContext } from '@main/services/db'
-import { readPrimaryElection } from './reconcile'
+import { readPrimaryElection } from './sync-pass'
 
 export interface ReconcilableUnit {
   id: string

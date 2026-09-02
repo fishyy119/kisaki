@@ -15,7 +15,7 @@ import { useStatistics } from '../composables'
 import { STATISTICS_ROUTE_NAMES } from '../routes'
 import { isPeriodBeforeCurrent, shiftPeriod } from '../period'
 import { getEntityIcon } from '@renderer/utils/format'
-import { MEDIA_TYPES } from '@shared/common'
+import { MEDIA_TYPES } from '@shared/entity-types'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -103,7 +103,7 @@ const canNavigateNext = computed(() => {
               icon="icon-[mdi--view-grid-outline]"
               class="size-4"
             />
-            <span>{{ m.common.all }}</span>
+            <span>{{ m.states.all }}</span>
           </div>
         </SegmentedControlItem>
         <SegmentedControlItem

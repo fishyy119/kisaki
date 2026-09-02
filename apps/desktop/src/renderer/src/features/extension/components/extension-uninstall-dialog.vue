@@ -112,7 +112,7 @@ async function handleUninstall() {
       </div>
 
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="uninstalling">{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogCancel :disabled="uninstalling">{{ m.actions.cancel }}</AlertDialogCancel>
         <AlertDialogAction
           :disabled="uninstalling"
           @click.prevent="handleUninstall"

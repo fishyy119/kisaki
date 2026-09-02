@@ -28,7 +28,7 @@ import { useLibraryExplorerStore } from '../../stores'
 import { useExplorerLocator } from '../../composables'
 import { parseExplorerSelectionKey, toExplorerSelectionKey } from '../../utils/explorer-selection'
 import type { EntityData } from '../../composables'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 interface Props {
   entity: EntityData

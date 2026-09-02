@@ -274,7 +274,7 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
             {{ m.game.saves.restoreDescription }}
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
+            <AlertDialogCancel>{{ m.actions.cancel }}</AlertDialogCancel>
             <AlertDialogAction @click="restoreTarget && handleRestore(restoreTarget)">
               {{ m.game.saves.confirmRestore }}
             </AlertDialogAction>

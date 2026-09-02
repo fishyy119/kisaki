@@ -12,7 +12,7 @@ import { Button } from '@renderer/components/ui/button'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAnime } from '@renderer/composables/use-anime'
-import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
+import { shouldOfferWatchCatchUp } from '@renderer/composables/anime-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
@@ -30,7 +30,7 @@ import {
 import type { MediaStatus } from '@shared/db'
 import AnimeWatchCatchUpDialog from '../anime-watch-catch-up-dialog.vue'
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 const { anime } = useAnime()
 const { m, f } = useI18n()
@@ -90,7 +90,7 @@ const coverUrl = computed(() =>
             variant="ghost"
             size="icon-xs"
             class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
-            :aria-label="m.common.edit"
+            :aria-label="m.actions.edit"
             @click="openEditDialog('name')"
           >
             <Icon
@@ -108,7 +108,7 @@ const coverUrl = computed(() =>
             variant="ghost"
             size="icon-xs"
             class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
-            :aria-label="m.common.edit"
+            :aria-label="m.actions.edit"
             @click="openEditDialog('originalName')"
           >
             <Icon
@@ -124,7 +124,7 @@ const coverUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('lastActive')"
             >
               <Icon
@@ -139,7 +139,7 @@ const coverUrl = computed(() =>
             <span class="text-xs">{{ m.library.fields.lastWatchedAt }}</span>
           </span>
           <span class="font-medium truncate text-xs">
-            {{ anime.lastActiveAt ? f.relativeTime(anime.lastActiveAt) : m.common.emptyValue }}
+            {{ anime.lastActiveAt ? f.relativeTime(anime.lastActiveAt) : m.values.emptyValue }}
           </span>
         </div>
 
@@ -147,7 +147,7 @@ const coverUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('status')"
             >
               <Icon
@@ -170,7 +170,7 @@ const coverUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('duration')"
             >
               <Icon
@@ -185,7 +185,7 @@ const coverUrl = computed(() =>
             <span class="text-xs">{{ m.library.fields.watchDuration }}</span>
           </span>
           <span class="font-medium truncate text-xs">
-            {{ anime.totalDuration > 0 ? f.duration(anime.totalDuration) : m.common.emptyValue }}
+            {{ anime.totalDuration > 0 ? f.duration(anime.totalDuration) : m.values.emptyValue }}
           </span>
         </div>
 
@@ -193,7 +193,7 @@ const coverUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('score')"
             >
               <Icon
@@ -208,7 +208,7 @@ const coverUrl = computed(() =>
             <span class="text-xs">{{ m.library.fields.myScore }}</span>
           </span>
           <span class="font-medium truncate text-xs">
-            {{ anime.score !== null ? (anime.score / 10).toFixed(1) : m.common.emptyValue }}
+            {{ anime.score !== null ? (anime.score / 10).toFixed(1) : m.values.emptyValue }}
           </span>
         </div>
       </div>

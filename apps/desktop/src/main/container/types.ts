@@ -27,12 +27,13 @@ import type { ScannerService } from '@main/services/scanner/service'
 import type { ProcessService } from '@main/services/process/service'
 import type { VideoService } from '@main/services/video/service'
 import type { HoldingsService } from '@main/services/holdings/service'
+import type { ImageService } from '@main/services/image/service'
 import type { ReaderService } from '@main/services/reader/service'
 import type { ActivityService } from '@main/services/activity/service'
 import type { AttachmentService } from '@main/services/attachment/service'
 import type { ExtensionService } from '@main/services/extension/service'
 import type { NetworkService } from '@main/services/network/service'
-import type { NotifyService } from '@main/services/notify/service'
+import type { NotificationService } from '@main/services/notification/service'
 import type { DeeplinkService } from '@main/services/deeplink/service'
 import type { UpdaterService } from '@main/services/updater/service'
 import type { CommandService } from '@main/services/command/service'
@@ -55,7 +56,7 @@ export interface ServiceRegistry {
   db: DbService
   window: WindowService
   native: NativeService
-  notify: NotifyService
+  notification: NotificationService
   network: NetworkService
   deeplink: DeeplinkService
   updater: UpdaterService
@@ -67,6 +68,7 @@ export interface ServiceRegistry {
   process: ProcessService
   video: VideoService
   reader: ReaderService
+  image: ImageService
 
   // Domain: library ownership, grows per media type
   scraper: ScraperService

@@ -1,5 +1,6 @@
 export { default as EntityContextMenu } from './context-menu.vue'
 export { default as EntityDropdownMenu } from './dropdown-menu.vue'
 export { default as EntityMenuItems } from './menu-items.vue'
+export { default as EntityCopyMenuItems } from './copy-menu-items.vue'
 export { default as EntityBatchContextMenu } from './batch-context-menu.vue'
 export { default as EntityBatchMenuItems } from './batch-menu-items.vue'

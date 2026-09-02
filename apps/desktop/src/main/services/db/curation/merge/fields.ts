@@ -1,4 +1,4 @@
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { ExternalSite } from '@shared/db/contracts/json'
 import { normalizeKeyText } from '@shared/identity'
 import type { MergeRow } from './types'
@@ -24,14 +24,14 @@ export function buildEntityFieldPatch(
       applyFirst(patch, target, source, 'savePath')
       applyFirst(patch, target, source, 'launcherPath')
       applyFirst(patch, target, source, 'monitorPath')
-      applyFirst(patch, target, source, 'gameDirPath')
+      applyFirst(patch, target, source, 'dirPath')
       break
     case 'anime':
       applyFirst(patch, target, source, 'releaseDate')
       patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
       patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
       applyFirst(patch, target, source, 'totalEpisodes')
-      applyFirst(patch, target, source, 'animeDirPath')
+      applyFirst(patch, target, source, 'dirPath')
       break
     case 'comic':
       applyFirst(patch, target, source, 'releaseDate')
@@ -40,14 +40,14 @@ export function buildEntityFieldPatch(
       applyFirst(patch, target, source, 'totalVolumes')
       applyFirst(patch, target, source, 'totalChapters')
       applyFirst(patch, target, source, 'readingDirection')
-      applyFirst(patch, target, source, 'comicDirPath')
+      applyFirst(patch, target, source, 'dirPath')
       break
     case 'novel':
       applyFirst(patch, target, source, 'releaseDate')
       patch.lastActiveAt = latestDateValue(target.lastActiveAt, source.lastActiveAt)
       patch.totalDuration = toDuration(target.totalDuration) + toDuration(source.totalDuration)
       applyFirst(patch, target, source, 'totalVolumes')
-      applyFirst(patch, target, source, 'novelDirPath')
+      applyFirst(patch, target, source, 'dirPath')
       break
     case 'person':
       patch.aliases = mergeAliases(target, source)

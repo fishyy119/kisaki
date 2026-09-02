@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { commandSucceeds, readCommand, readRequiredEnv } from './common'
+import { commandSucceeds, readCommand, readRequiredEnv } from './shared'
 import { getReleaseTargetDefinition, readReleaseTarget, type ReleaseTarget } from './targets'
 
 const REQUIRED_CHANGELOG_FILES = ['en.md', 'ja.md', 'zh-Hans.md'] as const

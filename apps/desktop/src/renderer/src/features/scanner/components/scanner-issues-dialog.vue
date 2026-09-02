@@ -34,7 +34,7 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
-import { MEDIA_TYPES, type MediaType } from '@shared/common'
+import { MEDIA_TYPES, type MediaType } from '@shared/entity-types'
 import type { ScannerRunIssueType } from '@shared/scanner'
 import { addScannerIgnoredName } from '../ignored-names'
 import ScannerResultFixDialog from './scanner-result-fix-dialog.vue'
@@ -317,7 +317,7 @@ useDbChanges(({ changes }) => {
               v-if="isQueryActive"
               class="shrink-0 text-xs text-muted-foreground"
             >
-              {{ m.common.itemCount({ count: filteredIssueRows.length }) }}
+              {{ m.values.itemCount({ count: filteredIssueRows.length }) }}
             </span>
 
             <div class="flex-1" />

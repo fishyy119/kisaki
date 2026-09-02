@@ -28,7 +28,7 @@ import { CollectionCard } from '@renderer/components/shared/collection'
 import { TagCard } from '@renderer/components/shared/tag'
 import type { ButtonVariants } from '@renderer/components/ui/button'
 import type { EntityRowMap } from '@renderer/core/db'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { assertNever } from '@shared/utils/exhaustive'
 
 type CardSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'

@@ -43,7 +43,7 @@ import {
   normalizeCapabilityError
 } from '@kisaki3/extension-api'
 import { and, eq, inArray, type SQL } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { buildFilterConditions, buildOrderBy } from '@shared/filter/builder'
 import { buildSearchCondition } from '@shared/search/builder'
@@ -369,7 +369,7 @@ export class ExtensionLibraryEntityStore {
     ensureNonEmptyString(input.name, 'library entity name')
 
     try {
-      const id = nanoid()
+      const id = newId()
       this.options.db.client.transaction((tx) => {
         tx.insert(config.table).values(config.buildCreateValues(id, input)).run()
         if (config.externalIds) {

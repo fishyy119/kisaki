@@ -1,2 +1,2 @@
-export { ExtensionLibraryGraphManager } from './manager'
-export type { ExtensionLibraryGraphManagerOptions } from './manager'
+export { ExtensionLibraryGraphRunner } from './runner'
+export type { ExtensionLibraryGraphRunnerOptions } from './runner'

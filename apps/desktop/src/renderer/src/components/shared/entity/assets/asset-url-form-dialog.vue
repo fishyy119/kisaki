@@ -27,7 +27,7 @@ import {
 } from '@renderer/components/ui/field'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { ENTITY_ASSET_SPECS } from './asset-specs'
 
 const { m } = useI18n()
@@ -160,7 +160,7 @@ function handleClose() {
             <img
               v-else
               :src="formData.url"
-              :alt="m.common.preview"
+              :alt="m.actions.preview"
               class="size-full object-contain"
               @error="previewError = true"
             />
@@ -173,7 +173,7 @@ function handleClose() {
           variant="outline"
           @click="handleClose"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="!isValidUrl || isImporting"
@@ -191,7 +191,7 @@ function handleClose() {
               icon="icon-[mdi--download]"
               class="size-4"
             />
-            {{ m.common.import }}
+            {{ m.actions.import }}
           </template>
         </Button>
       </DialogFooter>

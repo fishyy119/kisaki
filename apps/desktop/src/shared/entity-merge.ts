@@ -1,4 +1,4 @@
-import type { AllEntityType } from './common'
+import type { AllEntityType } from './entity-types'
 
 export type EntityMergeChangeKind =
   'fields' | 'externalIds' | 'relations' | 'filters' | 'attachments' | 'source'

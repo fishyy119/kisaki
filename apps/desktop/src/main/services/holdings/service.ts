@@ -15,16 +15,16 @@
  *
  * The domain grows one media type at a time, because recognition, probing, and
  * consumption shape differ per type. Anime, comic, and novel are the shipped
- * handlers.
+ * coordinators, addressed as `holdings.<media>`.
  */
 
 import { bootstrapHooks } from '@main/bootstrap/hooks'
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import { animeAutoSyncSpec, AnimeFileSyncHandler } from './anime'
+import { animeAutoSyncSpec, AnimeFileSyncCoordinator } from './anime'
 import { AutoSyncCoordinator } from './auto-sync'
-import { comicAutoSyncSpec, ComicFileSyncHandler } from './comic'
-import { novelAutoSyncSpec, NovelFileSyncHandler } from './novel'
+import { comicAutoSyncSpec, ComicFileSyncCoordinator } from './comic'
+import { novelAutoSyncSpec, NovelFileSyncCoordinator } from './novel'
 import { registerHoldingsIpc } from './ipc'
 
 const log = createLogger('Holdings')
@@ -39,9 +39,9 @@ export class HoldingsService implements IService<'holdings'> {
     'video'
   ] as const satisfies readonly ServiceName[]
 
-  anime!: AnimeFileSyncHandler
-  comic!: ComicFileSyncHandler
-  novel!: NovelFileSyncHandler
+  anime!: AnimeFileSyncCoordinator
+  comic!: ComicFileSyncCoordinator
+  novel!: NovelFileSyncCoordinator
 
   private autoSyncs: AutoSyncCoordinator[] = []
   private untapAppReady!: () => void
@@ -51,9 +51,9 @@ export class HoldingsService implements IService<'holdings'> {
     const fileWatch = container.get('file-watch')
     const reader = container.get('reader')
 
-    this.anime = new AnimeFileSyncHandler(dbService, container.get('video').probe)
-    this.comic = new ComicFileSyncHandler(dbService, reader.books)
-    this.novel = new NovelFileSyncHandler(dbService)
+    this.anime = new AnimeFileSyncCoordinator(dbService, container.get('video').probe)
+    this.comic = new ComicFileSyncCoordinator(dbService, reader.books)
+    this.novel = new NovelFileSyncCoordinator(dbService)
 
     this.autoSyncs = [
       animeAutoSyncSpec(dbService, this.anime),

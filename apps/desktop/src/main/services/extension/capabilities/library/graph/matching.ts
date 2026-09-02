@@ -297,13 +297,13 @@ function findMediaByPath(
 ): LibraryMediaEntity | null {
   switch (node.mediaType) {
     case 'anime':
-      return findAnimeByPath(node.input.animeDirPath, options)
+      return findAnimeByPath(node.input.dirPath, options)
     case 'game':
-      return findGameByPath(node.input.gameDirPath, options)
+      return findGameByPath(node.input.dirPath, options)
     case 'comic':
-      return findComicByPath(node.input.comicDirPath, options)
+      return findComicByPath(node.input.dirPath, options)
     case 'novel':
-      return findNovelByPath(node.input.novelDirPath, options)
+      return findNovelByPath(node.input.dirPath, options)
   }
 }
 
@@ -511,65 +511,65 @@ function findCharacterExternalIdMatches(
 }
 
 function findGameByPath(
-  gameDirPath: string | undefined,
+  dirPath: string | undefined,
   options: MatchLibraryGraphOptions
 ): LibraryGame | null {
-  if (!gameDirPath) {
+  if (!dirPath) {
     return null
   }
 
   const row = options.db.client
     .select({ id: games.id })
     .from(games)
-    .where(eq(games.gameDirPath, gameDirPath))
+    .where(eq(games.dirPath, dirPath))
     .get()
   return row ? options.entities.getGame(row.id) : null
 }
 
 function findAnimeByPath(
-  animeDirPath: string | undefined,
+  dirPath: string | undefined,
   options: MatchLibraryGraphOptions
 ): LibraryAnime | null {
-  if (!animeDirPath) {
+  if (!dirPath) {
     return null
   }
 
   const row = options.db.client
     .select({ id: animes.id })
     .from(animes)
-    .where(eq(animes.animeDirPath, animeDirPath))
+    .where(eq(animes.dirPath, dirPath))
     .get()
   return row ? options.entities.getAnime(row.id) : null
 }
 
 function findComicByPath(
-  comicDirPath: string | undefined,
+  dirPath: string | undefined,
   options: MatchLibraryGraphOptions
 ): LibraryComic | null {
-  if (!comicDirPath) {
+  if (!dirPath) {
     return null
   }
 
   const row = options.db.client
     .select({ id: comics.id })
     .from(comics)
-    .where(eq(comics.comicDirPath, comicDirPath))
+    .where(eq(comics.dirPath, dirPath))
     .get()
   return row ? options.entities.getComic(row.id) : null
 }
 
 function findNovelByPath(
-  novelDirPath: string | undefined,
+  dirPath: string | undefined,
   options: MatchLibraryGraphOptions
 ): LibraryNovel | null {
-  if (!novelDirPath) {
+  if (!dirPath) {
     return null
   }
 
   const row = options.db.client
     .select({ id: novels.id })
     .from(novels)
-    .where(eq(novels.novelDirPath, novelDirPath))
+    .where(eq(novels.dirPath, dirPath))
     .get()
   return row ? options.entities.getNovel(row.id) : null
 }

@@ -10,7 +10,7 @@ import type {
   SlotStrategy,
   UnmatchedEntityPolicy
 } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 import { computed, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
@@ -411,9 +411,9 @@ function handleSubmit() {
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.save }}</Button>
+          <Button type="submit">{{ m.actions.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

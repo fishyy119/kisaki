@@ -283,7 +283,7 @@ export const GAME_CONFIG = {
       launcherPath: optionalValue(row.launcherPath),
       monitorMode: row.monitorMode,
       monitorPath: optionalValue(row.monitorPath),
-      gameDirPath: optionalValue(row.gameDirPath),
+      dirPath: optionalValue(row.dirPath),
       descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
     }
   },
@@ -317,7 +317,7 @@ export const GAME_CONFIG = {
       launcherPath: input.launcherPath,
       monitorMode: input.monitorMode,
       monitorPath: input.monitorPath,
-      gameDirPath: input.gameDirPath,
+      dirPath: input.dirPath,
       descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
       score: input.score,
       isFavorite: input.isFavorite,
@@ -345,7 +345,7 @@ export const GAME_CONFIG = {
       launcherPath: patch.launcherPath,
       monitorMode: patch.monitorMode,
       monitorPath: patch.monitorPath,
-      gameDirPath: patch.gameDirPath,
+      dirPath: patch.dirPath,
       descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
       score: patch.score,
       isFavorite: patch.isFavorite,
@@ -399,7 +399,7 @@ export const ANIME_CONFIG = {
       totalEpisodes: row.totalEpisodes,
       lastActiveAt: toNullableTimestampMs(row.lastActiveAt),
       totalDuration: row.totalDuration,
-      animeDirPath: optionalValue(row.animeDirPath),
+      dirPath: optionalValue(row.dirPath),
       descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
     }
   },
@@ -427,7 +427,7 @@ export const ANIME_CONFIG = {
             ? null
             : new Date(input.lastActiveAt),
       totalDuration: input.totalDuration,
-      animeDirPath: input.animeDirPath,
+      dirPath: input.dirPath,
       descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
       score: input.score,
       isFavorite: input.isFavorite,
@@ -449,7 +449,7 @@ export const ANIME_CONFIG = {
       status: patch.status,
       format: patch.format,
       totalEpisodes: patch.totalEpisodes,
-      animeDirPath: patch.animeDirPath,
+      dirPath: patch.dirPath,
       descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
       score: patch.score,
       isFavorite: patch.isFavorite,
@@ -505,7 +505,7 @@ export const COMIC_CONFIG = {
       totalChapters: row.totalChapters,
       lastActiveAt: toNullableTimestampMs(row.lastActiveAt),
       totalDuration: row.totalDuration,
-      comicDirPath: optionalValue(row.comicDirPath),
+      dirPath: optionalValue(row.dirPath),
       descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
     }
   },
@@ -535,7 +535,7 @@ export const COMIC_CONFIG = {
             ? null
             : new Date(input.lastActiveAt),
       totalDuration: input.totalDuration,
-      comicDirPath: input.comicDirPath,
+      dirPath: input.dirPath,
       descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
       score: input.score,
       isFavorite: input.isFavorite,
@@ -559,7 +559,7 @@ export const COMIC_CONFIG = {
       readingDirection: patch.readingDirection,
       totalVolumes: patch.totalVolumes,
       totalChapters: patch.totalChapters,
-      comicDirPath: patch.comicDirPath,
+      dirPath: patch.dirPath,
       descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
       score: patch.score,
       isFavorite: patch.isFavorite,
@@ -613,7 +613,7 @@ export const NOVEL_CONFIG = {
       totalVolumes: row.totalVolumes,
       lastActiveAt: toNullableTimestampMs(row.lastActiveAt),
       totalDuration: row.totalDuration,
-      novelDirPath: optionalValue(row.novelDirPath),
+      dirPath: optionalValue(row.dirPath),
       descriptionInlineFiles: optionalArray(row.descriptionInlineFiles)
     }
   },
@@ -641,7 +641,7 @@ export const NOVEL_CONFIG = {
             ? null
             : new Date(input.lastActiveAt),
       totalDuration: input.totalDuration,
-      novelDirPath: input.novelDirPath,
+      dirPath: input.dirPath,
       descriptionInlineFiles: copyReadonlyArray(input.descriptionInlineFiles),
       score: input.score,
       isFavorite: input.isFavorite,
@@ -663,7 +663,7 @@ export const NOVEL_CONFIG = {
       status: patch.status,
       format: patch.format,
       totalVolumes: patch.totalVolumes,
-      novelDirPath: patch.novelDirPath,
+      dirPath: patch.dirPath,
       descriptionInlineFiles: copyReadonlyArray(patch.descriptionInlineFiles),
       score: patch.score,
       isFavorite: patch.isFavorite,

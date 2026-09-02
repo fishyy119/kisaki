@@ -13,9 +13,12 @@ import type { DbService } from '@main/services/db'
 import { comics } from '@shared/db'
 import type { AutoSyncSpec } from '../auto-sync'
 import { isComicArchiveFile, isComicPageFile } from './recognition'
-import { MAX_COMIC_WALK_DEPTH, type ComicFileSyncHandler } from './sync'
+import { MAX_COMIC_WALK_DEPTH, type ComicFileSyncCoordinator } from './sync'
 
-export function comicAutoSyncSpec(dbService: DbService, sync: ComicFileSyncHandler): AutoSyncSpec {
+export function comicAutoSyncSpec(
+  dbService: DbService,
+  sync: ComicFileSyncCoordinator
+): AutoSyncSpec {
   return {
     mediaType: 'comic',
     entryTable: 'comics',
@@ -23,9 +26,9 @@ export function comicAutoSyncSpec(dbService: DbService, sync: ComicFileSyncHandl
     matchesFile: (filePath) => isComicArchiveFile(filePath) || isComicPageFile(filePath),
     readDirectories: () =>
       dbService.client
-        .select({ id: comics.id, dirPath: comics.comicDirPath })
+        .select({ id: comics.id, dirPath: comics.dirPath })
         .from(comics)
-        .where(isNotNull(comics.comicDirPath))
+        .where(isNotNull(comics.dirPath))
         .all(),
     sync: async (comicId) => {
       const result = await sync.sync({ comicId })

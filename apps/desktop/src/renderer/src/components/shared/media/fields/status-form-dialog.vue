@@ -9,7 +9,7 @@
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { useAsyncData } from '@renderer/composables'
 import {
   Dialog,
@@ -91,7 +91,7 @@ async function handleSubmit() {
   isSaving.value = true
   try {
     await MEDIA_STATUS_WRITERS[props.mediaType](props.entityId, status.value)
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
     emit('saved', status.value)
   } catch (error) {
@@ -152,13 +152,13 @@ async function handleSubmit() {
               :disabled="isSaving"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

@@ -1,13 +1,13 @@
 import type { ComicScraperLookup } from '@shared/scraper'
 import type { ExternalId } from '@shared/identity'
-import type { IngestAddResult } from '../common'
+import type { IngestAddResult } from '../results'
 
 export interface IngestAddComicResult extends IngestAddResult {
   comicId: string
 }
 
 export interface IngestAddComicFromScraperOptions {
-  comicDirPath?: string
+  dirPath?: string
   targetCollectionId?: string
 }
 

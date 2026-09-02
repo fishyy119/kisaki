@@ -52,7 +52,6 @@
     "electron-window-state": "^5.0.3",
     "fflate": "catalog:",
     "file-type": "^22.0.1",
-    "nanoid": "^5.1.16",
     "node-stream-zip": "^1.16.0",
     "node-unrar-js": "^2.0.2",
     "pdfjs-dist": "^6.2.108",

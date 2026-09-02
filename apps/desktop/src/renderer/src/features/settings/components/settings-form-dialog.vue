@@ -119,7 +119,7 @@ watch(
     try {
       await setPreference(uiLocalePreference)
     } catch (e) {
-      notify.error(m.value.common.saveFailed, e instanceof Error ? e.message : String(e))
+      notify.error(m.value.feedback.saveFailed, e instanceof Error ? e.message : String(e))
     }
   }
 )
@@ -149,10 +149,10 @@ async function handleSubmit() {
 
     ipcManager.send('window:set-main-window-close-action', formData.value.mainWindowCloseAction)
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (e) {
-    notify.error(m.value.common.saveFailed, e instanceof Error ? e.message : String(e))
+    notify.error(m.value.feedback.saveFailed, e instanceof Error ? e.message : String(e))
   } finally {
     isSaving.value = false
   }
@@ -186,7 +186,7 @@ async function handleSubmit() {
               variant="outline"
               @click="refetch"
             >
-              {{ m.common.retry }}
+              {{ m.actions.retry }}
             </Button>
           </div>
         </DialogBody>
@@ -282,13 +282,13 @@ async function handleSubmit() {
               :disabled="isSaving"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

@@ -14,7 +14,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { useDbChanges } from '@renderer/composables'
-import { useAnimeWatch } from '@renderer/composables/use-anime-watch'
+import { useAnimeWatching } from '@renderer/composables/use-anime-watching'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { cn } from '@renderer/utils/cn'
@@ -43,7 +43,7 @@ const {
   pendingAction,
   watch: watchAnime,
   stop: stopAnime
-} = useAnimeWatch(
+} = useAnimeWatching(
   () => props.animeId,
   () => props.episodeId
 )

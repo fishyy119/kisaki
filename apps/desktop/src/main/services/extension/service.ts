@@ -15,11 +15,11 @@ import {
   ExtensionInstallationStore,
   ExtensionInstallationView
 } from './installations'
-import { ExtensionInstallerManager } from './installer'
+import { ExtensionInstaller } from './install'
 import { registerExtensionIpc } from './ipc'
 import {
   ExtensionFileAssetServer,
-  ExtensionIconManager,
+  ExtensionIconServer,
   ExtensionUiAssetServer,
   ExtensionWebviewFontServer
 } from './assets'
@@ -56,7 +56,7 @@ export class ExtensionService implements IService<'extension'> {
     'ipc',
     'network',
     'db',
-    'notify',
+    'notification',
     'scraper',
     'ingest',
     'scanner',
@@ -73,7 +73,7 @@ export class ExtensionService implements IService<'extension'> {
   capabilities!: ExtensionCapabilityGateway
   contributions!: ExtensionContributionRegistry
   installations!: ExtensionInstallationManager
-  installer!: ExtensionInstallerManager
+  installer!: ExtensionInstaller
   repositories!: ExtensionRepositoryManager
   runtime!: ExtensionRuntimeManager
   signers!: ExtensionSignerTrustManager
@@ -124,8 +124,8 @@ export class ExtensionService implements IService<'extension'> {
 
     await this.recoverPackages()
 
-    const iconManager = new ExtensionIconManager(rootDir, networkService)
-    iconManager.registerProtocolHandler()
+    const iconServer = new ExtensionIconServer(rootDir, networkService)
+    iconServer.registerProtocolHandler()
 
     const uiAssetServer = new ExtensionUiAssetServer({
       resolveUiSource: (extensionId) =>
@@ -153,7 +153,7 @@ export class ExtensionService implements IService<'extension'> {
       fetcher: new ExtensionRepositoryFetcher(networkService, {
         allowInsecureLocalUrls: !app.isPackaged
       }),
-      iconManager,
+      iconServer,
       taskRun: container.get('task-run'),
       i18n: container.get('i18n'),
       apiVersion: EXTENSION_API_VERSION,
@@ -183,7 +183,7 @@ export class ExtensionService implements IService<'extension'> {
       i18n: container.get('i18n'),
       ingest: container.get('ingest'),
       network: container.get('network'),
-      notify: container.get('notify'),
+      notification: container.get('notification'),
       scraper: container.get('scraper'),
       taskRun: container.get('task-run'),
       webviewSessions: this.webviews,
@@ -194,7 +194,7 @@ export class ExtensionService implements IService<'extension'> {
       command: container.get('command'),
       scraper: container.get('scraper'),
       deeplink: container.get('deeplink'),
-      notify: container.get('notify'),
+      notification: container.get('notification'),
       i18n: container.get('i18n'),
       waitForExtensionRunning: (extensionId, timeoutMs) =>
         this.waitForExtensionRunning(extensionId, timeoutMs),
@@ -250,7 +250,7 @@ export class ExtensionService implements IService<'extension'> {
       contributions: this.contributions,
       developmentWatcher: this.developmentWatcher,
       packageCommitter: this.packageCommitter,
-      iconManager,
+      iconServer,
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onInstallationsChanged: () => this.emitInstallationsChanged(),
       onContributionSnapshotChanged: () => this.emitContributionSnapshotChanged(),
@@ -259,7 +259,7 @@ export class ExtensionService implements IService<'extension'> {
     })
     bindExtensionLifecycleHookPoints(this.installations.hooks, this.contributions.hooks)
 
-    this.installer = new ExtensionInstallerManager({
+    this.installer = new ExtensionInstaller({
       layout,
       runtime: this.runtime,
       repositories: this.repositories,

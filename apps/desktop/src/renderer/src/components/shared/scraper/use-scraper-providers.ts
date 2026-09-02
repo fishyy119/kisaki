@@ -1,4 +1,4 @@
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import {
   useAsyncData,
   type UseAsyncDataOptions,

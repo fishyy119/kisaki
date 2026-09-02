@@ -17,7 +17,7 @@ import { useEntityDetailRoute, useTagRouteProvider } from '@renderer/composables
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 const { m } = useI18n()
 

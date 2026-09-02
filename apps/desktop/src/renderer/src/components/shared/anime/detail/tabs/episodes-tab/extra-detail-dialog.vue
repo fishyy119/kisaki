@@ -32,7 +32,7 @@ import AnimeExtraFormDialog from './extra-form-dialog.vue'
 import AnimeFileRecordList from './file-record-list.vue'
 import { MediaPlaybackProgress } from '@renderer/components/shared/media'
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 interface Props {
   animeId: string
@@ -100,7 +100,7 @@ async function handleDelete(): Promise<void> {
     open.value = false
   } catch (error) {
     log.error('Extra delete failed:', error)
-    notify.error(m.value.common.deleteFailed)
+    notify.error(m.value.feedback.deleteFailed)
   }
 }
 </script>

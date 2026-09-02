@@ -30,7 +30,7 @@ import {
 } from '@renderer/components/shared/comic'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useAmbientLight, useComicRouteProvider, useEntityDetailRoute } from '@renderer/composables'
-import { shouldOfferReadCatchUp } from '@renderer/composables/use-comic-read'
+import { shouldOfferReadCatchUp } from '@renderer/composables/comic-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -45,7 +45,7 @@ import {
   getMediaStatusVariant
 } from '@renderer/utils/format'
 
-const log = createLogger('Comic')
+const log = createLogger('Library')
 
 const { m } = useI18n()
 
@@ -109,7 +109,7 @@ async function handleToggleFavorite() {
         : m.value.library.feedback.favoriteAdded
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -154,13 +154,13 @@ const selectedStatus = computed({
 
 async function handleOpenComicDir() {
   const current = comic.value
-  if (!current?.comicDirPath) {
+  if (!current?.dirPath) {
     notify.error(m.value.comic.detail.comicDirNotSet)
     return
   }
 
   const result = await ipcManager.invoke('native:open-path', {
-    path: current.comicDirPath,
+    path: current.dirPath,
     ensure: 'folder'
   })
   if (!result.success) {
@@ -255,7 +255,7 @@ async function handleOpenComicDir() {
           variant="secondary"
           size="icon-sm"
           :tooltip="m.comic.detail.openComicDir"
-          :disabled="!comic.comicDirPath"
+          :disabled="!comic.dirPath"
           @click="handleOpenComicDir"
         >
           <Icon

@@ -11,7 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { useAsyncData, useDbChanges, useI18n, useRenderState } from '@renderer/composables'
 import { scraperProfiles, type ScraperProfile } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import {
   Select,
   SelectContent,
@@ -30,7 +30,7 @@ const NONE_VALUE = '#none'
 
 interface Props {
   /** Filter by media type */
-  mediaType?: ContentEntityType
+  entityType?: ContentEntityType
   placeholder?: string
   disabled?: boolean
   class?: string
@@ -43,7 +43,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mediaType: 'game',
+  entityType: 'game',
   placeholder: undefined,
   disabled: false,
   showMediaType: false,
@@ -83,9 +83,9 @@ const {
     db
       .select()
       .from(scraperProfiles)
-      .where(eq(scraperProfiles.mediaType, props.mediaType))
+      .where(eq(scraperProfiles.entityType, props.entityType))
       .orderBy(scraperProfiles.order),
-  { watch: [() => props.mediaType] }
+  { watch: [() => props.entityType] }
 )
 const state = useRenderState(isLoading, error, profiles)
 
@@ -146,7 +146,7 @@ watch(model, (profileId) => {
     :class="cn('flex items-center gap-2 h-7', props.class)"
   >
     <Spinner class="size-4" />
-    <span class="text-xs text-muted-foreground">{{ m.common.loading }}</span>
+    <span class="text-xs text-muted-foreground">{{ m.states.loading }}</span>
   </div>
 
   <!-- Empty state with create button -->
@@ -175,7 +175,7 @@ watch(model, (profileId) => {
       v-if="isCreateDialogOpen"
       v-model:open="isCreateDialogOpen"
       mode="recipes"
-      :media-type="props.mediaType"
+      :media-type="props.entityType"
       @create="handleProfileCreated"
     />
   </div>
@@ -208,7 +208,7 @@ watch(model, (profileId) => {
             variant="outline"
             class="px-1 py-0"
           >
-            {{ m.library.entities[profile.mediaType] || profile.mediaType }}
+            {{ m.library.entities[profile.entityType] || profile.entityType }}
           </Badge>
         </div>
       </SelectItem>

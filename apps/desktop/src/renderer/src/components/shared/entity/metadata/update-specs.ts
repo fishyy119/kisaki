@@ -33,7 +33,7 @@ import {
   type PersonBatchUpdateRequest,
   type PersonUpdateRequest
 } from '@shared/ingest/update'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 interface SubmitOutcome {
   success: boolean

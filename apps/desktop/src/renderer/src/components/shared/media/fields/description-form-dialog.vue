@@ -7,7 +7,7 @@
 import { ref, watch, toRef, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db, updateEntityRows } from '@renderer/core/db'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { useAsyncData, useInlineAttachments } from '@renderer/composables'
 import {
   Dialog,
@@ -102,7 +102,7 @@ async function handleSubmit() {
 
     await attachments.value.gcOnSave(next)
     didSave.value = true
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -165,13 +165,13 @@ async function handleSubmit() {
               :disabled="isSaving"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

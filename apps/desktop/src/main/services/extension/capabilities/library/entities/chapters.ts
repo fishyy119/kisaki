@@ -12,7 +12,7 @@ import {
   normalizeCapabilityError
 } from '@kisaki3/extension-api'
 import { and, asc, eq, isNull, type SQL } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { comicChapterExternalIds, comicChapters, comics } from '@shared/db'
 import { isSameChapterAcrossVolumeKnowledge } from '@shared/metadata'
 import type { DbService } from '@main/services/db'
@@ -111,7 +111,7 @@ export class ExtensionLibraryComicChapterStore {
     ensureNonEmptyString(comicId, 'library comic id')
 
     try {
-      const id = nanoid()
+      const id = newId()
       this.options.db.client.transaction((tx) => {
         const owner = tx.select({ id: comics.id }).from(comics).where(eq(comics.id, comicId)).get()
         if (!owner) {

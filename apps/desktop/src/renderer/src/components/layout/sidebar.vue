@@ -39,7 +39,7 @@ import {
 } from '@renderer/core/extensions'
 import type { ExtensionIconInfo } from '@shared/extension'
 import SidebarNavItem from './sidebar-nav-item.vue'
-import { AdderTrigger } from '@renderer/features/adder'
+import { AddEntryTrigger } from '@renderer/features/add-entry'
 import { ScraperProfilesFormDialog } from '@renderer/features/scraper'
 import { SettingsFormDialog } from '@renderer/features/settings'
 import { AboutDialog } from '@renderer/features/about'
@@ -159,7 +159,7 @@ const showNsfwModel = computed({
 
     <!-- Bottom navigation -->
     <nav class="flex flex-col items-center py-2 gap-1">
-      <AdderTrigger />
+      <AddEntryTrigger />
       <TaskCenterTrigger />
 
       <!-- Settings Dropdown -->
@@ -304,8 +304,8 @@ const showNsfwModel = computed({
         <p v-else>{{ m.nav.nsfw.disableDescription }}</p>
       </AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
-        <AlertDialogAction @click="handleNsfwConfirm">{{ m.common.confirm }}</AlertDialogAction>
+        <AlertDialogCancel>{{ m.actions.cancel }}</AlertDialogCancel>
+        <AlertDialogAction @click="handleNsfwConfirm">{{ m.actions.confirm }}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

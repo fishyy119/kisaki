@@ -1,13 +1,13 @@
 import type { NovelScraperLookup } from '@shared/scraper'
 import type { ExternalId } from '@shared/identity'
-import type { IngestAddResult } from '../common'
+import type { IngestAddResult } from '../results'
 
 export interface IngestAddNovelResult extends IngestAddResult {
   novelId: string
 }
 
 export interface IngestAddNovelFromScraperOptions {
-  novelDirPath?: string
+  dirPath?: string
   targetCollectionId?: string
 }
 

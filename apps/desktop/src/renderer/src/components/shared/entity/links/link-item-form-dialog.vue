@@ -210,9 +210,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.save }}</Button>
+          <Button type="submit">{{ m.actions.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

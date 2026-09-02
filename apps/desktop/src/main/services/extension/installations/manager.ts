@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { app } from 'electron'
 import { mkdir, rm } from 'node:fs/promises'
 import { createLogger } from '@main/log'
@@ -28,7 +28,7 @@ import {
   validateExtensionFileExists
 } from '../packages'
 import {
-  type ExtensionIconManager,
+  type ExtensionIconServer,
   type ExtensionWebviewUiSource,
   extensionFileUrl,
   resolveExtensionUiRootPath
@@ -53,7 +53,7 @@ export interface ExtensionInstallationManagerOptions {
   contributions: ExtensionContributionRegistry
   developmentWatcher: ExtensionDevelopmentWatcher
   packageCommitter: ExtensionPackageCommitter
-  iconManager: ExtensionIconManager
+  iconServer: ExtensionIconServer
   runMutatingOperation<T>(operation: () => Promise<T>): Promise<T>
   onInstallationsChanged?: () => void
   onContributionSnapshotChanged?: () => void
@@ -70,7 +70,7 @@ export class ExtensionInstallationManager {
   private readonly contributions: ExtensionContributionRegistry
   private readonly developmentWatcher: ExtensionDevelopmentWatcher
   private readonly packageCommitter: ExtensionPackageCommitter
-  private readonly iconManager: ExtensionIconManager
+  private readonly iconServer: ExtensionIconServer
   private installedEntries: readonly ExtensionInstalledEntry[] = []
   private installedById = new Map<string, ExtensionInstalledEntry>()
   private devExtensionEntries = new Map<string, ExtensionInstalledEntry>()
@@ -85,7 +85,7 @@ export class ExtensionInstallationManager {
     this.contributions = options.contributions
     this.developmentWatcher = options.developmentWatcher
     this.packageCommitter = options.packageCommitter
-    this.iconManager = options.iconManager
+    this.iconServer = options.iconServer
   }
 
   async init(): Promise<void> {
@@ -111,7 +111,7 @@ export class ExtensionInstallationManager {
       }
     }
 
-    this.iconManager.setAvailableIcons(
+    this.iconServer.setAvailableIcons(
       'installed',
       collectInstalledSnapshotIcons(this.installedEntries)
     )
@@ -127,7 +127,7 @@ export class ExtensionInstallationManager {
     await this.refresh()
     return this.installedEntries.map((entry) =>
       toExtensionInstalledPackageInfo(entry, this.getRuntimeState(entry.id), (icon) =>
-        this.iconManager.getIconUrl(icon)
+        this.iconServer.getIconUrl(icon)
       )
     )
   }
@@ -291,7 +291,7 @@ export class ExtensionInstallationManager {
         this.contributions.assertReleased(safeExtensionId, 'uninstall')
         await this.syncDevelopmentWatcherTargets(this.runtime.getDesiredExtensions())
         await this.packageCommitter.removeActivePackage({
-          workspaceId: randomUUID(),
+          workspaceId: newId(),
           extensionId: safeExtensionId
         })
         packageRemoved = true

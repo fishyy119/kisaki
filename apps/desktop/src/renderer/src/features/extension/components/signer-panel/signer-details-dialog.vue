@@ -123,7 +123,7 @@ const { m } = useI18n()
           variant="outline"
           @click="open = false"
         >
-          {{ m.common.close }}
+          {{ m.actions.close }}
         </Button>
       </DialogFooter>
     </DialogContent>

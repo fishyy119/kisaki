@@ -18,7 +18,7 @@ import { useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
 import type { ShowcaseSection } from '@shared/db'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 
 interface Props {
   section: ShowcaseSection

@@ -44,7 +44,7 @@ import {
   upsertCharacterNode,
   upsertCompanyNode,
   upsertPersonNode
-} from './common'
+} from './shared'
 
 interface PendingGamePersonLink {
   personIdentityKey: string

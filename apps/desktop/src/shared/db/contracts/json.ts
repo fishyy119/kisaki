@@ -4,9 +4,10 @@
  * Type definitions for complex JSON structures stored in SQLite text columns.
  */
 
-import type { ContentEntityType, SortDirection } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { ContentLocale } from '@shared/i18n'
 import type { FilterState } from '@shared/filter/model'
+import type { SortDirection } from '@shared/filter/sort'
 
 /** Related site link */
 export interface ExternalSite {

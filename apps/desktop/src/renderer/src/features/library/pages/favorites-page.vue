@@ -12,7 +12,7 @@ import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header
 import { EntityBrowsePanel } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { useFavorites } from '../composables'
 
 const { m } = useI18n()

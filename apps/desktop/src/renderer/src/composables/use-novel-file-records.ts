@@ -16,7 +16,7 @@ import { getOpenBookDialogOptions } from '@renderer/utils/dialog'
 import { novelVolumeFiles, type NovelVolumeFile } from '@shared/db'
 import { useI18n } from './use-i18n'
 
-const log = createLogger('Novel')
+const log = createLogger('Library')
 
 export interface NovelFileRecords {
   isAttaching: Ref<boolean>
@@ -105,7 +105,7 @@ export function useNovelFileRecords(
       notify.success(m.value.novel.files.fileRemoved)
     } catch (error) {
       log.error('Remove file record failed:', error)
-      notify.error(m.value.common.deleteFailed)
+      notify.error(m.value.feedback.deleteFailed)
     }
   }
 

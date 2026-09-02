@@ -30,8 +30,8 @@ const { m } = useI18n()
 
 const titleText = computed(() => props.title ?? m.value.ui.spoiler.title)
 const descriptionText = computed(() => props.description ?? m.value.ui.spoiler.description)
-const confirmTextDisplay = computed(() => props.confirmText ?? m.value.common.confirm)
-const cancelTextDisplay = computed(() => props.cancelText ?? m.value.common.cancel)
+const confirmTextDisplay = computed(() => props.confirmText ?? m.value.actions.confirm)
+const cancelTextDisplay = computed(() => props.cancelText ?? m.value.actions.cancel)
 
 const open = defineModel<boolean>('open', { required: true })
 

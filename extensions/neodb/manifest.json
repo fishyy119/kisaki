@@ -16,6 +16,6 @@
   "homepage": "https://neodb.social",
   "keywords": ["neodb", "novel", "book", "scraper", "sync"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.14"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

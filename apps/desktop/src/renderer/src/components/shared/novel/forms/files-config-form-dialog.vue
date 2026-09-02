@@ -38,7 +38,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Novel')
+const log = createLogger('Library')
 
 interface Props {
   novelId: string
@@ -65,7 +65,7 @@ const { data: novel, isLoading } = useAsyncData(
 // Initialize form state when data loads
 watch(novel, (novelData) => {
   if (novelData) {
-    dirPath.value = novelData.novelDirPath ?? ''
+    dirPath.value = novelData.dirPath ?? ''
   }
 })
 
@@ -90,11 +90,11 @@ async function handleSubmit() {
 
   isSaving.value = true
   try {
-    const changed = nextDirPath !== current.novelDirPath
+    const changed = nextDirPath !== current.dirPath
 
-    await db.update(novels).set({ novelDirPath: nextDirPath }).where(eq(novels.id, props.novelId))
+    await db.update(novels).set({ dirPath: nextDirPath }).where(eq(novels.id, props.novelId))
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
 
     // The new configuration only shows once files re-reconcile against it.
@@ -162,7 +162,7 @@ function handleCancel() {
                       :disabled="!dirPath"
                       @click="handleClearDir"
                     >
-                      {{ m.common.clear }}
+                      {{ m.actions.clear }}
                     </Button>
                   </div>
                 </FieldContent>
@@ -177,13 +177,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

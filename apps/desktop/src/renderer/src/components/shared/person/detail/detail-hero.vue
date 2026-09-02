@@ -59,7 +59,7 @@ const photoUrl = computed(() =>
               variant="ghost"
               size="icon-xs"
               class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('name')"
             >
               <Icon
@@ -78,7 +78,7 @@ const photoUrl = computed(() =>
               variant="ghost"
               size="icon-xs"
               class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('originalName')"
             >
               <Icon
@@ -93,7 +93,7 @@ const photoUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('score')"
             >
               <Icon
@@ -108,7 +108,7 @@ const photoUrl = computed(() =>
             <span class="text-xs">{{ m.library.fields.myScore }}</span>
           </span>
           <span class="font-medium truncate text-xs">
-            {{ person.score !== null ? dbScoreToDisplay(person.score) : m.common.emptyValue }}
+            {{ person.score !== null ? dbScoreToDisplay(person.score) : m.values.emptyValue }}
           </span>
         </div>
       </div>

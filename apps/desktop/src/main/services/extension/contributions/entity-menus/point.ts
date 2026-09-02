@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { createLogger } from '@main/log'
 import {
   createUiError,
@@ -209,7 +209,7 @@ export class ExtensionEntityMenuContributionPoint {
   }
 
   resolve(request: ExtensionEntityMenuResolveRequest): Promise<ExtensionResolvedEntityMenu> {
-    return this.resolveSession(randomUUID(), request)
+    return this.resolveSession(newId(), request)
   }
 
   async invoke(

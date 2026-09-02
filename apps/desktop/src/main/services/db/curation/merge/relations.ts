@@ -24,7 +24,7 @@ import {
   type ComicChapter,
   type NovelVolume
 } from '@shared/db'
-import type { AllEntityType, MediaType } from '@shared/common'
+import type { AllEntityType, MediaType } from '@shared/entity-types'
 import {
   animeUnitIdentityKey,
   comicUnitIdentityKey,

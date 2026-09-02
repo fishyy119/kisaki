@@ -36,7 +36,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { METADATA_UPDATE_SPECS } from './update-specs'
 
 const { m } = useI18n()
@@ -305,7 +305,7 @@ async function handleSubmit() {
             :disabled="isSubmitting"
             @click="open = false"
           >
-            {{ m.common.close }}
+            {{ m.actions.close }}
           </Button>
           <Button
             type="submit"

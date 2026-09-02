@@ -348,6 +348,11 @@ export const library = {
     unsetFavorite: '取消喜歡',
     openGameDir: '開啟遊戲目錄',
     launchConfig: '啟動設定',
+    createDesktopShortcut: '建立桌面捷徑',
+    copy: '複製',
+    copyId: 'ID',
+    copyPageLink: '頁面連結',
+    copyLaunchLink: '啟動連結',
     media: '媒體管理',
     updateMetadata: '更新中繼資料',
     manageExternalIds: '管理外部 ID',
@@ -379,6 +384,9 @@ export const library = {
     gameDirNotSet: '遊戲目錄未設定',
     openGameDirFailed: '無法開啟遊戲目錄',
     pickFileFailed: '選擇檔案失敗',
+    shortcutCreated: '已建立桌面捷徑',
+    shortcutCreatedWithoutIcon: '已建立桌面捷徑（目前平台不支援自訂圖示）',
+    shortcutFailed: '無法建立桌面捷徑',
     deletedSummary: ({ items }: { items: string[] }) =>
       items.length > 0 ? `已刪除 ${items.join('、')}` : '已刪除',
     nameAndMore: ({ name, count }: { name: string; count: number }) => `${name} 等 ${count} 項`

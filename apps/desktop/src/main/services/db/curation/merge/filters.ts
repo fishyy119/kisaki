@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { collections, showcaseSections } from '@shared/db'
 import type { DynamicCollectionConfig } from '@shared/db/contracts/json'
 import type { FilterCondition, FilterState } from '@shared/filter/model'

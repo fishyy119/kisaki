@@ -12,6 +12,7 @@ import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
+import { EntityCopyMenuItems } from '@renderer/components/shared/entity'
 import { collections, type Collection } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
 
@@ -84,7 +85,7 @@ async function handleToggleNsfw() {
         : m.value.library.feedback.nsfwMarked
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   }
 }
 </script>
@@ -178,6 +179,14 @@ async function handleToggleNsfw() {
 
     <component :is="props.components.Separator" />
 
+    <EntityCopyMenuItems
+      entity-type="collection"
+      :entity-id="props.collectionId"
+      :components="props.components"
+    />
+
+    <component :is="props.components.Separator" />
+
     <!-- Delete -->
     <component
       :is="props.components.Item"
@@ -188,7 +197,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--delete-outline]"
         class="size-4"
       />
-      {{ m.common.delete }}
+      {{ m.actions.delete }}
     </component>
   </template>
 </template>

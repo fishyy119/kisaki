@@ -17,12 +17,12 @@ import {
 } from '@renderer/components/ui/dialog'
 import { StateView } from '@renderer/components/ui/state-view'
 import { useAsyncData } from '@renderer/composables'
-import { markVolumesRead, readUnreadVolumeCount } from '@renderer/composables/use-novel-read'
+import { markVolumesRead, readUnreadVolumeCount } from '@renderer/composables/novel-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 
-const log = createLogger('Novel')
+const log = createLogger('Library')
 
 interface Props {
   novelId: string

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { CollectionInfoFormDialog } from '@renderer/components/shared/collection'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { EntityScoreFormDialog } from '../fields'
 import { EntityExternalIdsFormDialog } from '../identities'
 import { EntityMergeDialog } from '../merge'

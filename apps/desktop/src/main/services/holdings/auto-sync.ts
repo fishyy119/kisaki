@@ -25,7 +25,7 @@ import { createLogger } from '@main/log'
 import type { DbHooks } from '@main/services/db/hooks'
 import type { FileWatchEvent, FileWatchScope, FileWatchService } from '@main/services/file-watch'
 import type { HookUntap } from '@main/hooks'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
 
 const log = createLogger('Holdings')

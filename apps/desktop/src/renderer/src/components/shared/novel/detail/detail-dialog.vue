@@ -94,7 +94,7 @@ async function handleToggleFavorite() {
         : m.value.library.feedback.favoriteAdded
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -115,16 +115,16 @@ function handleRevealSpoilersConfirm() {
 async function handleOpenFolder() {
   if (state.value !== 'success') return
   const current = novel.value!
-  if (!current.novelDirPath) {
+  if (!current.dirPath) {
     notify.error(m.value.novel.detail.novelDirNotSet)
     return
   }
-  await ipcManager.invoke('native:open-path', { path: current.novelDirPath, ensure: 'folder' })
+  await ipcManager.invoke('native:open-path', { path: current.dirPath, ensure: 'folder' })
 }
 
 const canOpenNovelDir = computed(() => {
   if (state.value !== 'success') return false
-  return !!novel.value?.novelDirPath
+  return !!novel.value?.dirPath
 })
 </script>
 

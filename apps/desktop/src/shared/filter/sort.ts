@@ -8,7 +8,9 @@
  * back to the spec default. Membership carries no direction: the scope order
  * is taken verbatim and the direction is ignored.
  */
-import type { SortDirection } from '@shared/common'
+
+/** Sort direction for list ordering. */
+export type SortDirection = 'asc' | 'desc'
 
 /** Reserved sort key; no filter query spec may declare a sort field with it. */
 export const MEMBERSHIP_SORT_KEY = 'membership'

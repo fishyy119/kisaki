@@ -12,16 +12,15 @@ import type {
   ScraperSlot,
   SlotStrategy
 } from '@shared/db'
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { ContentLocale } from '@shared/i18n'
 
 import { ref, watch, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 import {
   createEmptySlotConfig,
-  getScraperSlotsForMediaType,
+  getScraperSlotsForEntityType,
   normalizeSlotConfigs
 } from '@shared/scraper'
 import {
@@ -80,7 +79,7 @@ const STRATEGY_LABELS = computed<Record<SlotStrategy, string>>(() => ({
 // Form state
 interface FormData {
   name: string
-  mediaType: ContentEntityType
+  entityType: ContentEntityType
   searchProviderId: string
   defaultLocale: ContentLocale | null
   slotConfigs: ScraperSlotConfigs
@@ -88,7 +87,7 @@ interface FormData {
 
 const formData = ref<FormData>({
   name: '',
-  mediaType: 'game',
+  entityType: 'game',
   searchProviderId: '',
   defaultLocale: null,
   slotConfigs: normalizeSlotConfigs('game', null)
@@ -104,11 +103,11 @@ watch(
   (isOpen) => {
     if (isOpen && props.profile) {
       formData.value.name = props.profile.name
-      formData.value.mediaType = props.profile.mediaType
+      formData.value.entityType = props.profile.entityType
       formData.value.searchProviderId = props.profile.searchProviderId
       formData.value.defaultLocale = props.profile.defaultLocale
       formData.value.slotConfigs = normalizeSlotConfigs(
-        props.profile.mediaType,
+        props.profile.entityType,
         props.profile.slotConfigs
       )
     }
@@ -117,13 +116,13 @@ watch(
 )
 
 watch(
-  () => formData.value.mediaType,
-  (mediaType) => {
-    formData.value.slotConfigs = normalizeSlotConfigs(mediaType, formData.value.slotConfigs)
+  () => formData.value.entityType,
+  (entityType) => {
+    formData.value.slotConfigs = normalizeSlotConfigs(entityType, formData.value.slotConfigs)
   }
 )
 
-const slotsForMediaType = computed(() => getScraperSlotsForMediaType(formData.value.mediaType))
+const slotsForEntityType = computed(() => getScraperSlotsForEntityType(formData.value.entityType))
 
 // Computed for slot editing
 const editingSlotConfig = computed(() => {
@@ -163,7 +162,7 @@ function handleSubmit() {
   props.onSave({
     ...props.profile,
     name: formData.value.name.trim(),
-    mediaType: formData.value.mediaType,
+    entityType: formData.value.entityType,
     searchProviderId: formData.value.searchProviderId,
     defaultLocale: formData.value.defaultLocale,
     slotConfigs: formData.value.slotConfigs,
@@ -173,30 +172,17 @@ function handleSubmit() {
 }
 
 // Computed model for media type (Select returns unknown type)
-const mediaTypeModel = computed({
-  get: () => formData.value.mediaType,
+const entityTypeModel = computed({
+  get: () => formData.value.entityType,
   set: (value: unknown) => {
     if (CONTENT_ENTITY_TYPES.includes(value as ContentEntityType)) {
-      formData.value.mediaType = value as ContentEntityType
+      formData.value.entityType = value as ContentEntityType
     }
   }
 })
 
 function getSlotStrategyLabel(slot: ScraperSlot): string {
   return STRATEGY_LABELS.value[formData.value.slotConfigs[slot]?.strategy ?? 'first']
-}
-
-async function handleCopyProfileId() {
-  if (!props.profile) {
-    return
-  }
-
-  try {
-    await navigator.clipboard.writeText(props.profile.id)
-    notify.success(m.value.scraper.profiles.idCopied)
-  } catch (error) {
-    notify.error(m.value.common.copyFailed, error instanceof Error ? error.message : String(error))
-  }
 }
 </script>
 
@@ -223,46 +209,21 @@ async function handleCopyProfileId() {
               </FieldContent>
             </Field>
 
-            <Field>
-              <FieldLabel>{{ m.scraper.profiles.idLabel }}</FieldLabel>
-              <FieldContent>
-                <div class="flex gap-1.5">
-                  <Input
-                    :model-value="props.profile?.id ?? ''"
-                    readonly
-                    class="font-mono"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    :tooltip="m.scraper.profiles.copyIdTooltip"
-                    @click="handleCopyProfileId"
-                  >
-                    <Icon
-                      icon="icon-[mdi--content-copy]"
-                      class="size-4"
-                    />
-                  </Button>
-                </div>
-              </FieldContent>
-            </Field>
-
             <!-- Media Type -->
             <Field>
-              <FieldLabel>{{ m.scraper.profiles.mediaTypeLabel }}</FieldLabel>
+              <FieldLabel>{{ m.scraper.profiles.entityTypeLabel }}</FieldLabel>
               <FieldContent>
-                <Select v-model="mediaTypeModel">
+                <Select v-model="entityTypeModel">
                   <SelectTrigger class="w-full">
-                    <SelectValue :placeholder="m.scraper.profiles.selectMediaType" />
+                    <SelectValue :placeholder="m.scraper.profiles.selectEntityType" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="mediaType in CONTENT_ENTITY_TYPES"
-                      :key="mediaType"
-                      :value="mediaType"
+                      v-for="entityType in CONTENT_ENTITY_TYPES"
+                      :key="entityType"
+                      :value="entityType"
                     >
-                      {{ m.library.entities[mediaType] }}
+                      {{ m.library.entities[entityType] }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -275,7 +236,7 @@ async function handleCopyProfileId() {
               <FieldContent>
                 <ScraperProviderSelect
                   v-model="formData.searchProviderId"
-                  :entity-type="formData.mediaType"
+                  :entity-type="formData.entityType"
                   :required-capabilities="['search']"
                 />
               </FieldContent>
@@ -309,7 +270,7 @@ async function handleCopyProfileId() {
               <FieldContent>
                 <div class="space-y-1">
                   <button
-                    v-for="slot in slotsForMediaType"
+                    v-for="slot in slotsForEntityType"
                     :key="slot"
                     type="button"
                     class="w-full flex items-center justify-between p-2.5 rounded-lg border hover:bg-accent/50 transition-colors text-left"
@@ -346,9 +307,9 @@ async function handleCopyProfileId() {
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.save }}</Button>
+          <Button type="submit">{{ m.actions.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>
@@ -358,7 +319,7 @@ async function handleCopyProfileId() {
   <ScraperProfileSlotConfigFormDialog
     v-if="editingSlot && editingSlotConfig"
     v-model:open="slotDialogOpen"
-    :entity-type="formData.mediaType"
+    :entity-type="formData.entityType"
     :slot-type="editingSlot"
     :slot-name="SLOT_LABELS[editingSlot]"
     :slot-config="editingSlotConfig"

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { cp, mkdir, readdir, rm } from 'node:fs/promises'
 import { movePath, pathExists } from '@main/utils/fs'
 import type { ExtensionPackageLayout } from './layout'
@@ -19,7 +19,7 @@ export class ExtensionPackageArchiveStore {
   async storeArchive(input: { archivePath: string; sha256: string }): Promise<string> {
     const sha256 = requireSafeArchiveSha256(input.sha256)
     const targetPath = this.archivePath(sha256)
-    const tempPath = resolveInsideRoot(this.layout.archivesDir, `${sha256}.${randomUUID()}.tmp`)
+    const tempPath = resolveInsideRoot(this.layout.archivesDir, `${sha256}.${newId()}.tmp`)
 
     await mkdir(this.layout.archivesDir, { recursive: true })
     try {

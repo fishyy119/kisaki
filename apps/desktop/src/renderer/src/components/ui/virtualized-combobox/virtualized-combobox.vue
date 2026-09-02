@@ -52,8 +52,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { m } = useI18n()
 
-const placeholderText = computed(() => props.placeholder ?? m.value.common.searchPlaceholder)
-const emptyTextDisplay = computed(() => props.emptyText ?? m.value.common.select)
+const placeholderText = computed(() => props.placeholder ?? m.value.values.searchPlaceholder)
+const emptyTextDisplay = computed(() => props.emptyText ?? m.value.actions.select)
 
 const emit = defineEmits<{
   /** Callback when selection changes */
@@ -124,7 +124,7 @@ const displayText = computed(() => {
 
   if (!props.showSelectedLabel || selectedIds.length === 0) return null
   if (props.multiple) {
-    return m.value.common.selectedCount({ count: selectedIds.length })
+    return m.value.values.selectedCount({ count: selectedIds.length })
   }
   const selected = entities.find((e) => e.id === selectedIds[0])
   return selected?.name ?? null

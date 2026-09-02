@@ -34,7 +34,7 @@ import {
 } from '@shared/db'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import { IngestPersistHandlers } from '../../persist'
+import { IngestPersisters } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
 import type {
   IngestCharacterGraph,
@@ -549,7 +549,7 @@ export interface MediaGraphLinkInput<
 export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind>(params: {
   tx: DbContext
   entityId: string
-  persistHandlers: IngestPersistHandlers
+  persisters: IngestPersisters
   nodes: {
     persons: IngestGameGraph['persons']
     companies: IngestGameGraph['companies']
@@ -585,17 +585,8 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
   pendingAssets: PendingAssetTask[]
   preservedLinkRows: Partial<Record<K | C | 'characterPerson', number>>
 } {
-  const {
-    tx,
-    entityId,
-    persistHandlers,
-    nodes,
-    person,
-    company,
-    character,
-    cast,
-    characterPerson
-  } = params
+  const { tx, entityId, persisters, nodes, person, company, character, cast, characterPerson } =
+    params
 
   const personIdentityKeys = new Set<string>()
   if (person.mode) {
@@ -629,11 +620,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
 
   const personResolution =
     personIdentityKeys.size > 0
-      ? resolvePersonNodes(
-          tx,
-          persistHandlers,
-          filterNodesByIdentity(nodes.persons, personIdentityKeys)
-        )
+      ? resolvePersonNodes(tx, persisters, filterNodesByIdentity(nodes.persons, personIdentityKeys))
       : EMPTY_RESOLUTION
   pendingAssets.push(...personResolution.pendingAssets)
 
@@ -641,7 +628,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
     companyIdentityKeys.size > 0
       ? resolveCompanyNodes(
           tx,
-          persistHandlers,
+          persisters,
           filterNodesByIdentity(nodes.companies, companyIdentityKeys)
         )
       : EMPTY_RESOLUTION
@@ -651,7 +638,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
     characterIdentityKeys.size > 0
       ? resolveCharacterNodes(
           tx,
-          persistHandlers,
+          persisters,
           filterNodesByIdentity(nodes.characters, characterIdentityKeys)
         )
       : EMPTY_RESOLUTION
@@ -736,7 +723,7 @@ export function applyMediaLinkGraph<K extends LinkRowKind, C extends CastRowKind
 
 export function resolvePersonNodes(
   tx: DbContext,
-  persistHandlers: IngestPersistHandlers,
+  persisters: IngestPersisters,
   nodes: IngestCharacterGraph['persons'] | IngestGameGraph['persons']
 ): {
   idByIdentity: Map<string, string>
@@ -746,7 +733,7 @@ export function resolvePersonNodes(
   const pendingAssets: PendingAssetTask[] = []
 
   for (const node of nodes) {
-    const result = persistHandlers.person.persistPersonNodeInternal(node, tx)
+    const result = persisters.person.persistPersonNodeInternal(node, tx)
     idByIdentity.set(node.identityKey, result.personId)
     pendingAssets.push(...result.pendingAssets)
   }
@@ -767,7 +754,7 @@ export function filterNodesByIdentity<T extends { identityKey: string }>(
 
 export function resolveCompanyNodes(
   tx: DbContext,
-  persistHandlers: IngestPersistHandlers,
+  persisters: IngestPersisters,
   nodes: IngestGameGraph['companies']
 ): {
   idByIdentity: Map<string, string>
@@ -777,7 +764,7 @@ export function resolveCompanyNodes(
   const pendingAssets: PendingAssetTask[] = []
 
   for (const node of nodes) {
-    const result = persistHandlers.company.persistCompanyNodeInternal(node, tx)
+    const result = persisters.company.persistCompanyNodeInternal(node, tx)
     idByIdentity.set(node.identityKey, result.companyId)
     pendingAssets.push(...result.pendingAssets)
   }
@@ -787,7 +774,7 @@ export function resolveCompanyNodes(
 
 export function resolveCharacterNodes(
   tx: DbContext,
-  persistHandlers: IngestPersistHandlers,
+  persisters: IngestPersisters,
   nodes: IngestGameGraph['characters'] | IngestCharacterNode[]
 ): {
   idByIdentity: Map<string, string>
@@ -797,7 +784,7 @@ export function resolveCharacterNodes(
   const pendingAssets: PendingAssetTask[] = []
 
   for (const node of nodes) {
-    const result = persistHandlers.character.persistCharacterNodeInternal(node, tx)
+    const result = persisters.character.persistCharacterNodeInternal(node, tx)
     idByIdentity.set(node.identityKey, result.characterId)
     pendingAssets.push(...result.pendingAssets)
   }

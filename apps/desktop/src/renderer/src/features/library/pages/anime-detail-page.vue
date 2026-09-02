@@ -30,7 +30,7 @@ import {
 } from '@renderer/components/shared/anime'
 import { EntityScoreFormDialog, EntityDropdownMenu } from '@renderer/components/shared/entity'
 import { useAmbientLight, useAnimeRouteProvider, useEntityDetailRoute } from '@renderer/composables'
-import { shouldOfferWatchCatchUp } from '@renderer/composables/use-anime-watch'
+import { shouldOfferWatchCatchUp } from '@renderer/composables/anime-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -45,7 +45,7 @@ import {
   getMediaStatusVariant
 } from '@renderer/utils/format'
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 const { m } = useI18n()
 
@@ -109,7 +109,7 @@ async function handleToggleFavorite() {
         : m.value.library.feedback.favoriteAdded
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -154,13 +154,13 @@ const selectedStatus = computed({
 
 async function handleOpenAnimeDir() {
   const current = anime.value
-  if (!current?.animeDirPath) {
+  if (!current?.dirPath) {
     notify.error(m.value.anime.detail.animeDirNotSet)
     return
   }
 
   const result = await ipcManager.invoke('native:open-path', {
-    path: current.animeDirPath,
+    path: current.dirPath,
     ensure: 'folder'
   })
   if (!result.success) {
@@ -255,7 +255,7 @@ async function handleOpenAnimeDir() {
           variant="secondary"
           size="icon-sm"
           :tooltip="m.anime.detail.openAnimeDir"
-          :disabled="!anime.animeDirPath"
+          :disabled="!anime.dirPath"
           @click="handleOpenAnimeDir"
         >
           <Icon

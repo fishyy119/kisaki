@@ -15,7 +15,7 @@ import { VirtualList } from '@renderer/components/ui/virtual'
 import { useAnimeFileSync } from '@renderer/composables'
 import { useAnime } from '@renderer/composables/use-anime'
 import { revealAnimeFile } from '@renderer/composables/use-anime-file-records'
-import { toggleEpisodeWatched } from '@renderer/composables/use-anime-watch'
+import { toggleEpisodeWatched } from '@renderer/composables/anime-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
@@ -41,7 +41,7 @@ const watchedCount = computed(() => episodes.value.filter((episode) => episode.w
 /** A film is one episode, so a watched-of-total count states nothing. */
 const isFilm = computed(() => anime.value?.format === 'movie')
 
-const canSyncFiles = computed(() => !!anime.value?.animeDirPath)
+const canSyncFiles = computed(() => !!anime.value?.dirPath)
 
 const episodeDetailOpen = computed({
   get: () => openEpisodeId.value !== null,
@@ -53,7 +53,7 @@ const episodeDetailOpen = computed({
 async function handleSyncFiles(): Promise<void> {
   const current = anime.value
   if (!current) return
-  if (!current.animeDirPath) {
+  if (!current.dirPath) {
     notify.error(m.value.anime.detail.animeDirNotSet)
     return
   }

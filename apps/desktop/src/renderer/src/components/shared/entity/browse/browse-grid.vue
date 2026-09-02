@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import type { ContentEntityData } from '@renderer/composables/content-entities'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import EntityCard from '../card'
 
 interface Props {

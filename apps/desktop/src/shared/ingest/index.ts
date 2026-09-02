@@ -2,8 +2,8 @@
  * Ingest type contracts.
  */
 
-export type { ExistingReason, IngestAddResult, IngestWarning, IngestWarningCode } from './common'
-export type { IngestUpdateResult } from './common'
+export type { ExistingReason, IngestAddResult, IngestWarning, IngestWarningCode } from './results'
+export type { IngestUpdateResult } from './results'
 export type {
   IngestAddCharacterFromScraperOptions,
   IngestAddCharacterFromScraperParams,

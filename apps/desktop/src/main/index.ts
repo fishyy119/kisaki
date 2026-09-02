@@ -15,6 +15,7 @@ import { ScraperService } from './services/scraper'
 import { ProcessService } from './services/process'
 import { VideoService } from './services/video'
 import { HoldingsService } from './services/holdings'
+import { ImageService } from './services/image'
 import { ReaderService } from './services/reader'
 import { ActivityService } from './services/activity'
 import { IngestService } from './services/ingest'
@@ -22,7 +23,7 @@ import { ScannerService } from './services/scanner'
 import { AttachmentService } from './services/attachment'
 import { ExtensionService } from './services/extension'
 import { NetworkService } from './services/network'
-import { NotifyService } from './services/notify'
+import { NotificationService } from './services/notification'
 import { DeeplinkService } from './services/deeplink'
 import { UpdaterService } from './services/updater'
 import { CommandService } from './services/command'
@@ -127,7 +128,7 @@ async function onAppReady(): Promise<void> {
   container.register(new DbService())
   container.register(new WindowService())
   container.register(new NativeService())
-  container.register(new NotifyService())
+  container.register(new NotificationService())
   container.register(new NetworkService())
   container.register(new DeeplinkService())
   container.register(new UpdaterService())
@@ -139,6 +140,7 @@ async function onAppReady(): Promise<void> {
   container.register(new ProcessService())
   container.register(new VideoService())
   container.register(new ReaderService())
+  container.register(new ImageService())
 
   // Domain: library ownership, grows per media type
   container.register(new ScraperService())

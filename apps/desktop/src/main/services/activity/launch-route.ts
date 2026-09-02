@@ -17,7 +17,7 @@
 
 import { createLogger } from '@main/log'
 import type { DeeplinkOutcome, DeeplinkRouteHandler } from '@main/services/deeplink'
-import type { NotifyService } from '@main/services/notify'
+import type { NotificationService } from '@main/services/notification'
 import type { I18nService } from '@main/services/i18n'
 import type { AnimeWatchResult, GameLaunchResult, ReadingResult } from '@shared/activity'
 import type { ActivityService } from './service'
@@ -28,7 +28,7 @@ export const LAUNCH_DEEPLINK_ROUTE = '/launch/:mediaType/:entityId' as const
 
 export function createLaunchRoute(
   activity: ActivityService,
-  notify: NotifyService,
+  notification: NotificationService,
   i18n: I18nService
 ): DeeplinkRouteHandler<typeof LAUNCH_DEEPLINK_ROUTE> {
   /** A deeplink launch has no button state, so anything unexpected is toasted. */
@@ -39,13 +39,13 @@ export function createLaunchRoute(
       case 'detected':
         return
       case 'cancelled':
-        notify.warning(messages.launchCancelledTitle)
+        notification.warning(messages.launchCancelledTitle)
         return
       case 'unconfirmed':
-        notify.warning(messages.launchRequestedTitle, messages[result.reason])
+        notification.warning(messages.launchRequestedTitle, messages[result.reason])
         return
       case 'failed':
-        notify.error(messages.launchFailedTitle, messages.errors[result.reason])
+        notification.error(messages.launchFailedTitle, messages.errors[result.reason])
     }
   }
 
@@ -69,7 +69,7 @@ export function createLaunchRoute(
     const result = await activity.anime.watch(animeId, episodeId)
 
     if (result.status === 'failed') {
-      notify.error(
+      notification.error(
         i18n.messages.activity.watchFailedTitle,
         i18n.messages.activity.errors[result.reason]
       )
@@ -86,10 +86,10 @@ export function createLaunchRoute(
     entryId: string,
     unitId: string | undefined
   ): DeeplinkOutcome {
-    const result = activity.reading.read(media, entryId, unitId)
+    const result = activity[media].read(entryId, unitId)
 
     if (result.status === 'failed') {
-      notify.error(
+      notification.error(
         i18n.messages.activity.readFailedTitle,
         i18n.messages.activity.errors[result.reason]
       )

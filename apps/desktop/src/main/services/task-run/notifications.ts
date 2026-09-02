@@ -1,5 +1,5 @@
-import type { NotifyOptions, NotifyType } from '@shared/notify'
-import type { NotifyCallbacks, NotifyService } from '@main/services/notify'
+import type { NotifyOptions, NotifyType } from '@shared/notification'
+import type { NotifyCallbacks, NotificationService } from '@main/services/notification'
 import type { I18nService } from '@main/services/i18n'
 import type { Messages } from '@shared/i18n'
 import type { TaskRun, TaskRunPresentation } from '@shared/task-run'
@@ -12,7 +12,7 @@ interface ActiveTaskRunNotification {
 }
 
 export interface TaskRunNotificationCoordinatorOptions {
-  notify: NotifyService
+  notification: NotificationService
   i18n: I18nService
   cancelRun(runId: string): boolean
 }
@@ -37,7 +37,7 @@ export class TaskRunNotificationCoordinator {
 
   dispose(): void {
     for (const active of this.active.values()) {
-      this.options.notify.dismiss(active.toastId)
+      this.options.notification.dismiss(active.toastId)
     }
     this.active.clear()
   }
@@ -80,9 +80,9 @@ export class TaskRunNotificationCoordinator {
     }
 
     if (this.active.has(run.id)) {
-      this.options.notify.update(active.toastId, options, callbacks)
+      this.options.notification.update(active.toastId, options, callbacks)
     } else {
-      this.options.notify.show(options, active.toastId, callbacks)
+      this.options.notification.show(options, active.toastId, callbacks)
       this.active.set(run.id, active)
     }
   }
@@ -104,15 +104,15 @@ export class TaskRunNotificationCoordinator {
 
     if (active && !active.closed) {
       // A progress toast is persistent; the final state needs a fresh toast lifetime.
-      this.options.notify.dismiss(active.toastId)
-      this.options.notify.show(options, resultToastId)
+      this.options.notification.dismiss(active.toastId)
+      this.options.notification.show(options, resultToastId)
       this.active.delete(run.id)
       return
     }
 
     this.active.delete(run.id)
     if (notify.showResult === true) {
-      this.options.notify.show(options, resultToastId)
+      this.options.notification.show(options, resultToastId)
     }
   }
 
@@ -120,7 +120,7 @@ export class TaskRunNotificationCoordinator {
     const messages = this.options.i18n.messages
     const accepted = this.options.cancelRun(run.id)
     if (!accepted) {
-      this.options.notify.update(toastId, {
+      this.options.notification.update(toastId, {
         title: run.title,
         message: messages.task.notifications.cancelUnavailable,
         type: 'info',
@@ -133,7 +133,7 @@ export class TaskRunNotificationCoordinator {
       return
     }
 
-    this.options.notify.update(toastId, {
+    this.options.notification.update(toastId, {
       title: run.title,
       message: messages.task.notifications.cancelling,
       type: 'loading',
@@ -149,7 +149,7 @@ function createCancelAction(messages: Messages, run: TaskRun): NotifyOptions['ac
 
   return {
     id: CANCEL_ACTION_ID,
-    label: messages.common.cancel
+    label: messages.actions.cancel
   }
 }
 

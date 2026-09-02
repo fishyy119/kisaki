@@ -38,7 +38,7 @@ import {
   personTagLinks,
   tags
 } from '@shared/db'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import {
   animeExternalIdLink,
   characterExternalIdLink,
@@ -47,7 +47,7 @@ import {
   gameExternalIdLink,
   novelExternalIdLink,
   personExternalIdLink
-} from '../../helper/external-id'
+} from '../../identity/external-id'
 import type { EntityMergeConfig, ExternalIdMergeConfig, RelationMergeConfig } from './types'
 
 const gameExternalIdConfig: ExternalIdMergeConfig = {

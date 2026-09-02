@@ -29,7 +29,7 @@ import { parseLocalDateKey } from '@renderer/utils/datetime'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
-import { UNIT_MEDIA_TYPES, type MediaType } from '@shared/common'
+import { UNIT_MEDIA_TYPES, type MediaType } from '@shared/entity-types'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 
 const {

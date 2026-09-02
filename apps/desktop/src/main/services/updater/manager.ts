@@ -16,7 +16,7 @@ import type { TaskRunInitiator, TaskRunProgressUpdate, TaskRunStartResult } from
 import type { I18nService } from '@main/services/i18n'
 import type { Messages } from '@shared/i18n'
 import electronUpdater, { type ProgressInfo, type UpdateInfo } from 'electron-updater'
-import type { UpdaterSettings } from './preferences'
+import type { UpdaterSettings } from './settings'
 
 // electron-updater is CJS with lazy getter exports that Node ESM named imports cannot see.
 const { autoUpdater } = electronUpdater

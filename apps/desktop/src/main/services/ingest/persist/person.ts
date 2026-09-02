@@ -6,7 +6,7 @@ import type {
 } from '@shared/ingest/add'
 import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   collectionPersonLinks,
   personExternalIds,
@@ -24,7 +24,7 @@ import type { IngestOperationOptions } from '../types'
 type PersonPersistOptions = IngestAddPersonFromScraperOptions &
   Pick<IngestOperationOptions, 'signal' | 'onProgress'>
 
-export class PersonIngestPersistHandler {
+export class PersonPersister {
   constructor(
     private readonly dbService: DbService,
     private readonly i18nService: I18nService
@@ -88,7 +88,7 @@ export class PersonIngestPersistHandler {
     }
 
     const core = node.core
-    const personId = nanoid()
+    const personId = newId()
     const newPerson: NewPerson = {
       id: personId,
       name: core.name,
@@ -157,7 +157,7 @@ export class PersonIngestPersistHandler {
     const core = node.core
 
     if (core.externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExisting(
+      const existingByExternalId = this.dbService.finder.findExisting(
         'person',
         { externalIds: core.externalIds },
         tx

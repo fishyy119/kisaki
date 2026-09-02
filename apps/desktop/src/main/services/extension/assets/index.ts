@@ -5,7 +5,7 @@
  */
 
 export { ExtensionFileAssetServer, extensionFileUrl } from './files'
-export { ExtensionIconManager } from './icon'
+export { ExtensionIconServer } from './icons'
 export { ExtensionUiAssetServer, resolveExtensionUiRootPath } from './ui'
 export { ExtensionWebviewFontServer } from './fonts'
 export type { ExtensionWebviewUiSource } from './ui'

@@ -9,7 +9,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ExtensionCategory } from '@kisaki3/extension-api'
-import type { SortDirection } from '@shared/common'
+import type { SortDirection } from '@shared/filter'
 import type {
   ExtensionAutomaticUpdateRunState,
   ExtensionUpdateCheckResult
@@ -54,9 +54,7 @@ export const useInstalledExtensionStore = defineStore(
     // Update facts: the latest manual check and the automatic update run
     const updateCheck = ref<ExtensionUpdateCheckResult>({ updates: [], unavailable: [] })
     const checkingUpdates = ref(false)
-    const automaticUpdateRun = ref<ExtensionAutomaticUpdateRunState>(
-      createIdleAutomaticUpdateRun()
-    )
+    const automaticUpdateRun = ref<ExtensionAutomaticUpdateRunState>(createIdleAutomaticUpdateRun())
 
     let listenersRegistered = false
 

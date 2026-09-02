@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { readCommand, readRequiredEnv, run } from './common'
+import { readCommand, readRequiredEnv, run } from './shared'
 
 const extensionId = readRequiredEnv('PUBLISH_EXTENSION_ID')
 const version = readRequiredEnv('PUBLISH_VERSION')

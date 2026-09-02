@@ -20,7 +20,7 @@ import type {
 } from '@shared/scraper'
 import { animes, characters, comics, companies, games, novels, persons } from '@shared/db'
 import type { TableName } from '@shared/db/table-names'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 export type AssetFileSource = { kind: 'path'; path: string } | { kind: 'url'; url: string }
 

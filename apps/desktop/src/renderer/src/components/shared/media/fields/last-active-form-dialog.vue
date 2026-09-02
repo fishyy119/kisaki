@@ -7,7 +7,7 @@
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db, updateEntityRows } from '@renderer/core/db'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { useAsyncData } from '@renderer/composables'
 import { formatDatetimeLocalInput } from '@renderer/utils/datetime'
 import {
@@ -81,7 +81,7 @@ async function handleSubmit() {
       lastActiveAt: datetime.value ? new Date(datetime.value) : null
     })
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -131,7 +131,7 @@ function clearDatetime() {
                       variant="outline"
                       @click="clearDatetime"
                     >
-                      {{ m.common.clear }}
+                      {{ m.actions.clear }}
                     </Button>
                   </div>
                 </FieldContent>
@@ -146,13 +146,13 @@ function clearDatetime() {
               :disabled="isSaving"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

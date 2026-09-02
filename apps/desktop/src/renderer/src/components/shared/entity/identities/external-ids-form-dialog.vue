@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData } from '@renderer/composables'
 import {
@@ -23,7 +23,7 @@ import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { IDENTITY_STORES } from './identity-tables'
 import EntityExternalIdItemFormDialog from './external-id-item-form-dialog.vue'
 
@@ -108,13 +108,13 @@ async function handleSave() {
     await store.value.replace(
       props.entityId,
       normalizedItems.map((item) => ({
-        id: item.isNew ? nanoid() : item.id,
+        id: item.isNew ? newId() : item.id,
         source: item.source,
         externalId: item.externalId
       }))
     )
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
@@ -151,7 +151,7 @@ function handleEdit(item: ExternalIdItem) {
 
 function handleAddNew() {
   editingItem.value = {
-    id: nanoid(),
+    id: newId(),
     source: '',
     externalId: '',
     isNew: true
@@ -248,13 +248,13 @@ function handleCancel() {
               variant="outline"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </div>
         </DialogFooter>

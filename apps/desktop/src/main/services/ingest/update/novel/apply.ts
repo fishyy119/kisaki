@@ -1,10 +1,6 @@
 import { eq, inArray } from 'drizzle-orm'
 import { novelExternalIdLink, requireExternalIdsAvailable, type DbContext } from '@main/services/db'
-import {
-  IngestPersistHandlers,
-  insertNovelVolumeExternalIds,
-  insertNovelVolumeRow
-} from '../../persist'
+import { IngestPersisters, insertNovelVolumeExternalIds, insertNovelVolumeRow } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
 import {
   novelExternalIds,
@@ -239,7 +235,7 @@ export function applyNovelPlan(
   tx: DbContext,
   novelId: string,
   plan: NovelUpdatePlan,
-  persistHandlers: IngestPersistHandlers
+  persisters: IngestPersisters
 ): UpdateLinkApplyResult<NovelLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, novelExternalIdLink, [novelId], plan.externalIds)
@@ -274,7 +270,7 @@ export function applyNovelPlan(
     ? applyMediaLinkGraph({
         tx,
         entityId: novelId,
-        persistHandlers,
+        persisters,
         nodes: relationGraph,
         person: {
           kind: 'novelPerson',

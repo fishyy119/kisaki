@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { readRequiredEnv } from './common'
+import { readRequiredEnv } from './shared'
 
 const artifactDir = readRequiredEnv('RELEASE_ARTIFACT_DIR')
 const checksumsPath = path.join(artifactDir, 'SHA256SUMS')

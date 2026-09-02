@@ -1,4 +1,4 @@
-export * from './common'
+export * from './shared'
 export * from './entities'
 export * from './links'
 export * from './relations'

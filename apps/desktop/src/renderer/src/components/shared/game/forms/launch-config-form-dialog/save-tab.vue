@@ -57,7 +57,7 @@ async function handleSelectSavePath() {
         <div class="flex gap-2">
           <Input
             v-model="savePath"
-            :placeholder="m.common.notSet"
+            :placeholder="m.states.notSet"
           />
           <Button
             type="button"

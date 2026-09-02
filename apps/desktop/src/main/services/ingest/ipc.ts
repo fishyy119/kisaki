@@ -76,30 +76,30 @@ export function registerIngestIpc(service: IngestService, ipc: IpcService): void
   )
 
   ipc.handle('ingest:batch-update-game-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.game.startUpdateFromScraper(request))
+    wrapIpc(() => service.batch.start('game', request))
   )
 
   ipc.handle('ingest:batch-update-anime-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.anime.startUpdateFromScraper(request))
+    wrapIpc(() => service.batch.start('anime', request))
   )
 
   ipc.handle('ingest:batch-update-comic-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.comic.startUpdateFromScraper(request))
+    wrapIpc(() => service.batch.start('comic', request))
   )
 
   ipc.handle('ingest:batch-update-novel-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.novel.startUpdateFromScraper(request))
+    wrapIpc(() => service.batch.start('novel', request))
   )
 
   ipc.handle('ingest:batch-update-person-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.person.startUpdateFromScraper(request))
+    wrapIpc(() => service.batch.start('person', request))
   )
 
   ipc.handle('ingest:batch-update-company-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.company.startUpdateFromScraper(request))
+    wrapIpc(() => service.batch.start('company', request))
   )
 
   ipc.handle('ingest:batch-update-character-from-scraper', async (_, request) =>
-    wrapIpc(() => service.batch.character.startUpdateFromScraper(request))
+    wrapIpc(() => service.batch.start('character', request))
   )
 }

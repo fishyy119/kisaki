@@ -1,4 +1,4 @@
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
 import type { SaveBackup } from '@shared/db/contracts/json'
 import type { AttachmentStore } from '../../attachment'

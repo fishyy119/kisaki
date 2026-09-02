@@ -10,9 +10,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { and, asc, eq, inArray } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
-import { MEDIA_TYPES, type MediaType } from '@shared/common'
+import { MEDIA_TYPES, type MediaType } from '@shared/entity-types'
 import {
   MEDIA_RELATION_TYPES,
   MEDIA_RELATION_TYPE_INVERSE,
@@ -238,7 +238,7 @@ async function handleSave() {
         }
 
         outValues.push({
-          id: item.isNew ? nanoid() : item.id,
+          id: item.isNew ? newId() : item.id,
           fromType: props.mediaType,
           fromId: props.entityId,
           toType: item.targetType,
@@ -271,7 +271,7 @@ async function handleSave() {
       await db.insert(mediaRelations).values(outValues)
     }
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
@@ -295,7 +295,7 @@ function handleEdit(item: RelationItem) {
 
 function handleItemFormSubmit(data: MediaRelationDraft) {
   if (isAddMode.value) {
-    items.value.push({ ...data, id: nanoid(), direction: 'out', isNew: true })
+    items.value.push({ ...data, id: newId(), direction: 'out', isNew: true })
     return
   }
   const index = items.value.findIndex((item) => item.id === editingItem.value?.id)
@@ -416,13 +416,13 @@ const deleteDialogOpen = computed({
               variant="outline"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </div>
         </DialogFooter>

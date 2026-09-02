@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { notify } from '@renderer/core/notify'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { useEntityDelete } from '@renderer/composables'
 import { formatEntityDeleteSuccessMessage } from '@renderer/utils/entity-delete'

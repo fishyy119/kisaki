@@ -10,7 +10,7 @@
 
 import type { DbContext, DbService } from '@main/services/db'
 import type { ScraperService } from '@main/services/scraper'
-import type { ContentEntityType, MediaType } from '@shared/common'
+import type { ContentEntityType, MediaType } from '@shared/entity-types'
 import type { IngestWarning } from '@shared/ingest'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
 import {
@@ -76,7 +76,7 @@ import {
   buildNovelGraph
 } from '../graph'
 import { normalizeLookup } from '../normalization'
-import type { IngestPersistHandlers } from '../persist'
+import type { IngestPersisters } from '../persist'
 import { createUnresolvedRelatedEntriesWarning } from '../persist/media-relations'
 import { applyAnimePlan, buildAnimeIncoming, buildAnimePlan, loadAnimeCurrent } from './anime'
 import { resolveAnimeUpdateLookup } from './anime/lookup'
@@ -172,6 +172,11 @@ export interface IngestUpdateTypeMap {
 // Correlated aliases carry the base shapes the engine reads.
 export type IngestUpdateRequestOf<T extends ContentEntityType> = IngestUpdateTypeMap[T]['request'] &
   IngestUpdateRequest<string>
+/** The surface key union an entity's update request selects from. */
+export type IngestUpdateSurfaceOf<T extends ContentEntityType> =
+  IngestUpdateTypeMap[T]['request'] extends IngestUpdateRequest<infer TSurface, infer _TLookup>
+    ? TSurface
+    : never
 export type IngestUpdateLookup<T extends ContentEntityType> = IngestUpdateTypeMap[T]['lookup'] &
   ScraperLookup
 export type IngestUpdateBundle<T extends ContentEntityType> = IngestUpdateTypeMap[T]['bundle']
@@ -181,7 +186,7 @@ export type IngestUpdatePlanning<T extends ContentEntityType> = IngestUpdateType
 export interface IngestUpdateDeps {
   dbService: DbService
   scraperService: ScraperService
-  persist: IngestPersistHandlers
+  persist: IngestPersisters
 }
 
 /** What one in-transaction apply produced for the engine to finish with. */
@@ -276,7 +281,7 @@ function createMediaUpdateSpec<
     tx: DbContext,
     rootId: string,
     plan: TPlan,
-    persist: IngestPersistHandlers
+    persist: IngestPersisters
   ) => UpdateLinkApplyResult<TLinkKind>
   linkTopology: Record<TLinkKind, LinkTopologySpec<TRelationSurface, TFactSource>>
 }) {

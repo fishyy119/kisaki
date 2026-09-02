@@ -1,4 +1,4 @@
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import type { ScannerRunIssue, ScannerRunIssueType } from '@shared/scanner'
 import { assertNever } from '@shared/utils/exhaustive'
 import { messages } from '@renderer/core/i18n'

@@ -64,7 +64,7 @@ const title = computed(() => {
       number: formatUnitNumber(props.chapter.volumeNumber)
     })
   }
-  return m.value.common.emptyValue
+  return m.value.values.emptyValue
 })
 
 const coverUrl = computed(() =>

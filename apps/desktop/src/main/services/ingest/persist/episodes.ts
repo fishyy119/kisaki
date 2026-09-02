@@ -1,6 +1,6 @@
 /** Anime episode row persistence shared by the first-write and re-scrape flows. */
 
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import { animeEpisodeExternalIds, animeEpisodes } from '@shared/db'
 import type { AnimeEpisodeInfo } from '@shared/metadata'
@@ -38,7 +38,7 @@ export function insertAnimeEpisodeRow(
   episode: AnimeEpisodeInfo,
   orderInAnime: number
 ): string {
-  const episodeId = nanoid()
+  const episodeId = newId()
   tx.insert(animeEpisodes)
     .values({
       id: episodeId,

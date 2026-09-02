@@ -11,7 +11,7 @@
 import { eq, sql, type SQL } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { collections } from '@shared/db'
 import type { DynamicEntityConfig } from '@shared/db/contracts/json'
 import { buildOrderBy, getFilterQuerySpec, type FilterState } from '@shared/filter'

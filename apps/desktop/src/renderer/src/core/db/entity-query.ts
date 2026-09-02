@@ -8,7 +8,7 @@
  */
 import { and, count, eq, inArray, sql, type SQL } from 'drizzle-orm'
 
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import {
   buildFilterConditions,
   buildOrderBy,

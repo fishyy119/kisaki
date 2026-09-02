@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { gameExternalIdLink, requireExternalIdsAvailable, type DbContext } from '@main/services/db'
-import { IngestPersistHandlers } from '../../persist'
+import { IngestPersisters } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
 import { gameExternalIds, gameTagLinks, games, type NewGame } from '@shared/db'
 import type { GameLinkKind, GameUpdatePlan } from './types'
@@ -32,7 +32,7 @@ export function applyGamePlan(
   tx: DbContext,
   gameId: string,
   plan: GameUpdatePlan,
-  persistHandlers: IngestPersistHandlers
+  persisters: IngestPersisters
 ): UpdateLinkApplyResult<GameLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, gameExternalIdLink, [gameId], plan.externalIds)
@@ -65,7 +65,7 @@ export function applyGamePlan(
     ? applyMediaLinkGraph({
         tx,
         entityId: gameId,
-        persistHandlers,
+        persisters,
         nodes: relationGraph,
         person: {
           kind: 'gamePerson',

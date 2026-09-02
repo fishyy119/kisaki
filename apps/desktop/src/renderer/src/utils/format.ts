@@ -5,7 +5,7 @@
  */
 
 import { MEDIA_STATUS_VALUES, type Gender, type MediaStatus } from '@shared/db'
-import type { AllEntityType, MediaType } from '@shared/common'
+import type { AllEntityType, MediaType } from '@shared/entity-types'
 import { messages } from '@renderer/core/i18n'
 
 // =============================================================================

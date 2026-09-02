@@ -30,14 +30,15 @@ import { createEmptyFilter, countConditions } from '@shared/filter'
 import type { FilterState } from '@shared/filter'
 import { collections, type DynamicCollectionConfig, type DynamicEntityConfig } from '@shared/db'
 import { parseDynamicCollectionConfig } from '@shared/db/columns/json/collection'
-import type { ContentEntityType, SortDirection } from '@shared/common'
-import { CONTENT_ENTITY_TYPES } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
+import type { SortDirection } from '@shared/filter'
+import { CONTENT_ENTITY_TYPES } from '@shared/entity-types'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Collection')
+const log = createLogger('Library')
 
 interface Props {
   collectionId: string
@@ -348,13 +349,13 @@ const sortDirectionModels = createModelsByEntityType(createSortDirectionModel)
           :disabled="isSubmitting"
           @click="open = false"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="isSubmitting || !initialized"
           @click="handleConfirm"
         >
-          {{ m.common.confirm }}
+          {{ m.actions.confirm }}
         </Button>
       </DialogFooter>
     </DialogContent>

@@ -18,7 +18,7 @@ import path from 'node:path'
 import { createLogger } from '@main/log'
 import type { DbContext, DbQueryContext, DbService } from '@main/services/db'
 import type { BookContainerReader } from '@main/services/reader'
-import { isProbeCurrent, readFileStat, SyncPassQueue, unnamedUnitGroupKey } from '../reconcile'
+import { isProbeCurrent, readFileStat, SyncPassQueue, unnamedUnitGroupKey } from '../sync-pass'
 import { reconcileUnitFiles, type UnitReconcileSpec } from '../unit-reconcile'
 import {
   comicChapterFiles,
@@ -41,7 +41,7 @@ import {
   isSameChapterAcrossVolumeKnowledge
 } from '@shared/metadata'
 import { and, eq, inArray } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   isComicArchiveFile,
   isComicPageFile,
@@ -145,7 +145,7 @@ const COMIC_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
     }
   },
   insertUnit: (tx, comicId, candidate, _values, order) => {
-    const id = nanoid()
+    const id = newId()
     const row: NewComicChapter = {
       id,
       comicId,
@@ -169,7 +169,7 @@ const COMIC_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
       isPrimary
     } satisfies Omit<NewComicChapterFile, 'id'>
     tx.insert(comicChapterFiles)
-      .values({ id: nanoid(), ...fileValues })
+      .values({ id: newId(), ...fileValues })
       .run()
   },
   updateFile: (tx, fileId, unitId, candidate, values, isPrimary) => {
@@ -196,7 +196,7 @@ const COMIC_UNIT_RECONCILE_SPEC: UnitReconcileSpec<
     )
 }
 
-export class ComicFileSyncHandler {
+export class ComicFileSyncCoordinator {
   private readonly passes = new SyncPassQueue<ComicFileSyncResult>()
 
   constructor(
@@ -309,7 +309,7 @@ export class ComicFileSyncHandler {
 
       tx.insert(comicChapterFiles)
         .values({
-          id: nanoid(),
+          id: newId(),
           chapterId,
           path: filePath,
           fileSize: stat?.size ?? null,
@@ -348,13 +348,13 @@ export class ComicFileSyncHandler {
 
   private readComicDirPath(comicId: string): string | null {
     const [row] = this.dbService.client
-      .select({ comicDirPath: comics.comicDirPath })
+      .select({ dirPath: comics.dirPath })
       .from(comics)
       .where(eq(comics.id, comicId))
       .limit(1)
       .all()
 
-    return row?.comicDirPath ?? null
+    return row?.dirPath ?? null
   }
 
   private readManualFiles(comicId: string): Array<{ path: string }> {

@@ -19,7 +19,7 @@ const { m } = useI18n()
     icon="icon-[mdi--loading]"
     :class="cn('animate-spin', props.class)"
     role="status"
-    :aria-label="m.common.loading"
+    :aria-label="m.states.loading"
     data-slot="spinner"
   />
 </template>

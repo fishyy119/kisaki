@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import {
   EXTENSION_HOOK_POINTS,
   validateHookPointId,
@@ -51,7 +51,7 @@ export class HostHooksContributionPoint {
     }
 
     const runtime = requireRuntimeByScope(this.options.registry, scope)
-    const registrationId = randomUUID()
+    const registrationId = newId()
     this.registrations.set(registrationId, {
       scope,
       pointId,

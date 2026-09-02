@@ -5,10 +5,10 @@
 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { getShowcaseSectionPresets, type ShowcaseSectionPreset } from './section-presets'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { ShowcaseSectionFormItem } from './types'
 import {
   Dialog,
@@ -79,7 +79,7 @@ function handleAdd() {
   const sectionsToAdd: ShowcaseSectionFormItem[] = getShowcaseSectionPresets()
     .filter((p) => selectedIds.value.has(p.id))
     .map((preset, index) => ({
-      id: nanoid(),
+      id: newId(),
       entityType: preset.entityType,
       name: preset.name,
       order: index,
@@ -151,7 +151,7 @@ function handleCancel() {
           variant="outline"
           @click="handleCancel"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="selectedIds.size === 0"

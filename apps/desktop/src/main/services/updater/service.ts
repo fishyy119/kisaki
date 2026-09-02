@@ -8,7 +8,7 @@ import { createLogger } from '@main/log'
 import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import { registerUpdaterIpc } from './ipc'
 import { UpdaterChangelogProvider } from './changelog'
-import { UpdaterSettings } from './preferences'
+import { UpdaterSettings } from './settings'
 import { AppUpdateManager } from './manager'
 
 const log = createLogger('Updater')

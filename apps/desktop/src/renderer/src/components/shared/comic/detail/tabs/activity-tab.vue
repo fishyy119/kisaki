@@ -37,12 +37,12 @@ function formatChapterName(chapter: {
   if (chapter.volumeNumber !== null) {
     return m.value.comic.chapters.unnamedVolume({ number: formatUnitNumber(chapter.volumeNumber) })
   }
-  return m.value.common.emptyValue
+  return m.value.values.emptyValue
 }
 
 function sessionTitle(session: { chapterId?: string | null }): string {
-  if (!session.chapterId) return m.value.common.emptyValue
-  return chapterNames.value.get(session.chapterId) ?? m.value.common.emptyValue
+  if (!session.chapterId) return m.value.values.emptyValue
+  return chapterNames.value.get(session.chapterId) ?? m.value.values.emptyValue
 }
 </script>
 

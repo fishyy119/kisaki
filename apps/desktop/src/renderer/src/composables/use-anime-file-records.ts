@@ -23,7 +23,7 @@ import {
 import type { IpcVoidResult } from '@shared/ipc'
 import { useI18n } from './use-i18n'
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 type AnimeFileRecord = AnimeEpisodeFile | AnimeExtraFile
 type AnimeFileTable = typeof animeEpisodeFiles | typeof animeExtraFiles
@@ -116,7 +116,7 @@ export function useAnimeFileRecords(options: AnimeFileRecordsOptions): AnimeFile
       notify.success(m.value.anime.files.fileRemoved)
     } catch (error) {
       log.error('Remove file record failed:', error)
-      notify.error(m.value.common.deleteFailed)
+      notify.error(m.value.feedback.deleteFailed)
     }
   }
 

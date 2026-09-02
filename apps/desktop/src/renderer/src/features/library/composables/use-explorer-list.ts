@@ -24,7 +24,7 @@ import { batchTouchesAny, useAsyncData, useDbChanges } from '@renderer/composabl
 import { useLibraryExplorerStore } from '../stores'
 import { usePreferencesStore } from '@renderer/stores'
 import { createMembershipSort, getFilterRelevantTables, isMembershipSort } from '@shared/filter'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 // =============================================================================
 // Types

@@ -19,7 +19,7 @@ import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { GameLaunchResult, GameStopResult } from '@shared/activity'
 
-const log = createLogger('Game')
+const log = createLogger('Library')
 
 type PlayButtonState = 'idle' | 'launching' | 'running' | 'stopping'
 

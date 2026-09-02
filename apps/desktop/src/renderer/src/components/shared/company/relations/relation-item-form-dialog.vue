@@ -173,9 +173,9 @@ function handleSubmit() {
             variant="outline"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.confirm }}</Button>
+          <Button type="submit">{{ m.actions.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

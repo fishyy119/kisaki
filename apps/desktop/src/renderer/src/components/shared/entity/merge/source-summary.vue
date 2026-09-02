@@ -36,7 +36,7 @@ const { m } = useI18n()
           {{ props.summary?.name ?? '...' }}
         </div>
         <span class="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-          {{ m.common.delete }}
+          {{ m.actions.delete }}
         </span>
       </div>
       <div class="truncate text-xs text-muted-foreground">

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { app, dialog, type FileFilter } from 'electron'
 import { cp, mkdir, rm, stat } from 'node:fs/promises'
 import type {
@@ -57,7 +57,7 @@ export class ExtensionFilesCapabilityProvider {
         throw createValidationError('The selected file is larger than the allowed maximum size.')
       }
 
-      const grantId = randomUUID()
+      const grantId = newId()
       const rootDir = normalized.copyTo === 'data' ? metadata.dataPath : metadata.tempPath
       const grantDir = resolveInsideRoot(rootDir, 'file-grants', grantId)
       const fileName = normalizeSelectedFileName(path.basename(selectedPath))

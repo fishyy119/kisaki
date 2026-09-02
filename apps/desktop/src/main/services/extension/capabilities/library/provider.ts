@@ -97,7 +97,7 @@ import {
   ExtensionLibraryEpisodeStore,
   ExtensionLibraryNovelVolumeStore
 } from './entities'
-import { ExtensionLibraryGraphManager } from './graph'
+import { ExtensionLibraryGraphRunner } from './graph'
 import { ExtensionLibraryLinkStore } from './links'
 import { ExtensionLibraryMediaRelationStore } from './relations'
 
@@ -154,7 +154,7 @@ export class ExtensionLibraryCapabilityProvider {
   readonly links: ExtensionLibraryLinkStore
   readonly relations: ExtensionLibraryMediaRelationStore
   readonly attachments: ExtensionLibraryAttachmentStore
-  readonly graph: ExtensionLibraryGraphManager
+  readonly graph: ExtensionLibraryGraphRunner
 
   constructor(private readonly options: ExtensionLibraryCapabilityProviderOptions) {
     this.entities = new ExtensionLibraryEntityStore({ db: options.db })
@@ -167,7 +167,7 @@ export class ExtensionLibraryCapabilityProvider {
       db: options.db,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
-    this.graph = new ExtensionLibraryGraphManager({
+    this.graph = new ExtensionLibraryGraphRunner({
       db: options.db,
       entities: this.entities,
       episodes: this.episodes,

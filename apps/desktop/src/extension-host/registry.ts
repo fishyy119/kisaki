@@ -1,3 +1,4 @@
+import type { ContentEntityType } from '@shared/entity-types'
 import type {
   AnimeScraperProvider,
   CardActionContribution,
@@ -18,7 +19,6 @@ import type {
   NovelScraperProvider,
   PersonScraperProvider,
   CompanyScraperProvider,
-  ScraperMediaType,
   ThemeContribution,
   DisposableStore,
   WebviewDialogContribution,
@@ -62,8 +62,8 @@ export interface ScraperProviderMaps {
   character: Map<string, CharacterScraperProvider>
 }
 
-export type ScraperProviderFor<TMediaType extends ScraperMediaType> =
-  ScraperProviderMaps[TMediaType] extends Map<string, infer TProvider> ? TProvider : never
+export type ScraperProviderFor<TEntityType extends ContentEntityType> =
+  ScraperProviderMaps[TEntityType] extends Map<string, infer TProvider> ? TProvider : never
 
 /**
  * Declared webview surface plus the host-side `onOpen` listeners that receive
@@ -174,27 +174,27 @@ export class ExtensionRegistry {
     this.require(extensionId).cardActions.delete(contributionId)
   }
 
-  getScraperProviders<TMediaType extends ScraperMediaType>(
+  getScraperProviders<TEntityType extends ContentEntityType>(
     extensionId: string,
-    mediaType: TMediaType
-  ): LoadedExtensionRuntime['scraperProviders'][TMediaType] {
-    return this.require(extensionId).scraperProviders[mediaType]
+    entityType: TEntityType
+  ): LoadedExtensionRuntime['scraperProviders'][TEntityType] {
+    return this.require(extensionId).scraperProviders[entityType]
   }
 
-  registerScraperProvider<TMediaType extends ScraperMediaType>(
+  registerScraperProvider<TEntityType extends ContentEntityType>(
     extensionId: string,
-    mediaType: TMediaType,
-    provider: ScraperProviderFor<TMediaType> & { id: string }
+    entityType: TEntityType,
+    provider: ScraperProviderFor<TEntityType> & { id: string }
   ): void {
-    getScraperProviderMap(this.require(extensionId), mediaType).set(provider.id, provider)
+    getScraperProviderMap(this.require(extensionId), entityType).set(provider.id, provider)
   }
 
-  unregisterScraperProvider<TMediaType extends ScraperMediaType>(
+  unregisterScraperProvider<TEntityType extends ContentEntityType>(
     extensionId: string,
-    mediaType: TMediaType,
+    entityType: TEntityType,
     providerId: string
   ): void {
-    getScraperProviderMap(this.require(extensionId), mediaType).delete(providerId)
+    getScraperProviderMap(this.require(extensionId), entityType).delete(providerId)
   }
 
   registerDeeplinkRoute(extensionId: string, contribution: DeeplinkRouteContribution): void {
@@ -331,13 +331,13 @@ export function getEntityMenuRegistrationForInput(
   }
 }
 
-export function getScraperProviderMap<TMediaType extends ScraperMediaType>(
+export function getScraperProviderMap<TEntityType extends ContentEntityType>(
   runtime: LoadedExtensionRuntime,
-  mediaType: TMediaType
-): Map<string, ScraperProviderFor<TMediaType>> {
-  return runtime.scraperProviders[mediaType] as unknown as Map<
+  entityType: TEntityType
+): Map<string, ScraperProviderFor<TEntityType>> {
+  return runtime.scraperProviders[entityType] as unknown as Map<
     string,
-    ScraperProviderFor<TMediaType>
+    ScraperProviderFor<TEntityType>
   >
 }
 

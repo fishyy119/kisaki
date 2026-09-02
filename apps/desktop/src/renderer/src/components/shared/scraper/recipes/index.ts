@@ -2,7 +2,7 @@
 export {
   SCRAPER_RECIPES,
   getRecipeById,
-  getRecipesForMediaType,
+  getRecipesForEntityType,
   resolveRecipeLanguageGroup,
   type RecipeLanguageGroup,
   type ScraperRecipe,

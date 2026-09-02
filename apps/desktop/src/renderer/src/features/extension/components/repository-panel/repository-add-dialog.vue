@@ -101,7 +101,7 @@ function resetForm() {
           :disabled="props.submitting"
           @click="open = false"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="!canSubmit"
@@ -111,7 +111,7 @@ function resetForm() {
             v-if="props.submitting"
             class="size-4"
           />
-          {{ m.common.add }}
+          {{ m.actions.add }}
         </Button>
       </DialogFooter>
     </DialogContent>

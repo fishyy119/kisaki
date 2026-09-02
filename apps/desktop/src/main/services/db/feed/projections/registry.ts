@@ -5,7 +5,7 @@ import { companyEntityProjection } from './company'
 import { personEntityProjection } from './person'
 import { tagEntityProjection } from './tag'
 
-export { projectEntityChanges } from './common'
+export { projectEntityChanges } from './project'
 export {
   MEDIA_PROJECTIONS,
   getMediaCreatedName,

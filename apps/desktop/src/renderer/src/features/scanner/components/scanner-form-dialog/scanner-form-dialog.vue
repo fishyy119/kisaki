@@ -13,7 +13,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { scanners, type Scanner, type NameExtractionRule } from '@shared/db'
-import { MEDIA_TYPES } from '@shared/common'
+import { MEDIA_TYPES } from '@shared/entity-types'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { addScannerIgnoredName } from '../../ignored-names'
@@ -427,13 +427,13 @@ async function openLink(link: { href: string }): Promise<void> {
                 :disabled="isSaving"
                 @click="open = false"
               >
-                {{ m.common.cancel }}
+                {{ m.actions.cancel }}
               </Button>
               <Button
                 type="submit"
                 :disabled="isSaving"
               >
-                {{ m.common.save }}
+                {{ m.actions.save }}
               </Button>
             </div>
           </DialogFooter>

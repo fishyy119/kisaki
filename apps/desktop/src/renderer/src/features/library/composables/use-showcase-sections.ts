@@ -6,7 +6,7 @@
 
 import { computed } from 'vue'
 import { eq, asc } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { showcaseSections, type ShowcaseSection, type NewShowcaseSection } from '@shared/db'
@@ -44,7 +44,7 @@ export function useShowcaseSections() {
 
 /** Create a new showcase section */
 export async function createSection(data: Omit<NewShowcaseSection, 'id'>): Promise<string> {
-  const id = nanoid()
+  const id = newId()
   await db.insert(showcaseSections).values({ ...data, id })
   return id
 }

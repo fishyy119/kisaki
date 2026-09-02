@@ -8,7 +8,7 @@ import {
   type IngestUpdateSelection,
   type IngestUpdateSurfaceKey,
   type IngestUpdateSurfaceKeysByGroup
-} from './common'
+} from './model'
 
 // Episodes are anime-owned child rows, not satellite links, so they sit in the
 // core group next to the other owned collections (externalSites/externalIds/tags)

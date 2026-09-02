@@ -280,7 +280,7 @@ function handleExclude(name: string) {
         </template>
       </DialogBody>
       <DialogFooter>
-        <Button @click="open = false">{{ m.common.close }}</Button>
+        <Button @click="open = false">{{ m.actions.close }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

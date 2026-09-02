@@ -7,7 +7,7 @@
  * Pure over the shared contracts, so route loaders import it directly.
  */
 
-import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import {
   createEmptyFilter,
   createMembershipSort,

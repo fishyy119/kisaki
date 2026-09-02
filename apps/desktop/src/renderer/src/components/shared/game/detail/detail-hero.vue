@@ -75,7 +75,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
               variant="ghost"
               size="icon-xs"
               class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('name')"
             >
               <Icon
@@ -93,7 +93,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
               variant="ghost"
               size="icon-xs"
               class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('originalName')"
             >
               <Icon
@@ -111,7 +111,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
             <span class="flex items-center gap-1.5 text-muted-foreground">
               <button
                 class="group/icon size-4 relative cursor-pointer"
-                :aria-label="m.common.edit"
+                :aria-label="m.actions.edit"
                 @click="openEditDialog('lastActive')"
               >
                 <Icon
@@ -126,7 +126,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
               <span class="text-xs">{{ m.library.fields.lastActiveAt }}</span>
             </span>
             <span class="font-medium truncate text-xs">
-              {{ game.lastActiveAt ? f.relativeTime(game.lastActiveAt) : m.common.emptyValue }}
+              {{ game.lastActiveAt ? f.relativeTime(game.lastActiveAt) : m.values.emptyValue }}
             </span>
           </div>
 
@@ -135,7 +135,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
             <span class="flex items-center gap-1.5 text-muted-foreground">
               <button
                 class="group/icon size-4 relative cursor-pointer"
-                :aria-label="m.common.edit"
+                :aria-label="m.actions.edit"
                 @click="openEditDialog('status')"
               >
                 <Icon
@@ -159,7 +159,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
             <span class="flex items-center gap-1.5 text-muted-foreground">
               <button
                 class="group/icon size-4 relative cursor-pointer"
-                :aria-label="m.common.edit"
+                :aria-label="m.actions.edit"
                 @click="openEditDialog('duration')"
               >
                 <Icon
@@ -174,7 +174,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
               <span class="text-xs">{{ m.library.fields.playDuration }}</span>
             </span>
             <span class="font-medium truncate text-xs">
-              {{ game.totalDuration > 0 ? f.duration(game.totalDuration) : m.common.emptyValue }}
+              {{ game.totalDuration > 0 ? f.duration(game.totalDuration) : m.values.emptyValue }}
             </span>
           </div>
 
@@ -183,7 +183,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
             <span class="flex items-center gap-1.5 text-muted-foreground">
               <button
                 class="group/icon size-4 relative cursor-pointer"
-                :aria-label="m.common.edit"
+                :aria-label="m.actions.edit"
                 @click="openEditDialog('score')"
               >
                 <Icon

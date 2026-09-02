@@ -21,8 +21,8 @@ import {
 } from 'drizzle-orm'
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core'
 
-import type { SortDirection } from '@shared/common'
 import type { DateRangeValue, FilterCondition, FilterState } from './model'
+import type { SortDirection } from './sort'
 import type { FilterQueryFieldDef, FilterQuerySpec, FilterRelationLink } from './spec'
 
 function parseYyyyMmDd(value: string): { year: number; month: number; day: number } | null {

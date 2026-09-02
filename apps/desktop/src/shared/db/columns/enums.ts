@@ -5,7 +5,7 @@ import {
   type AllEntityType,
   type ContentEntityType,
   type MediaType
-} from '../../common'
+} from '../../entity-types'
 import { MEDIA_RELATION_TYPES, type MediaRelationType } from '../contracts/media-relations'
 import { COMPANY_RELATION_TYPES, type CompanyRelationType } from '../contracts/company-relations'
 import { CONTENT_LOCALES, UI_LOCALES, type ContentLocale, type UiLocale } from '../../i18n'

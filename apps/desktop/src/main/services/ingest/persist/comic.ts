@@ -8,7 +8,7 @@ import type {
 import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
 import type { ComicChapterInfo } from '@shared/metadata'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import {
   characterPersonLinks,
   collectionComicLinks,
@@ -44,9 +44,9 @@ import {
   resolveOrderedLinks
 } from './links'
 import type { PersistComicGraphResult } from './types'
-import type { PersonIngestPersistHandler } from './person'
-import type { CompanyIngestPersistHandler } from './company'
-import type { CharacterIngestPersistHandler } from './character'
+import type { PersonPersister } from './person'
+import type { CompanyPersister } from './company'
+import type { CharacterPersister } from './character'
 import { reportIngestProgress } from '../run/progress'
 import type { IngestOperationOptions } from '../types'
 
@@ -162,12 +162,12 @@ function resolveComicCharacterLinks(params: {
   })
 }
 
-export class ComicIngestPersistHandler {
+export class ComicPersister {
   constructor(
     private readonly dbService: DbService,
-    private readonly personPersist: PersonIngestPersistHandler,
-    private readonly companyPersist: CompanyIngestPersistHandler,
-    private readonly characterPersist: CharacterIngestPersistHandler,
+    private readonly personPersist: PersonPersister,
+    private readonly companyPersist: CompanyPersister,
+    private readonly characterPersist: CharacterPersister,
     private readonly i18nService: I18nService
   ) {}
 
@@ -345,7 +345,7 @@ export class ComicIngestPersistHandler {
     }
 
     const core = node.core
-    const comicId = nanoid()
+    const comicId = newId()
     const newComic: NewComic = {
       id: comicId,
       name: core.name,
@@ -354,9 +354,7 @@ export class ComicIngestPersistHandler {
       releaseDate: core.releaseDate,
       description: core.description,
       externalSites: core.externalSites || [],
-      comicDirPath: options?.comicDirPath
-        ? normalizeLibraryDirPath(options.comicDirPath)
-        : undefined
+      dirPath: options?.dirPath ? normalizeLibraryDirPath(options.dirPath) : undefined
     }
     if (core.format) {
       newComic.format = core.format
@@ -388,10 +386,10 @@ export class ComicIngestPersistHandler {
     options: ComicPersistOptions | undefined,
     tx: DbContext
   ): { comicId: string; existingReason: 'path' | 'externalId' } | undefined {
-    if (options?.comicDirPath) {
-      const existingByPath = this.dbService.entityFinder.findExisting(
+    if (options?.dirPath) {
+      const existingByPath = this.dbService.finder.findExisting(
         'comic',
-        { path: options.comicDirPath },
+        { path: options.dirPath },
         tx
       )
       if (existingByPath) {
@@ -401,11 +399,7 @@ export class ComicIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.entityFinder.findExisting(
-        'comic',
-        { externalIds },
-        tx
-      )
+      const existingByExternalId = this.dbService.finder.findExisting('comic', { externalIds }, tx)
       if (existingByExternalId) {
         return { comicId: existingByExternalId.id, existingReason: 'externalId' }
       }
@@ -494,7 +488,7 @@ export class ComicIngestPersistHandler {
     if (!targetCollectionId) return
 
     const collectionLink: NewCollectionComicLink = {
-      id: nanoid(),
+      id: newId(),
       collectionId: targetCollectionId,
       comicId,
       orderInCollection: 0

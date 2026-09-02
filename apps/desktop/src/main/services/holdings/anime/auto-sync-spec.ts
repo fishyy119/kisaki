@@ -11,9 +11,12 @@ import type { DbService } from '@main/services/db'
 import { animes } from '@shared/db'
 import type { AutoSyncSpec } from '../auto-sync'
 import { isVideoFile } from './recognition'
-import { MAX_WALK_DEPTH, type AnimeFileSyncHandler } from './sync'
+import { MAX_WALK_DEPTH, type AnimeFileSyncCoordinator } from './sync'
 
-export function animeAutoSyncSpec(dbService: DbService, sync: AnimeFileSyncHandler): AutoSyncSpec {
+export function animeAutoSyncSpec(
+  dbService: DbService,
+  sync: AnimeFileSyncCoordinator
+): AutoSyncSpec {
   return {
     mediaType: 'anime',
     entryTable: 'animes',
@@ -21,9 +24,9 @@ export function animeAutoSyncSpec(dbService: DbService, sync: AnimeFileSyncHandl
     matchesFile: isVideoFile,
     readDirectories: () =>
       dbService.client
-        .select({ id: animes.id, dirPath: animes.animeDirPath })
+        .select({ id: animes.id, dirPath: animes.dirPath })
         .from(animes)
-        .where(isNotNull(animes.animeDirPath))
+        .where(isNotNull(animes.dirPath))
         .all(),
     sync: async (animeId) => {
       const result = await sync.sync({ animeId })

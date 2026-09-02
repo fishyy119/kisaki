@@ -40,7 +40,7 @@ const title = computed(() => {
   if (props.volume.volumeNumber !== null) {
     return m.value.novel.volumes.unnamed({ number: formatUnitNumber(props.volume.volumeNumber) })
   }
-  return m.value.common.emptyValue
+  return m.value.values.emptyValue
 })
 
 const resumePercent = computed(() =>

@@ -6,7 +6,7 @@ import {
   type LibraryComic,
   type LibraryMediaStatus,
   type LibraryNovel,
-  type ScraperMediaType,
+  type ScraperEntityType,
   type ScraperProfileSummary
 } from '@kisaki3/extension-sdk'
 import { m } from '../../i18n'
@@ -217,8 +217,8 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
 
   async listProfiles(): Promise<readonly ScraperProfileSummary[]> {
     const [comicProfiles, novelProfiles] = await Promise.all([
-      kisaki.scrapers.profiles.list({ mediaType: 'comic' }),
-      kisaki.scrapers.profiles.list({ mediaType: 'novel' })
+      kisaki.scrapers.profiles.list({ entityType: 'comic' }),
+      kisaki.scrapers.profiles.list({ entityType: 'novel' })
     ])
     return [...comicProfiles, ...novelProfiles]
   }
@@ -492,13 +492,13 @@ export class BookLocalMediaAdapter implements LocalMediaAdapter {
    * profile of the right media type, preferring the same search provider.
    */
   private async resolveProfileId(selectedId: string, target: BookTarget): Promise<string> {
-    const mediaType: ScraperMediaType = target
+    const entityType: ScraperEntityType = target
     const selected = await kisaki.scrapers.profiles.get(selectedId)
-    if (selected?.mediaType === mediaType) {
+    if (selected?.entityType === entityType) {
       return selectedId
     }
 
-    const candidates = await kisaki.scrapers.profiles.list({ mediaType })
+    const candidates = await kisaki.scrapers.profiles.list({ entityType })
     const preferred =
       candidates.find(
         (candidate) => selected && candidate.searchProviderId === selected.searchProviderId

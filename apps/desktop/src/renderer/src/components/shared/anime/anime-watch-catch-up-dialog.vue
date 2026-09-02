@@ -21,13 +21,13 @@ import { useAsyncData } from '@renderer/composables'
 import {
   markEpisodesWatched,
   readUnwatchedEpisodeCounts
-} from '@renderer/composables/use-anime-watch'
+} from '@renderer/composables/anime-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { ANIME_EPISODE_TYPE_VALUES, type AnimeEpisodeType } from '@shared/db'
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 interface Props {
   animeId: string

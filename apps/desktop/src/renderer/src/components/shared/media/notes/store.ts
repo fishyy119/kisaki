@@ -7,9 +7,9 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { attachment, db } from '@renderer/core/db'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { animeNotes, comicNotes, gameNotes, novelNotes } from '@shared/db'
 
 /** Media-neutral note row consumed by the shared notes components. */
@@ -60,7 +60,7 @@ export const MEDIA_NOTE_STORES: Record<MediaType, MediaNoteStore> = {
       return rows[0]
     },
     create: async (anchorId, data) => {
-      const id = nanoid()
+      const id = newId()
       await db.insert(gameNotes).values({
         id,
         gameId: anchorId,
@@ -108,7 +108,7 @@ export const MEDIA_NOTE_STORES: Record<MediaType, MediaNoteStore> = {
       return rows[0]
     },
     create: async (anchorId, data) => {
-      const id = nanoid()
+      const id = newId()
       await db.insert(animeNotes).values({
         id,
         animeId: anchorId,
@@ -156,7 +156,7 @@ export const MEDIA_NOTE_STORES: Record<MediaType, MediaNoteStore> = {
       return rows[0]
     },
     create: async (anchorId, data) => {
-      const id = nanoid()
+      const id = newId()
       await db.insert(comicNotes).values({
         id,
         comicId: anchorId,
@@ -204,7 +204,7 @@ export const MEDIA_NOTE_STORES: Record<MediaType, MediaNoteStore> = {
       return rows[0]
     },
     create: async (anchorId, data) => {
-      const id = nanoid()
+      const id = newId()
       await db.insert(novelNotes).values({
         id,
         novelId: anchorId,

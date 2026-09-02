@@ -9,7 +9,7 @@
 
 import type { DbService } from '@main/services/db'
 import type { ScraperService } from '@main/services/scraper'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { ExternalId } from '@shared/identity'
 import type { ExistingReason, IngestAddResult } from '@shared/ingest'
 import type {
@@ -69,7 +69,7 @@ import type {
   IngestNovelGraph,
   IngestPersonGraph
 } from '../graph'
-import type { IngestPersistHandlers } from '../persist'
+import type { IngestPersisters } from '../persist'
 import type { IngestOperationOptions } from '../types'
 
 /**
@@ -159,7 +159,7 @@ export type IngestAddResultOf<T extends ContentEntityType> = IngestAddTypeMap[T]
 export interface IngestAddDeps {
   dbService: DbService
   scraperService: ScraperService
-  persist: IngestPersistHandlers
+  persist: IngestPersisters
 }
 
 export interface IngestAddSpec<T extends ContentEntityType> {
@@ -196,8 +196,8 @@ export const INGEST_ADD_SPECS = {
     persist: (deps, graph, options) => deps.persist.game.persistGameGraph(graph, options),
     readEntityId: (result) => result.gameId,
     toExistingResult: (gameId, existingReason) => ({ gameId, isNew: false, existingReason }),
-    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('game', params),
-    dirPathOf: (options) => options?.gameDirPath
+    findExisting: (deps, params) => deps.dbService.finder.findExisting('game', params),
+    dirPathOf: (options) => options?.dirPath
   },
   anime: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -207,8 +207,8 @@ export const INGEST_ADD_SPECS = {
     persist: (deps, graph, options) => deps.persist.anime.persistAnimeGraph(graph, options),
     readEntityId: (result) => result.animeId,
     toExistingResult: (animeId, existingReason) => ({ animeId, isNew: false, existingReason }),
-    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('anime', params),
-    dirPathOf: (options) => options?.animeDirPath
+    findExisting: (deps, params) => deps.dbService.finder.findExisting('anime', params),
+    dirPathOf: (options) => options?.dirPath
   },
   comic: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -218,8 +218,8 @@ export const INGEST_ADD_SPECS = {
     persist: (deps, graph, options) => deps.persist.comic.persistComicGraph(graph, options),
     readEntityId: (result) => result.comicId,
     toExistingResult: (comicId, existingReason) => ({ comicId, isNew: false, existingReason }),
-    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('comic', params),
-    dirPathOf: (options) => options?.comicDirPath
+    findExisting: (deps, params) => deps.dbService.finder.findExisting('comic', params),
+    dirPathOf: (options) => options?.dirPath
   },
   novel: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -229,8 +229,8 @@ export const INGEST_ADD_SPECS = {
     persist: (deps, graph, options) => deps.persist.novel.persistNovelGraph(graph, options),
     readEntityId: (result) => result.novelId,
     toExistingResult: (novelId, existingReason) => ({ novelId, isNew: false, existingReason }),
-    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('novel', params),
-    dirPathOf: (options) => options?.novelDirPath
+    findExisting: (deps, params) => deps.dbService.finder.findExisting('novel', params),
+    dirPathOf: (options) => options?.dirPath
   },
   person: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -239,7 +239,7 @@ export const INGEST_ADD_SPECS = {
     persist: (deps, graph, options) => deps.persist.person.persistPersonGraph(graph, options),
     readEntityId: (result) => result.personId,
     toExistingResult: (personId, existingReason) => ({ personId, isNew: false, existingReason }),
-    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('person', params)
+    findExisting: (deps, params) => deps.dbService.finder.findExisting('person', params)
   },
   company: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -248,7 +248,7 @@ export const INGEST_ADD_SPECS = {
     persist: (deps, graph, options) => deps.persist.company.persistCompanyGraph(graph, options),
     readEntityId: (result) => result.companyId,
     toExistingResult: (companyId, existingReason) => ({ companyId, isNew: false, existingReason }),
-    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('company', params)
+    findExisting: (deps, params) => deps.dbService.finder.findExisting('company', params)
   },
   character: {
     scrape: (deps, profileId, lookup, signal) =>
@@ -261,6 +261,6 @@ export const INGEST_ADD_SPECS = {
       isNew: false,
       existingReason
     }),
-    findExisting: (deps, params) => deps.dbService.entityFinder.findExisting('character', params)
+    findExisting: (deps, params) => deps.dbService.finder.findExisting('character', params)
   }
 } as const satisfies { [T in ContentEntityType]: IngestAddSpec<T> }

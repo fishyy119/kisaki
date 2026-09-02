@@ -1,3 +1,4 @@
+import type { ContentEntityType } from '@shared/entity-types'
 import type {
   AnimeScraperProviderRegistrationInfo,
   CharacterScraperProviderRegistrationInfo,
@@ -8,7 +9,6 @@ import type {
   PersonScraperProviderRegistrationInfo
 } from '@kisaki3/extension-api'
 import type { ScraperService } from '@main/services/scraper'
-import type { ScraperMediaType } from '@shared/scraper'
 import type { RuntimeContributionOwner } from '../types'
 
 export type ScraperKind =
@@ -27,14 +27,14 @@ export type ScraperProviderRegistration =
 
 export interface ScraperRegistration {
   owner: RuntimeContributionOwner
-  mediaType: ScraperMediaType
+  entityType: ContentEntityType
   provider: ScraperProviderRegistration
   registryProviderId: string
 }
 
 export interface ScraperDomain {
   kind: ScraperKind
-  mediaType: ScraperMediaType
+  entityType: ContentEntityType
   registerWithScraper(scraper: ScraperService, provider: unknown): void
   unregisterFromScraper(scraper: ScraperService, registryProviderId: string): void | Promise<void>
 }

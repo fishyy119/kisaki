@@ -1,4 +1,4 @@
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import type { RawDbChange } from '@shared/db/changes'
 import type { LibraryEntityTopic } from '@shared/library'
 

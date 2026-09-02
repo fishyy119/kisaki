@@ -1,13 +1,13 @@
 import type { AnimeScraperLookup } from '@shared/scraper'
 import type { ExternalId } from '@shared/identity'
-import type { IngestAddResult } from '../common'
+import type { IngestAddResult } from '../results'
 
 export interface IngestAddAnimeResult extends IngestAddResult {
   animeId: string
 }
 
 export interface IngestAddAnimeFromScraperOptions {
-  animeDirPath?: string
+  dirPath?: string
   targetCollectionId?: string
 }
 

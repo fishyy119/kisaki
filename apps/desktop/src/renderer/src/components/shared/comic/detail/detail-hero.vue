@@ -26,11 +26,11 @@ import {
   MediaStatusFormDialog
 } from '@renderer/components/shared/media'
 import { createLogger } from '@renderer/core/log'
-import { shouldOfferReadCatchUp } from '@renderer/composables/use-comic-read'
+import { shouldOfferReadCatchUp } from '@renderer/composables/comic-completion'
 import type { MediaStatus } from '@shared/db'
 import ComicReadCatchUpDialog from '../comic-read-catch-up-dialog.vue'
 
-const log = createLogger('Comic')
+const log = createLogger('Library')
 
 const { comic } = useComic()
 const { m, f } = useI18n()
@@ -90,7 +90,7 @@ const coverUrl = computed(() =>
             variant="ghost"
             size="icon-xs"
             class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
-            :aria-label="m.common.edit"
+            :aria-label="m.actions.edit"
             @click="openEditDialog('name')"
           >
             <Icon
@@ -108,7 +108,7 @@ const coverUrl = computed(() =>
             variant="ghost"
             size="icon-xs"
             class="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-accent focus:opacity-100 focus:outline-none"
-            :aria-label="m.common.edit"
+            :aria-label="m.actions.edit"
             @click="openEditDialog('originalName')"
           >
             <Icon
@@ -124,7 +124,7 @@ const coverUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('lastActive')"
             >
               <Icon
@@ -139,7 +139,7 @@ const coverUrl = computed(() =>
             <span class="text-xs">{{ m.library.fields.lastReadAt }}</span>
           </span>
           <span class="font-medium truncate text-xs">
-            {{ comic.lastActiveAt ? f.relativeTime(comic.lastActiveAt) : m.common.emptyValue }}
+            {{ comic.lastActiveAt ? f.relativeTime(comic.lastActiveAt) : m.values.emptyValue }}
           </span>
         </div>
 
@@ -147,7 +147,7 @@ const coverUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('status')"
             >
               <Icon
@@ -170,7 +170,7 @@ const coverUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('duration')"
             >
               <Icon
@@ -185,7 +185,7 @@ const coverUrl = computed(() =>
             <span class="text-xs">{{ m.library.fields.readDuration }}</span>
           </span>
           <span class="font-medium truncate text-xs">
-            {{ comic.totalDuration > 0 ? f.duration(comic.totalDuration) : m.common.emptyValue }}
+            {{ comic.totalDuration > 0 ? f.duration(comic.totalDuration) : m.values.emptyValue }}
           </span>
         </div>
 
@@ -193,7 +193,7 @@ const coverUrl = computed(() =>
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button
               class="group/icon size-4 relative cursor-pointer"
-              :aria-label="m.common.edit"
+              :aria-label="m.actions.edit"
               @click="openEditDialog('score')"
             >
               <Icon
@@ -208,7 +208,7 @@ const coverUrl = computed(() =>
             <span class="text-xs">{{ m.library.fields.myScore }}</span>
           </span>
           <span class="font-medium truncate text-xs">
-            {{ comic.score !== null ? (comic.score / 10).toFixed(1) : m.common.emptyValue }}
+            {{ comic.score !== null ? (comic.score / 10).toFixed(1) : m.values.emptyValue }}
           </span>
         </div>
       </div>

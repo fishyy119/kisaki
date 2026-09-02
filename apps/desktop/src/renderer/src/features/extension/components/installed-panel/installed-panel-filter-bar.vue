@@ -22,7 +22,7 @@ import {
 } from '../../stores'
 import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki3/extension-api'
-import type { SortDirection } from '@shared/common'
+import type { SortDirection } from '@shared/filter'
 
 const { m } = useI18n()
 

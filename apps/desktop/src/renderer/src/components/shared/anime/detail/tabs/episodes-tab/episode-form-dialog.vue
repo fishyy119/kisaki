@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { attachment, db } from '@renderer/core/db'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { useStagedImagePick } from '@renderer/composables/use-staged-image-pick'
@@ -44,7 +44,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 const MILLISECONDS_PER_MINUTE = 60_000
 
@@ -190,7 +190,7 @@ async function handleSubmit() {
       episodeId = props.episode.id
       await db.update(animeEpisodes).set(values).where(eq(animeEpisodes.id, episodeId))
     } else {
-      episodeId = nanoid()
+      episodeId = newId()
       const existing = await db
         .select({ orderInAnime: animeEpisodes.orderInAnime })
         .from(animeEpisodes)
@@ -213,7 +213,7 @@ async function handleSubmit() {
       await attachment.clearFile(animeEpisodes, episodeId, 'stillFile')
     }
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Episode save failed:', error)
@@ -348,13 +348,13 @@ function handleCancel() {
             :disabled="isSaving"
             @click="handleCancel"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button
             type="submit"
             :disabled="isSaving"
           >
-            {{ m.common.save }}
+            {{ m.actions.save }}
           </Button>
         </DialogFooter>
       </Form>

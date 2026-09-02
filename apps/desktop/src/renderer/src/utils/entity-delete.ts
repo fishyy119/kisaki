@@ -1,4 +1,4 @@
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { EntityDeleteResult } from '@shared/entity-delete'
 import { messages } from '@renderer/core/i18n'
 

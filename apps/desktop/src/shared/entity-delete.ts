@@ -1,4 +1,4 @@
-import type { AllEntityType } from './common'
+import type { AllEntityType } from './entity-types'
 
 /**
  * Request payload for delete preview queries.

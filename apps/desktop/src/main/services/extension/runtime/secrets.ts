@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { safeStorage } from 'electron'
 import { Mutex } from 'async-mutex'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
@@ -138,7 +138,7 @@ export class ExtensionRuntimeSecrets {
 
     const tempPath = resolveInsideRoot(
       path.dirname(secretsPath),
-      `${path.basename(secretsPath)}.${randomUUID()}.tmp`
+      `${path.basename(secretsPath)}.${newId()}.tmp`
     )
 
     try {

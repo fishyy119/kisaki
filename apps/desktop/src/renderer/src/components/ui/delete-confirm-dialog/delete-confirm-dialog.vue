@@ -74,9 +74,9 @@ const descriptionText = computed(() => {
 
 const actionText = computed(() => {
   if (props.mode === 'remove') {
-    return isDeleting.value ? m.value.ui.deleteConfirm.removing : m.value.common.remove
+    return isDeleting.value ? m.value.ui.deleteConfirm.removing : m.value.actions.remove
   }
-  return isDeleting.value ? m.value.ui.deleteConfirm.deleting : m.value.common.delete
+  return isDeleting.value ? m.value.ui.deleteConfirm.deleting : m.value.actions.delete
 })
 
 async function handleConfirm() {
@@ -121,7 +121,7 @@ async function handleConfirm() {
           </div>
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <AlertDialogCancel :disabled="isDeleting">{{ m.common.cancel }}</AlertDialogCancel>
+          <AlertDialogCancel :disabled="isDeleting">{{ m.actions.cancel }}</AlertDialogCancel>
           <AlertDialogAction
             :disabled="isDeleting"
             @click="handleConfirm"

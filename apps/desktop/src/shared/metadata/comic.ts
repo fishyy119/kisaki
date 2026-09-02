@@ -5,7 +5,7 @@
  */
 
 import type { ComicFormat, PartialDate, ExternalSite } from '@shared/db'
-import type { ExternalId, Tag } from './common'
+import type { ExternalId, Tag } from './base'
 
 // =============================================================================
 // Core Info

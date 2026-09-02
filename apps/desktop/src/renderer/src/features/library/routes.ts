@@ -14,7 +14,7 @@ import type {
   RouteLocationNormalizedGeneric,
   RouteRecordRaw
 } from 'vue-router'
-import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/common'
+import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/entity-types'
 import type { RouteDataHandle } from '@renderer/core/route-data'
 import {
   entityDetailRouteName,

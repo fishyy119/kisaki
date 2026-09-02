@@ -4,7 +4,7 @@ import {
   requireExternalIdsAvailable,
   type DbContext
 } from '@main/services/db'
-import { IngestPersistHandlers } from '../../persist'
+import { IngestPersisters } from '../../persist'
 import type { PendingAssetTask } from '../../assets'
 import { characterExternalIds, characterTagLinks, characters, type NewCharacter } from '@shared/db'
 import type { CharacterLinkKind, CharacterUpdatePlan } from './types'
@@ -37,7 +37,7 @@ function applyCharacterRelationGraph(
   tx: DbContext,
   characterId: string,
   plan: CharacterUpdatePlan,
-  persistHandlers: IngestPersistHandlers
+  persisters: IngestPersisters
 ): UpdateLinkApplyResult<CharacterLinkKind> {
   const relationGraph = plan.relationGraph
   const collectionMode = plan.links.characterPerson
@@ -48,7 +48,7 @@ function applyCharacterRelationGraph(
   const personIdentityKeys = new Set(relationGraph.links.map((link) => link.personIdentityKey))
   const { idByIdentity, pendingAssets } = resolvePersonNodes(
     tx,
-    persistHandlers,
+    persisters,
     filterNodesByIdentity(relationGraph.persons, personIdentityKeys)
   )
 
@@ -69,7 +69,7 @@ export function applyCharacterPlan(
   tx: DbContext,
   characterId: string,
   plan: CharacterUpdatePlan,
-  persistHandlers: IngestPersistHandlers
+  persisters: IngestPersisters
 ): UpdateLinkApplyResult<CharacterLinkKind> {
   if (plan.externalIds) {
     requireExternalIdsAvailable(tx, characterExternalIdLink, [characterId], plan.externalIds)
@@ -91,7 +91,7 @@ export function applyCharacterPlan(
     ? [{ table: 'characters', rowId: characterId, field: 'photoFile', url: plan.photoUrl }]
     : []
 
-  const relations = applyCharacterRelationGraph(tx, characterId, plan, persistHandlers)
+  const relations = applyCharacterRelationGraph(tx, characterId, plan, persisters)
   pendingAssets.push(...relations.pendingAssets)
 
   return { pendingAssets, preservedLinkRows: relations.preservedLinkRows }

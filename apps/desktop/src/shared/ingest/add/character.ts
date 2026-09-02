@@ -1,5 +1,5 @@
 import type { ScraperLookup } from '@shared/scraper'
-import type { IngestAddResult } from '../common'
+import type { IngestAddResult } from '../results'
 
 export interface IngestAddCharacterResult extends IngestAddResult {
   characterId: string

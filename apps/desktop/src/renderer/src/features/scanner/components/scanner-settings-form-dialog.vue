@@ -227,7 +227,7 @@ async function handleSubmit() {
               variant="outline"
               @click="refetch"
             >
-              {{ m.common.retry }}
+              {{ m.actions.retry }}
             </Button>
           </div>
         </DialogBody>
@@ -306,7 +306,7 @@ async function handleSubmit() {
                         icon="icon-[mdi--plus]"
                         class="size-4"
                       />
-                      {{ m.common.add }}
+                      {{ m.actions.add }}
                     </Button>
                   </div>
 
@@ -354,13 +354,13 @@ async function handleSubmit() {
               :disabled="isSaving"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

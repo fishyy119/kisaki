@@ -83,7 +83,7 @@ export function createNeodbSettingsHostFunctions(
     },
 
     async listNovelProfiles(): Promise<NeodbProfileOption[]> {
-      const profiles = await kisaki.scrapers.profiles.list({ mediaType: 'novel' })
+      const profiles = await kisaki.scrapers.profiles.list({ entityType: 'novel' })
       return profiles.map((profile) => ({ id: profile.id, name: profile.name }))
     },
 

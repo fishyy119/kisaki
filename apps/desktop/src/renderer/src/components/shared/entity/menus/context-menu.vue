@@ -19,7 +19,7 @@ import {
   ContextMenuRadioItem
 } from '@renderer/components/ui/context-menu'
 import type { MenuComponents } from '@renderer/types'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import EntityMenuItems from './menu-items.vue'
 import EntityMenuDialogs from './menu-dialogs.vue'
 

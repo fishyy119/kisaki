@@ -60,13 +60,13 @@ function handleClear() {
     </InputGroupAddon>
     <InputGroupInput
       v-model="draft"
-      :placeholder="props.placeholder ?? m.common.searchPlaceholder"
+      :placeholder="props.placeholder ?? m.values.searchPlaceholder"
     />
     <InputGroupAddon
       v-if="draft"
       align="inline-end"
       class="cursor-pointer"
-      :title="m.common.clear"
+      :title="m.actions.clear"
       @click="handleClear"
     >
       <Icon

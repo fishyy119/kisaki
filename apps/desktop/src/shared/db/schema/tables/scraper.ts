@@ -1,15 +1,7 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
-import {
-  baseColumns,
-  contentEntityType,
-  contentLocale,
-  mediaType,
-  nameExtractionRules,
-  scraperSlotConfigs
-} from '../../columns'
-import { collections } from './collections'
+import { baseColumns, contentEntityType, contentLocale, scraperSlotConfigs } from '../../columns'
 
 export const scraperProfiles = sqliteTable(
   'scraper_profiles',
@@ -17,7 +9,8 @@ export const scraperProfiles = sqliteTable(
     ...baseColumns,
     name: text('name').notNull(),
     description: text('description'),
-    mediaType: contentEntityType('media_type').notNull().default('game'),
+    /** The content entity type this profile scrapes; satellites have profiles too. */
+    entityType: contentEntityType('entity_type').notNull().default('game'),
     /** Recipe this profile was created from; null for provider or blank creations. */
     recipeId: text('recipe_id'),
     /**
@@ -31,40 +24,10 @@ export const scraperProfiles = sqliteTable(
     order: integer('order').notNull().default(0)
   },
   (t) => [
-    index('idx_scraper_profiles_media_type').on(t.mediaType),
+    index('idx_scraper_profiles_entity_type').on(t.entityType),
     index('idx_scraper_profiles_order').on(t.order)
   ]
 )
 
 export type ScraperProfile = InferSelectModel<typeof scraperProfiles>
 export type NewScraperProfile = InferInsertModel<typeof scraperProfiles>
-
-export const scanners = sqliteTable(
-  'scanners',
-  {
-    ...baseColumns,
-    name: text('name').notNull(),
-    path: text('path').notNull(),
-    type: mediaType('type').notNull(),
-    /** Optional scrape policy; a scanner without one ingests directly. */
-    scraperProfileId: text('scraper_profile_id').references(() => scraperProfiles.id, {
-      onDelete: 'set null',
-      onUpdate: 'cascade'
-    }),
-    targetCollectionId: text('target_collection_id').references(() => collections.id, {
-      onDelete: 'set null',
-      onUpdate: 'cascade'
-    }),
-    /** Watch the scan path and scan when a new entity directory appears. */
-    watchEnabled: integer('watch_enabled', { mode: 'boolean' }).notNull().default(true),
-    entityDepth: integer('entity_depth').notNull().default(0),
-    nameExtractionRules: nameExtractionRules('name_extraction_rules').notNull().default([])
-  },
-  (t) => [
-    index('idx_scanners_type').on(t.type),
-    index('idx_scanners_scraper_profile_id').on(t.scraperProfileId)
-  ]
-)
-
-export type Scanner = InferSelectModel<typeof scanners>
-export type NewScanner = InferInsertModel<typeof scanners>

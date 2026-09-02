@@ -1,4 +1,4 @@
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import { collections, tags } from '@shared/db'
 import type { SearchQuerySpec } from './spec'
 

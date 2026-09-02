@@ -129,7 +129,7 @@ export function buildGamePatch(
   assignPatchValue(patch, existing, input, 'launcherPath', conflictMode)
   assignPatchValue(patch, existing, input, 'monitorMode', conflictMode)
   assignPatchValue(patch, existing, input, 'monitorPath', conflictMode)
-  assignPatchValue(patch, existing, input, 'gameDirPath', conflictMode)
+  assignPatchValue(patch, existing, input, 'dirPath', conflictMode)
   assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
   patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
   if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
@@ -150,7 +150,7 @@ export function buildAnimePatch(
   assignPatchValue(patch, existing, input, 'totalEpisodes', conflictMode)
   assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
   assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
-  assignPatchValue(patch, existing, input, 'animeDirPath', conflictMode)
+  assignPatchValue(patch, existing, input, 'dirPath', conflictMode)
   assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
   patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
   if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
@@ -173,7 +173,7 @@ export function buildComicPatch(
   assignPatchValue(patch, existing, input, 'totalChapters', conflictMode)
   assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
   assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
-  assignPatchValue(patch, existing, input, 'comicDirPath', conflictMode)
+  assignPatchValue(patch, existing, input, 'dirPath', conflictMode)
   assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
   patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
   if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {
@@ -194,7 +194,7 @@ export function buildNovelPatch(
   assignPatchValue(patch, existing, input, 'totalVolumes', conflictMode)
   assignPatchValue(patch, existing, input, 'lastActiveAt', conflictMode)
   assignPatchValue(patch, existing, input, 'totalDuration', conflictMode)
-  assignPatchValue(patch, existing, input, 'novelDirPath', conflictMode)
+  assignPatchValue(patch, existing, input, 'dirPath', conflictMode)
   assignPatchValue(patch, existing, input, 'descriptionInlineFiles', conflictMode)
   patch.externalIds = mergeExternalIds(existing.externalIds, input.externalIds)
   if (areExternalIdsEqual(patch.externalIds, existing.externalIds)) {

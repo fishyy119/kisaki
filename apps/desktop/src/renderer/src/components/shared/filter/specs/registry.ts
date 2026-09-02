@@ -5,7 +5,7 @@
  * spec field is surfaced in the UI.
  */
 import type { ComputedRef } from 'vue'
-import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/common'
+import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/entity-types'
 import { getFilterQuerySpec } from '@shared/filter'
 import type { FilterUiSpec } from './types'
 

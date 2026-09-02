@@ -2,7 +2,7 @@ import { buildEntityCanonicalIdentityKey } from '@shared/identity'
 import type { CoreCompanyMetadata } from '@shared/metadata'
 import type { ScrapedCompanyBundle, ScraperLookup } from '@shared/scraper'
 import type { IngestCompanyGraph } from './types'
-import { firstNonEmpty, mergeExternalIds, normalizeCompanyCore, pickFirstUrl } from './common'
+import { firstNonEmpty, mergeExternalIds, normalizeCompanyCore, pickFirstUrl } from './shared'
 
 function toCompanyRootCore(
   bundle: ScrapedCompanyBundle,

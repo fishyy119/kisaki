@@ -54,7 +54,7 @@ import {
   type NovelCompanyRole,
   type NovelPersonRole
 } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { Messages } from '@shared/i18n'
 import { getEntityImageFile } from '@renderer/utils/entity-image'
 

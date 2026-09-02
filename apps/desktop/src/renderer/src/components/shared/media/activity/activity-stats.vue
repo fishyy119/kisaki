@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { StatsGrid, type StatsGridItem } from '@renderer/components/ui/stats-grid'
 import { computeStreaks } from '@renderer/utils/statistics'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -104,14 +104,14 @@ const items = computed<StatsGridItem[]>(() => [
     label: labels.value.firstSession,
     value: stats.value.firstSessionDate
       ? f.value.date(stats.value.firstSessionDate)
-      : m.value.common.emptyValue
+      : m.value.values.emptyValue
   },
   {
     icon: 'icon-[mdi--calendar-end-outline]',
     label: labels.value.lastSession,
     value: stats.value.lastSessionDate
       ? f.value.date(stats.value.lastSessionDate)
-      : m.value.common.emptyValue
+      : m.value.values.emptyValue
   }
 ])
 </script>

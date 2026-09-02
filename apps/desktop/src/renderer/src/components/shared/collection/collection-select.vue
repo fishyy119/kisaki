@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
 import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
@@ -64,7 +64,7 @@ const emptyTextValue = computed(
     props.emptyText ??
     m.value.library.select.selectPlaceholder({ label: m.value.library.entities.collection })
 )
-const noneLabelText = computed(() => props.noneLabel ?? m.value.common.none)
+const noneLabelText = computed(() => props.noneLabel ?? m.value.states.none)
 
 /** For single selection mode */
 const modelValue = defineModel<string | null>({ default: null })
@@ -141,15 +141,15 @@ async function handleCreate(name: string) {
   }
 
   // Create new collection
-  const newId = nanoid()
-  await db.insert(collections).values({ id: newId, name })
+  const collectionId = newId()
+  await db.insert(collections).values({ id: collectionId, name })
 
   // Auto-select the new collection
   if (props.multiple) {
     const currentIds = selectedIdsModel.value
-    selectedIdsModel.value = [...currentIds, newId]
+    selectedIdsModel.value = [...currentIds, collectionId]
   } else {
-    modelValue.value = newId
+    modelValue.value = collectionId
   }
 }
 </script>

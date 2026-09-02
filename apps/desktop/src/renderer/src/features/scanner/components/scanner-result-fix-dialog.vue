@@ -184,7 +184,7 @@ watch(
             :disabled="isSubmitting"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button
             type="submit"

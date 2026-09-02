@@ -13,7 +13,7 @@ import { Mutex } from 'async-mutex'
 import { eq, getTableColumns, getTableName, is } from 'drizzle-orm'
 import { SQLiteTable, getTableConfig, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { fileTypeFromBuffer } from 'file-type'
 import { cp, mkdir, open, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { movePath, pathExists } from '@main/utils/fs'
@@ -618,7 +618,7 @@ export class AttachmentStore {
         }
       }
       case 'url': {
-        const fileId = nanoid()
+        const fileId = newId()
         const tempPath = path.join(fileDir, `${fileId}.tmp`)
         let finalPath: string | null = null
 
@@ -669,7 +669,7 @@ export class AttachmentStore {
   }
 
   private async createFileName(fileHeader: Buffer, extHint?: string): Promise<string> {
-    return await this.createFileNameWithId(nanoid(), fileHeader, extHint)
+    return await this.createFileNameWithId(newId(), fileHeader, extHint)
   }
 
   private async createFileNameWithId(
@@ -686,7 +686,7 @@ export class AttachmentStore {
     const safeExt = /^\.[a-z0-9]{1,10}$/i.test(ext) ? ext : ''
 
     for (let i = 0; i < 5; i++) {
-      const fileName = `${nanoid()}${safeExt}`
+      const fileName = `${newId()}${safeExt}`
       if (!(await pathExists(path.join(fileDir, fileName)))) {
         return fileName
       }

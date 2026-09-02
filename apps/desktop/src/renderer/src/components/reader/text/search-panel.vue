@@ -156,7 +156,7 @@ async function runQuery(raw: string): Promise<void> {
           variant="ghost"
           size="icon"
           class="absolute right-1.5 top-1/2 size-5 -translate-y-1/2"
-          :tooltip="m.common.clear"
+          :tooltip="m.actions.clear"
           @click="clearQuery"
         >
           <Icon

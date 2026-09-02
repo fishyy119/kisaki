@@ -8,7 +8,7 @@
 import { getTableColumns, getTableName } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
 import { MEMBERSHIP_SORT_KEY } from './sort'
 

@@ -44,7 +44,7 @@ const { m } = useI18n()
       </AlertDialogDescription>
 
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="props.removing">{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogCancel :disabled="props.removing">{{ m.actions.cancel }}</AlertDialogCancel>
         <AlertDialogAction
           :disabled="props.removing"
           @click.prevent="emit('confirm')"

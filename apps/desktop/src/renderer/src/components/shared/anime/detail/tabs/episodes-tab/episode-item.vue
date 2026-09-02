@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAnimeWatch } from '@renderer/composables/use-anime-watch'
+import { useAnimeWatching } from '@renderer/composables/use-anime-watching'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { cn } from '@renderer/utils/cn'
@@ -40,7 +40,7 @@ const title = computed(() => {
   const number = props.episode.episodeNumber
   const numbered =
     number === null ? null : m.value.anime.episodes.unnamed({ number: formatUnitNumber(number) })
-  return props.episode.name ?? numbered ?? m.value.common.emptyValue
+  return props.episode.name ?? numbered ?? m.value.values.emptyValue
 })
 
 const resolution = computed(() => {
@@ -62,7 +62,7 @@ const {
   isPaused,
   isPauseActionPending,
   togglePause
-} = useAnimeWatch(
+} = useAnimeWatching(
   () => props.animeId,
   () => props.episode.id
 )

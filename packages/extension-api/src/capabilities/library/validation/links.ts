@@ -30,7 +30,7 @@ import {
   validateRequiredEnumString,
   validateUnknownKeys
 } from '../../../shared/validation'
-import { isRecord, throwIfValidationIssues, validateLibraryEntityReference } from './common'
+import { isRecord, throwIfValidationIssues, validateLibraryEntityReference } from './shared'
 
 const LINK_CREATE_KEYS = new Set<string>(['kind', 'from', 'to', 'metadata'])
 const LINK_SELECTOR_KEYS = new Set<string>(['kind', 'from', 'to', 'role'])

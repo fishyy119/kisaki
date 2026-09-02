@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { EntityMergeResult } from '@shared/entity-merge'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -124,7 +124,7 @@ async function handleSubmit() {
           :disabled="submitting"
           @click="openModel = false"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="!canSubmit"

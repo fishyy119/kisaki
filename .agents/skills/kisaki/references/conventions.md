@@ -5,7 +5,7 @@
 - `apps/desktop/src/shared/` - Shared contracts and types
 - `apps/desktop/eslint.config.ts` - ESLint configuration
 - `.prettierrc.yaml` - Prettier configuration
-- `apps/desktop/src/main/services/notify/service.ts` - Notification service
+- `apps/desktop/src/main/services/notification/service.ts` - Notification service
 - `apps/desktop/src/renderer/src/core/notify.ts` - Renderer notifications
 - `apps/desktop/src/shared/i18n/` - Locale types, message catalogs, formatters
 
@@ -122,6 +122,37 @@ main/ ←✗→ renderer/  (Never cross-import)
 - If a local `shared.ts` starts accumulating unrelated helpers, split it into semantic files or move
   the code to the module that owns the behavior. Do not split one small cohesive shared helper group
   into several one-function files unless the extra boundary makes the code easier to navigate.
+- These are the only two sharing words. `common`, `helper(s)`, `base`, and `misc` are excluded as
+  file and folder names: they are synonyms of `shared` with no distinct reason behind them, and a
+  catch-all name is where things go when nobody names them (the entity type system once lived in a
+  `common.ts` that also accreted `SortDirection` and `AppTheme`). Code that owns a mechanism gets a
+  semantic name (`project.ts`, `identity.ts`, `surfaces.ts`).
+
+### Naming Claims
+
+A name is an assertion the reader trusts without opening the file. Three claims are checked on
+every folder, file, class, and namespace:
+
+- **Role nouns are honest.** A behavior class is `<Domain><Role>` where the role noun names its
+  behavioral shape (`Store`, `Coordinator`, `Runner`, `Engine`, `Persister`, `Adapter`, `Server`,
+  `Router`, `Feed`; `Manager` only for the lifecycle owner of live instances), or a
+  `<Service><Topic>` namespace object when it bundles operations on one topic
+  (`AttachmentShortcuts`, `NativeDialogs`). `Handler` is reserved for callback-shaped types. See
+  [architecture.md](architecture.md#folder-organization-semantics) for the noun definitions.
+- **The entity qualifier is a claim about the specialization axis.** Kisaki grows by media type, so
+  a name _without_ an entity qualifier asserts one of three things, and the assertion must be true:
+  it is mechanics parameterized only by schema facts (`AttachmentStore`, `IngestBatchUpdateRunner`);
+  it is an any-entity operation marked `Entity*` (`EntityMergeCoordinator`, `EntityFinder`); or it
+  is a technical-layer capability genuinely shared by a closed entity group (`ReadingCoordinator`
+  for the comic/novel pair). Specialized code carries its entity: `GameSaves`, `AnimeFileSyncCoordinator`,
+  `use-comic-reading.ts`. Several siblings sharing one qualifier put it on the folder
+  (`attachment/game/saves.ts`); a lone specialized file puts it in its name (`watch-progress.ts`).
+- **A concept word spans every layer it touches; only same-layer duplicates collide.**
+  `db.attachment` (the mechanism), the `attachment` service (workflows on it), `attachment://`, and
+  `AttachmentInput` share one word because they are one concept. What must never happen is two
+  services or two mechanisms sharing a word, or one word meaning two things (`metadata` for
+  satellite entities _and_ for scraped field contracts). See [vocabulary.md](vocabulary.md) for the
+  canonical nouns and the words each one excludes.
 
 ### Path Aliases
 
@@ -171,6 +202,8 @@ Use these names:
 - `require*(value, ...)` is allowed at CLI, file/network, extension-host, and other truly untrusted boundaries when invalid input should abort immediately. For internal main-app IPC, prefer forwarding the typed payload and letting service/domain code enforce its own invariants.
 
 Do not export naked `is*(value)` functions for schema, format, or type-guard validation of public contract data. Prefer `matches*Format`, `validate*`, `parse*`, `assertValid*`, or `require*` so the caller can see that this is input validation.
+
+Enum membership follows the same split, and the parameter type carries the distinction. A string from a route param, deeplink, or persisted JSON is parsed: `parseMediaType(value: string): MediaType | null`. A value that is already a member of the trusted union is narrowed with a predicate typed on that union: `isMediaType(type: AllEntityType): type is MediaType`. Because `string` is not assignable to the union, the compiler rejects an `is*` call on unparsed input; see `@shared/entity-types`.
 
 ### Business Checks
 
@@ -427,7 +460,7 @@ Distinguish the two growth axes:
   page through images, while their unit lists and catch-up flows stay mirrored per type.
 - What the shipped samples proved invariant is extracted, not forked. `holdings` keeps one
   `AutoSyncCoordinator` driven by a per-type `AutoSyncSpec` (directory query, file predicate, watch
-  depth, sync call), one `reconcile.ts` of pass mechanics (pass serialization, file revision,
+  depth, sync call), one `sync-pass.ts` of pass mechanics (pass serialization, file revision,
   probe freshness, primary election), and one `unit-reconcile.ts` holding the unit-file reconcile
   algorithm, instantiated per unit table (comic chapters, novel volumes, anime episodes). Claim
   strategies, orphan-deletion protection, and matched-row backfills are spec-declared facts on that
@@ -787,10 +820,10 @@ Kisaki provides a unified `notify` API that is callable from both main and rende
 - `notify` belongs to the surface that owns a user-facing flow, never to shared capability code.
   - A flow surface is the single place a user or external trigger enters the flow: a renderer
     component, a deeplink route handler, a tray/menu action, or a background job coordinator.
-  - Capability code that more than one flow can invoke (media service handlers, domain modules,
+  - Capability code that more than one flow can invoke (per-media coordinators, domain modules,
     pure utilities) stays silent: return a result union for expected outcomes, throw stable
     errors for unexpected ones, and log detail once at the layer that owns the context.
-  - Folder names do not decide this; ownership does. `activity/handlers/game.ts` is a shared
+  - Folder names do not decide this; ownership does. `activity/game/coordinator.ts` is a shared
     capability (play button, deeplinks, automations) and must not notify;
     `activity/launch-route.ts` is the entry adapter of one flow and owns its notifications.
 - Keep `ipc.handle(...)` functions as **thin adapters**: forward typed arguments to a service/use-case method + map to `IpcResult`.

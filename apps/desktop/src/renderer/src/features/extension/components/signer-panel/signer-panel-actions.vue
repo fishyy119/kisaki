@@ -24,6 +24,6 @@ const { refetch } = extensionSignersData()
       icon="icon-[mdi--refresh]"
       class="size-4"
     />
-    {{ m.common.refresh }}
+    {{ m.actions.refresh }}
   </Button>
 </template>

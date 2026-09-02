@@ -16,6 +16,6 @@
   "homepage": "https://www.igdb.com",
   "keywords": ["igdb", "game", "scraper"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.14"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

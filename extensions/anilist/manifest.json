@@ -16,6 +16,6 @@
   "homepage": "https://anilist.co",
   "keywords": ["anilist", "anime", "comic", "manga", "light-novel", "scraper", "sync"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.14"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

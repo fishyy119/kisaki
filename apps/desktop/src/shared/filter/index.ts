@@ -44,7 +44,7 @@ export { defineFilterQuerySpec } from './spec'
 
 export { buildFilterConditions, buildOrderBy } from './builder'
 
-export type { EntitySort } from './sort'
+export type { EntitySort, SortDirection } from './sort'
 export { MEMBERSHIP_SORT_KEY, createMembershipSort, isMembershipSort } from './sort'
 
 export { getFilterQuerySpec, getFilterRelevantTables } from './specs/registry'

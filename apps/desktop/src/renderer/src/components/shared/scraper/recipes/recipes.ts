@@ -12,7 +12,7 @@
  * recipe never produces dead slot entries.
  */
 
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { ContentLocale } from '@shared/i18n'
 import type { ScraperSlot, SlotStrategy } from '@shared/db'
 import { createExtensionScraperProviderId } from '@shared/scraper'
@@ -43,7 +43,7 @@ export interface ScraperRecipeVariant {
 export interface ScraperRecipe {
   /** Stable scene id; stored on profiles created from this recipe. */
   id: string
-  mediaType: ContentEntityType
+  entityType: ContentEntityType
   copy: (m: Messages) => { name: string; description: string }
   variants: Record<RecipeLanguageGroup, ScraperRecipeVariant>
 }
@@ -75,7 +75,7 @@ function slot(
  */
 const GAME_VISUAL_NOVEL: ScraperRecipe = {
   id: 'game.visual-novel',
-  mediaType: 'game',
+  entityType: 'game',
   copy: (m) => m.scraper.recipes.gameVisualNovel,
   variants: {
     zh: {
@@ -120,7 +120,7 @@ const GAME_VISUAL_NOVEL: ScraperRecipe = {
  */
 const GAME_VIDEO_GAME: ScraperRecipe = {
   id: 'game.video-game',
-  mediaType: 'game',
+  entityType: 'game',
   copy: (m) => m.scraper.recipes.gameVideoGame,
   variants: {
     zh: {
@@ -165,7 +165,7 @@ const GAME_VIDEO_GAME: ScraperRecipe = {
  */
 const ANIME: ScraperRecipe = {
   id: 'anime',
-  mediaType: 'anime',
+  entityType: 'anime',
   copy: (m) => m.scraper.recipes.anime,
   variants: {
     zh: {
@@ -210,7 +210,7 @@ const ANIME: ScraperRecipe = {
  */
 const COMIC: ScraperRecipe = {
   id: 'comic',
-  mediaType: 'comic',
+  entityType: 'comic',
   copy: (m) => m.scraper.recipes.comic,
   variants: {
     zh: {
@@ -251,7 +251,7 @@ const COMIC: ScraperRecipe = {
  */
 const NOVEL_LIGHT_NOVEL: ScraperRecipe = {
   id: 'novel.light-novel',
-  mediaType: 'novel',
+  entityType: 'novel',
   copy: (m) => m.scraper.recipes.novelLightNovel,
   variants: {
     zh: {
@@ -293,7 +293,7 @@ const NOVEL_LIGHT_NOVEL: ScraperRecipe = {
  */
 const NOVEL_FICTION: ScraperRecipe = {
   id: 'novel.fiction',
-  mediaType: 'novel',
+  entityType: 'novel',
   copy: (m) => m.scraper.recipes.novelFiction,
   variants: {
     zh: {
@@ -324,7 +324,7 @@ const NOVEL_FICTION: ScraperRecipe = {
 /** People (staff, authors, voice actors). */
 const PERSON: ScraperRecipe = {
   id: 'person',
-  mediaType: 'person',
+  entityType: 'person',
   copy: (m) => m.scraper.recipes.person,
   variants: {
     zh: {
@@ -350,7 +350,7 @@ const PERSON: ScraperRecipe = {
 /** Companies (studios, publishers, brands). */
 const COMPANY: ScraperRecipe = {
   id: 'company',
-  mediaType: 'company',
+  entityType: 'company',
   copy: (m) => m.scraper.recipes.company,
   variants: {
     zh: {
@@ -377,7 +377,7 @@ const COMPANY: ScraperRecipe = {
 /** Characters. */
 const CHARACTER: ScraperRecipe = {
   id: 'character',
-  mediaType: 'character',
+  entityType: 'character',
   copy: (m) => m.scraper.recipes.character,
   variants: {
     zh: {
@@ -414,8 +414,8 @@ export const SCRAPER_RECIPES: readonly ScraperRecipe[] = [
   CHARACTER
 ]
 
-export function getRecipesForMediaType(mediaType: ContentEntityType): ScraperRecipe[] {
-  return SCRAPER_RECIPES.filter((recipe) => recipe.mediaType === mediaType)
+export function getRecipesForEntityType(entityType: ContentEntityType): ScraperRecipe[] {
+  return SCRAPER_RECIPES.filter((recipe) => recipe.entityType === entityType)
 }
 
 export function getRecipeById(recipeId: string): ScraperRecipe | undefined {

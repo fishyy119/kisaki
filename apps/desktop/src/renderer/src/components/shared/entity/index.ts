@@ -11,6 +11,7 @@ export { EntityDeleteFormDialog, EntityBatchDeleteFormDialog } from './delete'
 export { EntityMergeDialog } from './merge'
 export {
   EntityContextMenu,
+  EntityCopyMenuItems,
   EntityDropdownMenu,
   EntityMenuItems,
   EntityBatchContextMenu,

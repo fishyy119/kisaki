@@ -161,7 +161,7 @@ Page import rules:
    in a manifest: pages sit downstream of the shared composable graph, and a static page edge
    would defeat route-level code splitting and put pages on the entry's full-reload path.
 2. Feature root `index.ts` barrels exist only for features consumed as components by other
-   surfaces (adder, scraper, settings, about, task-center); route wiring never goes through
+   surfaces (add-entry, scraper, settings, about, task-center); route wiring never goes through
    them. Manifests import loaders from their owning modules.
 3. Root `src/pages/` charter: system-owned route surfaces only. A page belongs there if and
    only if a core-level subsystem owns it, it imports no `features/*` code, and no feature code

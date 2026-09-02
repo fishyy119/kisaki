@@ -21,7 +21,7 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import type { MenuComponents } from '@renderer/types'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import EntityMenuItems from './menu-items.vue'
 import EntityMenuDialogs from './menu-dialogs.vue'
 

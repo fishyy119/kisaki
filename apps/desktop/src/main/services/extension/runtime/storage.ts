@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { Mutex } from 'async-mutex'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { movePath, pathExists } from '@main/utils/fs'
@@ -129,7 +129,7 @@ export class ExtensionRuntimeStorage {
 
     const tempPath = resolveInsideRoot(
       path.dirname(storagePath),
-      `${path.basename(storagePath)}.${randomUUID()}.tmp`
+      `${path.basename(storagePath)}.${newId()}.tmp`
     )
 
     try {

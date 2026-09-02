@@ -8,7 +8,7 @@
  */
 
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import type { ScraperLookup } from '@shared/scraper'
 
 export interface ScannerFixAddOptions {
@@ -26,28 +26,28 @@ export const SCANNER_FIX_ADD_SPECS: Record<MediaType, ScannerFixAddSubmit> = {
   game: async (profileId, lookup, options) =>
     unwrapIpcData(
       await ipcManager.invoke('ingest:add-game-from-scraper', profileId, lookup, {
-        gameDirPath: options.dirPath,
+        dirPath: options.dirPath,
         targetCollectionId: options.targetCollectionId
       })
     ),
   anime: async (profileId, lookup, options) =>
     unwrapIpcData(
       await ipcManager.invoke('ingest:add-anime-from-scraper', profileId, lookup, {
-        animeDirPath: options.dirPath,
+        dirPath: options.dirPath,
         targetCollectionId: options.targetCollectionId
       })
     ),
   comic: async (profileId, lookup, options) =>
     unwrapIpcData(
       await ipcManager.invoke('ingest:add-comic-from-scraper', profileId, lookup, {
-        comicDirPath: options.dirPath,
+        dirPath: options.dirPath,
         targetCollectionId: options.targetCollectionId
       })
     ),
   novel: async (profileId, lookup, options) =>
     unwrapIpcData(
       await ipcManager.invoke('ingest:add-novel-from-scraper', profileId, lookup, {
-        novelDirPath: options.dirPath,
+        dirPath: options.dirPath,
         targetCollectionId: options.targetCollectionId
       })
     )

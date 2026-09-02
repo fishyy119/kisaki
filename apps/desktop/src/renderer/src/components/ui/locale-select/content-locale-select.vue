@@ -53,7 +53,7 @@ const displayValue = computed(() => {
       <span
         v-else
         class="text-muted-foreground"
-        >{{ m.common.notSpecified }}</span
+        >{{ m.states.notSpecified }}</span
       >
     </SelectTrigger>
     <SelectContent>
@@ -62,7 +62,7 @@ const displayValue = computed(() => {
         :value="EMPTY_VALUE"
         class="text-muted-foreground"
       >
-        {{ m.common.notSpecified }}
+        {{ m.states.notSpecified }}
       </SelectItem>
       <SelectItem
         v-for="option in options"

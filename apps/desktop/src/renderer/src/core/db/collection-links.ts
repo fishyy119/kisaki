@@ -7,7 +7,7 @@
 import { asc, eq, getTableName } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
 import {
   collectionAnimeLinks,

@@ -705,7 +705,7 @@ onBeforeUnmount(() => {
           variant="outline"
           @click="handleClose"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="!imageLoaded || props.loading"
@@ -716,7 +716,7 @@ onBeforeUnmount(() => {
               icon="icon-[mdi--loading]"
               class="size-4 animate-spin"
             />
-            {{ m.common.processing }}
+            {{ m.states.processing }}
           </template>
           <template v-else>
             <Icon

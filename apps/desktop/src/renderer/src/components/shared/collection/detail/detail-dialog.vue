@@ -24,7 +24,7 @@ import {
   useRenderState
 } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import CollectionDetailActions from './detail-actions.vue'
 import CollectionDetailContent from './detail-content.vue'
 

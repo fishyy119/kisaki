@@ -97,7 +97,7 @@ async function handleToggleFavorite() {
         : m.value.library.feedback.favoriteAdded
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -137,7 +137,7 @@ async function handleOpenGameDir() {
   if (!game.value) return
   const current = game.value
   const pathToOpen =
-    current.gameDirPath || (current.launcherMode === 'file' ? current.launcherPath : null)
+    current.dirPath || (current.launcherMode === 'file' ? current.launcherPath : null)
   if (!pathToOpen) {
     notify.error(m.value.library.feedback.gameDirNotSet)
     return
@@ -151,7 +151,7 @@ async function handleOpenGameDir() {
 const canOpenGameDir = computed(() => {
   const current = game.value
   if (!current) return false
-  return !!(current.gameDirPath || (current.launcherMode === 'file' && current.launcherPath))
+  return !!(current.dirPath || (current.launcherMode === 'file' && current.launcherPath))
 })
 </script>
 

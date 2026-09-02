@@ -22,4 +22,4 @@ export {
   requireExternalIdsAvailable,
   resolveTagId,
   type ExternalIdLinkTable
-} from './helper'
+} from './identity'

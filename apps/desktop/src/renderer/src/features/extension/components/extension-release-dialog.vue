@@ -409,7 +409,7 @@ function formatSizeLabel(value: number | undefined): string {
               </div>
               <div class="min-w-0">
                 <dt class="text-muted-foreground">{{ m.extension.release.signerFingerprint }}</dt>
-                <dd class="font-mono truncate">{{ plan.signer.fingerprint ?? m.common.none }}</dd>
+                <dd class="font-mono truncate">{{ plan.signer.fingerprint ?? m.states.none }}</dd>
               </div>
               <div class="min-w-0">
                 <dt class="text-muted-foreground">{{ m.extension.release.artifactSize }}</dt>
@@ -548,7 +548,7 @@ function formatSizeLabel(value: number | undefined): string {
           :disabled="applying"
           @click="open = false"
         >
-          {{ m.common.cancel }}
+          {{ m.actions.cancel }}
         </Button>
         <Button
           :disabled="loadingPlan || applying || (!plan && Boolean(props.request))"

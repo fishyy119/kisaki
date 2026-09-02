@@ -3,7 +3,7 @@ import type {
   DynamicEntityConfig as ApiDynamicEntityConfig,
   JsonObject
 } from '@kisaki3/extension-api'
-import { CONTENT_ENTITY_TYPES } from '@shared/common'
+import { CONTENT_ENTITY_TYPES } from '@shared/entity-types'
 import type {
   DynamicCollectionConfig as DbDynamicCollectionConfig,
   DynamicEntityConfig as DbDynamicEntityConfig

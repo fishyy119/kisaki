@@ -6,7 +6,7 @@ import {
   readRequiredEnv,
   requireStringField,
   resolveWorkspacePath
-} from './common'
+} from './shared'
 
 const extensionId = readRequiredEnv('PUBLISH_EXTENSION_ID')
 const extensionDir = resolveWorkspacePath(readRequiredEnv('PUBLISH_EXTENSION_DIR'))

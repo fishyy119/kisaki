@@ -528,7 +528,7 @@ function parseOptionalTimezone(value: string): string | undefined {
             :disabled="isSaving"
             @click="open = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button
             type="submit"
@@ -538,7 +538,7 @@ function parseOptionalTimezone(value: string): string | undefined {
               icon="icon-[mdi--content-save-outline]"
               class="size-4"
             />
-            {{ isSaving ? m.common.saving : m.common.save }}
+            {{ isSaving ? m.states.saving : m.actions.save }}
           </Button>
         </DialogFooter>
       </Form>
@@ -593,9 +593,9 @@ function parseOptionalTimezone(value: string): string | undefined {
             variant="outline"
             @click="triggerDialogOpen = false"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.save }}</Button>
+          <Button type="submit">{{ m.actions.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

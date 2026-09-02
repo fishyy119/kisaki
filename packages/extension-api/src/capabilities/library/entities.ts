@@ -187,7 +187,7 @@ export interface LibraryGame extends LibraryRankedEntityBase {
   launcherPath?: string | undefined
   monitorMode: LibraryGameMonitorMode
   monitorPath?: string | undefined
-  gameDirPath?: string | undefined
+  dirPath?: string | undefined
   descriptionInlineFiles?: readonly string[] | undefined
   externalIds: readonly ExternalId[]
 }
@@ -204,7 +204,7 @@ export interface LibraryAnime extends LibraryRankedEntityBase {
   totalEpisodes?: number | null | undefined
   lastActiveAt?: number | null | undefined
   totalDuration: number
-  animeDirPath?: string | undefined
+  dirPath?: string | undefined
   descriptionInlineFiles?: readonly string[] | undefined
   externalIds: readonly ExternalId[]
 }
@@ -287,7 +287,7 @@ export interface LibraryComic extends LibraryRankedEntityBase {
   totalChapters?: number | null | undefined
   lastActiveAt?: number | null | undefined
   totalDuration: number
-  comicDirPath?: string | undefined
+  dirPath?: string | undefined
   descriptionInlineFiles?: readonly string[] | undefined
   externalIds: readonly ExternalId[]
 }
@@ -367,7 +367,7 @@ export interface LibraryNovel extends LibraryRankedEntityBase {
   totalVolumes?: number | null | undefined
   lastActiveAt?: number | null | undefined
   totalDuration: number
-  novelDirPath?: string | undefined
+  dirPath?: string | undefined
   descriptionInlineFiles?: readonly string[] | undefined
   externalIds: readonly ExternalId[]
 }
@@ -513,7 +513,7 @@ export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
   launcherPath?: string | undefined
   monitorMode?: LibraryGameMonitorMode | undefined
   monitorPath?: string | undefined
-  gameDirPath?: string | undefined
+  dirPath?: string | undefined
   descriptionInlineFiles?: readonly string[] | undefined
   externalIds?: readonly ExternalId[] | undefined
 }
@@ -536,7 +536,7 @@ export interface LibraryAnimeCreateInput extends LibraryRankedEntityInputBase {
   totalEpisodes?: number | null | undefined
   lastActiveAt?: number | null | undefined
   totalDuration?: number | undefined
-  animeDirPath?: string | undefined
+  dirPath?: string | undefined
   descriptionInlineFiles?: readonly string[] | undefined
   externalIds?: readonly ExternalId[] | undefined
 }
@@ -563,7 +563,7 @@ export interface LibraryComicCreateInput extends LibraryRankedEntityInputBase {
   totalChapters?: number | null | undefined
   lastActiveAt?: number | null | undefined
   totalDuration?: number | undefined
-  comicDirPath?: string | undefined
+  dirPath?: string | undefined
   descriptionInlineFiles?: readonly string[] | undefined
   externalIds?: readonly ExternalId[] | undefined
 }
@@ -588,7 +588,7 @@ export interface LibraryNovelCreateInput extends LibraryRankedEntityInputBase {
   totalVolumes?: number | null | undefined
   lastActiveAt?: number | null | undefined
   totalDuration?: number | undefined
-  novelDirPath?: string | undefined
+  dirPath?: string | undefined
   descriptionInlineFiles?: readonly string[] | undefined
   externalIds?: readonly ExternalId[] | undefined
 }

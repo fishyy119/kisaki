@@ -34,7 +34,7 @@ export function createProviderAdapter(
             'search',
             {
               runtimeHandle: registration.owner.runtimeHandle,
-              mediaType: domain.mediaType,
+              entityType: domain.entityType,
               providerId: registration.provider.id,
               query,
               locale: ctx.locale
@@ -60,7 +60,7 @@ export function createProviderAdapter(
         'resolve',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          mediaType: domain.mediaType,
+          entityType: domain.entityType,
           providerId: registration.provider.id,
           lookup,
           locale: ctx.locale
@@ -77,7 +77,7 @@ export function createProviderAdapter(
         'session.open',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          mediaType: domain.mediaType,
+          entityType: domain.entityType,
           providerId: registration.provider.id,
           target,
           locale: ctx.locale
@@ -105,7 +105,7 @@ function createSessionAdapter(
         'session.get',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          mediaType: domain.mediaType,
+          entityType: domain.entityType,
           providerId: registration.provider.id,
           sessionId,
           slots
@@ -122,7 +122,7 @@ function createSessionAdapter(
         'session.close',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          mediaType: domain.mediaType,
+          entityType: domain.entityType,
           providerId: registration.provider.id,
           sessionId
         },

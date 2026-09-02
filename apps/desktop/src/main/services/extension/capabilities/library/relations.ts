@@ -9,7 +9,7 @@ import type {
 } from '@kisaki3/extension-api'
 import { createNotFoundError, normalizeCapabilityError } from '@kisaki3/extension-api'
 import { and, eq, or, type SQL } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { animes, comics, games, mediaRelations, novels, type MediaRelation } from '@shared/db'
 import type { DbService } from '@main/services/db'
 
@@ -51,7 +51,7 @@ export class ExtensionLibraryMediaRelationStore {
       this.options.db.client
         .insert(mediaRelations)
         .values({
-          id: nanoid(),
+          id: newId(),
           fromType: input.from.entityType,
           fromId: input.from.id,
           toType: input.to.entityType,

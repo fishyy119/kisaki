@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import type { DbService } from '@main/services/db'
 import { asc, eq } from 'drizzle-orm'
 import type {
@@ -54,7 +54,7 @@ export class AutomationStore {
   async create(input: AutomationCreateInput): Promise<Automation> {
     const now = Date.now()
     const automation: Automation = {
-      id: randomUUID(),
+      id: newId(),
       name: input.name?.trim() || input.commandId,
       owner: input.owner ?? { type: 'app' },
       commandId: input.commandId,

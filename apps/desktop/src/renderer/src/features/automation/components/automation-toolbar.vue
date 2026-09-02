@@ -21,12 +21,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type {
-  AutomationSortDirection,
-  AutomationSortField,
-  AutomationSourceFilter,
-  AutomationStatusFilter
-} from '../types'
+import type { SortDirection } from '@shared/filter'
+import type { AutomationSortField, AutomationSourceFilter, AutomationStatusFilter } from '../types'
 
 interface Props {
   filteredCount: number
@@ -38,7 +34,7 @@ const searchQuery = defineModel<string>('searchQuery', { required: true })
 const statusFilter = defineModel<AutomationStatusFilter>('statusFilter', { required: true })
 const sourceFilter = defineModel<AutomationSourceFilter>('sourceFilter', { required: true })
 const sortField = defineModel<AutomationSortField>('sortField', { required: true })
-const sortDirection = defineModel<AutomationSortDirection>('sortDirection', { required: true })
+const sortDirection = defineModel<SortDirection>('sortDirection', { required: true })
 
 const { m } = useI18n()
 
@@ -106,7 +102,7 @@ const isQueryActive = computed(
         v-if="isQueryActive"
         class="shrink-0 text-xs text-muted-foreground"
       >
-        {{ m.common.itemCount({ count: props.filteredCount }) }}
+        {{ m.values.itemCount({ count: props.filteredCount }) }}
       </span>
 
       <div class="flex-1" />

@@ -3,7 +3,7 @@
  */
 
 import { createNotifyHook, type NotifyHook } from '@main/hooks'
-import type { AppTheme } from '@shared/common'
+import type { AppTheme } from '@shared/theme'
 
 export type MainWindowDocumentGoneCause = 'navigated' | 'render-process-gone' | 'closed'
 

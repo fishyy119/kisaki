@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import path from 'node:path'
 import { mkdir, readdir, rm } from 'node:fs/promises'
 import { movePath, pathExists } from '@main/utils/fs'
@@ -314,7 +314,7 @@ async function findVerifiedRecoverySource(
 
 function createQuarantineDirectoryName(pkg: PackageDirectoryInfo): string {
   const hint = createSafeDirectoryHint(pkg.extensionId ?? pkg.directoryName)
-  return `${Date.now()}-${randomUUID()}-${hint}`
+  return `${Date.now()}-${newId()}-${hint}`
 }
 
 function createSafeDirectoryHint(value: string): string {

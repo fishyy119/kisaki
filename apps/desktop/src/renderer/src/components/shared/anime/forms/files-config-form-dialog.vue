@@ -39,7 +39,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 interface Props {
   animeId: string
@@ -75,7 +75,7 @@ const { data: anime, isLoading } = useAsyncData(
 // Initialize form state when data loads
 watch(anime, (animeData) => {
   if (animeData) {
-    formData.value.dirPath = animeData.animeDirPath ?? ''
+    formData.value.dirPath = animeData.dirPath ?? ''
     formData.value.offsetText = String(animeData.episodeFileNumberOffset)
   }
 })
@@ -108,14 +108,14 @@ async function handleSubmit() {
 
   isSaving.value = true
   try {
-    const changed = dirPath !== current.animeDirPath || offset !== current.episodeFileNumberOffset
+    const changed = dirPath !== current.dirPath || offset !== current.episodeFileNumberOffset
 
     await db
       .update(animes)
-      .set({ animeDirPath: dirPath, episodeFileNumberOffset: offset })
+      .set({ dirPath: dirPath, episodeFileNumberOffset: offset })
       .where(eq(animes.id, props.animeId))
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
 
     // The new configuration only shows once files re-reconcile against it.
@@ -183,7 +183,7 @@ function handleCancel() {
                       :disabled="!formData.dirPath"
                       @click="handleClearDir"
                     >
-                      {{ m.common.clear }}
+                      {{ m.actions.clear }}
                     </Button>
                   </div>
                 </FieldContent>
@@ -212,13 +212,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

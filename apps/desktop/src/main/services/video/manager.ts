@@ -9,7 +9,7 @@
 
 import spawn from 'cross-spawn'
 import { existsSync } from 'node:fs'
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { resolveBundledBinary } from '@main/binaries'
 import { createLogger } from '@main/log'
 import type {
@@ -56,7 +56,7 @@ export class PlaybackSessionManager {
       return { status: 'failed', reason: 'engineNotFound' }
     }
 
-    const sessionId = randomUUID()
+    const sessionId = newId()
     const socketPath = buildIpcSocketPath(sessionId)
     // Ensured per start so a user deleting the directory self-heals.
     const configDir = ensureMpvConfigDir()

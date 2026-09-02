@@ -32,7 +32,7 @@ const editDialogOpen = ref(false)
       icon="icon-[mdi--pencil-outline]"
       class="mr-1.5 size-4"
     />
-    {{ m.common.edit }}
+    {{ m.actions.edit }}
   </Button>
   <TagDropdownMenu :tag-id="props.tagId" />
 

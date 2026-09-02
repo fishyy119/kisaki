@@ -188,15 +188,15 @@ const companyItems = computed<RoleLinkItem[]>(() =>
                 {{ alias }}
               </div>
             </dd>
-            <dd v-else>{{ m.common.emptyValue }}</dd>
+            <dd v-else>{{ m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.format }}</dt>
             <dd>{{ m.library.novelFormat[novel.format] }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.totalVolumes }}</dt>
-            <dd>{{ novel.totalVolumes ?? m.common.emptyValue }}</dd>
+            <dd>{{ novel.totalVolumes ?? m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
-            <dd>{{ novel.releaseDate ? f.date(novel.releaseDate) : m.common.emptyValue }}</dd>
+            <dd>{{ novel.releaseDate ? f.date(novel.releaseDate) : m.values.emptyValue }}</dd>
             <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
-            <dd>{{ novel.createdAt ? f.date(novel.createdAt) : m.common.emptyValue }}</dd>
+            <dd>{{ novel.createdAt ? f.date(novel.createdAt) : m.values.emptyValue }}</dd>
           </dl>
         </Section>
 

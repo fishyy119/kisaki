@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import { app } from 'electron'
 import { pathExists } from '@main/utils/fs'
 import { Mutex } from 'async-mutex'
@@ -249,7 +249,7 @@ export class ExtensionRuntimeManager {
     cause: ExtensionRuntimeChangeCause
   ): Promise<void> {
     const generation = this.nextGeneration()
-    const runtimeHandle = randomUUID()
+    const runtimeHandle = newId()
     this.runtimeHandles.set(runtimeHandle, extension)
     this.recordRuntimeLoading(extension.id)
 

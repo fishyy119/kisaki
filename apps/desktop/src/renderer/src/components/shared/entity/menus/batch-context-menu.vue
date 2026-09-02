@@ -10,7 +10,7 @@ import {
   ContextMenuTrigger,
   ContextMenuContent
 } from '@renderer/components/ui/context-menu'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { EntityBatchDeleteFormDialog } from '../delete'
 import { EntityBatchMetadataUpdateFormDialog } from '../metadata'
 import EntityBatchMenuItems from './batch-menu-items.vue'

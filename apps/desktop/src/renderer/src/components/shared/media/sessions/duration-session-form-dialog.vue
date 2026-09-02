@@ -18,7 +18,7 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldGroup, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { MediaSessionRow } from '../media-tables'
 
@@ -152,9 +152,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
-          <Button type="submit">{{ m.common.confirm }}</Button>
+          <Button type="submit">{{ m.actions.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

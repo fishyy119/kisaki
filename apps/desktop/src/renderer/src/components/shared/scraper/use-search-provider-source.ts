@@ -2,7 +2,7 @@ import { ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { scraperProfiles } from '@shared/db'
 
 const PROVIDER_CHANNELS = {

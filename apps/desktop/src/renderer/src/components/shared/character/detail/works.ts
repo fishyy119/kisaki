@@ -15,7 +15,7 @@ import {
 } from '@renderer/components/shared/entity'
 import { useCharacter } from '@renderer/composables/use-character'
 import { useI18n } from '@renderer/composables/use-i18n'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 
 export function useCharacterWorksBlocks(): ComputedRef<WorksBlock[]> {
   const { games, animes, comics, novels } = useCharacter()

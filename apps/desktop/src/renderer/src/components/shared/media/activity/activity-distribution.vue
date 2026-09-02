@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { MediaType } from '@shared/common'
+import type { MediaType } from '@shared/entity-types'
 import {
   aggregateByLocalDayOfMonth,
   aggregateByLocalHour,

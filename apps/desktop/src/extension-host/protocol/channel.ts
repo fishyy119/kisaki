@@ -7,7 +7,7 @@
  * host bundle keeps its own dependency floor.
  */
 
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import {
   RPC_ABORT_EVENT,
   RpcTimeoutError,
@@ -115,7 +115,7 @@ export class RpcChannel {
         return
       }
 
-      const id = randomUUID()
+      const id = newId()
       const pending: PendingRpcRequest = {
         resolve: (value) => resolve(value as TResult),
         reject

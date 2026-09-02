@@ -180,7 +180,7 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
           variant="outline"
           @click="open = false"
         >
-          {{ m.common.close }}
+          {{ m.actions.close }}
         </Button>
       </DialogFooter>
     </DialogContent>

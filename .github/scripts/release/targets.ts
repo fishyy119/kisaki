@@ -1,4 +1,4 @@
-import { readRequiredEnv } from './common'
+import { readRequiredEnv } from './shared'
 
 export type ReleaseTarget = 'desktop' | 'extension-tooling'
 

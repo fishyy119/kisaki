@@ -79,17 +79,22 @@ export const games = sqliteTable('games', {
 
 ### Base Columns Pattern
 
-Most tables use `baseColumns` for common fields:
+Most tables use `baseColumns` for the shared id and timestamp columns:
 
 ```typescript
 const baseColumns = {
   id: text('id')
     .primaryKey()
-    .$defaultFn(() => nanoid()),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+    .$defaultFn(() => newId()),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).$defaultFn(() => new Date())
 }
 ```
+
+Every generated identifier — row ids, attachment file names, runtime handles, temp suffixes — comes
+from `newId()` in `@shared/id` (RFC 9562 UUID), in every process. Renderer code that inserts rows
+directly mints ids the same way. An id is opaque once minted: nothing inspects its shape, and rows
+created under an earlier format are never migrated.
 
 ### Identity Key Columns
 
@@ -99,7 +104,7 @@ The stored value is the comparison key, so lookups can match with a plain `eq(..
 normalizing in application code.
 
 `tags` keeps both forms: `name` is the display name and `normalized_name` is the unique identity
-key. Resolve or create tags through `resolveTagId` (`services/db/helper/tag.ts`) so every ingest path
+key. Resolve or create tags through `resolveTagId` (`services/db/identity/tag.ts`) so every ingest path
 shares one matching semantic.
 
 ## Triggers & Change Feed
@@ -213,6 +218,9 @@ either.
 - Migration files are versioned and committed
 - `drizzle/` directory must be accessible in packaged app
 - `attachment://` protocol provides access to DB attachment files
+- Terminology: the **attachment store** is `db.attachment` (layout, column binding, row-lifetime
+  cleanup, merge staging, protocol); the **attachment service** owns workflows on top of it (save
+  backups, launcher-icon derivation, desktop launch shortcuts). Say which one you mean.
 
 ## Related
 

@@ -16,6 +16,6 @@
   "homepage": "https://www.steamgriddb.com",
   "keywords": ["steamgriddb", "game", "artwork", "scraper"],
   "engines": {
-    "kisakiExtensionApi": "=0.0.14"
+    "kisakiExtensionApi": "=0.0.12"
   }
 }

@@ -30,7 +30,7 @@ export interface GameRunningStatus {
 export interface GameMonitorPathConfig {
   monitorPath: string | null
   monitorMode: GameMonitorMode
-  gameDirPath: string | null
+  dirPath: string | null
   launcherMode: GameLauncherMode
   launcherPath: string | null
 }

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { newId } from '@shared/id'
 import {
   createNotFoundError,
   createValidationError,
@@ -278,7 +278,7 @@ export class ExtensionWebviewSessionManager {
 
     const session: WebviewSession = {
       info: {
-        webviewId: randomUUID(),
+        webviewId: newId(),
         extensionId: input.extensionId,
         title: input.title,
         surface: input.surface,

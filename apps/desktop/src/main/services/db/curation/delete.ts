@@ -1,5 +1,5 @@
 /**
- * DB entity delete helper.
+ * Entity delete coordinator.
  *
  * Provides delete previews and executes entity deletion with optional
  * direct-related entity cleanup inside a single DB transaction.
@@ -8,7 +8,7 @@
 import { and, eq, inArray, or } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
-import type { AllEntityType, MediaType } from '@shared/common'
+import type { AllEntityType, MediaType } from '@shared/entity-types'
 import type {
   EntityDeletePreview,
   EntityDeletePreviewItem,

@@ -8,7 +8,7 @@
 -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
 import {
   deleteCollectionLinks,
@@ -33,13 +33,13 @@ import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { VirtualList } from '@renderer/components/ui/virtual'
 import { getEntityIcon } from '@renderer/utils/format'
 import CollectionEntitiesItemFormDialog from './entity-item-form-dialog.vue'
-import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
+import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/entity-types'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Collection')
+const log = createLogger('Library')
 
 interface EntityLink {
   id: string
@@ -217,7 +217,7 @@ async function handleSave() {
         .filter((link) => link.entityType === entityType)
         .sort((a, b) => a.orderInCollection - b.orderInCollection)
         .map((link, index) => ({
-          id: link.isNew ? nanoid() : link.id,
+          id: link.isNew ? newId() : link.id,
           collectionId: props.collectionId,
           entityId: link.entityId,
           note: link.note || null,
@@ -227,7 +227,7 @@ async function handleSave() {
       await insertCollectionLinks(entityType, rows)
     }
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
@@ -351,13 +351,13 @@ const entityTypeModel = computed({
               variant="outline"
               @click="open = false"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ isSaving ? m.common.saving : m.common.save }}
+              {{ isSaving ? m.states.saving : m.actions.save }}
             </Button>
           </div>
         </DialogFooter>

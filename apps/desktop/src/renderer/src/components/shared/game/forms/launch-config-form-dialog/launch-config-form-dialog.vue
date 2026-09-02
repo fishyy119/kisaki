@@ -38,7 +38,7 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 // Form state
-const gameDirPath = ref('')
+const dirPath = ref('')
 const launcherMode = ref<GameLauncherMode>('file')
 const launcherPath = ref('')
 const monitorMode = ref<GameMonitorMode>('folder')
@@ -60,7 +60,7 @@ const { data: game, isLoading } = useAsyncData(
 // Initialize form state when data loads
 watch(game, (gameData) => {
   if (gameData) {
-    gameDirPath.value = gameData.gameDirPath || ''
+    dirPath.value = gameData.dirPath || ''
     launcherMode.value = gameData.launcherMode
     launcherPath.value = gameData.launcherPath || ''
     monitorMode.value = gameData.monitorMode
@@ -72,12 +72,12 @@ watch(game, (gameData) => {
 
 // Compute effective monitor path for preview when config changes
 watch(
-  [monitorPath, monitorMode, gameDirPath, launcherMode, launcherPath],
+  [monitorPath, monitorMode, dirPath, launcherMode, launcherPath],
   async () => {
     const result = await ipcManager.invoke('activity:compute-game-monitor-path', {
       monitorPath: monitorPath.value || null,
       monitorMode: monitorMode.value,
-      gameDirPath: gameDirPath.value || null,
+      dirPath: dirPath.value || null,
       launcherMode: launcherMode.value,
       launcherPath: launcherPath.value || null
     })
@@ -94,7 +94,7 @@ async function handleSave() {
     await db
       .update(games)
       .set({
-        gameDirPath: gameDirPath.value || null,
+        dirPath: dirPath.value || null,
         launcherMode: launcherMode.value,
         launcherPath: launcherPath.value || null,
         monitorMode: monitorMode.value,
@@ -107,7 +107,7 @@ async function handleSave() {
     notify.success(m.value.game.launchConfig.saved)
     open.value = false
   } catch {
-    notify.error(m.value.common.saveFailed)
+    notify.error(m.value.feedback.saveFailed)
   } finally {
     isSaving.value = false
   }
@@ -167,7 +167,7 @@ function handleCancel() {
 
             <TabsContent value="launch">
               <GameLaunchConfigLaunchTab
-                v-model:game-dir-path="gameDirPath"
+                v-model:dir-path="dirPath"
                 v-model:launcher-mode="launcherMode"
                 v-model:launcher-path="launcherPath"
               />
@@ -194,7 +194,7 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            {{ m.common.cancel }}
+            {{ m.actions.cancel }}
           </Button>
           <Button
             :disabled="isSaving"
@@ -205,9 +205,9 @@ function handleCancel() {
                 icon="icon-[mdi--loading]"
                 class="size-4 animate-spin"
               />
-              {{ m.common.saving }}
+              {{ m.states.saving }}
             </template>
-            <template v-else>{{ m.common.save }}</template>
+            <template v-else>{{ m.actions.save }}</template>
           </Button>
         </DialogFooter>
       </template>

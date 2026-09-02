@@ -170,7 +170,7 @@ export interface IngestWarning {
 }
 
 export interface IngestAddGameFromScraperOptions {
-  gameDirPath?: string | undefined
+  dirPath?: string | undefined
   gameFilePath?: string | undefined
   targetCollectionId?: string | undefined
 }
@@ -183,7 +183,7 @@ export interface IngestAddGameFromScraperResult {
 }
 
 export interface IngestAddAnimeFromScraperOptions {
-  animeDirPath?: string | undefined
+  dirPath?: string | undefined
   targetCollectionId?: string | undefined
 }
 
@@ -195,7 +195,7 @@ export interface IngestAddAnimeFromScraperResult {
 }
 
 export interface IngestAddComicFromScraperOptions {
-  comicDirPath?: string | undefined
+  dirPath?: string | undefined
   targetCollectionId?: string | undefined
 }
 
@@ -207,7 +207,7 @@ export interface IngestAddComicFromScraperResult {
 }
 
 export interface IngestAddNovelFromScraperOptions {
-  novelDirPath?: string | undefined
+  dirPath?: string | undefined
   targetCollectionId?: string | undefined
 }
 

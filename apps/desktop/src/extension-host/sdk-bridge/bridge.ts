@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
+import type { ContentEntityType } from '@shared/entity-types'
 import type {
   CardActionContribution,
   CardActionRegistration,
@@ -19,7 +20,6 @@ import type {
   HostToMainRpcMethod,
   HostToMainRpcRequestMap,
   KisakiApi,
-  ScraperMediaType,
   ScraperProviderRegistration,
   RpcParams,
   RpcResult,
@@ -348,8 +348,8 @@ export class ExtensionHostSdkBridge {
       registerEntityMenu: (scope, domain, menuScope, contribution) =>
         this.registerEntityMenu(scope, domain, menuScope, contribution),
       registerCardAction: (scope, action) => this.registerCardAction(scope, action),
-      registerScraperProvider: (scope, mediaType, provider) =>
-        this.registerScraperProvider(scope, mediaType, provider),
+      registerScraperProvider: (scope, entityType, provider) =>
+        this.registerScraperProvider(scope, entityType, provider),
       registerDeeplinkRoute: (scope, contribution) =>
         this.registerDeeplinkRoute(scope, contribution),
       registerTheme: (scope, theme) => this.registerTheme(scope, theme),
@@ -430,12 +430,12 @@ export class ExtensionHostSdkBridge {
     return this.cardActions.register(scope, action)
   }
 
-  private registerScraperProvider<TMediaType extends ScraperMediaType>(
+  private registerScraperProvider<TEntityType extends ContentEntityType>(
     scope: ActiveExtensionScope,
-    mediaType: TMediaType,
-    provider: ScraperProviderFor<TMediaType>
+    entityType: TEntityType,
+    provider: ScraperProviderFor<TEntityType>
   ): ScraperProviderRegistration {
-    return this.scraperProviders.registerScraperProvider(scope, mediaType, provider)
+    return this.scraperProviders.registerScraperProvider(scope, entityType, provider)
   }
 
   private registerDeeplinkRoute<const TPattern extends string>(

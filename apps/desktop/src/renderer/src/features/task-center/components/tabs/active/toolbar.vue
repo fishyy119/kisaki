@@ -52,7 +52,7 @@ const isQueryActive = computed(
       v-if="isQueryActive"
       class="shrink-0 text-xs text-muted-foreground"
     >
-      {{ m.common.itemCount({ count: props.filteredCount }) }}
+      {{ m.values.itemCount({ count: props.filteredCount }) }}
     </span>
 
     <div class="flex-1" />

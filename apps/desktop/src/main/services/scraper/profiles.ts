@@ -13,8 +13,8 @@ export class ScraperProfileCatalog {
       .from(scraperProfiles)
       .orderBy(asc(scraperProfiles.order), asc(scraperProfiles.name))
       .all()
-    const filtered = query.mediaType
-      ? rows.filter((profile) => profile.mediaType === query.mediaType)
+    const filtered = query.entityType
+      ? rows.filter((profile) => profile.entityType === query.entityType)
       : rows
 
     return filtered.map((profile) => toScraperProfileSummary(profile))
@@ -38,7 +38,7 @@ function toScraperProfileSummary(profile: ScraperProfile): ScraperProfileSummary
     id: profile.id,
     name: profile.name,
     description: profile.description,
-    mediaType: profile.mediaType,
+    entityType: profile.entityType,
     searchProviderId: profile.searchProviderId,
     defaultLocale: profile.defaultLocale,
     providerSlots: Object.entries(profile.slotConfigs).map(([slot, config]) => ({

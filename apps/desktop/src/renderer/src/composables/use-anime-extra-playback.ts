@@ -16,7 +16,7 @@ import { useAnimeActivityStore, type AnimePlaybackState } from '@renderer/stores
 import { useI18n } from './use-i18n'
 import { usePlayerControls } from './use-player-controls'
 
-const log = createLogger('Anime')
+const log = createLogger('Library')
 
 export interface AnimeExtraPlayback {
   isPlaying: ComputedRef<boolean>

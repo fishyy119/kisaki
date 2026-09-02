@@ -1,4 +1,4 @@
-import { readCommand, readRequiredEnv, writeGithubOutput } from './common'
+import { readCommand, readRequiredEnv, writeGithubOutput } from './shared'
 
 const releaseTag = readRequiredEnv('RELEASE_TAG')
 const tagPrefix = readRequiredEnv('RELEASE_TAG_PREFIX')

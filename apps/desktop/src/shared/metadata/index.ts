@@ -5,7 +5,7 @@
  * These types are used across scraper, ingest, and other services.
  */
 
-export * from './common'
+export * from './base'
 export * from './person'
 export * from './character'
 export * from './company'

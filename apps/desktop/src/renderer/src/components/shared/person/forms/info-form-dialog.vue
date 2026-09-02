@@ -42,7 +42,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const log = createLogger('Person')
+const log = createLogger('Library')
 
 interface Props {
   personId: string
@@ -63,7 +63,7 @@ interface FormData {
 
 const NONE_VALUE = '#none'
 const GENDER_OPTIONS = computed(() => [
-  { value: NONE_VALUE, label: m.value.common.none },
+  { value: NONE_VALUE, label: m.value.states.none },
   { value: 'male', label: m.value.library.gender.male },
   { value: 'female', label: m.value.library.gender.female },
   { value: 'other', label: m.value.library.gender.other }
@@ -148,7 +148,7 @@ async function handleSubmit() {
       })
       .where(eq(persons.id, props.personId))
 
-    notify.success(m.value.common.saved)
+    notify.success(m.value.feedback.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
@@ -261,13 +261,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              {{ m.common.cancel }}
+              {{ m.actions.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              {{ m.common.save }}
+              {{ m.actions.save }}
             </Button>
           </DialogFooter>
         </Form>

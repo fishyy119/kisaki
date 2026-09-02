@@ -71,7 +71,7 @@ function handleCloseAutoFocus(event: Event) {
           icon="icon-[mdi--close]"
           class="size-4"
         />
-        <span class="sr-only">{{ m.common.close }}</span>
+        <span class="sr-only">{{ m.actions.close }}</span>
       </DialogClose>
     </DialogContent>
   </DialogPortal>

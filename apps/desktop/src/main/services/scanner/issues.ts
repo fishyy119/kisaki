@@ -6,7 +6,7 @@
  */
 
 import { ScrapeFailure } from '@main/services/scraper'
-import type { IngestWarning, IngestWarningCode } from '@shared/ingest/common'
+import type { IngestWarning, IngestWarningCode } from '@shared/ingest/results'
 import type { EntityEntry, ScannerRunExisting } from '@shared/scanner'
 import type {
   ScannedEntity,

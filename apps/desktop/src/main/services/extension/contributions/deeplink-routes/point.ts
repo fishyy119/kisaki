@@ -27,7 +27,7 @@ import type {
   DeeplinkRouteContext,
   DeeplinkService
 } from '@main/services/deeplink'
-import type { NotifyService } from '@main/services/notify'
+import type { NotificationService } from '@main/services/notification'
 import type { I18nService } from '@main/services/i18n'
 import {
   getRuntimeContributionKey,
@@ -40,7 +40,7 @@ import {
 
 export interface ExtensionDeeplinkRouteContributionPointOptions extends ExtensionContributionPointOptions {
   deeplink: DeeplinkService
-  notify: NotifyService
+  notification: NotificationService
   i18n: I18nService
   waitForExtensionRunning(extensionId: string, timeoutMs: number): Promise<boolean>
 }
@@ -263,7 +263,7 @@ export class ExtensionDeeplinkRouteContributionPoint {
 
   private notifyExtensionUnavailable(): void {
     const messages = this.options.i18n.messages.deeplink
-    this.options.notify.show({
+    this.options.notification.show({
       title: messages.extensionUnavailableTitle,
       message: messages.extensionUnavailableMessage,
       type: 'error',

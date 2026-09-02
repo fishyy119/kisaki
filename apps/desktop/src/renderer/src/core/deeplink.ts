@@ -10,7 +10,7 @@
  */
 
 import type { Router } from 'vue-router'
-import { isAllEntityType } from '@shared/common'
+import { parseAllEntityType } from '@shared/entity-types'
 import { compileDeeplinkRoutePattern, matchDeeplinkRoutePattern } from '@shared/deeplink'
 import { getEntityDetailPath, LIBRARY_HOME_PATH } from '@renderer/utils/entity-routes'
 import { ipcManager } from './ipc'
@@ -29,8 +29,10 @@ type DestinationResolver = (params: Record<string, string>) => string | null
  */
 const DESTINATIONS: Record<string, DestinationResolver> = {
   '/': () => LIBRARY_HOME_PATH,
-  '/:entityType/:id': ({ entityType, id }) =>
-    entityType && id && isAllEntityType(entityType) ? getEntityDetailPath(entityType, id) : null,
+  '/:entityType/:id': ({ entityType, id }) => {
+    const parsed = entityType ? parseAllEntityType(entityType) : null
+    return parsed && id ? getEntityDetailPath(parsed, id) : null
+  },
   '/library': () => LIBRARY_HOME_PATH,
   '/statistics': () => '/statistics',
   '/scanner': () => '/scanner',

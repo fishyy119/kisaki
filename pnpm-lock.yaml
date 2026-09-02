@@ -206,9 +206,6 @@ importers:
       file-type:
         specifier: ^22.0.1
         version: 22.0.1
-      nanoid:
-        specifier: ^5.1.16
-        version: 5.1.16
       node-stream-zip:
         specifier: ^1.16.0
         version: 1.16.0
@@ -5036,11 +5033,6 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  nanoid@5.1.16:
-    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
-    engines: {node: ^18 || >=20}
-    hasBin: true
-
   napi-build-utils@2.0.0:
     resolution: {integrity: sha512-GEbrYkbfF7MoNaoh2iGG84Mnf/WZfB0GdGEsM8wz7Expx/LlWf5U8t9nvJKXSp3qr5IsEbK04cBGhol/KwOsWA==}
 
@@ -9714,8 +9706,6 @@ snapshots:
   murmurhash-js@1.0.0: {}
 
   nanoid@3.3.16: {}
-
-  nanoid@5.1.16: {}
 
   napi-build-utils@2.0.0: {}
 

@@ -26,7 +26,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../../stores'
 import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki3/extension-api'
-import type { SortDirection } from '@shared/common'
+import type { SortDirection } from '@shared/filter'
 
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, string> = {

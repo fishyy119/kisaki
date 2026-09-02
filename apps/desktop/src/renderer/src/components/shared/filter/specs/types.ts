@@ -1,4 +1,4 @@
-import type { AllEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/entity-types'
 import type { FilterQuerySpec, FilterSortKeyOf } from '@shared/filter'
 
 export interface FilterUiOption {

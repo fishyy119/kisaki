@@ -50,14 +50,15 @@ its own `kisaki://launch` route on `deeplink.router` is the reference example.
 
 | Layer      | Services                                                                                                   | Charter                                                           |
 | ---------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Platform   | `ipc`, `db`, `window`, `native`, `notify`, `network`, `deeplink`, `updater`, `i18n`                        | Wrap Electron, the OS, and transports; no library business rules  |
-| Capability | `task-run`, `file-watch`, `process`, `video`, `reader`                                                     | Technical abilities with no domain vocabulary and no library rows |
+| Platform   | `ipc`, `db`, `window`, `native`, `notification`, `network`, `deeplink`, `updater`, `i18n`                  | Wrap Electron, the OS, and transports; no library business rules  |
+| Capability | `task-run`, `file-watch`, `process`, `video`, `reader`, `image`                                            | Technical abilities with no domain vocabulary and no library rows |
 | Domain     | `scraper`, `ingest`, `scanner`, `holdings`, `activity`, `attachment`, `command`, `automation`, `extension` | Own library meaning and workflows; grow one media type at a time  |
 
 `db` is the one platform service that is a data platform rather than a thin adapter. A synchronous
 better-sqlite3 connection cannot hand a transaction to another service, so every operation that must
-see all entity tables at once lives with the connection: `db.curation` (merge, delete), `db.helper`
-(finder, tag, external-id primitives), and `db.feed` change projection. It stays non-domain because
+see all entity tables at once lives with the connection: `db.curation` (merge, delete), `db.identity`
+(finder, tag, external-id primitives), `db.attachment` (the attachment store), and `db.feed` change
+projection. It stays non-domain because
 it owns no workflow of its own — it exposes cross-table primitives that domain services compose.
 
 ### Consumption Engines
@@ -85,7 +86,13 @@ Two neighbours are easy to confuse, so their charters are stated once here:
 - `holdings` answers "which files does this entry actually have": the seam between user-owned media on
   disk and the consumption-unit rows that play it, including row ownership (`isManual`) and
   watch-driven reconcile.
-- `attachment` owns app-owned derived assets (covers, backdrops) whose bytes the app stores itself.
+- `attachment` owns the workflows that produce or consume row-attached files with main-process
+  capabilities: save backups, launcher-icon derivation, desktop launch shortcuts. The mechanism
+  itself — layout, column binding, row-lifetime cleanup, merge staging, `attachment://` — is the
+  **attachment store** (`db.attachment`); the service is the **attachment service**. Use those two
+  terms; the shared word is one concept across two layers, not a collision.
+- `image` is a capability (no domain vocabulary): sharp-based staging transforms for the asset
+  picker and icon encoding for shortcuts.
 
 ### Service Interface
 
@@ -107,6 +114,32 @@ already visible in the per-entity registries the compiler checks.
 Every folder should have one clear organizational meaning. Choose the meaning before naming entry
 files or deciding whether a role-specific entry such as `manager.ts`, `coordinator.ts`,
 `gateway.ts`, `provider.ts`, `point.ts`, or `registry.ts` belongs there.
+
+#### When a Folder Level Earns Its Name
+
+A folder name is a predicate a reader evaluates without opening anything: "everything inside
+satisfies P". A level earns its existence only when all three hold:
+
+- **True**: P holds for every child. A `handlers/` folder whose children are coordinators, writers,
+  and engines asserts a shape they do not have.
+- **Distinguishing**: P is false for the siblings outside. A `handlers/` level in a service whose
+  every file handles some phase carries zero information; the phase folders already are the role
+  folders.
+- **Not redundant**: P is not already evident from the children's shape or names. Member folders
+  beside helper files, or entity-prefixed file names, already separate a family from its
+  neighbours.
+
+Consequences that follow mechanically:
+
+- A folder named after a role plural (`handlers/`, `managers/`) is almost never right; the shared
+  property of a per-entity family is the entity axis, so the folder carries the entity
+  (`activity/game/`, `holdings/anime/`), never the role.
+- A family of one member that stays one by domain nature (only games have executables and saves)
+  gets no family folder at all; asserting a family that does not exist misinforms the reader.
+- When several siblings share one qualifier, the folder carries it (`attachment/game/saves.ts`,
+  not `attachment/game-saves.ts`); when a single file is specialized, its name carries it.
+- Uniformity lives in the rule, not the silhouette. Services with different growth axes (phase for
+  `ingest/`, entity for `holdings/`, engine for `activity/`) legitimately produce different trees.
 
 #### Category Organization
 
@@ -201,16 +234,44 @@ domain policy, move that code to a semantic owner file. Do not split tiny cohesi
 multiple files only to avoid a broad name; a small local `shared.ts` can be clearer than several
 one-function files.
 
+Code leaves a single owner for exactly two reasons, and each reason has exactly one word: `utils`
+(by nature: small, pure, liftable to any project) and `shared` (by relationship: siblings share it,
+at any scope — processes under `src/shared/`, submodules under `<module>/shared/`). Synonyms are
+excluded: no `common`, `helper(s)`, `base`, or `misc` files or folders. A file that is neither pure
+nor merely shared but _owns_ a mechanism the siblings parameterize (the generic projection, the
+identity-key builder, the scrape planner) is named for that mechanism (`project.ts`, `identity.ts`,
+`planner.ts`), not for the fact that several files import it.
+
 Common public-entry naming preferences:
 
 - Functional module split: the module is mostly stateless functions or small procedures. Use file
   names that describe the concrete responsibility, such as `validation.ts`, `mappers.ts`,
   `normalization.ts`, `planner.ts`, or `view.ts`.
-- `manager.ts` / `*Manager`: long-lived objects that own state, lifecycle, registrations,
-  sessions, caches, or invariants.
+- `manager.ts` / `*Manager`: long-lived objects that own the lifecycle of a set of live instances
+  (runs, sessions, windows, runtimes, installations), usually paired with a `*Store` that persists
+  them. Not a default for "does things": an object that performs one workflow is an installer, a
+  runner, or a coordinator, not an `*InstallerManager`.
 - `coordinator.ts` / `*Coordinator`: workflow objects that coordinate several owned/public modules
   to keep one operation consistent, especially when the coordination spans filesystem changes,
-  persistence, or recovery. Do not use `manager.ts` only because the workflow is commit-oriented.
+  persistence, or recovery, or carries ordering guarantees (persist the session before announcing
+  the stop). Do not use `manager.ts` only because the workflow is commit-oriented. Per-entity
+  consumption and sync workflows are coordinators (`GameActivityCoordinator`,
+  `AnimeFileSyncCoordinator`).
+- `engine.ts` / `*Engine`: a generic core driven by per-entity specs (`EntityAddEngine`,
+  `EntityScrapeEngine<T>`); the specs live beside it in `specs.ts` and per-entity folders.
+- `runner.ts` / `*Runner`: executes one task to completion with progress and cancellation
+  (`IngestBatchUpdateRunner`).
+- `*Persister`: writes a prepared graph into rows and links; one per entity under a `persist/`
+  phase folder.
+- `*Adapter`: shapes one media type's tables and vocabulary onto a shared coordinator
+  (`ComicReadingAdapter`).
+- `*Server`: serves bytes through a protocol or cache (`ExtensionUiAssetServer`,
+  `ExtensionIconServer`).
+- `*Feed` / `*Router` / `*Launcher` / `*Watcher` / `*Finder` / `*Executor`: single behavioral
+  identities named by what they do.
+- `*Handler` is reserved for callback-shaped _types_ — a function that receives an event or request
+  and processes it (`DeeplinkRouteHandler`, `IpcMainHandlers`, hook taps). A class with ten methods
+  that owns a workflow is never a handler; name its actual role.
 - `gateway.ts` / `*Gateway`: route or aggregate calls across peer adapters without owning the
   domain state itself.
 - `provider.ts` / `*Provider`: public capability adapters that expose application-owned services to
@@ -409,7 +470,7 @@ change in the library. Two contracts hold the seam together:
 
 | File/Directory | Used By                          | Purpose                                   |
 | -------------- | -------------------------------- | ----------------------------------------- |
-| `handlers/`    | activity, scraper                | Per-media handlers                        |
+| `<entity>/`    | activity, holdings, scraper      | Per-entity coordinator or spec folder     |
 | `types.ts`     | db, deeplink, extension, process | Service-specific type definitions         |
 | `ipc.ts`       | Any service with IPC channels    | IPC registration using `wrapIpc` helpers  |
 | `router.ts`    | deeplink                         | URL route definitions (deeplink-specific) |
@@ -417,9 +478,9 @@ change in the library. Two contracts hold the seam together:
 
 **Complex services** may have additional domain-specific files:
 
-- `db/`: attachment/ (store, protocol, thumbnail), curation/ (merge, delete), helper/ (finder, tag,
-  external-id), feed/, fts.ts, sql.ts, settings.ts, trigger.ts
-- `extension/`: service.ts, ipc.ts, installations/, installer/, packages/, repositories/, signers/, updates/, runtime/, capabilities/, contributions/
+- `db/`: attachment/ (store, protocol, thumbnail), curation/ (merge, delete), identity/ (finder,
+  tag, external-id), feed/, fts.ts, sql.ts, settings.ts, trigger.ts
+- `extension/`: service.ts, ipc.ts, installations/, install/, packages/, repositories/, signers/, updates/, runtime/, capabilities/, contributions/
 
 ## Bootstrap Sequence
 

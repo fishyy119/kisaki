@@ -280,7 +280,7 @@ async function handleRetryChangelog() {
                   size="sm"
                   @click="handleRetryChangelog"
                 >
-                  {{ m.common.retry }}
+                  {{ m.actions.retry }}
                 </Button>
               </div>
 
@@ -301,7 +301,7 @@ async function handleRetryChangelog() {
                   size="sm"
                   @click="handleRetryChangelog"
                 >
-                  {{ m.common.retry }}
+                  {{ m.actions.retry }}
                 </Button>
               </div>
 
@@ -363,7 +363,7 @@ async function handleRetryChangelog() {
             :disabled="isInstalling"
             @click="open = false"
           >
-            {{ m.common.close }}
+            {{ m.actions.close }}
           </Button>
         </div>
       </DialogFooter>

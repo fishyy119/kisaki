@@ -3,7 +3,7 @@ export {
   listIngestUpdateSurfaceKeysByCardinality,
   listIngestUpdateSurfaceKeysByGroup,
   mergeUpdateLookupKnownIds
-} from './common'
+} from './model'
 export type {
   IngestBatchUpdateRequest,
   IngestUpdatePolicy,
@@ -15,7 +15,7 @@ export type {
   IngestUpdateSurfaceKey,
   IngestUpdateSurfaceKeysByCardinality,
   IngestUpdateSurfaceKeysByGroup
-} from './common'
+} from './model'
 export {
   ANIME_UPDATE_CORE_SURFACES,
   ANIME_UPDATE_MEDIA_SURFACES,

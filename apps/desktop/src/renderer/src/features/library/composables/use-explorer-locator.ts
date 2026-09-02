@@ -42,7 +42,7 @@ import {
 import { useLibraryExplorerStore } from '../stores'
 import { toExplorerSelectionKey } from '../utils/explorer-selection'
 import type { ExplorerListContext } from './use-explorer-list'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 
 // =============================================================================
 // Types

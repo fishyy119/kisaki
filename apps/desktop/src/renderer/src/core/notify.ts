@@ -7,10 +7,10 @@
 
 import { h } from 'vue'
 import { toast, type ExternalToast } from 'vue-sonner'
-import { nanoid } from 'nanoid'
+import { newId } from '@shared/id'
 import { ipcManager } from './ipc'
 import { createLogger } from './log'
-import type { NotifyAction, NotifyOptions, NotifyType, NotifyFunction } from '@shared/notify'
+import type { NotifyAction, NotifyOptions, NotifyType, NotifyFunction } from '@shared/notification'
 
 type RendererNotifyActionHandler = (action: NotifyAction) => void | Promise<void>
 
@@ -23,7 +23,7 @@ export interface RendererNotifyFunction extends NotifyFunction {
   (options: RendererNotifyOptions): void
 }
 
-const log = createLogger('Notify')
+const log = createLogger('Notification')
 const mainToastIds = new Set<string>()
 const suppressedClosedToastIds = new Set<string>()
 const LoadingToastIcon = () =>
@@ -83,7 +83,7 @@ function createToastAction(
     label: action.label,
     onClick(event) {
       event.preventDefault()
-      ipcManager.send('notify:action', {
+      ipcManager.send('notification:action', {
         toastId,
         actionId: action.id
       })
@@ -106,24 +106,24 @@ function createToastOptions(options: RendererNotifyOptions, toastId?: string): E
 
 function createNotify(): RendererNotifyFunction {
   // Initialize IPC listeners for notifications from main process
-  ipcManager.on('notify:show', (_, options) => {
+  ipcManager.on('notification:show', (_, options) => {
     rememberMainToast(options.toastId)
     const toastFn = getToastFn(options)
     toastFn(options.title, createToastOptions(options, options.toastId))
   })
 
-  ipcManager.on('notify:loading', (_, { toastId, title, message }) => {
+  ipcManager.on('notification:loading', (_, { toastId, title, message }) => {
     rememberMainToast(toastId)
     toast.loading(title, { id: toastId, description: message })
   })
 
-  ipcManager.on('notify:update', (_, { toastId, ...options }) => {
+  ipcManager.on('notification:update', (_, { toastId, ...options }) => {
     rememberMainToast(toastId)
     const toastFn = getToastFn(options)
     toastFn(options.title, createToastOptions(options, toastId))
   })
 
-  ipcManager.on('notify:dismiss', (_, { toastId }) => {
+  ipcManager.on('notification:dismiss', (_, { toastId }) => {
     suppressProgrammaticDismiss(toastId)
     toast.dismiss(toastId)
   })
@@ -135,7 +135,10 @@ function createNotify(): RendererNotifyFunction {
 
     if (target === 'native' || target === 'auto') {
       // Forward to main process for native/auto handling
-      ipcManager.send(target === 'native' ? 'notify:native' : 'notify:auto', notifyOptions)
+      ipcManager.send(
+        target === 'native' ? 'notification:native' : 'notification:auto',
+        notifyOptions
+      )
     } else {
       // Show toast directly
       const toastFn = getToastFn(options)
@@ -149,7 +152,7 @@ function createNotify(): RendererNotifyFunction {
   notifyFn.info = (title, message?) => notifyFn({ title, message, type: 'info' })
 
   notifyFn.loading = (title, message?) => {
-    const toastId = nanoid()
+    const toastId = newId()
     toast.loading(title, { id: toastId, description: message })
     return toastId
   }
@@ -209,7 +212,7 @@ function handleMainToastDismissed(toastId: string): void {
     return
   }
 
-  ipcManager.send('notify:closed', {
+  ipcManager.send('notification:closed', {
     toastId
   })
 }

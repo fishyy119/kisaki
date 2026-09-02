@@ -12,7 +12,7 @@ import {
   validateRequiredString,
   validateUnknownKeys
 } from '../../../shared/validation'
-import { isRecord, throwIfValidationIssues, validateOptionalNonEmptyString } from './common'
+import { isRecord, throwIfValidationIssues, validateOptionalNonEmptyString } from './shared'
 
 const ENTITY_REFERENCE_KEYS = new Set<string>(['entityType', 'id'])
 const ATTACHMENT_WRITE_KEYS = new Set<string>(['entity', 'slot', 'source', 'replace'])

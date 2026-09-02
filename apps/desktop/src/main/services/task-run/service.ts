@@ -10,7 +10,7 @@ const log = createLogger('TaskRun')
 
 export class TaskRunService implements INonDomainService<'task-run'> {
   readonly id = 'task-run'
-  readonly deps = ['db', 'i18n', 'ipc', 'notify'] as const
+  readonly deps = ['db', 'i18n', 'ipc', 'notification'] as const
 
   runs!: TaskRunManager
   history!: TaskRunHistoryStore
@@ -24,7 +24,7 @@ export class TaskRunService implements INonDomainService<'task-run'> {
       onDeleted: (runIds) => this.emitDeleted(runIds)
     })
     this.notifications = new TaskRunNotificationCoordinator({
-      notify: container.get('notify'),
+      notification: container.get('notification'),
       i18n: container.get('i18n'),
       cancelRun: (runId) => this.runs.cancel(runId)
     })

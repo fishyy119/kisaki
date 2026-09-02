@@ -25,9 +25,9 @@ import { db, updateEntityRows } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
-import { isMediaType } from '@shared/common'
+import { isMediaType } from '@shared/entity-types'
 import type { MenuComponents } from '@renderer/types'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import { MENU_SPECS } from './menu-specs'
 
 interface Props {
@@ -170,13 +170,13 @@ async function handleSetFavorite(isFavorite: boolean) {
       isFavorite ? m.value.library.feedback.favoriteAdded : m.value.library.feedback.favoriteRemoved
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   }
 }
 </script>
 
 <template>
-  <ContextMenuLabel>{{ m.common.selectedCount({ count: selectedEntityCount }) }}</ContextMenuLabel>
+  <ContextMenuLabel>{{ m.values.selectedCount({ count: selectedEntityCount }) }}</ContextMenuLabel>
   <ContextMenuSeparator />
 
   <!-- Add to collection -->

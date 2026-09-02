@@ -83,7 +83,7 @@ import {
   validateOptionalSaveBackups,
   validateOptionalStringArray,
   validateRankedEntityFields
-} from './common'
+} from './shared'
 
 const CREATE_TIMESTAMP_KEYS = ['createdAt', 'updatedAt'] as const
 const GAME_CREATE_KEYS = new Set<string>([
@@ -105,7 +105,7 @@ const GAME_CREATE_KEYS = new Set<string>([
   'launcherPath',
   'monitorMode',
   'monitorPath',
-  'gameDirPath',
+  'dirPath',
   'descriptionInlineFiles',
   'externalIds'
 ])
@@ -125,7 +125,7 @@ const GAME_PATCH_KEYS = new Set<string>([
   'launcherPath',
   'monitorMode',
   'monitorPath',
-  'gameDirPath',
+  'dirPath',
   'descriptionInlineFiles',
   'externalIds',
   'lastActiveAt',
@@ -144,7 +144,7 @@ const ANIME_CREATE_KEYS = new Set<string>([
   'totalEpisodes',
   'lastActiveAt',
   'totalDuration',
-  'animeDirPath',
+  'dirPath',
   'descriptionInlineFiles',
   'externalIds'
 ])
@@ -158,7 +158,7 @@ const ANIME_PATCH_KEYS = new Set<string>([
   'status',
   'format',
   'totalEpisodes',
-  'animeDirPath',
+  'dirPath',
   'descriptionInlineFiles',
   'externalIds',
   'lastActiveAt',
@@ -202,7 +202,7 @@ const COMIC_CREATE_KEYS = new Set<string>([
   'totalChapters',
   'lastActiveAt',
   'totalDuration',
-  'comicDirPath',
+  'dirPath',
   'descriptionInlineFiles',
   'externalIds'
 ])
@@ -218,7 +218,7 @@ const COMIC_PATCH_KEYS = new Set<string>([
   'readingDirection',
   'totalVolumes',
   'totalChapters',
-  'comicDirPath',
+  'dirPath',
   'descriptionInlineFiles',
   'externalIds',
   'lastActiveAt',
@@ -249,7 +249,7 @@ const NOVEL_CREATE_KEYS = new Set<string>([
   'totalVolumes',
   'lastActiveAt',
   'totalDuration',
-  'novelDirPath',
+  'dirPath',
   'descriptionInlineFiles',
   'externalIds'
 ])
@@ -263,7 +263,7 @@ const NOVEL_PATCH_KEYS = new Set<string>([
   'status',
   'format',
   'totalVolumes',
-  'novelDirPath',
+  'dirPath',
   'descriptionInlineFiles',
   'externalIds',
   'lastActiveAt',
@@ -1099,7 +1099,7 @@ function validateGameWriteInput(value: unknown, path: string, create: boolean): 
       'monitorMode must be one of the supported monitor modes.'
     ),
     ...validateOptionalString(input.monitorPath, `${path}.monitorPath`),
-    ...validateOptionalString(input.gameDirPath, `${path}.gameDirPath`),
+    ...validateOptionalString(input.dirPath, `${path}.dirPath`),
     ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
     ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
     ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
@@ -1140,7 +1140,7 @@ function validateAnimeWriteInput(value: unknown, path: string, create: boolean):
       'format must be one of the supported anime formats.'
     ),
     ...validateOptionalNullableFiniteNumber(input.totalEpisodes, `${path}.totalEpisodes`),
-    ...validateOptionalString(input.animeDirPath, `${path}.animeDirPath`),
+    ...validateOptionalString(input.dirPath, `${path}.dirPath`),
     ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
     ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
     ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
@@ -1218,7 +1218,7 @@ function validateComicWriteInput(value: unknown, path: string, create: boolean):
     ),
     ...validateOptionalNullableFiniteNumber(input.totalVolumes, `${path}.totalVolumes`),
     ...validateOptionalNullableFiniteNumber(input.totalChapters, `${path}.totalChapters`),
-    ...validateOptionalString(input.comicDirPath, `${path}.comicDirPath`),
+    ...validateOptionalString(input.dirPath, `${path}.dirPath`),
     ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
     ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
     ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),
@@ -1283,7 +1283,7 @@ function validateNovelWriteInput(value: unknown, path: string, create: boolean):
       'format must be one of the supported novel formats.'
     ),
     ...validateOptionalNullableFiniteNumber(input.totalVolumes, `${path}.totalVolumes`),
-    ...validateOptionalString(input.novelDirPath, `${path}.novelDirPath`),
+    ...validateOptionalString(input.dirPath, `${path}.dirPath`),
     ...validateOptionalStringArray(input.descriptionInlineFiles, `${path}.descriptionInlineFiles`),
     ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`),
     ...validateOptionalNullableFiniteNumber(input.lastActiveAt, `${path}.lastActiveAt`),

@@ -94,7 +94,7 @@ async function handleToggleFavorite() {
         : m.value.library.feedback.favoriteAdded
     )
   } catch {
-    notify.error(m.value.common.operationFailed)
+    notify.error(m.value.feedback.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -115,16 +115,16 @@ function handleRevealSpoilersConfirm() {
 async function handleOpenFolder() {
   if (state.value !== 'success') return
   const current = comic.value!
-  if (!current.comicDirPath) {
+  if (!current.dirPath) {
     notify.error(m.value.comic.detail.comicDirNotSet)
     return
   }
-  await ipcManager.invoke('native:open-path', { path: current.comicDirPath, ensure: 'folder' })
+  await ipcManager.invoke('native:open-path', { path: current.dirPath, ensure: 'folder' })
 }
 
 const canOpenComicDir = computed(() => {
   if (state.value !== 'success') return false
-  return !!comic.value?.comicDirPath
+  return !!comic.value?.dirPath
 })
 </script>
 

@@ -22,7 +22,7 @@ import type { INonDomainService, ServiceInitContainer } from '@main/container'
 import { DEEPLINK_SCHEME, parseDeeplinkUrl, type DeeplinkRequest } from '@shared/deeplink'
 import { drainCapturedDeeplinkUrls } from '@main/bootstrap/deeplink-capture'
 import type { WindowService } from '@main/services/window'
-import type { NotifyService } from '@main/services/notify'
+import type { NotificationService } from '@main/services/notification'
 import type { I18nService } from '@main/services/i18n'
 import { DeeplinkRouter } from './router'
 import { createOpenRoute, OPEN_DEEPLINK_ROUTE } from './open-route'
@@ -31,11 +31,11 @@ const log = createLogger('Deeplink')
 
 export class DeeplinkService implements INonDomainService<'deeplink'> {
   readonly id = 'deeplink'
-  readonly deps = ['ipc', 'window', 'notify', 'i18n'] as const
+  readonly deps = ['ipc', 'window', 'notification', 'i18n'] as const
 
   router!: DeeplinkRouter
   private windowService!: WindowService
-  private notify!: NotifyService
+  private notification!: NotificationService
   private i18n!: I18nService
   private pending: DeeplinkRequest[] = []
   private isReady = false
@@ -45,7 +45,7 @@ export class DeeplinkService implements INonDomainService<'deeplink'> {
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     this.windowService = container.get('window')
-    this.notify = container.get('notify')
+    this.notification = container.get('notification')
     this.i18n = container.get('i18n')
 
     this.router = new DeeplinkRouter()
@@ -104,7 +104,7 @@ export class DeeplinkService implements INonDomainService<'deeplink'> {
       // low-sensitivity descriptor, never the raw URL.
       log.warn('Rejected invalid deeplink.', { urlDescriptor: describeUrlForLog(url) })
       const messages = this.i18n.messages.deeplink
-      this.notify.show({
+      this.notification.show({
         title: messages.invalidLinkTitle,
         message: messages.invalidLinkMessage,
         type: 'error',
@@ -149,7 +149,7 @@ export class DeeplinkService implements INonDomainService<'deeplink'> {
     if (!match) {
       log.warn('No deeplink route matched.', { requestPath: request.path })
       const messages = this.i18n.messages.deeplink
-      this.notify.show({
+      this.notification.show({
         title: messages.unknownLinkTitle,
         message: messages.unknownLinkMessage,
         type: 'error',

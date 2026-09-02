@@ -8,13 +8,13 @@
  * update detection can compare configurations rather than labels.
  */
 
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType } from '@shared/entity-types'
 import type { ContentLocale } from '@shared/i18n'
 import type { ScraperSlotConfigs, SlotConfig } from '@shared/db'
 import {
   createEmptySlotConfig,
   createSlotConfig,
-  getScraperSlotsForMediaType,
+  getScraperSlotsForEntityType,
   type ScraperCapability
 } from '@shared/scraper'
 import type { ScraperProviderInfo } from '../provider-display'
@@ -27,7 +27,7 @@ import {
 
 export interface MaterializedRecipe {
   recipeId: string
-  mediaType: ContentEntityType
+  entityType: ContentEntityType
   searchProviderId: string
   defaultLocale: ContentLocale
   slotConfigs: ScraperSlotConfigs
@@ -101,7 +101,7 @@ export function materializeRecipe(
   }
 
   const slotConfigs = {} as Record<string, SlotConfig>
-  for (const slot of getScraperSlotsForMediaType(recipe.mediaType)) {
+  for (const slot of getScraperSlotsForEntityType(recipe.entityType)) {
     const plan = variant.slots[slot]
     const availableProviderIds = (plan?.providerIds ?? []).filter((providerId) =>
       providerSupports(providers, providerId, slot)
@@ -115,7 +115,7 @@ export function materializeRecipe(
 
   const materialized: Omit<MaterializedRecipe, 'fingerprint'> = {
     recipeId: recipe.id,
-    mediaType: recipe.mediaType,
+    entityType: recipe.entityType,
     searchProviderId,
     defaultLocale: variant.defaultLocale,
     slotConfigs: slotConfigs as ScraperSlotConfigs
