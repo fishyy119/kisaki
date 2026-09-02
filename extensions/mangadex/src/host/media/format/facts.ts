@@ -113,26 +113,52 @@ export function buildComicFormat(
   }
 }
 
-/** MangaDex related values map onto the library relation vocabulary. */
-export function mapRelationType(value: string | null | undefined): LibraryMediaRelationType {
+export interface MangadexRelationMapping {
+  type: LibraryMediaRelationType
+  /** Stable machine-readable qualifier carrying the publication form the kind folds. */
+  note?: string
+}
+
+/**
+ * MangaDex `related` values read from the scraped title towards the related
+ * one. Publication forms of one work (coloured and monochrome editions, the
+ * pre-serialization web run and its serialization) fold onto
+ * `alternativeVersion`; a doujinshi is an unofficial spin-off. `same_franchise`
+ * and `shared_universe` are n-ary group facts, so they map to nothing rather
+ * than to `other`.
+ */
+export function mapRelationType(
+  value: string | null | undefined
+): MangadexRelationMapping | undefined {
   switch (value) {
     case 'sequel':
-      return 'sequel'
+      return { type: 'sequel' }
     case 'prequel':
-      return 'prequel'
+      return { type: 'prequel' }
     case 'side_story':
-    case 'spin_off':
-      return 'sideStory'
+      return { type: 'sideStory' }
     case 'main_story':
-      return 'parentStory'
+      return { type: 'mainStory' }
+    case 'spin_off':
+      return { type: 'spinOff' }
+    case 'doujinshi':
+      return { type: 'spinOff', note: 'Doujinshi' }
     case 'based_on':
     case 'adapted_from':
-      return 'sourceMaterial'
+      return { type: 'sourceMaterial' }
     case 'alternate_story':
     case 'alternate_version':
-      return 'alternative'
+      return { type: 'alternativeVersion' }
+    case 'colored':
+      return { type: 'alternativeVersion', note: 'Colored' }
+    case 'monochrome':
+      return { type: 'alternativeVersion', note: 'Monochrome' }
+    case 'preserialization':
+      return { type: 'alternativeVersion', note: 'Pre-serialization' }
+    case 'serialization':
+      return { type: 'alternativeVersion', note: 'Serialization' }
     default:
-      return 'other'
+      return undefined
   }
 }
 

@@ -7,7 +7,7 @@ import type {
 import {
   characterPersonLinks,
   companyRelations,
-  getMediaRelationTypeRules,
+  isMediaRelationTypeAllowed,
   mediaRelations
 } from '@shared/db'
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
@@ -565,8 +565,8 @@ interface MediaRelationEndpoints {
 
 /**
  * Resolves both endpoint media types and re-checks the relation type against
- * the per-pair vocabulary as a safety net behind input validation. Returns
- * null when the edge cannot be written.
+ * the endpoint rule as a safety net behind input validation. Returns null when
+ * the edge cannot be written.
  */
 function resolveMediaRelationEndpoints(
   edge: MediaMediaEdge,
@@ -578,9 +578,7 @@ function resolveMediaRelationEndpoints(
     return null
   }
 
-  return getMediaRelationTypeRules(fromType, toType).includes(edge.type)
-    ? { fromType, toType }
-    : null
+  return isMediaRelationTypeAllowed(edge.type, fromType, toType) ? { fromType, toType } : null
 }
 
 function mediaRelationCondition(

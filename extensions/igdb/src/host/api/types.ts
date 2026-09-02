@@ -58,6 +58,7 @@ export interface IgdbGame {
   remasters?: number[] | null
   ports?: number[] | null
   forks?: number[] | null
+  bundles?: number[] | null
 }
 
 export interface IgdbGameSearchItem {

@@ -321,9 +321,13 @@ function mapCompanyRelations(entry: {
 }
 
 /**
- * Direct pairwise relations only. `similar_games` is an algorithmic
- * recommendation and franchise/collection membership is a grouping, not a
- * relation fact between two entries, so neither is contributed.
+ * Direct pairwise relations only, read from this game towards the related
+ * one. Add-on content is a side story of its base game in release form, and
+ * IGDB's directed version words (remake, remaster, port, fork, edition) fold
+ * onto the symmetric `alternativeVersion` with the word kept as the note.
+ * `similar_games` is an algorithmic recommendation and franchise/collection
+ * membership is a grouping, not a relation fact between two entries, so
+ * neither is contributed.
  */
 async function buildRelatedEntries(loaders: IgdbGameLoaders): Promise<ScrapedRelatedEntryFact[]> {
   const game = await loaders.getGame()
@@ -348,16 +352,17 @@ async function buildRelatedEntries(loaders: IgdbGameLoaders): Promise<ScrapedRel
     }
   }
 
-  push(game.parent_game, 'parentStory')
-  push(game.expanded_games, 'parentStory', 'Expands')
-  push(game.version_parent, 'alternative', 'Edition of')
+  push(game.parent_game, 'mainStory')
+  push(game.expanded_games, 'mainStory', 'Expands')
+  push(game.version_parent, 'alternativeVersion', 'Edition of')
   push(game.dlcs, 'sideStory', 'DLC')
   push(game.expansions, 'sideStory', 'Expansion')
   push(game.standalone_expansions, 'sideStory', 'Standalone expansion')
-  push(game.remakes, 'alternative', 'Remake')
-  push(game.remasters, 'alternative', 'Remaster')
-  push(game.ports, 'alternative', 'Port')
-  push(game.forks, 'alternative', 'Fork')
+  push(game.remakes, 'alternativeVersion', 'Remake')
+  push(game.remasters, 'alternativeVersion', 'Remaster')
+  push(game.ports, 'alternativeVersion', 'Port')
+  push(game.forks, 'alternativeVersion', 'Fork')
+  push(game.bundles, 'compilation', 'Bundle')
 
   return facts
 }

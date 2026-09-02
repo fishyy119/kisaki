@@ -163,7 +163,7 @@ function buildRelatedEntries(details: SteamAppDetails): ScrapedRelatedEntryFact[
       mediaType: 'game',
       source: STEAM_SOURCE_ID,
       externalId: String(fullGameId),
-      type: 'parentStory',
+      type: 'mainStory',
       note: 'Full game'
     })
   }

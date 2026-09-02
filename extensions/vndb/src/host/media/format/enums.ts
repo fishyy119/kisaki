@@ -119,22 +119,56 @@ export function mapProducerRole(
   return roles.length > 0 ? roles : ['other']
 }
 
-/** VN-to-VN relation vocabulary; unmapped values fall back to `other`. */
-export function mapVnRelation(relation: string | null | undefined): LibraryMediaRelationType {
-  switch (trimToUndefined(relation)?.toLowerCase()) {
+export interface VnRelationMapping {
+  type: LibraryMediaRelationType
+  /** Stable machine-readable qualifier carrying the VN-specific form the kind folds. */
+  note?: string
+}
+
+/**
+ * VN-to-VN relation vocabulary, read from the scraped VN towards the related
+ * one. A fandisc is a side story in release form, so `fan` and its inverse
+ * `orig` fold onto the side-story pair and keep the VNDB word as the note.
+ * `set` (same setting) and `ser` (same series) are n-ary group facts and
+ * `char` (shares characters) is already encoded by shared character links, so
+ * they map to nothing rather than to `other`.
+ */
+export function mapVnRelation(
+  relation: string | null | undefined,
+  official: boolean | null | undefined
+): VnRelationMapping | undefined {
+  const mapping = mapVnRelationKind(trimToUndefined(relation)?.toLowerCase())
+  if (!mapping) {
+    return undefined
+  }
+
+  // VNDB flags fan-made relations explicitly; officiality is orthogonal to the
+  // kind, so it travels as a qualifier rather than as a kind of its own.
+  if (official === false) {
+    return { ...mapping, note: [mapping.note, 'Unofficial'].filter(Boolean).join(', ') }
+  }
+
+  return mapping
+}
+
+function mapVnRelationKind(relation: string | undefined): VnRelationMapping | undefined {
+  switch (relation) {
     case 'seq':
-      return 'sequel'
+      return { type: 'sequel' }
     case 'preq':
-      return 'prequel'
+      return { type: 'prequel' }
     case 'side':
-    case 'fan':
-      return 'sideStory'
+      return { type: 'sideStory' }
     case 'par':
-      return 'parentStory'
+      return { type: 'mainStory' }
+    case 'fan':
+      return { type: 'sideStory', note: 'Fandisc' }
+    case 'orig':
+      return { type: 'mainStory', note: 'Original game' }
     case 'alt':
-      return 'alternative'
+      return { type: 'alternativeVersion' }
     default:
-      return 'other'
+      return undefined
   }
 }
 

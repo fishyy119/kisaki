@@ -15,7 +15,6 @@ import {
   LIBRARY_GAME_COMPANY_ROLES,
   LIBRARY_GAME_PERSON_ROLES,
   LIBRARY_COMPANY_RELATION_TYPES,
-  LIBRARY_MEDIA_RELATION_TYPE_RULES,
   LIBRARY_MEDIA_TYPES,
   LIBRARY_NOVEL_CHARACTER_ROLES,
   LIBRARY_NOVEL_COMPANY_ROLES,
@@ -33,6 +32,7 @@ import {
   assertValidLibraryPersonCreateInput,
   assertValidLibraryTagCreateInput,
   createValidationError,
+  listLibraryMediaRelationTypes,
   type LibraryGraphEdge,
   type LibraryGraphInput,
   type LibraryGraphNodeKind,
@@ -395,11 +395,7 @@ function validateEdge(
       validateEndpointKinds(edge, label, 'media', 'media')
       const fromType = mediaTypes.get(edge.from.key) ?? 'game'
       const toType = mediaTypes.get(edge.to.key) ?? 'game'
-      validateRole(
-        edge.type,
-        LIBRARY_MEDIA_RELATION_TYPE_RULES[`${fromType}-${toType}`],
-        `${label}.type`
-      )
+      validateRole(edge.type, listLibraryMediaRelationTypes(fromType, toType), `${label}.type`)
       validateOptionalString(edge.note, `${label}.note`)
       validateOptionalFiniteNumber(edge.order, `${label}.order`)
       return

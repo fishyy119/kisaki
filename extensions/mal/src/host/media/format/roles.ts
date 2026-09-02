@@ -6,29 +6,43 @@ import type {
   LibraryNovelPersonRole
 } from '@kisaki3/extension-sdk'
 
-/** MAL relation types are stable snake_case identifiers. */
-export function mapRelationType(value: string | null | undefined): LibraryMediaRelationType {
+/**
+ * MAL relation types are stable snake_case identifiers, read from the scraped
+ * entry towards the related one.
+ *
+ * MAL's `adaptation` is the same word on both sides of an anime/manga pair, so
+ * it states only that the two are one work in two media; `crossMedia` says
+ * exactly that, and a source that does state the direction refines it.
+ * `alternative_setting` is an n-ary setting fact (a collection's job) and
+ * `character` is already encoded by shared character links, so both map to
+ * nothing rather than to `other`.
+ */
+export function mapRelationType(
+  value: string | null | undefined
+): LibraryMediaRelationType | undefined {
   switch (value) {
     case 'sequel':
       return 'sequel'
     case 'prequel':
       return 'prequel'
     case 'side_story':
-    case 'spin_off':
       return 'sideStory'
     case 'parent_story':
-      return 'parentStory'
+      return 'mainStory'
+    case 'spin_off':
+      return 'spinOff'
     case 'summary':
       return 'summary'
     case 'full_story':
       return 'fullStory'
     case 'adaptation':
-      return 'adaptation'
+      return 'crossMedia'
     case 'alternative_version':
-    case 'alternative_setting':
-      return 'alternative'
-    default:
+      return 'alternativeVersion'
+    case 'other':
       return 'other'
+    default:
+      return undefined
   }
 }
 

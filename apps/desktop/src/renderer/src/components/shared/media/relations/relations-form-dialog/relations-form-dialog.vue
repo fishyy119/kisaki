@@ -4,8 +4,9 @@
   perspective, grouped by relation type. Out-edges are owned here and are
   rewritten on save; in-edges (stored on the other endpoint) appear with the
   inverse vocabulary and save back onto their stored row, so a relation stays
-  editable from both sides. Only out-edges are orderable: the stored order
-  belongs to the from side.
+  editable from both sides. Edges the display reader hides as subsumed are
+  hidden here too, so a subsumed out-edge is dropped by the next save.
+  Only out-edges are orderable: the stored order belongs to the from side.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
@@ -16,6 +17,7 @@ import { MEDIA_TYPES, type MediaType } from '@shared/entity-types'
 import {
   MEDIA_RELATION_TYPES,
   MEDIA_RELATION_TYPE_INVERSE,
+  collapseSubsumedMediaRelations,
   mediaRelations,
   type MediaRelationType,
   type NewMediaRelation
@@ -124,26 +126,29 @@ const {
       ).flat()
     )
 
-    const loadedItems: RelationItem[] = [
-      ...outRows.map((row): RelationItem => ({
-        id: row.id,
-        direction: 'out',
-        targetType: row.toType,
-        targetId: row.toId,
-        targetName: nameByKey.get(`${row.toType}:${row.toId}`) ?? '',
-        type: row.type,
-        note: row.note ?? ''
-      })),
-      ...inRows.map((row): RelationItem => ({
-        id: row.id,
-        direction: 'in',
-        targetType: row.fromType,
-        targetId: row.fromId,
-        targetName: nameByKey.get(`${row.fromType}:${row.fromId}`) ?? '',
-        type: MEDIA_RELATION_TYPE_INVERSE[row.type],
-        note: row.note ?? ''
-      }))
-    ]
+    const loadedItems = collapseSubsumedMediaRelations<RelationItem>(
+      [
+        ...outRows.map((row): RelationItem => ({
+          id: row.id,
+          direction: 'out',
+          targetType: row.toType,
+          targetId: row.toId,
+          targetName: nameByKey.get(`${row.toType}:${row.toId}`) ?? '',
+          type: row.type,
+          note: row.note ?? ''
+        })),
+        ...inRows.map((row): RelationItem => ({
+          id: row.id,
+          direction: 'in',
+          targetType: row.fromType,
+          targetId: row.fromId,
+          targetName: nameByKey.get(`${row.fromType}:${row.fromId}`) ?? '',
+          type: MEDIA_RELATION_TYPE_INVERSE[row.type],
+          note: row.note ?? ''
+        }))
+      ],
+      (item) => ({ type: item.type, targetType: item.targetType, targetId: item.targetId })
+    )
 
     const snapshots = new Map<string, InEdgeSnapshot>(
       loadedItems

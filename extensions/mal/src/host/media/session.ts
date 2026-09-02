@@ -469,7 +469,8 @@ function buildRelatedEntries(detail: MalAnimeDetail | MalMangaDetail): ScrapedRe
 
   const push = (edge: MalRelatedEdge, mediaType: MalMediaKind): void => {
     const node = edge.node
-    if (!node) {
+    const type = mapRelationType(edge.relation_type)
+    if (!node || !type) {
       return
     }
 
@@ -477,7 +478,7 @@ function buildRelatedEntries(detail: MalAnimeDetail | MalMangaDetail): ScrapedRe
       mediaType,
       source: MAL_SOURCE_ID,
       externalId: String(node.id),
-      type: mapRelationType(edge.relation_type)
+      type
     })
   }
 

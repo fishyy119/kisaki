@@ -521,33 +521,47 @@ question the row answers, not by table name.
   `order_in_from`, unique on the five identity columns). Polymorphic ends cannot carry FKs, so
   referential integrity is owned by the application choke points: entity delete clears both ends,
   entity merge remaps them.
-- Rows are **directed** and stored exactly as written. Readers merge both directions: out-edges
-  keep their stored `type`, in-edges are labelled through the total `MEDIA_RELATION_TYPE_INVERSE`
-  map. Never write mirror rows to make a pair visible from both sides.
-- The ordered endpoint pair constrains the vocabulary (`MEDIA_RELATION_TYPE_RULES`): same-type
-  pairs carry the structural words (sequel/prequel, sideStory/parentStory, summary/fullStory,
-  alternative), cross-type pairs carry provenance plus derivation (adaptation/sourceMaterial,
-  mediaMix, sideStory/parentStory). Adding a media type forces new pair entries at compile time.
-- **A source that states no direction may not be given one.** `mediaMix` is the undirected member
-  of the provenance group, for cross-type edges that say only "the same work in another medium".
-  Bangumi is the reason it exists: it labels a cross-media edge with the target's own media type
-  (`动画`, `书籍`), so one anime's `书籍` edges point at both the novel it adapts and the art book
-  drawn from it. Mapping those onto `adaptation` would invent a direction that no later scrape
-  could tell from a real one, and mapping them onto `other` would bury the most common ACGN
-  relation in the fallback word. Sources that do state direction (AniList's `SOURCE` /
-  `ADAPTATION`) keep using `adaptation` / `sourceMaterial`; `mediaMix` is self-inverse, so it reads
-  the same from either endpoint.
-- `sideStory`/`parentStory` is a cross-type pair precisely because ACGN spin-offs cross media: a
-  fandisc of a visual novel, a spin-off comic of an anime. Restricting derivation words to same-type
-  pairs would force those edges into `other`.
-- The vocabulary states narrative derivation between two entries and nothing else. A shared setting
-  is an n-ary group fact and belongs in a collection; a shared cast is already encoded by two entries
-  linking the same character. Neither becomes an edge type.
+- Rows are **directed** and read as "`to` is the `type` of `from`": `(A → B, sequel)` states that B
+  is A's sequel. Each row is the `from` entry's own assertion — a scrape writes an entry's out-edges,
+  the editor rewrites them — so both endpoints may assert one fact and the unique key identifies an
+  assertion, not a fact. Readers merge both directions: out-edges keep their stored `type`, in-edges
+  are labelled through `MEDIA_RELATION_TYPE_INVERSE`. Never write mirror rows to make a pair visible
+  from both sides.
+- The vocabulary is declared once as directed `[type, inverse]` pairs plus symmetric kinds
+  (`MEDIA_RELATION_DIRECTED_PAIRS`, `MEDIA_RELATION_SYMMETRIC_TYPES`); the type list and the
+  inverse map are derived from it, so the inverse is total and an involution by construction. The
+  pairs are the axes of derivation between two works: `sequel`/`prequel` (continuation),
+  `sideStory`/`mainStory` (a supplementary story inside one continuity), `spinOff`/`spinOffOrigin`
+  (a derivative work whose subject shifts), `summary`/`fullStory` (condensation),
+  `adaptation`/`sourceMaterial` (transposition into another medium or format, including a web
+  novel's light novel), `compilation`/`includedWork` (aggregation at entry grain). The symmetric
+  kinds are `alternativeVersion` (the same story told or produced again), `crossMedia` (the
+  transposition axis with the direction unstated), and `other`.
+- A concept becomes a kind only when all four hold: it is **pairwise** (a shared setting, a shared
+  franchise, and a crossover are n-ary and belong in a collection), **not derivable** (a shared cast
+  is already encoded by two entries linking the same character), **closed and involutive** (the UI
+  can label it from either endpoint), and **published structurally** by at least one source. Kinds
+  are medium-neutral; medium-specific forms (fandisc, DLC, remaster, coloured edition, doujinshi)
+  fold into a kind and keep the source's word in `note`.
+- Endpoint constraints hang on the **kind**, not on the endpoint pair: `isMediaRelationTypeAllowed`
+  rejects only a kind that states a change of medium between two entries of one media type
+  (`crossMedia`). Everything else is legal on every pair — a novel is the prequel of a game, a web
+  novel is the source material of its light novel — so adding a media type adds no relation rules.
+- **A source that states no direction may not be given one.** `crossMedia` exists because Bangumi
+  labels a cross-media edge with the target's own media type (`动画`, `书籍`) and MAL uses one word
+  (`adaptation`) on both sides of an anime/manga pair; inferring the direction from release dates
+  would misfile the promotional comics that open alongside an original anime. `crossMedia` is
+  subsumed by a directed `adaptation`/`sourceMaterial` edge on the same pair
+  (`MEDIA_RELATION_TYPE_SUBSUMED_BY`): readers drop it after inverse labelling, ingest drops it
+  inside the out-edge set it writes, so a source that states the direction refines the record.
+- **Unmapped is dropped, never folded into `other`.** A provider's relation mapping returns the kind
+  or nothing; only the source's own "other" word maps to `other`. A scrape that emitted `other` for
+  a shared-character or same-setting label would assert a derivation the source never stated.
 - **`company_relations`** is the same-class graph for companies (parent/subsidiary, brand/owner,
   renames, spin-offs). Both ends are companies, so unlike `media_relations` it carries real FKs and
-  needs no pair-dependent vocabulary; it is otherwise the same directed shape with a total inverse
-  map. It exists because a brand and its parent are different companies that credit different works,
-  and collapsing them loses credits while leaving them unlinked loses the succession.
+  needs no endpoint rule; it is otherwise the same directed shape with a total inverse map. It
+  exists because a brand and its parent are different companies that credit different works, and
+  collapsing them loses credits while leaving them unlinked loses the succession.
 - Merging two entities of the class **remaps both ends of its relations in one pass**
   (`SAME_CLASS_RELATION_MERGES`), never through the cross-class link machinery. An edge between the
   two merged entities collapses onto itself and must vanish, which is only visible while both ends

@@ -68,7 +68,7 @@ export async function buildSeasonRelated(
     // The specials season belongs to the show, not to a run of its own.
     const first = broadcast[0]
     if (first !== undefined) {
-      toSeason(first, 'parentStory')
+      toSeason(first, 'mainStory')
     }
 
     return facts

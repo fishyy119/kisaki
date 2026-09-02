@@ -2,12 +2,13 @@
   MediaRelationItemFormDialog
   Dialog for adding/editing a single media relation as seen from the owning
   entry: target media type, target entry, relation type constrained by the
-  endpoint pair, and an optional note.
+  endpoint rule, and an optional note. The target picker resolves through the
+  entity select registry, so every media type gets its own select.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { MediaType } from '@shared/entity-types'
-import { getMediaRelationTypeRules, type MediaRelationType } from '@shared/db'
+import { listMediaRelationTypes, type MediaRelationType } from '@shared/db'
 import { MEDIA_TYPES } from '@shared/entity-types'
 import {
   Dialog,
@@ -28,8 +29,7 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
-import { AnimeSelect } from '@renderer/components/shared/anime'
-import { GameSelect } from '@renderer/components/shared/game'
+import { ENTITY_SELECT_SPECS } from '@renderer/components/shared/entity'
 import { queryEntityNames } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -80,8 +80,10 @@ const selectExcludeIds = computed(() => {
   return isAddMode.value ? excludeIds : excludeIds.filter((id) => id !== formData.value.targetId)
 })
 
+const targetSelect = computed(() => ENTITY_SELECT_SPECS[formData.value.targetType])
+
 const allowedTypes = computed(() =>
-  getMediaRelationTypeRules(props.mediaType, formData.value.targetType)
+  listMediaRelationTypes(props.mediaType, formData.value.targetType)
 )
 
 const RELATION_TYPE_OPTIONS = computed(() =>
@@ -93,7 +95,7 @@ function createEmptyDraft(mediaType: MediaType): MediaRelationDraft {
     targetType: mediaType,
     targetId: '',
     targetName: '',
-    type: getMediaRelationTypeRules(mediaType, mediaType)[0]!,
+    type: listMediaRelationTypes(mediaType, mediaType)[0]!,
     note: ''
   }
 }
@@ -189,20 +191,14 @@ function handleCancel() {
             <Field>
               <FieldLabel>{{ m.library.entities[formData.targetType] }}</FieldLabel>
               <FieldContent>
-                <GameSelect
-                  v-if="formData.targetType === 'game'"
+                <component
+                  :is="targetSelect.component()"
                   v-model="formData.targetId"
                   :exclude-ids="selectExcludeIds"
                   :placeholder="
-                    m.library.select.selectPlaceholder({ label: m.library.entities.game })
-                  "
-                />
-                <AnimeSelect
-                  v-else
-                  v-model="formData.targetId"
-                  :exclude-ids="selectExcludeIds"
-                  :placeholder="
-                    m.library.select.selectPlaceholder({ label: m.library.entities.anime })
+                    m.library.select.selectPlaceholder({
+                      label: m.library.entities[formData.targetType]
+                    })
                   "
                 />
               </FieldContent>

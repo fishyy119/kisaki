@@ -267,6 +267,13 @@
       "when": 1788327726484,
       "tag": "0037_game_status_default",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1788334895664,
+      "tag": "0038_media_relation_vocabulary",
+      "breakpoints": true
     }
   ]
 }

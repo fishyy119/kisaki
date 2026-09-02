@@ -118,28 +118,42 @@ export function mapGender(value: string | null | undefined): LibraryGender | und
   }
 }
 
-export function mapRelationType(value: string | null | undefined): LibraryMediaRelationType {
+/**
+ * AniList relation types read from the scraped media towards the related one,
+ * matching the library's "to is the type of from" convention. `CHARACTER`
+ * (shares a character) is already encoded by two entries linking the same
+ * character, so it and any unknown value map to nothing rather than to
+ * `other`, which would assert a derivation the source never stated.
+ */
+export function mapRelationType(
+  value: string | null | undefined
+): LibraryMediaRelationType | undefined {
   switch (value) {
     case 'SEQUEL':
       return 'sequel'
     case 'PREQUEL':
       return 'prequel'
     case 'SIDE_STORY':
-    case 'SPIN_OFF':
       return 'sideStory'
     case 'PARENT':
-      return 'parentStory'
+      return 'mainStory'
+    case 'SPIN_OFF':
+      return 'spinOff'
     case 'SUMMARY':
       return 'summary'
-    case 'COMPILATION':
-      return 'fullStory'
     case 'ADAPTATION':
       return 'adaptation'
     case 'SOURCE':
       return 'sourceMaterial'
+    case 'COMPILATION':
+      return 'compilation'
+    case 'CONTAINS':
+      return 'includedWork'
     case 'ALTERNATIVE':
-      return 'alternative'
-    default:
+      return 'alternativeVersion'
+    case 'OTHER':
       return 'other'
+    default:
+      return undefined
   }
 }

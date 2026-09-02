@@ -446,7 +446,8 @@ function buildRelatedEntries(media: AnilistMedia): ScrapedRelatedEntryFact[] {
     }
 
     const kind = resolveMediaKind(node.type, node.format)
-    if (!kind) {
+    const type = mapRelationType(edge.relationType)
+    if (!kind || !type) {
       continue
     }
 
@@ -454,7 +455,7 @@ function buildRelatedEntries(media: AnilistMedia): ScrapedRelatedEntryFact[] {
       mediaType: kind,
       source: ANILIST_SOURCE_ID,
       externalId: String(node.id),
-      type: mapRelationType(edge.relationType)
+      type
     })
   }
 

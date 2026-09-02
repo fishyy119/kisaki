@@ -20,12 +20,12 @@ export interface ExtensionLibraryMediaRelationStoreOptions {
 /**
  * Extension-facing CRUD over `media_relations`.
  *
- * Rows are directed edges; an extension manages the edges it writes, and
- * readers merge both directions through the inverse vocabulary. Endpoint pair
- * and vocabulary validity are enforced by the shared validators at the RPC
- * boundary; endpoint existence is verified here on create, because the table
- * carries no foreign keys and this is the only write path whose targets are
- * not already resolved from the library.
+ * Rows are directed edges read as "`to` is the `type` of `from`"; an extension
+ * manages the edges it writes, and readers merge both directions through the
+ * inverse vocabulary. Vocabulary membership and the endpoint rule are enforced
+ * by the shared validators at the RPC boundary; endpoint existence is verified
+ * here on create, because the table carries no foreign keys and this is the
+ * only write path whose targets are not already resolved from the library.
  */
 export class ExtensionLibraryMediaRelationStore {
   constructor(private readonly options: ExtensionLibraryMediaRelationStoreOptions) {}

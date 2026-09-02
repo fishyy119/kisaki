@@ -9,8 +9,11 @@ import { companies } from './content'
  *
  * Polymorphic endpoints cannot carry SQLite foreign keys, so referential
  * integrity is owned by the application choke points: entity delete clears
- * both ends and entity merge remaps them. Rows are written as scraped or
- * edited; readers merge both directions via the inverse vocabulary.
+ * both ends and entity merge remaps them. A row is the `from` entry's own
+ * assertion, written as scraped or edited; readers merge both directions
+ * through the inverse vocabulary and collapse kinds a more specific edge on
+ * the same pair subsumes. The unique key therefore identifies an assertion,
+ * not a fact: both endpoints may assert the same relation.
  */
 export const mediaRelations = sqliteTable(
   'media_relations',

@@ -164,7 +164,12 @@ function buildRelatedEntries(manga: MdManga): ScrapedRelatedEntryFact[] {
   const facts: ScrapedRelatedEntryFact[] = []
 
   for (const relationship of manga.relationships ?? []) {
-    if (relationship.type !== 'manga' || !relationship.related) {
+    if (relationship.type !== 'manga') {
+      continue
+    }
+
+    const mapping = mapRelationType(relationship.related)
+    if (!mapping) {
       continue
     }
 
@@ -172,7 +177,8 @@ function buildRelatedEntries(manga: MdManga): ScrapedRelatedEntryFact[] {
       mediaType: 'comic',
       source: MANGADEX_SOURCE_ID,
       externalId: relationship.id,
-      type: mapRelationType(relationship.related)
+      type: mapping.type,
+      note: mapping.note
     })
   }
 

@@ -288,14 +288,18 @@ export const library = {
   mediaRelation: {
     sequel: '續作',
     prequel: '前作',
-    sideStory: '外傳',
-    parentStory: '本篇',
+    sideStory: '番外篇',
+    mainStory: '本篇',
+    spinOff: '衍生作品',
+    spinOffOrigin: '衍生自',
     summary: '總集篇',
     fullStory: '完整版',
     adaptation: '改編作品',
     sourceMaterial: '原作',
-    mediaMix: '跨媒體作品',
-    alternative: '不同版本',
+    compilation: '合集',
+    includedWork: '收錄作品',
+    alternativeVersion: '不同版本',
+    crossMedia: '跨媒體作品',
     other: '其他'
   },
 

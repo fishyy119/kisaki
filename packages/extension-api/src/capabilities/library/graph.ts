@@ -342,11 +342,12 @@ export interface LibraryGraphCharacterPersonEdge {
 }
 
 /**
- * Directed entry-to-entry relation between two media nodes. The endpoint pair
- * constrains the vocabulary; the host validates it against the resolved media
- * types. Both endpoints must be graph media nodes — matching an existing
- * library entry through its node identity is how existing entries join edges,
- * so the graph never fabricates a media entry just to relate to it.
+ * Directed entry-to-entry relation between two media nodes, read as "`to` is
+ * the `type` of `from`". The host validates the kind against the resolved
+ * endpoint media types (`crossMedia` needs two different media types). Both
+ * endpoints must be graph media nodes — matching an existing library entry
+ * through its node identity is how existing entries join edges, so the graph
+ * never fabricates a media entry just to relate to it.
  */
 export interface LibraryGraphMediaMediaEdge {
   kind: 'media-media'
@@ -361,7 +362,7 @@ export interface LibraryGraphMediaMediaEdge {
  * Directed relation between two companies: houses, labels, renames, spin-offs.
  *
  * Unlike `media-media` both endpoints are one type, so the vocabulary needs no
- * pair-dependent validation.
+ * endpoint validation.
  */
 export interface LibraryGraphCompanyCompanyEdge {
   kind: 'company-company'

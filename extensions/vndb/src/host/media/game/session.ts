@@ -360,14 +360,22 @@ async function buildRelatedEntries(
     return undefined
   }
 
-  return (relations.relations ?? [])
-    .filter((relation) => relation.id)
-    .map((relation) => ({
-      mediaType: 'game' as const,
-      source: VNDB_SOURCE_ID,
-      externalId: relation.id,
-      type: mapVnRelation(relation.relation)
-    }))
+  return (relations.relations ?? []).flatMap((relation): ScrapedRelatedEntryFact[] => {
+    const mapping = mapVnRelation(relation.relation, relation.relation_official)
+    if (!relation.id || !mapping) {
+      return []
+    }
+
+    return [
+      {
+        mediaType: 'game',
+        source: VNDB_SOURCE_ID,
+        externalId: relation.id,
+        type: mapping.type,
+        note: mapping.note
+      }
+    ]
+  })
 }
 
 async function buildCovers(loaders: VndbGameLoaders): Promise<string[]> {

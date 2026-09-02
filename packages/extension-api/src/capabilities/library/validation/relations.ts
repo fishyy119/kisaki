@@ -1,12 +1,15 @@
 import { LIBRARY_MEDIA_TYPES, type LibraryMediaType } from '../graph'
 import {
-  LIBRARY_MEDIA_RELATION_TYPE_RULES,
+  isLibraryMediaRelationTypeAllowed,
   type LibraryMediaRelationCreateInput,
   type LibraryMediaRelationPatch,
   type LibraryMediaRelationQuery,
   type LibraryMediaRelationSelector
 } from '../relations'
-import { LIBRARY_MEDIA_RELATION_TYPES } from '../../../shared/library'
+import {
+  LIBRARY_MEDIA_RELATION_TYPES,
+  type LibraryMediaRelationType
+} from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
   validateOptionalFiniteNumber,
@@ -194,25 +197,32 @@ function validateMediaEntityReference(value: unknown, path: string): ValidationI
   return issues
 }
 
-/** The ordered endpoint pair constrains the relation vocabulary. */
+/** A kind that states a change of medium cannot join two entries of one media type. */
 function validateTypeAgainstPair(value: Record<string, unknown>): ValidationIssue[] {
   const fromType = readMediaType(value.from)
   const toType = readMediaType(value.to)
-  if (!fromType || !toType || typeof value.type !== 'string') {
+  const type = readRelationType(value.type)
+  if (!fromType || !toType || !type) {
     return []
   }
 
-  const allowed = LIBRARY_MEDIA_RELATION_TYPE_RULES[`${fromType}-${toType}`]
-  if (allowed.includes(value.type as (typeof allowed)[number])) {
+  if (isLibraryMediaRelationTypeAllowed(type, fromType, toType)) {
     return []
   }
 
   return [
     {
       path: '$.type',
-      message: `type "${value.type}" is not allowed for the ${fromType}-${toType} endpoint pair.`
+      message: `type "${type}" is not allowed between two ${fromType} entries.`
     }
   ]
+}
+
+function readRelationType(value: unknown): LibraryMediaRelationType | undefined {
+  return typeof value === 'string' &&
+    LIBRARY_MEDIA_RELATION_TYPES.includes(value as LibraryMediaRelationType)
+    ? (value as LibraryMediaRelationType)
+    : undefined
 }
 
 function readMediaType(value: unknown): LibraryMediaType | undefined {

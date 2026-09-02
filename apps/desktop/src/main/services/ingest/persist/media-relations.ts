@@ -3,15 +3,17 @@
  *
  * Scraped related entries reference their targets by external identity only.
  * This applier resolves them against library entries — scraping never creates
- * media entries — and writes the entity's outgoing edges. Unresolved or
- * pair-invalid facts are dropped and counted so callers can surface a warning.
+ * media entries — and writes the entity's outgoing edges. Unresolved facts are
+ * dropped and counted so callers can surface a warning; endpoint-invalid facts
+ * are dropped silently because they mean a provider mapping bug.
  */
 
 import { and, asc, eq } from 'drizzle-orm'
 import { newId } from '@shared/id'
 import type { MediaType } from '@shared/entity-types'
 import {
-  getMediaRelationTypeRules,
+  collapseSubsumedMediaRelations,
+  isMediaRelationTypeAllowed,
   mediaRelations,
   type MediaRelationType,
   type NewMediaRelation
@@ -114,8 +116,8 @@ function resolveRelationRows(
   let unresolvedCount = 0
 
   for (const fact of facts) {
-    // Pair-invalid vocabulary means a provider mapping bug, not missing data.
-    if (!getMediaRelationTypeRules(mediaType, fact.mediaType).includes(fact.type)) continue
+    // Endpoint-invalid vocabulary means a provider mapping bug, not missing data.
+    if (!isMediaRelationTypeAllowed(fact.type, mediaType, fact.mediaType)) continue
 
     const externalId = normalizeExternalId({ source: fact.source, id: fact.externalId })
     if (!externalId.source || !externalId.id) continue
@@ -143,7 +145,17 @@ function resolveRelationRows(
     })
   }
 
-  return { rows, unresolvedCount }
+  // Providers merged for one entry may state the same pair at two levels of
+  // specificity (one names the direction, one does not); only the specific
+  // edge is worth storing.
+  return {
+    rows: collapseSubsumedMediaRelations(rows, (row) => ({
+      type: row.type,
+      targetType: row.toType,
+      targetId: row.toId
+    })),
+    unresolvedCount
+  }
 }
 
 function relationRowKey(row: ResolvedRelationRow): string {

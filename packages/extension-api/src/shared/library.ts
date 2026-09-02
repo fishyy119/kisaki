@@ -138,21 +138,54 @@ export const LIBRARY_CHARACTER_PERSON_ROLES = [
 
 export type LibraryCharacterPersonRole = (typeof LIBRARY_CHARACTER_PERSON_ROLES)[number]
 
-export const LIBRARY_MEDIA_RELATION_TYPES = [
-  'sequel',
-  'prequel',
-  'sideStory',
-  'parentStory',
-  'summary',
-  'fullStory',
-  'adaptation',
-  'sourceMaterial',
-  'mediaMix',
-  'alternative',
+/**
+ * Directed media relation kinds as `[type, inverse]` pairs. An edge
+ * `(from -> to, type)` reads as "`to` is the `type` of `from`"; the host
+ * labels the edge with the inverse when it is read from `to`.
+ */
+export const LIBRARY_MEDIA_RELATION_DIRECTED_PAIRS = [
+  ['sequel', 'prequel'],
+  ['sideStory', 'mainStory'],
+  ['spinOff', 'spinOffOrigin'],
+  ['summary', 'fullStory'],
+  ['adaptation', 'sourceMaterial'],
+  ['compilation', 'includedWork']
+] as const
+
+/**
+ * Media relation kinds that read the same from either endpoint. `crossMedia`
+ * is for sources that name the same work in another medium without stating
+ * which one derives from the other; a directed `adaptation` / `sourceMaterial`
+ * edge on the same pair supersedes it.
+ */
+export const LIBRARY_MEDIA_RELATION_SYMMETRIC_TYPES = [
+  'alternativeVersion',
+  'crossMedia',
   'other'
 ] as const
 
-export type LibraryMediaRelationType = (typeof LIBRARY_MEDIA_RELATION_TYPES)[number]
+export type LibraryMediaRelationType =
+  | (typeof LIBRARY_MEDIA_RELATION_DIRECTED_PAIRS)[number][number]
+  | (typeof LIBRARY_MEDIA_RELATION_SYMMETRIC_TYPES)[number]
+
+export const LIBRARY_MEDIA_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
+  ...LIBRARY_MEDIA_RELATION_DIRECTED_PAIRS.flat(),
+  ...LIBRARY_MEDIA_RELATION_SYMMETRIC_TYPES
+]
+
+/** Label of a media relation read from its target side; total and involutive by construction. */
+export const LIBRARY_MEDIA_RELATION_TYPE_INVERSE: Readonly<
+  Record<LibraryMediaRelationType, LibraryMediaRelationType>
+> =
+  // The cast is the single point where the pair list becomes a keyed record;
+  // every key is written exactly once by the two loops below.
+  Object.fromEntries([
+    ...LIBRARY_MEDIA_RELATION_DIRECTED_PAIRS.flatMap(([type, inverse]) => [
+      [type, inverse],
+      [inverse, type]
+    ]),
+    ...LIBRARY_MEDIA_RELATION_SYMMETRIC_TYPES.map((type) => [type, type])
+  ]) as Record<LibraryMediaRelationType, LibraryMediaRelationType>
 
 export const LIBRARY_COMPANY_RELATION_TYPES = [
   'parent',

@@ -288,14 +288,18 @@ export const library = {
   mediaRelation: {
     sequel: '続編',
     prequel: '前作',
-    sideStory: '外伝',
-    parentStory: '本編',
+    sideStory: '番外編',
+    mainStory: '本編',
+    spinOff: 'スピンオフ',
+    spinOffOrigin: 'スピンオフ元',
     summary: '総集編',
     fullStory: '完全版',
     adaptation: 'メディア化作品',
     sourceMaterial: '原作',
-    mediaMix: 'メディアミックス',
-    alternative: '別バージョン',
+    compilation: '収録先',
+    includedWork: '収録作品',
+    alternativeVersion: '別バージョン',
+    crossMedia: 'メディアミックス',
     other: 'その他'
   },
 

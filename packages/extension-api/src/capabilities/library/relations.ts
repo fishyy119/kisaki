@@ -1,64 +1,40 @@
 import type { LibraryEntityReference } from './entities'
 import type { LibraryMediaType } from './graph'
-import type { LibraryMediaRelationType } from '../../shared/library'
-
-export type LibraryMediaTypePair = `${LibraryMediaType}-${LibraryMediaType}`
-
-const SAME_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
-  'sequel',
-  'prequel',
-  'sideStory',
-  'parentStory',
-  'summary',
-  'fullStory',
-  'alternative',
-  'other'
-]
+import { LIBRARY_MEDIA_RELATION_TYPES, type LibraryMediaRelationType } from '../../shared/library'
 
 /**
- * Cross-type pairs carry provenance plus the side-story pair: an anime's
- * spin-off game and a visual novel's fandisc adaptation are told across media.
- *
- * `mediaMix` is the undirected member of that group, for sources that name the
- * same work in another medium without stating which one derives from the other.
+ * Kinds that state a change of medium and therefore cannot join two entries
+ * of one media type. Every other kind is medium-neutral, so this is the only
+ * endpoint constraint the vocabulary carries.
  */
-const CROSS_TYPE_RELATION_TYPES: readonly LibraryMediaRelationType[] = [
-  'adaptation',
-  'sourceMaterial',
-  'mediaMix',
-  'sideStory',
-  'parentStory',
-  'other'
-]
+const CROSS_MEDIA_ONLY_TYPES: ReadonlySet<LibraryMediaRelationType> =
+  new Set<LibraryMediaRelationType>(['crossMedia'])
 
-/** Allowed relation types per ordered endpoint pair. */
-export const LIBRARY_MEDIA_RELATION_TYPE_RULES: Record<
-  LibraryMediaTypePair,
-  readonly LibraryMediaRelationType[]
-> = {
-  'game-game': SAME_TYPE_RELATION_TYPES,
-  'anime-anime': SAME_TYPE_RELATION_TYPES,
-  'comic-comic': SAME_TYPE_RELATION_TYPES,
-  'novel-novel': SAME_TYPE_RELATION_TYPES,
-  'game-anime': CROSS_TYPE_RELATION_TYPES,
-  'anime-game': CROSS_TYPE_RELATION_TYPES,
-  'game-comic': CROSS_TYPE_RELATION_TYPES,
-  'comic-game': CROSS_TYPE_RELATION_TYPES,
-  'game-novel': CROSS_TYPE_RELATION_TYPES,
-  'novel-game': CROSS_TYPE_RELATION_TYPES,
-  'anime-comic': CROSS_TYPE_RELATION_TYPES,
-  'comic-anime': CROSS_TYPE_RELATION_TYPES,
-  'anime-novel': CROSS_TYPE_RELATION_TYPES,
-  'novel-anime': CROSS_TYPE_RELATION_TYPES,
-  'comic-novel': CROSS_TYPE_RELATION_TYPES,
-  'novel-comic': CROSS_TYPE_RELATION_TYPES
+/** Whether `type` may label a directed edge from `fromType` to `toType`. */
+export function isLibraryMediaRelationTypeAllowed(
+  type: LibraryMediaRelationType,
+  fromType: LibraryMediaType,
+  toType: LibraryMediaType
+): boolean {
+  return fromType !== toType || !CROSS_MEDIA_ONLY_TYPES.has(type)
+}
+
+/** Kinds allowed on a directed edge from `fromType` to `toType`, in vocabulary order. */
+export function listLibraryMediaRelationTypes(
+  fromType: LibraryMediaType,
+  toType: LibraryMediaType
+): readonly LibraryMediaRelationType[] {
+  return LIBRARY_MEDIA_RELATION_TYPES.filter((type) =>
+    isLibraryMediaRelationTypeAllowed(type, fromType, toType)
+  )
 }
 
 /**
  * One directed entry-to-entry relation between media entries.
  *
- * Rows are stored exactly as written; readers merge both directions through
- * the inverse vocabulary, so an extension only manages the edges it writes.
+ * `(from -> to, type)` reads as "`to` is the `type` of `from`". Rows are stored
+ * exactly as written; readers merge both directions through the inverse
+ * vocabulary, so an extension only manages the edges it writes.
  */
 export interface LibraryMediaRelation {
   from: LibraryEntityReference<LibraryMediaType>

@@ -4,18 +4,21 @@
  * Rows are stored as directed edges; this reader merges outgoing edges (label
  * as stored) with incoming edges (label through the inverse vocabulary), so a
  * half-written pair stays visible from both endpoints. Duplicate pairs (both
- * directions stored) collapse onto the outgoing row.
+ * directions stored) collapse onto the outgoing row, and a kind subsumed by a
+ * more specific edge to the same target is dropped.
  */
 import { and, asc, eq, inArray } from 'drizzle-orm'
 
 import type { MediaType } from '@shared/entity-types'
 import {
   MEDIA_RELATION_TYPE_INVERSE,
+  collapseSubsumedMediaRelations,
   mediaRelations,
   type Anime,
   type Comic,
   type Game,
   type MediaRelation,
+  type MediaRelationEdgeView,
   type MediaRelationType,
   type Novel
 } from '@shared/db'
@@ -90,7 +93,11 @@ export async function fetchMediaRelations(
   for (const row of outRows) push(row, 'out')
   for (const row of inRows) push(row, 'in')
 
-  return attachTargets(edges, showNsfw)
+  return attachTargets(collapseSubsumedMediaRelations(edges, readEdgeView), showNsfw)
+}
+
+function readEdgeView(edge: MediaRelationEdge): MediaRelationEdgeView {
+  return { type: edge.type, targetType: edge.targetType, targetId: edge.targetId }
 }
 
 /** Endpoint rows load one query per media type, then pair back onto their edge. */
