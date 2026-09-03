@@ -3,8 +3,8 @@
   Application preferences: independent switches, each valid on its own, so
   every control applies and persists the moment it changes (no draft, no save,
   no cancel). A failed write reverts the control and reports the failure.
-  Three titled groups on one surface make this the multi-section settings
-  recipe (SettingsSection with the rows surface).
+  Three titled groups on one surface: the app's own grouping - a Section
+  heading over a plain FieldGroup of horizontal fields, bound by proximity.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
@@ -28,7 +28,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
-import { SettingsSection } from '@renderer/components/ui/settings-section'
+import { Section } from '@renderer/components/ui/section'
 import { UiLocaleSelect } from '@renderer/components/ui/locale-select'
 import { useThemeStore, type ThemeMode } from '@renderer/stores'
 import { settings, type MainWindowCloseAction } from '@shared/db'
@@ -227,10 +227,7 @@ const uiLocaleModel = computed({
         v-else
         class="space-y-5 py-4"
       >
-        <SettingsSection
-          :title="m.settings.sections.appearance"
-          surface="rows"
-        >
+        <Section :title="m.settings.sections.appearance">
           <FieldGroup>
             <Field orientation="horizontal">
               <FieldLabel>{{ m.settings.themeLabel }}</FieldLabel>
@@ -306,12 +303,9 @@ const uiLocaleModel = computed({
               </FieldContent>
             </Field>
           </FieldGroup>
-        </SettingsSection>
+        </Section>
 
-        <SettingsSection
-          :title="m.settings.sections.window"
-          surface="rows"
-        >
+        <Section :title="m.settings.sections.window">
           <FieldGroup>
             <Field orientation="horizontal">
               <FieldLabel>{{ m.settings.autoLaunchLabel }}</FieldLabel>
@@ -341,12 +335,9 @@ const uiLocaleModel = computed({
               </FieldContent>
             </Field>
           </FieldGroup>
-        </SettingsSection>
+        </Section>
 
-        <SettingsSection
-          :title="m.settings.sections.updates"
-          surface="rows"
-        >
+        <Section :title="m.settings.sections.updates">
           <FieldGroup>
             <Field orientation="horizontal">
               <FieldLabel>{{ m.settings.updaterAutoCheckLabel }}</FieldLabel>
@@ -362,7 +353,7 @@ const uiLocaleModel = computed({
               </FieldContent>
             </Field>
           </FieldGroup>
-        </SettingsSection>
+        </Section>
       </DialogBody>
     </DialogContent>
   </Dialog>

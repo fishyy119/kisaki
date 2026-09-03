@@ -13,8 +13,6 @@
 - `apps/desktop/src/renderer/src/components/ui/field/` - Field layout components; `FieldGroup`
   owns the app-wide form texture
 - `apps/desktop/src/renderer/src/components/ui/dialog/` - Dialog components
-- `apps/desktop/src/renderer/src/components/ui/settings-section/` - Multi-section settings recipe
-  (mirror of the `@kisaki3/extension-ui-vue` component); the app settings dialog is its reference
 - `apps/desktop/src/renderer/src/components/ui/table/` - Column-driven table: header, widths,
   alignment, reflow and horizontal-scroll fallbacks from one `columns` definition
 - `apps/desktop/src/renderer/src/components/ui/container/` - `ContainerStep` vocabulary shared by
@@ -86,12 +84,11 @@ Never write pixel or viewport lengths in classes (`w-[400px]`, `max-h-[60vh]`),
 arbitrary type sizes (`text-[11px]`), `text-xl` / `text-3xl`, viewport breakpoints
 (`md:`), or named containers and container queries (`@container/region`,
 `@md/region:`); the `kisaki/layout-discipline` ESLint rule rejects them in
-templates and in `cn()` / `cva()` strings. The rule lives in two places on
-purpose - `apps/desktop/eslint.config.ts` and `packages/extension-ui-vue/eslint.config.ts` -
-the kit mirrors the app rule by rule as it mirrors it component by component,
-without importing from it; change both together. Extension webviews are not
-linted by it; they inherit the discipline through the kit's components and this
-reference. Two responsive axes exist on a desktop - window size and text scale -
+templates and in `cn()` / `cva()` strings. The kit carries its own copy of the
+same rule (`packages/extension-ui-vue/eslint.config.ts`); the two configs are
+independent, and a change in one is not owed to the other. Extension webviews are
+not linted by it; they inherit the discipline through the kit's components and
+this reference. Two responsive axes exist on a desktop - window size and text scale -
 and this vocabulary covers both without viewport units.
 
 ## Modal Region and Layering
@@ -137,27 +134,36 @@ overlays; it never overlaps the titlebar), floating layers stay `z-50`.
 
 ## Surface Types
 
-Layout is unified per surface type, not per owner. The system keeps a finite
-vocabulary of surface types, each with exactly one canonical recipe; implementers
-(app pages and extension webviews alike) classify the surface they are building
-and apply that recipe. Do not design layouts per page, and do not copy the layout
-of the nearest existing screen when it is a different surface type. When a new
-surface type genuinely has no recipe, define the recipe once (document it here,
-add shared components where needed), then build the surface; whichever side meets
-the need first proposes, but the recipe belongs to the system and both sides use it.
+Layout is unified per surface type, not per page. The app keeps a finite
+vocabulary of surface types, each with exactly one canonical recipe; a page
+classifies the surface it is building and applies that recipe. Do not design
+layouts per page, and do not copy the layout of the nearest existing screen when
+it is a different surface type. When a new surface type genuinely has no recipe,
+define the recipe once (document it here, add shared components where needed),
+then build the surface.
 
-| Surface type              | Test                                                                                              | Recipe                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Form                      | One record, valid only as a whole, submitted at once                                              | Plain `FieldGroup`, no frame; Save / Cancel footer; edits are a draft         |
-| Preferences               | Independent settings, each valid on its own                                                       | Every control applies and persists on change; no Save, Cancel, or draft       |
-| Multi-section settings    | Several titled groups of preferences on one surface                                               | Preferences apply model + `SettingsSection` per group with the `rows` surface |
-| Integration control panel | Account-backed integration surface mixing status, operations, and configuration                   | Left tab rail + fixed tab vocabulary (see below)                              |
-| Data row list             | Entity rows with inline actions                                                                   | `border` + `divide-y` rows                                                    |
-| Data table                | Uniform records compared across named columns                                                     | `Table` with column definitions (see Table)                                   |
-| Section navigation        | Non-settings surfaces: up to 3 sections top horizontal `TabsList`, 5+ in a large dialog left rail | Category first; thresholds only where no category fits                        |
-| Detail page content       | Content-first sections                                                                            | `Section` with de-emphasized xs heading                                       |
-| Report surface            | Data-dense read-only bands                                                                        | Full-bleed bands + `divide-y` (see Report surfaces)                           |
-| Finder                    | Type, see hits, pick one (the library search)                                                     | `2xl` `fill` dialog: query row, scope switch, grouped fluid grid of hits      |
+The extension UI kit (`@kisaki3/extension-ui-vue`) exists so extensions can build
+webviews in the app's style; that likeness is the kit's product goal, not an
+obligation either side owes the other. The app and the kit evolve independently:
+neither mirrors the other's components, a recipe here binds app surfaces only,
+and the kit's recipes (the integration control panel, its settings sections) are
+the kit's own. Syncing a style or a technique across the boundary is allowed when
+it serves, never required. The one shared thing is a contract, not a design: the
+webview dialog size vocabulary of `@kisaki3/extension-api`, which tells the host how
+large a dialog to allocate.
+
+| Surface type              | Test                                                                                              | Recipe                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Form                      | One record, valid only as a whole, submitted at once                                              | Plain `FieldGroup`, no frame; Save / Cancel footer; edits are a draft    |
+| Preferences               | Independent settings, each valid on its own                                                       | Every control applies and persists on change; no Save, Cancel, or draft  |
+| Multi-section settings    | Several titled groups of preferences on one surface                                               | Preferences apply model; a `Section` heading over each `FieldGroup`      |
+| Integration control panel | Account-backed integration surface mixing status, operations, and configuration                   | Left tab rail + fixed tab vocabulary (see below)                         |
+| Data row list             | Entity rows with inline actions                                                                   | `border` + `divide-y` rows                                               |
+| Data table                | Uniform records compared across named columns                                                     | `Table` with column definitions (see Table)                              |
+| Section navigation        | Non-settings surfaces: up to 3 sections top horizontal `TabsList`, 5+ in a large dialog left rail | Category first; thresholds only where no category fits                   |
+| Detail page content       | Content-first sections                                                                            | `Section` with de-emphasized xs heading                                  |
+| Report surface            | Data-dense read-only bands                                                                        | Full-bleed bands + `divide-y` (see Report surfaces)                      |
+| Finder                    | Type, see hits, pick one (the library search)                                                     | `2xl` `fill` dialog: query row, scope switch, grouped fluid grid of hits |
 
 Form versus preferences is the apply model, and it is decided by the data, not by
 the owner or the surface's size. A record (a scanner, a game, a launch config) is
@@ -171,13 +177,12 @@ preferences surface has no Save. Extension settings webviews hold records
 (credentials, endpoints) and stay forms.
 
 Multi-section settings is a preferences surface with several titled groups; the app
-settings dialog (Appearance / Startup and window / Updates) is its reference. The
-line between multi-section settings and an integration control panel is the
-content mix, not the section count: pure configuration (scraper extension settings
-such as TMDB or IGDB) stays a one-page multi-section surface, while an
-account-backed integration that also runs operations (list import, full push,
-automations) is an integration control panel and uses the rail recipe regardless
-of how many tabs it currently fills.
+settings dialog (Appearance / Startup and window / Updates) is its reference. It
+uses the app's own grouping - the same `Section` heading as a detail page over a
+plain `FieldGroup` of horizontal fields - with no frame or dividers: two to four
+rows under a heading read by proximity, as every form in the app does. A settings
+surface that grows past five groups moves to a left rail, the same as any other
+5+ section navigation; top tabs stay content navigation.
 
 ## Semantic Tokens
 
@@ -895,36 +900,35 @@ every form in the app reads the same. Notes:
   its label (switches, selects); the default vertical field gives the control
   the full width, which free-text inputs need.
 
-### Multi-Section Settings (SettingsSection)
+### Multi-Section Settings
 
-For a surface carrying several titled groups of configuration - the app settings
-dialog (Appearance / Startup and window / Updates) and the scraper extension
-settings webviews (TMDB, IGDB, YMGal, SteamGridDB):
+Two recipes, one per side, because the app and the kit evolve independently.
+
+In the app, several titled groups of preferences are the app's own grouping - the
+`Section` heading a detail page uses, over a plain `FieldGroup` of horizontal
+fields, no frame and no dividers:
 
 ```vue
-<div class="space-y-5">
-  <SettingsSection :title="t" :description="d" surface="rows">
+<DialogBody class="space-y-5 py-4">
+  <Section :title="m.settings.sections.appearance">
     <FieldGroup>
       <Field orientation="horizontal">...</Field>
     </FieldGroup>
-  </SettingsSection>
-</div>
+  </Section>
+</DialogBody>
 ```
 
-- `SettingsSection` owns the heading: `text-sm font-medium` title, optional xs
-  muted description, and an `#actions` slot at the heading's right edge.
-- `surface="rows"` restyles the section's `FieldGroup` into one bordered
-  `rounded-md` column of `divide-y` rows (`px-3 py-2.5`). That frame is what
-  keeps one group distinct from the next; it is the reason the recipe exists and
-  the reason a plain form does not use it.
-- Plain sections (no `surface`) carry content that frames itself: data lists,
-  action button rows, documentation blocks.
-- The component exists twice on purpose - `components/ui/settings-section` in the
-  app and `SettingsSection` in `@kisaki3/extension-ui-vue` - and the two stay
-  identical; the recipe is one.
-- Apply model follows the data (see Surface Types): app preferences apply on
-  change with no footer; extension settings that hold credentials or endpoints are
-  records and keep Save.
+Two to four rows under a heading read by proximity, as every form in the app
+does; a frame would state a grouping the heading already states. The app settings
+dialog is the reference.
+
+In the kit, extension settings webviews (TMDB, IGDB, YMGal, SteamGridDB) use the
+kit's `SettingsSection`: a `text-sm font-medium` heading with an optional xs
+description and `#actions` slot, and `surface="rows"` restyling the group into one
+bordered `rounded-md` column of `divide-y` rows. That is the kit's recipe for its
+consumers; the app does not carry it. Apply model follows the data on both sides
+(see Surface Types): app preferences apply on change with no footer; extension
+settings that hold credentials or endpoints are records and keep Save.
 
 ### Integration Control Panel (rail shell)
 
@@ -1183,7 +1187,7 @@ Zero JS runtime, CSS mask-based.
 - Dialog geometry: `size="`, `fill`, `DialogSize`, `min(100%,48rem)`
 - Container queries: `@container`, `ContainerStep`, `collapse-below="`, `reflow-below="`,
   `:min-width="`, `data-role`, `data-label`
-- Preferences: `SettingsSection`, `applyRow`, `setInterfaceScale`
+- Preferences: `Section` + `FieldGroup`, `applyRow`, `setInterfaceScale`
 
 ## Constraints
 

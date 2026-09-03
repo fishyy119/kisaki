@@ -11,9 +11,9 @@ import prettier from 'eslint-config-prettier'
  * "Units" and "Responsive"): surfaces lay out against the container they are
  * in, on the rem scale. Each forbidden class family names its replacement.
  *
- * Mirror of the rule in `apps/desktop/eslint.config.ts`, kept as a copy on
- * purpose: the kit mirrors the app's design system component by component and
- * rule by rule, without importing from it. Change both together.
+ * The kit's own copy of the rule the app renderer runs: the two evolve
+ * independently and neither imports from the other, so this list may diverge
+ * from the app's as the kit's needs do.
  */
 const layoutClassRestrictions: Array<{ pattern: RegExp; message: string }> = [
   {

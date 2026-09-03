@@ -63,21 +63,25 @@ Textarea, Tooltip, plus the `cn` class utility.
 `Icon` mirrors the app's API — `<Icon icon="icon-[mdi--home]" class="size-4" />`
 — and works with any iconify set installed in the consuming project.
 
-`Dialog` follows the app's dialog geometry: `DialogContent` takes a `size` step
-(`sm` prompts, `md` forms - the default, `lg` list editing, `xl` detail views and
-tables, `2xl` editors) and an optional `fill` for tool dialogs that need a
-definite height; callers never pass width or height classes, and `DialogBody`
-is the only part that scrolls. The same steps name the `size` of a declared
-webview dialog contribution.
+The kit exists so extensions can build webviews in the app's style. That likeness
+is the kit's goal, not a coupling: the kit and the app evolve independently, and
+a style or technique is carried across when it serves. The one shared contract is
+the dialog size vocabulary of `@kisaki3/extension-api`, which tells the host how
+large a dialog to allocate.
 
-Layout follows the app's discipline: sizes are `rem` steps, never pixel or
-viewport lengths, and a layout that changes with width uses an unnamed
-container query against the nearest container (`@sm:grid-cols-2`,
-`@xl:grid-cols-3`), with the grid's frame declared as that container
-(`class="@container ..."`). Viewport breakpoints (`sm:`, `lg:`) measure the
-webview document's initial 16px rem and never the interface scale, and named
-containers reach past the width a block actually gets; the kit's ESLint config
-carries the same `layout-discipline` rule the app renderer runs.
+`Dialog` geometry: `DialogContent` takes a `size` step (`sm` prompts, `md` forms -
+the default, `lg` list editing, `xl` detail views and tables, `2xl` editors) and
+an optional `fill` for tool dialogs that need a definite height; callers never
+pass width or height classes, and `DialogBody` is the only part that scrolls.
+The same steps name the `size` of a declared webview dialog contribution.
+
+Layout discipline: sizes are `rem` steps, never pixel or viewport lengths, and a
+layout that changes with width uses an unnamed container query against the
+nearest container (`@sm:grid-cols-2`, `@xl:grid-cols-3`), with the grid's frame
+declared as that container (`class="@container ..."`). Viewport breakpoints
+(`sm:`, `lg:`) measure the webview document's initial 16px rem and never the
+interface scale, and named containers reach past the width a block actually
+gets; the kit's ESLint config carries a `layout-discipline` rule for both.
 
 ## Document shells
 
