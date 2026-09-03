@@ -7,11 +7,11 @@ active; the panel owns the list and its row operations.
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { extensionSignersData } from '../../composables'
+import { extensionSignersQuery } from '../../composables'
 
 const { m } = useI18n()
 
-const { reload } = extensionSignersData()
+const { reload } = extensionSignersQuery()
 </script>
 
 <template>

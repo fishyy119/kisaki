@@ -1,14 +1,14 @@
 /**
  * Composable: useAutomations
  *
- * Route data of the automation page: the automation list with running state
+ * Route query of the automation page: the automation list with running state
  * and the command catalog, kept fresh by the automation events the main
  * process pushes.
  */
 
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
-import { defineRouteData } from '@renderer/core/route-data'
+import { defineRouteQuery } from '@renderer/core/query'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
 
@@ -18,7 +18,7 @@ interface AutomationsData {
   commands: CommandListItem[]
 }
 
-export const automationsData = defineRouteData({
+export const automationsQuery = defineRouteQuery({
   name: 'automations',
   key: () => 'automations',
   fetch: async (): Promise<AutomationsData> => {
@@ -40,25 +40,14 @@ export const automationsData = defineRouteData({
 })
 
 export function useAutomations() {
-  const { data, error, isFetching, reload } = automationsData()
-
-  // Event-driven mutations between refetches keep this local Set current;
-  // each settled fetch replaces it with the authoritative snapshot.
-  const runningAutomationIds = ref(new Set<string>())
-  watch(
-    () => data.value?.runningIds,
-    (ids) => {
-      if (ids) runningAutomationIds.value = new Set(ids)
-    },
-    { immediate: true }
-  )
+  const { data, error, isFetching, reload } = automationsQuery()
 
   return {
     automations: computed(() => data.value?.automations ?? []),
     commands: computed(() => data.value?.commands ?? []),
-    runningAutomationIds,
+    runningAutomationIds: computed(() => new Set(data.value?.runningIds ?? [])),
     error,
     isFetching,
-    refetch: reload
+    reload
   }
 }

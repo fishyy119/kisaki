@@ -7,7 +7,7 @@
 import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db, ENTITY_TABLES, updateEntityRows } from '@renderer/core/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ const table = computed(() => ENTITY_TABLES[props.entityType].table)
 const score = ref('')
 const isSaving = ref(false)
 
-const { data: row, isLoading } = useAsyncData(
+const { data: row, isLoading } = useLiveQuery(
   async () => {
     const rows = await db
       .select({ score: table.value.score })

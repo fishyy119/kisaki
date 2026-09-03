@@ -109,7 +109,7 @@ const editDialogOpen = computed({
       <VirtualGrid
         :items="block.entries"
         :get-key="(entry) => entry.key"
-        scroll-parent="region"
+        scroll="region"
         class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between"
       >
         <template #item="{ item: entry }">

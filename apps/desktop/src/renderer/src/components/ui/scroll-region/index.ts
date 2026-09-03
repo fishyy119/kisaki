@@ -1,8 +1,7 @@
 export { default as ScrollRegion } from './scroll-region.vue'
 export {
-  ScrollRegionKey,
-  useOptionalScrollRegion,
   useScrollRegion,
-  type ScrollRegionHandle
+  type ScrollRegionHandle,
+  type ScrollRegionLayout
 } from './use-scroll-region'
-export { nestedScrollIdentity, readScrollMemory, writeScrollMemory } from './scroll-memory'
+export { BACK_TO_TOP_ICON, useBackToTop, type BackToTopControls } from './use-back-to-top'

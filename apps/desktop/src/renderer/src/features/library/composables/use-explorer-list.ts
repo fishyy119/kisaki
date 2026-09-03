@@ -20,12 +20,13 @@ import {
   COLLECTION_LINKS,
   type EntityRowMap
 } from '@renderer/core/db'
-import { batchTouchesAny, useAsyncData, useDbChanges } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { useLibraryExplorerStore } from '../stores'
 import { usePreferencesStore } from '@renderer/stores'
 import {
   createMembershipSort,
-  getQueryDependencyTables,
+  getAllFilterReadTables,
+  getFilterReadTables,
   isMembershipSort,
   type FilterState
 } from '@shared/filter'
@@ -63,7 +64,7 @@ export interface ExplorerListContext {
   allEntities: ComputedRef<EntityData[]>
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
-  refetch: () => Promise<void>
+  reload: () => Promise<void>
 }
 
 const ExplorerListKey: InjectionKey<ExplorerListContext> = Symbol('explorerList')
@@ -196,28 +197,28 @@ function createExplorerList(): ExplorerListContext {
     }
   }
 
-  // Fetch on mount and on any query change (the query replaces wholesale)
-  const { data, isLoading, isFetching, refetch } = useAsyncData(fetchExplorerData, {
-    watch: [query, showNsfw]
-  })
-
+  // Fetch on mount and on any query change (the query replaces wholesale).
   // What the fetch reads: the entity list under the store query, the
   // collections and the membership link table, and whatever the dynamic
-  // collections' filters reference. The read set follows the query instance
-  // and the loaded configs, not the type's whole spec.
-  const readTables = computed(() => {
-    const entityType = activeEntityType.value
-    const tables = new Set<TableName>(getQueryDependencyTables(entityType, query.value))
-    tables.add('collections')
-    tables.add(COLLECTION_LINKS[entityType].tableName)
-    for (const filter of data.value?.dynamicFilters ?? []) {
-      for (const table of getQueryDependencyTables(entityType, { filter })) tables.add(table)
+  // collections' filters reference; until the configs are known, every table
+  // a filter over the type can read.
+  const { data, isLoading, isFetching, reload } = useLiveQuery(fetchExplorerData, {
+    watch: [query, showNsfw],
+    invalidate: {
+      tables: ({ data: loaded }) => {
+        const entityType = activeEntityType.value
+        const tables = new Set<TableName>(getFilterReadTables(entityType, query.value.filter))
+        tables.add('collections')
+        tables.add(COLLECTION_LINKS[entityType].tableName)
+        if (!loaded) {
+          for (const table of getAllFilterReadTables(entityType)) tables.add(table)
+        }
+        for (const filter of loaded?.dynamicFilters ?? []) {
+          for (const table of getFilterReadTables(entityType, filter)) tables.add(table)
+        }
+        return [...tables]
+      }
     }
-    return tables
-  })
-
-  useDbChanges((batch) => {
-    if (batchTouchesAny(batch, readTables.value)) refetch()
   })
 
   // Computed data with default for UI rendering
@@ -245,7 +246,7 @@ function createExplorerList(): ExplorerListContext {
     allEntities,
     isLoading,
     isFetching,
-    refetch
+    reload
   }
 }
 

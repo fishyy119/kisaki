@@ -32,7 +32,7 @@ const metadataUpdateDialogOpen = ref(false)
 </script>
 
 <template>
-  <ContextMenu v-model:open="menuOpen">
+  <ContextMenu @update:open="menuOpen = $event">
     <ContextMenuTrigger as-child>
       <slot />
     </ContextMenuTrigger>

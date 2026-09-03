@@ -11,7 +11,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import {
   EntitySearcher,
@@ -47,7 +47,7 @@ const { m } = useI18n()
 const isSubmitting = ref(false)
 const selection = shallowRef<EntitySearcherSelection<ScraperLookup> | null>(null)
 
-const { data: scanner } = useAsyncData(
+const { data: scanner } = useLiveQuery(
   async () => {
     if (!props.problem.scannerId) return null
     const row = await db.query.scanners.findFirst({
@@ -151,7 +151,7 @@ watch(
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-        <DialogBody class="space-y-3 max-h-[70vh] overflow-y-auto">
+        <DialogBody class="space-y-3 max-h-[70vh]">
           <div class="rounded-md border border-border bg-muted/20 px-3 py-2 text-xs">
             <div class="flex items-center gap-2 min-w-0">
               <Icon

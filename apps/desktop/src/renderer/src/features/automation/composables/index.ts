@@ -1,1 +1,1 @@
-export { useAutomations, automationsData } from './use-automations'
+export { useAutomations, automationsQuery } from './use-automations'

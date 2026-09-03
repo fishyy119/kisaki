@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { db, updateEntityRows } from '@renderer/core/db'
 import type { MediaType } from '@shared/entity-types'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
@@ -89,7 +89,7 @@ interface InitialDurationData {
   untrackedMinutes: number
 }
 
-const { data, isLoading } = useAsyncData<InitialDurationData>(
+const { data, isLoading } = useLiveQuery<InitialDurationData>(
   async () => {
     const [sessionsData, rows] = await Promise.all([
       store.value.list(props.entityId),
@@ -241,75 +241,71 @@ const minutesModel = computed({
         <DialogHeader>
           <DialogTitle>{{ labels.title }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="flex-1 min-h-0 p-0 flex flex-col">
-          <!-- Total duration summary -->
-          <div class="px-4 py-3 border-b bg-muted/30">
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-muted-foreground">{{ labels.totalTime }}</span>
-              <span class="font-medium">{{ f.duration(totalDuration) }}</span>
-            </div>
-            <div class="flex items-center justify-between text-xs text-muted-foreground mt-1">
-              <span>{{ labels.sessionsDuration({ value: f.duration(sessionsDuration) }) }}</span>
-              <span>{{ labels.untrackedDuration({ value: f.duration(untrackedMs) }) }}</span>
-            </div>
+        <!-- Total duration summary -->
+        <div class="px-4 py-3 border-b bg-muted/30">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-muted-foreground">{{ labels.totalTime }}</span>
+            <span class="font-medium">{{ f.duration(totalDuration) }}</span>
           </div>
-
-          <!-- Untracked time input -->
-          <div class="px-4 py-3 border-b">
-            <Field>
-              <FieldLabel>{{ labels.untrackedLabel }}</FieldLabel>
-              <FieldContent>
-                <div class="flex items-center gap-2">
-                  <Input
-                    v-model="hoursModel"
-                    type="number"
-                    min="0"
-                    class="w-20"
-                  />
-                  <span class="text-sm text-muted-foreground">{{ labels.hoursUnit }}</span>
-                  <Input
-                    v-model="minutesModel"
-                    type="number"
-                    min="0"
-                    max="59"
-                    class="w-20"
-                  />
-                  <span class="text-sm text-muted-foreground">{{ labels.minutesUnit }}</span>
-                </div>
-              </FieldContent>
-              <FieldDescription>{{ labels.untrackedHint }}</FieldDescription>
-            </Field>
+          <div class="flex items-center justify-between text-xs text-muted-foreground mt-1">
+            <span>{{ labels.sessionsDuration({ value: f.duration(sessionsDuration) }) }}</span>
+            <span>{{ labels.untrackedDuration({ value: f.duration(untrackedMs) }) }}</span>
           </div>
+        </div>
 
-          <!-- Session records -->
-          <div class="flex-1 min-h-0 flex flex-col">
-            <div class="px-4 py-2 text-sm font-medium text-muted-foreground border-b shrink-0">
-              {{ labels.sessionsHeader({ count: sessions.length }) }}
-            </div>
-            <div class="px-4 py-3 space-y-1 overflow-auto max-h-[40vh]">
-              <StateView
-                v-if="sessions.length === 0"
-                state="empty"
-                :description="labels.emptySessions"
-                class="py-6"
+        <!-- Untracked time input -->
+        <div class="px-4 py-3 border-b">
+          <Field>
+            <FieldLabel>{{ labels.untrackedLabel }}</FieldLabel>
+            <FieldContent>
+              <div class="flex items-center gap-2">
+                <Input
+                  v-model="hoursModel"
+                  type="number"
+                  min="0"
+                  class="w-20"
+                />
+                <span class="text-sm text-muted-foreground">{{ labels.hoursUnit }}</span>
+                <Input
+                  v-model="minutesModel"
+                  type="number"
+                  min="0"
+                  max="59"
+                  class="w-20"
+                />
+                <span class="text-sm text-muted-foreground">{{ labels.minutesUnit }}</span>
+              </div>
+            </FieldContent>
+            <FieldDescription>{{ labels.untrackedHint }}</FieldDescription>
+          </Field>
+        </div>
+
+        <!-- Session records: the header stays, the list is the dialog's scroll region -->
+        <div class="px-4 py-2 text-sm font-medium text-muted-foreground border-b">
+          {{ labels.sessionsHeader({ count: sessions.length }) }}
+        </div>
+        <DialogBody class="space-y-1 max-h-[40vh]">
+          <StateView
+            v-if="sessions.length === 0"
+            state="empty"
+            :description="labels.emptySessions"
+            class="py-6"
+          />
+          <ListItem
+            v-for="session in sessions"
+            v-else
+            :key="session.id"
+            icon="icon-[mdi--timer-outline]"
+            :title="f.duration(session.endedAt.getTime() - session.startedAt.getTime())"
+            :description="f.dateTimeRange(session.startedAt, session.endedAt)"
+          >
+            <template #actions>
+              <ListItemActions
+                @edit="handleEditClick(session.id)"
+                @delete="deleteId = session.id"
               />
-              <ListItem
-                v-for="session in sessions"
-                v-else
-                :key="session.id"
-                icon="icon-[mdi--timer-outline]"
-                :title="f.duration(session.endedAt.getTime() - session.startedAt.getTime())"
-                :description="f.dateTimeRange(session.startedAt, session.endedAt)"
-              >
-                <template #actions>
-                  <ListItemActions
-                    @edit="handleEditClick(session.id)"
-                    @delete="deleteId = session.id"
-                  />
-                </template>
-              </ListItem>
-            </div>
-          </div>
+            </template>
+          </ListItem>
         </DialogBody>
         <DialogFooter class="flex justify-between">
           <Button

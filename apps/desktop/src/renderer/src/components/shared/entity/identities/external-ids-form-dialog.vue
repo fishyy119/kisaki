@@ -7,7 +7,7 @@
 import { ref, computed, watch } from 'vue'
 import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -56,7 +56,7 @@ const deleteId = ref<string | null>(null)
 const isSaving = ref(false)
 const itemFormOpen = ref(false)
 
-const { data: results, isLoading } = useAsyncData(() => store.value.list(props.entityId), {
+const { data: results, isLoading } = useLiveQuery(() => store.value.list(props.entityId), {
   watch: [() => props.entityId],
   enabled: () => open.value
 })
@@ -203,7 +203,7 @@ function handleCancel() {
         <DialogHeader>
           <DialogTitle>{{ m.library.forms.manageExternalIds }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <div class="space-y-1">
             <StateView
               v-if="items.length === 0"

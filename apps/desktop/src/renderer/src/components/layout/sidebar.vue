@@ -205,7 +205,6 @@ const showNsfwModel = computed({
                 <span>{{ m.nav.themeMode }}</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent
-                side="right"
                 align="start"
                 class="min-w-40"
               >

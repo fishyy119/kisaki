@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { cn } from '@renderer/utils/cn'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../../stores'
-import { extensionRepositoriesData } from '../../composables'
+import { extensionRepositoriesQuery } from '../../composables'
 import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type { SortDirection } from '@shared/filter'
@@ -47,9 +47,9 @@ const SORT_OPTIONS = computed<SortOption<DiscoverExtensionSortField>[]>(() => [
 
 const store = useDiscoverExtensionStore()
 
-// The repositories resource is declared on the discover route, so the list
+// The repositories query is declared on the discover route, so the list
 // is complete on the first frame and follows repository changes.
-const { data: repositories } = extensionRepositoriesData()
+const { data: repositories } = extensionRepositoriesQuery()
 
 const enabledRepositories = computed(() =>
   (repositories.value ?? []).filter((repository) => repository.state === 'enabled')

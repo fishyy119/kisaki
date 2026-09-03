@@ -11,7 +11,7 @@ import { storeToRefs } from 'pinia'
 import { eq, and, asc } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
+import { useLiveQuery, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db, ENTITY_TABLES, updateEntityRows } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -124,9 +124,12 @@ async function fetchMenuData(): Promise<EntityMenuData | null> {
   }
 }
 
-const { data, refetch } = useAsyncData(fetchMenuData, {
+const { data } = useLiveQuery(fetchMenuData, {
   watch: [() => props.entityId, showNsfw],
-  enabled: () => props.enabled
+  enabled: () => props.enabled,
+  invalidate: {
+    tables: () => [spec.value.entityTable, spec.value.collections.table, 'collections']
+  }
 })
 
 const entry = computed(() => data.value?.entry ?? null)
@@ -141,20 +144,6 @@ const extensionMenuInput = computed(
       entityId: props.entityId
     }) as const
 )
-
-useDbChanges(({ changes, tables }) => {
-  const linkTable = spec.value.collections.table
-  const shouldRefetch =
-    tables.has(linkTable) ||
-    tables.has('collections') ||
-    changes.some(
-      (change) =>
-        change.operation === 'updated' &&
-        change.table === spec.value.entityTable &&
-        change.id === props.entityId
-    )
-  if (shouldRefetch) refetch()
-})
 
 // Computed for displaying score
 const displayScore = computed(() => {

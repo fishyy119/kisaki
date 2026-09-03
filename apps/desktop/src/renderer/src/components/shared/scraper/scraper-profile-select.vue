@@ -9,7 +9,7 @@ import { computed, ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useDbChanges, useI18n, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useI18n, useRenderState } from '@renderer/composables'
 import { scraperProfiles, type ScraperProfile } from '@shared/db'
 import type { ContentEntityType } from '@shared/entity-types'
 import {
@@ -76,23 +76,17 @@ const isCreateDialogOpen = ref(false)
 const {
   data: profiles,
   isLoading,
-  error,
-  refetch
-} = useAsyncData(
+  error
+} = useLiveQuery(
   () =>
     db
       .select()
       .from(scraperProfiles)
       .where(eq(scraperProfiles.entityType, props.entityType))
       .orderBy(scraperProfiles.order),
-  { watch: [() => props.entityType] }
+  { watch: [() => props.entityType], invalidate: { tables: ['scraper_profiles'] } }
 )
 const state = useRenderState(isLoading, error, profiles)
-
-// Listen for profile changes
-useDbChanges(({ tables }) => {
-  if (tables.has('scraper_profiles')) refetch()
-})
 
 // Auto-select first profile when value is empty and loading is complete.
 // With allowNone the empty value is a deliberate choice, so it stays.
@@ -175,7 +169,7 @@ watch(model, (profileId) => {
       v-if="isCreateDialogOpen"
       v-model:open="isCreateDialogOpen"
       mode="recipes"
-      :media-type="props.entityType"
+      :entity-type="props.entityType"
       @create="handleProfileCreated"
     />
   </div>

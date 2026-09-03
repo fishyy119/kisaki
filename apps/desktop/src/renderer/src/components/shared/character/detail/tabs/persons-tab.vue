@@ -114,7 +114,7 @@ const groupedPersons = computed(() => {
             <VirtualGrid
               :items="groupedPersons[role]!"
               :get-key="(link) => link.id"
-              scroll-parent="region"
+              scroll="region"
               class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between"
             >
               <template #item="{ item: link }">

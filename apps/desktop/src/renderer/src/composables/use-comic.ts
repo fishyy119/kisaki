@@ -1,7 +1,7 @@
 /**
  * Comic data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * The provider/consumer shell (route query, dialog provider, invalidation) comes
  * from the entity detail context factory; this module owns what a comic
  * detail surface fetches and shows.
  */
@@ -26,7 +26,7 @@ import type {
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
 import {
-  MEDIA_RELATION_READS,
+  MEDIA_RELATION_TABLES,
   fetchMediaRelations,
   type MediaRelationEntry
 } from '@renderer/core/db/media-relations'
@@ -207,12 +207,8 @@ async function attachChapterFiles(chapters: ComicChapter[]): Promise<ComicChapte
 // Context Wiring
 // =============================================================================
 
-/**
- * Owned and link rows attribute to the comic; chapter file rows hang off
- * chapters without a key of their own, so they and the satellite tables
- * match by table.
- */
-const COMIC_READS: readonly TableName[] = [
+/** Owned rows, link rows, and the tables the links join. */
+const COMIC_TABLES: readonly TableName[] = [
   'comic_chapters',
   'comic_chapter_files',
   'comic_notes',
@@ -225,7 +221,7 @@ const COMIC_READS: readonly TableName[] = [
   'persons',
   'comic_company_links',
   'companies',
-  ...MEDIA_RELATION_READS
+  ...MEDIA_RELATION_TABLES
 ]
 
 const comicDetail = createEntityDetailContext<ComicData, EntitySpoilerParams>({
@@ -243,10 +239,10 @@ const comicDetail = createEntityDetailContext<ComicData, EntitySpoilerParams>({
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchComicData(id, params.spoilersRevealed, view.showNsfw),
-  reads: COMIC_READS
+  tables: COMIC_TABLES
 })
 
-export const comicDetailData = comicDetail.detailData
+export const comicDetailQuery = comicDetail.detailQuery
 export const useComicRouteProvider = comicDetail.useRouteProvider
 export const useComicDialogProvider = comicDetail.useDialogProvider
 export const useComic = comicDetail.useContext

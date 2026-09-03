@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { tags } from '@shared/db'
 import { normalizeKeyText } from '@shared/identity'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const { data: tag, isLoading } = useAsyncData(
+const { data: tag, isLoading } = useLiveQuery(
   () => db.query.tags.findFirst({ where: eq(tags.id, props.tagId) }),
   {
     watch: [() => props.tagId],
@@ -140,7 +140,7 @@ async function handleSubmit() {
           <DialogTitle>{{ m.library.forms.editTags }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto">
+          <DialogBody class="max-h-[60vh]">
             <FieldGroup>
               <Field>
                 <FieldLabel>{{ m.library.fields.name }}</FieldLabel>

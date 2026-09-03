@@ -159,7 +159,7 @@ function handleGroupRowClick(e: MouseEvent) {
       v-if="!isCollapsed && props.group.entities.length > 0"
       ref="listView"
       :items="props.group.entities"
-      scroll-parent="region"
+      scroll="region"
       class="flex flex-col gap-0.5"
     >
       <template #item="{ item }">

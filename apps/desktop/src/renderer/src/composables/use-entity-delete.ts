@@ -12,7 +12,7 @@ import type { AllEntityType } from '@shared/entity-types'
 import type { EntityDeleteResult } from '@shared/entity-delete'
 import { deleteEntities, previewEntityDelete } from '@renderer/core/db'
 import { messages } from '@renderer/core/i18n'
-import { useAsyncData } from './use-async-data'
+import { useLiveQuery } from './use-live-query'
 
 interface UseEntityDeleteOptions {
   entityType: MaybeRefOrGetter<AllEntityType>
@@ -27,7 +27,7 @@ export function useEntityDelete(options: UseEntityDeleteOptions) {
   const selectedRelatedTypes = ref<AllEntityType[]>([])
   const entityIdsKey = computed(() => options.entityIds.value.join('\0'))
 
-  const { data, isLoading } = useAsyncData(
+  const { data, isLoading } = useLiveQuery(
     async () => {
       const entityIds = options.entityIds.value.filter(Boolean)
       if (entityIds.length === 0) {

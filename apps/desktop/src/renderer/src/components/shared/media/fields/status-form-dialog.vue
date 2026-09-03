@@ -10,7 +10,7 @@ import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import type { MediaType } from '@shared/entity-types'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -66,7 +66,7 @@ const options = computed(() =>
 const status = ref<MediaStatus>('planned')
 const isSaving = ref(false)
 
-const { data: row, isLoading } = useAsyncData(
+const { data: row, isLoading } = useLiveQuery(
   async () => {
     const rows = await db
       .select({ status: table.value.status })

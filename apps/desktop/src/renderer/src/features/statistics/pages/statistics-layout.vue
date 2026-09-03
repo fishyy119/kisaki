@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { useStatisticsProvider } from '../composables'
 import { StatisticsHeader } from '../components'
 
@@ -21,10 +22,13 @@ useStatisticsProvider()
     <!-- Header (includes report type navigation and period selector) -->
     <StatisticsHeader />
 
-    <!-- Main content - each report page owns its scroll region. Keyed by
-         path so a page instance belongs to one location. -->
-    <div class="flex-1 min-h-0 flex flex-col">
-      <RouterView :key="route.path" />
-    </div>
+    <!-- Main content - one scroll region per report: keyed by path so
+         switching reports mounts the next page fresh, at the top. -->
+    <ScrollRegion
+      :key="route.path"
+      class="bg-background"
+    >
+      <RouterView />
+    </ScrollRegion>
   </div>
 </template>

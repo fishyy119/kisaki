@@ -19,7 +19,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuSubContent
 } from '@renderer/components/ui/context-menu'
-import { useAsyncData, useI18n } from '@renderer/composables'
+import { useLiveQuery, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db, updateEntityRows } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -100,7 +100,7 @@ async function fetchMenuData(): Promise<{ collections: CollectionRow[]; links: L
   }
 }
 
-const { data, refetch } = useAsyncData(fetchMenuData, {
+const { data, reload } = useLiveQuery(fetchMenuData, {
   watch: [() => props.entityIds, showNsfw],
   enabled: () => props.enabled
 })
@@ -141,7 +141,7 @@ async function handleAddToCollection(collectionId: string) {
   try {
     await spec.value.collections.addMany(missingIds, collectionId)
     notify.success(m.value.library.feedback.addedToCollection)
-    await refetch()
+    await reload()
   } catch {
     notify.error(m.value.library.feedback.addFailed)
   }
@@ -154,7 +154,7 @@ async function handleRemoveFromCollection(collectionId: string) {
   try {
     await spec.value.collections.removeMany(ids, collectionId)
     notify.success(m.value.library.feedback.removedFromCollection)
-    await refetch()
+    await reload()
   } catch {
     notify.error(m.value.library.feedback.removeFailed)
   }

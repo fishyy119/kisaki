@@ -1,10 +1,9 @@
 <!--
   DialogBody - The dialog's scroll viewport.
 
-  A ScrollRegion without memory: a dialog is an instance-scoped overlay, so
-  its offset belongs to nothing that outlives it. It hosts the back-to-top
+  A ScrollRegion with the dialog's default padding. It hosts the back-to-top
   device and is the scroll parent of every virtual list inside the dialog
-  (`scroll-parent="region"`). Inside a `flex flex-col` DialogContent with a
+  (`scroll="region"`). Inside a `flex flex-col` DialogContent with a
   max height it takes the remaining space and scrolls; elsewhere it grows with
   its content, and a max height passed through `class` caps it.
 -->

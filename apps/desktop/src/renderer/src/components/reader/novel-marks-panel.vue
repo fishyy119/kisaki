@@ -7,6 +7,7 @@ a reader looks for one or the other.
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { HIGHLIGHT_TINTS } from '@renderer/core/reader/text/highlight'
 import { cn } from '@renderer/utils/cn'
@@ -55,7 +56,7 @@ function bookmarkLocation(bookmark: NovelBookmark): string {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto p-2">
+  <ScrollRegion class="p-2">
     <p
       v-if="isEmpty"
       class="px-2 py-1 text-xs text-muted-foreground"
@@ -140,5 +141,5 @@ function bookmarkLocation(bookmark: NovelBookmark): string {
         />
       </div>
     </template>
-  </div>
+  </ScrollRegion>
 </template>

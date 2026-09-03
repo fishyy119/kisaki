@@ -6,30 +6,28 @@ Boundary: calls repository IPC only; renderer never fetches manifests directly.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
 import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useTaskRunStore } from '@renderer/stores'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { extensionRepositoriesData } from '../../composables'
+import { extensionRepositoriesQuery } from '../../composables'
 import RepositoryDetailsDialog from './repository-details-dialog.vue'
 import RepositoryPanelRow from './repository-panel-row.vue'
 import RepositoryRemoveDialog from './repository-remove-dialog.vue'
 import type { ExtensionRepositoryInfo } from '@shared/extension'
 
 const { m } = useI18n()
-const route = useRoute()
 const busyRepositoryIds = ref(new Set<string>())
 const detailsDialogOpen = ref(false)
 const removeDialogOpen = ref(false)
 const selectedRepositoryId = ref<string | null>(null)
 const repositoryToRemove = ref<ExtensionRepositoryInfo | null>(null)
 
-// Committed by the route data kernel before the page mounts; the resource
-// reloads itself whenever the main process reports a repository change.
-const { data: repositories, error } = extensionRepositoriesData()
+// Committed by the route query before the page mounts; the query reloads
+// itself whenever the main process reports a repository change.
+const { data: repositories, error } = extensionRepositoriesQuery()
 const repositoryList = computed(() =>
   [...(repositories.value ?? [])].sort((left, right) => left.priority - right.priority)
 )
@@ -187,7 +185,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
 
 <template>
   <div class="flex flex-col h-full">
-    <ScrollRegion :memory="route.path">
+    <ScrollRegion>
       <StateView
         v-if="error"
         state="error"

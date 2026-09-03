@@ -1,7 +1,7 @@
 /**
  * Person data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * The provider/consumer shell (route query, dialog provider, invalidation) comes
  * from the entity detail context factory; this module owns what a person
  * detail surface fetches and shows.
  */
@@ -227,8 +227,8 @@ async function fetchPersonData(
 // Context Wiring
 // =============================================================================
 
-/** Link rows attribute to the person; the tables they join match by table. */
-const PERSON_READS: readonly TableName[] = [
+/** Link rows and the tables the links join. */
+const PERSON_TABLES: readonly TableName[] = [
   'person_tag_links',
   'tags',
   'game_person_links',
@@ -259,10 +259,10 @@ const personDetail = createEntityDetailContext<PersonData, EntitySpoilerParams>(
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchPersonData(id, params.spoilersRevealed, view.showNsfw),
-  reads: PERSON_READS
+  tables: PERSON_TABLES
 })
 
-export const personDetailData = personDetail.detailData
+export const personDetailQuery = personDetail.detailQuery
 export const usePersonRouteProvider = personDetail.useRouteProvider
 export const usePersonDialogProvider = personDetail.useDialogProvider
 export const usePerson = personDetail.useContext

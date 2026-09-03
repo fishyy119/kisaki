@@ -5,23 +5,32 @@
  * Main scanner management page listing all configured scanners.
  */
 
-import { useRoute } from 'vue-router'
 import { useScanners } from '../composables'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { ScannerHeader, ScannerEmptyState, ScannerItem } from '../components'
 import { useI18n } from '@renderer/composables/use-i18n'
 
-// Data committed by the route data kernel before the page mounts
-const { entries } = useScanners()
+// Data committed by the route query before the page mounts
+const { entries, error } = useScanners()
 
 const SCANNER_TABLE_COLUMNS = ['', '5rem', '13%', '13%', '10rem', '7rem', '10rem']
 
 const { m } = useI18n()
-const route = useRoute()
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <StateView
+    v-if="error"
+    state="error"
+    :error="error"
+    class="h-full bg-background"
+  />
+
+  <div
+    v-else
+    class="flex flex-col h-full"
+  >
     <!-- Page header -->
     <ScannerHeader />
 
@@ -35,7 +44,6 @@ const route = useRoute()
         v-else
         fixed-header
         :columns="SCANNER_TABLE_COLUMNS"
-        :memory="route.path"
       >
         <template #header>
           <TableHeader>

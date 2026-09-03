@@ -1,8 +1,8 @@
 /**
  * Collection data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
- * from the entity detail context factory; this module owns what a collection
+ * The provider/consumer shell (route query, dialog provider, invalidation)
+ * comes from the entity detail context factory; this module owns what a collection
  * detail surface fetches and shows: the collection row, member counts per
  * content type, and the members of the browsed type under the surface's list
  * query. A static collection's members come from its link tables, a dynamic
@@ -22,7 +22,7 @@ import {
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { Collection } from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import { getFilterRelevantTables, getQueryDependencyTables } from '@shared/filter'
+import { getAllFilterReadTables, getFilterReadTables } from '@shared/filter'
 import {
   createEmptyContentEntityCounts,
   type ContentEntityCounts,
@@ -32,7 +32,7 @@ import {
   createEntityDetailContext,
   type EntityDetailContext,
   type EntityDetailProviderReturn,
-  type EntityDetailReadsContext
+  type EntityDetailTablesContext
 } from './entity-context'
 import {
   createEntityListQuery,
@@ -115,17 +115,16 @@ async function fetchCollectionData(
 }
 
 /**
- * What the fetch reads. Link rows attribute to the collection through their
- * foreign key, so a static collection only refetches for its own membership
- * changes; every entity table can hide a member and matches by table. A
- * dynamic collection's counts read the tables its configured filters
- * reference, and the visible list reads the shown type's query tables. Until
- * the row is known the declaration answers with the upper bound.
+ * What the fetch reads: every entity table (a count, and a member that can
+ * be hidden), the membership link tables of a static collection, the tables
+ * a dynamic collection's configured filters reference, and the shown type's
+ * list query tables. Until the row is known the declaration answers with the
+ * upper bound.
  */
-function collectionReads({
+function collectionTables({
   params,
   data
-}: EntityDetailReadsContext<CollectionData, OrganizerDetailParams>): readonly TableName[] {
+}: EntityDetailTablesContext<CollectionData, OrganizerDetailParams>): readonly TableName[] {
   const tables = new Set<TableName>()
   const collection = data?.collection ?? null
 
@@ -133,20 +132,18 @@ function collectionReads({
     tables.add(ENTITY_TABLES[type].tableName)
     if (!collection || !collection.isDynamic) tables.add(COLLECTION_LINKS[type].tableName)
     if (!collection) {
-      for (const table of getFilterRelevantTables(type)) tables.add(table)
+      for (const table of getAllFilterReadTables(type)) tables.add(table)
     } else if (collection.isDynamic) {
       const config = collection.dynamicConfig?.[type]
       if (config?.enabled) {
-        for (const table of getQueryDependencyTables(type, { filter: config.filter })) {
-          tables.add(table)
-        }
+        for (const table of getFilterReadTables(type, config.filter)) tables.add(table)
       }
     }
   }
 
   const shownType = data?.entityType ?? params.query.entityType
   for (const type of shownType ? [shownType] : CONTENT_ENTITY_TYPES) {
-    for (const table of getQueryDependencyTables(type, params.query)) tables.add(table)
+    for (const table of getFilterReadTables(type, params.query.filter)) tables.add(table)
   }
 
   return [...tables]
@@ -167,10 +164,10 @@ const collectionDetail = createEntityDetailContext<CollectionData, OrganizerDeta
   },
   initialParams: () => ({ query: createEntityListQuery(null) }),
   fetch: (id, params, view) => fetchCollectionData(id, params.query, view.showNsfw),
-  reads: collectionReads
+  tables: collectionTables
 })
 
-export const collectionDetailData = collectionDetail.detailData
+export const collectionDetailQuery = collectionDetail.detailQuery
 export const useCollectionRouteProvider = collectionDetail.useRouteProvider
 export const useCollectionDialogProvider = collectionDetail.useDialogProvider
 export const useCollection = collectionDetail.useContext

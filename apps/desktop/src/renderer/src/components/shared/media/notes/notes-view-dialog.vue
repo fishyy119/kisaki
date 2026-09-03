@@ -4,7 +4,7 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAsyncData, useDbChanges } from '@renderer/composables'
+import { useLiveQuery, useDbChanges } from '@renderer/composables'
 import type { MediaType } from '@shared/entity-types'
 import {
   Dialog,
@@ -38,7 +38,7 @@ const emit = defineEmits<{
 
 const store = computed(() => MEDIA_NOTE_STORES[props.mediaType])
 
-const { data: note, isLoading } = useAsyncData(() => store.value.find(props.noteId), {
+const { data: note, isLoading } = useLiveQuery(() => store.value.find(props.noteId), {
   watch: [() => props.noteId],
   enabled: () => open.value
 })
@@ -102,7 +102,7 @@ useDbChanges(({ changes }) => {
             {{ note.name }}
           </DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[70vh] overflow-auto space-y-4">
+        <DialogBody class="max-h-[70vh] space-y-4">
           <div
             v-if="coverUrl"
             class="rounded-lg overflow-hidden border bg-muted"

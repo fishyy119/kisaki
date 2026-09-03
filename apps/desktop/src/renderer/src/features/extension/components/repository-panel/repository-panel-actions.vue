@@ -13,7 +13,7 @@ import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useTaskRunStore } from '@renderer/stores'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { extensionRepositoriesData } from '../../composables'
+import { extensionRepositoriesQuery } from '../../composables'
 import RepositoryAddDialog from './repository-add-dialog.vue'
 import type { RepositoryAddRequest } from './types'
 import {
@@ -28,9 +28,9 @@ const submitting = ref(false)
 const addingOfficialRepository = ref(false)
 const startingRefreshAll = ref(false)
 
-// Adding a repository reaches the list through the resource's declared
-// repository-change event; nothing here refetches by hand.
-const { data: repositories } = extensionRepositoriesData()
+// Adding a repository reaches the list through the query's declared
+// repository-change event; nothing here reloads by hand.
+const { data: repositories } = extensionRepositoriesQuery()
 
 const taskRunStore = useTaskRunStore()
 const activeRefreshAll = computed(() =>

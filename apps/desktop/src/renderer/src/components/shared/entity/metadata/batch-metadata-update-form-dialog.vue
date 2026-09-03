@@ -165,14 +165,14 @@ async function handleSubmit() {
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-        <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto">
+        <DialogBody class="space-y-4 max-h-[70vh]">
           <FieldGroup>
             <Field>
               <FieldLabel>{{ m.library.forms.scraperConfigLabel }}</FieldLabel>
               <FieldContent>
                 <ScraperProfileSelect
                   v-model="profileId"
-                  :media-type="props.entityType"
+                  :entity-type="props.entityType"
                 />
               </FieldContent>
             </Field>

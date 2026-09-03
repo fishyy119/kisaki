@@ -3,8 +3,7 @@
 
   Owns the scroll wiring: prev/next buttons in the header and a
   VirtualHorizontalScroll body. Shows the Section emptyText when there
-  are no items. With a `memoryKey`, the row remembers its horizontal offset
-  under the enclosing region's identity.
+  are no items. The title slot passes through for callers that style it.
 -->
 <script setup lang="ts" generic="T">
 import { ref, type HTMLAttributes } from 'vue'
@@ -19,8 +18,6 @@ interface Props {
   items: T[]
   getKey?: (item: T, index: number) => string | number
   emptyText?: string
-  /** Local memory key of the row inside the enclosing ScrollRegion. */
-  memoryKey?: string
   class?: HTMLAttributes['class']
 }
 
@@ -31,6 +28,7 @@ const emit = defineEmits<{
 }>()
 
 defineSlots<{
+  title?: () => void
   item: (props: { item: T; index: number }) => void
 }>()
 
@@ -48,6 +46,13 @@ const scrollState = ref({ canScrollLeft: false, canScrollRight: false })
     data-slot="section-scroll"
     @edit="emit('edit')"
   >
+    <template
+      v-if="$slots.title"
+      #title
+    >
+      <slot name="title" />
+    </template>
+
     <template
       v-if="props.items.length > 0"
       #actions
@@ -82,7 +87,6 @@ const scrollState = ref({ canScrollLeft: false, canScrollRight: false })
       ref="scrollRef"
       :items="props.items"
       :get-key="props.getKey"
-      :memory-key="props.memoryKey"
       class="flex gap-3 pr-0.5"
       @scroll-state-change="scrollState = $event"
     >

@@ -14,7 +14,7 @@ import type { AllEntityType } from '@shared/entity-types'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
-import { useAsyncData, useEntityDelete } from '@renderer/composables'
+import { useLiveQuery, useEntityDelete } from '@renderer/composables'
 import { formatEntityDeleteSuccessMessage } from '@renderer/utils/entity-delete'
 import { useI18n } from '@renderer/composables/use-i18n'
 import DeleteRelatedOptions from './delete-related-options.vue'
@@ -72,7 +72,7 @@ const {
 })
 
 // Fetch the scanner folder name when the entity supports ignoring
-const { data: folderData, isLoading: isFolderLoading } = useAsyncData(
+const { data: folderData, isLoading: isFolderLoading } = useLiveQuery(
   async () => {
     const source = ignoreSource.value
     return { folderName: source ? await source(props.entityId) : '' }

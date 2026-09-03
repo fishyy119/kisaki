@@ -1,8 +1,8 @@
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import {
-  useAsyncData,
-  type UseAsyncDataOptions,
-  type UseAsyncDataReturn
+  useLiveQuery,
+  type UseLiveQueryOptions,
+  type UseLiveQueryReturn
 } from '@renderer/composables'
 import { ipcManager } from '@renderer/core/ipc'
 import type { ScraperProviderInfo, ScraperProvidersByType } from './provider-display'
@@ -59,7 +59,7 @@ export async function fetchScraperProvidersByType(): Promise<ScraperProvidersByT
 
 /** Reactive wrapper over {@link fetchScraperProvidersByType}. */
 export function useScraperProviders(
-  options: UseAsyncDataOptions = {}
-): UseAsyncDataReturn<ScraperProvidersByType> {
-  return useAsyncData(fetchScraperProvidersByType, options)
+  options: UseLiveQueryOptions<ScraperProvidersByType> = {}
+): UseLiveQueryReturn<ScraperProvidersByType> {
+  return useLiveQuery(fetchScraperProvidersByType, options)
 }

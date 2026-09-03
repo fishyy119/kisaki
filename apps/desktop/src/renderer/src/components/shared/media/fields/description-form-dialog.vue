@@ -8,7 +8,7 @@ import { ref, watch, toRef, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db, updateEntityRows } from '@renderer/core/db'
 import type { MediaType } from '@shared/entity-types'
-import { useAsyncData, useInlineAttachments } from '@renderer/composables'
+import { useLiveQuery, useInlineAttachments } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -58,7 +58,7 @@ const INLINE_ATTACHMENTS: Record<MediaType, ReturnType<typeof useInlineAttachmen
 
 const attachments = computed(() => INLINE_ATTACHMENTS[props.mediaType])
 
-const { data: row, isLoading } = useAsyncData(
+const { data: row, isLoading } = useLiveQuery(
   async () => {
     const rows = await db
       .select({ description: table.value.description })

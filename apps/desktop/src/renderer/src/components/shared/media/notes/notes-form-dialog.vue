@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import { computed, ref, watch, toRef } from 'vue'
-import { useAsyncData, useInlineAttachments, useStagedImagePick } from '@renderer/composables'
+import { useLiveQuery, useInlineAttachments, useStagedImagePick } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import type { MediaType } from '@shared/entity-types'
@@ -83,8 +83,8 @@ async function handleInlineAttachment() {
 const {
   data: existingNote,
   isLoading,
-  refetch
-} = useAsyncData(() => store.value.find(props.noteId!), {
+  reload
+} = useLiveQuery(() => store.value.find(props.noteId!), {
   watch: [() => props.noteId],
   enabled: () => open.value && isEditMode.value
 })
@@ -122,7 +122,7 @@ watch(
     cover.reset()
 
     if (isEditMode.value) {
-      refetch()
+      reload()
       return
     }
 
@@ -213,7 +213,7 @@ function handleCancel() {
           }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="space-y-4 max-h-[80vh] overflow-auto">
+          <DialogBody class="space-y-4 max-h-[80vh]">
             <FieldGroup>
               <Field>
                 <FieldLabel>{{ m.library.notes.titleLabel }}</FieldLabel>

@@ -33,7 +33,7 @@ import {
 import { Textarea } from '@renderer/components/ui/textarea'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { Automation, AutomationFailurePolicy, AutomationTriggers } from '@shared/automation'
 import { formatJson } from '../utils/display'
@@ -79,7 +79,7 @@ const {
   data: commands,
   isLoading: commandsLoading,
   error: commandsError
-} = useAsyncData(() => ipcManager.invoke('command:list').then(unwrapIpcData), {
+} = useLiveQuery(() => ipcManager.invoke('command:list').then(unwrapIpcData), {
   enabled: () => open.value
 })
 
@@ -406,7 +406,7 @@ function parseOptionalTimezone(value: string): string | undefined {
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[72vh] overflow-auto">
+        <DialogBody class="max-h-[72vh]">
           <FieldGroup>
             <Field :label="m.automation.form.name">
               <FieldContent>

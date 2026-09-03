@@ -10,7 +10,7 @@ import type { NameExtractionRule } from '@shared/db'
 import type { ExtractionTestResult } from '@shared/scanner'
 import { Icon } from '@renderer/components/ui/icon'
 import { ipcManager } from '@renderer/core/ipc'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
@@ -86,7 +86,7 @@ const {
   data: results,
   isLoading,
   error
-} = useAsyncData(fetcher, {
+} = useLiveQuery(fetcher, {
   watch: [open, () => props.scannerPath, () => props.entityDepth, rulesKey],
   immediate: true
 })
@@ -134,7 +134,7 @@ function handleExclude(name: string) {
       <DialogHeader>
         <DialogTitle>{{ m.scanner.test.title }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto">
+      <DialogBody class="max-h-[60vh]">
         <!-- Config Summary -->
         <div class="flex text-xs items-center justify-between gap-4 text-muted-foreground pb-2">
           <div class="flex items-center gap-3 min-w-0">

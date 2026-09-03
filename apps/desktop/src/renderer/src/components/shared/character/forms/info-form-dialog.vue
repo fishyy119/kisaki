@@ -9,7 +9,7 @@ import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { characters, type PartialDate } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { formatDateInput } from '@renderer/utils/datetime'
 import {
   Dialog,
@@ -91,7 +91,7 @@ const isSaving = ref(false)
 const birthDateInput = ref<PartialDateInputExpose | null>(null)
 
 // Fetch character data when dialog opens
-const { data: character, isLoading } = useAsyncData(
+const { data: character, isLoading } = useLiveQuery(
   () => db.query.characters.findFirst({ where: eq(characters.id, props.characterId) }),
   {
     watch: [() => props.characterId],
@@ -198,7 +198,7 @@ function handleCancel() {
           <DialogTitle>{{ m.library.forms.editDetails }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto">
+          <DialogBody class="max-h-[60vh]">
             <FieldGroup>
               <Field>
                 <FieldLabel>{{ m.library.fields.sortName }}</FieldLabel>

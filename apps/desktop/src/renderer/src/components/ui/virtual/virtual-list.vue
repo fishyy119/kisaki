@@ -3,12 +3,12 @@
 
   Features:
   - Vertical virtual scrolling for fixed-height items
-  - Scrolls inside the enclosing ScrollRegion ('region') or on its own
+  - Scrolls inside the enclosing ScrollRegion (`scroll="region"`) or on its own
   - Dynamic item height measurement from the first rendered item
 
   @example
   ```vue
-  <VirtualList :items="entities" scroll-parent="region">
+  <VirtualList :items="entities" scroll="region">
     <template #item="{ item, index }">
       <ListItem :entity="item" />
     </template>
@@ -19,7 +19,7 @@
 import { ref, computed, onMounted, watch, nextTick, toRef, type HTMLAttributes } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { cn } from '@renderer/utils/cn'
-import { useVirtualScrollParent, type VirtualScrollParent } from './use-virtual-scroll-parent'
+import { useVirtualScrollParent, type VirtualScroll } from './use-virtual-scroll-parent'
 
 const props = withDefaults(
   defineProps<{
@@ -27,8 +27,8 @@ const props = withDefaults(
     items: T[]
     /** Custom key extractor, defaults to index */
     getKey?: (item: T, index: number) => string | number
-    /** External scroll parent: 'region' for the enclosing ScrollRegion, or an element */
-    scrollParent?: VirtualScrollParent
+    /** Where the list scrolls: its own container, or the enclosing ScrollRegion */
+    scroll?: VirtualScroll
     /** Container class - defaults to flex column with small gap */
     class?: HTMLAttributes['class']
     /** Overscan count for virtualizer */
@@ -36,7 +36,7 @@ const props = withDefaults(
   }>(),
   {
     getKey: undefined,
-    scrollParent: null,
+    scroll: 'self',
     class: 'flex flex-col gap-0.5',
     overscan: 5
   }
@@ -67,13 +67,13 @@ const {
   updateScrollMargin
 } = useVirtualScrollParent({
   containerRef,
-  scrollParent: toRef(props, 'scrollParent'),
+  scroll: toRef(props, 'scroll'),
   onMeasure: () => virtualizer.value.measure(),
   onResize: measureLayout
 })
 
-// Virtualizer. The initial offset is where the scroll parent is or is about
-// to be, so the first render already shows the right rows.
+// Virtualizer. The initial offset is where the scroll parent is, so a list
+// mounting into a scrolled region renders the right rows on its first frame.
 const virtualizer = useVirtualizer(
   computed(() => ({
     count: props.items.length,

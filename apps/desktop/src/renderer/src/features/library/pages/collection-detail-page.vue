@@ -3,8 +3,8 @@
  * Collection Detail Page
  *
  * Full page view of a collection: identity and operations in the header, the
- * browse surface below. Data settles during navigation through the collection
- * route loader; static and dynamic collections share the surface.
+ * browse surface below. Data is committed by the collection
+ * route query before the page mounts; static and dynamic collections share the surface.
  */
 
 import { computed } from 'vue'
@@ -43,7 +43,7 @@ const collectionId = computed(() => route.params.collectionId as string)
 const { exit } = useEntityDetailRoute('collection', collectionId)
 
 // =============================================================================
-// Provider (data settled during navigation by the route loader)
+// Provider (data committed by the route query before the page mounts)
 // =============================================================================
 
 const {
@@ -127,7 +127,6 @@ function handleOpen(entityType: ContentEntityType, entityId: string) {
     <CollectionDetailContent
       v-model:query="query"
       class="min-h-0 flex-1 bg-background"
-      :memory="route.path"
       @open="handleOpen"
     />
   </div>

@@ -13,7 +13,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData, useEntityMerge, useI18n } from '@renderer/composables'
+import { useLiveQuery, useEntityMerge, useI18n } from '@renderer/composables'
 import { fetchEntityMergeSummary } from './summary'
 import TargetSummary from './target-summary.vue'
 import SourcePicker from './source-picker.vue'
@@ -34,7 +34,7 @@ const emit = defineEmits<{
 
 const sourceId = ref('')
 
-const { data: targetSummary } = useAsyncData(
+const { data: targetSummary } = useLiveQuery(
   () => fetchEntityMergeSummary(props.entityType, props.targetId),
   {
     watch: [() => props.entityType, () => props.targetId],
@@ -42,7 +42,7 @@ const { data: targetSummary } = useAsyncData(
   }
 )
 
-const { data: sourceSummary } = useAsyncData(
+const { data: sourceSummary } = useLiveQuery(
   async () => (sourceId.value ? fetchEntityMergeSummary(props.entityType, sourceId.value) : null),
   {
     watch: [() => props.entityType, sourceId],

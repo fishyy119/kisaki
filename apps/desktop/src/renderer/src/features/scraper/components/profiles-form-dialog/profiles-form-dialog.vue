@@ -17,7 +17,7 @@ import { copyToClipboard } from '@renderer/core/clipboard'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useDbChanges } from '@renderer/composables'
+import { useLiveQuery, useDbChanges } from '@renderer/composables'
 import { scanners, scraperProfiles } from '@shared/db'
 import {
   Dialog,
@@ -58,7 +58,7 @@ interface ProfileFormData {
 }
 
 // Fetch data when dialog opens
-const { data, isLoading, refetch } = useAsyncData(
+const { data, isLoading, reload } = useLiveQuery(
   async (): Promise<ProfileFormData> => {
     const [profilesData, providersByType] = await Promise.all([
       db.select().from(scraperProfiles).orderBy(scraperProfiles.order),
@@ -74,7 +74,7 @@ useDbChanges(({ changes }) => {
   const membershipChanged = changes.some(
     (change) => change.table === 'scraper_profiles' && change.operation !== 'updated'
   )
-  if (membershipChanged) refetch()
+  if (membershipChanged) reload()
 })
 
 // Local state for editing
@@ -180,7 +180,7 @@ const deleteProfileName = computed(() => {
 
 // Deleting a profile unbinds scanners (FK set null), so the confirm dialog
 // names how many scanners will fall back to direct import.
-const { data: deleteAffectedScannerCount } = useAsyncData(
+const { data: deleteAffectedScannerCount } = useLiveQuery(
   async () => {
     if (!deleteProfileId.value) return 0
     const rows = await db
@@ -399,7 +399,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
 
       <!-- Content -->
       <template v-else>
-        <DialogBody class="max-h-[60vh] overflow-auto">
+        <DialogBody class="max-h-[60vh]">
           <StateView
             v-if="profiles.length === 0"
             state="empty"

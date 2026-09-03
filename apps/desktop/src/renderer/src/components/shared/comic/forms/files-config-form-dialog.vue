@@ -12,7 +12,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { comics } from '@shared/db'
-import { useAsyncData, useComicFileSync } from '@renderer/composables'
+import { useLiveQuery, useComicFileSync } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -54,7 +54,7 @@ const dirPath = ref('')
 const isSaving = ref(false)
 
 // Fetch comic data when dialog opens
-const { data: comic, isLoading } = useAsyncData(
+const { data: comic, isLoading } = useLiveQuery(
   () => db.query.comics.findFirst({ where: eq(comics.id, props.comicId) }),
   {
     watch: [() => props.comicId],

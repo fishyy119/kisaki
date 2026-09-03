@@ -13,7 +13,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { animes } from '@shared/db'
-import { useAsyncData, useAnimeFileSync } from '@renderer/composables'
+import { useLiveQuery, useAnimeFileSync } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -64,7 +64,7 @@ const formData = ref<FormData>({
 const isSaving = ref(false)
 
 // Fetch anime data when dialog opens
-const { data: anime, isLoading } = useAsyncData(
+const { data: anime, isLoading } = useLiveQuery(
   () => db.query.animes.findFirst({ where: eq(animes.id, props.animeId) }),
   {
     watch: [() => props.animeId],

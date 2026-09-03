@@ -130,7 +130,7 @@ async function handleOpenFolder(path: string): Promise<void> {
         <VirtualList
           :items="chapters"
           :get-key="(chapter) => chapter.id"
-          scroll-parent="region"
+          scroll="region"
           class="flex flex-col"
         >
           <template #item="{ item: chapter, index }">

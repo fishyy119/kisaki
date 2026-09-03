@@ -3,9 +3,9 @@
  *
  * Owns every library surface: the layout, the showcase home, one generated
  * detail route per entity type, and the organizer list pages. Pages are
- * lazy-loaded from their .vue files; route data resources are declared on
- * `meta.routeData` and loaded by the route-data kernel during navigation.
- * Detail paths, param names, pages, and resources all derive from one
+ * lazy-loaded from their .vue files; route queries are declared on
+ * `meta.routeQueries` and loaded by the query kernel during navigation.
+ * Detail paths, param names, pages, and queries all derive from one
  * registry, so adding a media type is one entry here plus its page component.
  */
 
@@ -15,7 +15,7 @@ import type {
   RouteRecordRaw
 } from 'vue-router'
 import { ALL_ENTITY_TYPES, type AllEntityType } from '@shared/entity-types'
-import type { RouteDataHandle } from '@renderer/core/route-data'
+import type { RouteQueryHandle } from '@renderer/core/query'
 import {
   entityDetailRouteName,
   getEntityDetailRoutePattern,
@@ -23,48 +23,48 @@ import {
   LIBRARY_HOME_PATH
 } from '@renderer/utils/entity-routes'
 import { useDefaultFromStore } from '@renderer/stores'
-import { gameDetailData } from '@renderer/composables/use-game'
-import { animeDetailData } from '@renderer/composables/use-anime'
-import { comicDetailData } from '@renderer/composables/use-comic'
-import { novelDetailData } from '@renderer/composables/use-novel'
-import { characterDetailData } from '@renderer/composables/use-character'
-import { personDetailData } from '@renderer/composables/use-person'
-import { companyDetailData } from '@renderer/composables/use-company'
-import { collectionDetailData } from '@renderer/composables/use-collection'
-import { tagDetailData } from '@renderer/composables/use-tag'
-import { showcaseData } from './composables/use-showcase-sections'
-import { favoritesData } from './composables/use-favorites'
-import { uncategorizedListData } from './composables/use-uncategorized-list'
-import { collectionsListData } from './composables/use-collections-list'
+import { gameDetailQuery } from '@renderer/composables/use-game'
+import { animeDetailQuery } from '@renderer/composables/use-anime'
+import { comicDetailQuery } from '@renderer/composables/use-comic'
+import { novelDetailQuery } from '@renderer/composables/use-novel'
+import { characterDetailQuery } from '@renderer/composables/use-character'
+import { personDetailQuery } from '@renderer/composables/use-person'
+import { companyDetailQuery } from '@renderer/composables/use-company'
+import { collectionDetailQuery } from '@renderer/composables/use-collection'
+import { tagDetailQuery } from '@renderer/composables/use-tag'
+import { showcaseQuery } from './composables/use-showcase-sections'
+import { favoritesQuery } from './composables/use-favorites'
+import { uncategorizedQuery } from './composables/use-uncategorized-list'
+import { collectionsQuery } from './composables/use-collections-list'
 
 // =============================================================================
 // Entity detail routes
 // =============================================================================
 
 const ENTITY_DETAIL_ROUTES = {
-  game: { page: () => import('./pages/game-detail-page.vue'), data: gameDetailData },
-  anime: { page: () => import('./pages/anime-detail-page.vue'), data: animeDetailData },
-  comic: { page: () => import('./pages/comic-detail-page.vue'), data: comicDetailData },
-  novel: { page: () => import('./pages/novel-detail-page.vue'), data: novelDetailData },
+  game: { page: () => import('./pages/game-detail-page.vue'), query: gameDetailQuery },
+  anime: { page: () => import('./pages/anime-detail-page.vue'), query: animeDetailQuery },
+  comic: { page: () => import('./pages/comic-detail-page.vue'), query: comicDetailQuery },
+  novel: { page: () => import('./pages/novel-detail-page.vue'), query: novelDetailQuery },
   character: {
     page: () => import('./pages/character-detail-page.vue'),
-    data: characterDetailData
+    query: characterDetailQuery
   },
-  person: { page: () => import('./pages/person-detail-page.vue'), data: personDetailData },
-  company: { page: () => import('./pages/company-detail-page.vue'), data: companyDetailData },
+  person: { page: () => import('./pages/person-detail-page.vue'), query: personDetailQuery },
+  company: { page: () => import('./pages/company-detail-page.vue'), query: companyDetailQuery },
   collection: {
     page: () => import('./pages/collection-detail-page.vue'),
-    data: collectionDetailData
+    query: collectionDetailQuery
   },
-  tag: { page: () => import('./pages/tag-detail-page.vue'), data: tagDetailData }
-} satisfies Record<AllEntityType, { page: () => Promise<unknown>; data: RouteDataHandle }>
+  tag: { page: () => import('./pages/tag-detail-page.vue'), query: tagDetailQuery }
+} satisfies Record<AllEntityType, { page: () => Promise<unknown>; query: RouteQueryHandle }>
 
 const entityDetailRoutes: RouteRecordRaw[] = ALL_ENTITY_TYPES.map((entityType) => ({
   path: getEntityDetailRoutePattern(entityType),
   name: entityDetailRouteName(entityType),
   component: ENTITY_DETAIL_ROUTES[entityType].page,
   props: true,
-  meta: { routeData: [ENTITY_DETAIL_ROUTES[entityType].data] }
+  meta: { routeQueries: [ENTITY_DETAIL_ROUTES[entityType].query] }
 }))
 
 // =============================================================================
@@ -104,27 +104,27 @@ export const libraryRoutes: RouteRecordRaw[] = [
         path: '',
         name: 'showcase',
         component: () => import('./pages/showcase-page.vue'),
-        meta: { routeData: [showcaseData] }
+        meta: { routeQueries: [showcaseQuery] }
       },
       ...entityDetailRoutes,
       {
         path: 'collections',
         name: 'collections',
         component: () => import('./pages/collections-page.vue'),
-        meta: { routeData: [collectionsListData] }
+        meta: { routeQueries: [collectionsQuery] }
       },
       {
         path: 'uncategorized/:entityType',
         name: 'uncategorized',
         component: () => import('./pages/uncategorized-page.vue'),
         props: true,
-        meta: { routeData: [uncategorizedListData] }
+        meta: { routeQueries: [uncategorizedQuery] }
       },
       {
         path: 'favorites',
         name: 'favorites',
         component: () => import('./pages/favorites-page.vue'),
-        meta: { routeData: [favoritesData] }
+        meta: { routeQueries: [favoritesQuery] }
       }
     ]
   }

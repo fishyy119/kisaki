@@ -33,7 +33,7 @@ import {
 } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { formatExplorerContext } from '@renderer/utils/explorer-context'
-import { getFilterRelevantTables } from '@shared/filter'
+import { getAllFilterReadTables } from '@shared/filter'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
@@ -68,7 +68,7 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
   // Recompute maps when NSFW visibility changes
   watch(showNsfw, async () => {
     if (!isInitialized.value) return
-    await Promise.all([refetchAllStatic(), refetchAllDynamic()])
+    await Promise.all([reloadAllStatic(), reloadAllDynamic()])
   })
 
   function getStaticMap(entityType: ContentEntityType): Ref<FromMap> {
@@ -113,7 +113,7 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
    */
   async function init() {
     if (isInitialized.value) return
-    await Promise.all([refetchAllStatic(), refetchAllDynamic()])
+    await Promise.all([reloadAllStatic(), reloadAllDynamic()])
     isInitialized.value = true
     setupEventListeners()
   }
@@ -122,11 +122,11 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
   // Static collection handling
   // =========================================================================
 
-  async function refetchAllStatic() {
-    await Promise.all(CONTENT_ENTITY_TYPES.map((type) => refetchStaticType(type)))
+  async function reloadAllStatic() {
+    await Promise.all(CONTENT_ENTITY_TYPES.map((type) => reloadStaticType(type)))
   }
 
-  async function refetchStaticType(entityType: ContentEntityType) {
+  async function reloadStaticType(entityType: ContentEntityType) {
     const target = getStaticMap(entityType)
     const newMap = new Map<string, FromEntry>()
 
@@ -192,11 +192,11 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
   // Dynamic collection handling
   // =========================================================================
 
-  async function refetchAllDynamic() {
-    await Promise.all(CONTENT_ENTITY_TYPES.map((type) => refetchDynamicType(type)))
+  async function reloadAllDynamic() {
+    await Promise.all(CONTENT_ENTITY_TYPES.map((type) => reloadDynamicType(type)))
   }
 
-  async function refetchDynamicType(entityType: ContentEntityType) {
+  async function reloadDynamicType(entityType: ContentEntityType) {
     const target = getDynamicMap(entityType)
     const newMap = new Map<string, FromEntry>()
 
@@ -244,31 +244,31 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
   // =========================================================================
 
   function setupEventListeners() {
-    // Debounced per-type dynamic refetches for entity/link table changes
-    const debouncedDynamicRefetch = new Map(
-      CONTENT_ENTITY_TYPES.map((type) => [type, useDebounceFn(() => refetchDynamicType(type), 300)])
+    // Debounced per-type dynamic reloads for entity/link table changes
+    const debouncedDynamicReload = new Map(
+      CONTENT_ENTITY_TYPES.map((type) => [type, useDebounceFn(() => reloadDynamicType(type), 300)])
     )
 
     const handleStaticChange = (table: TableName) => {
       if (table === 'collections') {
-        // Order might have changed - refetch all static
-        void refetchAllStatic()
+        // Order might have changed - reload all static
+        void reloadAllStatic()
         return
       }
       for (const type of CONTENT_ENTITY_TYPES) {
-        if (COLLECTION_LINKS[type].tableName === table) void refetchStaticType(type)
+        if (COLLECTION_LINKS[type].tableName === table) void reloadStaticType(type)
       }
     }
 
     const handleDynamicChange = (table: TableName) => {
       if (table === 'collections') {
-        // dynamicConfig might have changed - refetch all dynamic
-        void refetchAllDynamic()
+        // dynamicConfig might have changed - reload all dynamic
+        void reloadAllDynamic()
         return
       }
       for (const type of CONTENT_ENTITY_TYPES) {
-        if (getFilterRelevantTables(type).includes(table)) {
-          void debouncedDynamicRefetch.get(type)?.()
+        if (getAllFilterReadTables(type).includes(table)) {
+          void debouncedDynamicReload.get(type)?.()
         }
       }
     }
@@ -288,9 +288,9 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
     isInitialized: readonly(isInitialized),
     getFrom,
     init,
-    refetchAllStatic,
-    refetchAllDynamic,
-    refetchStaticType,
-    refetchDynamicType
+    reloadAllStatic,
+    reloadAllDynamic,
+    reloadStaticType,
+    reloadDynamicType
   }
 })

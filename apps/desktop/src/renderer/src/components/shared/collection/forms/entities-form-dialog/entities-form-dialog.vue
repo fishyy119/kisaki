@@ -15,7 +15,7 @@ import {
   insertCollectionLinks,
   queryCollectionMembers
 } from '@renderer/core/db'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useRenderState } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import {
   Dialog,
@@ -86,8 +86,8 @@ const {
   data: fetchedLinks,
   isLoading,
   error,
-  refetch
-} = useAsyncData(
+  reload
+} = useLiveQuery(
   async () => {
     const groups = await Promise.all(
       CONTENT_ENTITY_TYPES.map(async (entityType) => {
@@ -124,7 +124,7 @@ watch(
   () => open.value,
   (isOpen) => {
     if (isOpen) {
-      refetch()
+      reload()
     }
   },
   { immediate: true }
@@ -278,7 +278,7 @@ const entityTypeModel = computed({
         <DialogHeader>
           <DialogTitle>{{ m.library.forms.editCollectionEntities }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <!-- Entity type tabs -->
           <SegmentedControl
             v-model="entityTypeModel"
@@ -311,7 +311,7 @@ const entityTypeModel = computed({
             v-else
             :items="currentTypeLinks"
             :get-key="(link) => link.id"
-            scroll-parent="region"
+            scroll="region"
             class="flex flex-col gap-1"
           >
             <template #item="{ item: link, index }">

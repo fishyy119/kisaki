@@ -6,7 +6,7 @@
   this is the single loading indication for route transitions.
 -->
 <script setup lang="ts">
-import { isNavigationPending } from '@renderer/core/route-data'
+import { isNavigationPending } from '@renderer/core/query'
 import { useDelayedLoading } from '@renderer/composables'
 
 const { showLoading } = useDelayedLoading(isNavigationPending, 'local')

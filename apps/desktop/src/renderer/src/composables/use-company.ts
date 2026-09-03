@@ -1,7 +1,7 @@
 /**
  * Company data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * The provider/consumer shell (route query, dialog provider, invalidation) comes
  * from the entity detail context factory; this module owns what a company
  * detail surface fetches and shows.
  */
@@ -187,8 +187,8 @@ async function fetchCompanyData(
 // Context Wiring
 // =============================================================================
 
-/** Link and relation rows attribute to the company; the tables they join match by table. */
-const COMPANY_READS: readonly TableName[] = [
+/** Link rows, relation rows, and the tables the links join. */
+const COMPANY_TABLES: readonly TableName[] = [
   'company_tag_links',
   'tags',
   'game_company_links',
@@ -215,10 +215,10 @@ const companyDetail = createEntityDetailContext<CompanyData, EntitySpoilerParams
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchCompanyData(id, params.spoilersRevealed, view.showNsfw),
-  reads: COMPANY_READS
+  tables: COMPANY_TABLES
 })
 
-export const companyDetailData = companyDetail.detailData
+export const companyDetailQuery = companyDetail.detailQuery
 export const useCompanyRouteProvider = companyDetail.useRouteProvider
 export const useCompanyDialogProvider = companyDetail.useDialogProvider
 export const useCompany = companyDetail.useContext

@@ -1,24 +1,28 @@
-import { computed, onMounted, onUnmounted, ref, unref, watch, type Ref } from 'vue'
-import { useOptionalScrollRegion } from '@renderer/components/ui/scroll-region'
-import { onLayoutInvalidate, invalidateLayout } from './virtual-layout-invalidation'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  toValue,
+  type MaybeRefOrGetter,
+  type Ref
+} from 'vue'
+import { useScrollRegion } from '@renderer/components/ui/scroll-region'
 
 /**
- * External scroll parent of a virtual component: `'region'` for the enclosing
- * ScrollRegion (resolved through the component tree, so it is known at setup,
- * before anything is in the DOM), a concrete element, or null/undefined for
- * self-contained scrolling.
+ * Where a virtual component scrolls: on its own container (`'self'`) or
+ * inside the enclosing ScrollRegion (`'region'`, resolved through the
+ * component tree so it is known at setup, before anything is in the DOM).
  */
-export type VirtualScrollParent = HTMLElement | 'region' | null | undefined
+export type VirtualScroll = 'self' | 'region'
 
 export interface UseVirtualScrollParentOptions {
   /** Reference to the container element */
   containerRef: Ref<HTMLElement | undefined>
-  /** External scroll parent, or 'region' for the enclosing ScrollRegion */
-  scrollParent: Ref<VirtualScrollParent>
+  /** Read once at setup: the scroll parent is a fact of the component tree, fixed for the instance. */
+  scroll: MaybeRefOrGetter<VirtualScroll>
   /** Callback to trigger virtualizer measure (called lazily to avoid circular deps) */
   onMeasure?: () => void
-  /** Whether this is horizontal scrolling (affects margin and detection axis) */
-  horizontal?: boolean
   /** Callback when resize is detected */
   onResize?: () => void
 }
@@ -30,36 +34,28 @@ export interface UseVirtualScrollParentOptions {
  * renders for before it attaches.
  */
 export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
-  const { containerRef, scrollParent, onMeasure, horizontal = false, onResize } = options
+  const { containerRef, onMeasure, onResize } = options
 
-  const region = useOptionalScrollRegion()
-  if (unref(scrollParent) === 'region' && !region) {
-    throw new Error('scroll-parent="region" requires an enclosing ScrollRegion')
+  const scroll = toValue(options.scroll)
+  const region = scroll === 'region' ? useScrollRegion() : null
+  if (scroll === 'region' && !region) {
+    throw new Error('scroll="region" requires an enclosing ScrollRegion')
   }
 
-  /** The effective external scroll parent; null means self-contained scrolling. */
-  const resolvedParent = computed<HTMLElement | null>(() => {
-    const wanted = unref(scrollParent)
-    if (!wanted) return null
-    if (wanted === 'region') return region?.element.value ?? null
-    return wanted
-  })
+  /** The region's scroll element; null while self-contained or before the region mounts. */
+  const resolvedParent = computed<HTMLElement | null>(() => region?.element.value ?? null)
 
-  // Get the effective scroll element
   const getScrollElement = () => resolvedParent.value ?? containerRef.value ?? null
 
   /**
-   * Offset the parent is at, or is about to be at. A region answers with its
-   * remembered offset before its element exists, so the first render already
-   * shows the rows at that offset and the virtualizer's attach-time scroll to
-   * this value is a no-op: a virtual component never moves a scroll element
-   * it did not create.
+   * Offset the scroll element is at when this component first renders. A
+   * component mounting late into a scrolled region reads the live offset, so
+   * its first render shows the right rows and the virtualizer's attach-time
+   * scroll to this value is a no-op: a virtual component never moves a scroll
+   * element it did not create.
    */
   function initialOffset(): number {
-    const wanted = unref(scrollParent)
-    if (!wanted) return 0
-    if (wanted === 'region') return horizontal ? 0 : (region?.offset() ?? 0)
-    return horizontal ? wanted.scrollLeft : wanted.scrollTop
+    return region?.offset() ?? 0
   }
 
   const scrollMargin = ref(0)
@@ -71,10 +67,6 @@ export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
 
     const containerRect = containerRef.value.getBoundingClientRect()
     const parentRect = parent.getBoundingClientRect()
-
-    if (horizontal) {
-      return containerRect.left - parentRect.left + parent.scrollLeft
-    }
     return containerRect.top - parentRect.top + parent.scrollTop
   }
 
@@ -101,14 +93,14 @@ export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
     })
   }
 
-  // Internal state
   let resizeObserver: ResizeObserver | null = null
   let unsubscribeLayout: (() => void) | null = null
 
   onMounted(() => {
-    scheduleScrollMarginUpdate()
+    // Synchronous, so the first painted frame already positions rows below
+    // whatever precedes the container in the region; churn goes through rAF.
+    updateScrollMargin()
 
-    // Setup resize observer
     resizeObserver = new ResizeObserver(() => {
       scheduleScrollMarginUpdate()
       onResize?.()
@@ -118,39 +110,16 @@ export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
     const parent = resolvedParent.value
     if (parent) resizeObserver.observe(parent)
 
-    // Subscribe to layout invalidation
-    if (parent) {
-      unsubscribeLayout = onLayoutInvalidate(parent, scheduleScrollMarginUpdate)
-      invalidateLayout(parent)
+    if (region) {
+      unsubscribeLayout = region.layout.subscribe(scheduleScrollMarginUpdate)
+      region.layout.invalidate()
     }
   })
 
   onUnmounted(() => {
-    const parent = resolvedParent.value
-    if (parent) invalidateLayout(parent)
+    region?.layout.invalidate()
     resizeObserver?.disconnect()
     unsubscribeLayout?.()
-  })
-
-  // Rewire observation and layout subscription to the resolved element
-  watch(resolvedParent, (nextParent, prevParent) => {
-    if (nextParent === prevParent) return
-
-    // Update resize observer
-    if (resizeObserver) {
-      if (prevParent) resizeObserver.unobserve(prevParent)
-      if (nextParent) resizeObserver.observe(nextParent)
-    }
-
-    // Update layout subscription
-    unsubscribeLayout?.()
-    unsubscribeLayout = null
-    scrollMargin.value = 0
-
-    if (!nextParent) return
-    unsubscribeLayout = onLayoutInvalidate(nextParent, scheduleScrollMarginUpdate)
-    scheduleScrollMarginUpdate()
-    invalidateLayout(nextParent)
   })
 
   return {
@@ -158,17 +127,13 @@ export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
     resolvedParent,
     getScrollElement,
     initialOffset,
-    scheduleScrollMarginUpdate,
     /**
      * Synchronous margin refresh for callers that need correct scroll math
      * right now (programmatic scrolls); the rAF-throttled path only serves
      * scroll/resize churn.
      */
     updateScrollMargin,
-    /** Notify sibling components that layout has changed */
-    notifyLayoutChange: () => {
-      const parent = resolvedParent.value
-      if (parent) invalidateLayout(parent)
-    }
+    /** Notify sibling components in the region that layout has changed */
+    notifyLayoutChange: () => region?.layout.invalidate()
   }
 }

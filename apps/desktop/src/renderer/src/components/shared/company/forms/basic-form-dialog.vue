@@ -8,7 +8,7 @@ import { ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { companies, type PartialDate } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,7 @@ const isSaving = ref(false)
 const foundedDateInput = ref<PartialDateInputExpose | null>(null)
 
 // Fetch company data when dialog opens
-const { data: company, isLoading } = useAsyncData(
+const { data: company, isLoading } = useLiveQuery(
   () => db.query.companies.findFirst({ where: eq(companies.id, props.companyId) }),
   {
     watch: [() => props.companyId],
@@ -131,7 +131,7 @@ function handleCancel() {
           <DialogTitle>{{ m.library.forms.editBasicInfo }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto">
+          <DialogBody class="max-h-[60vh]">
             <FieldGroup>
               <Field>
                 <FieldLabel>{{ m.library.fields.name }}</FieldLabel>

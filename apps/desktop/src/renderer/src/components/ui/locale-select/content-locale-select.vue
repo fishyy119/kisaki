@@ -8,6 +8,8 @@ import { cn } from '@renderer/utils/cn'
 
 interface Props {
   allowEmpty?: boolean
+  /** Label of the empty choice; defaults to "not specified". */
+  placeholder?: string
   class?: HTMLAttributes['class']
   triggerClass?: HTMLAttributes['class']
   size?: 'default' | 'sm'
@@ -15,12 +17,15 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   allowEmpty: true,
+  placeholder: undefined,
   size: 'default'
 })
 
 const model = defineModel<ContentLocale | null>({ default: null })
 
 const { m } = useI18n()
+
+const emptyLabel = computed(() => props.placeholder ?? m.value.states.notSpecified)
 
 const EMPTY_VALUE = '__empty__'
 
@@ -53,7 +58,7 @@ const displayValue = computed(() => {
       <span
         v-else
         class="text-muted-foreground"
-        >{{ m.states.notSpecified }}</span
+        >{{ emptyLabel }}</span
       >
     </SelectTrigger>
     <SelectContent>
@@ -62,7 +67,7 @@ const displayValue = computed(() => {
         :value="EMPTY_VALUE"
         class="text-muted-foreground"
       >
-        {{ m.states.notSpecified }}
+        {{ emptyLabel }}
       </SelectItem>
       <SelectItem
         v-for="option in options"

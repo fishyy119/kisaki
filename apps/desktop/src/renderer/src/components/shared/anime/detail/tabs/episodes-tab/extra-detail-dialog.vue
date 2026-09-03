@@ -118,7 +118,7 @@ async function handleDelete(): Promise<void> {
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="flex-1 min-h-0 overflow-auto space-y-4">
+        <DialogBody class="flex-1 min-h-0 space-y-4">
           <!-- Live playback progress -->
           <MediaPlaybackProgress
             v-if="isPlaying"

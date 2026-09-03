@@ -17,7 +17,7 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { StateView } from '@renderer/components/ui/state-view'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   markEpisodesWatched,
   readUnwatchedEpisodeCounts
@@ -39,7 +39,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-const { data: counts, isLoading } = useAsyncData(() => readUnwatchedEpisodeCounts(props.animeId), {
+const { data: counts, isLoading } = useLiveQuery(() => readUnwatchedEpisodeCounts(props.animeId), {
   watch: [() => props.animeId],
   enabled: () => open.value
 })

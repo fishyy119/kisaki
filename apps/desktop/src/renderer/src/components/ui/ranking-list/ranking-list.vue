@@ -89,12 +89,12 @@ const inlineColumns = computed(() => {
         <DialogHeader>
           <DialogTitle>{{ expandTitleText }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[65vh] overflow-y-auto scrollbar-thin">
+        <DialogBody class="max-h-[65vh] scrollbar-thin">
           <!-- The full dataset can carry thousands of rows, so they virtualize -->
           <VirtualList
             :items="props.items"
             :get-key="(item) => item.id"
-            scroll-parent="region"
+            scroll="region"
             class="flex flex-col"
           >
             <template #item="{ item, index }">

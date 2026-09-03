@@ -8,7 +8,7 @@ import { ref, computed, watch } from 'vue'
 import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
 import { queryEntityTagLinks, replaceEntityTagLinks } from '@renderer/core/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -72,7 +72,7 @@ watch(
   }
 )
 
-const { data: results, isLoading } = useAsyncData(
+const { data: results, isLoading } = useLiveQuery(
   () => queryEntityTagLinks(props.entityType, props.entityId),
   {
     watch: [() => props.entityId],
@@ -244,7 +244,7 @@ function handleRevealSpoilersConfirm() {
         <DialogHeader>
           <DialogTitle>{{ m.library.forms.editTags }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <StateView
             v-if="items.length === 0"
             state="empty"
@@ -256,7 +256,7 @@ function handleRevealSpoilersConfirm() {
             v-else
             :items="displayItems"
             :get-key="(entry) => entry.item.id"
-            scroll-parent="region"
+            scroll="region"
             class="flex flex-col gap-1"
           >
             <template #item="{ item: { item, spoiler }, index }">

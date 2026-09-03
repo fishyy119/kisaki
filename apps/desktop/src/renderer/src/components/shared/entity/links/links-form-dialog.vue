@@ -8,7 +8,7 @@
 import { ref, computed, watch } from 'vue'
 import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -82,7 +82,7 @@ watch(
   }
 )
 
-const { data: results, isLoading } = useAsyncData(() => spec.value.list(props.entityId), {
+const { data: results, isLoading } = useLiveQuery(() => spec.value.list(props.entityId), {
   watch: [() => props.entityId],
   enabled: () => open.value
 })
@@ -309,7 +309,7 @@ function handleRevealSpoilersConfirm() {
         <DialogHeader>
           <DialogTitle>{{ spec.title(m) }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <div class="space-y-4">
             <StateView
               v-if="items.length === 0"
@@ -330,7 +330,7 @@ function handleRevealSpoilersConfirm() {
                   <VirtualList
                     :items="withSpoiler(groupedItems[role]!)"
                     :get-key="(entry) => entry.link.id"
-                    scroll-parent="region"
+                    scroll="region"
                     class="flex flex-col gap-1"
                   >
                     <template #item="{ item: { link, spoiler, imageUrl }, index }">

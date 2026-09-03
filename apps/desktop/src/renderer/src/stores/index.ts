@@ -10,7 +10,7 @@ export {
 export { useReadingActivityStore } from './reading-activity'
 export { useScannerStore } from './scanner'
 export { useDefaultFromStore } from './default-from'
-export { usePreferencesStore } from './preferences'
+export { usePreferencesStore, visibilityView, type VisibilityView } from './preferences'
 export { useReaderSettingsStore } from './reader-settings'
 export { useUpdaterStore } from './updater'
 export { useTaskRunStore } from './task-run'

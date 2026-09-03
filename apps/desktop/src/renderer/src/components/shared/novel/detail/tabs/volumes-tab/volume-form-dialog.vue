@@ -8,7 +8,7 @@ import { computed, ref, watch } from 'vue'
 import { eq, max } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { novelVolumes, type PartialDate } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -62,7 +62,7 @@ const isSaving = ref(false)
 const deleteConfirmOpen = ref(false)
 const releaseDateInput = ref<PartialDateInputExpose | null>(null)
 
-const { data: volume, isLoading } = useAsyncData(
+const { data: volume, isLoading } = useLiveQuery(
   async () => {
     if (!props.volumeId) return null
     return (

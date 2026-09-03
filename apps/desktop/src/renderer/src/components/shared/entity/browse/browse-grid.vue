@@ -25,7 +25,7 @@ const emit = defineEmits<{
   <VirtualGrid
     :items="props.entities"
     :get-key="(item) => item.id"
-    scroll-parent="region"
+    scroll="region"
     class="grid grid-cols-[repeat(auto-fill,8rem)] justify-between gap-3"
   >
     <template #item="{ item }">

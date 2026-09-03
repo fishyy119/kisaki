@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { newId } from '@shared/id'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
+import { useLiveQuery, useI18n } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { collections } from '@shared/db'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
@@ -74,18 +74,14 @@ const selectedIdsModel = defineModel<string[]>('selectedIds', { default: () => [
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
 
-const { data: allCollections, refetch } = useAsyncData(
+const { data: allCollections } = useLiveQuery(
   () =>
     db.query.collections.findMany({
       columns: { id: true, name: true },
       ...(showNsfw.value ? {} : { where: (c, { eq }) => eq(c.isNsfw, false) })
     }),
-  { watch: [showNsfw] }
+  { watch: [showNsfw], invalidate: { tables: ['collections'] } }
 )
-
-useDbChanges(({ tables }) => {
-  if (tables.has('collections')) refetch()
-})
 
 // Build entity list: optional "none" + all collections
 const collectionEntities = computed(() => {

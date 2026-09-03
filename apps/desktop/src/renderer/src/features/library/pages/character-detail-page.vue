@@ -42,7 +42,7 @@ const { exit } = useEntityDetailRoute('character', characterId)
 const { m } = useI18n()
 
 // =============================================================================
-// Provider (data settled during navigation by the route loader)
+// Provider (data committed by the route query before the page mounts)
 // =============================================================================
 
 const {
@@ -215,10 +215,7 @@ function handleRevealSpoilersConfirm() {
     </PageHeader>
 
     <!-- Main content -->
-    <ScrollRegion
-      :memory="route.path"
-      class="bg-background p-4"
-    >
+    <ScrollRegion class="bg-background p-4">
       <CharacterDetailContent />
     </ScrollRegion>
 

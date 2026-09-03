@@ -92,7 +92,7 @@ function handleCancel() {
           </span>
         </DialogHeader>
 
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <FilterBuilder
             v-model="localFilter"
             :ui-spec="props.uiSpec"

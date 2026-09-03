@@ -4,7 +4,7 @@
  * The user-facing query state every browse surface holds: which content
  * entity type to show, free-text search, a filter, and a sort. Values are
  * replaced wholesale, never mutated, so a shallow holder sees every change.
- * Pure over the shared contracts, so route loaders import it directly.
+ * Pure over the shared contracts, so route queries import it directly.
  */
 
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'

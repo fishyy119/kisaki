@@ -16,7 +16,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { StateView } from '@renderer/components/ui/state-view'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { markVolumesRead, readUnreadVolumeCount } from '@renderer/composables/novel-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
@@ -34,7 +34,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-const { data: pending, isLoading } = useAsyncData(() => readUnreadVolumeCount(props.novelId), {
+const { data: pending, isLoading } = useLiveQuery(() => readUnreadVolumeCount(props.novelId), {
   watch: [() => props.novelId],
   enabled: () => open.value
 })

@@ -2,13 +2,12 @@
  * Entity detail context factory.
  *
  * One implementation of the provider/consumer shell every entity detail
- * surface shares: a route data resource keyed by the entity id (params reset
- * across entries, invalidation attributed to the entity), a dialog provider
- * that fetches after mount and evaluates the same invalidation declaration,
- * computed projections over the fetched data, and the injected consumer.
- * What an entity fetches — its data shape, its in-page params, its queries,
- * and the tables those queries read — stays in its own `use-<entity>.ts` as
- * the spec.
+ * surface shares: a route query keyed by the entity id (params reset across
+ * entries), a dialog provider that fetches after mount, computed projections
+ * over the fetched data, and the injected consumer. Both providers evaluate
+ * the same invalidation declaration. What an entity fetches — its data
+ * shape, its in-page params, its queries, and the tables those queries read —
+ * stays in its own `use-<entity>.ts` as the spec.
  */
 
 import {
@@ -27,27 +26,19 @@ import {
 import { storeToRefs } from 'pinia'
 import { ENTITY_TABLES } from '@renderer/core/db'
 import {
-  buildDbPredicate,
-  defineRouteData,
+  defineRouteQuery,
   projectParams,
-  type RouteData,
-  type RouteDataInvalidate,
-  type RouteDataParams
-} from '@renderer/core/route-data'
-import { usePreferencesStore } from '@renderer/stores'
+  type ParamRefs,
+  type RouteQuery
+} from '@renderer/core/query'
+import { usePreferencesStore, visibilityView, type VisibilityView } from '@renderer/stores'
 import { entityRouteParam } from '@renderer/utils/entity-routes'
 import type { AllEntityType } from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
-import { useAsyncData } from './use-async-data'
-import { useDbChanges } from './use-db-changes'
+import { useLiveQuery } from './use-live-query'
 
-/** Global visibility preference every detail fetch filters by. */
-export interface EntityDetailView {
-  showNsfw: boolean
-}
-
-/** What a spec's read-set declaration may depend on. */
-export interface EntityDetailReadsContext<TData extends object, TParams extends object> {
+/** What a spec's table declaration may depend on. */
+export interface EntityDetailTablesContext<TData extends object, TParams extends object> {
   params: TParams
   /** The loaded data when known; a declaration that needs it returns its upper bound otherwise. */
   data: TData | null | undefined
@@ -63,35 +54,30 @@ export interface EntityDetailSpec<TData extends object, TParams extends object> 
    * different entry loads; a dialog keeps its own per instance.
    */
   initialParams(): TParams
-  fetch(id: string, params: TParams, view: EntityDetailView): Promise<TData | null>
-  /**
-   * Every table `fetch` reads besides the entity's own table: owned rows,
-   * link rows, and the satellite tables the links join. Rows that reference
-   * the entity are attributed to it by the schema; satellite tables match by
-   * table.
-   */
-  reads:
+  fetch(id: string, params: TParams, view: VisibilityView): Promise<TData | null>
+  /** Every table `fetch` reads besides the entity's own table. */
+  tables:
     | readonly TableName[]
-    | ((context: EntityDetailReadsContext<TData, TParams>) => readonly TableName[])
+    | ((context: EntityDetailTablesContext<TData, TParams>) => readonly TableName[])
 }
 
 export interface EntityDetailContextBase {
   /** Initial loading state (always false on the route surface after mount) */
   isLoading: Ref<boolean>
-  /** Background refetching state */
+  /** Background reloading state */
   isFetching: Ref<boolean>
   /** Error if any */
   error: Ref<string | null>
-  /** Manually refetch data */
-  refetch: () => Promise<void>
+  /** Run the fetch again; the displayed data stays until the result lands */
+  reload: () => Promise<void>
 }
 
 export type EntityDetailContext<TData extends object> = {
   readonly [K in keyof TData]: ComputedRef<TData[K]>
 } & EntityDetailContextBase
 
-/** One writable ref per in-page param; a set replaces the params and refetches (SWR). */
-export type EntityDetailParams<TParams extends object> = RouteDataParams<TParams>
+/** One writable ref per in-page param; a set replaces the params and reloads (SWR). */
+export type EntityDetailParams<TParams extends object> = ParamRefs<TParams>
 
 export type EntityDetailProviderReturn<
   TData extends object,
@@ -112,14 +98,14 @@ export function createEntitySpoilerParams(): EntitySpoilerParams {
 
 export interface EntityDetailContextApi<TData extends object, TParams extends object> {
   key: InjectionKey<EntityDetailContext<TData>>
-  /** Route data resource; declare on the detail route's `meta.routeData`. */
-  detailData: RouteData<TParams, TData>
+  /** Route query; declare on the detail route's `meta.routeQueries`. */
+  detailQuery: RouteQuery<TParams, TData>
   /**
    * Provide entity data on the route surface.
    *
-   * Data is committed by the route data kernel when the navigation confirms,
-   * so it is already settled when the page mounts. In-page changes (params,
-   * NSFW preference, db changes) trigger a non-blocking SWR refetch.
+   * Data is committed by the query kernel when the navigation confirms, so
+   * it is already settled when the page mounts. In-page changes (params, NSFW
+   * preference, db changes) trigger a non-blocking SWR reload.
    */
   useRouteProvider(): EntityDetailProviderReturn<TData, TParams>
   /**
@@ -137,7 +123,7 @@ interface EntityDetailSource<TData extends object> {
   isLoading: Ref<boolean>
   isFetching: Ref<boolean>
   error: Ref<string | null>
-  refetch: () => Promise<void>
+  reload: () => Promise<void>
 }
 
 export function createEntityDetailContext<TData extends object, TParams extends object>(
@@ -147,29 +133,24 @@ export function createEntityDetailContext<TData extends object, TParams extends 
   const routeParam = entityRouteParam(spec.entityType)
   const entityTable = ENTITY_TABLES[spec.entityType].tableName
 
-  // One declaration serves both surfaces: the entity's own table plus what
-  // the spec reads, attributed to the entity itself.
-  const invalidate: RouteDataInvalidate<string, TParams, TData> = {
-    reads: ({ params, data }) => [
+  // One declaration serves both surfaces: the entity's own table plus what the spec reads.
+  function tables(context: EntityDetailTablesContext<TData, TParams>): readonly TableName[] {
+    return [
       entityTable,
-      ...(typeof spec.reads === 'function' ? spec.reads({ params, data }) : spec.reads)
-    ],
-    scope: ({ key: id }) => [{ entity: spec.entityType, id }]
+      ...(typeof spec.tables === 'function' ? spec.tables(context) : spec.tables)
+    ]
   }
 
-  const detailData = defineRouteData<string, TParams, EntityDetailView, TData>({
+  const detailQuery = defineRouteQuery<string, TParams, VisibilityView, TData>({
     name: `${spec.entityType}-detail`,
     key: (route) => {
       const id = route.params[routeParam]
       return typeof id === 'string' && id !== '' ? id : null
     },
     params: () => spec.initialParams(),
-    view: () => {
-      const { showNsfw } = storeToRefs(usePreferencesStore())
-      return { showNsfw: showNsfw.value }
-    },
+    view: visibilityView,
     fetch: ({ key: id, params, view }) => spec.fetch(id, params, view),
-    invalidate
+    invalidate: { tables }
   })
 
   function provideContext(source: EntityDetailSource<TData>): EntityDetailContext<TData> {
@@ -187,7 +168,7 @@ export function createEntityDetailContext<TData extends object, TParams extends 
       isLoading: source.isLoading,
       isFetching: source.isFetching,
       error: source.error,
-      refetch: source.refetch
+      reload: source.reload
     }
 
     provide(key, context)
@@ -195,14 +176,14 @@ export function createEntityDetailContext<TData extends object, TParams extends 
   }
 
   function useRouteProvider(): EntityDetailProviderReturn<TData, TParams> {
-    const { data, error, isFetching, params, reload } = detailData()
+    const { data, error, isFetching, params, reload } = detailQuery()
 
     const context = provideContext({
       data,
       isLoading: ref(false),
       isFetching,
       error,
-      refetch: reload
+      reload
     })
 
     return { ...context, params }
@@ -215,9 +196,14 @@ export function createEntityDetailContext<TData extends object, TParams extends 
     const instanceParams = shallowRef<TParams>(spec.initialParams())
     const { showNsfw } = storeToRefs(usePreferencesStore())
 
-    const { data, isLoading, isFetching, error, refetch } = useAsyncData(
+    const { data, isLoading, isFetching, error, reload } = useLiveQuery(
       () => spec.fetch(toValue(entityId), instanceParams.value, { showNsfw: showNsfw.value }),
-      { watch: [entityId, instanceParams, showNsfw] }
+      {
+        watch: [entityId, instanceParams, showNsfw],
+        invalidate: {
+          tables: ({ data: loaded }) => tables({ params: instanceParams.value, data: loaded })
+        }
+      }
     )
 
     const params = projectParams(
@@ -227,19 +213,7 @@ export function createEntityDetailContext<TData extends object, TParams extends 
       }
     )
 
-    const context = provideContext({ data, isLoading, isFetching, error, refetch })
-
-    // The dialog evaluates the same declaration the route resource declares.
-    const predicate = computed(() =>
-      buildDbPredicate(invalidate, {
-        key: toValue(entityId),
-        params: instanceParams.value,
-        data: data.value
-      })
-    )
-    useDbChanges((batch) => {
-      if (predicate.value?.(batch)) void refetch()
-    })
+    const context = provideContext({ data, isLoading, isFetching, error, reload })
 
     return { ...context, params }
   }
@@ -252,5 +226,5 @@ export function createEntityDetailContext<TData extends object, TParams extends 
     return context
   }
 
-  return { key, detailData, useRouteProvider, useDialogProvider, useContext }
+  return { key, detailQuery, useRouteProvider, useDialogProvider, useContext }
 }

@@ -1,9 +1,9 @@
 /**
  * Back-to-top device: the one calibration both of its homes share.
  *
- * The overlay (`BackToTop`) serves scroll regions without chrome of their
- * own; a surface that already owns a footer strip (the library explorer)
- * consumes this composable directly and renders the button in that strip.
+ * The overlay (`BackToTop`) serves the scroll region it is rendered in; a
+ * surface that already owns a footer strip (the library explorer) calls this
+ * composable with the region's element and renders the button in that strip.
  * Visibility and the jump are decided here so the two homes never drift.
  */
 
@@ -31,7 +31,9 @@ export interface BackToTopControls {
   scrollToTop: () => void
 }
 
-export function useBackToTop(target: Ref<HTMLElement | null | undefined>): BackToTopControls {
+export function useBackToTop(
+  target: Readonly<Ref<HTMLElement | null | undefined>>
+): BackToTopControls {
   const visible = ref(false)
 
   function update(): void {

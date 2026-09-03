@@ -29,7 +29,6 @@ function handleNavClick() {
     <!-- Showcase link -->
     <RouterLink
       to="/library"
-      exact
       class="flex flex-1 items-center gap-1.5 h-7 px-2.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-exact-active]:text-foreground [&.router-link-exact-active]:bg-accent [&.router-link-exact-active]:shadow-raised"
     >
       <Icon

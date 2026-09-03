@@ -18,7 +18,7 @@ export {
 
 // Core composables
 export { useAmbientLight } from './use-ambient-light'
-export { useAsyncData, type UseAsyncDataOptions, type UseAsyncDataReturn } from './use-async-data'
+export { useLiveQuery, type UseLiveQueryOptions, type UseLiveQueryReturn } from './use-live-query'
 export { useDebouncedRef } from './use-debounced-ref'
 export {
   LOADING_PRESETS,
@@ -50,13 +50,12 @@ export {
   type EntityDetailContext,
   type EntityDetailParams,
   type EntityDetailProviderReturn,
-  type EntityDetailReadsContext,
   type EntityDetailSpec,
-  type EntityDetailView,
+  type EntityDetailTablesContext,
   type EntitySpoilerParams
 } from './entity-context'
 export {
-  gameDetailData,
+  gameDetailQuery,
   useGame,
   useGameDialogProvider,
   useGameRouteProvider,
@@ -65,7 +64,7 @@ export {
   type GameProviderReturn
 } from './use-game'
 export {
-  animeDetailData,
+  animeDetailQuery,
   useAnime,
   useAnimeDialogProvider,
   useAnimeRouteProvider,
@@ -91,7 +90,7 @@ export {
 } from './anime-completion'
 export { useAnimeWatching, type AnimeWatching } from './use-anime-watching'
 export {
-  comicDetailData,
+  comicDetailQuery,
   useComic,
   useComicDialogProvider,
   useComicRouteProvider,
@@ -108,7 +107,7 @@ export {
   toggleChapterRead
 } from './comic-completion'
 export {
-  novelDetailData,
+  novelDetailQuery,
   useNovel,
   useNovelDialogProvider,
   useNovelRouteProvider,
@@ -127,7 +126,7 @@ export {
 export { useReaderChrome, type ReaderChrome, type ReaderPanelTab } from './use-reader-chrome'
 export { useReadingClock } from './use-reading-clock'
 export {
-  collectionDetailData,
+  collectionDetailQuery,
   useCollection,
   useCollectionDialogProvider,
   useCollectionRouteProvider,
@@ -135,7 +134,7 @@ export {
   type CollectionProviderReturn
 } from './use-collection'
 export {
-  personDetailData,
+  personDetailQuery,
   usePerson,
   usePersonDialogProvider,
   usePersonRouteProvider,
@@ -144,7 +143,7 @@ export {
   type PersonProviderReturn
 } from './use-person'
 export {
-  characterDetailData,
+  characterDetailQuery,
   useCharacter,
   useCharacterDialogProvider,
   useCharacterRouteProvider,
@@ -153,7 +152,7 @@ export {
   type CharacterProviderReturn
 } from './use-character'
 export {
-  companyDetailData,
+  companyDetailQuery,
   useCompany,
   useCompanyDialogProvider,
   useCompanyRouteProvider,
@@ -162,7 +161,7 @@ export {
   type CompanyRelationEntry
 } from './use-company'
 export {
-  tagDetailData,
+  tagDetailQuery,
   useTag,
   useTagDialogProvider,
   useTagRouteProvider,

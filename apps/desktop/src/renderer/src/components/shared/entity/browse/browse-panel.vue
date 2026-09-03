@@ -5,10 +5,8 @@
   the host sizes the panel and paints its plane (pages pass `bg-background`,
   dialogs sit on the dialog slab) - the band carries fill only, never a pane.
 
-  The region's memory identity is the host's identity (a page passes its route
-  path; a dialog passes none) plus the list query: the same list restores its
-  offset, and a query change (type, search, filter, sort) is a new list that
-  enters at the top.
+  The scroll region is keyed by the list query: a query change (type, search,
+  filter, sort) is a new list, so it mounts a fresh viewport at the top.
 -->
 <script setup lang="ts">
 import { computed, type HTMLAttributes } from 'vue'
@@ -40,8 +38,6 @@ interface Props {
   emptyIcon?: string
   emptyTitle?: string
   emptyDescription?: string
-  /** Host identity the scroll memory is scoped to (a page's route path); omit for no memory. */
-  memory?: string
   class?: HTMLAttributes['class']
 }
 
@@ -57,9 +53,7 @@ const emit = defineEmits<{
 
 const { m } = useI18n()
 
-const memory = computed(() =>
-  props.memory !== undefined ? `${props.memory}?${JSON.stringify(query.value)}` : undefined
-)
+const queryIdentity = computed(() => JSON.stringify(query.value))
 
 const isQueryActive = computed(() => hasActiveEntityListQuery(query.value))
 
@@ -80,7 +74,7 @@ function handleClearQuery() {
     />
 
     <ScrollRegion
-      :memory="memory"
+      :key="queryIdentity"
       class="p-4"
     >
       <StateView

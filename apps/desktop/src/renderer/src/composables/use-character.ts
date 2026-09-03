@@ -1,7 +1,7 @@
 /**
  * Character data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * The provider/consumer shell (route query, dialog provider, invalidation) comes
  * from the entity detail context factory; this module owns what a character
  * detail surface fetches and shows.
  */
@@ -228,8 +228,8 @@ async function fetchCharacterData(
 // Context Wiring
 // =============================================================================
 
-/** Link rows attribute to the character; the tables they join match by table. */
-const CHARACTER_READS: readonly TableName[] = [
+/** Link rows and the tables the links join. */
+const CHARACTER_TABLES: readonly TableName[] = [
   'character_tag_links',
   'tags',
   'game_character_links',
@@ -260,10 +260,10 @@ const characterDetail = createEntityDetailContext<CharacterData, EntitySpoilerPa
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchCharacterData(id, params.spoilersRevealed, view.showNsfw),
-  reads: CHARACTER_READS
+  tables: CHARACTER_TABLES
 })
 
-export const characterDetailData = characterDetail.detailData
+export const characterDetailQuery = characterDetail.detailQuery
 export const useCharacterRouteProvider = characterDetail.useRouteProvider
 export const useCharacterDialogProvider = characterDetail.useDialogProvider
 export const useCharacter = characterDetail.useContext

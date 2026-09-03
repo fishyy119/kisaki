@@ -8,6 +8,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Input } from '@renderer/components/ui/input'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -167,7 +168,7 @@ async function runQuery(raw: string): Promise<void> {
       </div>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+    <ScrollRegion class="px-2 pb-2">
       <p
         v-if="isEmptyResult"
         class="px-2 py-1 text-xs text-muted-foreground"
@@ -216,6 +217,6 @@ async function runQuery(raw: string): Promise<void> {
       >
         {{ m.reader.search.tooMany({ count: MAX_RESULTS }) }}
       </p>
-    </div>
+    </ScrollRegion>
   </div>
 </template>

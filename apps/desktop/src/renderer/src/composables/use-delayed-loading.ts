@@ -48,8 +48,8 @@ export interface UseDelayedLoadingReturn {
  *
  * @example
  * ```ts
- * // With useAsyncData
- * const { isLoading } = useAsyncData(() => fetchData())
+ * // With useLiveQuery
+ * const { isLoading } = useLiveQuery(() => fetchData())
  * const { showLoading } = useDelayedLoading(isLoading)
  *
  * // With preset

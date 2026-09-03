@@ -40,7 +40,7 @@ const personId = computed(() => route.params.personId as string)
 const { exit } = useEntityDetailRoute('person', personId)
 
 // =============================================================================
-// Provider (data settled during navigation by the route loader)
+// Provider (data committed by the route query before the page mounts)
 // =============================================================================
 
 const { m } = useI18n()
@@ -208,10 +208,7 @@ function handleRevealSpoilersConfirm() {
     </PageHeader>
 
     <!-- Main content -->
-    <ScrollRegion
-      :memory="route.path"
-      class="bg-background p-4"
-    >
+    <ScrollRegion class="bg-background p-4">
       <PersonDetailContent />
     </ScrollRegion>
 

@@ -8,7 +8,6 @@
  */
 
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
@@ -19,10 +18,9 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import { LibraryShowcaseSection, LibraryShowcaseSectionsFormDialog } from '../components/showcase'
 
 const { m } = useI18n()
-const route = useRoute()
 
-// Data (committed by the route data kernel before the page mounts)
-const { sections } = useShowcaseSections()
+// Data (committed by the route query before the page mounts)
+const { sections, error } = useShowcaseSections()
 
 // Dialog state
 const isManagerOpen = ref(false)
@@ -32,7 +30,17 @@ const visibleSections = computed(() => sections.value.filter((s) => s.section.is
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <StateView
+    v-if="error"
+    state="error"
+    :error="error"
+    class="h-full bg-background"
+  />
+
+  <div
+    v-else
+    class="h-full flex flex-col"
+  >
     <!-- Header -->
     <PageHeader>
       <PageHeaderTitle
@@ -56,10 +64,7 @@ const visibleSections = computed(() => sections.value.filter((s) => s.section.is
     </PageHeader>
 
     <!-- Content -->
-    <ScrollRegion
-      :memory="route.path"
-      class="bg-background"
-    >
+    <ScrollRegion class="bg-background">
       <StateView
         v-if="visibleSections.length === 0"
         state="empty"

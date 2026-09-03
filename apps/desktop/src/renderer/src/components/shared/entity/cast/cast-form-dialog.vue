@@ -8,7 +8,7 @@
 import { ref, computed, watch } from 'vue'
 import { newId } from '@shared/id'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,7 @@ const itemFormOpen = ref(false)
 const deleteId = ref<string | null>(null)
 const isSaving = ref(false)
 
-const { data: results, isLoading } = useAsyncData(() => spec.value.list(props.entityId), {
+const { data: results, isLoading } = useLiveQuery(() => spec.value.list(props.entityId), {
   watch: [() => props.entityId, () => props.mediaType],
   enabled: () => open.value
 })
@@ -186,7 +186,7 @@ async function handleSave() {
         <DialogHeader>
           <DialogTitle>{{ m.library.fields.cast }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <StateView
             v-if="items.length === 0"
             state="empty"
@@ -198,7 +198,7 @@ async function handleSave() {
             v-else
             :items="items"
             :get-key="(item) => item.id"
-            scroll-parent="region"
+            scroll="region"
             class="flex flex-col gap-1"
           >
             <template #item="{ item }">

@@ -10,7 +10,7 @@ import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { scanners, type Scanner, type NameExtractionRule } from '@shared/db'
 import { MEDIA_TYPES } from '@shared/entity-types'
@@ -112,7 +112,7 @@ const isEdit = computed(() => !!props.scannerId)
 // Load Data on Open
 // =============================================================================
 
-const { data, isLoading, error } = useAsyncData(
+const { data, isLoading, error } = useLiveQuery(
   async () => {
     if (!props.scannerId) return null
     return await db.query.scanners.findFirst({
@@ -270,7 +270,7 @@ async function openLink(link: { href: string }): Promise<void> {
 
       <template v-else>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto">
+          <DialogBody class="max-h-[60vh]">
             <FieldGroup>
               <Field :label="m.scanner.form.name">
                 <FieldContent>
@@ -348,7 +348,7 @@ async function openLink(link: { href: string }): Promise<void> {
                 <FieldContent>
                   <ScraperProfileSelect
                     v-model="formData.scraperProfileId"
-                    :media-type="formData.type"
+                    :entity-type="formData.type"
                     allow-none
                   />
                 </FieldContent>

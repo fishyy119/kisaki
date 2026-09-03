@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
+import { useLiveQuery, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -41,17 +41,10 @@ async function fetchTag(): Promise<Tag | null> {
   return data ?? null
 }
 
-const { data: tag, refetch } = useAsyncData(fetchTag, {
+const { data: tag } = useLiveQuery(fetchTag, {
   watch: [() => props.tagId],
-  enabled: () => props.enabled
-})
-
-useDbChanges(({ changes }) => {
-  const updated = changes.some(
-    (change) =>
-      change.operation === 'updated' && change.table === 'tags' && change.id === props.tagId
-  )
-  if (updated) refetch()
+  enabled: () => props.enabled,
+  invalidate: { tables: ['tags'] }
 })
 
 const extensionMenuInput = computed(

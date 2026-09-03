@@ -241,7 +241,7 @@ const dialogTitle = computed(() => {
       <DialogHeader>
         <DialogTitle>{{ dialogTitle }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[65vh] overflow-auto">
+      <DialogBody class="max-h-[65vh]">
         <StateView
           v-if="isLoading"
           state="loading"

@@ -7,7 +7,7 @@
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { cn } from '@renderer/utils/cn'
 import {
   Dialog,
@@ -53,7 +53,7 @@ const imagesError = ref<Error | null>(null)
 const hasSearched = ref(false)
 
 // Fetch entry names when dialog opens
-const { data: entry, isLoading } = useAsyncData(() => spec.value.loadEntry(props.entityId), {
+const { data: entry, isLoading } = useLiveQuery(() => spec.value.loadEntry(props.entityId), {
   watch: [() => props.entityId],
   enabled: () => open.value
 })
@@ -148,106 +148,104 @@ watch(selectedProviderId, () => {
 
       <!-- Content -->
       <template v-else>
-        <DialogBody class="flex flex-col gap-4">
-          <!-- Search controls row -->
-          <div class="flex items-center gap-3">
-            <ScraperProviderSelect
-              v-model="selectedProviderId"
-              :entity-type="props.entityType"
-              :required-capabilities="[slot.searchCapability]"
-              class="w-[140px]"
-            />
+        <!-- Search controls row: a fixed band above the scrolling grid -->
+        <div class="flex items-center gap-3 px-4 py-3">
+          <ScraperProviderSelect
+            v-model="selectedProviderId"
+            :entity-type="props.entityType"
+            :required-capabilities="[slot.searchCapability]"
+            class="w-[140px]"
+          />
 
-            <Input
-              v-model="searchQuery"
-              :placeholder="m.library.forms.searchKeywordPlaceholder"
-              class="flex-1"
-              :disabled="isLoadingImages"
-              @keydown="handleKeyDown"
-            />
+          <Input
+            v-model="searchQuery"
+            :placeholder="m.library.forms.searchKeywordPlaceholder"
+            class="flex-1"
+            :disabled="isLoadingImages"
+            @keydown="handleKeyDown"
+          />
 
-            <Button
-              type="button"
-              :disabled="!selectedProviderId || isLoadingImages"
-              @click="handleSearch"
-            >
-              <Icon
-                v-if="isLoadingImages"
-                icon="icon-[mdi--loading]"
-                class="size-4 animate-spin"
-              />
-              <Icon
-                v-else
-                icon="icon-[mdi--magnify]"
-                class="size-4"
-              />
-              {{ m.actions.search }}
-            </Button>
-          </div>
-
-          <!-- Image grid -->
-          <div class="overflow-auto max-h-[60vh]">
-            <StateView
-              v-if="!hasSearched"
-              state="empty"
-              icon="icon-[mdi--image-plus-outline]"
-              :description="m.library.forms.searchStartHint"
-              class="py-12"
+          <Button
+            type="button"
+            :disabled="!selectedProviderId || isLoadingImages"
+            @click="handleSearch"
+          >
+            <Icon
+              v-if="isLoadingImages"
+              icon="icon-[mdi--loading]"
+              class="size-4 animate-spin"
             />
-            <StateView
-              v-else-if="isLoadingImages"
-              state="loading"
-              class="py-12"
-            />
-            <StateView
-              v-else-if="imagesError"
-              state="error"
-              :error="imagesError"
-              class="py-12"
-            />
-            <StateView
-              v-else-if="images.length === 0"
-              state="empty"
-              icon="icon-[mdi--image-off-outline]"
-              :description="m.library.forms.searchNoImages"
-              class="py-12"
-            />
-            <div
+            <Icon
               v-else
-              :class="cn('grid gap-3', slot.searchGridClass)"
+              icon="icon-[mdi--magnify]"
+              class="size-4"
+            />
+            {{ m.actions.search }}
+          </Button>
+        </div>
+
+        <!-- Image grid -->
+        <DialogBody class="max-h-[60vh] pt-0">
+          <StateView
+            v-if="!hasSearched"
+            state="empty"
+            icon="icon-[mdi--image-plus-outline]"
+            :description="m.library.forms.searchStartHint"
+            class="py-12"
+          />
+          <StateView
+            v-else-if="isLoadingImages"
+            state="loading"
+            class="py-12"
+          />
+          <StateView
+            v-else-if="imagesError"
+            state="error"
+            :error="imagesError"
+            class="py-12"
+          />
+          <StateView
+            v-else-if="images.length === 0"
+            state="empty"
+            icon="icon-[mdi--image-off-outline]"
+            :description="m.library.forms.searchNoImages"
+            class="py-12"
+          />
+          <div
+            v-else
+            :class="cn('grid gap-3', slot.searchGridClass)"
+          >
+            <button
+              v-for="(url, index) in images"
+              :key="index"
+              type="button"
+              :class="
+                cn(
+                  'relative overflow-hidden transition-colors border shadow-raised rounded-lg',
+                  'hover:border-primary',
+                  selectedUrl === url ? 'border-primary hover:border-primary' : 'border-border'
+                )
+              "
+              @click="selectedUrl = url"
             >
-              <button
-                v-for="(url, index) in images"
-                :key="index"
-                type="button"
-                :class="
-                  cn(
-                    'relative overflow-hidden transition-colors border shadow-raised rounded-lg',
-                    'hover:border-primary',
-                    selectedUrl === url ? 'border-primary hover:border-primary' : 'border-border'
-                  )
-                "
-                @click="selectedUrl = url"
+              <div :class="cn('w-full bg-muted', slot.aspectClass)">
+                <img
+                  :src="url"
+                  :alt="`Option ${index + 1}`"
+                  class="size-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div
+                v-if="selectedUrl === url"
+                class="absolute inset-0 bg-primary/30 flex items-center justify-center"
               >
-                <div :class="cn('w-full bg-muted', slot.aspectClass)">
-                  <img
-                    :src="url"
-                    :alt="`Option ${index + 1}`"
-                    class="size-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-                <div
-                  v-if="selectedUrl === url"
-                  class="absolute inset-0 bg-primary/30 flex items-center justify-center"
-                >
-                  <Icon
-                    icon="icon-[mdi--check-circle-outline]"
-                    class="size-8 text-primary"
-                  />
-                </div>
-              </button>
-            </div>
+                <Icon
+                  icon="icon-[mdi--check-circle-outline]"
+                  class="size-8 text-primary"
+                />
+              </div>
+            </button>
           </div>
         </DialogBody>
 

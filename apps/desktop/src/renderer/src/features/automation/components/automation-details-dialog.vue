@@ -146,7 +146,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[72vh] space-y-4 overflow-auto">
+      <DialogBody class="max-h-[72vh] space-y-4">
         <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div class="min-w-0">
             <div class="text-xs text-muted-foreground">{{ m.automation.details.command }}</div>
@@ -332,7 +332,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
 
       <DialogBody
         v-if="selectedRunRecord"
-        class="max-h-[72vh] space-y-4 overflow-auto"
+        class="max-h-[72vh] space-y-4"
       >
         <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div class="min-w-0">

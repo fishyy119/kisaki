@@ -68,7 +68,7 @@ const metadata = computed(() => [
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[72vh] space-y-4 overflow-auto overflow-x-hidden">
+      <DialogBody class="max-h-[72vh] space-y-4 overflow-x-hidden">
         <section
           v-if="warnings.length"
           class="space-y-2"

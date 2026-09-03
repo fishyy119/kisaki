@@ -21,7 +21,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { SortControl, type SortOption } from '@renderer/components/ui/sort-control'
 import { FilterDialog, getFilterUiSpec } from '@renderer/components/shared/filter'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { cn } from '@renderer/utils/cn'
 import { getEntityIcon } from '@renderer/utils/format'
 import { notify } from '@renderer/core/notify'
@@ -85,7 +85,7 @@ const localConfig = ref<DynamicCollectionConfig>(createDefaultConfig())
 const initialized = ref(false)
 const isSubmitting = ref(false)
 
-const { data: existingCollection, refetch } = useAsyncData(
+const { data: existingCollection, reload } = useLiveQuery(
   async () => {
     const data = await db.query.collections.findFirst({
       where: eq(collections.id, props.collectionId)
@@ -138,7 +138,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       initialized.value = false
-      refetch()
+      reload()
     }
   },
   { immediate: true }
@@ -254,7 +254,7 @@ const sortDirectionModels = createModelsByEntityType(createSortDirectionModel)
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="overflow-auto max-h-[60vh]">
+      <DialogBody class="max-h-[60vh]">
         <div class="space-y-2">
           <div
             v-for="type in CONTENT_ENTITY_TYPES"

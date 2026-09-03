@@ -9,12 +9,17 @@ import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { useLiveQuery } from '@renderer/composables/use-live-query'
 import ExtensionReleaseDialog from '../extension-release-dialog.vue'
 import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
 import ExtensionDiscoverPanelDetailsDialog from './discover-panel-details-dialog.vue'
 import ExtensionDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
 import { useDiscoverExtensionStore } from '../../stores'
-import { discoverSearchData, installedExtensionsData, searchExtensionPage } from '../../composables'
+import {
+  installedExtensionsQuery,
+  searchExtensionPage,
+  type DiscoverSearchView
+} from '../../composables'
 import type {
   ExtensionCatalogPackageInfo,
   ExtensionCreateRepositoryReleasePlanRequest,
@@ -33,33 +38,44 @@ const detailsOpen = ref(false)
 const releaseRequest = ref<ExtensionCreateRepositoryReleasePlanRequest | null>(null)
 const releaseDialogOpen = ref(false)
 
-// The first page is the non-blocking search resource: filter changes and
-// catalog changes reload it through its declared view and events. The
-// installed catalog is the blocking resource shared with the installed page.
-const { data: searchData, isFetching } = discoverSearchData()
-const { data: catalog } = installedExtensionsData()
+// The filters one search runs with; a snapshot, so the fetch is pure over it.
+const searchView = computed<DiscoverSearchView>(() => ({
+  searchQuery: store.searchQuery,
+  selectedRepositoryId: store.selectedRepositoryId,
+  selectedCategory: store.selectedCategory,
+  compatibleOnly: store.compatibleOnly,
+  sortField: store.sortField,
+  sortDirection: store.sortDirection
+}))
+
+// The first page is a remote search, not route data: it loads in the panel,
+// reruns on every filter change and on catalog changes, and shows its own
+// loading and error states. The installed catalog is the route query shared
+// with the installed page.
+const {
+  data: searchData,
+  error,
+  isFetching
+} = useLiveQuery(() => searchExtensionPage(searchView.value, 1), {
+  watch: [searchView],
+  invalidate: { ipc: ['extension:catalog-changed'] }
+})
+const { data: catalog } = installedExtensionsQuery()
 
 // Pages beyond the first accumulate here and belong to the first page they
-// extend: whenever the resource replaces page 1 (a filter change, a catalog
-// change), they are gone with it.
+// extend: whenever page 1 is replaced (a filter change, a catalog change),
+// they are gone with it.
 watch(searchData, () => {
   page.value = 1
   additionalResults.value = []
   additionalHasMore.value = false
 })
 
-const allResults = computed(() => {
-  const base = searchData.value?.results ?? []
-  return [...base, ...additionalResults.value]
-})
+const results = computed(() => [...(searchData.value?.results ?? []), ...additionalResults.value])
 
-const hasMore = computed(() => {
-  return page.value === 1 ? (searchData.value?.hasMore ?? false) : additionalHasMore.value
-})
-
-const displayedResults = computed(() => {
-  return [...allResults.value]
-})
+const hasMore = computed(() =>
+  page.value === 1 ? (searchData.value?.hasMore ?? false) : additionalHasMore.value
+)
 
 const searched = computed(() => searchData.value !== undefined)
 const installedIds = computed(() => new Set((catalog.value ?? []).map((entry) => entry.id)))
@@ -75,7 +91,7 @@ async function handleLoadMore() {
   const nextPage = page.value + 1
 
   try {
-    const data = await searchExtensionPage(nextPage)
+    const data = await searchExtensionPage(searchView.value, nextPage)
 
     page.value = nextPage
     additionalResults.value = [...additionalResults.value, ...data.results]
@@ -131,16 +147,21 @@ watch(detailsOpen, (open) => {
   <div class="flex flex-col h-full">
     <ExtensionDiscoverPanelFilterBar />
 
-    <!-- No memory: remote results reload on every visit, so an offset into a
-         list that may have changed names nothing. -->
     <ScrollRegion>
       <StateView
-        v-if="loading && displayedResults.length === 0"
+        v-if="loading && results.length === 0"
         state="loading"
         class="h-48"
       />
 
-      <template v-else-if="displayedResults.length === 0 && searched">
+      <StateView
+        v-else-if="error && results.length === 0"
+        state="error"
+        :error="error"
+        class="h-48"
+      />
+
+      <template v-else-if="results.length === 0 && searched">
         <StateView
           state="empty"
           icon="icon-[mdi--puzzle-outline]"
@@ -176,7 +197,7 @@ watch(detailsOpen, (open) => {
         <!-- Grid - no container borders -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           <ExtensionDiscoverPanelCard
-            v-for="extension in displayedResults"
+            v-for="extension in results"
             :key="extension.id"
             :extension="extension"
             :installed="isInstalled(extension)"

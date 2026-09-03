@@ -19,7 +19,7 @@ import {
   collectionPersonLinks,
   collectionCompanyLinks
 } from '@shared/db'
-import { useAsyncData, useStagedImagePick } from '@renderer/composables'
+import { useLiveQuery, useStagedImagePick } from '@renderer/composables'
 import { getEntityImageUrl } from '@renderer/utils/entity-image'
 import type { ContentEntityType } from '@shared/entity-types'
 import {
@@ -89,8 +89,8 @@ const cover = useStagedImagePick()
 const {
   data: existingCollection,
   isLoading,
-  refetch
-} = useAsyncData(
+  reload
+} = useLiveQuery(
   () => db.query.collections.findFirst({ where: eq(collections.id, props.collectionId!) }),
   {
     watch: [() => props.collectionId],
@@ -140,7 +140,7 @@ watch(
     if (isOpen) {
       cover.reset()
       if (isEditMode) {
-        refetch()
+        reload()
       } else {
         // Create mode - reset to defaults
         formData.value = {

@@ -16,7 +16,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { StateView } from '@renderer/components/ui/state-view'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { markChaptersRead, readUnreadChapterCount } from '@renderer/composables/comic-completion'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
@@ -34,7 +34,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-const { data: pending, isLoading } = useAsyncData(() => readUnreadChapterCount(props.comicId), {
+const { data: pending, isLoading } = useLiveQuery(() => readUnreadChapterCount(props.comicId), {
   watch: [() => props.comicId],
   enabled: () => open.value
 })

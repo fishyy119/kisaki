@@ -9,8 +9,7 @@
   thead/tfoot - so it also covers the reserved gutter strip. The body is a
   ScrollRegion: it fills the available height by default (pass a height via
   `bodyClass`, e.g. h-[20vh], for a fixed-size viewport), hosts the
-  back-to-top device, remembers its offset under `memory` when the table is a
-  route page's body, and exposes its scroll element for callers that
+  back-to-top device, and exposes its scroll element for callers that
   virtualize rows against it. The `state` slot renders empty/loading views
   inside the scroll region.
 -->
@@ -27,8 +26,6 @@ const props = defineProps<{
   columns?: readonly string[]
   /** Extra classes for the scrolling body region (e.g. a fixed height). */
   bodyClass?: HTMLAttributes['class']
-  /** Scroll memory identity of the body when the table is a route page's body. */
-  memory?: string
 }>()
 
 const region = useTemplateRef<InstanceType<typeof ScrollRegion>>('region')
@@ -66,7 +63,6 @@ defineExpose({
 
     <ScrollRegion
       ref="region"
-      :memory="props.memory"
       :class="cn('[scrollbar-gutter:stable]', props.bodyClass)"
     >
       <slot name="state" />

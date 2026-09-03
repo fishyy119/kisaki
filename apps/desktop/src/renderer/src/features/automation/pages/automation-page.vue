@@ -3,7 +3,6 @@ Automation Page owns automation data, filters, and actions.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import {
@@ -20,7 +19,6 @@ import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
-import { useIpc } from '@renderer/composables'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
 import { useAutomations } from '../composables'
@@ -39,7 +37,6 @@ const log = createLogger('Automation')
 const AUTOMATION_TABLE_COLUMNS = ['', '20%', '17%', '17%', '12%', '8.25rem']
 
 const { m } = useI18n()
-const route = useRoute()
 
 const searchQuery = ref('')
 const statusFilter = ref<AutomationStatusFilter>('all')
@@ -56,14 +53,14 @@ const detailsAutomation = ref<Automation | null>(null)
 const pendingDeleteAutomation = ref<Automation | null>(null)
 const deleting = ref(false)
 
-// Data (settled during navigation by the route loader)
+// Data (committed by the route query before the page mounts)
 const {
   automations: automationList,
   commands: commandList,
   runningAutomationIds,
   error,
   isFetching,
-  refetch
+  reload
 } = useAutomations()
 const commandById = computed(() => {
   const map = new Map<string, CommandListItem>()
@@ -128,20 +125,6 @@ const selectedDetailsCommand = computed(() =>
     : undefined
 )
 
-// The list itself reloads through the resource's declared automation events;
-// these keep the running set current between those reloads.
-useIpc('automation:deleted', (_e, { automationId }) => {
-  removeFromSet(runningAutomationIds, automationId)
-})
-
-useIpc('automation:run-started', (_e, { automationId }) => {
-  addToSet(runningAutomationIds, automationId)
-})
-
-useIpc('automation:run-finished', (_e, record) => {
-  removeFromSet(runningAutomationIds, record.automationId)
-})
-
 function compareAutomations(left: Automation, right: Automation): number {
   let comparison = 0
   switch (sortField.value) {
@@ -199,7 +182,7 @@ function requestDeleteAutomation(automation: Automation) {
 }
 
 async function handleRun(automation: Automation) {
-  addToSet(runningAutomationIds, automation.id)
+  setBusy(automation.id, true)
   try {
     const record = unwrapIpcData(await ipcManager.invoke('automation:run', automation.id))
     if (!record) {
@@ -216,7 +199,7 @@ async function handleRun(automation: Automation) {
       error instanceof Error ? error.message : String(error)
     )
   } finally {
-    removeFromSet(runningAutomationIds, automation.id)
+    setBusy(automation.id, false)
   }
 }
 
@@ -224,12 +207,9 @@ async function handleCancel(automation: Automation) {
   setBusy(automation.id, true)
   try {
     const cancelled = unwrapIpcData(await ipcManager.invoke('automation:cancel', automation.id))
-    if (cancelled) {
-      notify.info(m.value.automation.feedback.stopRequested)
-    } else {
-      notify.info(m.value.automation.feedback.notRunning)
-      removeFromSet(runningAutomationIds, automation.id)
-    }
+    notify.info(
+      cancelled ? m.value.automation.feedback.stopRequested : m.value.automation.feedback.notRunning
+    )
   } catch (error) {
     log.error('Failed to cancel Automation:', error)
     notify.error(
@@ -285,23 +265,10 @@ async function handleDeleteConfirmed() {
 }
 
 function setBusy(automationId: string, busy: boolean) {
-  if (busy) {
-    addToSet(busyAutomationIds, automationId)
-  } else {
-    removeFromSet(busyAutomationIds, automationId)
-  }
-}
-
-function addToSet(target: typeof runningAutomationIds, value: string) {
-  const next = new Set(target.value)
-  next.add(value)
-  target.value = next
-}
-
-function removeFromSet(target: typeof runningAutomationIds, value: string) {
-  const next = new Set(target.value)
-  next.delete(value)
-  target.value = next
+  const next = new Set(busyAutomationIds.value)
+  if (busy) next.add(automationId)
+  else next.delete(automationId)
+  busyAutomationIds.value = next
 }
 </script>
 
@@ -310,7 +277,7 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
     <AutomationHeader
       :refreshing="isFetching"
       @create="openCreateDialog"
-      @refresh="refetch"
+      @refresh="reload"
     />
 
     <div class="flex min-h-0 flex-1 flex-col bg-background">
@@ -351,7 +318,6 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
           v-else
           fixed-header
           :columns="AUTOMATION_TABLE_COLUMNS"
-          :memory="route.path"
         >
           <template #header>
             <TableHeader>

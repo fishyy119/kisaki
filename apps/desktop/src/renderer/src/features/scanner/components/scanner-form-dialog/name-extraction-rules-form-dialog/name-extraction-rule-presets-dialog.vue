@@ -120,7 +120,7 @@ function handleCancel() {
       <DialogHeader>
         <DialogTitle>{{ m.scanner.rules.presetsTitle }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto">
+      <DialogBody class="max-h-[60vh]">
         <StateView
           v-if="availablePresets.length === 0"
           state="empty"

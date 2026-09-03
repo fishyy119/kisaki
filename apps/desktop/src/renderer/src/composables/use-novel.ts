@@ -1,7 +1,7 @@
 /**
  * Novel data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * The provider/consumer shell (route query, dialog provider, invalidation) comes
  * from the entity detail context factory; this module owns what a novel
  * detail surface fetches and shows.
  */
@@ -26,7 +26,7 @@ import type {
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
 import {
-  MEDIA_RELATION_READS,
+  MEDIA_RELATION_TABLES,
   fetchMediaRelations,
   type MediaRelationEntry
 } from '@renderer/core/db/media-relations'
@@ -203,12 +203,8 @@ async function attachVolumeFiles(volumes: NovelVolume[]): Promise<NovelVolumeEnt
 // Context Wiring
 // =============================================================================
 
-/**
- * Owned and link rows attribute to the novel; volume file rows hang off
- * volumes without a key of their own, so they and the satellite tables match
- * by table.
- */
-const NOVEL_READS: readonly TableName[] = [
+/** Owned rows, link rows, and the tables the links join. */
+const NOVEL_TABLES: readonly TableName[] = [
   'novel_volumes',
   'novel_volume_files',
   'novel_notes',
@@ -221,7 +217,7 @@ const NOVEL_READS: readonly TableName[] = [
   'persons',
   'novel_company_links',
   'companies',
-  ...MEDIA_RELATION_READS
+  ...MEDIA_RELATION_TABLES
 ]
 
 const novelDetail = createEntityDetailContext<NovelData, EntitySpoilerParams>({
@@ -239,10 +235,10 @@ const novelDetail = createEntityDetailContext<NovelData, EntitySpoilerParams>({
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchNovelData(id, params.spoilersRevealed, view.showNsfw),
-  reads: NOVEL_READS
+  tables: NOVEL_TABLES
 })
 
-export const novelDetailData = novelDetail.detailData
+export const novelDetailQuery = novelDetail.detailQuery
 export const useNovelRouteProvider = novelDetail.useRouteProvider
 export const useNovelDialogProvider = novelDetail.useDialogProvider
 export const useNovel = novelDetail.useContext

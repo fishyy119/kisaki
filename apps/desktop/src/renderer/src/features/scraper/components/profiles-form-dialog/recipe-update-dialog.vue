@@ -98,7 +98,7 @@ function handleApply() {
       <DialogHeader>
         <DialogTitle>{{ m.scraper.recipeUpdate.title }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto">
+      <DialogBody class="max-h-[60vh]">
         <p class="text-sm text-muted-foreground mb-3">
           {{ m.scraper.recipeUpdate.hint }}
         </p>

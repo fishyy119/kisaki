@@ -136,7 +136,7 @@ async function handleDeleteChapter(): Promise<void> {
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="min-h-0 flex-1 space-y-4 overflow-auto">
+        <DialogBody class="min-h-0 flex-1 space-y-4">
           <!-- Cover (display only; edited through the chapter form) -->
           <div
             v-if="coverUrl"

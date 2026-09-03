@@ -154,7 +154,7 @@ const extraDetailOpen = computed({
         <VirtualList
           :items="episodes"
           :get-key="(episode) => episode.id"
-          scroll-parent="region"
+          scroll="region"
           class="flex flex-col"
         >
           <template #item="{ item: episode, index }">

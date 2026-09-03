@@ -13,6 +13,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { createEmptyFilter, countConditions } from '@shared/filter'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { Button } from '@renderer/components/ui/button'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { useI18n } from '@renderer/composables'
 import FilterBuilder from './filter-builder.vue'
 import MatchModeSwitch from './match-mode-switch.vue'
@@ -76,12 +77,12 @@ function handleClear() {
         </div>
 
         <!-- Body - Scrollable -->
-        <div class="flex-1 overflow-auto p-4">
+        <ScrollRegion class="p-4">
           <FilterBuilder
             v-model="model"
             :ui-spec="props.uiSpec"
           />
-        </div>
+        </ScrollRegion>
 
         <!-- Footer: list-level actions + count -->
         <div class="flex items-center justify-between px-4 py-3 border-t">

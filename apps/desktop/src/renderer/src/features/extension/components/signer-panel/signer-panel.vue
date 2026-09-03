@@ -5,29 +5,27 @@ Boundary: calls signer trust IPC only; trust remains scoped by extension id.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
 import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { extensionSignersData } from '../../composables'
+import { extensionSignersQuery } from '../../composables'
 import SignerDetailsDialog from './signer-details-dialog.vue'
 import SignerPanelRow from './signer-panel-row.vue'
 import SignerRemoveDialog from './signer-remove-dialog.vue'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
 
 const { m } = useI18n()
-const route = useRoute()
 const removing = ref(false)
 const detailsDialogOpen = ref(false)
 const removeDialogOpen = ref(false)
 const signerToView = ref<ExtensionTrustedSignerInfo | null>(null)
 const signerToRemove = ref<ExtensionTrustedSignerInfo | null>(null)
 
-// Committed by the route data kernel before the page mounts; the resource
-// reloads itself whenever the main process reports a trust change.
-const { data: signers, error } = extensionSignersData()
+// Committed by the route query before the page mounts; the query reloads
+// itself whenever the main process reports a trust change.
+const { data: signers, error } = extensionSignersQuery()
 const signerList = computed(() =>
   [...(signers.value ?? [])].sort(
     (left, right) =>
@@ -83,7 +81,7 @@ async function handleRemoveSigner(): Promise<void> {
 
 <template>
   <div class="flex h-full flex-col">
-    <ScrollRegion :memory="route.path">
+    <ScrollRegion>
       <StateView
         v-if="error"
         state="error"

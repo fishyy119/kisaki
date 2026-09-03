@@ -16,6 +16,7 @@ import {
   DialogDescription
 } from '@renderer/components/ui/dialog'
 import { Input } from '@renderer/components/ui/input'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
@@ -254,7 +255,7 @@ watch(
 <template>
   <Dialog v-model:open="open">
     <DialogContent
-      class="max-w-7xl p-0"
+      class="max-w-[92vw] p-0"
       :show-close-button="false"
       @keydown="handleKeyDown"
     >
@@ -294,7 +295,7 @@ watch(
         <div
           v-for="(config, columnIndex) in COLUMNS"
           :key="config.type"
-          class="flex flex-col min-w-0"
+          class="flex h-[68vh] flex-col min-w-0"
         >
           <!-- Column header -->
           <div
@@ -311,7 +312,7 @@ watch(
           </div>
 
           <!-- Column content -->
-          <div class="overflow-auto py-1 h-[50vh]">
+          <ScrollRegion class="py-1">
             <StateView
               v-if="getColumnItems(config).length === 0"
               state="empty"
@@ -355,7 +356,7 @@ watch(
                 </Button>
               </div>
             </template>
-          </div>
+          </ScrollRegion>
         </div>
       </div>
 

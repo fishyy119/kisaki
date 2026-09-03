@@ -10,7 +10,7 @@ import { asc, eq } from 'drizzle-orm'
 import { newId } from '@shared/id'
 import { db } from '@renderer/core/db'
 import { showcaseSections } from '@shared/db'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -63,7 +63,7 @@ async function fetchSections(): Promise<ShowcaseSectionFormItem[]> {
   return sections as ShowcaseSectionFormItem[]
 }
 
-const { data, isLoading, error } = useAsyncData(fetchSections, {
+const { data, isLoading, error } = useLiveQuery(fetchSections, {
   enabled: open
 })
 const state = useRenderState(isLoading, error, data)
@@ -270,7 +270,7 @@ function handleClose() {
           <DialogTitle>{{ m.library.showcase.manage.title }}</DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <div class="space-y-1">
             <StateView
               v-if="items.length === 0"

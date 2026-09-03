@@ -248,7 +248,7 @@ function handleSubmit() {
         }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[60vh] overflow-auto">
+        <DialogBody class="max-h-[60vh]">
           <FieldGroup>
             <Field>
               <FieldLabel>{{ m.scraper.profiles.strategyLabel }}</FieldLabel>

@@ -45,9 +45,9 @@ const { m } = useI18n()
 
 interface Props {
   scanner: Scanner
-  /** Resolved by the scanner route data; null when unset or hidden. */
+  /** Resolved by the scanner route query; null when unset or hidden. */
   targetCollectionName: string | null
-  /** Resolved by the scanner route data; null when unset. */
+  /** Resolved by the scanner route query; null when unset. */
   scraperProfileName: string | null
 }
 

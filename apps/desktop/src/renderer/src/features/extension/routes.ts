@@ -6,11 +6,10 @@
 
 import type { RouteRecordRaw } from 'vue-router'
 import {
-  discoverSearchData,
-  installedExtensionsData,
-  extensionRepositoriesData,
-  extensionSignersData
-} from './composables/loaders'
+  installedExtensionsQuery,
+  extensionRepositoriesQuery,
+  extensionSignersQuery
+} from './composables/queries'
 
 /** Route names of the extension manager pages; header tabs navigate by them. */
 export const EXTENSION_ROUTE_NAMES = {
@@ -30,28 +29,27 @@ export const extensionRoutes: RouteRecordRaw[] = [
         path: 'discover',
         name: EXTENSION_ROUTE_NAMES.discover,
         component: () => import('./pages/extension-discover-page.vue'),
-        // The filter bar's repository list is the repositories resource.
-        meta: {
-          routeData: [discoverSearchData, installedExtensionsData, extensionRepositoriesData]
-        }
+        // The filter bar's repository list is the repositories query; the
+        // catalog search is remote and loads in the panel.
+        meta: { routeQueries: [installedExtensionsQuery, extensionRepositoriesQuery] }
       },
       {
         path: 'installed',
         name: EXTENSION_ROUTE_NAMES.installed,
         component: () => import('./pages/extension-installed-page.vue'),
-        meta: { routeData: [installedExtensionsData] }
+        meta: { routeQueries: [installedExtensionsQuery] }
       },
       {
         path: 'repositories',
         name: EXTENSION_ROUTE_NAMES.repositories,
         component: () => import('./pages/extension-repositories-page.vue'),
-        meta: { routeData: [extensionRepositoriesData] }
+        meta: { routeQueries: [extensionRepositoriesQuery] }
       },
       {
         path: 'signers',
         name: EXTENSION_ROUTE_NAMES.signers,
         component: () => import('./pages/extension-signers-page.vue'),
-        meta: { routeData: [extensionSignersData] }
+        meta: { routeQueries: [extensionSignersQuery] }
       }
     ]
   }

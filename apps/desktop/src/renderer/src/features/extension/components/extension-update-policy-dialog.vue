@@ -34,12 +34,7 @@ interface Props {
   extension: ExtensionInstalledPackageInfo
 }
 
-interface Emits {
-  (e: 'updated'): void
-}
-
 const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
 const { m } = useI18n()
 const saving = ref(false)
@@ -80,7 +75,6 @@ async function handleSave() {
     )
     notify.success(m.value.extension.updatePolicyDialog.saved)
     open.value = false
-    emit('updated')
   } catch (error) {
     notify.error(
       m.value.extension.updatePolicyDialog.saveFailed,

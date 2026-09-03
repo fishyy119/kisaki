@@ -20,7 +20,7 @@ import {
   type NewCompanyRelation
 } from '@shared/db'
 import { db, queryEntityNames } from '@renderer/core/db'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -80,7 +80,7 @@ const {
   data: fetchedData,
   isLoading,
   error
-} = useAsyncData(
+} = useLiveQuery(
   async () => {
     const [outRows, inRows] = await Promise.all([
       db
@@ -298,7 +298,7 @@ const deleteDialogOpen = computed({
         <DialogHeader>
           <DialogTitle>{{ m.library.forms.editCompanyRelations }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <StateView
             v-if="items.length === 0"
             state="empty"

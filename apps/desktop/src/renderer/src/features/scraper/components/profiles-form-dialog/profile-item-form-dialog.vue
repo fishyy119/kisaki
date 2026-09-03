@@ -195,7 +195,7 @@ function getSlotStrategyLabel(slot: ScraperSlot): string {
         }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[70vh] overflow-auto">
+        <DialogBody class="max-h-[70vh]">
           <FieldGroup>
             <!-- Profile Name -->
             <Field>

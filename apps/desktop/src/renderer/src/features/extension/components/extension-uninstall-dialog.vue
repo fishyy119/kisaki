@@ -29,12 +29,7 @@ interface Props {
   extension: ExtensionInstalledPackageInfo
 }
 
-interface Emits {
-  (e: 'uninstalled'): void
-}
-
 const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
 const { m } = useI18n()
 const uninstalling = ref(false)
@@ -68,14 +63,12 @@ async function handleUninstall() {
         : m.value.extension.uninstall.uninstalled
     )
     open.value = false
-    emit('uninstalled')
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (uninstalled) {
       await refreshExtensionContributionSnapshot().catch(() => undefined)
       notify.error(m.value.extension.uninstall.purgeFailed, message)
       open.value = false
-      emit('uninstalled')
     } else {
       notify.error(m.value.extension.uninstall.failed, message)
     }

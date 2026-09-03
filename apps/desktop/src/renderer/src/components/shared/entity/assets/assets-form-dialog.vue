@@ -9,7 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
-import { useAsyncData, useDbChanges } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { cn } from '@renderer/utils/cn'
 import {
   Dialog,
@@ -53,24 +53,10 @@ const showDeleteConfirm = ref(false)
 // Loading states
 const isImportingFile = ref(false)
 
-const {
-  data: entry,
-  isLoading,
-  refetch
-} = useAsyncData(() => spec.value.loadEntry(props.entityId), {
+const { data: entry, isLoading } = useLiveQuery(() => spec.value.loadEntry(props.entityId), {
   watch: [() => props.entityId],
-  enabled: () => open.value
-})
-
-// Listen for entity updates
-useDbChanges(({ changes }) => {
-  const entryUpdated = changes.some(
-    (change) =>
-      change.operation === 'updated' &&
-      change.table === spec.value.attachmentTable &&
-      change.id === props.entityId
-  )
-  if (entryUpdated) refetch()
+  enabled: () => open.value,
+  invalidate: { tables: () => [spec.value.attachmentTable] }
 })
 
 const selectedSlot = computed(() =>

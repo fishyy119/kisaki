@@ -41,7 +41,7 @@ const ROW_CLASS =
     <VirtualList
       :items="props.units"
       :get-key="(unit) => unit.id"
-      scroll-parent="region"
+      scroll="region"
       class="flex flex-col"
     >
       <template #item="{ item: unit }">
@@ -78,7 +78,7 @@ const ROW_CLASS =
       <VirtualList
         :items="props.outline"
         :get-key="(entry) => `${entry.depth}:${entry.target}:${entry.label}`"
-        scroll-parent="region"
+        scroll="region"
         class="flex flex-col"
       >
         <template #item="{ item: entry }">

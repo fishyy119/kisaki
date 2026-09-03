@@ -237,7 +237,7 @@ function handleCancel() {
         }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="overflow-auto max-h-[65vh]">
+        <DialogBody class="max-h-[65vh]">
           <FieldGroup>
             <div class="grid grid-cols-2 gap-3">
               <Field>

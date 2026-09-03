@@ -196,7 +196,7 @@ const entityIdModel = computed({
       <FieldContent>
         <ScraperProfileSelect
           v-model="selectedProfileId"
-          :media-type="props.entityType"
+          :entity-type="props.entityType"
         />
       </FieldContent>
     </Field>

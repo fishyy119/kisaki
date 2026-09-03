@@ -11,10 +11,10 @@
 
 import type Database from 'better-sqlite3'
 import { createLogger } from '@main/log'
-import type { DbChangeSummary, RawDbChange } from '@shared/db/changes'
-import { summarizeDbChange } from '@shared/db/references'
+import { toDbChangeSummary, type DbChangeSummary, type RawDbChange } from '@shared/db/changes'
 import type { LibraryEntityChangeSummary } from '@shared/library'
 import type { DbHooks } from '../hooks'
+import { deriveChangeTargets } from './attribution'
 import {
   ENTITY_PROJECTIONS,
   getEntityProjectionForTopic,
@@ -60,12 +60,9 @@ export class DbChangeFeed {
     }
 
     this.dispatchSettingsChanged(change)
-    // The summary's targets are the schema-derived attribution of the row;
-    // the entity-grouped hook groups by exactly the same targets.
-    const summary = summarizeDbChange(change)
-    this.pendingSummaries.push(summary)
+    this.pendingSummaries.push(toDbChangeSummary(change))
 
-    for (const target of summary.targets) {
+    for (const target of deriveChangeTargets(change)) {
       const key = `${target.entity}:${target.id}`
       const group = this.groups.get(key)
       if (group) {

@@ -20,7 +20,7 @@ export {
 } from './use-explorer-locator'
 export {
   useShowcaseSections,
-  showcaseData,
+  showcaseQuery,
   createSection,
   updateSection,
   deleteSection,
@@ -33,6 +33,6 @@ export {
   type LibrarySearchHit,
   type LibrarySearchResult
 } from './use-library-search'
-export { useFavorites, favoritesData } from './use-favorites'
-export { useUncategorizedList, uncategorizedListData } from './use-uncategorized-list'
-export { useCollectionsList, collectionsListData } from './use-collections-list'
+export { useFavorites, favoritesQuery } from './use-favorites'
+export { useUncategorizedList, uncategorizedQuery } from './use-uncategorized-list'
+export { useCollectionsList, collectionsQuery } from './use-collections-list'

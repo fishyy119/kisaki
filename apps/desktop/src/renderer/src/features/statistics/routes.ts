@@ -8,7 +8,7 @@
  */
 
 import type { RouteRecordRaw } from 'vue-router'
-import { statisticsData } from './composables/use-statistics'
+import { statisticsQuery } from './composables/use-statistics'
 import type { ReportType } from './types'
 
 declare module 'vue-router' {
@@ -31,7 +31,7 @@ export const statisticsRoutes: RouteRecordRaw[] = [
     path: '/statistics',
     component: () => import('./pages/statistics-layout.vue'),
     redirect: '/statistics/overview',
-    meta: { routeData: [statisticsData] },
+    meta: { routeQueries: [statisticsQuery] },
     children: [
       {
         path: 'overview',

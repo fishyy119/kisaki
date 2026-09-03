@@ -39,7 +39,7 @@ const pages = computed<number[]>(() => {
     <VirtualGrid
       v-else-if="props.source"
       :items="pages"
-      scroll-parent="region"
+      scroll="region"
       class="grid grid-cols-3 gap-2"
     >
       <template #item="{ item }">

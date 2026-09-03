@@ -9,7 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { games, GameLauncherMode, GameMonitorMode } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,7 @@ const isSaving = ref(false)
 const effectiveMonitorPath = ref<string | null>(null)
 
 // Fetch game data when dialog opens
-const { data: game, isLoading } = useAsyncData(
+const { data: game, isLoading } = useLiveQuery(
   () => db.query.games.findFirst({ where: eq(games.id, props.gameId) }),
   {
     watch: [() => props.gameId],

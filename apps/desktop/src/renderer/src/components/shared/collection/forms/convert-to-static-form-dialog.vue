@@ -19,7 +19,7 @@ import {
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import {
   db,
@@ -57,8 +57,8 @@ const isConverting = ref(false)
 const {
   data: collection,
   isLoading,
-  refetch
-} = useAsyncData(
+  reload
+} = useLiveQuery(
   async () => {
     const data = await db.query.collections.findFirst({
       where: eq(collections.id, props.collectionId)
@@ -74,7 +74,7 @@ const {
 watch(
   () => open.value,
   (isOpen) => {
-    if (isOpen) refetch()
+    if (isOpen) reload()
   },
   { immediate: true }
 )

@@ -7,7 +7,7 @@ import { ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { games, type PartialDate } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { formatDateInput } from '@renderer/utils/datetime'
 import {
   Dialog,
@@ -61,7 +61,7 @@ const isSaving = ref(false)
 const releaseDateInput = ref<PartialDateInputExpose | null>(null)
 
 // Fetch game data when dialog opens
-const { data: game, isLoading } = useAsyncData(
+const { data: game, isLoading } = useLiveQuery(
   () => db.query.games.findFirst({ where: eq(games.id, props.gameId) }),
   {
     watch: [() => props.gameId],

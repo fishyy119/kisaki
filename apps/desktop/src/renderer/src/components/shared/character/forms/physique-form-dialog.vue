@@ -9,7 +9,7 @@ import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { characters, type CupSize } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -85,7 +85,7 @@ const formData = ref<FormData>({
 const isSaving = ref(false)
 
 // Fetch character data when dialog opens
-const { data: character, isLoading } = useAsyncData(
+const { data: character, isLoading } = useLiveQuery(
   () => db.query.characters.findFirst({ where: eq(characters.id, props.characterId) }),
   {
     watch: [() => props.characterId],

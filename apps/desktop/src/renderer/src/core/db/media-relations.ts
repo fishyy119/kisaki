@@ -62,9 +62,9 @@ interface MediaRelationEdge {
 /**
  * Tables `fetchMediaRelations` reads: the edges, and the endpoint rows of
  * every media type an edge can point at. Detail specs include this in their
- * read-set declaration.
+ * table declaration.
  */
-export const MEDIA_RELATION_READS: readonly TableName[] = [
+export const MEDIA_RELATION_TABLES: readonly TableName[] = [
   'media_relations',
   'games',
   'animes',

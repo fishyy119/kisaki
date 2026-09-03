@@ -8,6 +8,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+/** The visibility preference every library read filters by. */
+export interface VisibilityView {
+  showNsfw: boolean
+}
+
+/** Snapshot of the visibility preference; the `view` of every library query. */
+export function visibilityView(): VisibilityView {
+  return { showNsfw: usePreferencesStore().showNsfw }
+}
+
 export const usePreferencesStore = defineStore(
   'preferences',
   () => {

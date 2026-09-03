@@ -8,25 +8,25 @@
   state - it appears and disappears the way the explorer's locate affordance
   does, and reads as a static fixture while it exists.
 
-  Its host is `ScrollRegion`, which frames the viewport and renders this
-  device as the sibling of its scroll element; no other surface mounts it.
+  Rendered only by `ScrollRegion`, as the sibling of its scroll element; it
+  finds the element through the region's handle like any other descendant.
   Surfaces that already own a footer strip render the device there through
   `useBackToTop` instead of this overlay.
 -->
 <script setup lang="ts">
-import { toRef } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { BACK_TO_TOP_ICON, useBackToTop } from './use-back-to-top'
+import { useScrollRegion } from './use-scroll-region'
 
-const props = defineProps<{
-  /** The scrolling element this affordance serves. */
-  target?: HTMLElement | null
-}>()
+const region = useScrollRegion()
+if (!region) {
+  throw new Error('BackToTop must be rendered inside a ScrollRegion')
+}
 
 const { m } = useI18n()
 
-const { visible, scrollToTop } = useBackToTop(toRef(props, 'target'))
+const { visible, scrollToTop } = useBackToTop(region.element)
 </script>
 
 <template>

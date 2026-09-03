@@ -105,7 +105,7 @@ const metadata = computed(() => [
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[72vh] space-y-4 overflow-auto overflow-x-hidden">
+      <DialogBody class="max-h-[72vh] space-y-4 overflow-x-hidden">
         <section class="space-y-2">
           <div class="text-xs font-medium text-muted-foreground">{{ m.task.details.result }}</div>
           <div class="overflow-hidden rounded-md border border-border bg-muted/20">

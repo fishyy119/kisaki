@@ -36,12 +36,7 @@ interface Props {
   updateInfo?: ExtensionUpdateInfo
 }
 
-interface Emits {
-  (e: 'refresh'): void
-}
-
 const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
 
 const { m } = useI18n()
 const toggling = ref(false)
@@ -134,7 +129,6 @@ async function handleToggle(enabled: boolean) {
         ? m.value.extension.installed.enabledFeedback
         : m.value.extension.installed.disabledFeedback
     )
-    emit('refresh')
   } catch (error) {
     log.error('Toggle failed:', error)
     notify.error(m.value.extension.installed.operationFailed, (error as Error).message)
@@ -369,21 +363,18 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
       v-if="updateDialogOpen && props.updateInfo"
       v-model:open="updateDialogOpen"
       :initial-plan="props.updateInfo.releasePlan"
-      @applied="emit('refresh')"
     />
 
     <ExtensionUpdatePolicyDialog
       v-if="updatePolicyDialogOpen"
       v-model:open="updatePolicyDialogOpen"
       :extension="props.extension"
-      @updated="emit('refresh')"
     />
 
     <ExtensionUninstallDialog
       v-if="uninstallDialogOpen"
       v-model:open="uninstallDialogOpen"
       :extension="props.extension"
-      @uninstalled="emit('refresh')"
     />
   </div>
 </template>

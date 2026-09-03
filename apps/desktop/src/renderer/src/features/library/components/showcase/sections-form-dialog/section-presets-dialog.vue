@@ -111,7 +111,7 @@ function handleCancel() {
       <DialogHeader>
         <DialogTitle>{{ m.library.showcase.presetsDialog.title }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto">
+      <DialogBody class="max-h-[60vh]">
         <StateView
           v-if="Object.keys(presetsByEntityType).length === 0"
           state="empty"

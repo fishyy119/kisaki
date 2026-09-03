@@ -7,7 +7,7 @@
  */
 
 import { ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
@@ -26,14 +26,13 @@ const { m } = useI18n()
 // Router
 // =============================================================================
 
-const route = useRoute()
 const router = useRouter()
 
 // =============================================================================
-// Data (committed by the route data kernel before the page mounts)
+// Data (committed by the route query before the page mounts)
 // =============================================================================
 
-const { collections: collectionList } = useCollectionsList()
+const { collections: collectionList, error } = useCollectionsList()
 
 // =============================================================================
 // State
@@ -51,7 +50,17 @@ function handleCollectionClick(collectionId: string) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <StateView
+    v-if="error"
+    state="error"
+    :error="error"
+    class="h-full bg-background"
+  />
+
+  <div
+    v-else
+    class="h-full flex flex-col"
+  >
     <!-- Header -->
     <PageHeader>
       <PageHeaderTitle
@@ -76,10 +85,7 @@ function handleCollectionClick(collectionId: string) {
     </PageHeader>
 
     <!-- Collection grid -->
-    <ScrollRegion
-      :memory="route.path"
-      class="bg-background p-4"
-    >
+    <ScrollRegion class="bg-background p-4">
       <!-- Empty state -->
       <StateView
         v-if="collectionList.length === 0"
@@ -95,7 +101,7 @@ function handleCollectionClick(collectionId: string) {
         v-else
         :items="collectionList"
         :get-key="(item) => item.id"
-        scroll-parent="region"
+        scroll="region"
         class="grid grid-cols-[repeat(auto-fill,8rem)] gap-3 justify-between"
       >
         <template #item="{ item }">

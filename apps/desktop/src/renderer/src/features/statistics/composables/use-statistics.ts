@@ -5,22 +5,21 @@
  * Handles report type switching (via route) and period navigation.
  * Date range is computed based on report type and current period; period
  * reports also load the previous period's sessions for comparison.
- * Data loads during navigation (route loader); period switching triggers a
- * non-blocking SWR refetch.
+ * Data loads during navigation (route query); period switching triggers a
+ * non-blocking SWR reload.
  *
  * Sessions from every media type merge into one entity-keyed stream: each
  * session carries an `entityKey` (`<mediaType>:<id>`) that resolves through
  * the `entities` map, so charts, rankings, and stats stay media-agnostic.
  * A media filter scopes every derived stream in memory; the loaded snapshot
- * always holds all media, so switching scope never refetches.
+ * always holds all media, so switching scope never reloads.
  */
 
 import { provide, inject, ref, computed, type InjectionKey, type ComputedRef, type Ref } from 'vue'
 import { gte, lte, and, count, inArray, eq, getTableName, type SQL } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
-import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
-import { defineRouteData } from '@renderer/core/route-data'
+import { defineRouteQuery } from '@renderer/core/query'
 import type { TableName } from '@shared/db/table-names'
 import {
   MEDIA_TYPES,
@@ -31,7 +30,7 @@ import {
 } from '@shared/entity-types'
 import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
-import { usePreferencesStore } from '@renderer/stores'
+import { visibilityView } from '@renderer/stores'
 import { computeStats, type GlobalStatisticsStats } from '@renderer/utils/statistics'
 import {
   calculatePeriodDateRange,
@@ -88,7 +87,7 @@ function filterSessionsByMedia(
 // =============================================================================
 
 export interface StatisticsContext {
-  // Report type (derived from the loaded route data)
+  // Report type (derived from the loaded route query)
   reportType: ComputedRef<ReportType>
 
   // Period state (for weekly/monthly/yearly)
@@ -122,10 +121,8 @@ export interface StatisticsContext {
   // Link data for local computation, entity side keyed like sessions
   entityCollectionLinks: ComputedRef<{ entityId: string; collectionId: string }[]>
 
-  // State
-  isFetching: Ref<boolean>
+  /** Set by a failed navigation load; the report pages render it. */
   error: Ref<string | null>
-  refetch: () => Promise<void>
 }
 
 // =============================================================================
@@ -166,10 +163,6 @@ interface MediaStatisticsSource {
   }
   collectionLinks: SQLiteTable & { collectionId: SQLiteColumn }
   collectionLinkEntityId: SQLiteColumn
-  /** Session table name as reported by database change events */
-  sessionTable: TableName
-  /** Media table name as reported by database change events */
-  entityTable: TableName
 }
 
 const MEDIA_STATISTICS_SOURCES = {
@@ -178,45 +171,30 @@ const MEDIA_STATISTICS_SOURCES = {
     sessionEntityId: schema.gameSessions.gameId,
     entities: schema.games,
     collectionLinks: schema.collectionGameLinks,
-    collectionLinkEntityId: schema.collectionGameLinks.gameId,
-    sessionTable: 'game_sessions',
-    entityTable: 'games'
+    collectionLinkEntityId: schema.collectionGameLinks.gameId
   },
   anime: {
     sessions: schema.animeSessions,
     sessionEntityId: schema.animeSessions.animeId,
     entities: schema.animes,
     collectionLinks: schema.collectionAnimeLinks,
-    collectionLinkEntityId: schema.collectionAnimeLinks.animeId,
-    sessionTable: 'anime_sessions',
-    entityTable: 'animes'
+    collectionLinkEntityId: schema.collectionAnimeLinks.animeId
   },
   comic: {
     sessions: schema.comicSessions,
     sessionEntityId: schema.comicSessions.comicId,
     entities: schema.comics,
     collectionLinks: schema.collectionComicLinks,
-    collectionLinkEntityId: schema.collectionComicLinks.comicId,
-    sessionTable: 'comic_sessions',
-    entityTable: 'comics'
+    collectionLinkEntityId: schema.collectionComicLinks.comicId
   },
   novel: {
     sessions: schema.novelSessions,
     sessionEntityId: schema.novelSessions.novelId,
     entities: schema.novels,
     collectionLinks: schema.collectionNovelLinks,
-    collectionLinkEntityId: schema.collectionNovelLinks.novelId,
-    sessionTable: 'novel_sessions',
-    entityTable: 'novels'
+    collectionLinkEntityId: schema.collectionNovelLinks.novelId
   }
 } as const satisfies Record<MediaType, MediaStatisticsSource>
-
-const SESSION_TABLES = new Set<TableName>(
-  MEDIA_TYPES.map((mediaType) => MEDIA_STATISTICS_SOURCES[mediaType].sessionTable)
-)
-const MEDIA_TABLES = new Set<TableName>(
-  MEDIA_TYPES.map((mediaType) => MEDIA_STATISTICS_SOURCES[mediaType].entityTable)
-)
 
 /**
  * Per-media wiring for unit-consumption facts: which unit table carries the
@@ -229,8 +207,6 @@ interface UnitStatisticsSource {
   completed: SQLiteColumn
   completedAt: SQLiteColumn
   entities: SQLiteTable & { id: SQLiteColumn; isNsfw: SQLiteColumn }
-  /** Unit table name as reported by database change events */
-  unitTable: TableName
 }
 
 const UNIT_STATISTICS_SOURCES = {
@@ -239,30 +215,23 @@ const UNIT_STATISTICS_SOURCES = {
     unitEntityId: schema.animeEpisodes.animeId,
     completed: schema.animeEpisodes.watched,
     completedAt: schema.animeEpisodes.watchedAt,
-    entities: schema.animes,
-    unitTable: 'anime_episodes'
+    entities: schema.animes
   },
   comic: {
     units: schema.comicChapters,
     unitEntityId: schema.comicChapters.comicId,
     completed: schema.comicChapters.read,
     completedAt: schema.comicChapters.readAt,
-    entities: schema.comics,
-    unitTable: 'comic_chapters'
+    entities: schema.comics
   },
   novel: {
     units: schema.novelVolumes,
     unitEntityId: schema.novelVolumes.novelId,
     completed: schema.novelVolumes.read,
     completedAt: schema.novelVolumes.readAt,
-    entities: schema.novels,
-    unitTable: 'novel_volumes'
+    entities: schema.novels
   }
 } as const satisfies Record<UnitMediaType, UnitStatisticsSource>
-
-const UNIT_TABLES = new Set<TableName>(
-  UNIT_MEDIA_TYPES.map((mediaType) => UNIT_STATISTICS_SOURCES[mediaType].unitTable)
-)
 
 function emptyUnitCounts(): Record<UnitMediaType, number> {
   return Object.fromEntries(UNIT_MEDIA_TYPES.map((mediaType) => [mediaType, 0])) as Record<
@@ -472,7 +441,7 @@ async function fetchStatisticsData(
 }
 
 // =============================================================================
-// Route Loader
+// Route Query
 // =============================================================================
 
 interface StatisticsData {
@@ -489,29 +458,25 @@ interface StatisticsParams {
 }
 
 // Media scope persists across report types and navigations; it filters the
-// loaded snapshot in memory, so changing it never refetches.
+// loaded snapshot in memory, so changing it never reloads.
 const selectedMediaFilter = ref<StatisticsMediaFilter>('all')
 
 /** Everything a report reads: session spans, unit completions, the media rows that name them, and their collections. */
-const STATISTICS_READS: readonly TableName[] = [
-  ...SESSION_TABLES,
-  ...UNIT_TABLES,
-  ...MEDIA_TABLES,
-  'collections',
-  ...MEDIA_TYPES.map(
-    (mediaType) => getTableName(MEDIA_STATISTICS_SOURCES[mediaType].collectionLinks) as TableName
-  )
-]
+const STATISTICS_TABLES: readonly TableName[] = [
+  ...MEDIA_TYPES.flatMap((mediaType) => {
+    const source: MediaStatisticsSource = MEDIA_STATISTICS_SOURCES[mediaType]
+    return [source.sessions, source.entities, source.collectionLinks]
+  }),
+  ...UNIT_MEDIA_TYPES.map((mediaType) => UNIT_STATISTICS_SOURCES[mediaType].units),
+  schema.collections
+].map((table) => getTableName(table) as TableName)
 
-export const statisticsData = defineRouteData({
+export const statisticsQuery = defineRouteQuery({
   name: 'statistics',
   // Declared by the statistics route manifest on each report page's meta.
   key: (route): ReportType => route.meta.reportType ?? 'overview',
   params: (reportType): StatisticsParams => ({ period: getCurrentPeriod(reportType) }),
-  view: () => {
-    const { showNsfw } = storeToRefs(usePreferencesStore())
-    return { showNsfw: showNsfw.value }
-  },
+  view: visibilityView,
   fetch: async ({ key: reportType, params, view }): Promise<StatisticsData> => {
     const { period } = params
     const dateRange = calculatePeriodDateRange(reportType, period)
@@ -530,7 +495,7 @@ export const statisticsData = defineRouteData({
 
     return { reportType, period, current, previousSessions, allTime }
   },
-  invalidate: { reads: STATISTICS_READS }
+  invalidate: { tables: STATISTICS_TABLES }
 })
 
 // =============================================================================
@@ -540,14 +505,14 @@ export const statisticsData = defineRouteData({
 /**
  * Provide statistics data context.
  *
- * Data is committed by the route data kernel when the navigation confirms.
- * Period switching (a param), the NSFW preference (the view), and db changes
- * in the read tables trigger a non-blocking SWR refetch; derived state
- * (period, date range, display) follows the loaded snapshot so charts and
- * labels always match the sessions on screen.
+ * Data is committed by the route query when the navigation confirms. Period
+ * switching (a param), the NSFW preference (the view), and db changes in the
+ * read tables trigger a non-blocking SWR reload; derived state (period, date
+ * range, display) follows the loaded snapshot so charts and labels always
+ * match the sessions on screen.
  */
 export function useStatisticsProvider(): StatisticsContext {
-  const { data, error, isFetching, params, reload } = statisticsData()
+  const { data, error, params } = statisticsQuery()
 
   const reportType = computed<ReportType>(() => data.value?.reportType ?? 'overview')
   const currentPeriod = computed<Period>(() => data.value?.period ?? params.period.value)
@@ -633,9 +598,7 @@ export function useStatisticsProvider(): StatisticsContext {
     unitCounts,
     allTimeUnitCounts,
     entityCollectionLinks,
-    isFetching,
-    error,
-    refetch: reload
+    error
   }
 
   provide(StatisticsKey, context)

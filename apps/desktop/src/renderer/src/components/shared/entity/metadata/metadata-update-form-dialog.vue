@@ -8,7 +8,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import type { ExternalId } from '@shared/identity'
 import {
   mergeUpdateLookupKnownIds,
@@ -77,7 +77,7 @@ const collectionUpdate = ref<IngestUpdatePolicy['collectionUpdate']>('replace')
 const selectedSurfaces = ref<string[]>([...spec.value.surfaceKeys])
 const useCurrentExternalIdsAsKnownIds = ref(true)
 
-const { data, isLoading } = useAsyncData(
+const { data, isLoading } = useLiveQuery(
   async () => {
     const rows = await db
       .select({ name: table.value.name, originalName: table.value.originalName })
@@ -216,7 +216,7 @@ async function handleSubmit() {
         </DialogHeader>
 
         <Form @submit="handleSubmit">
-          <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto">
+          <DialogBody class="space-y-4 max-h-[70vh]">
             <EntitySearcher
               :entity-type="props.entityType"
               :default-search-query="defaultSearchQuery"

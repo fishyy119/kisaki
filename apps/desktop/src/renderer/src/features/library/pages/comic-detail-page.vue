@@ -67,7 +67,7 @@ const comicId = computed(() => route.params.comicId as string)
 const { exit } = useEntityDetailRoute('comic', comicId)
 
 // =============================================================================
-// Provider (data settled during navigation by the route loader)
+// Provider (data committed by the route query before the page mounts)
 // =============================================================================
 
 const {
@@ -329,10 +329,7 @@ async function handleOpenComicDir() {
       </template>
     </PageHeader>
 
-    <ScrollRegion
-      :memory="route.path"
-      class="bg-background p-4"
-    >
+    <ScrollRegion class="bg-background p-4">
       <ComicDetailContent />
     </ScrollRegion>
 

@@ -163,7 +163,7 @@ function handleSave() {
       <DialogHeader>
         <DialogTitle>{{ m.scanner.rules.title }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto">
+      <DialogBody class="max-h-[60vh]">
         <StateView
           v-if="localRules.length === 0"
           state="empty"

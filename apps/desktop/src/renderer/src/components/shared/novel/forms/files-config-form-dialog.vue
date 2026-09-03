@@ -12,7 +12,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { novels } from '@shared/db'
-import { useAsyncData, useNovelFileSync } from '@renderer/composables'
+import { useLiveQuery, useNovelFileSync } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -54,7 +54,7 @@ const dirPath = ref('')
 const isSaving = ref(false)
 
 // Fetch novel data when dialog opens
-const { data: novel, isLoading } = useAsyncData(
+const { data: novel, isLoading } = useLiveQuery(
   () => db.query.novels.findFirst({ where: eq(novels.id, props.novelId) }),
   {
     watch: [() => props.novelId],

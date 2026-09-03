@@ -1,1 +1,1 @@
-export { useScanners, scannersData, type ScannerListEntry, type ScannersView } from './use-scanners'
+export { useScanners, scannersQuery, type ScannerListEntry } from './use-scanners'

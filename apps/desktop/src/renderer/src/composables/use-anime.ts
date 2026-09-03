@@ -1,7 +1,7 @@
 /**
  * Anime data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * The provider/consumer shell (route query, dialog provider, invalidation) comes
  * from the entity detail context factory; this module owns what an anime
  * detail surface fetches and shows.
  */
@@ -29,7 +29,7 @@ import type {
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
 import {
-  MEDIA_RELATION_READS,
+  MEDIA_RELATION_TABLES,
   fetchMediaRelations,
   type MediaRelationEntry
 } from '@renderer/core/db/media-relations'
@@ -283,12 +283,8 @@ async function attachExtraFiles(extras: AnimeExtra[]): Promise<AnimeExtraEntry[]
 // Context Wiring
 // =============================================================================
 
-/**
- * Owned and link rows attribute to the anime; file rows hang off episodes and
- * extras without a key of their own, so they and the satellite tables match
- * by table.
- */
-const ANIME_READS: readonly TableName[] = [
+/** Owned rows, link rows, and the tables the links join. */
+const ANIME_TABLES: readonly TableName[] = [
   'anime_episodes',
   'anime_episode_files',
   'anime_extras',
@@ -304,7 +300,7 @@ const ANIME_READS: readonly TableName[] = [
   'anime_cast_links',
   'anime_company_links',
   'companies',
-  ...MEDIA_RELATION_READS
+  ...MEDIA_RELATION_TABLES
 ]
 
 const animeDetail = createEntityDetailContext<AnimeData, EntitySpoilerParams>({
@@ -324,10 +320,10 @@ const animeDetail = createEntityDetailContext<AnimeData, EntitySpoilerParams>({
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchAnimeData(id, params.spoilersRevealed, view.showNsfw),
-  reads: ANIME_READS
+  tables: ANIME_TABLES
 })
 
-export const animeDetailData = animeDetail.detailData
+export const animeDetailQuery = animeDetail.detailQuery
 export const useAnimeRouteProvider = animeDetail.useRouteProvider
 export const useAnimeDialogProvider = animeDetail.useDialogProvider
 export const useAnime = animeDetail.useContext

@@ -40,7 +40,7 @@ const companyId = computed(() => route.params.companyId as string)
 const { exit } = useEntityDetailRoute('company', companyId)
 
 // =============================================================================
-// Provider (data settled during navigation by the route loader)
+// Provider (data committed by the route query before the page mounts)
 // =============================================================================
 
 const { m } = useI18n()
@@ -215,10 +215,7 @@ function handleRevealSpoilersConfirm() {
     </PageHeader>
 
     <!-- Main content -->
-    <ScrollRegion
-      :memory="route.path"
-      class="bg-background p-4"
-    >
+    <ScrollRegion class="bg-background p-4">
       <CompanyDetailContent />
     </ScrollRegion>
 

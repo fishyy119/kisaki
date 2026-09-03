@@ -14,7 +14,7 @@ import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobo
 import { db } from '@renderer/core/db'
 import { tags } from '@shared/db'
 import { normalizeKeyText } from '@shared/identity'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
+import { useLiveQuery, useI18n } from '@renderer/composables'
 
 interface Props {
   /** Multiple selection mode */
@@ -66,18 +66,14 @@ const selectedIdsModel = defineModel<string[]>('selectedIds', { default: () => [
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
 
-const { data: allTags, refetch } = useAsyncData(
+const { data: allTags } = useLiveQuery(
   () =>
     db.query.tags.findMany({
       columns: { id: true, name: true },
       ...(showNsfw.value ? {} : { where: (t, { eq }) => eq(t.isNsfw, false) })
     }),
-  { watch: [showNsfw] }
+  { watch: [showNsfw], invalidate: { tables: ['tags'] } }
 )
-
-useDbChanges(({ tables }) => {
-  if (tables.has('tags')) refetch()
-})
 
 const tagEntities = computed(() =>
   (allTags.value || [])

@@ -7,8 +7,7 @@ import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData } from '@renderer/composables/use-async-data'
-import { useDbChanges } from '@renderer/composables/use-db-changes'
+import { useLiveQuery } from '@renderer/composables/use-live-query'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { usePreferencesStore, useScannerStore } from '@renderer/stores'
 import { Icon } from '@renderer/components/ui/icon'
@@ -131,7 +130,7 @@ const relatedEntityIds = computed(() => {
   return byMediaType
 })
 
-const { data: relatedEntityNames, refetch: refetchRelatedEntityNames } = useAsyncData(
+const { data: relatedEntityNames } = useLiveQuery(
   async () => {
     const names = new Map<string, string>()
 
@@ -156,7 +155,8 @@ const { data: relatedEntityNames, refetch: refetchRelatedEntityNames } = useAsyn
     return names
   },
   {
-    watch: [relatedEntityIds, showNsfw]
+    watch: [relatedEntityIds, showNsfw],
+    invalidate: { tables: MEDIA_TYPES.map((mediaType) => ENTITY_TABLES[mediaType].tableName) }
   }
 )
 
@@ -264,17 +264,6 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
     )
   }
 }
-
-const MEDIA_TABLE_NAMES = new Set<string>(
-  MEDIA_TYPES.map((mediaType) => ENTITY_TABLES[mediaType].tableName)
-)
-
-useDbChanges(({ changes }) => {
-  const mediaUpdated = changes.some(
-    (change) => change.operation === 'updated' && MEDIA_TABLE_NAMES.has(change.table)
-  )
-  if (mediaUpdated) refetchRelatedEntityNames()
-})
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 /**
  * Game data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
+ * The provider/consumer shell (route query, dialog provider, invalidation) comes
  * from the entity detail context factory; this module owns what a game detail
  * surface fetches and shows.
  */
@@ -25,7 +25,7 @@ import type {
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
 import {
-  MEDIA_RELATION_READS,
+  MEDIA_RELATION_TABLES,
   fetchMediaRelations,
   type MediaRelationEntry
 } from '@renderer/core/db/media-relations'
@@ -194,8 +194,8 @@ async function fetchGameData(
 // Context Wiring
 // =============================================================================
 
-/** Owned and link rows attribute to the game; the satellite tables they join match by table. */
-const GAME_READS: readonly TableName[] = [
+/** Owned rows, link rows, and the tables the links join. */
+const GAME_TABLES: readonly TableName[] = [
   'game_notes',
   'game_sessions',
   'game_tag_links',
@@ -207,7 +207,7 @@ const GAME_READS: readonly TableName[] = [
   'game_cast_links',
   'game_company_links',
   'companies',
-  ...MEDIA_RELATION_READS
+  ...MEDIA_RELATION_TABLES
 ]
 
 const gameDetail = createEntityDetailContext<GameData, EntitySpoilerParams>({
@@ -225,10 +225,10 @@ const gameDetail = createEntityDetailContext<GameData, EntitySpoilerParams>({
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchGameData(id, params.spoilersRevealed, view.showNsfw),
-  reads: GAME_READS
+  tables: GAME_TABLES
 })
 
-export const gameDetailData = gameDetail.detailData
+export const gameDetailQuery = gameDetail.detailQuery
 export const useGameRouteProvider = gameDetail.useRouteProvider
 export const useGameDialogProvider = gameDetail.useDialogProvider
 export const useGame = gameDetail.useContext

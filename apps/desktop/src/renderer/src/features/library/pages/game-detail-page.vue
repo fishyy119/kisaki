@@ -59,7 +59,7 @@ const gameId = computed(() => route.params.gameId as string)
 const { exit } = useEntityDetailRoute('game', gameId)
 
 // =============================================================================
-// Provider (data settled during navigation by the route loader)
+// Provider (data committed by the route query before the page mounts)
 // =============================================================================
 
 const {
@@ -318,10 +318,7 @@ const canOpenGameDir = computed(() => {
     </PageHeader>
 
     <!-- Main content -->
-    <ScrollRegion
-      :memory="route.path"
-      class="bg-background p-4"
-    >
+    <ScrollRegion class="bg-background p-4">
       <GameDetailContent />
     </ScrollRegion>
 

@@ -5,7 +5,6 @@ and their state live in the installed extension store.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
@@ -15,16 +14,15 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import ExtensionInstalledPanelCard from './installed-panel-card.vue'
 import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
 import { useInstalledExtensionStore } from '../../stores'
-import { installedExtensionsData } from '../../composables'
+import { installedExtensionsQuery } from '../../composables'
 
 const store = useInstalledExtensionStore()
 const { updates } = storeToRefs(store)
 const { m } = useI18n()
-const route = useRoute()
 
-// Committed by the route data kernel before the page mounts; the resource
-// reloads itself on installation and runtime state changes.
-const { data: extensions, error, reload } = installedExtensionsData()
+// Committed by the route query before the page mounts; the query reloads
+// itself on installation and runtime state changes.
+const { data: extensions, error } = installedExtensionsQuery()
 
 const extensionsList = computed(() => extensions.value ?? [])
 
@@ -35,11 +33,6 @@ useIpc('extension:installations-changed', () => {
 
 function getUpdateInfo(extensionId: string) {
   return updates.value.find((u) => u.extensionId === extensionId)
-}
-
-async function handleRefresh() {
-  store.resetUpdateCheck()
-  await reload()
 }
 
 // Filter and sort extensions
@@ -104,7 +97,7 @@ const filteredExtensions = computed(() => {
     <ExtensionInstalledPanelFilterBar />
 
     <!-- Extension Grid -->
-    <ScrollRegion :memory="route.path">
+    <ScrollRegion>
       <StateView
         v-if="error"
         state="error"
@@ -137,7 +130,6 @@ const filteredExtensions = computed(() => {
             :key="extension.id"
             :extension="extension"
             :update-info="getUpdateInfo(extension.id)"
-            @refresh="handleRefresh"
           />
         </div>
       </template>

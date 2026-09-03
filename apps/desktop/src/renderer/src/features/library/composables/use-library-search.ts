@@ -14,7 +14,7 @@ import { storeToRefs } from 'pinia'
 import { db, ENTITY_TABLES } from '@renderer/core/db'
 import { buildFtsMatchText, normalizeSearchText } from '@shared/search'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
-import { useAsyncData } from '@renderer/composables/use-async-data'
+import { useLiveQuery } from '@renderer/composables/use-live-query'
 import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
 import { usePreferencesStore } from '@renderer/stores'
 
@@ -98,7 +98,7 @@ export function useLibrarySearch(
     debounceMs
   )
 
-  const { data, isFetching } = useAsyncData(
+  const { data, isFetching } = useLiveQuery(
     async () => {
       const text = debouncedQuery.value
       if (!text) return createEmptyResult()

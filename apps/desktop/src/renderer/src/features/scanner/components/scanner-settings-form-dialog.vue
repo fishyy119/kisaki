@@ -18,7 +18,7 @@ import {
   type ScannerIngestMode
 } from '@shared/db'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
@@ -120,7 +120,7 @@ const openModel = computed({
 // Load Data on Open
 // =============================================================================
 
-const { data, isLoading, error, refetch } = useAsyncData(
+const { data, isLoading, error, reload } = useLiveQuery(
   async () => {
     const result = await db.query.settings.findFirst()
     if (!result) {
@@ -225,7 +225,7 @@ async function handleSubmit() {
             <Button
               type="button"
               variant="outline"
-              @click="refetch"
+              @click="reload"
             >
               {{ m.actions.retry }}
             </Button>
@@ -235,7 +235,7 @@ async function handleSubmit() {
 
       <template v-else>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto">
+          <DialogBody class="max-h-[60vh]">
             <FieldGroup>
               <Field orientation="horizontal">
                 <FieldLabel>{{ m.scanner.settings.ingestMode }}</FieldLabel>

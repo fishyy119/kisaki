@@ -67,7 +67,7 @@ const novelId = computed(() => route.params.novelId as string)
 const { exit } = useEntityDetailRoute('novel', novelId)
 
 // =============================================================================
-// Provider (data settled during navigation by the route loader)
+// Provider (data committed by the route query before the page mounts)
 // =============================================================================
 
 const {
@@ -329,10 +329,7 @@ async function handleOpenNovelDir() {
       </template>
     </PageHeader>
 
-    <ScrollRegion
-      :memory="route.path"
-      class="bg-background p-4"
-    >
+    <ScrollRegion class="bg-background p-4">
       <NovelDetailContent />
     </ScrollRegion>
 

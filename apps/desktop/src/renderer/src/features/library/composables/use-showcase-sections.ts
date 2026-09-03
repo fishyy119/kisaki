@@ -1,27 +1,21 @@
 /**
  * Composable: useShowcaseSections
  *
- * Route data of the showcase: the section list and every section's entities,
+ * Route query of the showcase: the section list and every section's entities,
  * loaded together so the page's first frame is complete. Each section is one
- * filtered entity query; its read tables come from the query it declares.
+ * filtered entity query; its read tables come from the filter it declares.
  */
 
 import { computed } from 'vue'
-import { eq, asc, getTableName } from 'drizzle-orm'
-import { storeToRefs } from 'pinia'
+import { eq, asc } from 'drizzle-orm'
 import { newId } from '@shared/id'
 import { db, queryEntities, type EntityRowMap } from '@renderer/core/db'
-import { defineRouteData } from '@renderer/core/route-data'
-import { usePreferencesStore } from '@renderer/stores'
+import { defineRouteQuery } from '@renderer/core/query'
+import { visibilityView } from '@renderer/stores'
 import { showcaseSections, type ShowcaseSection, type NewShowcaseSection } from '@shared/db'
-import { ENTITY_TABLE_BY_TYPE } from '@shared/db/references'
 import type { TableName } from '@shared/db/table-names'
-import { getQueryDependencyTables } from '@shared/filter'
-
-/** Every entity table: the read set of a section list whose sections are not known yet. */
-const ENTITY_TABLE_NAMES: readonly TableName[] = Object.values(ENTITY_TABLE_BY_TYPE).map(
-  (table) => getTableName(table) as TableName
-)
+import { ALL_ENTITY_TYPES } from '@shared/entity-types'
+import { getAllFilterReadTables, getFilterReadTables } from '@shared/filter'
 
 // =============================================================================
 // Types
@@ -35,7 +29,7 @@ export interface ShowcaseSectionData {
 }
 
 // =============================================================================
-// Route data
+// Route query
 // =============================================================================
 
 async function fetchSectionEntities(
@@ -50,13 +44,10 @@ async function fetchSectionEntities(
   })
 }
 
-export const showcaseData = defineRouteData({
+export const showcaseQuery = defineRouteQuery({
   name: 'showcase',
   key: () => 'showcase',
-  view: () => {
-    const { showNsfw } = storeToRefs(usePreferencesStore())
-    return { showNsfw: showNsfw.value }
-  },
+  view: visibilityView,
   fetch: async ({ view }) => {
     const sections = await db.query.showcaseSections.findMany({
       orderBy: asc(showcaseSections.order)
@@ -69,21 +60,21 @@ export const showcaseData = defineRouteData({
     )
   },
   invalidate: {
-    // The section list itself, plus what every visible section's query reads.
-    // Until the sections are known, every entity table is a candidate.
-    reads: ({ data }) => {
+    // The section list itself, plus what every visible section's filter reads.
+    // Until the sections are known, every table any filter can read.
+    tables: ({ data }) => {
       const tables = new Set<TableName>(['showcase_sections'])
       if (!data) {
-        for (const table of ENTITY_TABLE_NAMES) tables.add(table)
+        for (const type of ALL_ENTITY_TYPES) {
+          for (const table of getAllFilterReadTables(type)) tables.add(table)
+        }
         return [...tables]
       }
       for (const { section } of data) {
         if (!section.isVisible) continue
-        const query = {
-          filter: section.filter,
-          sort: { key: section.sortField, direction: section.sortDirection }
+        for (const table of getFilterReadTables(section.entityType, section.filter)) {
+          tables.add(table)
         }
-        for (const table of getQueryDependencyTables(section.entityType, query)) tables.add(table)
       }
       return [...tables]
     }
@@ -91,13 +82,11 @@ export const showcaseData = defineRouteData({
 })
 
 export function useShowcaseSections() {
-  const { data, error, isFetching, reload } = showcaseData()
+  const { data, error } = showcaseQuery()
 
   return {
     sections: computed(() => data.value ?? []),
-    error,
-    isFetching,
-    refetch: reload
+    error
   }
 }
 

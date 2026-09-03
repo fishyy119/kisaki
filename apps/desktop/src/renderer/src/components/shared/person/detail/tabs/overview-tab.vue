@@ -92,7 +92,6 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
 
         <SectionScroll
           :title="m.library.fields.relatedCharacters"
-          memory-key="characters"
           editable
           :items="characterLinks"
           :get-key="(item) => item.id"

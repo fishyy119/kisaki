@@ -38,7 +38,7 @@ const { m } = useI18n()
         </DialogDescription>
       </DialogHeader>
 
-      <DialogBody class="max-h-[70vh] overflow-auto">
+      <DialogBody class="max-h-[70vh]">
         <FieldGroup class="gap-4">
           <Field orientation="horizontal">
             <FieldLabel>{{ m.extension.signer.details.extensionId }}</FieldLabel>

@@ -151,7 +151,7 @@ const currentConfig = computed(() => ({
         v-if="allEntities.length > 0"
         ref="filteredListView"
         :items="allEntities"
-        scroll-parent="region"
+        scroll="region"
         class="flex flex-col gap-0.5"
       >
         <template #item="{ item }">

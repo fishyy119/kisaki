@@ -3,7 +3,7 @@
  * Tag Detail Page
  *
  * Full page view of a tag: identity and operations in the header, the browse
- * surface below. Data settles during navigation through the tag route loader.
+ * surface below. Data is committed by the tag route query before the page mounts.
  */
 
 import { computed } from 'vue'
@@ -33,7 +33,7 @@ const tagId = computed(() => route.params.tagId as string)
 const { exit } = useEntityDetailRoute('tag', tagId)
 
 // =============================================================================
-// Provider (data settled during navigation by the route loader)
+// Provider (data committed by the route query before the page mounts)
 // =============================================================================
 
 const {
@@ -106,7 +106,6 @@ function handleOpen(entityType: ContentEntityType, entityId: string) {
     <TagDetailContent
       v-model:query="query"
       class="min-h-0 flex-1 bg-background"
-      :memory="route.path"
       @open="handleOpen"
     />
   </div>

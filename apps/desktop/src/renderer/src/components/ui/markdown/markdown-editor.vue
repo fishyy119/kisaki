@@ -284,7 +284,7 @@ watch(fullscreenOpen, async (open) => {
       <DialogHeader>
         <DialogTitle>{{ m.ui.markdown.previewTitle }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[75vh] overflow-auto">
+      <DialogBody class="max-h-[75vh]">
         <MarkdownContent :content="model" />
       </DialogBody>
     </DialogContent>

@@ -12,7 +12,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { ENTITY_SELECT_SPECS } from '@renderer/components/shared/entity'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { queryEntityNames } from '@renderer/core/db'
 import { usePreferencesStore } from '@renderer/stores'
 
@@ -35,7 +35,7 @@ const selectedIds = computed({
   }
 })
 
-const { data: selectedEntities } = useAsyncData(
+const { data: selectedEntities } = useLiveQuery(
   () => queryEntityNames(props.targetEntity, model.value, showNsfw.value),
   { watch: [() => props.targetEntity, model, showNsfw] }
 )

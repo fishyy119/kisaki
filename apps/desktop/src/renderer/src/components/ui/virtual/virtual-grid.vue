@@ -5,11 +5,11 @@
   - Native CSS Grid layout (auto-fill, auto-fit, etc.)
   - Dynamic measurement taken from the first rendered row (no hidden copies)
   - Auto-detects column count from the resolved grid template
-  - Scrolls inside the enclosing ScrollRegion ('region') or on its own
+  - Scrolls inside the enclosing ScrollRegion (`scroll="region"`) or on its own
 
   @example
   ```vue
-  <VirtualGrid :items="games" scroll-parent="region">
+  <VirtualGrid :items="games" scroll="region">
     <template #item="{ item }">
       <GameCard :game="item" />
     </template>
@@ -20,7 +20,7 @@
 import { ref, computed, watch, onMounted, nextTick, toRef, type HTMLAttributes } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { cn } from '@renderer/utils/cn'
-import { useVirtualScrollParent, type VirtualScrollParent } from './use-virtual-scroll-parent'
+import { useVirtualScrollParent, type VirtualScroll } from './use-virtual-scroll-parent'
 
 const props = withDefaults(
   defineProps<{
@@ -28,8 +28,8 @@ const props = withDefaults(
     items: T[]
     /** Custom key extractor, defaults to index */
     getKey?: (item: T, index: number) => string | number
-    /** External scroll parent: 'region' for the enclosing ScrollRegion, or an element */
-    scrollParent?: VirtualScrollParent
+    /** Where the grid scrolls: its own container, or the enclosing ScrollRegion */
+    scroll?: VirtualScroll
     /** Container/grid class - defaults to responsive auto-fill grid */
     class?: HTMLAttributes['class']
     /** Overscan row count for virtualizer */
@@ -37,7 +37,7 @@ const props = withDefaults(
   }>(),
   {
     getKey: undefined,
-    scrollParent: null,
+    scroll: 'self',
     class: 'grid grid-cols-[repeat(auto-fill,8rem)] gap-3 justify-between',
     overscan: 2
   }
@@ -66,13 +66,13 @@ const rowCount = computed(() => Math.ceil(props.items.length / columnCount.value
 const { scrollMargin, resolvedParent, getScrollElement, initialOffset, notifyLayoutChange } =
   useVirtualScrollParent({
     containerRef,
-    scrollParent: toRef(props, 'scrollParent'),
+    scroll: toRef(props, 'scroll'),
     onMeasure: () => virtualizer.value.measure(),
     onResize: measureLayout
   })
 
-// Virtualizer for rows. The initial offset is where the scroll parent is or
-// is about to be, so the first render already shows the right rows.
+// Virtualizer for rows. The initial offset is where the scroll parent is, so
+// a grid mounting into a scrolled region renders the right rows on its first frame.
 const virtualizer = useVirtualizer(
   computed(() => ({
     count: rowCount.value,

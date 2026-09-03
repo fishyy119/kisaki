@@ -51,8 +51,8 @@ export interface FilterQuerySpec extends FilterQuerySpecInput {
   idColumn: SQLiteColumn
   fieldByKey: ReadonlyMap<string, FilterQueryFieldDef>
   sortByKey: ReadonlyMap<string, FilterQuerySortDef>
-  /** Entity table plus every relation link table; drives db-change invalidation. */
-  relevantTables: readonly TableName[]
+  /** Entity table plus every relation link table: the read set of any query over the type. */
+  allReadTables: readonly TableName[]
 }
 
 /** Field keys declared by a spec, as a literal union. */
@@ -97,10 +97,10 @@ export function defineFilterQuerySpec<const TInput extends FilterQuerySpecInput>
     throw new Error(`Default sort key not found: ${input.sort.defaultKey}`)
   }
 
-  const relevantTables = new Set<TableName>([getTableName(input.table) as TableName])
+  const allReadTables = new Set<TableName>([getTableName(input.table) as TableName])
   for (const field of input.fields) {
     if (field.kind === 'relation') {
-      relevantTables.add(getTableName(field.link.table) as TableName)
+      allReadTables.add(getTableName(field.link.table) as TableName)
     }
   }
 
@@ -110,6 +110,6 @@ export function defineFilterQuerySpec<const TInput extends FilterQuerySpecInput>
     idColumn,
     fieldByKey,
     sortByKey,
-    relevantTables: [...relevantTables]
+    allReadTables: [...allReadTables]
   }
 }

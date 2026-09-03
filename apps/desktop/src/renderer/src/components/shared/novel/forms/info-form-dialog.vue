@@ -8,7 +8,7 @@ import { ref, computed, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { NOVEL_FORMAT_VALUES, novels, type NovelFormat, type PartialDate } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { formatDateInput } from '@renderer/utils/datetime'
 import {
   Dialog,
@@ -77,7 +77,7 @@ const isSaving = ref(false)
 const releaseDateInput = ref<PartialDateInputExpose | null>(null)
 
 // Fetch novel data when dialog opens
-const { data: novel, isLoading } = useAsyncData(
+const { data: novel, isLoading } = useLiveQuery(
   () => db.query.novels.findFirst({ where: eq(novels.id, props.novelId) }),
   {
     watch: [() => props.novelId],

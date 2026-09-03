@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { createRouter, createWebHashHistory, type Router } from 'vue-router'
 import Main from './main.vue'
-import { installRouteData } from './core/route-data'
+import { installRouteQueries } from './core/query'
 import { initI18n } from './core/i18n'
 import {
   EXTENSION_PAGE_ROUTE_NAME,
@@ -65,12 +65,9 @@ function createAppRouter(): Router {
         component: () => import('./pages/not-found-page.vue')
       }
     ]
-    // No scrollBehavior: the window never scrolls (the root layout is
-    // overflow-hidden). Scroll memory belongs to each ScrollRegion, keyed by
-    // the identity it displays.
   })
 
-  installRouteData(router)
+  installRouteQueries(router)
   // The library feature owns the browse-context autofill policy.
   router.beforeEach(libraryFromAutofillGuard)
   return router

@@ -15,8 +15,7 @@ import { usePreferencesStore } from '@renderer/stores'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import type { VirtualizedComboboxEntity } from '@renderer/components/ui/virtualized-combobox'
 import type { ContentEntityType } from '@shared/entity-types'
-import { useAsyncData } from './use-async-data'
-import { useDbChanges } from './use-db-changes'
+import { useLiveQuery } from './use-live-query'
 
 export function useEntitySelectSource(
   entityType: ContentEntityType,
@@ -24,14 +23,10 @@ export function useEntitySelectSource(
 ): ComputedRef<VirtualizedComboboxEntity[]> {
   const { showNsfw } = storeToRefs(usePreferencesStore())
 
-  const { data, refetch } = useAsyncData(
+  const { data } = useLiveQuery(
     () => queryEntityPickerRows(entityType, { includeNsfw: showNsfw.value }),
-    { watch: [showNsfw] }
+    { watch: [showNsfw], invalidate: { tables: [ENTITY_TABLES[entityType].tableName] } }
   )
-
-  useDbChanges(({ tables }) => {
-    if (tables.has(ENTITY_TABLES[entityType].tableName)) refetch()
-  })
 
   return computed(() => {
     const excluded = new Set(toValue(excludeIds))

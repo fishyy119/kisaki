@@ -15,7 +15,7 @@ import {
   type ComicReadingDirection,
   type PartialDate
 } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { formatDateInput } from '@renderer/utils/datetime'
 import {
   Dialog,
@@ -102,7 +102,7 @@ const isSaving = ref(false)
 const releaseDateInput = ref<PartialDateInputExpose | null>(null)
 
 // Fetch comic data when dialog opens
-const { data: comic, isLoading } = useAsyncData(
+const { data: comic, isLoading } = useLiveQuery(
   () => db.query.comics.findFirst({ where: eq(comics.id, props.comicId) }),
   {
     watch: [() => props.comicId],

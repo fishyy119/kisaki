@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { useAsyncData, useI18n, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useI18n, useRenderState } from '@renderer/composables'
 import {
   Select,
   SelectContent,
@@ -70,7 +70,7 @@ const {
   data: providers,
   isLoading,
   error
-} = useAsyncData(() => fetchScraperProviders(props.entityType), {
+} = useLiveQuery(() => fetchScraperProviders(props.entityType), {
   watch: [() => props.entityType]
 })
 const state = useRenderState(isLoading, error, providers)

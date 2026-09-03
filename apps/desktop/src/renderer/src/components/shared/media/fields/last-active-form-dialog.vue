@@ -8,7 +8,7 @@ import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db, updateEntityRows } from '@renderer/core/db'
 import type { MediaType } from '@shared/entity-types'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import { formatDatetimeLocalInput } from '@renderer/utils/datetime'
 import {
   Dialog,
@@ -53,7 +53,7 @@ const labels = computed(() => m.value[props.mediaType].lastActiveDialog)
 const datetime = ref('')
 const isSaving = ref(false)
 
-const { data: row, isLoading } = useAsyncData(
+const { data: row, isLoading } = useLiveQuery(
   async () => {
     const rows = await db
       .select({ lastActiveAt: table.value.lastActiveAt })

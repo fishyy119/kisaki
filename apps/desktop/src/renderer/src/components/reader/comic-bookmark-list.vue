@@ -4,6 +4,7 @@ Boundary: a comic mark is a page, so the list is previews; the shell owns which
 unit each mark belongs to and what opening one does.
 -->
 <script setup lang="ts">
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { PageSource } from '@renderer/core/reader/image/source'
 import type { ComicBookmark } from '@shared/db'
@@ -28,7 +29,7 @@ const { m } = useI18n()
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto p-2">
+  <ScrollRegion class="p-2">
     <p
       v-if="props.bookmarks.length === 0"
       class="px-2 py-1 text-xs text-muted-foreground"
@@ -77,5 +78,5 @@ const { m } = useI18n()
         @remove="emit('remove', bookmark.id)"
       />
     </div>
-  </div>
+  </ScrollRegion>
 </template>

@@ -12,8 +12,6 @@ import { getEntityIcon } from '@renderer/utils/format'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 
 interface Props {
-  /** Scroll memory identity of the host; the page passes its route path, the dialog nothing. */
-  memory?: string
   class?: HTMLAttributes['class']
 }
 
@@ -47,7 +45,6 @@ const membershipLabel = computed(() =>
     v-if="collection"
     v-model:query="query"
     :class="props.class"
-    :memory="props.memory"
     :entity-type="entityType"
     :entities="entities"
     :counts="counts"

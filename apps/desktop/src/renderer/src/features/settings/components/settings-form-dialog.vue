@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm'
 import { ipcManager } from '@renderer/core/ipc'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useLiveQuery, useRenderState } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
@@ -63,7 +63,7 @@ const openModel = computed({
   }
 })
 
-const { data, isLoading, error, refetch } = useAsyncData(
+const { data, isLoading, error, reload } = useLiveQuery(
   async () => {
     const [autoLaunchResult, currentSettings] = await Promise.all([
       ipcManager.invoke('native:get-auto-launch'),
@@ -184,7 +184,7 @@ async function handleSubmit() {
             <Button
               type="button"
               variant="outline"
-              @click="refetch"
+              @click="reload"
             >
               {{ m.actions.retry }}
             </Button>

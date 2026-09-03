@@ -1,8 +1,8 @@
 /**
  * Tag data composable
  *
- * The provider/consumer shell (route loader, dialog provider, db sync) comes
- * from the entity detail context factory; this module owns what a tag detail
+ * The provider/consumer shell (route query, dialog provider, invalidation)
+ * comes from the entity detail context factory; this module owns what a tag detail
  * surface fetches and shows: the tag row, member counts per content type, and
  * the members of the browsed type under the surface's list query.
  */
@@ -18,7 +18,7 @@ import {
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { Tag } from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import { getQueryDependencyTables } from '@shared/filter'
+import { getFilterReadTables } from '@shared/filter'
 import {
   createEmptyContentEntityCounts,
   type ContentEntityCounts,
@@ -28,7 +28,7 @@ import {
   createEntityDetailContext,
   type EntityDetailContext,
   type EntityDetailProviderReturn,
-  type EntityDetailReadsContext
+  type EntityDetailTablesContext
 } from './entity-context'
 import {
   createEntityListQuery,
@@ -89,15 +89,14 @@ async function fetchTagData(
 }
 
 /**
- * What the fetch reads. Link rows attribute to the tag through their foreign
- * key, so only this tag's membership changes refetch; every entity table can
- * hide a member and matches by table; the visible list reads the shown
- * type's query tables (every type's until the shown type is known).
+ * What the fetch reads: every tag link table (a count) and entity table (a
+ * member that can be hidden), plus the shown type's list query tables (every
+ * type's until the shown type is known).
  */
-function tagReads({
+function tagTables({
   params,
   data
-}: EntityDetailReadsContext<TagData, OrganizerDetailParams>): readonly TableName[] {
+}: EntityDetailTablesContext<TagData, OrganizerDetailParams>): readonly TableName[] {
   const tables = new Set<TableName>()
   for (const type of CONTENT_ENTITY_TYPES) {
     tables.add(TAG_LINKS[type].tableName)
@@ -106,7 +105,7 @@ function tagReads({
 
   const shownType = data?.entityType ?? params.query.entityType
   for (const type of shownType ? [shownType] : CONTENT_ENTITY_TYPES) {
-    for (const table of getQueryDependencyTables(type, params.query)) tables.add(table)
+    for (const table of getFilterReadTables(type, params.query.filter)) tables.add(table)
   }
 
   return [...tables]
@@ -126,10 +125,10 @@ const tagDetail = createEntityDetailContext<TagData, OrganizerDetailParams>({
   },
   initialParams: () => ({ query: createEntityListQuery(null) }),
   fetch: (id, params, view) => fetchTagData(id, params.query, view.showNsfw),
-  reads: tagReads
+  tables: tagTables
 })
 
-export const tagDetailData = tagDetail.detailData
+export const tagDetailQuery = tagDetail.detailQuery
 export const useTagRouteProvider = tagDetail.useRouteProvider
 export const useTagDialogProvider = tagDetail.useDialogProvider
 export const useTag = tagDetail.useContext

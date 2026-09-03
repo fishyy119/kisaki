@@ -7,8 +7,9 @@
  */
 
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
+import { StateView } from '@renderer/components/ui/state-view'
 import { EntityBrowsePanel } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
@@ -17,14 +18,13 @@ import { useFavorites } from '../composables'
 
 const { m } = useI18n()
 
-const route = useRoute()
 const router = useRouter()
 
 // =============================================================================
-// Data (committed by the route data kernel before the page mounts)
+// Data (committed by the route query before the page mounts)
 // =============================================================================
 
-const { entities, counts, entityType, query } = useFavorites()
+const { entities, counts, entityType, query, error } = useFavorites()
 
 const entityLabel = computed(() => m.value.library.entities[entityType.value])
 
@@ -40,7 +40,17 @@ function handleOpen(type: ContentEntityType, entityId: string) {
 </script>
 
 <template>
-  <div class="flex h-full w-full flex-col">
+  <StateView
+    v-if="error"
+    state="error"
+    :error="error"
+    class="h-full bg-background"
+  />
+
+  <div
+    v-else
+    class="flex h-full w-full flex-col"
+  >
     <PageHeader>
       <PageHeaderTitle
         :title="m.library.pages.favoritesTitle"
@@ -51,7 +61,6 @@ function handleOpen(type: ContentEntityType, entityId: string) {
     <EntityBrowsePanel
       v-model:query="query"
       class="min-h-0 flex-1 bg-background"
-      :memory="route.path"
       :entity-type="entityType"
       :entities="entities"
       :counts="counts"

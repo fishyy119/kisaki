@@ -1,6 +1,6 @@
 export {
   StatisticsKey,
-  statisticsData,
+  statisticsQuery,
   useStatisticsProvider,
   useStatistics,
   mediaTypeOfEntityKey

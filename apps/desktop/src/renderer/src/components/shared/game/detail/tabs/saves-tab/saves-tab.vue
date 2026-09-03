@@ -29,7 +29,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
 
-const { game, refetch } = useGame()
+const { game, reload } = useGame()
 
 const isCreating = ref(false)
 const restoreTarget = ref<number | null>(null)
@@ -67,7 +67,7 @@ async function handleCreate() {
     const result = await ipcManager.invoke('attachment:create-game-save-backup', game.value.id)
     if (result.success) {
       notify.success(m.value.game.saves.backupCreated)
-      refetch()
+      reload()
     } else {
       notify.error(m.value.game.saves.createBackupFailed, result.error)
     }
@@ -85,7 +85,7 @@ async function handleRestore(backupAt: number) {
   )
   if (result.success) {
     notify.success(m.value.game.saves.restored)
-    refetch()
+    reload()
   } else {
     notify.error(m.value.game.saves.restoreFailed, result.error)
   }
@@ -101,7 +101,7 @@ async function handleDelete(backupAt: number) {
   )
   if (result.success) {
     notify.success(m.value.game.saves.backupDeleted)
-    refetch()
+    reload()
   } else {
     notify.error(result.error || m.value.game.saves.deleteBackupFailed)
   }
@@ -136,7 +136,7 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
       notify.success(m.value.game.saves.backupInfoUpdated)
       editDialogOpen.value = false
       editTarget.value = null
-      refetch()
+      reload()
     } else {
       notify.error(result.error || m.value.library.feedback.updateFailed)
     }

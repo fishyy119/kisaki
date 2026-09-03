@@ -10,7 +10,7 @@ import { watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { db, ENTITY_TABLES, updateEntityRows } from '@renderer/core/db'
 import type { ExternalSite } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { useLiveQuery } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,7 @@ const formOpen = ref(false)
 const editingIndex = ref<number | null>(null)
 const isSaving = ref(false)
 
-const { data: row, isLoading } = useAsyncData(
+const { data: row, isLoading } = useLiveQuery(
   async () => {
     const rows = await db
       .select({ externalSites: table.value.externalSites })
@@ -174,7 +174,7 @@ function handleCancel() {
         <DialogHeader>
           <DialogTitle>{{ m.library.forms.editExternalSites }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh]">
+        <DialogBody class="max-h-[60vh]">
           <div class="space-y-1">
             <StateView
               v-if="sites.length === 0"

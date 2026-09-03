@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
+import { useLiveQuery, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -46,19 +46,10 @@ async function fetchCollection(): Promise<Collection | null> {
   return data ?? null
 }
 
-const { data: collection, refetch } = useAsyncData(fetchCollection, {
+const { data: collection } = useLiveQuery(fetchCollection, {
   watch: [() => props.collectionId],
-  enabled: () => props.enabled
-})
-
-useDbChanges(({ changes }) => {
-  const updated = changes.some(
-    (change) =>
-      change.operation === 'updated' &&
-      change.table === 'collections' &&
-      change.id === props.collectionId
-  )
-  if (updated) refetch()
+  enabled: () => props.enabled,
+  invalidate: { tables: ['collections'] }
 })
 
 const isDynamic = computed(() => collection.value?.isDynamic ?? false)

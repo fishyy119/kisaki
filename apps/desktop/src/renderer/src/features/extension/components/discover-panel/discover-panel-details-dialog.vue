@@ -168,7 +168,7 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
         </div>
       </DialogHeader>
 
-      <DialogBody class="max-h-[65vh] overflow-auto space-y-5">
+      <DialogBody class="max-h-[65vh] space-y-5">
         <section class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
           <div>
             <span class="text-muted-foreground">{{ m.extension.discover.extensionId }}</span>
