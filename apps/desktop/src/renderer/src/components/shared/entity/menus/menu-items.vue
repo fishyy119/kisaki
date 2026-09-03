@@ -281,23 +281,21 @@ async function handleCreateDesktopShortcut() {
       </component>
       <component
         :is="props.components.SubContent"
-        class="min-w-[180px]"
+        class="min-w-44"
       >
         <template v-if="collectionsData.notContaining.length > 0">
-          <div class="max-h-[200px] overflow-auto">
-            <component
-              :is="props.components.Item"
-              v-for="collection in collectionsData.notContaining"
-              :key="collection.id"
-              @select="handleAddToCollection(collection.id)"
-            >
-              <Icon
-                :icon="getEntityIcon('collection')"
-                class="size-4"
-              />
-              {{ collection.name }}
-            </component>
-          </div>
+          <component
+            :is="props.components.Item"
+            v-for="collection in collectionsData.notContaining"
+            :key="collection.id"
+            @select="handleAddToCollection(collection.id)"
+          >
+            <Icon
+              :icon="getEntityIcon('collection')"
+              class="size-4"
+            />
+            {{ collection.name }}
+          </component>
         </template>
         <component
           :is="props.components.Item"
@@ -334,22 +332,20 @@ async function handleCreateDesktopShortcut() {
       </component>
       <component
         :is="props.components.SubContent"
-        class="min-w-[180px]"
+        class="min-w-44"
       >
-        <div class="max-h-[200px] overflow-auto">
-          <component
-            :is="props.components.Item"
-            v-for="collection in collectionsData.containing"
-            :key="collection.id"
-            @select="handleRemoveFromCollection(collection.id)"
-          >
-            <Icon
-              :icon="getEntityIcon('collection')"
-              class="size-4"
-            />
-            {{ collection.name }}
-          </component>
-        </div>
+        <component
+          :is="props.components.Item"
+          v-for="collection in collectionsData.containing"
+          :key="collection.id"
+          @select="handleRemoveFromCollection(collection.id)"
+        >
+          <Icon
+            :icon="getEntityIcon('collection')"
+            class="size-4"
+          />
+          {{ collection.name }}
+        </component>
       </component>
     </component>
 
@@ -369,7 +365,7 @@ async function handleCreateDesktopShortcut() {
       </component>
       <component
         :is="props.components.SubContent"
-        class="min-w-[140px]"
+        class="min-w-36"
       >
         <component
           :is="props.components.RadioGroup"

@@ -12,7 +12,7 @@ const props = defineProps<Props>()
 
 <template>
   <div
-    :class="cn('rounded-t-md border-b border-border bg-muted/30 px-4 py-3', props.class)"
+    :class="cn('shrink-0 rounded-t-md border-b border-border bg-muted/30 px-4 py-3', props.class)"
     data-slot="alert-dialog-header"
   >
     <slot />

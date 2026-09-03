@@ -36,15 +36,17 @@ export function createShadcnTheme(isDark: boolean): Extension {
 }
 
 /**
- * Custom base theme for editor styling to match shadcn input components.
+ * Custom base theme for editor styling to match the app's input components.
+ * Type sizes come from the app's rem scale (text-xs / text-sm) so the editor
+ * follows the interface scale like every other control.
  */
 export function createBaseTheme(minHeight: string, maxHeight: string): Extension {
   return EditorView.theme({
     '&': {
-      fontSize: '12px',
+      fontSize: 'var(--text-xs)',
       fontFamily: 'var(--font-mono)',
       maxHeight,
-      borderRadius: '4px'
+      borderRadius: 'var(--radius-sm)'
     },
     '&.cm-focused': {
       outline: 'none'
@@ -82,7 +84,7 @@ export function createBaseTheme(minHeight: string, maxHeight: string): Extension
     },
     '.cm-tooltip-autocomplete ul': {
       fontFamily: 'var(--font-mono)',
-      fontSize: '13px'
+      fontSize: 'var(--text-sm)'
     },
     '.cm-tooltip-autocomplete ul li': {
       padding: '4px 8px'

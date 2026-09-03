@@ -81,11 +81,11 @@ const coverUrl = computed(() =>
       class="w-28 aspect-[3/4] rounded-lg shrink-0 border shadow-raised"
     />
 
-    <div class="flex-1 min-w-0 flex flex-col justify-between">
+    <div class="@container flex-1 min-w-0 flex flex-col justify-between">
       <div>
         <!-- Title (Editable) -->
         <div class="group/field relative flex items-center gap-3">
-          <h2 class="text-xl font-bold truncate">{{ novel.name }}</h2>
+          <h2 class="text-lg font-semibold truncate">{{ novel.name }}</h2>
           <Button
             variant="ghost"
             size="icon-xs"
@@ -119,7 +119,7 @@ const coverUrl = computed(() =>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-x-8 gap-y-1.5">
+      <div class="grid grid-cols-1 gap-x-8 gap-y-1.5 @md:grid-cols-2">
         <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">
           <span class="flex items-center gap-1.5 text-muted-foreground">
             <button

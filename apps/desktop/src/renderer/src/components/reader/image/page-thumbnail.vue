@@ -67,7 +67,7 @@ onMounted(async () => {
     </span>
     <span
       v-if="props.numbered"
-      class="text-[10px] tabular-nums text-muted-foreground"
+      class="text-xs tabular-nums text-muted-foreground"
     >
       {{ props.index + 1 }}
     </span>

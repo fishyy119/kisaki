@@ -70,7 +70,7 @@ const enabledModel = computed({
       cn('h-16 border-border/50 hover:bg-accent/30', !props.automation.enabled && 'opacity-70')
     "
   >
-    <TableCell class="py-2 pl-4">
+    <TableCell class="py-2">
       <div class="flex min-w-0 items-center gap-3">
         <Switch
           v-model="enabledModel"
@@ -145,7 +145,7 @@ const enabledModel = computed({
       </div>
     </TableCell>
 
-    <TableCell class="py-2 pr-4">
+    <TableCell class="py-2">
       <div class="flex items-center justify-end gap-1">
         <Button
           size="icon-sm"

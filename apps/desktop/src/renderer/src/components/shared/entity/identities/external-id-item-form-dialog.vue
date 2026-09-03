@@ -82,7 +82,7 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-sm">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{
           isAddMode ? m.library.forms.addExternalId : m.library.forms.editExternalId

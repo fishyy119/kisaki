@@ -69,8 +69,8 @@ const syncItemsLabel = computed(() => {
 <template>
   <div class="space-y-4">
     <SettingsSection :title="m.ui.overview.statusTitle">
-      <div class="overflow-hidden rounded-md border border-border">
-        <div class="grid -m-px lg:grid-cols-3">
+      <div class="@container overflow-hidden rounded-md border border-border">
+        <div class="grid -m-px @xl:grid-cols-3">
           <button
             type="button"
             class="border-r border-b border-border px-3 py-2 text-left transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
@@ -125,8 +125,8 @@ const syncItemsLabel = computed(() => {
     </SettingsSection>
 
     <SettingsSection :title="m.ui.overview.runtimeTitle">
-      <div class="overflow-hidden rounded-md border border-border">
-        <div class="grid -m-px sm:grid-cols-2">
+      <div class="@container overflow-hidden rounded-md border border-border">
+        <div class="grid -m-px @sm:grid-cols-2">
           <div class="border-r border-b border-border px-3 py-2">
             <div class="text-xs text-muted-foreground">{{ m.ui.overview.runningJobs }}</div>
             <div class="mt-1 flex items-center gap-2">
@@ -151,8 +151,11 @@ const syncItemsLabel = computed(() => {
       </div>
     </SettingsSection>
 
-    <SettingsSection :title="m.ui.overview.quickActionsTitle">
-      <div class="grid gap-2 sm:grid-cols-2">
+    <SettingsSection
+      :title="m.ui.overview.quickActionsTitle"
+      class="@container"
+    >
+      <div class="grid gap-2 @sm:grid-cols-2">
         <Button
           variant="outline"
           size="sm"

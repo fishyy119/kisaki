@@ -14,9 +14,8 @@ export function getAutomationStatusLabel(status: SteamAutomationStatus): string 
   return m.value.automations.status[status]
 }
 
-export const AUTOMATION_STATUS_VARIANTS: Record<SteamAutomationStatus, BadgeVariants['variant']> =
-  {
-    missing: 'secondary',
-    enabled: 'success',
-    disabled: 'warning'
-  }
+export const AUTOMATION_STATUS_VARIANTS: Record<SteamAutomationStatus, BadgeVariants['variant']> = {
+  missing: 'secondary',
+  enabled: 'success',
+  disabled: 'warning'
+}

@@ -114,13 +114,13 @@ async function handleDeleteChapter(): Promise<void> {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="flex max-h-[85vh] max-w-2xl flex-col">
+    <DialogContent size="lg">
       <template v-if="chapter">
         <DialogHeader>
-          <DialogTitle class="flex min-w-0 items-center gap-2">
+          <DialogTitle>
             <span
               v-if="chapter.volumeNumber !== null"
-              class="shrink-0 font-mono text-muted-foreground"
+              class="font-mono text-muted-foreground"
             >
               {{
                 m.comic.chapters.unnamedVolume({ number: formatUnitNumber(chapter.volumeNumber) })
@@ -128,15 +128,15 @@ async function handleDeleteChapter(): Promise<void> {
             </span>
             <span
               v-if="chapter.chapterNumber !== null"
-              class="shrink-0 font-mono text-muted-foreground"
+              class="font-mono text-muted-foreground"
             >
               {{ formatUnitNumber(chapter.chapterNumber) }}
             </span>
-            <span class="truncate">{{ title }}</span>
+            {{ title }}
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="min-h-0 flex-1 space-y-4">
+        <DialogBody class="space-y-4">
           <!-- Cover (display only; edited through the chapter form) -->
           <div
             v-if="coverUrl"

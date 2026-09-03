@@ -93,8 +93,6 @@ export const scanner = {
 
   settings: {
     title: 'Scanner settings',
-    saved: 'Settings saved',
-    saveFailed: 'Save failed',
     ingestMode: 'Import mode',
     ingestModeDescription: 'Controls how the scanner imports newly identified games',
     ingestPreferScraper: 'Prefer scraper',

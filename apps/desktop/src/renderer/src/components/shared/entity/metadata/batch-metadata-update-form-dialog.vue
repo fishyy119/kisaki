@@ -147,25 +147,23 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="openModel">
-    <DialogContent class="max-w-3xl">
+    <DialogContent size="lg">
       <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <Icon
-            icon="icon-[mdi--database-sync-outline]"
-            class="size-4"
-          />
+        <DialogTitle icon="icon-[mdi--database-sync-outline]">
           {{ m.library.forms.batchUpdateMetadataTitle }}
-          <span class="text-xs text-muted-foreground">{{
-            m.library.forms.batchSelectedCount({
-              count: selectedCount,
-              label: m.library.entities[props.entityType]
-            })
-          }}</span>
+          <template #trailing>
+            <span class="shrink-0 text-xs text-muted-foreground">{{
+              m.library.forms.batchSelectedCount({
+                count: selectedCount,
+                label: m.library.entities[props.entityType]
+              })
+            }}</span>
+          </template>
         </DialogTitle>
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-        <DialogBody class="space-y-4 max-h-[70vh]">
+        <DialogBody class="space-y-4">
           <FieldGroup>
             <Field>
               <FieldLabel>{{ m.library.forms.scraperConfigLabel }}</FieldLabel>

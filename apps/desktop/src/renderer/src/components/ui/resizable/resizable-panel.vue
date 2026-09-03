@@ -13,10 +13,8 @@ const props = defineProps<Props>()
 
 const context = useResizable()
 
-const width = computed(() => (props.position === 'left' ? context.leftWidth : context.rightWidth))
-
 const panelStyle = computed(() =>
-  props.position === 'left' ? { width: `${width.value}px` } : undefined
+  props.position === 'left' ? { width: `${context.leftWidthPx}px` } : undefined
 )
 </script>
 

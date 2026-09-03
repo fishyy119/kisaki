@@ -1,3 +1,8 @@
+<!--
+  DialogOverlay - Fills the dialog's positioner (and through it the modal
+  region), blocking the surface underneath. No scrim: separation is the slab's
+  elevation, not a darkened page.
+-->
 <script setup lang="ts">
 import type { DialogOverlayProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
@@ -16,7 +21,7 @@ const delegatedProps = reactiveOmit(props, 'class')
     v-bind="delegatedProps"
     :class="
       cn(
-        'fixed inset-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+        'absolute inset-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         props.class
       )
     "

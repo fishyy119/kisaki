@@ -237,24 +237,22 @@ const sortDirectionModels = createModelsByEntityType(createSortDirectionModel)
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <Icon
-            icon="icon-[mdi--filter-outline]"
-            class="size-5"
-          />
+        <DialogTitle icon="icon-[mdi--filter-outline]">
           {{ m.library.forms.dynamicConfigTitle }}
-          <span
-            v-if="enabledCount > 0"
-            class="text-sm font-normal text-muted-foreground"
-          >
-            {{ m.library.forms.enabledTypesCount({ count: enabledCount }) }}
-          </span>
+          <template #trailing>
+            <span
+              v-if="enabledCount > 0"
+              class="shrink-0 text-xs text-muted-foreground"
+            >
+              {{ m.library.forms.enabledTypesCount({ count: enabledCount }) }}
+            </span>
+          </template>
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[60vh]">
+      <DialogBody>
         <div class="space-y-2">
           <div
             v-for="type in CONTENT_ENTITY_TYPES"

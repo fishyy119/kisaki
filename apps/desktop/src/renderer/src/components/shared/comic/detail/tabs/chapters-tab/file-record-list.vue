@@ -245,7 +245,7 @@ function fileFacts(file: ComicChapterFile): string[] {
       v-if="noteTarget"
       v-model:open="noteDialogOpen"
     >
-      <DialogContent class="max-w-sm">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>{{ m.comic.files.editNote }}</DialogTitle>
         </DialogHeader>

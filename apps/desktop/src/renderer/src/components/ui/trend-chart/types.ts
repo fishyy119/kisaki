@@ -22,8 +22,8 @@ export interface TrendChartProps {
   formatDate?: (date: string, granularity: TrendGranularity) => string
   /** Granularity selector labels */
   granularityLabels?: { daily: string; weekly: string; monthly: string }
-  /** Chart height in pixels */
-  height?: number
+  /** Plot height as a CSS length (rem, so it follows the interface scale) */
+  height?: string
   /** Custom class */
   class?: HTMLAttributes['class']
 }

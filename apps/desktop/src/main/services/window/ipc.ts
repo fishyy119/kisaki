@@ -1,5 +1,5 @@
 import type { IpcService } from '@main/services/ipc'
-import { wrapIpcVoid } from '@main/services/ipc'
+import { wrapIpc, wrapIpcVoid } from '@main/services/ipc'
 import type { WindowService } from './service'
 
 export function registerWindowIpc(service: WindowService, ipc: IpcService): void {
@@ -23,5 +23,11 @@ export function registerWindowIpc(service: WindowService, ipc: IpcService): void
 
   ipc.handle('window:close-main-window', () =>
     wrapIpcVoid(() => service.mainWindow.closeByConfiguredAction())
+  )
+
+  ipc.handle('window:get-interface-scale', () => wrapIpc(() => service.interfaceScale))
+
+  ipc.handle('window:set-interface-scale', (_e, scale) =>
+    wrapIpcVoid(() => service.setInterfaceScale(scale))
   )
 }

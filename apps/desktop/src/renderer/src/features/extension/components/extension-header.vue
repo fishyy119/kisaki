@@ -79,7 +79,12 @@ const navItems = computed<PageHeaderNavItem[]>(() => [
       :title="m.extension.title"
       icon="icon-[mdi--puzzle-outline]"
     />
-    <PageHeaderNav :items="navItems" />
+    <!-- Title 6rem + four icon pills 22rem + up to three action buttons 24rem
+         need about 56rem; below the 4xl step the pills become one dropdown -->
+    <PageHeaderNav
+      :items="navItems"
+      collapse-below="4xl"
+    />
 
     <!-- Right: Actions -->
     <template #actions>

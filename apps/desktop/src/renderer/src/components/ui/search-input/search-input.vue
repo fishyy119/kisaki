@@ -3,6 +3,9 @@
   Search field with a leading magnifier and a clear affordance. Keystrokes
   reach the model after a debounce; clearing commits at once. A model change
   from outside (a reset on scope switch) replaces the draft.
+  Never narrower than the magnifier plus a few characters of query (9rem):
+  in a flexible row the field yields down to that floor, then the row wraps
+  around it instead of squeezing it further.
 -->
 <script setup lang="ts">
 import { ref, watch, type HTMLAttributes } from 'vue'
@@ -50,7 +53,7 @@ function handleClear() {
 <template>
   <InputGroup
     :size="props.size"
-    :class="cn('min-w-0', props.class)"
+    :class="cn('min-w-36', props.class)"
   >
     <InputGroupAddon>
       <Icon

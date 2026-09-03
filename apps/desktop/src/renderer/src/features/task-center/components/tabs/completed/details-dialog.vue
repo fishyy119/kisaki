@@ -88,24 +88,22 @@ const metadata = computed(() => [
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl">
+    <DialogContent size="xl">
       <DialogHeader>
-        <DialogTitle class="flex min-w-0 items-center gap-2 pr-8">
-          <Icon
-            :icon="getTaskRunCategoryIcon(props.run.category)"
-            class="size-5 shrink-0"
-          />
-          <span class="truncate">{{ props.run.title }}</span>
-          <Badge
-            :variant="getTaskRunStatusVariant(props.run.status)"
-            class="h-5"
-          >
-            {{ formatTaskRunStatus(props.run.status) }}
-          </Badge>
+        <DialogTitle :icon="getTaskRunCategoryIcon(props.run.category)">
+          {{ props.run.title }}
+          <template #trailing>
+            <Badge
+              :variant="getTaskRunStatusVariant(props.run.status)"
+              class="h-5"
+            >
+              {{ formatTaskRunStatus(props.run.status) }}
+            </Badge>
+          </template>
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[72vh] space-y-4 overflow-x-hidden">
+      <DialogBody class="space-y-4 overflow-x-hidden">
         <section class="space-y-2">
           <div class="text-xs font-medium text-muted-foreground">{{ m.task.details.result }}</div>
           <div class="overflow-hidden rounded-md border border-border bg-muted/20">
@@ -147,7 +145,7 @@ const metadata = computed(() => [
               v-if="counters.length"
               class="border-t border-border px-3 py-2"
             >
-              <dl class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-3">
+              <dl class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm @lg:grid-cols-3">
                 <div
                   v-for="[key, value] in counters"
                   :key="key"
@@ -169,7 +167,7 @@ const metadata = computed(() => [
                 {{ m.task.details.output }}
               </div>
               <pre
-                class="max-h-56 overflow-auto bg-muted/50 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground"
+                class="max-h-56 overflow-auto bg-muted/50 p-3 text-xs leading-relaxed whitespace-pre-wrap wrap-break-word text-foreground"
                 >{{ outputPreview }}</pre>
             </div>
           </div>
@@ -197,7 +195,7 @@ const metadata = computed(() => [
                 >
                   {{ warning.code }}
                 </div>
-                <div class="break-words">{{ warning.message }}</div>
+                <div class="wrap-break-word">{{ warning.message }}</div>
               </div>
             </div>
           </div>
@@ -211,7 +209,7 @@ const metadata = computed(() => [
               class="col-span-2 min-w-0"
             >
               <div class="text-xs text-muted-foreground">{{ m.task.details.description }}</div>
-              <div class="break-words">{{ props.run.description }}</div>
+              <div class="wrap-break-word">{{ props.run.description }}</div>
             </div>
 
             <template
@@ -220,7 +218,7 @@ const metadata = computed(() => [
             >
               <div class="min-w-0">
                 <div class="text-xs text-muted-foreground">{{ item.label }}</div>
-                <div class="break-words">{{ item.value }}</div>
+                <div class="wrap-break-word">{{ item.value }}</div>
               </div>
             </template>
           </section>

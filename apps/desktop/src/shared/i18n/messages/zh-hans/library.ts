@@ -809,6 +809,10 @@ export const library = {
     placeholder: '搜索游戏、角色、人物、公司…',
     typeToSearch: '输入关键词搜索',
     emptyResult: ({ label }: { label: string }) => `无${label}结果`,
+    allTypes: '全部',
+    noResults: '无结果',
+    showAll: ({ count }: { count: number }) => `查看全部 ${count} 条`,
+    switchScope: '切换类型',
     navigate: '导航',
     select: '选择',
     totalResults: ({ count }: { count: number }) => `共 ${count} 条结果`

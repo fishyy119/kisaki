@@ -5,10 +5,13 @@
   - Line chart with area fill
   - Internal granularity selector (daily/weekly/monthly)
   - Tooltip support (shadcn-vue chart tooltip)
+  - X-axis tick count follows the plot width, so labels never collide
 -->
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, shallowRef } from 'vue'
+import { computed, onMounted, onUnmounted, shallowRef, useTemplateRef } from 'vue'
+import { useElementSize } from '@vueuse/core'
+import { remToPx } from '@renderer/core/interface-scale'
 import { cn } from '@renderer/utils/cn'
 import {
   toLocalDateKey,
@@ -35,7 +38,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 // =============================================================================
 
 const props = withDefaults(defineProps<TrendChartProps>(), {
-  height: 200,
+  height: '14rem',
   availableGranularities: () => ['daily', 'weekly', 'monthly']
 })
 
@@ -216,7 +219,17 @@ const canRender = computed(() => range.value !== null && series.value.length > 0
 const x = (_d: TrendChartSeriesPoint, i: number) => i
 const y = (d: TrendChartSeriesPoint) => d.value
 
-const numTicks = computed(() => Math.min(series.value.length, 10))
+// One label needs about 4.5rem ("Jan 2026", "12/31") plus breathing room; the
+// count follows the measured plot width so labels never collide at any
+// width or scale. At least two ticks frame the range.
+const plotRef = useTemplateRef<HTMLElement>('plot')
+const { width: plotWidth } = useElementSize(plotRef)
+const TICK_SLOT_REM = 4.5
+
+const numTicks = computed(() => {
+  const fitting = Math.floor(plotWidth.value / remToPx(TICK_SLOT_REM))
+  return Math.max(2, Math.min(series.value.length, fitting))
+})
 
 function formatXLabel(i: number): string {
   const idx = Math.round(i)
@@ -310,7 +323,8 @@ const insight = computed(() => {
 
     <div
       v-if="canRender"
-      :style="{ height: `${props.height}px` }"
+      ref="plot"
+      :style="{ height: props.height }"
     >
       <ChartContainer :config="chartConfig">
         <VisXYContainer

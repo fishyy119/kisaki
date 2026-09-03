@@ -1,10 +1,10 @@
 import { inject, provide, type InjectionKey } from 'vue'
 
+/** Layout facts in CSS pixels, resolved from the rem model for DOM styling. */
 export interface ResizableContext {
-  leftWidth: number
-  rightWidth: number
-  containerWidth: number
-  handleSize: number
+  leftWidthPx: number
+  rightWidthPx: number
+  handleSizePx: number
   isResizing: boolean
   startResize: (e: MouseEvent) => void
   resetToDefault: () => void

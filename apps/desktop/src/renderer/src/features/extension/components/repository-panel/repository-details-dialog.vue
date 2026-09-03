@@ -44,7 +44,7 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <div class="flex items-start gap-3 min-w-0">
           <Icon
@@ -61,15 +61,15 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
         </div>
       </DialogHeader>
 
-      <DialogBody class="max-h-[65vh] space-y-5">
+      <DialogBody class="space-y-5">
         <section class="space-y-2">
           <div class="text-sm font-medium">{{ m.extension.repository.details.basicInfo }}</div>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-xs @lg:grid-cols-2">
             <div class="min-w-0">
               <dt class="text-muted-foreground">
                 {{ m.extension.repository.details.repositoryId }}
               </dt>
-              <dd class="font-mono break-all select-text">{{ props.repository.id }}</dd>
+              <dd class="font-mono wrap-anywhere select-text">{{ props.repository.id }}</dd>
             </div>
             <div class="min-w-0">
               <dt class="text-muted-foreground">{{ m.extension.repository.details.priority }}</dt>
@@ -83,7 +83,7 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
               <dt class="text-muted-foreground">{{ m.extension.repository.details.localState }}</dt>
               <dd>{{ stateLabel }}</dd>
             </div>
-            <div class="min-w-0 sm:col-span-2">
+            <div class="min-w-0 @lg:col-span-2">
               <dt class="text-muted-foreground">
                 {{ m.extension.repository.details.manifestUrl }}
               </dt>
@@ -92,7 +92,7 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
                   :href="props.repository.url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="block break-all text-primary hover:underline"
+                  class="block wrap-anywhere text-primary hover:underline"
                 >
                   {{ props.repository.url }}
                 </a>
@@ -105,12 +105,12 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
           <div class="text-sm font-medium">
             {{ m.extension.repository.details.manifestMetadata }}
           </div>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
-            <div class="min-w-0 sm:col-span-2">
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-xs @lg:grid-cols-2">
+            <div class="min-w-0 @lg:col-span-2">
               <dt class="text-muted-foreground">
                 {{ m.extension.repository.details.manifestDigest }}
               </dt>
-              <dd class="font-mono break-all select-text">
+              <dd class="font-mono wrap-anywhere select-text">
                 {{ formatRepositoryNullable(props.repository.manifestDigest) }}
               </dd>
             </div>
@@ -122,13 +122,13 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
             </div>
             <div class="min-w-0">
               <dt class="text-muted-foreground">Last-Modified</dt>
-              <dd class="break-all select-text">
+              <dd class="wrap-anywhere select-text">
                 {{ formatRepositoryNullable(props.repository.lastModified) }}
               </dd>
             </div>
-            <div class="min-w-0 sm:col-span-2">
+            <div class="min-w-0 @lg:col-span-2">
               <dt class="text-muted-foreground">ETag</dt>
-              <dd class="font-mono break-all select-text">
+              <dd class="font-mono wrap-anywhere select-text">
                 {{ formatRepositoryNullable(props.repository.etag) }}
               </dd>
             </div>
@@ -137,7 +137,7 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
 
         <section class="space-y-2">
           <div class="text-sm font-medium">{{ m.extension.repository.details.refreshState }}</div>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-xs @lg:grid-cols-2">
             <div class="min-w-0">
               <dt class="text-muted-foreground">
                 {{ m.extension.repository.details.lastChecked }}
@@ -152,17 +152,17 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
             </div>
             <div
               v-if="props.repository.lastError"
-              class="min-w-0 sm:col-span-2"
+              class="min-w-0 @lg:col-span-2"
             >
               <dt class="text-muted-foreground">{{ m.extension.repository.details.lastError }}</dt>
-              <dd class="break-words text-destructive">{{ props.repository.lastError }}</dd>
+              <dd class="wrap-break-word text-destructive">{{ props.repository.lastError }}</dd>
             </div>
           </dl>
         </section>
 
         <section class="space-y-2">
           <div class="text-sm font-medium">{{ m.extension.repository.details.localRecord }}</div>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-xs @lg:grid-cols-2">
             <div class="min-w-0">
               <dt class="text-muted-foreground">{{ m.extension.repository.details.createdAt }}</dt>
               <dd>{{ formatRepositoryDate(props.repository.createdAt) }}</dd>

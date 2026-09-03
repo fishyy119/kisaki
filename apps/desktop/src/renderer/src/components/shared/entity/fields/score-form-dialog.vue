@@ -109,7 +109,7 @@ function handleClear() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <!-- Loading state -->
       <template v-if="isLoading || !row">
         <DialogBody>

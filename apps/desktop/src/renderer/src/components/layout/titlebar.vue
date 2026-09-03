@@ -64,7 +64,7 @@ function handleOpenUpdaterDialog() {
       <img
         :src="kisakiIcon"
         alt="Kisaki"
-        class="w-[18px] h-[18px] border border-border rounded-md"
+        class="size-5 border border-border rounded-md"
       />
     </div>
 

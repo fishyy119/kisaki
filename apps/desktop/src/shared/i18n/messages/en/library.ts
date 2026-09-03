@@ -862,6 +862,10 @@ export const library = {
     placeholder: 'Search games, characters, people, companies…',
     typeToSearch: 'Type keywords to search',
     emptyResult: ({ label }: { label: string }) => `No ${label.toLowerCase()} results`,
+    allTypes: 'All',
+    noResults: 'No results',
+    showAll: ({ count }: { count: number }) => `Show all ${count}`,
+    switchScope: 'Switch type',
     navigate: 'Navigate',
     select: 'Select',
     totalResults: ({ count }: { count: number }) =>

@@ -130,7 +130,10 @@ const canOpenComicDir = computed(() => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl max-h-[90vh] flex flex-col">
+    <DialogContent
+      size="xl"
+      fill
+    >
       <!-- Loading / Error / Not Found -->
       <template v-if="state !== 'success'">
         <DialogBody>
@@ -140,7 +143,7 @@ const canOpenComicDir = computed(() => {
             :icon="getEntityIcon('comic')"
             :title="m.library.detail.notFoundTitle({ label: m.library.entities.comic })"
             :description="m.library.detail.notFoundDescription({ label: m.library.entities.comic })"
-            class="py-12"
+            class="h-full"
           />
         </DialogBody>
       </template>
@@ -148,11 +151,7 @@ const canOpenComicDir = computed(() => {
       <!-- Loaded Content -->
       <template v-else-if="comic">
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
-            <Icon
-              :icon="getEntityIcon('comic')"
-              class="size-4 text-muted-foreground"
-            />
+          <DialogTitle :icon="getEntityIcon('comic')">
             {{ comic.name }}
           </DialogTitle>
         </DialogHeader>

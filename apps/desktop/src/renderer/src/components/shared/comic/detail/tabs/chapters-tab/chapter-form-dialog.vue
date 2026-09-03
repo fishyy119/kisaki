@@ -165,7 +165,7 @@ async function handleDelete() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <!-- Loading state (edit mode only) -->
       <template v-if="isEditMode && (isLoading || !chapter)">
         <DialogBody>

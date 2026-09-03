@@ -15,7 +15,8 @@ import {
   type EntityListQuery
 } from '@renderer/composables/entity-list-query'
 
-const DEFAULT_EXPLORER_WIDTH = 220
+/** Rail width in rem: a content size, so it follows the interface scale. */
+const DEFAULT_EXPLORER_WIDTH_REM = 16
 
 export const useLibraryExplorerStore = defineStore(
   'libraryExplorer',
@@ -35,7 +36,7 @@ export const useLibraryExplorerStore = defineStore(
     // State - UI Preferences (persisted)
     // ========================================================================
 
-    const explorerWidth = ref(DEFAULT_EXPLORER_WIDTH)
+    const explorerWidthRem = ref(DEFAULT_EXPLORER_WIDTH_REM)
     const collapsedIds = ref<string[]>([])
 
     // ========================================================================
@@ -157,20 +158,12 @@ export const useLibraryExplorerStore = defineStore(
       }
     }
 
-    function setExplorerWidth(width: number) {
-      explorerWidth.value = width
-    }
-
     function toggleCollapsed(id: string) {
       if (collapsedIds.value.includes(id)) {
         collapsedIds.value = collapsedIds.value.filter((i) => i !== id)
       } else {
         collapsedIds.value = [...collapsedIds.value, id]
       }
-    }
-
-    function resetExplorerWidth() {
-      explorerWidth.value = DEFAULT_EXPLORER_WIDTH
     }
 
     return {
@@ -180,7 +173,7 @@ export const useLibraryExplorerStore = defineStore(
       selectedKeys,
       selectionAnchorKey,
       // State - UI Preferences
-      explorerWidth,
+      explorerWidthRem,
       collapsedIds,
       // Actions
       setQuery,
@@ -192,14 +185,12 @@ export const useLibraryExplorerStore = defineStore(
       selectRange,
       toggleGroupSelection,
       pruneSelection,
-      setExplorerWidth,
-      toggleCollapsed,
-      resetExplorerWidth
+      toggleCollapsed
     }
   },
   {
     persist: {
-      pick: ['explorerWidth', 'collapsedIds', 'query.sort'],
+      pick: ['explorerWidthRem', 'collapsedIds', 'query.sort'],
       afterHydrate: ({ store }) => {
         // The persisted sort may name a field the launch type does not
         // declare; re-entering the same type runs the shared retention rule

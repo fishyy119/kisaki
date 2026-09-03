@@ -105,56 +105,56 @@ const isQueryActive = computed(
         {{ m.values.itemCount({ count: props.filteredCount }) }}
       </span>
 
-      <div class="flex-1" />
-
-      <ButtonGroup>
-        <template
-          v-for="option in statusOptions"
-          :key="option.value"
-        >
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                :variant="statusFilter === option.value ? 'secondary' : 'outline'"
-                size="icon-sm"
-                :class="cn(statusFilter !== option.value && 'text-muted-foreground')"
-                @click="statusFilter = option.value"
-              >
-                <Icon
-                  :icon="option.icon"
-                  class="size-4"
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{{ option.label }}</TooltipContent>
-          </Tooltip>
-        </template>
-      </ButtonGroup>
-
-      <Select v-model="sourceFilter">
-        <SelectTrigger
-          size="sm"
-          class="w-28"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem
-            v-for="option in sourceOptions"
+      <template #trailing>
+        <ButtonGroup>
+          <template
+            v-for="option in statusOptions"
             :key="option.value"
-            :value="option.value"
           >
-            {{ option.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  :variant="statusFilter === option.value ? 'secondary' : 'outline'"
+                  size="icon-sm"
+                  :class="cn(statusFilter !== option.value && 'text-muted-foreground')"
+                  @click="statusFilter = option.value"
+                >
+                  <Icon
+                    :icon="option.icon"
+                    class="size-4"
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{{ option.label }}</TooltipContent>
+            </Tooltip>
+          </template>
+        </ButtonGroup>
 
-      <SortControl
-        v-model:field="sortField"
-        v-model:direction="sortDirection"
-        :options="sortOptions"
-        size="sm"
-      />
+        <Select v-model="sourceFilter">
+          <SelectTrigger
+            size="sm"
+            class="w-28"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem
+              v-for="option in sourceOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        <SortControl
+          v-model:field="sortField"
+          v-model:direction="sortDirection"
+          :options="sortOptions"
+          size="sm"
+        />
+      </template>
     </ToolbarRow>
   </Toolbar>
 </template>

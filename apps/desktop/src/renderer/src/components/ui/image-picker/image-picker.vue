@@ -30,7 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
   pickIcon: 'icon-[mdi--image-outline]',
   pickDisabled: false,
   clearDisabled: false,
-  previewMaxHeightClass: 'max-h-[220px]',
+  previewMaxHeightClass: 'max-h-64',
   showPickedPath: true
 })
 

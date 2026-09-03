@@ -83,6 +83,6 @@ const chartData = computed(() => {
     :data="chartData"
     :available-types="props.availableTypes"
     :format-value="(v: number) => `${v.toFixed(1)}h`"
-    :height="200"
+    height="14rem"
   />
 </template>

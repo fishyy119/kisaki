@@ -96,7 +96,7 @@ function currentIncludePreviewUpdates(): boolean {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{ m.extension.updatePolicyDialog.title }}</DialogTitle>
         <DialogDescription>{{ resolveExtensionText(props.extension.name) }}</DialogDescription>

@@ -116,11 +116,11 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{ m.scanner.rules.presetsTitle }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh]">
+      <DialogBody>
         <StateView
           v-if="availablePresets.length === 0"
           state="empty"

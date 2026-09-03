@@ -230,14 +230,14 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{
           isAddMode ? m.anime.episodes.addEpisode : m.anime.episodes.editEpisode
         }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[65vh]">
+        <DialogBody>
           <FieldGroup>
             <div class="grid grid-cols-2 gap-3">
               <Field>

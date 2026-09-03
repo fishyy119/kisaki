@@ -41,7 +41,7 @@ import type { ExtensionIconInfo } from '@shared/extension'
 import SidebarNavItem from './sidebar-nav-item.vue'
 import { AddEntryTrigger } from '@renderer/features/add-entry'
 import { ScraperProfilesFormDialog } from '@renderer/features/scraper'
-import { SettingsFormDialog } from '@renderer/features/settings'
+import { SettingsDialog } from '@renderer/features/settings'
 import { AboutDialog } from '@renderer/features/about'
 import { TaskCenterTrigger } from '@renderer/features/task-center'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -143,8 +143,11 @@ const showNsfwModel = computed({
 
 <template>
   <aside class="flex flex-col h-full w-13 bg-surface border-r border-border shrink-0">
-    <!-- Main navigation -->
-    <nav class="flex-1 flex flex-col items-center py-2 gap-1">
+    <!-- Main navigation: scrolls when extension pages outgrow a short window,
+         so it never pushes the bottom navigation off the rail -->
+    <nav
+      class="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto py-2 [scrollbar-width:none]"
+    >
       <SidebarNavItem
         v-for="item in navItems"
         :key="item.id"
@@ -158,7 +161,7 @@ const showNsfwModel = computed({
     </nav>
 
     <!-- Bottom navigation -->
-    <nav class="flex flex-col items-center py-2 gap-1">
+    <nav class="flex shrink-0 flex-col items-center py-2 gap-1">
       <AddEntryTrigger />
       <TaskCenterTrigger />
 
@@ -281,7 +284,7 @@ const showNsfwModel = computed({
     v-model:open="isProfileManagerOpen"
   />
 
-  <SettingsFormDialog
+  <SettingsDialog
     v-if="isSettingsOpen"
     v-model:open="isSettingsOpen"
   />

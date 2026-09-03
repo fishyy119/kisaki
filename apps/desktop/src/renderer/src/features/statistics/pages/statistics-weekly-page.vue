@@ -48,14 +48,14 @@ const { error } = useStatistics()
     </div>
 
     <!-- Charts band -->
-    <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
+    <div class="grid grid-cols-1 divide-y @7xl:grid-cols-[2fr_1fr] @7xl:divide-y-0">
       <div class="min-w-0 p-4">
         <StatisticsTimeTrend
           :title="m.statistics.charts.trendTitle"
           :available-granularities="['daily']"
         />
       </div>
-      <div class="min-w-0 p-4 xl:border-l">
+      <div class="min-w-0 p-4 @4xl:border-l">
         <StatisticsTimeDistribution
           :title="m.statistics.charts.distributionTitle"
           :available-types="['hourly']"

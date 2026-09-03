@@ -9,7 +9,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { useAnime } from '@renderer/composables/use-anime'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -38,63 +37,47 @@ const activeTab = ref('overview')
     <AnimeDetailHero />
 
     <Tabs v-model="activeTab">
-      <TabsList>
-        <TabsTrigger value="overview">
-          <Icon
-            icon="icon-[mdi--information-outline]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.overview }}
-        </TabsTrigger>
-        <TabsTrigger value="episodes">
-          <Icon
-            icon="icon-[mdi--playlist-play]"
-            class="size-3.5"
-          />
-          {{ m.anime.episodes.title }}
-        </TabsTrigger>
-        <TabsTrigger value="characters">
-          <Icon
-            :icon="getEntityIcon('character')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.characters }}
-        </TabsTrigger>
-        <TabsTrigger value="persons">
-          <Icon
-            :icon="getEntityIcon('person')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.persons }}
-        </TabsTrigger>
-        <TabsTrigger value="companies">
-          <Icon
-            :icon="getEntityIcon('company')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.companies }}
-        </TabsTrigger>
-        <TabsTrigger value="relations">
-          <Icon
-            icon="icon-[mdi--link-variant]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.relatedEntries }}
-        </TabsTrigger>
-        <TabsTrigger value="activity">
-          <Icon
-            icon="icon-[mdi--report-timeline-variant]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.activity }}
-        </TabsTrigger>
-        <TabsTrigger value="notes">
-          <Icon
-            icon="icon-[mdi--image-multiple-outline]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.notes }}
-        </TabsTrigger>
+      <TabsList collapse-below="2xl">
+        <TabsTrigger
+          value="overview"
+          icon="icon-[mdi--information-outline]"
+          :label="m.library.detail.tabs.overview"
+        />
+        <TabsTrigger
+          value="episodes"
+          icon="icon-[mdi--playlist-play]"
+          :label="m.anime.episodes.title"
+        />
+        <TabsTrigger
+          value="characters"
+          :icon="getEntityIcon('character')"
+          :label="m.library.detail.tabs.characters"
+        />
+        <TabsTrigger
+          value="persons"
+          :icon="getEntityIcon('person')"
+          :label="m.library.detail.tabs.persons"
+        />
+        <TabsTrigger
+          value="companies"
+          :icon="getEntityIcon('company')"
+          :label="m.library.detail.tabs.companies"
+        />
+        <TabsTrigger
+          value="relations"
+          icon="icon-[mdi--link-variant]"
+          :label="m.library.detail.tabs.relatedEntries"
+        />
+        <TabsTrigger
+          value="activity"
+          icon="icon-[mdi--report-timeline-variant]"
+          :label="m.library.detail.tabs.activity"
+        />
+        <TabsTrigger
+          value="notes"
+          icon="icon-[mdi--image-multiple-outline]"
+          :label="m.library.detail.tabs.notes"
+        />
       </TabsList>
 
       <TabsContent value="overview">

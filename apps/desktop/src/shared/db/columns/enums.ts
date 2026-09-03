@@ -77,7 +77,13 @@ import type {
   NovelPersonRole,
   ScannerIngestMode
 } from '../contracts/enums'
-import { createBoundedIntegerType, createEnumType, createNullableEnumType } from './factories'
+import { UI_SCALE_DEFAULT, UI_SCALE_VALUES, type UiScale } from '../../window'
+import {
+  createBoundedIntegerType,
+  createEnumType,
+  createIntegerEnumType,
+  createNullableEnumType
+} from './factories'
 
 export const mediaStatus = createEnumType<MediaStatus>(
   MEDIA_STATUS_VALUES,
@@ -255,6 +261,8 @@ export const mainWindowCloseAction = createEnumType<MainWindowCloseAction>(
   'exit',
   'mainWindowCloseAction'
 )
+
+export const uiScale = createIntegerEnumType<UiScale>(UI_SCALE_VALUES, UI_SCALE_DEFAULT, 'uiScale')
 
 export const scannerIngestMode = createEnumType<ScannerIngestMode>(
   SCANNER_INGEST_MODE_VALUES,

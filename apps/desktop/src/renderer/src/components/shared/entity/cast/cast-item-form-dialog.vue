@@ -143,7 +143,7 @@ function handleSubmit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <Form @submit="handleSubmit">
         <DialogHeader>
           <DialogTitle>

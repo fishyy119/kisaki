@@ -196,7 +196,7 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-6xl">
+    <DialogContent size="2xl">
       <template v-if="isEditMode && (isLoading || !existingNote)">
         <DialogBody>
           <StateView
@@ -213,7 +213,7 @@ function handleCancel() {
           }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="space-y-4 max-h-[80vh]">
+          <DialogBody class="space-y-4">
             <FieldGroup>
               <Field>
                 <FieldLabel>{{ m.library.notes.titleLabel }}</FieldLabel>
@@ -247,8 +247,8 @@ function handleCancel() {
                   <MarkdownEditor
                     v-model="formData.content"
                     :placeholder="m.library.notes.contentPlaceholder"
-                    min-height="420px"
-                    max-height="420px"
+                    min-height="30rem"
+                    max-height="30rem"
                     :on-attachment="isEditMode ? handleInlineAttachment : undefined"
                   />
                 </FieldContent>

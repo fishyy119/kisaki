@@ -3,6 +3,9 @@
 ## Key Files
 
 - `apps/desktop/src/renderer/src/styles/globals.css` - Theme tokens and base styles
+- `apps/desktop/src/shared/window.ts` - Viewport contract: window floors, interface scale steps
+- `apps/desktop/src/renderer/src/core/interface-scale/` - Root font size from the interface scale, `remToPx`
+- `apps/desktop/src/main/services/window/geometry.ts` - Window floors, default size, pinned zoom
 - `apps/desktop/src/renderer/src/components/ui/` - UI component library
 - `apps/desktop/src/renderer/src/components/ui/button.vue` - Button variants
 - `apps/desktop/src/renderer/src/components/ui/input.vue` - Input component
@@ -10,14 +13,102 @@
 - `apps/desktop/src/renderer/src/components/ui/field/` - Field layout components; `FieldGroup`
   owns the app-wide form texture
 - `apps/desktop/src/renderer/src/components/ui/dialog/` - Dialog components
-- `@kisaki3/extension-ui-vue` `SettingsSection` - Multi-section settings recipe; the app has
-  no surface of that type yet, so it has no counterpart component
+- `apps/desktop/src/renderer/src/components/ui/settings-section/` - Multi-section settings recipe
+  (mirror of the `@kisaki3/extension-ui-vue` component); the app settings dialog is its reference
+- `apps/desktop/src/renderer/src/components/ui/table/` - Column-driven table: header, widths,
+  alignment, reflow and horizontal-scroll fallbacks from one `columns` definition
+- `apps/desktop/src/renderer/src/components/ui/container/` - `ContainerStep` vocabulary shared by
+  every `collapseBelow` / `reflowBelow` prop
 - `extensions/bangumi/src/ui/settings/app.vue` - Integration control panel (rail shell)
   reference implementation
 - `apps/desktop/src/renderer/src/components/ui/icon.vue` - Icon component
 - `apps/desktop/src/renderer/src/components/ui/back-to-top/` - Back-to-top scroll aid (overlay
   component + the `useBackToTop` calibration its footer home shares)
 - `apps/desktop/src/renderer/src/components/shared/game/game-forms/game-characters-form-dialog/` - ListForm pattern reference
+
+## Viewport Contract
+
+The UI is designed against a floor, not a target monitor. The contract lives in
+`src/shared/window.ts` and both processes derive from it. Window limits are fixed
+CSS pixels; design tiers are rem, because the layout only ever sees rem:
+
+| Contract              | Value                                                                               |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| Main window minimum   | 960×560 CSS px (`MAIN_WINDOW_MIN_CONTENT_SIZE`), independent of the interface scale |
+| Main window default   | 1400×850, capped at 90% of the primary work area, never below the minimum           |
+| Reader window minimum | 480×360 CSS px                                                                      |
+| Interface scale       | `settings.ui_scale`: 70–130% in 10% steps, default 100%, no step ever disabled      |
+| Supported displays    | 1366×768 @125% (work area ≈ 1092×576), 1280×720 @100%, and everything larger        |
+
+Three design tiers, in rem of main-area width (window minus the 3.25rem sidebar):
+
+| Tier            | Main area | Reached by                | Promise                                                                                   |
+| --------------- | --------- | ------------------------- | ----------------------------------------------------------------------------------------- |
+| **Comfortable** | ≥ 88rem   | 1280px @100%              | Every surface at its intended layout; multi-column bands side by side                     |
+| **Correct**     | ≥ 65rem   | 960px @100%, 1092px @110% | No overflow, clipping, or stray scrollbar; single-column bands, full tables, docked rails |
+| **Usable**      | ≥ 49rem   | 960px @130%               | Everything reachable and readable: tables reflow, header navigation folds                 |
+
+The floor and the scale are decoupled on purpose: a large scale in a small window
+shows less and degrades through the fluid rules below, instead of the window
+refusing to fit the screen or a scale step being greyed out. The scale is a
+density preference, ±30% around the design size (70% for dense displays at 100%
+OS scaling, where `text-xs` is 7.35px - the smallest role the system carries);
+accessibility magnification is the operating system's display scaling, which the
+app inherits, so no step above 130% exists to stand in for it.
+
+The interface scale is the single lever of the rem scale: the main `WindowService`
+is its only writer (the settings surface calls `window:set-interface-scale`;
+`Ctrl+=` / `Ctrl+-` step through the presets and `Ctrl+0` resets, in every window),
+it pushes `window:interface-scale-changed`, and each renderer sets
+`--text-base-size = 14px × scale` on its root (`core/interface-scale`). The webview
+bridge mirrors the resolved size into extension documents. Layout code that must
+speak pixels (virtualizer row estimates, canvases, tick budgets) uses `remToPx()`
+from `core/interface-scale` inside a computed, never a literal pixel constant.
+
+Page zoom is pinned: there is no application menu (macOS keeps app + edit roles),
+`zoomFactor` is reset to 1 on every load, and pinch zoom stays disabled.
+Development builds cycle the main window through the probe stops (floor, laptop
+work area, comfortable tier) with `Ctrl+Shift+M`; combined with the scale steps
+this reaches every tier.
+
+## Units
+
+A dimension is either a content size or a region clamp, and each has one unit:
+
+| Quantity                                         | Unit                           | Why                                                                       |
+| ------------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------- |
+| Content sizes (widths, heights, gaps, type)      | `rem` (Tailwind steps)         | Encode content - characters per line, lines - and follow the scale        |
+| Region clamps (`w-full`, `max-h-full`, `h-full`) | `%` of the containing region   | The region is what is actually available; it is never the viewport        |
+| Layout switches                                  | container queries (`@<step>:`) | Lay out against the width a surface actually gets                         |
+| `vh` / `vw`                                      | root layout `h-screen` only    | Wrong reference (window chrome), blind to the scale, tied to aspect ratio |
+
+Never write pixel or viewport lengths in classes (`w-[400px]`, `max-h-[60vh]`),
+arbitrary type sizes (`text-[11px]`), `text-xl` / `text-3xl`, viewport breakpoints
+(`md:`), or named containers and container queries (`@container/region`,
+`@md/region:`); the `kisaki/layout-discipline` ESLint rule rejects them in
+templates and in `cn()` / `cva()` strings. The rule lives in two places on
+purpose - `apps/desktop/eslint.config.ts` and `packages/extension-ui-vue/eslint.config.ts` -
+the kit mirrors the app rule by rule as it mirrors it component by component,
+without importing from it; change both together. Extension webviews are not
+linted by it; they inherit the discipline through the kit's components and this
+reference. Two responsive axes exist on a desktop - window size and text scale -
+and this vocabulary covers both without viewport units.
+
+## Modal Region and Layering
+
+Every document that hosts app dialogs declares one `#modal-layer`
+(`MODAL_LAYER_ID` / `MODAL_LAYER_CLASS` from `components/ui/dialog`). It is the
+region modals are confined to and centered in:
+
+- Main window: the `absolute inset-0` first child of the area below the titlebar
+  (`root-layout.vue`). A modal covers sidebar and content, never the window chrome,
+  so the window stays draggable and its controls stay operable while a dialog is
+  open. No constant encodes the titlebar height - the structure does.
+- Reader window: the whole document (native frame).
+- Extension webview documents: no layer; the kit's positioner is `fixed inset-0`.
+
+Stacking has two levels and no tokens: the layer is `z-40` (above in-page `z-10`
+overlays; it never overlaps the titlebar), floating layers stay `z-50`.
 
 ## Design Language
 
@@ -28,10 +119,13 @@
 - Structure expressed through background layers, not card stacking
 - One form texture: a form is a plain stack of fields (`FieldGroup`), each a label above
   its full-width control, bound by proximity. Every form in the app reads the same way,
-  from a one-field rename dialog to the settings dialog.
+  from a one-field rename dialog to the scanner editor.
 - Frames and dividers are a grouping device, so they are spent only where there are
-  groups to tell apart: a multi-section settings surface. They do not belong to forms -
-  around a single field a frame states a grouping that does not exist.
+  groups to tell apart: a multi-section settings surface such as the app settings
+  dialog. They do not belong to forms - around a single field a frame states a
+  grouping that does not exist.
+- Two apply models and never a mix: records are drafts committed by Save (forms);
+  independent settings apply the moment they change (preferences).
 - Row lists and divider-based grids, not repeated cards: use borders, aligned columns,
   and compact row rhythm to make related controls scannable.
 - Lightbox base: the app shell is a backlit panel of three layers (`ambient-light.vue`) -
@@ -52,24 +146,38 @@ surface type genuinely has no recipe, define the recipe once (document it here,
 add shared components where needed), then build the surface; whichever side meets
 the need first proposes, but the recipe belongs to the system and both sides use it.
 
-| Surface type              | Test                                                                                              | Recipe                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Form                      | Fields to fill and submit, whatever the dialog's size                                             | Plain `FieldGroup`, no frame                           |
-| Multi-section settings    | Several titled groups of pure configuration on one resident surface                               | `SettingsSection` per group with the `rows` surface    |
-| Integration control panel | Account-backed integration surface mixing status, operations, and configuration                   | Left tab rail + fixed tab vocabulary (see below)       |
-| Data row list             | Entity rows with inline actions                                                                   | `border` + `divide-y` rows                             |
-| Section navigation        | Non-settings surfaces: up to 3 sections top horizontal `TabsList`, 5+ in a large dialog left rail | Category first; thresholds only where no category fits |
-| Detail page content       | Content-first sections                                                                            | `Section` with de-emphasized xs heading                |
-| Report surface            | Data-dense read-only bands                                                                        | Full-bleed bands + `divide-y` (see Report surfaces)    |
+| Surface type              | Test                                                                                              | Recipe                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Form                      | One record, valid only as a whole, submitted at once                                              | Plain `FieldGroup`, no frame; Save / Cancel footer; edits are a draft         |
+| Preferences               | Independent settings, each valid on its own                                                       | Every control applies and persists on change; no Save, Cancel, or draft       |
+| Multi-section settings    | Several titled groups of preferences on one surface                                               | Preferences apply model + `SettingsSection` per group with the `rows` surface |
+| Integration control panel | Account-backed integration surface mixing status, operations, and configuration                   | Left tab rail + fixed tab vocabulary (see below)                              |
+| Data row list             | Entity rows with inline actions                                                                   | `border` + `divide-y` rows                                                    |
+| Data table                | Uniform records compared across named columns                                                     | `Table` with column definitions (see Table)                                   |
+| Section navigation        | Non-settings surfaces: up to 3 sections top horizontal `TabsList`, 5+ in a large dialog left rail | Category first; thresholds only where no category fits                        |
+| Detail page content       | Content-first sections                                                                            | `Section` with de-emphasized xs heading                                       |
+| Report surface            | Data-dense read-only bands                                                                        | Full-bleed bands + `divide-y` (see Report surfaces)                           |
+| Finder                    | Type, see hits, pick one (the library search)                                                     | `2xl` `fill` dialog: query row, scope switch, grouped fluid grid of hits      |
 
-The line between a form and a multi-section settings surface is the presence of
-several groups, not the owner and not the surface's size. A dialog holding one flat
-set of settings (the app settings dialog) is a form. The line between multi-section
-settings and an integration control panel is the content mix, not the section count:
-pure configuration (scraper extension settings such as TMDB or IGDB) stays a
-one-page multi-section surface, while an account-backed integration that also runs
-operations (list import, full push, automations) is an integration control panel and
-uses the rail recipe regardless of how many tabs it currently fills.
+Form versus preferences is the apply model, and it is decided by the data, not by
+the owner or the surface's size. A record (a scanner, a game, a launch config) is
+valid only as a whole, so it is edited as a draft and committed by Save; a set of
+independent switches (the app settings dialog, the scanner settings dialog) has no
+whole to validate, so each control writes its own setting the moment it changes -
+selects and switches on change, text and numbers on blur or Enter - and a failed
+write reverts the control and reports through `notify`. The two models never mix
+on one surface: a dialog with a Save button applies nothing early, and a
+preferences surface has no Save. Extension settings webviews hold records
+(credentials, endpoints) and stay forms.
+
+Multi-section settings is a preferences surface with several titled groups; the app
+settings dialog (Appearance / Startup and window / Updates) is its reference. The
+line between multi-section settings and an integration control panel is the
+content mix, not the section count: pure configuration (scraper extension settings
+such as TMDB or IGDB) stays a one-page multi-section surface, while an
+account-backed integration that also runs operations (list import, full push,
+automations) is an integration control panel and uses the rail recipe regardless
+of how many tabs it currently fills.
 
 ## Semantic Tokens
 
@@ -271,14 +379,16 @@ Three roles carry all body copy:
 
 | Role       | Utility     | What it covers                                                                          |
 | ---------- | ----------- | --------------------------------------------------------------------------------------- |
+| Hero title | `text-lg`   | The entity name in a detail hero (`font-semibold`) - one per detail surface             |
 | Page title | `text-base` | `PageHeaderTitle` only - one per screen                                                 |
 | Content    | `text-sm`   | Control values, options, buttons, menu items, dialog titles, list titles, body copy     |
 | Meta       | `text-xs`   | Field/dialog descriptions, subtitles, badges, shortcuts, group labels, tabs, table text |
 
 Above the roles sit display sizes for figures that are read as data, not as
 prose: `text-lg` for stat values, `text-2xl` for the report hero figure (the
-app-wide ceiling; `text-3xl` is never used). A number is a figure only when it
-is the point of its cell - counts inside a label stay at the label's size.
+app-wide ceiling; `text-xl` and `text-3xl` are never used). A number is a
+figure only when it is the point of its cell - counts inside a label stay at the
+label's size.
 
 ### Control Sizes
 
@@ -362,6 +472,28 @@ See `buttonVariants` in `components/ui/button.vue`:
 - `bg-dialog` (opaque slab) + `border` + `rounded-md` + `shadow-modal`
 - No visual overlay/scrim: separation comes from shadow-modal + the elevation ladder
 - 100-150ms fade/zoom animation
+- **Geometry is declared, never styled.** `DialogContent` is the only owner of
+  dialog geometry: it portals into the modal region, brings its own positioner
+  (region-filling, `p-4` inset, centered), and lays the slab out as a flex column.
+  Call sites pass two things and no width or height classes:
+  - `size` - the width step, a content class: `sm` 24rem (single-control prompts),
+    `md` 32rem (single-column forms, the default), `lg` 42rem (list editing with row
+    actions, two-column forms), `xl` 56rem (detail views, data tables, side-by-side
+    comparison), `2xl` 72rem (editors, multi-column searchers). The positioner clamps
+    every step at small windows.
+  - `fill` - a definite height for tool dialogs whose content is unbounded or varies
+    (tabs, tables, virtual lists, webview shells): the region height up to the dialog
+    ceiling. Without it the slab is content-sized up to the same ceiling.
+    The ceiling is 48rem - the region height at the comfortable tier - so it only binds
+    on tall windows, where it keeps slab proportions stable. Both bounds are rem clamped
+    by the region; no `vh`, no `min-h`, no per-dialog heights, no `max-h` on
+    `DialogBody`. `DialogBody` is `min-h-0 grow` and the only part that scrolls;
+    `Form` is a transparent flex column so the body keeps scrolling inside it.
+- `DialogTitle` is one line that always fits: `icon` prop (muted identity icon),
+  truncated text, `#trailing` slot for badges that keep their size. `DialogHeader`
+  reserves the close button's corner (`pr-10`).
+- `AlertDialog` takes no geometry props: always `sm`, content-sized; its
+  description scrolls if it ever has to.
 - Two roles, one unconditional look each:
   - `Dialog` is a workbench window (forms, toolbars, scrollable lists).
     Structure: `DialogHeader` → `DialogBody` → `DialogFooter`; header and
@@ -400,10 +532,22 @@ lightbox layers through the fill.
 - Row order: the scope row (which body of content - tabs with icon + label +
   count) sits above the query row (what to see inside it). A surface without
   a scope switch keeps only the query row.
-- Query row order is fixed: `SearchInput` (`flex-1`) → match count (only
-  while a query is active) → enum filters / `SortControl` → `FilterTrigger`.
-- `ToolbarRow` is a container query root: tab labels collapse to icon +
-  tooltip below the width threshold (the explorer rail is the consumer).
+- Query row anatomy is fixed: the leading part is `SearchInput`
+  (`flex-1 max-w-xl`) followed by the match count (only while a query is
+  active); everything fixed-size - enum filters, selects, `SortControl`,
+  `FilterTrigger` - goes in the row's `#trailing` slot, in that order. No
+  spacer elements: the trailing group is `ml-auto`.
+- The row wraps, it never squeezes. Fixed controls keep their content width
+  (a select is as wide as its longest option, a rem step chosen from that
+  label); `SearchInput` yields down to its 9rem floor; when floor and trailing
+  group no longer share a line, the group drops to a second line, right-aligned,
+  and the search keeps the first line whole. Nothing on a band has a width that
+  changes with the window except the search.
+- `ToolbarRow` is a query container: tab labels collapse to icon + title below
+  the step the call site declares (`collapseBelow`), the explorer rail being the
+  consumer.
+- A select trigger packs its content left (icon, value) and pushes only the
+  chevron to the end; the value truncates rather than widening the trigger.
 - Operations (check updates, refresh, clear) never enter the band - they
   belong to page `#actions` or the `DialogFooter`.
 - `SearchInput` owns the search debounce (default 200ms; clearing commits at
@@ -423,6 +567,198 @@ lightbox layers through the fill.
   `EntityBrowsePanel` / `EntityBrowseToolbar` compose it over one
   `EntityListQuery` (tabs with counts, search, hit count, membership-first
   sort, filter).
+
+### Responsive Layout (container queries)
+
+Surfaces lay out against the width they actually get, never against the
+window: a detail overview lives in a resizable pane and in an `xl` dialog, a
+toolbar row lives in the explorer rail and in a full-width band. Queries are
+unnamed and resolve against the **nearest** container (`@3xl:grid-cols-[3fr_1fr]`,
+`@max-2xl:hidden`).
+
+The one invariant: **the nearest container is the subject's width-giver** - the
+ancestor whose inline size is the space the subject lays out in. A name is a
+routing key for skipping a nearer container; nothing in this tree needs to skip
+one, so containers are never named. Named queries fail silently (they measure a
+distant root when the component lands in a narrower column, and never match
+when that root is absent), unnamed ones fail visibly and locally, and the fix
+is always the same one-class change on the width-giver. Two placement rules
+keep the invariant:
+
+| Case                                                                               | Who declares `@container`                                                       | Why                                                                                                                                                                                                                      |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The component's **internal layout** depends on its own width                       | The component, on a wrapper one level above the grid                            | A query cannot style its own container. Detail overview, hero info column, `StatsGrid` frame, `ActivityPanel`, `Table` scroller                                                                                          |
+| The component's **mode** depends on the parent's width; its own width is intrinsic | The parent width-giver: `ToolbarRow`, `PageHeader`, `Tabs` root, the reader row | `container-type: inline-size` is size containment - the element's inline size can no longer come from its content, so a shrink-to-fit control that declared its own container would collapse to zero width in a flex row |
+| `Field orientation="responsive"`                                                   | `FieldGroup`                                                                    | The group is the field's width-giver                                                                                                                                                                                     |
+| Page and dialog bodies written in place (report bands, card grids)                 | `ScrollRegion` viewport                                                         | The baseline width-giver of in-place content                                                                                                                                                                             |
+
+Containment is therefore only ever placed on elements whose inline size is
+imposed from outside (block stretch, `flex-1 min-w-0`, a grid track, `absolute
+inset`, an explicit width) - never on a shrink-to-fit element. Container queries
+measure the content box, so a threshold on a padded container (`PageHeader
+px-4`) is compared against the width minus that padding; the derivation rule
+below includes the padding term for this reason.
+
+Steps are Tailwind's container scale at the 14px root: `@lg` 32rem, `@2xl` 42rem,
+`@3xl` 48rem, `@4xl` 56rem, `@5xl` 64rem, `@6xl` 72rem, `@7xl` 80rem; media-query
+`rem` resolves at 16px, so the two scales never mix. Components that take a step
+as a prop (`collapseBelow`, `reflowBelow`) type it as `ContainerStep` and keep a
+static class map so Tailwind sees every class.
+
+**Thresholds are derived, not chosen by eye.** A layout switches to n columns only
+when each cell keeps its comfortable width - the width at which its own content
+reads without truncation or label collision:
+
+```
+threshold(n) = n × comfortable cell width + gaps + surface padding, rounded up to a step
+```
+
+then verified to sit at least 2rem away from every host's floor content width, so
+the switch never flickers around a tier boundary. The check runs against the
+narrowest host at the largest scale (the usable tier), not only at 100%. References:
+extension cards (24rem comfortable, 2 cols `@2xl`, 3 cols `@7xl`); report charts
+band (a monthly trend chart keeps its labels at 40rem: side by side `@7xl`, ranking
+pair `@4xl`); detail overview two columns `@3xl`; hero stats (icon 1 + label 4 +
+value 7 = 12rem a cell, two cells plus the 2rem gap = 26rem) two columns `@md` of
+the info column, which is about 38rem at 130% on the floor. Fluid content inside a cell
+scales continuously instead: a chart's tick count is the measured plot width
+divided by one label's rem budget (`TrendChart`), never a fixed number.
+
+**Usable-tier devices.** Below the correct tier a surface degrades through a fixed
+vocabulary, never through hiding content:
+
+| Device                | Owner                                         | Rule                                                                                                                 |
+| --------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Label collapse        | `TabsList` / `SegmentedControl collapseBelow` | Labels hide, icons and counts stay, label moves into the title                                                       |
+| Navigation fold       | `PageHeaderNav collapseBelow`                 | Route pills become one dropdown showing the active route; both renderings are in the markup, the container picks one |
+| Panel float           | Reader `NavPanel`                             | Below `@2xl` of the reader row the panel is absolute over the page; the shell renders the click-catcher              |
+| Table reflow / scroll | `Table reflowBelow` / `minWidth`              | See Table                                                                                                            |
+| Band wrap             | `ToolbarRow`                                  | The trailing group drops to a second line before the search yields below its floor (see Band)                        |
+
+A device exists only where the contract reaches the width that triggers it. The
+library rail has none: its pane minimums (16rem rail, 30rem content, the handle)
+fit the narrowest main area the contract produces (49rem at 130% on the floor),
+so `ResizableLayout` clamps and never floats - a float mode there would be
+unreachable, untestable code. The reader panel floats because the reader floor
+(480px, 26rem at 130%) cannot hold the 18rem panel beside a readable page. When
+the contract or a minimum changes, re-derive before adding a device.
+
+A floated panel is a floating layer, not a pane: an opaque `bg-popover` slab with
+`shadow-overlay`, the same as every popover. The docked form keeps its translucent
+`bg-surface`. The click-catcher behind it is transparent, as the dialog overlay
+is - a tinted layer color there would be a layer used as a fill.
+
+### Tabs and segmented controls
+
+`TabsTrigger` (and `SegmentedControlItem`) declare `icon` and `label` as props;
+the slot carries extras (counts) that stay visible. `TabsList` / `SegmentedControl`
+take `collapseBelow="<step>"`: below that step of the nearest container the labels
+hide, the icon and count stay, and the label moves into the trigger title. A row
+that is still too wide scrolls inside the list rather than overflowing the surface.
+The call site picks the step because it knows what shares the container with the
+list: entity detail tabs and browse / filter tabs collapse below `2xl`, the
+statistics header scope switch below `6xl` (it shares the header with a title, a
+period navigator, and route navigation).
+
+### Table
+
+`Table` is driven by `columns: TableColumn[]` - label, width, alignment, tone, and
+reflow role in one place. The component renders the header row from it (`inset`
+pads the first and last column to the surface edge for page-wide tables), the
+colgroup widths come from it, and each `TableCell` claims its column from its row
+in template order, taking the column's alignment and tone and carrying its label.
+Call sites write body rows only and never color a cell for its column: a
+secondary column is `tone: 'muted'` on the definition, so the emphasis is one
+decision, applies to every cell, and is dropped by the card, where the label
+carries the hierarchy and every value reads in the foreground (an empty-value
+placeholder stays muted - that is value semantics, not column tone). A row's cells
+are static (toggle content inside a cell, never the cell), and conditional columns
+are built with the same condition as the cells.
+
+Type in the card is the card's, not the table's: the label takes the header's
+role (`text-xs` muted), every value steps down to the meta role (`text-xs`,
+foreground - a `text-sm` a cell uses in table mode is neutralized by the reflow
+CSS), and only the headline keeps the content size, so the record's identity is
+the one thing read at `text-sm`. Table mode keeps the sizes the rows author.
+
+Columns are never hidden at narrow widths - a hidden column is missing
+information the user cannot recover. Two fallbacks exist, and a table declares
+one:
+
+- `reflowBelow="<step>"` for tables whose row still reads as a list item: below
+  the step of the table's own container the same rows reflow into record cards.
+  The card has three tracks - label, value, actions: the `primary` cell is the
+  headline across label and value; the `actions` cell sits beside it on the
+  first row; each `meta` cell is a definition entry (`td::before` prints the
+  column label in the header's type role) that subgrids into the label and value
+  tracks, so labels align down the whole card. The reflow never rearranges what
+  is inside a cell: a value with its qualifier line stays two lines, a badge
+  stays a badge. Scanner and automation lists reflow below `4xl`.
+
+A cell is one datum: a value, optionally with one qualifier line beneath it in
+the muted xs role (a subtitle, an id, a source, the next occurrence). Two peer
+facts never share a cell - that is a missing column, and it reads wrong in both
+the table and the card. Cell content is always wrapped in an element (never bare
+text in the `td`), so the card can place it.
+
+- `minWidth="<rem>"` for tables whose rows must stay uniform (virtualized lists,
+  dense record grids): the table keeps its width and the surface scrolls it
+  sideways. Scanner issues (`48rem`) and automation run history (`40rem`).
+
+The threshold follows the derivation rule above: the sum of the fixed columns plus
+the comfortable width of the flexible one, rounded up to a step.
+
+### Overflow and text
+
+- Data text on one line (names, file names, paths, ids in rows) is `truncate`; the
+  flex or grid cell around it is `min-w-0`, and a `title` carries the full value
+  where it matters.
+- Multi-line user text (descriptions, notes, error messages) is `wrap-break-word`;
+  the body already sets `overflow-wrap: break-word`, cells still need `min-w-0`.
+- Unbreakable tokens (paths, URLs, fingerprints, ids) in a wrapping block are
+  `wrap-anywhere`.
+- `whitespace-nowrap` belongs to controls (`Button`, `Badge`, `TabsTrigger`,
+  `SelectTrigger`), never to data text. `SelectTrigger` truncates its value; the
+  caller sizes the trigger.
+- Every floating layer binds its size to what reka leaves it:
+  `max-h-(--reka-<kind>-content-available-height)` with `overflow-y-auto` on menus and
+  sub-menus, height and width on popovers and hover cards, `max-w-xs wrap-break-word`
+  on tooltips. No hand-built `max-h` + `overflow-auto` inside a menu.
+- Rails that can outgrow a short window (the sidebar navigation) scroll with a
+  hidden scrollbar. `ResizableLayout` speaks rem (pane bounds encode content, the
+  stored pane width follows the interface scale; pixels exist only at the DOM
+  edge), keeps the content pane at `minRightWidth`, and clamps a stored width the
+  container can no longer honor. The explorer rail floor (16rem) is what its
+  seven-type scope row needs.
+
+### Finder (library search)
+
+A finder shows the name being matched at a readable width at every tier; the
+type grouping is a secondary axis. It is a `2xl` `fill` dialog whose hits fill a
+fluid grid - `repeat(auto-fill, minmax(16rem, 1fr))`, a cell being thumbnail 2 +
+gap + a readable name - so a narrower dialog holds fewer cells per row, never
+narrower cells. A fixed split into per-type columns is not an option: seven
+columns at 14rem need 98rem, more than any dialog step, so that layout fails the
+threshold rule at every width.
+
+- Query row: magnifier, borderless `Input`, spinner while loading, `ESC` kbd.
+- Scope row: `SegmentedControl` - all types plus one item per content type, with
+  counts; labels fold to icons below `3xl` of the row.
+- Results: one `ScrollRegion`, every hit the query matches (no cap). In the
+  all-types scope, a section per type under a sticky `bg-dialog` header of one
+  fixed height (`h-7` - the sticky handover between sections must not move the
+  content beneath) with icon, label, count, and "show all N" while the section
+  shows its preview of eight; in a type scope, that type's full grid. Thumbnails
+  load lazily. Empty states through `StateView`.
+- Keys: ↑↓ move by row (the column count is read from the grid; crossing into the
+  neighbouring section keeps the column; ↑ from the first row returns to the
+  query), ←→ move by cell once a hit is focused (in the query they move the
+  caret), Tab reaches the scope switch (arrows then step it), Enter opens, Esc
+  closes. The footer lists them.
+- The trigger in the page header is a plain `secondary` `sm` action - magnifier,
+  label, shortcut kbd - the same at every width: a content-sized button has
+  nothing to yield, and hiding its shortcut by header width only made it
+  smaller than it reads.
 
 ### Empty / Loading / Error (StateView)
 
@@ -561,11 +897,12 @@ every form in the app reads the same. Notes:
 
 ### Multi-Section Settings (SettingsSection)
 
-For a resident surface carrying several titled groups of pure configuration -
-today the scraper extension settings webviews (TMDB, IGDB, YMGal, SteamGridDB):
+For a surface carrying several titled groups of configuration - the app settings
+dialog (Appearance / Startup and window / Updates) and the scraper extension
+settings webviews (TMDB, IGDB, YMGal, SteamGridDB):
 
 ```vue
-<div class="space-y-4">
+<div class="space-y-5">
   <SettingsSection :title="t" :description="d" surface="rows">
     <FieldGroup>
       <Field orientation="horizontal">...</Field>
@@ -582,9 +919,12 @@ today the scraper extension settings webviews (TMDB, IGDB, YMGal, SteamGridDB):
   the reason a plain form does not use it.
 - Plain sections (no `surface`) carry content that frames itself: data lists,
   action button rows, documentation blocks.
-- The component lives in `@kisaki3/extension-ui-vue`. When the app grows a
-  surface of this type, mirror it into `components/ui/` rather than inventing a
-  second recipe.
+- The component exists twice on purpose - `components/ui/settings-section` in the
+  app and `SettingsSection` in `@kisaki3/extension-ui-vue` - and the two stay
+  identical; the recipe is one.
+- Apply model follows the data (see Surface Types): app preferences apply on
+  change with no footer; extension settings that hold credentials or endpoints are
+  records and keep Save.
 
 ### Integration Control Panel (rail shell)
 
@@ -651,7 +991,7 @@ For editing lists of items (e.g., game characters, tags, related sites), use a p
 
 - Fetches data with `useAsyncData(..., { enabled: () => open.value })`
 - Uses `watch(data, ...)` to initialize local array (avoid binding DB result directly)
-- Body: `max-h-[60vh] overflow-auto scrollbar-thin`
+- `DialogContent size="lg"`; the body scrolls on its own, no height classes
 - Footer: Left side "Add" button (outline + `Icon mdi--plus`), right side "Cancel/Save"
 - Manages `isSaving` state to disable save button during submission
 - Handles reordering (move up/down) and deletion with confirmation dialog
@@ -697,9 +1037,9 @@ function handleItemSubmit(data: ItemData) {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent>
+    <DialogContent size="lg">
       <DialogHeader><DialogTitle>Edit Items</DialogTitle></DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+      <DialogBody>
         <!-- List items with edit/delete/reorder buttons -->
       </DialogBody>
       <DialogFooter class="flex justify-between">
@@ -776,7 +1116,7 @@ function handleSubmit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent>
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{ isAddMode ? 'Add Item' : 'Edit Item' }}</DialogTitle>
       </DialogHeader>
@@ -836,6 +1176,14 @@ Zero JS runtime, CSS mask-based.
 - Animation: `data-[state=open]:animate-in`, `fade-in`, `zoom-in`
 - Form: `FieldGroup`, `FieldLabel`, `FieldContent`
 - Scroll aids: `BackToTop`, `useBackToTop`, `BACK_TO_TOP_ICON`, `showLocateButton`
+- Viewport contract: `MAIN_WINDOW_MIN_CONTENT_SIZE`, `UI_SCALE_VALUES`, `stepUiScale`, `uiScale`,
+  `remToPx`, `--text-base-size`, `window:set-interface-scale`, `window:interface-scale-changed`,
+  `watchInterfaceScaleShortcuts`
+- Modal region: `MODAL_LAYER_ID`, `MODAL_LAYER_SELECTOR`, `dialog-positioner`
+- Dialog geometry: `size="`, `fill`, `DialogSize`, `min(100%,48rem)`
+- Container queries: `@container`, `ContainerStep`, `collapse-below="`, `reflow-below="`,
+  `:min-width="`, `data-role`, `data-label`
+- Preferences: `SettingsSection`, `applyRow`, `setInterfaceScale`
 
 ## Constraints
 
@@ -848,6 +1196,14 @@ Zero JS runtime, CSS mask-based.
   translucency to layer backgrounds (use `/NN` modifiers only for interaction
   states on control fills)
 - Use `Icon` component for icons (CSS mask, tree-shakeable)
+- No viewport breakpoints (`sm:`…`2xl:`), no named containers or named container queries,
+  no pixel or viewport lengths in classes, no arbitrary type sizes:
+  `kisaki/layout-discipline` enforces the Units section
+- Layout thresholds are derived from comfortable cell widths and land at least 2rem
+  from every host's floor; a fixed count where the width varies (chart ticks) is a bug
+- Columns are never hidden: a table reflows (`reflowBelow`) or scrolls (`minWidth`)
+- Dialog call sites never write width or height classes; geometry is `size` + `fill`
+- A surface with a Save button applies nothing early; a preferences surface has no Save
 - `components/ui/*` contains no business logic
 - All interactive elements must have `focus-visible` state
 - Reuse existing UI components; don't duplicate styles in business components

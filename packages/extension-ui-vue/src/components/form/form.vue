@@ -21,7 +21,7 @@ function handleFormSubmit(e: Event) {
 
 <template>
   <form
-    :class="cn('relative', props.class)"
+    :class="cn('relative flex min-h-0 grow flex-col', props.class)"
     data-slot="form"
     @submit="handleFormSubmit"
   >

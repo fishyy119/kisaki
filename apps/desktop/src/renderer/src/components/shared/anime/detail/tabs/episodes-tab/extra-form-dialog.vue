@@ -144,7 +144,7 @@ async function saveEdit(): Promise<void> {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>
           {{ isEditing ? m.anime.extras.editTitle : m.anime.extras.addExtra }}

@@ -22,12 +22,11 @@ import {
 import { StateView } from '@renderer/components/ui/state-view'
 import {
   Table,
-  TableHeader,
   TableBody,
   TableFooter,
-  TableHead,
   TableRow,
-  TableCell
+  TableCell,
+  type TableColumn
 } from '@renderer/components/ui/table'
 import { ScraperProfileSelect, useSearchProviderSource } from '@renderer/components/shared/scraper'
 import type { ContentEntityType } from '@shared/entity-types'
@@ -57,7 +56,13 @@ const { m, f } = useI18n()
 
 const spec = computed(() => SEARCHER_SPECS[props.entityType])
 const entityLabel = computed(() => m.value.library.entities[props.entityType])
-const columnWidths = computed(() => spec.value.columns.map((column) => column.width))
+const columns = computed<TableColumn[]>(() =>
+  spec.value.columns.map((column, index) => ({
+    label: column.header(m.value),
+    width: column.width,
+    tone: index === 0 ? 'default' : 'muted'
+  }))
+)
 
 const selectedProfileId = ref('')
 const searchProviderSource = useSearchProviderSource(selectedProfileId, () => props.entityType)
@@ -237,22 +242,9 @@ const entityIdModel = computed({
     <div class="border border-border rounded-md overflow-hidden">
       <Table
         fixed-header
-        :columns="columnWidths"
-        body-class="h-[20vh]"
+        :columns="columns"
+        body-class="h-40"
       >
-        <template #header>
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                v-for="(column, index) in spec.columns"
-                :key="index"
-              >
-                {{ column.header(m) }}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-        </template>
-
         <template #state>
           <StateView
             v-if="!hasSearched"
@@ -292,7 +284,7 @@ const entityIdModel = computed({
             <TableCell
               v-for="(column, index) in spec.columns"
               :key="index"
-              :class="index === 0 ? 'truncate' : 'text-muted-foreground truncate'"
+              class="truncate"
             >
               {{ column.cell(result, m, f) }}
             </TableCell>

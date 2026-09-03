@@ -19,6 +19,12 @@
   a surface that renders the device in its own footer strip passes
   `:back-to-top="false"` and wires `useBackToTop` to the exposed element.
 
+  Responsive baseline. The scroll element is a query container, so content
+  written directly into a page or dialog body lays out against the width it
+  actually gets with unnamed `@<step>:` variants, never against the window.
+  Reusable components that reflow bring their own container root instead of
+  relying on this one, so they stay correct inside narrower columns.
+
     <div class="h-full flex flex-col">
       <PageHeader />
       <ScrollRegion class="bg-background p-4">…</ScrollRegion>
@@ -75,7 +81,7 @@ defineExpose({ element })
     <div
       ref="element"
       data-slot="scroll-region-viewport"
-      :class="cn('min-h-0 grow overflow-auto', props.class)"
+      :class="cn('@container min-h-0 grow overflow-auto', props.class)"
     >
       <slot />
     </div>

@@ -107,7 +107,7 @@ function handleClose() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent size="lg">
       <!-- Loading state -->
       <template v-if="isLoading || !entry">
         <DialogBody>
@@ -173,7 +173,7 @@ function handleClose() {
                 cn(
                   'w-full rounded-lg border bg-muted/50 flex items-center justify-center overflow-hidden',
                   selectedSlot.aspectClass,
-                  'max-h-[300px]'
+                  'max-h-80'
                 )
               "
             >

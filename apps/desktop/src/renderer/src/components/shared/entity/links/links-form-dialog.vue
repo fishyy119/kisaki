@@ -293,7 +293,7 @@ function handleRevealSpoilersConfirm() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <!-- Loading state -->
       <template v-if="isLoading || !results">
         <DialogBody>
@@ -309,7 +309,7 @@ function handleRevealSpoilersConfirm() {
         <DialogHeader>
           <DialogTitle>{{ spec.title(m) }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <div class="space-y-4">
             <StateView
               v-if="items.length === 0"

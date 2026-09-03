@@ -204,7 +204,7 @@ watch(open, (newOpen, oldOpen) => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>
           {{ props.isNew ? m.library.showcase.form.addTitle : m.library.showcase.form.editTitle }}

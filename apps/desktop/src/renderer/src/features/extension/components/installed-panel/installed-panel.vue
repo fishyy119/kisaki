@@ -124,7 +124,7 @@ const filteredExtensions = computed(() => {
       />
 
       <template v-else>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        <div class="grid grid-cols-1 @2xl:grid-cols-2 @7xl:grid-cols-3">
           <ExtensionInstalledPanelCard
             v-for="extension in filteredExtensions"
             :key="extension.id"

@@ -3,13 +3,14 @@ import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import ReaderApp from './reader.vue'
 import { initI18n } from './core/i18n'
+import { initInterfaceScale } from './core/interface-scale'
 import { useThemeStore } from './stores/theme'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Reader')
 
 async function initReaderWindowRenderer() {
-  await initI18n()
+  await Promise.all([initI18n(), initInterfaceScale()])
 
   const app = createApp(ReaderApp)
 

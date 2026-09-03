@@ -237,11 +237,11 @@ const dialogTitle = computed(() => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{ dialogTitle }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[65vh]">
+      <DialogBody>
         <StateView
           v-if="isLoading"
           state="loading"

@@ -25,11 +25,10 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@renderer/components/ui/tooltip'
 import {
   Table,
-  TableHeader,
   TableBody,
   TableRow,
-  TableHead,
-  TableCell
+  TableCell,
+  type TableColumn
 } from '@renderer/components/ui/table'
 
 // =============================================================================
@@ -110,6 +109,21 @@ const matchedCount = computed(
 )
 const totalCount = computed(() => visibleResults.value.length)
 const hasRules = computed(() => props.rules.length > 0)
+
+// Columns and row cells share the same conditions, so cell indices line up.
+const columns = computed<TableColumn[]>(() => [
+  { label: m.value.scanner.test.entityName },
+  ...(hasRules.value
+    ? ([
+        { label: m.value.scanner.test.extractedName },
+        { label: m.value.scanner.test.rule, width: '4rem', align: 'center' }
+      ] satisfies TableColumn[])
+    : []),
+  ...(props.onAddToIgnoreList
+    ? ([{ width: '3rem', align: 'center', role: 'actions' }] satisfies TableColumn[])
+    : [])
+])
+
 const ruleInfoById = computed(() => {
   const map = new Map<string, { index: number; description: string }>()
   props.rules.forEach((rule, index) => {
@@ -130,11 +144,11 @@ function handleExclude(name: string) {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ m.scanner.test.title }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh]">
+      <DialogBody>
         <!-- Config Summary -->
         <div class="flex text-xs items-center justify-between gap-4 text-muted-foreground pb-2">
           <div class="flex items-center gap-3 min-w-0">
@@ -190,24 +204,7 @@ function handleExclude(name: string) {
         <!-- Results Table -->
         <template v-else>
           <div class="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader class="bg-muted/30">
-                <TableRow class="border-border">
-                  <TableHead>{{ m.scanner.test.entityName }}</TableHead>
-                  <TableHead v-if="hasRules">{{ m.scanner.test.extractedName }}</TableHead>
-                  <TableHead
-                    v-if="hasRules"
-                    class="text-center w-16"
-                  >
-                    {{ m.scanner.test.rule }}
-                  </TableHead>
-                  <TableHead
-                    v-if="props.onAddToIgnoreList"
-                    class="text-center w-12"
-                  ></TableHead>
-                </TableRow>
-              </TableHeader>
-
+            <Table :columns="columns">
               <TableBody>
                 <TableRow
                   v-for="(result, index) in visibleResults"
@@ -216,24 +213,21 @@ function handleExclude(name: string) {
                 >
                   <TableCell
                     :title="result.originalName"
-                    class="font-mono text-xs truncate max-w-[220px]"
+                    class="font-mono text-xs truncate max-w-64"
                   >
                     {{ result.originalName }}
                   </TableCell>
                   <TableCell
                     v-if="hasRules"
                     :title="result.extractedName"
-                    class="font-mono text-xs truncate max-w-[220px]"
+                    class="font-mono text-xs truncate max-w-64"
                     :class="
                       result.originalName !== result.extractedName && 'text-primary font-medium'
                     "
                   >
                     {{ result.extractedName }}
                   </TableCell>
-                  <TableCell
-                    v-if="hasRules"
-                    class="text-center"
-                  >
+                  <TableCell v-if="hasRules">
                     <Tooltip v-if="result.matchedRuleId !== null">
                       <TooltipTrigger as-child>
                         <span class="font-mono text-xs text-success tabular-nums cursor-help">
@@ -255,10 +249,7 @@ function handleExclude(name: string) {
                       >-</span
                     >
                   </TableCell>
-                  <TableCell
-                    v-if="props.onAddToIgnoreList"
-                    class="text-center"
-                  >
+                  <TableCell v-if="props.onAddToIgnoreList">
                     <Button
                       type="button"
                       variant="ghost"

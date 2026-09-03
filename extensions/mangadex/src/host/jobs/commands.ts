@@ -101,7 +101,8 @@ export function isMangadexCommandId(value: string): value is MangadexCommandId {
  * them through.
  */
 function normalizeImportArgs(args: JsonObject): ImportOptions {
-  const profileId = typeof args.profileId === 'string' && args.profileId ? args.profileId : undefined
+  const profileId =
+    typeof args.profileId === 'string' && args.profileId ? args.profileId : undefined
 
   return {
     updateExisting: args.updateExisting !== false,

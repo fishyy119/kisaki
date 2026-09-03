@@ -115,7 +115,7 @@ const selectSpec = computed(() => ENTITY_SELECT_SPECS[props.entityType])
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-sm">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{
           (props.isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({

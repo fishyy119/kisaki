@@ -76,7 +76,7 @@ const bindings = computed(() => [
             <kbd
               v-for="key in binding.keys"
               :key="key"
-              class="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] leading-none"
+              class="rounded border border-border bg-surface px-1.5 py-0.5 text-xs leading-none"
             >
               {{ key }}
             </kbd>

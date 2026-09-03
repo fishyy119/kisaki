@@ -1,4 +1,8 @@
-<!-- Page header bar: fixed-height surface strip with left content and right actions -->
+<!--
+  Page header bar: fixed-height surface strip with left content and right
+  actions. A query container: the controls it holds (navigation, scope
+  switches) collapse by the width the strip actually gets.
+-->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@renderer/utils/cn'
@@ -15,7 +19,7 @@ const props = defineProps<Props>()
     data-slot="page-header"
     :class="
       cn(
-        'shrink-0 flex h-12 items-center gap-3 border-b border-border bg-surface px-4',
+        '@container flex h-12 shrink-0 items-center gap-3 border-b border-border bg-surface px-4',
         props.class
       )
     "

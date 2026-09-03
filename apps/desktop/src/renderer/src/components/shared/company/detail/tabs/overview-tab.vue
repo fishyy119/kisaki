@@ -55,104 +55,106 @@ const relationGroups = computed(() =>
 
 <template>
   <template v-if="company">
-    <div class="grid md:grid-cols-[3fr_1fr] grid-cols-1 gap-8">
-      <!-- Left column: Description, Works, Tags -->
-      <div class="space-y-6 min-w-0">
-        <Section
-          :title="m.library.detail.sections.description"
-          editable
-          :empty="!company.description"
-          :empty-text="m.library.detail.empty.description"
-          @edit="descriptionDialogOpen = true"
-        >
-          <MarkdownContent :content="company.description!" />
-        </Section>
+    <div class="@container">
+      <div class="grid grid-cols-1 gap-8 @3xl:grid-cols-[3fr_1fr]">
+        <!-- Left column: Description, Works, Tags -->
+        <div class="space-y-6 min-w-0">
+          <Section
+            :title="m.library.detail.sections.description"
+            editable
+            :empty="!company.description"
+            :empty-text="m.library.detail.empty.description"
+            @edit="descriptionDialogOpen = true"
+          >
+            <MarkdownContent :content="company.description!" />
+          </Section>
 
-        <EntityWorksSection
-          :blocks="worksBlocks"
-          @open="(mediaType, id) => (openEntity = { entityType: mediaType, entityId: id })"
-        />
+          <EntityWorksSection
+            :blocks="worksBlocks"
+            @open="(mediaType, id) => (openEntity = { entityType: mediaType, entityId: id })"
+          />
 
-        <Section
-          :title="m.library.fields.tags"
-          editable
-          :empty="!hasTags"
-          :empty-text="m.library.detail.empty.tags"
-          @edit="tagsDialogOpen = true"
-        >
-          <div class="flex flex-wrap gap-1">
-            <template
-              v-for="tagLink in tags"
-              :key="tagLink.id"
-            >
-              <TagCard
-                v-if="tagLink.tag"
-                :tag="tagLink.tag"
-                variant="button"
-                button-size="xs"
-                @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
-              />
-            </template>
-          </div>
-        </Section>
-      </div>
+          <Section
+            :title="m.library.fields.tags"
+            editable
+            :empty="!hasTags"
+            :empty-text="m.library.detail.empty.tags"
+            @edit="tagsDialogOpen = true"
+          >
+            <div class="flex flex-wrap gap-1">
+              <template
+                v-for="tagLink in tags"
+                :key="tagLink.id"
+              >
+                <TagCard
+                  v-if="tagLink.tag"
+                  :tag="tagLink.tag"
+                  variant="button"
+                  button-size="xs"
+                  @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
+                />
+              </template>
+            </div>
+          </Section>
+        </div>
 
-      <!-- Right column: Company Relations, Related Sites -->
-      <div class="space-y-6 min-w-0">
-        <Section
-          :title="m.library.fields.companyRelations"
-          editable
-          :empty="!hasRelations"
-          :empty-text="m.library.detail.empty.companyRelations"
-          @edit="relationsDialogOpen = true"
-        >
-          <div class="space-y-3">
-            <div
-              v-for="group in relationGroups"
-              :key="group.type"
-            >
-              <h4 class="text-xs font-medium text-muted-foreground mb-1">
-                {{ RELATION_TYPE_LABELS[group.type] }}
-              </h4>
-              <div class="flex flex-col gap-1 text-sm">
-                <button
-                  v-for="relation in group.items"
-                  :key="relation.id"
-                  type="button"
-                  class="text-left text-primary hover:underline truncate"
-                  @click="openEntity = { entityType: 'company', entityId: relation.company.id }"
-                >
-                  {{ relation.company.name }}
-                </button>
+        <!-- Right column: Company Relations, Related Sites -->
+        <div class="space-y-6 min-w-0">
+          <Section
+            :title="m.library.fields.companyRelations"
+            editable
+            :empty="!hasRelations"
+            :empty-text="m.library.detail.empty.companyRelations"
+            @edit="relationsDialogOpen = true"
+          >
+            <div class="space-y-3">
+              <div
+                v-for="group in relationGroups"
+                :key="group.type"
+              >
+                <h4 class="text-xs font-medium text-muted-foreground mb-1">
+                  {{ RELATION_TYPE_LABELS[group.type] }}
+                </h4>
+                <div class="flex flex-col gap-1 text-sm">
+                  <button
+                    v-for="relation in group.items"
+                    :key="relation.id"
+                    type="button"
+                    class="text-left text-primary hover:underline truncate"
+                    @click="openEntity = { entityType: 'company', entityId: relation.company.id }"
+                  >
+                    {{ relation.company.name }}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </Section>
+          </Section>
 
-        <Section
-          :title="m.library.fields.externalSites"
-          editable
-          :empty="!hasExternalSites"
-          :empty-text="m.library.detail.empty.externalSites"
-          @edit="sitesDialogOpen = true"
-        >
-          <div class="flex flex-col gap-1.5">
-            <a
-              v-for="(site, index) in company.externalSites"
-              :key="index"
-              :href="site.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              <Icon
-                icon="icon-[mdi--open-in-new]"
-                class="size-3.5"
-              />
-              {{ site.label }}
-            </a>
-          </div>
-        </Section>
+          <Section
+            :title="m.library.fields.externalSites"
+            editable
+            :empty="!hasExternalSites"
+            :empty-text="m.library.detail.empty.externalSites"
+            @edit="sitesDialogOpen = true"
+          >
+            <div class="flex flex-col gap-1.5">
+              <a
+                v-for="(site, index) in company.externalSites"
+                :key="index"
+                :href="site.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex min-w-0 items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Icon
+                  icon="icon-[mdi--open-in-new]"
+                  class="size-3.5 shrink-0"
+                />
+                <span class="truncate">{{ site.label }}</span>
+              </a>
+            </div>
+          </Section>
+        </div>
       </div>
     </div>
 

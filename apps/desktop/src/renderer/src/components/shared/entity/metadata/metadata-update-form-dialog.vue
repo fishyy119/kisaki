@@ -194,7 +194,7 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-3xl">
+    <DialogContent size="lg">
       <template v-if="isLoading || !data">
         <DialogBody>
           <StateView
@@ -206,17 +206,13 @@ async function handleSubmit() {
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
-            <Icon
-              icon="icon-[mdi--database-sync-outline]"
-              class="size-4"
-            />
+          <DialogTitle icon="icon-[mdi--database-sync-outline]">
             {{ m.library.forms.updateMetadataTitle }}
           </DialogTitle>
         </DialogHeader>
 
         <Form @submit="handleSubmit">
-          <DialogBody class="space-y-4 max-h-[70vh]">
+          <DialogBody class="space-y-4">
             <EntitySearcher
               :entity-type="props.entityType"
               :default-search-query="defaultSearchQuery"

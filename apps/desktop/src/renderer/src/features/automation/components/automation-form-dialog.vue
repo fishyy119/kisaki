@@ -400,13 +400,13 @@ function parseOptionalTimezone(value: string): string | undefined {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ dialogTitle }}</DialogTitle>
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[72vh]">
+        <DialogBody>
           <FieldGroup>
             <Field :label="m.automation.form.name">
               <FieldContent>
@@ -546,7 +546,7 @@ function parseOptionalTimezone(value: string): string | undefined {
   </Dialog>
 
   <Dialog v-model:open="triggerDialogOpen">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{ m.automation.form.configureTrigger }}</DialogTitle>
       </DialogHeader>

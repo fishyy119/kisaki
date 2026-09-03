@@ -94,8 +94,6 @@ export const scanner = {
 
   settings: {
     title: '掃描器設定',
-    saved: '設定已儲存',
-    saveFailed: '儲存失敗',
     ingestMode: '入庫模式',
     ingestModeDescription: '控制掃描器辨識到新遊戲後的匯入策略',
     ingestPreferScraper: '優先刮削',

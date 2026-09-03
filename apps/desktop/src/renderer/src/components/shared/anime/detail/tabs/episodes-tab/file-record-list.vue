@@ -254,7 +254,7 @@ function fileFacts(file: FileRecord): string[] {
       v-if="noteTarget"
       v-model:open="noteDialogOpen"
     >
-      <DialogContent class="max-w-sm">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>{{ m.anime.files.editNote }}</DialogTitle>
         </DialogHeader>

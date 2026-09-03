@@ -2,7 +2,15 @@ import type { Messages } from '../schema'
 
 export const settings = {
   title: '設定',
+  sections: {
+    appearance: '外観',
+    window: '起動とウィンドウ',
+    updates: '更新'
+  },
   themeLabel: 'テーマ',
+  themeModeLabel: '配色モード',
+  interfaceScaleLabel: '表示倍率',
+  interfaceScaleValue: ({ scale }: { scale: number }) => `${scale}%`,
   autoLaunchLabel: '起動時に自動実行',
   closeActionLabel: 'ウィンドウを閉じたとき',
   closeActionExit: 'アプリを終了',

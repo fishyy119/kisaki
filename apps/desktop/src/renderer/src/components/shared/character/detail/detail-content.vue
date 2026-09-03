@@ -6,7 +6,6 @@
 -->
 
 <script setup lang="ts">
-import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
 import { getEntityIcon } from '@renderer/utils/format'
@@ -34,28 +33,22 @@ const { character } = useCharacter()
 
     <!-- Tabs -->
     <Tabs default-value="overview">
-      <TabsList>
-        <TabsTrigger value="overview">
-          <Icon
-            icon="icon-[mdi--information-outline]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.overview }}
-        </TabsTrigger>
-        <TabsTrigger value="persons">
-          <Icon
-            :icon="getEntityIcon('person')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.relatedPersons }}
-        </TabsTrigger>
-        <TabsTrigger value="works">
-          <Icon
-            icon="icon-[mdi--filmstrip-box-multiple]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.relatedWorks }}
-        </TabsTrigger>
+      <TabsList collapse-below="2xl">
+        <TabsTrigger
+          value="overview"
+          icon="icon-[mdi--information-outline]"
+          :label="m.library.detail.tabs.overview"
+        />
+        <TabsTrigger
+          value="persons"
+          :icon="getEntityIcon('person')"
+          :label="m.library.detail.tabs.relatedPersons"
+        />
+        <TabsTrigger
+          value="works"
+          icon="icon-[mdi--filmstrip-box-multiple]"
+          :label="m.library.detail.tabs.relatedWorks"
+        />
       </TabsList>
 
       <TabsContent value="overview">

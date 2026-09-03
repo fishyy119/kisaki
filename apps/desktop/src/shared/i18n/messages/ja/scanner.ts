@@ -94,8 +94,6 @@ export const scanner = {
 
   settings: {
     title: 'スキャナー設定',
-    saved: '設定を保存しました',
-    saveFailed: '保存に失敗しました',
     ingestMode: '取り込みモード',
     ingestModeDescription: 'スキャナーが新しいゲームを検出した際の取り込み方法を制御します',
     ingestPreferScraper: 'スクレイパー優先',

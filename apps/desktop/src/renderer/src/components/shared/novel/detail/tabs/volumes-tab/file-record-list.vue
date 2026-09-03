@@ -242,7 +242,7 @@ function fileFacts(file: NovelVolumeFile): string[] {
       v-if="noteTarget"
       v-model:open="noteDialogOpen"
     >
-      <DialogContent class="max-w-sm">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>{{ m.novel.files.editNote }}</DialogTitle>
         </DialogHeader>

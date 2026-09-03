@@ -40,7 +40,7 @@ const disabled = computed(() => props.node.disabled === true || invoking.value)
     </component>
     <component
       :is="props.components.SubContent"
-      class="min-w-[160px]"
+      class="min-w-44"
     >
       <component
         :is="props.components.RadioGroup"

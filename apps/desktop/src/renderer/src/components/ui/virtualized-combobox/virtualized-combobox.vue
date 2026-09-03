@@ -15,6 +15,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@renderer/components/ui
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { StateView } from '@renderer/components/ui/state-view'
+import { remToPx } from '@renderer/core/interface-scale'
 import { cn } from '@renderer/utils/cn'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { VirtualizedComboboxEntity } from './types'
@@ -34,8 +35,8 @@ interface Props {
   class?: HTMLAttributes['class']
   /** Disable the combobox */
   disabled?: boolean
-  /** Popover max height in pixels */
-  maxHeight?: number
+  /** List max height as a CSS length; rem so it follows the interface scale */
+  maxHeight?: string
   /** Allow creating new items */
   allowCreate?: boolean
   /** Reflect the current selection in the trigger; disable when the host renders the selection itself (e.g. as badges) */
@@ -45,7 +46,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   multiple: false,
   disabled: false,
-  maxHeight: 230,
+  maxHeight: '16rem',
   allowCreate: false,
   showSelectedLabel: true
 })
@@ -100,11 +101,12 @@ const canCreate = computed(() => {
 const hasSubText = computed(() => props.entities.some((e) => e.subText))
 const hasImage = computed(() => props.entities.some((e) => e.imageUrl !== undefined))
 
-const ITEM_HEIGHT = 26
-const ITEM_HEIGHT_WITH_SUBTEXT = 44
+// Row heights in rem: one text-sm line with py-1, or an avatar / two-line row.
+const ITEM_HEIGHT_REM = 1.875
+const ITEM_HEIGHT_WITH_SUBTEXT_REM = 3.125
 
 const itemHeight = computed(() =>
-  hasSubText.value || hasImage.value ? ITEM_HEIGHT_WITH_SUBTEXT : ITEM_HEIGHT
+  remToPx(hasSubText.value || hasImage.value ? ITEM_HEIGHT_WITH_SUBTEXT_REM : ITEM_HEIGHT_REM)
 )
 
 // Setup TanStack Virtual
@@ -341,7 +343,7 @@ function handleMouseMove() {
       <!-- Virtual list container -->
       <div
         ref="parentRef"
-        :style="{ maxHeight: `${props.maxHeight}px` }"
+        :style="{ maxHeight: props.maxHeight }"
         class="overflow-x-hidden overflow-y-auto p-1"
         @mousedown="handleMouseDown"
         @mousemove="handleMouseMove"

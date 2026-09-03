@@ -85,7 +85,7 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-6xl">
+    <DialogContent size="2xl">
       <!-- Loading state -->
       <template v-if="isLoading || !row">
         <DialogBody>
@@ -119,8 +119,8 @@ async function handleSubmit() {
                         label: m.library.entities[props.entityType]
                       })
                     "
-                    min-height="500px"
-                    max-height="500px"
+                    min-height="36rem"
+                    max-height="36rem"
                     auto-focus
                   />
                 </FieldContent>

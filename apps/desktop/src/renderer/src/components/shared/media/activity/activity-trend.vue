@@ -50,6 +50,6 @@ const chartData = computed(() =>
     :range="range"
     :data="chartData"
     :format-value="(v: number) => `${v.toFixed(1)}h`"
-    :height="200"
+    height="14rem"
   />
 </template>

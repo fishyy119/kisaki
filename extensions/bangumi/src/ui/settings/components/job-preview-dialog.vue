@@ -29,14 +29,14 @@ const open = defineModel<boolean>('open', { required: true })
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-3xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ props.title }}</DialogTitle>
         <DialogDescription v-if="props.description">
           {{ props.description }}
         </DialogDescription>
       </DialogHeader>
-      <DialogBody class="max-h-[62vh] overflow-y-auto">
+      <DialogBody>
         <JobPreviewGroups
           :groups="props.groups"
           @error="(message) => emit('error', message)"

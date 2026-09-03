@@ -17,7 +17,9 @@ import { join } from 'node:path'
 import windowStateKeeper from 'electron-window-state'
 import { isDev, rendererDevServerUrl } from '@main/env'
 import { createLogger } from '@main/log'
+import { applyMinimumSize, lockZoom } from '@main/services/window/geometry'
 import type { ReaderBootstrap } from '@shared/reader'
+import { READER_WINDOW_MIN_CONTENT_SIZE } from '@shared/window'
 import type { ReaderHooks } from './hooks'
 
 const log = createLogger('Reader')
@@ -73,8 +75,8 @@ export class ReaderWindowManager {
       ...(isFirstWindow ? { x: windowState.x, y: windowState.y } : {}),
       width: windowState.width,
       height: windowState.height,
-      minWidth: 480,
-      minHeight: 360,
+      minWidth: READER_WINDOW_MIN_CONTENT_SIZE.width,
+      minHeight: READER_WINDOW_MIN_CONTENT_SIZE.height,
       show: false,
       autoHideMenuBar: true,
       title: bootstrap.title,
@@ -83,6 +85,9 @@ export class ReaderWindowManager {
         sandbox: false
       }
     })
+
+    applyMinimumSize(window, READER_WINDOW_MIN_CONTENT_SIZE)
+    lockZoom(window.webContents)
 
     if (isFirstWindow) windowState.manage(window)
     this.records.set(window.id, { window, entryKey, bootstrap })

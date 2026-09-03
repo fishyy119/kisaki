@@ -7,7 +7,10 @@ import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import { openExternalLink } from '@main/utils/external-url'
 import type { MainWindowCloseAction } from '@shared/db/contracts/enums'
+import { MAIN_WINDOW_MIN_CONTENT_SIZE } from '@shared/window'
+import { applyMinimumSize, lockZoom, resolveDefaultMainWindowSize } from '../geometry'
 import type { MainWindowDocumentGoneCause } from '../hooks'
+import { watchViewportProbe } from '../shortcuts'
 
 const log = createLogger('Window')
 
@@ -42,15 +45,11 @@ export class MainWindowController implements MainWindowApi {
   init(deps: MainWindowControllerDeps): void {
     this.ipcService = deps.ipcService
     this.onDocumentGone = deps.onDocumentGone
-    this.mainWindowCloseAction = this.loadMainWindowCloseActionFromDb(deps.dbService)
+    this.mainWindowCloseAction = deps.dbService.settings.tryGet()?.mainWindowCloseAction ?? 'exit'
   }
 
   markQuitting(): void {
     this.isQuitting = true
-  }
-
-  private loadMainWindowCloseActionFromDb(dbService: DbService): MainWindowCloseAction {
-    return dbService.settings.tryGet()?.mainWindowCloseAction ?? 'exit'
   }
 
   setCloseAction(action: MainWindowCloseAction): void {
@@ -116,9 +115,14 @@ export class MainWindowController implements MainWindowApi {
   create(): BrowserWindow {
     const ipcService = this.requireIpcService()
 
+    // Frameless: window bounds are content bounds, so the shared content-size
+    // contract applies to the window size directly.
+    const minimumSize = MAIN_WINDOW_MIN_CONTENT_SIZE
+    const defaultSize = resolveDefaultMainWindowSize(minimumSize)
+
     const mainWindowState = windowStateKeeper({
-      defaultWidth: 1400,
-      defaultHeight: 850,
+      defaultWidth: defaultSize.width,
+      defaultHeight: defaultSize.height,
       maximize: false,
       fullScreen: false
     })
@@ -130,6 +134,8 @@ export class MainWindowController implements MainWindowApi {
       y: mainWindowState.y,
       width: mainWindowState.width,
       height: mainWindowState.height,
+      minWidth: minimumSize.width,
+      minHeight: minimumSize.height,
       show: false,
       frame: false,
       autoHideMenuBar: true,
@@ -146,6 +152,11 @@ export class MainWindowController implements MainWindowApi {
       }
     })
     this.window = mainWindow
+
+    // A restored state may predate the floor; grow before showing.
+    applyMinimumSize(mainWindow, minimumSize)
+    lockZoom(mainWindow.webContents)
+    watchViewportProbe(mainWindow)
 
     mainWindowState.manage(mainWindow)
 

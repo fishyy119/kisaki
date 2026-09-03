@@ -146,7 +146,7 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-sm">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{
           (isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({

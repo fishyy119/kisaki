@@ -4,7 +4,7 @@ Automation Page owns automation data, filters, and actions.
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { StateView } from '@renderer/components/ui/state-view'
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
+import { Table, TableBody, type TableColumn } from '@renderer/components/ui/table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,9 +34,18 @@ import type { AutomationSortField, AutomationSourceFilter, AutomationStatusFilte
 
 const log = createLogger('Automation')
 
-const AUTOMATION_TABLE_COLUMNS = ['', '20%', '17%', '17%', '12%', '8.25rem']
-
 const { m } = useI18n()
+
+// Percent columns keep the table readable down to about 48rem; below the 4xl
+// step the rows reflow into cards.
+const columns = computed<TableColumn[]>(() => [
+  { label: m.value.automation.page.table.name },
+  { label: m.value.automation.page.table.command, width: '20%' },
+  { label: m.value.automation.page.table.trigger, width: '17%' },
+  { label: m.value.automation.page.table.run, width: '17%' },
+  { label: m.value.automation.page.table.status, width: '12%' },
+  { label: m.value.automation.page.table.actions, width: '8.25rem', align: 'end', role: 'actions' }
+])
 
 const searchQuery = ref('')
 const statusFilter = ref<AutomationStatusFilter>('all')
@@ -317,21 +326,10 @@ function setBusy(automationId: string, busy: boolean) {
         <Table
           v-else
           fixed-header
-          :columns="AUTOMATION_TABLE_COLUMNS"
+          inset
+          reflow-below="4xl"
+          :columns="columns"
         >
-          <template #header>
-            <TableHeader>
-              <TableRow class="h-8">
-                <TableHead class="pl-4">{{ m.automation.page.table.name }}</TableHead>
-                <TableHead>{{ m.automation.page.table.command }}</TableHead>
-                <TableHead>{{ m.automation.page.table.trigger }}</TableHead>
-                <TableHead>{{ m.automation.page.table.run }}</TableHead>
-                <TableHead>{{ m.automation.page.table.status }}</TableHead>
-                <TableHead class="pr-4 text-right">{{ m.automation.page.table.actions }}</TableHead>
-              </TableRow>
-            </TableHeader>
-          </template>
-
           <TableBody>
             <AutomationRow
               v-for="automation in filteredAutomations"

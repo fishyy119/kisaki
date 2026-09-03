@@ -809,6 +809,10 @@ export const library = {
     placeholder: '搜尋遊戲、角色、人物、公司…',
     typeToSearch: '輸入關鍵字搜尋',
     emptyResult: ({ label }: { label: string }) => `無${label}結果`,
+    allTypes: '全部',
+    noResults: '無結果',
+    showAll: ({ count }: { count: number }) => `查看全部 ${count} 筆`,
+    switchScope: '切換類型',
     navigate: '導覽',
     select: '選擇',
     totalResults: ({ count }: { count: number }) => `共 ${count} 筆結果`

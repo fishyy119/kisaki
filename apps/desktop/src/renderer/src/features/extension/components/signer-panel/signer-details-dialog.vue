@@ -30,7 +30,7 @@ const { m } = useI18n()
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{ m.extension.signer.details.title }}</DialogTitle>
         <DialogDescription>
@@ -38,7 +38,7 @@ const { m } = useI18n()
         </DialogDescription>
       </DialogHeader>
 
-      <DialogBody class="max-h-[70vh]">
+      <DialogBody>
         <FieldGroup class="gap-4">
           <Field orientation="horizontal">
             <FieldLabel>{{ m.extension.signer.details.extensionId }}</FieldLabel>
@@ -66,28 +66,28 @@ const { m } = useI18n()
           <Field>
             <FieldLabel>{{ m.extension.signer.details.fingerprint }}</FieldLabel>
             <FieldContent>
-              <span class="break-all font-mono text-xs">{{ props.signer.fingerprint }}</span>
+              <span class="wrap-anywhere font-mono text-xs">{{ props.signer.fingerprint }}</span>
             </FieldContent>
           </Field>
 
           <Field>
             <FieldLabel>{{ m.extension.signer.details.publicKey }}</FieldLabel>
             <FieldContent>
-              <span class="break-all font-mono text-xs">{{ props.signer.publicKey }}</span>
+              <span class="wrap-anywhere font-mono text-xs">{{ props.signer.publicKey }}</span>
             </FieldContent>
           </Field>
 
           <Field>
             <FieldLabel>{{ m.extension.signer.details.trustRecordId }}</FieldLabel>
             <FieldContent>
-              <span class="break-all font-mono text-xs">{{ props.signer.id }}</span>
+              <span class="wrap-anywhere font-mono text-xs">{{ props.signer.id }}</span>
             </FieldContent>
           </Field>
 
           <Field>
             <FieldLabel>{{ m.extension.signer.details.sourceRepositoryId }}</FieldLabel>
             <FieldContent>
-              <span class="break-all font-mono text-xs">
+              <span class="wrap-anywhere font-mono text-xs">
                 {{ formatSignerOptionalValue(props.signer.trustedFromRepositoryId) }}
               </span>
             </FieldContent>
@@ -96,7 +96,7 @@ const { m } = useI18n()
           <Field>
             <FieldLabel>{{ m.extension.signer.details.sourceRepositoryUrl }}</FieldLabel>
             <FieldContent>
-              <span class="break-all font-mono text-xs">
+              <span class="wrap-anywhere font-mono text-xs">
                 {{ formatSignerOptionalValue(props.signer.trustedFromRepositoryUrl) }}
               </span>
             </FieldContent>

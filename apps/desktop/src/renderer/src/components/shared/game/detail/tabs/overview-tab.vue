@@ -129,147 +129,149 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
 
 <template>
   <template v-if="game">
-    <div class="grid md:grid-cols-[3fr_1fr] grid-cols-1 gap-8">
-      <!-- Left column: Description, Characters, Tags -->
-      <div class="space-y-6 min-w-0">
-        <Section
-          :title="m.library.detail.sections.description"
-          editable
-          :empty="!game.description"
-          :empty-text="m.library.detail.empty.description"
-          @edit="openEditDialog('description')"
-        >
-          <MarkdownContent :content="game.description!" />
-        </Section>
+    <div class="@container">
+      <div class="grid grid-cols-1 gap-8 @3xl:grid-cols-[3fr_1fr]">
+        <!-- Left column: Description, Characters, Tags -->
+        <div class="space-y-6 min-w-0">
+          <Section
+            :title="m.library.detail.sections.description"
+            editable
+            :empty="!game.description"
+            :empty-text="m.library.detail.empty.description"
+            @edit="openEditDialog('description')"
+          >
+            <MarkdownContent :content="game.description!" />
+          </Section>
 
-        <SectionScroll
-          :title="m.library.detail.tabs.characters"
-          editable
-          :items="sortedCharacters"
-          :get-key="(item) => item.link.id"
-          :empty-text="m.library.detail.empty.characters"
-          @edit="openEditDialog('characters')"
-        >
-          <template #item="{ item }">
-            <CharacterCard
-              v-if="item.character"
-              :character="item.character"
-              size="sm"
-              align="left"
-              :badge-label="item.roleLabel"
-              @click="openEntity = { entityType: 'character', entityId: item.character.id }"
-            />
-          </template>
-        </SectionScroll>
-
-        <MediaRelationsSection
-          :relations="relations"
-          editable
-          @edit="openEditDialog('relations')"
-        />
-
-        <Section
-          :title="m.library.fields.tags"
-          editable
-          :empty="!hasTags"
-          :empty-text="m.library.detail.empty.tags"
-          @edit="openEditDialog('tags')"
-        >
-          <div class="flex flex-wrap gap-1">
-            <template
-              v-for="tagLink in tags"
-              :key="tagLink.id"
-            >
-              <TagCard
-                v-if="tagLink.tag"
-                :tag="tagLink.tag"
-                variant="button"
-                button-size="xs"
-                @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
+          <SectionScroll
+            :title="m.library.detail.tabs.characters"
+            editable
+            :items="sortedCharacters"
+            :get-key="(item) => item.link.id"
+            :empty-text="m.library.detail.empty.characters"
+            @edit="openEditDialog('characters')"
+          >
+            <template #item="{ item }">
+              <CharacterCard
+                v-if="item.character"
+                :character="item.character"
+                size="sm"
+                align="left"
+                :badge-label="item.roleLabel"
+                @click="openEntity = { entityType: 'character', entityId: item.character.id }"
               />
             </template>
-          </div>
-        </Section>
-      </div>
+          </SectionScroll>
 
-      <!-- Right column: Details, Persons, Companies, Links -->
-      <div class="space-y-6 min-w-0">
-        <Section
-          :title="m.library.detail.sections.details"
-          editable
-          @edit="openEditDialog('details')"
-        >
-          <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
-            <dt class="text-muted-foreground">{{ m.library.fields.aliases }}</dt>
-            <!-- One name per line: a name is atomic and must not wrap mid-word. -->
-            <dd
-              v-if="aliases.length > 0"
-              class="min-w-0 space-y-0.5"
-            >
-              <div
-                v-for="alias in aliases"
-                :key="alias"
-                class="break-words"
+          <MediaRelationsSection
+            :relations="relations"
+            editable
+            @edit="openEditDialog('relations')"
+          />
+
+          <Section
+            :title="m.library.fields.tags"
+            editable
+            :empty="!hasTags"
+            :empty-text="m.library.detail.empty.tags"
+            @edit="openEditDialog('tags')"
+          >
+            <div class="flex flex-wrap gap-1">
+              <template
+                v-for="tagLink in tags"
+                :key="tagLink.id"
               >
-                {{ alias }}
-              </div>
-            </dd>
-            <dd v-else>{{ m.values.emptyValue }}</dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
-            <dd>{{ game.releaseDate ? f.date(game.releaseDate) : m.values.emptyValue }}</dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
-            <dd>{{ game.createdAt ? f.date(game.createdAt) : m.values.emptyValue }}</dd>
-          </dl>
-        </Section>
+                <TagCard
+                  v-if="tagLink.tag"
+                  :tag="tagLink.tag"
+                  variant="button"
+                  button-size="xs"
+                  @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
+                />
+              </template>
+            </div>
+          </Section>
+        </div>
 
-        <EntityRoleLinksSection
-          :title="m.library.detail.tabs.persons"
-          :empty-text="m.library.detail.empty.persons"
-          entity-type="person"
-          :items="personItems"
-          :role-order="GAME_PERSON_ROLE_VALUES"
-          :role-labels="PERSON_ROLE_LABELS"
-          @edit="openEditDialog('persons')"
-          @open="openEntity = { entityType: 'person', entityId: $event }"
-          @view-all="emit('navigate', 'persons')"
-        />
+        <!-- Right column: Details, Persons, Companies, Links -->
+        <div class="space-y-6 min-w-0">
+          <Section
+            :title="m.library.detail.sections.details"
+            editable
+            @edit="openEditDialog('details')"
+          >
+            <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
+              <dt class="text-muted-foreground">{{ m.library.fields.aliases }}</dt>
+              <!-- One name per line: a name is atomic and must not wrap mid-word. -->
+              <dd
+                v-if="aliases.length > 0"
+                class="min-w-0 space-y-0.5"
+              >
+                <div
+                  v-for="alias in aliases"
+                  :key="alias"
+                  class="wrap-break-word"
+                >
+                  {{ alias }}
+                </div>
+              </dd>
+              <dd v-else>{{ m.values.emptyValue }}</dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
+              <dd>{{ game.releaseDate ? f.date(game.releaseDate) : m.values.emptyValue }}</dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
+              <dd>{{ game.createdAt ? f.date(game.createdAt) : m.values.emptyValue }}</dd>
+            </dl>
+          </Section>
 
-        <EntityRoleLinksSection
-          :title="m.library.detail.tabs.companies"
-          :empty-text="m.library.detail.empty.companies"
-          entity-type="company"
-          :items="companyItems"
-          :role-order="GAME_COMPANY_ROLE_VALUES"
-          :role-labels="COMPANY_ROLE_LABELS"
-          @edit="openEditDialog('companies')"
-          @open="openEntity = { entityType: 'company', entityId: $event }"
-          @view-all="emit('navigate', 'companies')"
-        />
+          <EntityRoleLinksSection
+            :title="m.library.detail.tabs.persons"
+            :empty-text="m.library.detail.empty.persons"
+            entity-type="person"
+            :items="personItems"
+            :role-order="GAME_PERSON_ROLE_VALUES"
+            :role-labels="PERSON_ROLE_LABELS"
+            @edit="openEditDialog('persons')"
+            @open="openEntity = { entityType: 'person', entityId: $event }"
+            @view-all="emit('navigate', 'persons')"
+          />
 
-        <Section
-          :title="m.library.fields.externalSites"
-          editable
-          :empty="!hasExternalSites"
-          :empty-text="m.library.detail.empty.externalSites"
-          @edit="openEditDialog('externalSites')"
-        >
-          <div class="flex flex-col gap-1.5">
-            <a
-              v-for="(site, index) in game.externalSites"
-              :key="index"
-              :href="site.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              <Icon
-                icon="icon-[mdi--open-in-new]"
-                class="size-3.5"
-              />
-              {{ site.label }}
-            </a>
-          </div>
-        </Section>
+          <EntityRoleLinksSection
+            :title="m.library.detail.tabs.companies"
+            :empty-text="m.library.detail.empty.companies"
+            entity-type="company"
+            :items="companyItems"
+            :role-order="GAME_COMPANY_ROLE_VALUES"
+            :role-labels="COMPANY_ROLE_LABELS"
+            @edit="openEditDialog('companies')"
+            @open="openEntity = { entityType: 'company', entityId: $event }"
+            @view-all="emit('navigate', 'companies')"
+          />
+
+          <Section
+            :title="m.library.fields.externalSites"
+            editable
+            :empty="!hasExternalSites"
+            :empty-text="m.library.detail.empty.externalSites"
+            @edit="openEditDialog('externalSites')"
+          >
+            <div class="flex flex-col gap-1.5">
+              <a
+                v-for="(site, index) in game.externalSites"
+                :key="index"
+                :href="site.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex min-w-0 items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Icon
+                  icon="icon-[mdi--open-in-new]"
+                  class="size-3.5 shrink-0"
+                />
+                <span class="truncate">{{ site.label }}</span>
+              </a>
+            </div>
+          </Section>
+        </div>
       </div>
     </div>
 

@@ -50,7 +50,7 @@ function handleCopyLaunchLink() {
     </component>
     <component
       :is="props.components.SubContent"
-      class="min-w-[160px]"
+      class="min-w-44"
     >
       <component
         :is="props.components.Item"

@@ -49,69 +49,69 @@ function handleClear() {
       <slot />
     </PopoverTrigger>
 
+    <!-- The popover is the column: header and footer hold, the builder scrolls
+         within whatever height the viewport leaves the popover -->
     <PopoverContent
       :side="props.side"
       :align="props.align"
       :side-offset="4"
-      class="w-[400px] p-0"
+      class="flex w-100 flex-col p-0"
     >
-      <div class="flex flex-col max-h-[70vh]">
-        <!-- Header: what this is + query-scoped match mode -->
-        <div class="flex items-center justify-between px-4 py-3 border-b">
-          <div class="flex items-center gap-3">
-            <div class="text-sm font-medium">{{ m.filter.title }}</div>
-            <MatchModeSwitch v-model="model" />
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            class="-mr-1"
-            @click="open = false"
-          >
-            <Icon
-              icon="icon-[mdi--close]"
-              class="size-3.5"
-            />
-          </Button>
+      <!-- Header: what this is + query-scoped match mode -->
+      <div class="flex shrink-0 items-center justify-between px-4 py-3 border-b">
+        <div class="flex items-center gap-3">
+          <div class="text-sm font-medium">{{ m.filter.title }}</div>
+          <MatchModeSwitch v-model="model" />
         </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          class="-mr-1"
+          @click="open = false"
+        >
+          <Icon
+            icon="icon-[mdi--close]"
+            class="size-3.5"
+          />
+        </Button>
+      </div>
 
-        <!-- Body - Scrollable -->
-        <ScrollRegion class="p-4">
-          <FilterBuilder
+      <!-- Body - Scrollable -->
+      <ScrollRegion class="p-4">
+        <FilterBuilder
+          v-model="model"
+          :ui-spec="props.uiSpec"
+        />
+      </ScrollRegion>
+
+      <!-- Footer: list-level actions + count -->
+      <div class="flex shrink-0 items-center justify-between px-4 py-3 border-t">
+        <div class="flex items-center gap-2">
+          <AddConditionMenu
             v-model="model"
             :ui-spec="props.uiSpec"
           />
-        </ScrollRegion>
-
-        <!-- Footer: list-level actions + count -->
-        <div class="flex items-center justify-between px-4 py-3 border-t">
-          <div class="flex items-center gap-2">
-            <AddConditionMenu
-              v-model="model"
-              :ui-spec="props.uiSpec"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              class="text-muted-foreground"
-              @click="handleClear"
-            >
-              <Icon
-                icon="icon-[mdi--filter-off-outline]"
-                class="size-4 mr-1"
-              />
-              {{ m.filter.clearFilters }}
-            </Button>
-          </div>
-          <span
-            v-if="countConditions(model) > 0"
-            class="text-xs text-muted-foreground"
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            class="text-muted-foreground"
+            @click="handleClear"
           >
-            {{ m.filter.conditionCount({ count: countConditions(model) }) }}
-          </span>
+            <Icon
+              icon="icon-[mdi--filter-off-outline]"
+              class="size-4 mr-1"
+            />
+            {{ m.filter.clearFilters }}
+          </Button>
         </div>
+        <span
+          v-if="countConditions(model) > 0"
+          class="text-xs text-muted-foreground"
+        >
+          {{ m.filter.conditionCount({ count: countConditions(model) }) }}
+        </span>
       </div>
     </PopoverContent>
   </Popover>

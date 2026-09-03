@@ -12,7 +12,7 @@ import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header
 import { useScannerStore } from '@renderer/stores'
 import { Button } from '@renderer/components/ui/button'
 import { ScannerFormDialog } from './scanner-form-dialog'
-import ScannerSettingsFormDialog from './scanner-settings-form-dialog.vue'
+import ScannerSettingsDialog from './scanner-settings-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useScanners } from '../composables'
@@ -118,7 +118,7 @@ async function handleCancelAll() {
   </PageHeader>
 
   <!-- Dialogs -->
-  <ScannerSettingsFormDialog
+  <ScannerSettingsDialog
     v-if="isSettingsDialogOpen"
     v-model:open="isSettingsDialogOpen"
   />

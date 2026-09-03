@@ -65,12 +65,12 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
       />
 
       <!-- Info -->
-      <div class="flex-1 min-w-0 flex flex-col justify-between">
+      <div class="@container flex-1 min-w-0 flex flex-col justify-between">
         <!-- Name -->
         <div>
           <!-- Title (Editable) -->
           <div class="group/field relative flex items-center gap-3">
-            <h2 class="text-xl font-bold truncate">{{ game.name }}</h2>
+            <h2 class="text-lg font-semibold truncate">{{ game.name }}</h2>
             <Button
               variant="ghost"
               size="icon-xs"
@@ -105,7 +105,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
         </div>
 
         <!-- Stats grid - aligned labels and values -->
-        <div class="grid grid-cols-2 gap-x-8 gap-y-1.5">
+        <div class="grid grid-cols-1 gap-x-8 gap-y-1.5 @md:grid-cols-2">
           <!-- Last played -->
           <div class="grid grid-cols-[auto_1fr] gap-3 items-center text-sm">
             <span class="flex items-center gap-1.5 text-muted-foreground">

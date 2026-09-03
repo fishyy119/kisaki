@@ -136,13 +136,9 @@ watch(
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-3xl">
+    <DialogContent size="lg">
       <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <Icon
-            icon="icon-[mdi--database-search-outline]"
-            class="size-4"
-          />
+        <DialogTitle icon="icon-[mdi--database-search-outline]">
           {{ m.scanner.fix.title }}
         </DialogTitle>
         <DialogDescription class="truncate">
@@ -151,7 +147,7 @@ watch(
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-        <DialogBody class="space-y-3 max-h-[70vh]">
+        <DialogBody class="space-y-3">
           <div class="rounded-md border border-border bg-muted/20 px-3 py-2 text-xs">
             <div class="flex items-center gap-2 min-w-0">
               <Icon

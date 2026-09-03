@@ -19,8 +19,8 @@ export interface TimeDistributionChartProps {
   formatValue?: (value: number) => string
   /** Distribution type selector labels */
   distributionLabels?: { hourly: string; weekday: string; dayOfMonth: string }
-  /** Chart height in pixels */
-  height?: number
+  /** Plot height as a CSS length (rem, so it follows the interface scale) */
+  height?: string
   /** Custom class */
   class?: HTMLAttributes['class']
 }

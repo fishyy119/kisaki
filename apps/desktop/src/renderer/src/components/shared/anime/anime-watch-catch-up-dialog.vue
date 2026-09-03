@@ -79,7 +79,7 @@ async function mark(types: readonly AnimeEpisodeType[]): Promise<void> {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <template v-if="isLoading">
         <DialogBody>
           <StateView

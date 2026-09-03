@@ -69,7 +69,7 @@ function resetForm() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{ m.extension.repository.addDialog.title }}</DialogTitle>
       </DialogHeader>

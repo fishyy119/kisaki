@@ -825,6 +825,10 @@ export const library = {
     placeholder: 'ゲーム、キャラクター、人物、会社を検索…',
     typeToSearch: 'キーワードを入力して検索します',
     emptyResult: ({ label }: { label: string }) => `${label}の結果はありません`,
+    allTypes: 'すべて',
+    noResults: '結果はありません',
+    showAll: ({ count }: { count: number }) => `${count} 件をすべて表示`,
+    switchScope: '種類を切り替え',
     navigate: '移動',
     select: '選択',
     totalResults: ({ count }: { count: number }) => `全 ${count} 件の結果`

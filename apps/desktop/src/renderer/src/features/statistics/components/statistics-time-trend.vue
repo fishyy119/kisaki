@@ -68,6 +68,6 @@ const chartData = computed(() =>
     :data="chartData"
     :available-granularities="props.availableGranularities"
     :format-value="(v: number) => `${v.toFixed(1)}h`"
-    :height="200"
+    height="14rem"
   />
 </template>

@@ -5,8 +5,13 @@
   transparent; every visible region (titlebar, sidebar, page headers, page
   bodies) paints exactly one translucent base pane over the light layers so
   transmission is uniform window-wide.
+
+  The area below the titlebar is the modal region: it hosts the modal layer
+  dialogs portal into, so a modal covers sidebar and content (modality) but
+  never the window chrome, which stays draggable and operable.
 -->
 <script setup lang="ts">
+import { MODAL_LAYER_CLASS, MODAL_LAYER_ID } from '@renderer/components/ui/dialog'
 import { TooltipProvider } from '@renderer/components/ui/tooltip'
 
 import AmbientLight from './ambient-light.vue'
@@ -27,8 +32,14 @@ import Titlebar from './titlebar.vue'
       <!-- Top titlebar with window controls -->
       <Titlebar />
 
-      <!-- Main area: Sidebar + Content -->
-      <div class="flex-1 flex overflow-hidden">
+      <!-- Main area: Sidebar + Content, and the modal region over both -->
+      <div class="relative flex-1 flex overflow-hidden">
+        <!-- Declared first so the portal target exists before any page mounts -->
+        <div
+          :id="MODAL_LAYER_ID"
+          :class="MODAL_LAYER_CLASS"
+        />
+
         <!-- Left sidebar navigation -->
         <Sidebar />
 

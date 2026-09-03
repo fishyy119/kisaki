@@ -61,8 +61,7 @@ export const ja: MangadexMessages = {
     descriptions: {
       'auth-check': 'アプリ起動時に MangaDex の資格情報を確認します',
       'push-full-daily': '毎日早朝に、関連付け済みの全エントリを MangaDex アカウントへ送信します',
-      'import-refresh-weekly':
-        '毎週、読書ステータスと評価を既存エントリへ再インポートします'
+      'import-refresh-weekly': '毎週、読書ステータスと評価を既存エントリへ再インポートします'
     },
     status: {
       missing: '未作成',

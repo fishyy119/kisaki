@@ -139,27 +139,27 @@ async function handleDeleteEpisode(): Promise<void> {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl max-h-[85vh] flex flex-col">
+    <DialogContent size="lg">
       <template v-if="episode">
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2 min-w-0">
+          <DialogTitle>
             <span
               v-if="episode.type !== 'regular'"
-              class="font-mono text-muted-foreground shrink-0"
+              class="font-mono text-muted-foreground"
             >
               {{ m.library.animeEpisodeType[episode.type] }}
             </span>
             <span
               v-if="episode.episodeNumber !== null"
-              class="font-mono text-muted-foreground shrink-0"
+              class="font-mono text-muted-foreground"
             >
               {{ formatUnitNumber(episode.episodeNumber) }}
             </span>
-            <span class="truncate">{{ title }}</span>
+            {{ title }}
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="flex-1 min-h-0 space-y-4">
+        <DialogBody class="space-y-4">
           <!-- Live playback progress -->
           <MediaPlaybackProgress
             v-if="isWatching"

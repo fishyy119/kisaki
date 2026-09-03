@@ -188,21 +188,19 @@ async function handleSetFavorite(isFavorite: boolean) {
       />
       {{ m.library.menu.addToCollection }}
     </ContextMenuSubTrigger>
-    <ContextMenuSubContent class="min-w-[180px]">
+    <ContextMenuSubContent class="min-w-44">
       <template v-if="collectionsAddable.length > 0">
-        <div class="max-h-[240px] overflow-auto">
-          <ContextMenuItem
-            v-for="collection in collectionsAddable"
-            :key="collection.id"
-            @select="handleAddToCollection(collection.id)"
-          >
-            <Icon
-              :icon="getEntityIcon('collection')"
-              class="size-4"
-            />
-            {{ collection.name }}
-          </ContextMenuItem>
-        </div>
+        <ContextMenuItem
+          v-for="collection in collectionsAddable"
+          :key="collection.id"
+          @select="handleAddToCollection(collection.id)"
+        >
+          <Icon
+            :icon="getEntityIcon('collection')"
+            class="size-4"
+          />
+          {{ collection.name }}
+        </ContextMenuItem>
       </template>
       <ContextMenuItem
         v-else
@@ -222,21 +220,19 @@ async function handleSetFavorite(isFavorite: boolean) {
       />
       {{ m.library.menu.removeFromCollection }}
     </ContextMenuSubTrigger>
-    <ContextMenuSubContent class="min-w-[180px]">
+    <ContextMenuSubContent class="min-w-44">
       <template v-if="collectionsRemovable.length > 0">
-        <div class="max-h-[240px] overflow-auto">
-          <ContextMenuItem
-            v-for="collection in collectionsRemovable"
-            :key="collection.id"
-            @select="handleRemoveFromCollection(collection.id)"
-          >
-            <Icon
-              :icon="getEntityIcon('collection')"
-              class="size-4"
-            />
-            {{ collection.name }}
-          </ContextMenuItem>
-        </div>
+        <ContextMenuItem
+          v-for="collection in collectionsRemovable"
+          :key="collection.id"
+          @select="handleRemoveFromCollection(collection.id)"
+        >
+          <Icon
+            :icon="getEntityIcon('collection')"
+            class="size-4"
+          />
+          {{ collection.name }}
+        </ContextMenuItem>
       </template>
       <ContextMenuItem
         v-else

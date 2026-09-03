@@ -18,7 +18,7 @@ const props = defineProps<Props>()
 <template>
   <div
     data-slot="field-group"
-    :class="cn('group/field-group @container/field-group flex w-full flex-col gap-5', props.class)"
+    :class="cn('@container flex w-full flex-col gap-5', props.class)"
   >
     <slot />
   </div>

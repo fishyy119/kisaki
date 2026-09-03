@@ -349,7 +349,7 @@ const deleteDialogOpen = computed({
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <template v-if="state === 'loading'">
         <DialogBody>
           <StateView
@@ -363,7 +363,7 @@ const deleteDialogOpen = computed({
         <DialogHeader>
           <DialogTitle>{{ m.library.forms.editRelatedEntries }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <StateView
             v-if="items.length === 0"
             state="empty"

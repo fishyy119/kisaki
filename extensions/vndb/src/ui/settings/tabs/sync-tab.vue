@@ -1,6 +1,14 @@
 <!-- Sync Tab edits auto push preferences and launches the manual full push. -->
 <script setup lang="ts">
-import { Button, Field, FieldGroup, Icon, SettingsSection, Spinner, Switch } from '@kisaki3/extension-ui-vue'
+import {
+  Button,
+  Field,
+  FieldGroup,
+  Icon,
+  SettingsSection,
+  Spinner,
+  Switch
+} from '@kisaki3/extension-ui-vue'
 import { settingsForm } from '../form'
 import { m } from '../i18n'
 import { host } from '../rpc'

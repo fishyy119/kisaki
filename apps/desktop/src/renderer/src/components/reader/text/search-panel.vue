@@ -191,7 +191,7 @@ async function runQuery(raw: string): Promise<void> {
           <span class="min-w-0 truncate text-xs font-medium">
             {{ group.label }}
           </span>
-          <span class="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+          <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
             {{ group.items.length }}
           </span>
         </div>
@@ -213,7 +213,7 @@ async function runQuery(raw: string): Promise<void> {
 
       <p
         v-if="capped"
-        class="px-2 py-1 text-[11px] text-muted-foreground"
+        class="px-2 py-1 text-xs text-muted-foreground"
       >
         {{ m.reader.search.tooMany({ count: MAX_RESULTS }) }}
       </p>

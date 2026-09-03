@@ -120,7 +120,7 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <!-- Loading state -->
       <template v-if="isLoading || !game">
         <DialogBody>
@@ -142,27 +142,21 @@ function handleCancel() {
             class="w-full"
           >
             <TabsList>
-              <TabsTrigger value="launch">
-                <Icon
-                  icon="icon-[mdi--play-circle-outline]"
-                  class="size-3.5"
-                />
-                {{ m.game.launchConfig.tabLaunch }}
-              </TabsTrigger>
-              <TabsTrigger value="monitor">
-                <Icon
-                  icon="icon-[mdi--eye-outline]"
-                  class="size-3.5"
-                />
-                {{ m.game.launchConfig.tabMonitor }}
-              </TabsTrigger>
-              <TabsTrigger value="save">
-                <Icon
-                  icon="icon-[mdi--content-save-outline]"
-                  class="size-3.5"
-                />
-                {{ m.library.detail.tabs.saves }}
-              </TabsTrigger>
+              <TabsTrigger
+                value="launch"
+                icon="icon-[mdi--play-circle-outline]"
+                :label="m.game.launchConfig.tabLaunch"
+              />
+              <TabsTrigger
+                value="monitor"
+                icon="icon-[mdi--eye-outline]"
+                :label="m.game.launchConfig.tabMonitor"
+              />
+              <TabsTrigger
+                value="save"
+                icon="icon-[mdi--content-save-outline]"
+                :label="m.library.detail.tabs.saves"
+              />
             </TabsList>
 
             <TabsContent value="launch">

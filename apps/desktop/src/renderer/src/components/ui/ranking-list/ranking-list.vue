@@ -85,11 +85,11 @@ const inlineColumns = computed(() => {
       v-if="dialogOpen"
       v-model:open="dialogOpen"
     >
-      <DialogContent class="max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{{ expandTitleText }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[65vh] scrollbar-thin">
+        <DialogBody>
           <!-- The full dataset can carry thousands of rows, so they virtualize -->
           <VirtualList
             :items="props.items"

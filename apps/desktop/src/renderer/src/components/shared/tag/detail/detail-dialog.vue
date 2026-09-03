@@ -1,12 +1,11 @@
 <!--
   TagDetailDialog
   Dialog view of a tag: identity in the header, the browse surface in a
-  fixed-height body so the band never shifts, the tag's operations in the
+  fill-height body so the band never shifts, the tag's operations in the
   footer.
 -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import {
   Dialog,
@@ -60,7 +59,10 @@ function handleOpen(entityType: ContentEntityType, entityId: string) {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="flex max-w-4xl flex-col">
+    <DialogContent
+      size="xl"
+      fill
+    >
       <!-- Loading / Error / Not Found -->
       <DialogBody v-if="state !== 'success'">
         <StateView
@@ -69,28 +71,24 @@ function handleOpen(entityType: ContentEntityType, entityId: string) {
           icon="icon-[mdi--tag-off-outline]"
           :title="m.library.detail.notFoundTitle({ label: m.library.entities.tag })"
           :description="m.library.detail.notFoundDescription({ label: m.library.entities.tag })"
-          class="py-12"
+          class="h-full"
         />
       </DialogBody>
 
       <template v-else-if="tag">
         <DialogHeader>
-          <div class="flex items-center gap-2">
-            <DialogTitle class="flex items-center gap-2">
-              <Icon
-                :icon="getEntityIcon('tag')"
-                class="size-4 text-muted-foreground"
-              />
-              {{ tag.name }}
-            </DialogTitle>
-            <Badge
-              v-if="tag.isNsfw"
-              variant="destructive"
-              class="px-1.5 py-0"
-            >
-              NSFW
-            </Badge>
-          </div>
+          <DialogTitle :icon="getEntityIcon('tag')">
+            {{ tag.name }}
+            <template #trailing>
+              <Badge
+                v-if="tag.isNsfw"
+                variant="destructive"
+                class="px-1.5 py-0"
+              >
+                NSFW
+              </Badge>
+            </template>
+          </DialogTitle>
           <MarkdownContent
             v-if="tag.description"
             :content="tag.description"
@@ -98,7 +96,7 @@ function handleOpen(entityType: ContentEntityType, entityId: string) {
           />
         </DialogHeader>
 
-        <DialogBody class="flex h-[min(72vh,660px)] flex-col p-0">
+        <DialogBody class="flex flex-col p-0">
           <TagDetailContent
             v-model:query="query"
             class="min-h-0 flex-1"

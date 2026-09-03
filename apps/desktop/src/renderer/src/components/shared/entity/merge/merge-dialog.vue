@@ -91,7 +91,7 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="openModel">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{ m.merge.title }}</DialogTitle>
       </DialogHeader>

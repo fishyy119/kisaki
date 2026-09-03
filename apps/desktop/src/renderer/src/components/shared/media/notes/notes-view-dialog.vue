@@ -15,7 +15,6 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
-import { Icon } from '@renderer/components/ui/icon'
 import { StateView } from '@renderer/components/ui/state-view'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
@@ -61,7 +60,7 @@ useDbChanges(({ changes }) => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl">
+    <DialogContent size="xl">
       <template v-if="isLoading">
         <DialogBody>
           <StateView
@@ -94,15 +93,11 @@ useDbChanges(({ changes }) => {
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
-            <Icon
-              icon="icon-[mdi--note-text-outline]"
-              class="size-4 text-muted-foreground"
-            />
+          <DialogTitle icon="icon-[mdi--note-text-outline]">
             {{ note.name }}
           </DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[70vh] space-y-4">
+        <DialogBody class="space-y-4">
           <div
             v-if="coverUrl"
             class="rounded-lg overflow-hidden border bg-muted"
@@ -110,7 +105,7 @@ useDbChanges(({ changes }) => {
             <img
               :src="coverUrl"
               alt=""
-              class="w-full max-h-[360px] object-contain"
+              class="w-full max-h-96 object-contain"
             />
           </div>
           <MarkdownContent

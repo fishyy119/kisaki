@@ -9,7 +9,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
 import { getEntityIcon } from '@renderer/utils/format'
@@ -40,63 +39,47 @@ const activeTab = ref('overview')
 
     <!-- Tabs -->
     <Tabs v-model="activeTab">
-      <TabsList>
-        <TabsTrigger value="overview">
-          <Icon
-            icon="icon-[mdi--information-outline]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.overview }}
-        </TabsTrigger>
-        <TabsTrigger value="characters">
-          <Icon
-            :icon="getEntityIcon('character')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.characters }}
-        </TabsTrigger>
-        <TabsTrigger value="persons">
-          <Icon
-            :icon="getEntityIcon('person')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.persons }}
-        </TabsTrigger>
-        <TabsTrigger value="companies">
-          <Icon
-            :icon="getEntityIcon('company')"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.companies }}
-        </TabsTrigger>
-        <TabsTrigger value="relations">
-          <Icon
-            icon="icon-[mdi--link-variant]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.relatedEntries }}
-        </TabsTrigger>
-        <TabsTrigger value="activity">
-          <Icon
-            icon="icon-[mdi--report-timeline-variant]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.activity }}
-        </TabsTrigger>
-        <TabsTrigger value="saves">
-          <Icon
-            icon="icon-[mdi--content-save-outline]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.saves }}
-        </TabsTrigger>
-        <TabsTrigger value="notes">
-          <Icon
-            icon="icon-[mdi--image-multiple-outline]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.notes }}
-        </TabsTrigger>
+      <TabsList collapse-below="2xl">
+        <TabsTrigger
+          value="overview"
+          icon="icon-[mdi--information-outline]"
+          :label="m.library.detail.tabs.overview"
+        />
+        <TabsTrigger
+          value="characters"
+          :icon="getEntityIcon('character')"
+          :label="m.library.detail.tabs.characters"
+        />
+        <TabsTrigger
+          value="persons"
+          :icon="getEntityIcon('person')"
+          :label="m.library.detail.tabs.persons"
+        />
+        <TabsTrigger
+          value="companies"
+          :icon="getEntityIcon('company')"
+          :label="m.library.detail.tabs.companies"
+        />
+        <TabsTrigger
+          value="relations"
+          icon="icon-[mdi--link-variant]"
+          :label="m.library.detail.tabs.relatedEntries"
+        />
+        <TabsTrigger
+          value="activity"
+          icon="icon-[mdi--report-timeline-variant]"
+          :label="m.library.detail.tabs.activity"
+        />
+        <TabsTrigger
+          value="saves"
+          icon="icon-[mdi--content-save-outline]"
+          :label="m.library.detail.tabs.saves"
+        />
+        <TabsTrigger
+          value="notes"
+          icon="icon-[mdi--image-multiple-outline]"
+          :label="m.library.detail.tabs.notes"
+        />
       </TabsList>
 
       <TabsContent value="overview">

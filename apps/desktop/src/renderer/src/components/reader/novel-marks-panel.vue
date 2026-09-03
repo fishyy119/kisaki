@@ -35,8 +35,7 @@ const { m } = useI18n()
 
 const isEmpty = computed(() => props.bookmarks.length === 0 && props.highlights.length === 0)
 
-const HEADING_CLASS =
-  'px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+const HEADING_CLASS = 'px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground'
 const ROW_CLASS = 'flex items-start gap-1.5 rounded-md px-2 py-1.5 transition-colors'
 
 function rowClass(id: string): string {
@@ -86,13 +85,13 @@ function bookmarkLocation(bookmark: NovelBookmark): string {
           </span>
           <span
             v-if="bookmark.excerpt"
-            class="mt-0.5 block truncate text-[11px] text-muted-foreground"
+            class="mt-0.5 block truncate text-xs text-muted-foreground"
           >
             {{ bookmarkLocation(bookmark) }}
           </span>
           <span
             v-if="bookmark.note"
-            class="mt-0.5 line-clamp-2 block text-[11px] text-muted-foreground"
+            class="mt-0.5 line-clamp-2 block text-xs text-muted-foreground"
           >
             {{ bookmark.note }}
           </span>
@@ -127,7 +126,7 @@ function bookmarkLocation(bookmark: NovelBookmark): string {
           <span class="line-clamp-2 text-xs">{{ highlight.excerpt }}</span>
           <span
             v-if="highlight.note"
-            class="mt-0.5 line-clamp-2 block text-[11px] text-muted-foreground"
+            class="mt-0.5 line-clamp-2 block text-xs text-muted-foreground"
           >
             {{ highlight.note }}
           </span>

@@ -46,27 +46,27 @@ const { allTimeSessions, error } = useStatistics()
     </div>
 
     <!-- Charts band -->
-    <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
+    <div class="grid grid-cols-1 divide-y @7xl:grid-cols-[2fr_1fr] @7xl:divide-y-0">
       <div class="min-w-0 p-4">
         <StatisticsTimeTrend
           :title="m.statistics.charts.trendTitle"
           default-granularity="monthly"
         />
       </div>
-      <div class="min-w-0 p-4 xl:border-l">
+      <div class="min-w-0 p-4 @4xl:border-l">
         <StatisticsTimeDistribution :title="m.statistics.charts.distributionTitle" />
       </div>
     </div>
 
     <!-- Rankings band: last row, so uneven column ends fall off the page -->
-    <div class="grid grid-cols-1 divide-y xl:grid-cols-2 xl:divide-y-0">
+    <div class="grid grid-cols-1 divide-y @4xl:grid-cols-2 @4xl:divide-y-0">
       <div class="min-w-0 p-4">
         <StatisticsMediaRanking
           :title="m.statistics.ranking.mediaTitle"
           :sessions="allTimeSessions"
         />
       </div>
-      <div class="min-w-0 p-4 xl:border-l">
+      <div class="min-w-0 p-4 @4xl:border-l">
         <StatisticsCollectionRanking
           :title="m.statistics.ranking.collectionTitle"
           :sessions="allTimeSessions"

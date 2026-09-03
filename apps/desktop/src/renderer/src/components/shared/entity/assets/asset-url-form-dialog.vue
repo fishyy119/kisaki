@@ -108,7 +108,7 @@ function handleClose() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{
           m.library.forms.importMediaFromUrlTitle({ label: slotLabel })
@@ -144,7 +144,7 @@ function handleClose() {
           <div
             :class="
               cn(
-                'relative rounded-lg border bg-muted/50 overflow-hidden flex items-center justify-center max-w-[150px]',
+                'relative rounded-lg border bg-muted/50 overflow-hidden flex items-center justify-center max-w-44',
                 slot.aspectClass
               )
             "

@@ -5,6 +5,7 @@ import { createRouter, createWebHashHistory, type Router } from 'vue-router'
 import Main from './main.vue'
 import { installRouteQueries } from './core/query'
 import { initI18n } from './core/i18n'
+import { initInterfaceScale } from './core/interface-scale'
 import {
   EXTENSION_PAGE_ROUTE_NAME,
   EXTENSION_PAGE_ROUTE_PATTERN,
@@ -77,7 +78,7 @@ async function initMainWindowRenderer() {
   // ===========================================================================
   // Phase 1: Critical Path (blocking - UI must wait)
   // ===========================================================================
-  await initI18n()
+  await Promise.all([initI18n(), initInterfaceScale()])
 
   const app = createApp(Main)
 

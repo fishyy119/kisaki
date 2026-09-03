@@ -34,7 +34,7 @@ const ROW_CLASS =
 
 <template>
   <ScrollRegion class="p-2">
-    <p class="px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <p class="px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
       {{ props.unitLabel }}
     </p>
 
@@ -70,9 +70,7 @@ const ROW_CLASS =
     </VirtualList>
 
     <template v-if="props.outline.length > 0">
-      <p
-        class="mt-3 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-      >
+      <p class="mt-3 px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {{ m.reader.panel.outlineHeading }}
       </p>
       <VirtualList

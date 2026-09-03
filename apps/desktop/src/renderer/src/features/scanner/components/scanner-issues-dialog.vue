@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db, ENTITY_TABLES } from '@renderer/core/db'
+import { remToPx } from '@renderer/core/interface-scale'
 import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
@@ -29,9 +30,8 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
+  TableRow,
+  type TableColumn
 } from '@renderer/components/ui/table'
 import { MEDIA_TYPES, type MediaType } from '@shared/entity-types'
 import type { ScannerRunIssueType } from '@shared/scanner'
@@ -198,7 +198,18 @@ const isQueryActive = computed(
   () => searchQuery.value.trim().length > 0 || issueTypeFilter.value !== 'all'
 )
 
-const ISSUE_TABLE_COLUMNS = ['', '8rem', '22%', '24%', '16%', '7rem']
+// Virtualized rows must stay uniform, so a narrow dialog scrolls the table
+// sideways (min 48rem: name 12 + fixed 15 + percent columns) instead of
+// reflowing it.
+const ISSUE_TABLE_MIN_WIDTH = '48rem'
+const issueColumns = computed<TableColumn[]>(() => [
+  { label: m.value.scanner.issues.table.name },
+  { label: m.value.scanner.issues.table.type, width: '8rem' },
+  { label: m.value.scanner.issues.table.path, width: '22%', tone: 'muted' },
+  { label: m.value.scanner.issues.table.reason, width: '24%', tone: 'muted' },
+  { label: m.value.scanner.issues.table.relatedEntity, width: '16%', tone: 'muted' },
+  { label: m.value.scanner.issues.table.actions, width: '7rem', align: 'end', role: 'actions' }
+])
 
 // =============================================================================
 // Issue rows virtualization
@@ -207,18 +218,19 @@ const ISSUE_TABLE_COLUMNS = ['', '8rem', '22%', '24%', '16%', '7rem']
 // spacer rows so the native table layout (shared colgroup) stays intact.
 // =============================================================================
 
-/** Must match the issue row's fixed height: h-14 (56px) + 1px border. */
-const ISSUE_ROW_HEIGHT_PX = 57
+/** Must match the issue row's fixed height: h-14 plus its 1px bottom border. */
+const ISSUE_ROW_HEIGHT_REM = 3.5
 
 const issueTable = useTemplateRef<InstanceType<typeof Table>>('issueTable')
 
 const issueVirtualizer = useVirtualizer(
   computed(() => {
     const scrollElement = issueTable.value?.scrollElement ?? null
+    const rowHeight = remToPx(ISSUE_ROW_HEIGHT_REM) + 1
     return {
       count: filteredIssueRows.value.length,
       getScrollElement: () => scrollElement,
-      estimateSize: () => ISSUE_ROW_HEIGHT_PX,
+      estimateSize: () => rowHeight,
       overscan: 8
     }
   })
@@ -268,13 +280,12 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-5xl">
+    <DialogContent
+      size="2xl"
+      fill
+    >
       <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <Icon
-            icon="icon-[mdi--alert-outline]"
-            class="size-4 text-warning"
-          />
+        <DialogTitle icon="icon-[mdi--alert-outline]">
           {{ m.scanner.issues.title }}
         </DialogTitle>
         <DialogDescription>
@@ -283,7 +294,7 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
       </DialogHeader>
 
       <!-- Full-bleed body: rounded to the slab corner since no footer follows -->
-      <DialogBody class="flex max-h-[68vh] flex-col overflow-hidden rounded-b-md p-0">
+      <DialogBody class="flex flex-col overflow-hidden rounded-b-md p-0">
         <Toolbar>
           <ToolbarRow>
             <SearchInput
@@ -299,30 +310,30 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
               {{ m.values.itemCount({ count: filteredIssueRows.length }) }}
             </span>
 
-            <div class="flex-1" />
-
-            <Select v-model="issueTypeFilter">
-              <SelectTrigger
-                size="sm"
-                class="w-36"
-              >
-                <span class="truncate">
-                  {{
-                    issueTypeOptions.find((option) => option.value === issueTypeFilter)?.label ??
-                    m.scanner.issues.allTypes
-                  }}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="option in issueTypeOptions"
-                  :key="option.value"
-                  :value="option.value"
+            <template #trailing>
+              <Select v-model="issueTypeFilter">
+                <SelectTrigger
+                  size="sm"
+                  class="w-36"
                 >
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                  <span class="truncate">
+                    {{
+                      issueTypeOptions.find((option) => option.value === issueTypeFilter)?.label ??
+                      m.scanner.issues.allTypes
+                    }}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="option in issueTypeOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </template>
           </ToolbarRow>
         </Toolbar>
 
@@ -340,21 +351,10 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
           <Table
             ref="issueTable"
             fixed-header
-            :columns="ISSUE_TABLE_COLUMNS"
+            inset
+            :columns="issueColumns"
+            :min-width="ISSUE_TABLE_MIN_WIDTH"
           >
-            <template #header>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{{ m.scanner.issues.table.name }}</TableHead>
-                  <TableHead>{{ m.scanner.issues.table.type }}</TableHead>
-                  <TableHead>{{ m.scanner.issues.table.path }}</TableHead>
-                  <TableHead>{{ m.scanner.issues.table.reason }}</TableHead>
-                  <TableHead>{{ m.scanner.issues.table.relatedEntity }}</TableHead>
-                  <TableHead class="text-right">{{ m.scanner.issues.table.actions }}</TableHead>
-                </TableRow>
-              </TableHeader>
-            </template>
-
             <TableBody>
               <tr
                 v-if="issuePadTop > 0"
@@ -376,7 +376,7 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
                       <div class="truncate font-medium">{{ row.issue.extractedName }}</div>
                       <div
                         v-if="!props.scannerId"
-                        class="truncate text-muted-foreground"
+                        class="truncate"
                       >
                         {{ row.scannerName }}
                       </div>
@@ -387,19 +387,19 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
                   <Badge variant="warning">{{ getIssueTypeText(row.issue.type) }}</Badge>
                 </TableCell>
                 <TableCell
-                  class="truncate text-muted-foreground"
+                  class="truncate"
                   :title="row.issue.path"
                 >
                   {{ row.issue.path }}
                 </TableCell>
                 <TableCell
-                  class="truncate text-muted-foreground"
+                  class="truncate"
                   :title="row.issue.reason"
                 >
                   {{ row.issue.reason }}
                 </TableCell>
                 <TableCell
-                  class="truncate text-muted-foreground"
+                  class="truncate"
                   :title="row.existingEntityName"
                 >
                   {{ row.existingEntityName || '-' }}

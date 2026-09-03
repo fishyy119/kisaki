@@ -4,7 +4,6 @@
   Used by both page and dialog modes.
 -->
 <script setup lang="ts">
-import { Icon } from '@renderer/components/ui/icon'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { useCompany } from '@renderer/composables'
 import CompanyDetailHero from './detail-hero.vue'
@@ -23,21 +22,17 @@ const { company } = useCompany()
 
     <!-- Tabs -->
     <Tabs default-value="overview">
-      <TabsList>
-        <TabsTrigger value="overview">
-          <Icon
-            icon="icon-[mdi--information-outline]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.overview }}
-        </TabsTrigger>
-        <TabsTrigger value="works">
-          <Icon
-            icon="icon-[mdi--filmstrip-box-multiple]"
-            class="size-3.5"
-          />
-          {{ m.library.detail.tabs.relatedWorks }}
-        </TabsTrigger>
+      <TabsList collapse-below="2xl">
+        <TabsTrigger
+          value="overview"
+          icon="icon-[mdi--information-outline]"
+          :label="m.library.detail.tabs.overview"
+        />
+        <TabsTrigger
+          value="works"
+          icon="icon-[mdi--filmstrip-box-multiple]"
+          :label="m.library.detail.tabs.relatedWorks"
+        />
       </TabsList>
 
       <TabsContent value="overview">

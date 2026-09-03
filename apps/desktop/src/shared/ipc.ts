@@ -136,6 +136,7 @@ import type {
 import type { NotifyOptions } from './notification'
 import type { UiLocale, UiLocaleState } from './i18n'
 import type { AppTheme } from './theme'
+import type { UiScale } from './window'
 import type { MediaType } from './entity-types'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type {
@@ -318,6 +319,8 @@ export interface IpcMainHandlers {
   'window:minimize-main-window': () => IpcVoidResult
   'window:toggle-main-window-maximize': () => IpcVoidResult
   'window:close-main-window': () => IpcVoidResult
+  'window:get-interface-scale': () => IpcResult<UiScale>
+  'window:set-interface-scale': (scale: UiScale) => IpcVoidResult
 
   // Database proxy
   'db:execute': (
@@ -784,6 +787,9 @@ export interface IpcRendererEvents {
 
   // I18n state push
   'i18n:state-changed': [state: UiLocaleState]
+
+  // Interface scale push (every window mirrors the main-owned value)
+  'window:interface-scale-changed': [scale: UiScale]
 
   // Automation state pushes
   'automation:changed': [payload: { automationId: string }]

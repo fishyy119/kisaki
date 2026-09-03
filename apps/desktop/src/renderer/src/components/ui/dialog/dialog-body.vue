@@ -1,11 +1,14 @@
 <!--
-  DialogBody - The dialog's scroll viewport.
+  DialogBody - The dialog's scroll viewport, and the only part of a dialog that
+  ever scrolls.
 
-  A ScrollRegion with the dialog's default padding. It hosts the back-to-top
-  device and is the scroll parent of every virtual list inside the dialog
-  (`scroll="region"`). Inside a `flex flex-col` DialogContent with a
-  max height it takes the remaining space and scrolls; elsewhere it grows with
-  its content, and a max height passed through `class` caps it.
+  A ScrollRegion with the dialog's default padding. Inside the slab's flex
+  column it takes whatever height the header and footer leave and scrolls
+  beyond it: in a content-sized dialog that is as tall as its content up to the
+  slab ceiling, in a `fill` dialog it is the remaining definite height. Callers
+  never cap it; the slab owns the geometry. It hosts the back-to-top device and
+  is the scroll parent of every virtual list inside the dialog
+  (`scroll="region"`).
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'

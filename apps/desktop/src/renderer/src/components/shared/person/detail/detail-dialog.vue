@@ -121,7 +121,10 @@ function handleRevealSpoilersConfirm() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl max-h-[90vh] flex flex-col">
+    <DialogContent
+      size="xl"
+      fill
+    >
       <!-- Loading / Error / Not Found -->
       <template v-if="state !== 'success'">
         <DialogBody>
@@ -133,7 +136,7 @@ function handleRevealSpoilersConfirm() {
             :description="
               m.library.detail.notFoundDescription({ label: m.library.entities.person })
             "
-            class="py-12"
+            class="h-full"
           />
         </DialogBody>
       </template>
@@ -141,11 +144,7 @@ function handleRevealSpoilersConfirm() {
       <!-- Loaded Content -->
       <template v-else-if="person">
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
-            <Icon
-              :icon="getEntityIcon('person')"
-              class="size-4 text-muted-foreground"
-            />
+          <DialogTitle :icon="getEntityIcon('person')">
             {{ person.name }}
           </DialogTitle>
         </DialogHeader>

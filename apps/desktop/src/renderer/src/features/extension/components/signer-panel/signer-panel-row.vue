@@ -37,11 +37,11 @@ const { m } = useI18n()
         <span class="truncate text-sm font-medium">{{ props.signer.extensionId }}</span>
       </div>
 
-      <div class="font-mono text-xs text-muted-foreground">
+      <div class="font-mono text-xs wrap-anywhere text-muted-foreground">
         {{ shortSignerFingerprint(props.signer.fingerprint) }}
       </div>
 
-      <div class="grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-muted-foreground lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-muted-foreground @3xl:grid-cols-2">
         <div class="truncate">
           {{ m.extension.signer.sourceLine({ value: getSignerRepositoryLabel(props.signer) }) }}
         </div>

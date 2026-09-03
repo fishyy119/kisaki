@@ -813,7 +813,14 @@ function applyTypography(): void {
       </template>
     </ReaderToolbar>
 
-    <div class="flex min-h-0 flex-1">
+    <!-- The row is the container the nav panel docks or floats against -->
+    <div class="@container relative flex min-h-0 flex-1">
+      <div
+        v-if="!fullScreen && panelOpen"
+        class="absolute inset-0 z-10 hidden @max-2xl:block"
+        aria-hidden="true"
+        @click="togglePanel"
+      />
       <NavPanel
         v-if="!fullScreen && panelOpen"
         v-model:tab="panelTab"

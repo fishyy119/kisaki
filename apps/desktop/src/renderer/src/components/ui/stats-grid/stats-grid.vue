@@ -2,7 +2,8 @@
   StatsGrid - Simple statistics grid with optional date range header
 
   Features:
-  - Uniform card container
+  - Uniform card container; the frame is the query container its columns
+    respond to, so the grid is correct wherever it is placed
   - Icon + label + value cells
 -->
 
@@ -12,13 +13,13 @@ import { Icon } from '@renderer/components/ui/icon'
 import type { StatsGridProps } from './types'
 
 const props = withDefaults(defineProps<StatsGridProps>(), {
-  gridClass: 'grid-cols-2 md:grid-cols-4'
+  gridClass: 'grid-cols-2 @2xl:grid-cols-4'
 })
 </script>
 
 <template>
   <div
-    :class="cn('rounded-lg border overflow-hidden', props.class)"
+    :class="cn('@container rounded-lg border overflow-hidden', props.class)"
     data-slot="stats-grid"
   >
     <div :class="cn('grid -m-px', props.gridClass)">

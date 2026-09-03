@@ -73,6 +73,6 @@ const selectedIds = computed({
     :empty-text="emptyTextValue"
     :disabled="props.disabled"
     :class="props.class"
-    :max-height="280"
+    max-height="20rem"
   />
 </template>

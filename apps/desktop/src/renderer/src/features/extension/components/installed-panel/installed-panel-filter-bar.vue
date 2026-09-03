@@ -89,25 +89,22 @@ const categoryModel = computed({
 <template>
   <Toolbar>
     <ToolbarRow>
-      <SegmentedControl v-model="categoryModel">
-        <SegmentedControlItem value="all">
-          <Icon
-            icon="icon-[mdi--view-grid-outline]"
-            class="size-3.5"
-          />
-          {{ m.extension.installed.filterAll }}
-        </SegmentedControlItem>
+      <SegmentedControl
+        v-model="categoryModel"
+        collapse-below="2xl"
+      >
+        <SegmentedControlItem
+          value="all"
+          icon="icon-[mdi--view-grid-outline]"
+          :label="m.extension.installed.filterAll"
+        />
         <SegmentedControlItem
           v-for="cat in EXTENSION_CATEGORIES"
           :key="cat.id"
           :value="cat.id"
-        >
-          <Icon
-            :icon="CATEGORY_ICONS[cat.id]!"
-            class="size-3.5"
-          />
-          {{ cat.label }}
-        </SegmentedControlItem>
+          :icon="CATEGORY_ICONS[cat.id]!"
+          :label="cat.label"
+        />
       </SegmentedControl>
     </ToolbarRow>
 
@@ -119,76 +116,76 @@ const categoryModel = computed({
         class="max-w-xl flex-1"
       />
 
-      <div class="flex-1" />
-
-      <!-- Status filter as button group -->
-      <ButtonGroup>
-        <template
-          v-for="opt in STATUS_OPTIONS"
-          :key="opt.value"
-        >
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                :variant="store.statusFilter === opt.value ? 'secondary' : 'outline'"
-                size="icon-sm"
-                :class="cn(store.statusFilter !== opt.value && 'text-muted-foreground')"
-                @click="store.setStatusFilter(opt.value)"
-              >
-                <Icon
-                  :icon="opt.icon"
-                  class="size-4"
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{{ opt.label }}</TooltipContent>
-          </Tooltip>
-        </template>
-      </ButtonGroup>
-
-      <!-- Updates filter toggle -->
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            :variant="store.showUpdatesOnly ? 'secondary' : 'outline'"
-            size="sm"
-            :class="cn('gap-1.5', !store.showUpdatesOnly && 'text-muted-foreground')"
-            @click="store.setShowUpdatesOnly(!store.showUpdatesOnly)"
+      <template #trailing>
+        <!-- Status filter as button group -->
+        <ButtonGroup>
+          <template
+            v-for="opt in STATUS_OPTIONS"
+            :key="opt.value"
           >
-            <Icon
-              icon="icon-[mdi--refresh]"
-              class="size-4"
-            />
-            <span
-              v-if="store.updates.length > 0"
-              :class="
-                cn(
-                  'text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center',
-                  store.showUpdatesOnly
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted-foreground/20'
-                )
-              "
-            >
-              {{ store.updates.length }}
-            </span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {{
-            store.showUpdatesOnly
-              ? m.extension.installed.showAll
-              : m.extension.installed.showUpdatesOnly
-          }}
-        </TooltipContent>
-      </Tooltip>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  :variant="store.statusFilter === opt.value ? 'secondary' : 'outline'"
+                  size="icon-sm"
+                  :class="cn(store.statusFilter !== opt.value && 'text-muted-foreground')"
+                  @click="store.setStatusFilter(opt.value)"
+                >
+                  <Icon
+                    :icon="opt.icon"
+                    class="size-4"
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{{ opt.label }}</TooltipContent>
+            </Tooltip>
+          </template>
+        </ButtonGroup>
 
-      <SortControl
-        v-model:field="sortFieldModel"
-        v-model:direction="sortDirectionModel"
-        :options="SORT_OPTIONS"
-        size="sm"
-      />
+        <!-- Updates filter toggle -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              :variant="store.showUpdatesOnly ? 'secondary' : 'outline'"
+              size="sm"
+              :class="cn('gap-1.5', !store.showUpdatesOnly && 'text-muted-foreground')"
+              @click="store.setShowUpdatesOnly(!store.showUpdatesOnly)"
+            >
+              <Icon
+                icon="icon-[mdi--refresh]"
+                class="size-4"
+              />
+              <span
+                v-if="store.updates.length > 0"
+                :class="
+                  cn(
+                    'text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center',
+                    store.showUpdatesOnly
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted-foreground/20'
+                  )
+                "
+              >
+                {{ store.updates.length }}
+              </span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {{
+              store.showUpdatesOnly
+                ? m.extension.installed.showAll
+                : m.extension.installed.showUpdatesOnly
+            }}
+          </TooltipContent>
+        </Tooltip>
+
+        <SortControl
+          v-model:field="sortFieldModel"
+          v-model:direction="sortDirectionModel"
+          :options="SORT_OPTIONS"
+          size="sm"
+        />
+      </template>
     </ToolbarRow>
   </Toolbar>
 </template>

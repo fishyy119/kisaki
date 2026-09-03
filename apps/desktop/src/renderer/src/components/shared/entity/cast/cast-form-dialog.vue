@@ -172,7 +172,7 @@ async function handleSave() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <template v-if="isLoading || !results">
         <DialogBody>
           <StateView
@@ -186,7 +186,7 @@ async function handleSave() {
         <DialogHeader>
           <DialogTitle>{{ m.library.fields.cast }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <StateView
             v-if="items.length === 0"
             state="empty"

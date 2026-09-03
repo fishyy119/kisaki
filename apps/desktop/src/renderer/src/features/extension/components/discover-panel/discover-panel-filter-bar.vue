@@ -86,25 +86,22 @@ const repositoryModel = computed({
 <template>
   <Toolbar>
     <ToolbarRow>
-      <SegmentedControl v-model="categoryModel">
-        <SegmentedControlItem value="all">
-          <Icon
-            icon="icon-[mdi--view-grid-outline]"
-            class="size-3.5"
-          />
-          {{ m.extension.discover.allCategories }}
-        </SegmentedControlItem>
+      <SegmentedControl
+        v-model="categoryModel"
+        collapse-below="2xl"
+      >
+        <SegmentedControlItem
+          value="all"
+          icon="icon-[mdi--view-grid-outline]"
+          :label="m.extension.discover.allCategories"
+        />
         <SegmentedControlItem
           v-for="cat in EXTENSION_CATEGORIES"
           :key="cat.id"
           :value="cat.id"
-        >
-          <Icon
-            :icon="CATEGORY_ICONS[cat.id]!"
-            class="size-3.5"
-          />
-          {{ cat.label }}
-        </SegmentedControlItem>
+          :icon="CATEGORY_ICONS[cat.id]!"
+          :label="cat.label"
+        />
       </SegmentedControl>
     </ToolbarRow>
 
@@ -116,61 +113,61 @@ const repositoryModel = computed({
         class="max-w-xl flex-1"
       />
 
-      <div class="flex-1" />
-
-      <!-- Repository selector -->
-      <Select v-model="repositoryModel">
-        <SelectTrigger
-          size="sm"
-          class="min-w-40"
-        >
-          <Icon
-            icon="icon-[mdi--source-branch]"
-            class="size-4 text-muted-foreground"
-          />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">{{ m.extension.discover.allRepositories }}</SelectItem>
-          <SelectItem
-            v-for="repository in enabledRepositories"
-            :key="repository.id"
-            :value="repository.id"
-          >
-            {{ repository.name }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            :variant="store.compatibleOnly ? 'secondary' : 'outline'"
-            size="icon-sm"
-            :class="cn(!store.compatibleOnly && 'text-muted-foreground')"
-            @click="store.setCompatibleOnly(!store.compatibleOnly)"
+      <template #trailing>
+        <!-- Repository selector -->
+        <Select v-model="repositoryModel">
+          <SelectTrigger
+            size="sm"
+            class="min-w-40"
           >
             <Icon
-              icon="icon-[mdi--shield-check-outline]"
-              class="size-4"
+              icon="icon-[mdi--source-branch]"
+              class="size-4 text-muted-foreground"
             />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {{
-            store.compatibleOnly
-              ? m.extension.discover.compatibleOnly
-              : m.extension.discover.allCompatibility
-          }}
-        </TooltipContent>
-      </Tooltip>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{{ m.extension.discover.allRepositories }}</SelectItem>
+            <SelectItem
+              v-for="repository in enabledRepositories"
+              :key="repository.id"
+              :value="repository.id"
+            >
+              {{ repository.name }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
-      <SortControl
-        v-model:field="sortFieldModel"
-        v-model:direction="sortDirectionModel"
-        :options="SORT_OPTIONS"
-        size="sm"
-      />
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              :variant="store.compatibleOnly ? 'secondary' : 'outline'"
+              size="icon-sm"
+              :class="cn(!store.compatibleOnly && 'text-muted-foreground')"
+              @click="store.setCompatibleOnly(!store.compatibleOnly)"
+            >
+              <Icon
+                icon="icon-[mdi--shield-check-outline]"
+                class="size-4"
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {{
+              store.compatibleOnly
+                ? m.extension.discover.compatibleOnly
+                : m.extension.discover.allCompatibility
+            }}
+          </TooltipContent>
+        </Tooltip>
+
+        <SortControl
+          v-model:field="sortFieldModel"
+          v-model:direction="sortDirectionModel"
+          :options="SORT_OPTIONS"
+          size="sm"
+        />
+      </template>
     </ToolbarRow>
   </Toolbar>
 </template>

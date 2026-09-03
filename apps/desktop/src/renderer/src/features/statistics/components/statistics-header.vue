@@ -60,7 +60,12 @@ const canNavigateNext = computed(() => {
       :title="m.statistics.title"
       icon="icon-[mdi--chart-box-outline]"
     />
-    <PageHeaderNav :items="reportNavItems" />
+    <!-- Title 7rem + four pills 20rem + period and scope controls 24rem need
+         about 56rem; below the 4xl step the pills become one dropdown -->
+    <PageHeaderNav
+      :items="reportNavItems"
+      collapse-below="4xl"
+    />
 
     <!-- Right: Period Navigator + Media Selector -->
     <template #actions>
@@ -95,30 +100,23 @@ const canNavigateNext = computed(() => {
         </Button>
       </div>
 
-      <!-- Media scope filter -->
-      <SegmentedControl v-model="mediaFilter">
-        <SegmentedControlItem value="all">
-          <div class="flex items-center gap-1.5">
-            <Icon
-              icon="icon-[mdi--view-grid-outline]"
-              class="size-4"
-            />
-            <span>{{ m.states.all }}</span>
-          </div>
-        </SegmentedControlItem>
+      <!-- Media scope filter; labels collapse to icons when the header is narrow -->
+      <SegmentedControl
+        v-model="mediaFilter"
+        collapse-below="6xl"
+      >
+        <SegmentedControlItem
+          value="all"
+          icon="icon-[mdi--view-grid-outline]"
+          :label="m.states.all"
+        />
         <SegmentedControlItem
           v-for="type in MEDIA_TYPES"
           :key="type"
           :value="type"
-        >
-          <div class="flex items-center gap-1.5">
-            <Icon
-              :icon="getEntityIcon(type)"
-              class="size-4"
-            />
-            <span>{{ m.library.entities[type] }}</span>
-          </div>
-        </SegmentedControlItem>
+          :icon="getEntityIcon(type)"
+          :label="m.library.entities[type]"
+        />
       </SegmentedControl>
     </template>
   </PageHeader>

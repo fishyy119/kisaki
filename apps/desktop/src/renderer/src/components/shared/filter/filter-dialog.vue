@@ -73,14 +73,10 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <Form @submit="handleConfirm">
         <DialogHeader class="flex items-center gap-3">
-          <DialogTitle class="flex items-center gap-2">
-            <Icon
-              icon="icon-[mdi--filter-outline]"
-              class="size-4"
-            />
+          <DialogTitle icon="icon-[mdi--filter-outline]">
             {{ m.filter.title }}
           </DialogTitle>
           <MatchModeSwitch v-model="localFilter" />
@@ -92,14 +88,14 @@ function handleCancel() {
           </span>
         </DialogHeader>
 
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <FilterBuilder
             v-model="localFilter"
             :ui-spec="props.uiSpec"
           />
         </DialogBody>
 
-        <DialogFooter class="flex-row justify-between items-center sm:justify-between">
+        <DialogFooter class="flex-row justify-between items-center">
           <div class="flex items-center gap-2">
             <AddConditionMenu
               v-model="localFilter"

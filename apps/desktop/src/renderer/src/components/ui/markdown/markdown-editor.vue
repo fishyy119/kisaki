@@ -33,6 +33,7 @@ import {
 interface Props {
   placeholder?: string
   class?: string
+  /** Inline editor height bounds, as rem lengths so they follow the interface scale. */
   minHeight?: string
   maxHeight?: string
   readonly?: boolean
@@ -42,8 +43,8 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '',
-  minHeight: '200px',
-  maxHeight: '400px',
+  minHeight: '14rem',
+  maxHeight: '28rem',
   readonly: false,
   autofocus: false
 })
@@ -237,54 +238,56 @@ watch(fullscreenOpen, async (open) => {
   </div>
 
   <Dialog v-model:open="fullscreenOpen">
-    <DialogContent class="max-w-none w-full h-full overflow-hidden p-0 rounded-none border-0">
-      <div class="flex h-full flex-col">
-        <DialogHeader class="shrink-0">
-          <DialogTitle>{{ m.ui.markdown.editorTitle }}</DialogTitle>
-        </DialogHeader>
-        <MarkdownEditorToolbar
-          class="shrink-0"
+    <DialogContent
+      size="2xl"
+      fill
+      class="overflow-hidden"
+    >
+      <DialogHeader>
+        <DialogTitle>{{ m.ui.markdown.editorTitle }}</DialogTitle>
+      </DialogHeader>
+      <MarkdownEditorToolbar
+        class="shrink-0"
+        :readonly="props.readonly"
+        :can-attach="!!props.onAttachment"
+        show-preview
+        show-exit-fullscreen
+        @wrap-selection="wrapSelection"
+        @insert-block="insertBlock"
+        @prefix-selected-lines="prefixSelectedLines"
+        @insert-heading="insertHeading"
+        @insert-link="insertLink"
+        @insert-image-syntax="insertImageSyntax"
+        @insert-table="insertTable"
+        @insert-footnote="insertFootnote"
+        @attach-image="attachImage"
+        @preview="previewOpen = true"
+        @exit-fullscreen="fullscreenOpen = false"
+      />
+      <div class="min-h-0 grow">
+        <CodeMirror
+          v-model="model"
+          class="h-full"
+          :lang="markdownLang"
+          :placeholder="props.placeholder"
           :readonly="props.readonly"
-          :can-attach="!!props.onAttachment"
-          show-preview
-          show-exit-fullscreen
-          @wrap-selection="wrapSelection"
-          @insert-block="insertBlock"
-          @prefix-selected-lines="prefixSelectedLines"
-          @insert-heading="insertHeading"
-          @insert-link="insertLink"
-          @insert-image-syntax="insertImageSyntax"
-          @insert-table="insertTable"
-          @insert-footnote="insertFootnote"
-          @attach-image="attachImage"
-          @preview="previewOpen = true"
-          @exit-fullscreen="fullscreenOpen = false"
+          autofocus
+          :extensions="fullscreenExtensions"
+          tab
+          :tab-size="2"
+          wrap
+          @ready="onReadyFullscreen"
         />
-        <div class="flex-1 min-h-0">
-          <CodeMirror
-            v-model="model"
-            class="h-full"
-            :lang="markdownLang"
-            :placeholder="props.placeholder"
-            :readonly="props.readonly"
-            autofocus
-            :extensions="fullscreenExtensions"
-            tab
-            :tab-size="2"
-            wrap
-            @ready="onReadyFullscreen"
-          />
-        </div>
       </div>
     </DialogContent>
   </Dialog>
 
   <Dialog v-model:open="previewOpen">
-    <DialogContent class="max-w-[90vw] w-[90vw]">
+    <DialogContent size="2xl">
       <DialogHeader>
         <DialogTitle>{{ m.ui.markdown.previewTitle }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[75vh]">
+      <DialogBody>
         <MarkdownContent :content="model" />
       </DialogBody>
     </DialogContent>

@@ -126,219 +126,227 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
 
 <template>
   <template v-if="character">
-    <div class="grid md:grid-cols-[3fr_1fr] grid-cols-1 gap-8">
-      <!-- Left column: Description, Works, Tags -->
-      <div class="space-y-6 min-w-0">
-        <Section
-          :title="m.library.detail.sections.description"
-          editable
-          :empty="!character.description"
-          :empty-text="m.library.detail.empty.description"
-          @edit="openEditDialog('description')"
-        >
-          <MarkdownContent :content="character.description!" />
-        </Section>
+    <div class="@container">
+      <div class="grid grid-cols-1 gap-8 @3xl:grid-cols-[3fr_1fr]">
+        <!-- Left column: Description, Works, Tags -->
+        <div class="space-y-6 min-w-0">
+          <Section
+            :title="m.library.detail.sections.description"
+            editable
+            :empty="!character.description"
+            :empty-text="m.library.detail.empty.description"
+            @edit="openEditDialog('description')"
+          >
+            <MarkdownContent :content="character.description!" />
+          </Section>
 
-        <EntityWorksSection
-          :blocks="worksBlocks"
-          @open="(mediaType, id) => (openEntity = { entityType: mediaType, entityId: id })"
-        />
+          <EntityWorksSection
+            :blocks="worksBlocks"
+            @open="(mediaType, id) => (openEntity = { entityType: mediaType, entityId: id })"
+          />
 
-        <Section
-          :title="m.library.fields.tags"
-          editable
-          :empty="!hasTags"
-          :empty-text="m.library.detail.empty.tags"
-          @edit="openEditDialog('tags')"
-        >
-          <div class="flex flex-wrap gap-1">
-            <template
-              v-for="tagLink in tags"
-              :key="tagLink.id"
-            >
-              <TagCard
-                v-if="tagLink.tag"
-                :tag="tagLink.tag"
-                variant="button"
-                button-size="xs"
-                @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
-              />
-            </template>
-          </div>
-        </Section>
-      </div>
-
-      <!-- Right column: Details, Physique, Related Persons, Voice credits, Related Sites -->
-      <div class="space-y-6 min-w-0">
-        <Section
-          :title="m.library.detail.sections.details"
-          editable
-          @edit="openEditDialog('details')"
-        >
-          <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
-            <dt class="text-muted-foreground">{{ m.library.fields.aliases }}</dt>
-            <!-- One name per line: a name is atomic and must not wrap mid-word. -->
-            <dd
-              v-if="aliases.length > 0"
-              class="min-w-0 space-y-0.5"
-            >
-              <div
-                v-for="alias in aliases"
-                :key="alias"
-                class="break-words"
+          <Section
+            :title="m.library.fields.tags"
+            editable
+            :empty="!hasTags"
+            :empty-text="m.library.detail.empty.tags"
+            @edit="openEditDialog('tags')"
+          >
+            <div class="flex flex-wrap gap-1">
+              <template
+                v-for="tagLink in tags"
+                :key="tagLink.id"
               >
-                {{ alias }}
-              </div>
-            </dd>
-            <dd v-else>{{ m.values.emptyValue }}</dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.gender }}</dt>
-            <dd>{{ character.gender ? GENDER_LABELS[character.gender] : m.values.emptyValue }}</dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.birthDate }}</dt>
-            <dd>{{ character.birthDate ? f.date(character.birthDate) : m.values.emptyValue }}</dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.age }}</dt>
-            <dd>
-              {{
-                character.age !== null
-                  ? m.library.detail.ageValue({ age: character.age })
-                  : m.values.emptyValue
-              }}
-            </dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.bloodType }}</dt>
-            <dd>
-              {{
-                character.bloodType ? BLOOD_TYPE_LABELS[character.bloodType] : m.values.emptyValue
-              }}
-            </dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
-            <dd>{{ character.createdAt ? f.date(character.createdAt) : m.values.emptyValue }}</dd>
-          </dl>
-        </Section>
+                <TagCard
+                  v-if="tagLink.tag"
+                  :tag="tagLink.tag"
+                  variant="button"
+                  button-size="xs"
+                  @click="openEntity = { entityType: 'tag', entityId: tagLink.tag.id }"
+                />
+              </template>
+            </div>
+          </Section>
+        </div>
 
-        <Section
-          :title="m.library.detail.sections.physique"
-          editable
-          :empty="!hasPhysique"
-          :empty-text="m.library.detail.empty.physique"
-          @edit="openEditDialog('physique')"
-        >
-          <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
-            <dt class="text-muted-foreground">{{ m.library.fields.height }}</dt>
-            <dd>{{ character.height !== null ? `${character.height}cm` : m.values.emptyValue }}</dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.weight }}</dt>
-            <dd>{{ character.weight !== null ? `${character.weight}kg` : m.values.emptyValue }}</dd>
-            <dt class="text-muted-foreground">{{ m.library.fields.measurements }}</dt>
-            <dd>{{ threeSizes ?? m.values.emptyValue }}</dd>
-            <!--
+        <!-- Right column: Details, Physique, Related Persons, Voice credits, Related Sites -->
+        <div class="space-y-6 min-w-0">
+          <Section
+            :title="m.library.detail.sections.details"
+            editable
+            @edit="openEditDialog('details')"
+          >
+            <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
+              <dt class="text-muted-foreground">{{ m.library.fields.aliases }}</dt>
+              <!-- One name per line: a name is atomic and must not wrap mid-word. -->
+              <dd
+                v-if="aliases.length > 0"
+                class="min-w-0 space-y-0.5"
+              >
+                <div
+                  v-for="alias in aliases"
+                  :key="alias"
+                  class="wrap-break-word"
+                >
+                  {{ alias }}
+                </div>
+              </dd>
+              <dd v-else>{{ m.values.emptyValue }}</dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.gender }}</dt>
+              <dd>
+                {{ character.gender ? GENDER_LABELS[character.gender] : m.values.emptyValue }}
+              </dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.birthDate }}</dt>
+              <dd>{{ character.birthDate ? f.date(character.birthDate) : m.values.emptyValue }}</dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.age }}</dt>
+              <dd>
+                {{
+                  character.age !== null
+                    ? m.library.detail.ageValue({ age: character.age })
+                    : m.values.emptyValue
+                }}
+              </dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.bloodType }}</dt>
+              <dd>
+                {{
+                  character.bloodType ? BLOOD_TYPE_LABELS[character.bloodType] : m.values.emptyValue
+                }}
+              </dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
+              <dd>{{ character.createdAt ? f.date(character.createdAt) : m.values.emptyValue }}</dd>
+            </dl>
+          </Section>
+
+          <Section
+            :title="m.library.detail.sections.physique"
+            editable
+            :empty="!hasPhysique"
+            :empty-text="m.library.detail.empty.physique"
+            @edit="openEditDialog('physique')"
+          >
+            <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
+              <dt class="text-muted-foreground">{{ m.library.fields.height }}</dt>
+              <dd>
+                {{ character.height !== null ? `${character.height}cm` : m.values.emptyValue }}
+              </dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.weight }}</dt>
+              <dd>
+                {{ character.weight !== null ? `${character.weight}kg` : m.values.emptyValue }}
+              </dd>
+              <dt class="text-muted-foreground">{{ m.library.fields.measurements }}</dt>
+              <dd>{{ threeSizes ?? m.values.emptyValue }}</dd>
+              <!--
               Cup applies to a subset of characters, so an empty value means
               inapplicable rather than unknown; the row renders only when filled.
             -->
-            <template v-if="character.cup">
-              <dt class="text-muted-foreground">{{ m.library.fields.cup }}</dt>
-              <dd>{{ character.cup.toUpperCase() }}</dd>
-            </template>
-          </dl>
-        </Section>
+              <template v-if="character.cup">
+                <dt class="text-muted-foreground">{{ m.library.fields.cup }}</dt>
+                <dd>{{ character.cup.toUpperCase() }}</dd>
+              </template>
+            </dl>
+          </Section>
 
-        <Section
-          :title="m.library.fields.relatedPersons"
-          editable
-          :empty="!hasPersons"
-          :empty-text="m.library.detail.empty.relatedPersons"
-          @edit="openEditDialog('persons')"
-        >
-          <div class="space-y-2 text-sm">
-            <template
-              v-for="role in CHARACTER_PERSON_ROLE_VALUES"
-              :key="role"
-            >
-              <div v-if="groupedPersons[role]?.length">
-                <div class="text-muted-foreground text-xs mb-1">
-                  {{ PERSON_ROLE_LABELS[role] || role }}
+          <Section
+            :title="m.library.fields.relatedPersons"
+            editable
+            :empty="!hasPersons"
+            :empty-text="m.library.detail.empty.relatedPersons"
+            @edit="openEditDialog('persons')"
+          >
+            <div class="space-y-2 text-sm">
+              <template
+                v-for="role in CHARACTER_PERSON_ROLE_VALUES"
+                :key="role"
+              >
+                <div v-if="groupedPersons[role]?.length">
+                  <div class="text-muted-foreground text-xs mb-1">
+                    {{ PERSON_ROLE_LABELS[role] || role }}
+                  </div>
+                  <div class="flex flex-wrap gap-x-1 gap-y-0.5">
+                    <template
+                      v-for="(link, index) in groupedPersons[role]"
+                      :key="link.id"
+                    >
+                      <span class="inline-flex items-center max-w-full min-w-0">
+                        <PersonCard
+                          v-if="link.person"
+                          :person="link.person"
+                          variant="button"
+                          button-variant="link"
+                          button-size="xs"
+                          @click="openEntity = { entityType: 'person', entityId: link.person.id }"
+                        />
+                        <span
+                          v-if="index < groupedPersons[role]!.length - 1"
+                          class="text-muted-foreground/50"
+                          >,</span
+                        >
+                      </span>
+                    </template>
+                  </div>
                 </div>
-                <div class="flex flex-wrap gap-x-1 gap-y-0.5">
-                  <template
-                    v-for="(link, index) in groupedPersons[role]"
-                    :key="link.id"
-                  >
-                    <span class="inline-flex items-center max-w-full min-w-0">
-                      <PersonCard
-                        v-if="link.person"
-                        :person="link.person"
-                        variant="button"
-                        button-variant="link"
-                        button-size="xs"
-                        @click="openEntity = { entityType: 'person', entityId: link.person.id }"
-                      />
-                      <span
-                        v-if="index < groupedPersons[role]!.length - 1"
-                        class="text-muted-foreground/50"
-                        >,</span
-                      >
-                    </span>
-                  </template>
-                </div>
-              </div>
-            </template>
-          </div>
-        </Section>
+              </template>
+            </div>
+          </Section>
 
-        <!--
+          <!--
           Where the character is actually voiced, entry by entry. The list above
           says who voices them at all; this says where that was credited, which
           is what makes a recast visible.
         -->
-        <Section
-          :title="m.library.fields.voiceCredits"
-          :empty="!hasCast"
-          :empty-text="m.library.detail.empty.voiceCredits"
-        >
-          <div class="space-y-1.5 text-sm">
-            <div
-              v-for="credit in cast"
-              :key="credit.id"
-              class="flex items-baseline gap-2 min-w-0"
-            >
-              <button
-                type="button"
-                class="text-primary hover:underline truncate"
-                @click="openEntity = { entityType: credit.mediaType, entityId: credit.mediaId }"
+          <Section
+            :title="m.library.fields.voiceCredits"
+            :empty="!hasCast"
+            :empty-text="m.library.detail.empty.voiceCredits"
+          >
+            <div class="space-y-1.5 text-sm">
+              <div
+                v-for="credit in cast"
+                :key="credit.id"
+                class="flex items-baseline gap-2 min-w-0"
               >
-                {{ credit.mediaName }}
-              </button>
-              <span
-                v-if="credit.person"
-                class="text-muted-foreground text-xs truncate"
-              >
-                {{ credit.person.name }}
-              </span>
+                <button
+                  type="button"
+                  class="text-primary hover:underline truncate"
+                  @click="openEntity = { entityType: credit.mediaType, entityId: credit.mediaId }"
+                >
+                  {{ credit.mediaName }}
+                </button>
+                <span
+                  v-if="credit.person"
+                  class="text-muted-foreground text-xs truncate"
+                >
+                  {{ credit.person.name }}
+                </span>
+              </div>
             </div>
-          </div>
-        </Section>
+          </Section>
 
-        <Section
-          :title="m.library.fields.externalSites"
-          editable
-          :empty="!hasExternalSites"
-          :empty-text="m.library.detail.empty.externalSites"
-          @edit="openEditDialog('sites')"
-        >
-          <div class="flex flex-col gap-1.5">
-            <a
-              v-for="(site, index) in character.externalSites"
-              :key="index"
-              :href="site.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              <Icon
-                icon="icon-[mdi--open-in-new]"
-                class="size-3.5"
-              />
-              {{ site.label }}
-            </a>
-          </div>
-        </Section>
+          <Section
+            :title="m.library.fields.externalSites"
+            editable
+            :empty="!hasExternalSites"
+            :empty-text="m.library.detail.empty.externalSites"
+            @edit="openEditDialog('sites')"
+          >
+            <div class="flex flex-col gap-1.5">
+              <a
+                v-for="(site, index) in character.externalSites"
+                :key="index"
+                :href="site.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex min-w-0 items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Icon
+                  icon="icon-[mdi--open-in-new]"
+                  class="size-3.5 shrink-0"
+                />
+                <span class="truncate">{{ site.label }}</span>
+              </a>
+            </div>
+          </Section>
+        </div>
       </div>
     </div>
 

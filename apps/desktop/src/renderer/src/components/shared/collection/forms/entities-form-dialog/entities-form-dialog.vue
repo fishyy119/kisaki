@@ -263,7 +263,7 @@ const entityTypeModel = computed({
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <!-- Loading state -->
       <template v-if="state === 'loading'">
         <DialogBody>
@@ -278,7 +278,7 @@ const entityTypeModel = computed({
         <DialogHeader>
           <DialogTitle>{{ m.library.forms.editCollectionEntities }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <!-- Entity type tabs -->
           <SegmentedControl
             v-model="entityTypeModel"

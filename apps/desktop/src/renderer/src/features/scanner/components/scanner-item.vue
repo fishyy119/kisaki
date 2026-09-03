@@ -227,7 +227,7 @@ async function handleOpenPath() {
     :class="cn('relative h-11 border-border/50 hover:bg-accent/30', isBusy && 'bg-primary/5')"
   >
     <!-- Name column -->
-    <TableCell class="pl-4">
+    <TableCell>
       <!-- Progress bar overlay while a run is active; positioned by the row -->
       <div
         v-if="showProgressOverlay"
@@ -281,20 +281,20 @@ async function handleOpenPath() {
     </TableCell>
 
     <!-- Type column -->
-    <TableCell class="relative text-center">
+    <TableCell class="relative">
       <span class="text-sm">{{ getTypeText(props.scanner.type) }}</span>
     </TableCell>
 
     <!-- Profile column -->
-    <TableCell class="relative text-center">
-      <span class="block truncate text-sm text-muted-foreground">
+    <TableCell class="relative">
+      <span class="block truncate text-sm">
         {{ props.scraperProfileName || '-' }}
       </span>
     </TableCell>
 
     <!-- Collection column -->
-    <TableCell class="relative text-center">
-      <span class="block truncate text-sm text-muted-foreground">
+    <TableCell class="relative">
+      <span class="block truncate text-sm">
         {{ props.targetCollectionName || '-' }}
       </span>
     </TableCell>
@@ -346,7 +346,7 @@ async function handleOpenPath() {
     </TableCell>
 
     <!-- Actions column -->
-    <TableCell class="relative pr-4">
+    <TableCell class="relative">
       <div class="flex items-center justify-end gap-0.5">
         <Button
           v-if="scannerState && issueCount > 0"

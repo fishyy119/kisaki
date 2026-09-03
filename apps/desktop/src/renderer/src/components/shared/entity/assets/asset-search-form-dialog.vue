@@ -131,7 +131,7 @@ watch(selectedProviderId, () => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-3xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ m.library.forms.searchMediaTitle({ label: slot.label(m) }) }}</DialogTitle>
       </DialogHeader>
@@ -154,7 +154,7 @@ watch(selectedProviderId, () => {
             v-model="selectedProviderId"
             :entity-type="props.entityType"
             :required-capabilities="[slot.searchCapability]"
-            class="w-[140px]"
+            class="w-40"
           />
 
           <Input
@@ -185,7 +185,7 @@ watch(selectedProviderId, () => {
         </div>
 
         <!-- Image grid -->
-        <DialogBody class="max-h-[60vh] pt-0">
+        <DialogBody class="pt-0">
           <StateView
             v-if="!hasSearched"
             state="empty"

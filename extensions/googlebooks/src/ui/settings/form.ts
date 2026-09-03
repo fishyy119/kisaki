@@ -27,7 +27,5 @@ export function settingsFormsEqual(
   first: GbooksSettingsFormState,
   second: GbooksSettingsFormState
 ): boolean {
-  return (
-    first.timeoutSeconds === second.timeoutSeconds && first.retryCount === second.retryCount
-  )
+  return first.timeoutSeconds === second.timeoutSeconds && first.retryCount === second.retryCount
 }

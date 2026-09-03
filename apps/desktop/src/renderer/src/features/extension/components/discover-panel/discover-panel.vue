@@ -195,7 +195,7 @@ watch(detailsOpen, (open) => {
 
       <template v-else>
         <!-- Grid - no container borders -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        <div class="grid grid-cols-1 @2xl:grid-cols-2 @7xl:grid-cols-3">
           <ExtensionDiscoverPanelCard
             v-for="extension in results"
             :key="extension.id"

@@ -165,7 +165,7 @@ function diagnosticSeverityClass(severity: string): string {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <div class="flex items-start gap-3 min-w-0">
           <img
@@ -192,13 +192,13 @@ function diagnosticSeverityClass(severity: string): string {
         </div>
       </DialogHeader>
 
-      <DialogBody class="max-h-[65vh] space-y-5">
+      <DialogBody class="space-y-5">
         <section class="space-y-2">
           <div class="text-sm font-medium">{{ m.extension.installed.details.basicInfo }}</div>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
-            <div class="min-w-0 sm:col-span-2">
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-xs @lg:grid-cols-2">
+            <div class="min-w-0 @lg:col-span-2">
               <dt class="text-muted-foreground">{{ m.extension.installed.details.extensionId }}</dt>
-              <dd class="font-mono break-all select-text">{{ props.extension.id }}</dd>
+              <dd class="font-mono wrap-anywhere select-text">{{ props.extension.id }}</dd>
             </div>
             <div class="min-w-0">
               <dt class="text-muted-foreground">{{ m.extension.installed.details.version }}</dt>
@@ -221,7 +221,7 @@ function diagnosticSeverityClass(severity: string): string {
             </div>
             <div
               v-if="props.extension.homepage"
-              class="min-w-0 sm:col-span-2"
+              class="min-w-0 @lg:col-span-2"
             >
               <dt class="text-muted-foreground">{{ m.extension.installed.details.homepage }}</dt>
               <dd>
@@ -240,7 +240,7 @@ function diagnosticSeverityClass(severity: string): string {
 
         <section class="space-y-2">
           <div class="text-sm font-medium">{{ m.extension.installed.details.status }}</div>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-xs @lg:grid-cols-2">
             <div class="min-w-0">
               <dt class="text-muted-foreground">
                 {{ m.extension.installed.details.enabledStatus }}
@@ -267,12 +267,12 @@ function diagnosticSeverityClass(severity: string): string {
             </div>
             <div
               v-if="props.extension.runtimeError"
-              class="min-w-0 sm:col-span-2"
+              class="min-w-0 @lg:col-span-2"
             >
               <dt class="text-muted-foreground">
                 {{ m.extension.installed.details.runtimeError }}
               </dt>
-              <dd class="break-words text-destructive">{{ props.extension.runtimeError }}</dd>
+              <dd class="wrap-break-word text-destructive">{{ props.extension.runtimeError }}</dd>
             </div>
           </dl>
         </section>
@@ -281,7 +281,7 @@ function diagnosticSeverityClass(severity: string): string {
           <div class="text-sm font-medium">
             {{ m.extension.installed.details.installationSource }}
           </div>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-xs @lg:grid-cols-2">
             <div class="min-w-0">
               <dt class="text-muted-foreground">{{ m.extension.installed.details.sourceType }}</dt>
               <dd>{{ sourceKindLabel }}</dd>
@@ -291,9 +291,11 @@ function diagnosticSeverityClass(severity: string): string {
                 <dt class="text-muted-foreground">
                   {{ m.extension.installed.details.repository }}
                 </dt>
-                <dd class="font-mono break-all select-text">{{ repositorySource.repositoryId }}</dd>
+                <dd class="font-mono wrap-anywhere select-text">
+                  {{ repositorySource.repositoryId }}
+                </dd>
               </div>
-              <div class="min-w-0 sm:col-span-2">
+              <div class="min-w-0 @lg:col-span-2">
                 <dt class="text-muted-foreground">
                   {{ m.extension.installed.details.repositoryUrl }}
                 </dt>
@@ -302,42 +304,44 @@ function diagnosticSeverityClass(severity: string): string {
                     :href="repositorySource.repositoryUrl"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="block break-all text-primary hover:underline"
+                    class="block wrap-anywhere text-primary hover:underline"
                   >
                     {{ repositorySource.repositoryUrl }}
                   </a>
                 </dd>
               </div>
-              <div class="min-w-0 sm:col-span-2">
+              <div class="min-w-0 @lg:col-span-2">
                 <dt class="text-muted-foreground">
                   {{ m.extension.installed.details.releaseDigest }}
                 </dt>
-                <dd class="font-mono break-all select-text">{{ repositorySource.releaseId }}</dd>
+                <dd class="font-mono wrap-anywhere select-text">
+                  {{ repositorySource.releaseId }}
+                </dd>
               </div>
-              <div class="min-w-0 sm:col-span-2">
+              <div class="min-w-0 @lg:col-span-2">
                 <dt class="text-muted-foreground">
                   {{ m.extension.installed.details.manifestDigest }}
                 </dt>
-                <dd class="font-mono break-all select-text">
+                <dd class="font-mono wrap-anywhere select-text">
                   {{ repositorySource.manifestDigest }}
                 </dd>
               </div>
-              <div class="min-w-0 sm:col-span-2">
+              <div class="min-w-0 @lg:col-span-2">
                 <dt class="text-muted-foreground">
                   {{ m.extension.installed.details.artifactSha256 }}
                 </dt>
-                <dd class="font-mono break-all select-text">
+                <dd class="font-mono wrap-anywhere select-text">
                   {{ repositorySource.artifact.sha256 }}
                 </dd>
               </div>
               <div
                 v-if="repositorySource.signature?.fingerprint"
-                class="min-w-0 sm:col-span-2"
+                class="min-w-0 @lg:col-span-2"
               >
                 <dt class="text-muted-foreground">
                   {{ m.extension.installed.details.signerFingerprint }}
                 </dt>
-                <dd class="font-mono break-all select-text">
+                <dd class="font-mono wrap-anywhere select-text">
                   {{ repositorySource.signature.fingerprint }}
                 </dd>
               </div>
@@ -361,22 +365,22 @@ function diagnosticSeverityClass(severity: string): string {
               </div>
             </template>
             <template v-else-if="localFileSource">
-              <div class="min-w-0 sm:col-span-2">
+              <div class="min-w-0 @lg:col-span-2">
                 <dt class="text-muted-foreground">{{ m.extension.installed.details.file }}</dt>
-                <dd class="break-all select-text">{{ localFileSource.path }}</dd>
+                <dd class="wrap-anywhere select-text">{{ localFileSource.path }}</dd>
               </div>
-              <div class="min-w-0 sm:col-span-2">
+              <div class="min-w-0 @lg:col-span-2">
                 <dt class="text-muted-foreground">
                   {{ m.extension.installed.details.artifactSha256 }}
                 </dt>
-                <dd class="font-mono break-all select-text">
+                <dd class="font-mono wrap-anywhere select-text">
                   {{ localFileSource.artifactSha256 }}
                 </dd>
               </div>
             </template>
-            <div class="min-w-0 sm:col-span-2">
+            <div class="min-w-0 @lg:col-span-2">
               <dt class="text-muted-foreground">{{ m.extension.installed.details.installDir }}</dt>
-              <dd class="break-all select-text">{{ props.extension.directory }}</dd>
+              <dd class="wrap-anywhere select-text">{{ props.extension.directory }}</dd>
             </div>
           </dl>
         </section>
@@ -386,7 +390,7 @@ function diagnosticSeverityClass(severity: string): string {
           class="space-y-2"
         >
           <div class="text-sm font-medium">{{ m.extension.installed.details.updateConfig }}</div>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-xs @lg:grid-cols-2">
             <div class="min-w-0">
               <dt class="text-muted-foreground">
                 {{ m.extension.installed.details.updatePolicy }}
@@ -420,7 +424,7 @@ function diagnosticSeverityClass(severity: string): string {
             <li
               v-for="issue in props.extension.issues"
               :key="issue"
-              class="break-words"
+              class="wrap-break-word"
             >
               {{ issue }}
             </li>
@@ -450,10 +454,10 @@ function diagnosticSeverityClass(severity: string): string {
                 <span class="text-muted-foreground">{{ diagnostic.source }}</span>
                 <span class="text-muted-foreground">{{ formatDate(diagnostic.createdAt) }}</span>
               </div>
-              <div class="break-words">{{ diagnostic.message }}</div>
+              <div class="wrap-break-word">{{ diagnostic.message }}</div>
               <div
                 v-if="diagnostic.details"
-                class="break-words text-muted-foreground"
+                class="wrap-break-word text-muted-foreground"
               >
                 {{ diagnostic.details }}
               </div>

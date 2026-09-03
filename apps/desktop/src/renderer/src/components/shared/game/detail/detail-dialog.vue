@@ -131,7 +131,10 @@ const canOpenGameDir = computed(() => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl max-h-[90vh] flex flex-col">
+    <DialogContent
+      size="xl"
+      fill
+    >
       <!-- Loading / Error / Not Found -->
       <template v-if="state !== 'success'">
         <DialogBody>
@@ -141,7 +144,7 @@ const canOpenGameDir = computed(() => {
             :icon="getEntityIcon('game')"
             :title="m.library.detail.notFoundTitle({ label: m.library.entities.game })"
             :description="m.library.detail.notFoundDescription({ label: m.library.entities.game })"
-            class="py-12"
+            class="h-full"
           />
         </DialogBody>
       </template>
@@ -149,11 +152,7 @@ const canOpenGameDir = computed(() => {
       <!-- Loaded Content -->
       <template v-else-if="game">
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
-            <Icon
-              :icon="getEntityIcon('game')"
-              class="size-4 text-muted-foreground"
-            />
+          <DialogTitle :icon="getEntityIcon('game')">
             {{ game.name }}
           </DialogTitle>
         </DialogHeader>

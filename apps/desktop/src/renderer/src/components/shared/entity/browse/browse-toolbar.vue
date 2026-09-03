@@ -116,18 +116,18 @@ const sortDirectionModel = computed({
         {{ m.values.itemCount({ count: props.filteredCount }) }}
       </span>
 
-      <div class="flex-1" />
-
-      <SortControl
-        v-model:field="sortFieldModel"
-        v-model:direction="sortDirectionModel"
-        :options="sortOptions"
-        size="sm"
-      />
-      <FilterTrigger
-        v-model="filterModel"
-        :ui-spec="uiSpec"
-      />
+      <template #trailing>
+        <SortControl
+          v-model:field="sortFieldModel"
+          v-model:direction="sortDirectionModel"
+          :options="sortOptions"
+          size="sm"
+        />
+        <FilterTrigger
+          v-model="filterModel"
+          :ui-spec="uiSpec"
+        />
+      </template>
     </ToolbarRow>
   </Toolbar>
 </template>

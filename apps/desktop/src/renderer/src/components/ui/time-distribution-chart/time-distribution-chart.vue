@@ -33,7 +33,7 @@ import type {
 // =============================================================================
 
 const props = withDefaults(defineProps<TimeDistributionChartProps>(), {
-  height: 200,
+  height: '14rem',
   availableTypes: () => ['hourly', 'weekday', 'dayOfMonth']
 })
 
@@ -180,7 +180,7 @@ const insight = computed(() => {
       </div>
     </div>
 
-    <div :style="{ height: `${props.height}px` }">
+    <div :style="{ height: props.height }">
       <ChartContainer :config="chartConfig">
         <VisXYContainer
           :data="chartData"

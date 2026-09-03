@@ -254,7 +254,7 @@ function handleClose() {
     v-if="state === 'loading'"
     v-model:open="open"
   >
-    <DialogContent class="max-w-2xl">
+    <DialogContent size="lg">
       <StateView
         state="loading"
         class="py-12"
@@ -265,12 +265,12 @@ function handleClose() {
   <!-- Main content -->
   <template v-else>
     <Dialog v-model:open="open">
-      <DialogContent class="max-w-lg">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{{ m.library.showcase.manage.title }}</DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <div class="space-y-1">
             <StateView
               v-if="items.length === 0"

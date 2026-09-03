@@ -13,11 +13,12 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
+import { Table, TableBody, type TableColumn } from '@renderer/components/ui/table'
 import { Toolbar, ToolbarRow } from '@renderer/components/ui/toolbar'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { cn } from '@renderer/utils/cn'
+import { remToPx } from '@renderer/core/interface-scale'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useTaskRunStore } from '@renderer/stores'
@@ -36,8 +37,20 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-const ACTIVE_RUN_TABLE_COLUMNS = ['32%', '', '6rem', '8.25rem']
-const COMPLETED_RUN_TABLE_COLUMNS = ['32%', '', '6rem', '4rem']
+// Four columns fit the narrowest dialog body (about 38rem): no reflow needed,
+// and the completed list is virtualized, which needs uniform rows anyway.
+const activeColumns = computed<TableColumn[]>(() => [
+  { label: m.value.task.table.task, width: '32%' },
+  { label: m.value.task.table.progress },
+  { label: m.value.task.table.status, width: '6rem' },
+  { label: m.value.task.table.actions, width: '8.25rem', align: 'end', role: 'actions' }
+])
+const completedColumns = computed<TableColumn[]>(() => [
+  { label: m.value.task.table.task, width: '32%' },
+  { label: m.value.task.table.result },
+  { label: m.value.task.table.status, width: '6rem' },
+  { label: m.value.task.table.actions, width: '4rem', align: 'end', role: 'actions' }
+])
 
 const store = useTaskRunStore()
 const { activeRuns, completedRuns, activeCount, completedCount, refreshing, error } =
@@ -80,18 +93,19 @@ const filteredCompletedRuns = computed(() =>
 // the row component (h-16 plus its bottom border).
 // =============================================================================
 
-/** Must match CompletedTaskRunRow's fixed height: h-16 (64px) + 1px border. */
-const COMPLETED_ROW_HEIGHT_PX = 65
+/** Must match CompletedTaskRunRow's fixed height: h-16 plus its 1px bottom border. */
+const COMPLETED_ROW_HEIGHT_REM = 4
 
 const completedTable = useTemplateRef<InstanceType<typeof Table>>('completedTable')
 
 const completedVirtualizer = useVirtualizer(
   computed(() => {
     const scrollElement = completedTable.value?.scrollElement ?? null
+    const rowHeight = remToPx(COMPLETED_ROW_HEIGHT_REM) + 1
     return {
       count: filteredCompletedRuns.value.length,
       getScrollElement: () => scrollElement,
-      estimateSize: () => COMPLETED_ROW_HEIGHT_PX,
+      estimateSize: () => rowHeight,
       overscan: 8
     }
   })
@@ -250,7 +264,10 @@ async function handleCancel(run: TaskRun): Promise<void> {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="w-[min(calc(100vw-2rem),980px)] max-w-none">
+    <DialogContent
+      size="xl"
+      fill
+    >
       <DialogHeader>
         <DialogTitle>{{ m.task.center }}</DialogTitle>
       </DialogHeader>
@@ -258,7 +275,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
       <DialogBody class="overflow-hidden p-0">
         <Tabs
           v-model="selectedTab"
-          class="flex h-[min(72vh,660px)] min-h-[420px] flex-col gap-0 overflow-hidden"
+          class="flex h-full flex-col gap-0 overflow-hidden"
         >
           <!-- Band shared by both tabs: the scope row, then the selected tab's query row -->
           <Toolbar>
@@ -310,20 +327,10 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 <Table
                   v-else
                   fixed-header
-                  :columns="ACTIVE_RUN_TABLE_COLUMNS"
+                  inset
+                  :columns="activeColumns"
                   body-class="overflow-x-hidden"
                 >
-                  <template #header>
-                    <TableHeader>
-                      <TableRow class="h-8">
-                        <TableHead class="pl-4">{{ m.task.table.task }}</TableHead>
-                        <TableHead>{{ m.task.table.progress }}</TableHead>
-                        <TableHead>{{ m.task.table.status }}</TableHead>
-                        <TableHead class="pr-4 text-right">{{ m.task.table.actions }}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                  </template>
-
                   <TableBody>
                     <ActiveTaskRunRow
                       v-for="run in filteredActiveRuns"
@@ -361,20 +368,10 @@ async function handleCancel(run: TaskRun): Promise<void> {
                   <Table
                     ref="completedTable"
                     fixed-header
-                    :columns="COMPLETED_RUN_TABLE_COLUMNS"
+                    inset
+                    :columns="completedColumns"
                     body-class="overflow-x-hidden"
                   >
-                    <template #header>
-                      <TableHeader>
-                        <TableRow class="h-8">
-                          <TableHead class="pl-4">{{ m.task.table.task }}</TableHead>
-                          <TableHead>{{ m.task.table.result }}</TableHead>
-                          <TableHead>{{ m.task.table.status }}</TableHead>
-                          <TableHead class="pr-4 text-right">{{ m.task.table.actions }}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                    </template>
-
                     <TableBody>
                       <tr
                         v-if="completedPadTop > 0"

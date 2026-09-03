@@ -113,21 +113,21 @@ async function handleDeleteVolume(): Promise<void> {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="flex max-h-[85vh] max-w-2xl flex-col">
+    <DialogContent size="lg">
       <template v-if="volume">
         <DialogHeader>
-          <DialogTitle class="flex min-w-0 items-center gap-2">
+          <DialogTitle>
             <span
               v-if="volume.volumeNumber !== null"
-              class="shrink-0 font-mono text-muted-foreground"
+              class="font-mono text-muted-foreground"
             >
               {{ formatUnitNumber(volume.volumeNumber) }}
             </span>
-            <span class="truncate">{{ title }}</span>
+            {{ title }}
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="min-h-0 flex-1 space-y-4">
+        <DialogBody class="space-y-4">
           <!-- Cover (display only; edited through the volume form) -->
           <div
             v-if="coverUrl"

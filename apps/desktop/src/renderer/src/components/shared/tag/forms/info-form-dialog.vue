@@ -125,7 +125,7 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-xl">
+    <DialogContent size="md">
       <!-- Loading state -->
       <DialogBody v-if="isLoading || !tag">
         <StateView
@@ -140,7 +140,7 @@ async function handleSubmit() {
           <DialogTitle>{{ m.library.forms.editTags }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh]">
+          <DialogBody>
             <FieldGroup>
               <Field>
                 <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
@@ -158,8 +158,8 @@ async function handleSubmit() {
                   <MarkdownEditor
                     v-model="formData.description"
                     :placeholder="m.library.forms.tagDescriptionPlaceholder"
-                    min-height="140px"
-                    max-height="200px"
+                    min-height="10rem"
+                    max-height="14rem"
                   />
                 </FieldContent>
               </Field>

@@ -61,12 +61,12 @@ const { m } = useI18n()
         <span class="line-clamp-1 text-xs">
           {{ props.unitLabels[bookmark.chapterId] ?? m.reader.units.comicLabel }}
         </span>
-        <span class="text-[11px] tabular-nums text-muted-foreground">
+        <span class="text-xs tabular-nums text-muted-foreground">
           {{ m.reader.marks.page({ page: bookmark.pageIndex + 1 }) }}
         </span>
         <span
           v-if="bookmark.note"
-          class="mt-0.5 line-clamp-2 block text-[11px] text-muted-foreground"
+          class="mt-0.5 line-clamp-2 block text-xs text-muted-foreground"
         >
           {{ bookmark.note }}
         </span>

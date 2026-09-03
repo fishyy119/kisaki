@@ -159,11 +159,11 @@ function handleSave() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{ m.scanner.rules.title }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh]">
+      <DialogBody>
         <StateView
           v-if="localRules.length === 0"
           state="empty"

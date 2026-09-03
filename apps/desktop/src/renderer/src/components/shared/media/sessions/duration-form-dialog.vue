@@ -225,7 +225,7 @@ const minutesModel = computed({
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg max-h-[80vh] flex flex-col">
+    <DialogContent size="md">
       <!-- Loading state -->
       <template v-if="isLoading || !data">
         <DialogBody>
@@ -284,7 +284,7 @@ const minutesModel = computed({
         <div class="px-4 py-2 text-sm font-medium text-muted-foreground border-b">
           {{ labels.sessionsHeader({ count: sessions.length }) }}
         </div>
-        <DialogBody class="space-y-1 max-h-[40vh]">
+        <DialogBody class="space-y-1">
           <StateView
             v-if="sessions.length === 0"
             state="empty"

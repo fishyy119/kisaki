@@ -165,7 +165,7 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <!-- Loading state -->
       <template v-if="isLoading || !person">
         <DialogBody>
@@ -182,7 +182,7 @@ function handleCancel() {
           <DialogTitle>{{ m.library.forms.editDetails }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh]">
+          <DialogBody>
             <FieldGroup>
               <Field>
                 <FieldLabel>{{ m.library.fields.sortName }}</FieldLabel>

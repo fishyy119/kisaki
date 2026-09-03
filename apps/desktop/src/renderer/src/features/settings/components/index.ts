@@ -1,2 +1,2 @@
 // Settings feature components
-export { default as SettingsFormDialog } from './settings-form-dialog.vue'
+export { default as SettingsDialog } from './settings-dialog.vue'

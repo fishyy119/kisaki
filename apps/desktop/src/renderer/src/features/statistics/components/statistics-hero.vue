@@ -401,7 +401,7 @@ const facts = computed<HeroFact[]>(() => [...reportFacts.value, ...unitFacts.val
               <TooltipContent>
                 <div class="flex items-center gap-2">
                   <span
-                    class="size-2.5 shrink-0 rounded-[2px]"
+                    class="size-2.5 shrink-0 rounded-xs"
                     :style="{ backgroundColor: segment.fill }"
                   />
                   <span>{{ segment.name }}</span>

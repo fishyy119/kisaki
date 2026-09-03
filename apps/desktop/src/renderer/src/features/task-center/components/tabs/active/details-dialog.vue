@@ -51,24 +51,22 @@ const metadata = computed(() => [
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl">
+    <DialogContent size="xl">
       <DialogHeader>
-        <DialogTitle class="flex min-w-0 items-center gap-2 pr-8">
-          <Icon
-            :icon="getTaskRunCategoryIcon(props.run.category)"
-            class="size-5 shrink-0"
-          />
-          <span class="truncate">{{ props.run.title }}</span>
-          <Badge
-            :variant="getTaskRunStatusVariant(props.run.status)"
-            class="h-5"
-          >
-            {{ formatTaskRunStatus(props.run.status) }}
-          </Badge>
+        <DialogTitle :icon="getTaskRunCategoryIcon(props.run.category)">
+          {{ props.run.title }}
+          <template #trailing>
+            <Badge
+              :variant="getTaskRunStatusVariant(props.run.status)"
+              class="h-5"
+            >
+              {{ formatTaskRunStatus(props.run.status) }}
+            </Badge>
+          </template>
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[72vh] space-y-4 overflow-x-hidden">
+      <DialogBody class="space-y-4 overflow-x-hidden">
         <section
           v-if="warnings.length"
           class="space-y-2"
@@ -91,7 +89,7 @@ const metadata = computed(() => [
                 >
                   {{ warning.code }}
                 </div>
-                <div class="break-words">{{ warning.message }}</div>
+                <div class="wrap-break-word">{{ warning.message }}</div>
               </div>
             </div>
           </div>
@@ -105,7 +103,7 @@ const metadata = computed(() => [
               class="col-span-2 min-w-0"
             >
               <div class="text-xs text-muted-foreground">{{ m.task.details.description }}</div>
-              <div class="break-words">{{ props.run.description }}</div>
+              <div class="wrap-break-word">{{ props.run.description }}</div>
             </div>
 
             <template
@@ -114,7 +112,7 @@ const metadata = computed(() => [
             >
               <div class="min-w-0">
                 <div class="text-xs text-muted-foreground">{{ item.label }}</div>
-                <div class="break-words">{{ item.value }}</div>
+                <div class="wrap-break-word">{{ item.value }}</div>
               </div>
             </template>
           </section>

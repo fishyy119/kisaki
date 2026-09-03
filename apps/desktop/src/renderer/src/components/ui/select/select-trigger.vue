@@ -22,7 +22,11 @@ const forwardedProps = useForwardProps(delegatedProps)
     v-bind="forwardedProps"
     :class="
       cn(
-        'flex w-fit items-center justify-between gap-2 rounded-md border bg-input border-border px-2 text-sm whitespace-nowrap transition-colors outline-none',
+        'flex w-fit min-w-0 items-center gap-2 rounded-md border bg-input border-border px-2 text-sm whitespace-nowrap transition-colors outline-none',
+        // The value never widens the trigger: callers size it, the text truncates.
+        // Leading content (an icon, the value) packs left; only the chevron is pushed to the end.
+        '*:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:truncate',
+        '*:data-[slot=select-value]:text-left',
         'data-[placeholder]:text-muted-foreground',
         'focus:border-primary',
         'disabled:cursor-not-allowed disabled:opacity-50',
@@ -36,7 +40,7 @@ const forwardedProps = useForwardProps(delegatedProps)
     <SelectIcon as-child>
       <Icon
         icon="icon-[mdi--chevron-down]"
-        class="size-3.5 opacity-50"
+        class="ml-auto size-3.5 opacity-50"
       />
     </SelectIcon>
   </SelectTrigger>

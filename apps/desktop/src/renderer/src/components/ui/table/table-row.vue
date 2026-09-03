@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
+import { provide, type HTMLAttributes } from 'vue'
 import { cn } from '@renderer/utils/cn'
+import { TableRowCellsKey } from './context'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']
 }>()
+
+let claimed = 0
+provide(TableRowCellsKey, { claim: () => claimed++ })
 </script>
 
 <template>

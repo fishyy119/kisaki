@@ -1,6 +1,8 @@
 <!--
 Reader navigation panel: docked beside the page rather than floating over it,
-so the page stays readable while browsing units, pages, or marks.
+so the page stays readable while browsing units, pages, or marks. Below the
+2xl step of the reader row (18rem of panel would leave the page less than
+24rem) it floats over the page instead; the shell provides the scrim.
 Boundary: it renders what the shell hands it and reports where the reader wants
 to go; navigation itself belongs to the engine.
 -->
@@ -42,7 +44,7 @@ const tabLabels = computed<Record<ReaderPanelTab, string>>(() => ({
 <template>
   <Tabs
     v-model="tab"
-    class="w-72 shrink-0 gap-0 overflow-hidden border-r border-border bg-surface"
+    class="w-72 shrink-0 gap-0 overflow-hidden border-r border-border bg-surface @max-2xl:absolute @max-2xl:inset-y-0 @max-2xl:left-0 @max-2xl:z-20 @max-2xl:bg-popover @max-2xl:shadow-overlay"
   >
     <TabsList
       v-if="props.tabs.length > 1"

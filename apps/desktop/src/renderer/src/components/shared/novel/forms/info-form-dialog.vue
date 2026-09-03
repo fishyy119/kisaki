@@ -146,7 +146,7 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <!-- Loading state -->
       <template v-if="isLoading || !novel">
         <DialogBody>

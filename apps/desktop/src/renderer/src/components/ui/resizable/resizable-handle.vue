@@ -13,8 +13,8 @@ const props = defineProps<Props>()
 const context = useResizable()
 
 const handleStyle = computed(() => ({
-  width: `${context.handleSize}px`,
-  left: `${context.leftWidth}px`
+  width: `${context.handleSizePx}px`,
+  left: `${context.leftWidthPx}px`
 }))
 </script>
 

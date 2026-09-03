@@ -5,18 +5,29 @@
  * Main scanner management page listing all configured scanners.
  */
 
+import { computed } from 'vue'
 import { useScanners } from '../composables'
 import { StateView } from '@renderer/components/ui/state-view'
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
+import { Table, TableBody, type TableColumn } from '@renderer/components/ui/table'
 import { ScannerHeader, ScannerEmptyState, ScannerItem } from '../components'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 // Data committed by the route query before the page mounts
 const { entries, error } = useScanners()
 
-const SCANNER_TABLE_COLUMNS = ['', '5rem', '13%', '13%', '10rem', '7rem', '10rem']
-
 const { m } = useI18n()
+
+// Reads as a table down to about 48rem (name 12 + fixed 32 + padding); below
+// the 4xl step the rows reflow into cards.
+const columns = computed<TableColumn[]>(() => [
+  { label: m.value.scanner.table.name },
+  { label: m.value.scanner.table.type, width: '5rem', align: 'center' },
+  { label: m.value.scanner.table.scraperProfile, width: '13%', align: 'center', tone: 'muted' },
+  { label: m.value.scanner.table.targetCollection, width: '13%', align: 'center', tone: 'muted' },
+  { label: m.value.scanner.table.newExisting, width: '10rem', align: 'center' },
+  { label: m.value.scanner.table.status, width: '7rem', align: 'center' },
+  { label: m.value.scanner.table.actions, width: '10rem', align: 'end', role: 'actions' }
+])
 </script>
 
 <template>
@@ -43,22 +54,10 @@ const { m } = useI18n()
       <Table
         v-else
         fixed-header
-        :columns="SCANNER_TABLE_COLUMNS"
+        inset
+        reflow-below="4xl"
+        :columns="columns"
       >
-        <template #header>
-          <TableHeader>
-            <TableRow class="h-8">
-              <TableHead class="pl-4">{{ m.scanner.table.name }}</TableHead>
-              <TableHead class="text-center">{{ m.scanner.table.type }}</TableHead>
-              <TableHead class="text-center">{{ m.scanner.table.scraperProfile }}</TableHead>
-              <TableHead class="text-center">{{ m.scanner.table.targetCollection }}</TableHead>
-              <TableHead class="text-center">{{ m.scanner.table.newExisting }}</TableHead>
-              <TableHead class="text-center">{{ m.scanner.table.status }}</TableHead>
-              <TableHead class="pr-4 text-right">{{ m.scanner.table.actions }}</TableHead>
-            </TableRow>
-          </TableHeader>
-        </template>
-
         <TableBody>
           <ScannerItem
             v-for="entry in entries"

@@ -26,7 +26,7 @@ const { m } = useI18n()
 const route = useRoute()
 
 const store = useLibraryExplorerStore()
-const { explorerWidth } = storeToRefs(store)
+const { explorerWidthRem } = storeToRefs(store)
 
 const isSearchOpen = ref(false)
 
@@ -65,6 +65,8 @@ onUnmounted(() => {
       />
 
       <template #actions>
+        <!-- One content-sized action, the same at every width: the shortcut hint
+             is part of the label, never hidden by the header's width -->
         <Button
           variant="secondary"
           size="sm"
@@ -76,7 +78,7 @@ onUnmounted(() => {
           />
           {{ m.library.pages.globalSearch }}
           <kbd
-            class="ml-2 -mr-1 p-0 pointer-events-none h-5 select-none items-center gap-1 rounded px-1.5 font-mono text-xs font-medium text-muted-foreground hidden sm:inline-flex"
+            class="pointer-events-none ml-2 -mr-1 inline-flex h-5 select-none items-center gap-1 rounded p-0 px-1.5 font-mono text-xs font-medium text-muted-foreground"
           >
             Ctrl F
           </kbd>
@@ -85,11 +87,13 @@ onUnmounted(() => {
     </PageHeader>
 
     <div class="flex-1 min-h-0">
+      <!-- Rail bounds in rem: the floor holds the seven-type scope row, the
+           ceiling keeps the content pane at its minimum on the window floor -->
       <ResizableLayout
-        v-model:left-width="explorerWidth"
-        :default-width="220"
-        :min-left-width="180"
-        :max-left-width="400"
+        v-model:left-width="explorerWidthRem"
+        :default-width="16"
+        :min-left-width="16"
+        :max-left-width="28"
         class="h-full"
       >
         <ResizablePanel position="left">

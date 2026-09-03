@@ -274,6 +274,27 @@
       "when": 1788334895664,
       "tag": "0038_media_relation_vocabulary",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "6",
+      "when": 1788422207035,
+      "tag": "0039_settings_ui_scale",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1788433932044,
+      "tag": "0040_settings_ui_scale_steps",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1788445279490,
+      "tag": "0041_settings_ui_scale_range",
+      "breakpoints": true
     }
   ]
 }

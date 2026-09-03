@@ -19,9 +19,8 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
+  TableRow,
+  type TableColumn
 } from '@renderer/components/ui/table'
 import type { Automation, AutomationRunHistoryRecord } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
@@ -53,7 +52,17 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-const HISTORY_TABLE_COLUMNS = ['8rem', '6rem', '9rem', '6rem', '']
+// Run history: a dense record grid, so a narrow dialog scrolls it sideways
+// (29rem of fixed columns plus a readable result preview) rather than
+// reflowing it.
+const HISTORY_TABLE_MIN_WIDTH = '40rem'
+const historyColumns = computed<TableColumn[]>(() => [
+  { label: m.value.automation.details.historyRun, width: '8rem' },
+  { label: m.value.automation.details.historyTrigger, width: '6rem', tone: 'muted' },
+  { label: m.value.automation.details.historyStartedAt, width: '9rem', tone: 'muted' },
+  { label: m.value.automation.details.historyDuration, width: '6rem', tone: 'muted' },
+  { label: m.value.automation.details.historyResult }
+])
 
 const commandTitle = computed(() => props.command?.title ?? props.automation.commandId)
 const sourceLabel = computed(() =>
@@ -121,32 +130,30 @@ function openRunResult(record: AutomationRunHistoryRecord) {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-4xl">
+    <DialogContent size="xl">
       <DialogHeader>
-        <DialogTitle class="flex min-w-0 items-center gap-2 pr-8">
-          <Icon
-            icon="icon-[mdi--timer-outline]"
-            class="size-5 shrink-0"
-          />
-          <span class="truncate">{{ props.automation.name }}</span>
-          <Badge
-            v-if="props.running"
-            variant="default"
-            class="h-5"
-          >
-            {{ m.automation.details.running }}
-          </Badge>
-          <Badge
-            v-if="!props.running && latestRun"
-            :variant="getRunStatusVariant(latestRun.invocationStatus)"
-            class="h-5"
-          >
-            {{ getRunStatusLabel(latestRun.invocationStatus) }}
-          </Badge>
+        <DialogTitle icon="icon-[mdi--timer-outline]">
+          {{ props.automation.name }}
+          <template #trailing>
+            <Badge
+              v-if="props.running"
+              variant="default"
+              class="h-5"
+            >
+              {{ m.automation.details.running }}
+            </Badge>
+            <Badge
+              v-if="!props.running && latestRun"
+              :variant="getRunStatusVariant(latestRun.invocationStatus)"
+              class="h-5"
+            >
+              {{ getRunStatusLabel(latestRun.invocationStatus) }}
+            </Badge>
+          </template>
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[72vh] space-y-4">
+      <DialogBody class="space-y-4">
         <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div class="min-w-0">
             <div class="text-xs text-muted-foreground">{{ m.automation.details.command }}</div>
@@ -237,21 +244,10 @@ function openRunResult(record: AutomationRunHistoryRecord) {
           >
             <Table
               fixed-header
-              :columns="HISTORY_TABLE_COLUMNS"
+              :columns="historyColumns"
+              :min-width="HISTORY_TABLE_MIN_WIDTH"
               body-class="max-h-80"
             >
-              <template #header>
-                <TableHeader>
-                  <TableRow class="h-8">
-                    <TableHead>{{ m.automation.details.historyRun }}</TableHead>
-                    <TableHead>{{ m.automation.details.historyTrigger }}</TableHead>
-                    <TableHead>{{ m.automation.details.historyStartedAt }}</TableHead>
-                    <TableHead>{{ m.automation.details.historyDuration }}</TableHead>
-                    <TableHead>{{ m.automation.details.historyResult }}</TableHead>
-                  </TableRow>
-                </TableHeader>
-              </template>
-
               <TableBody>
                 <TableRow
                   v-for="row in historyRows"
@@ -271,13 +267,13 @@ function openRunResult(record: AutomationRunHistoryRecord) {
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell class="text-muted-foreground">
+                  <TableCell>
                     {{ getTriggerLabel(row.record.trigger) }}
                   </TableCell>
-                  <TableCell class="text-muted-foreground">
+                  <TableCell>
                     {{ formatAutomationTimestamp(row.record.startedAt) }}
                   </TableCell>
-                  <TableCell class="text-muted-foreground">
+                  <TableCell>
                     {{ formatRunDuration(row.record) }}
                   </TableCell>
                   <TableCell>
@@ -310,29 +306,25 @@ function openRunResult(record: AutomationRunHistoryRecord) {
   </Dialog>
 
   <Dialog v-model:open="runResultDialogOpen">
-    <DialogContent class="max-w-3xl">
+    <DialogContent size="lg">
       <DialogHeader>
-        <DialogTitle class="flex min-w-0 items-center gap-2 pr-8">
-          <Icon
-            icon="icon-[mdi--text-box-search-outline]"
-            class="size-5 shrink-0"
-          />
-          <span class="truncate">
-            {{ m.automation.details.runResultTitle({ title: selectedRunResultTitle }) }}
-          </span>
-          <Badge
-            v-if="selectedRunRecord"
-            :variant="getRunStatusVariant(selectedRunRecord.invocationStatus)"
-            class="h-5"
-          >
-            {{ getRunStatusLabel(selectedRunRecord.invocationStatus) }}
-          </Badge>
+        <DialogTitle icon="icon-[mdi--text-box-search-outline]">
+          {{ m.automation.details.runResultTitle({ title: selectedRunResultTitle }) }}
+          <template #trailing>
+            <Badge
+              v-if="selectedRunRecord"
+              :variant="getRunStatusVariant(selectedRunRecord.invocationStatus)"
+              class="h-5"
+            >
+              {{ getRunStatusLabel(selectedRunRecord.invocationStatus) }}
+            </Badge>
+          </template>
         </DialogTitle>
       </DialogHeader>
 
       <DialogBody
         v-if="selectedRunRecord"
-        class="max-h-[72vh] space-y-4"
+        class="space-y-4"
       >
         <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div class="min-w-0">
@@ -366,7 +358,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             {{ selectedRunResultLabel }}
           </div>
           <pre
-            class="max-h-[52vh] overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground"
+            class="rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap wrap-anywhere text-foreground"
             >{{ selectedRunResultText }}</pre>
         </section>
       </DialogBody>

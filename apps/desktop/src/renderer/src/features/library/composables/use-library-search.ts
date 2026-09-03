@@ -32,9 +32,6 @@ export interface LibrarySearchHit {
 
 export type LibrarySearchResult = Record<ContentEntityType, LibrarySearchHit[]>
 
-/** Hits kept per entity type; a search surface lists candidates, not tables. */
-const SEARCH_RESULT_LIMIT = 50
-
 function createEmptyResult(): LibrarySearchResult {
   return Object.fromEntries(
     CONTENT_ENTITY_TYPES.map((entityType) => [entityType, [] as LibrarySearchHit[]])
@@ -62,7 +59,6 @@ async function searchEntityType(
         showNsfw ? undefined : eq(def.isNsfwColumn, false)
       )
     )
-    .limit(SEARCH_RESULT_LIMIT)
 
   return rows.map((row) => ({
     id: row.id as string,

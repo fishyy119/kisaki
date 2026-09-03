@@ -53,6 +53,32 @@ export function createNullableEnumType<T extends string>(
   })
 }
 
+export function createIntegerEnumType<T extends number>(
+  validValues: readonly T[],
+  defaultValue: T,
+  typeName: string
+) {
+  return customType<{ data: T; driverData: number }>({
+    dataType() {
+      return 'integer'
+    },
+
+    fromDriver(value: number): T {
+      if (validValues.includes(value as T)) {
+        return value as T
+      }
+      return defaultValue
+    },
+
+    toDriver(value: T): number {
+      if (validValues.includes(value)) {
+        return value
+      }
+      throw new Error(`Invalid ${typeName} value: ${value}`)
+    }
+  })
+}
+
 export function createBoundedIntegerType(
   min: number,
   max: number,

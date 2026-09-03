@@ -6,19 +6,22 @@ import {
   scannerIgnoredNames,
   scannerIngestMode,
   scannerParallelCount,
-  uiLocale
+  uiLocale,
+  uiScale
 } from '../../columns'
 import {
   SCANNER_PARALLEL_COUNT_DEFAULT,
   SCANNER_PARALLEL_COUNT_MAX,
   SCANNER_PARALLEL_COUNT_MIN
 } from '../../contracts/constants'
+import { UI_SCALE_DEFAULT, UI_SCALE_VALUES } from '../../../window'
 
 export const settings = sqliteTable(
   'settings',
   {
     id: integer('id').primaryKey().default(0),
     uiLocale: uiLocale('ui_locale'),
+    uiScale: uiScale('ui_scale').notNull().default(UI_SCALE_DEFAULT),
     mainWindowCloseAction: mainWindowCloseAction('main_window_close_action')
       .notNull()
       .default('exit'),
@@ -34,6 +37,10 @@ export const settings = sqliteTable(
   },
   (t) => [
     check('single_row_check', sql`${t.id} = 0`),
+    check(
+      'ui_scale_values_check',
+      sql.raw(`"settings"."ui_scale" in (${UI_SCALE_VALUES.join(', ')})`)
+    ),
     check(
       'scanner_parallel_count_range_check',
       sql.raw(

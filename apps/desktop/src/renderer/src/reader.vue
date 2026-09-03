@@ -1,8 +1,12 @@
-<!-- Reader window shell: pulls the bootstrap and hands off to the engine. -->
+<!--
+  Reader window shell: pulls the bootstrap and hands off to the engine. The
+  window has a native frame, so the whole document is the modal region.
+-->
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import type { ReaderBootstrap } from '@shared/reader'
 import { Button } from '@renderer/components/ui/button'
+import { MODAL_LAYER_CLASS, MODAL_LAYER_ID } from '@renderer/components/ui/dialog'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Toaster } from '@renderer/components/ui/toaster'
 import { TooltipProvider } from '@renderer/components/ui/tooltip'
@@ -47,7 +51,12 @@ onBeforeUnmount(() => {
 
 <template>
   <TooltipProvider>
-    <div class="h-full bg-background text-foreground">
+    <div class="relative h-full bg-background text-foreground">
+      <div
+        :id="MODAL_LAYER_ID"
+        :class="MODAL_LAYER_CLASS"
+      />
+
       <ComicReader
         v-if="bootstrap?.media === 'comic'"
         :bootstrap="bootstrap"

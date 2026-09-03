@@ -61,7 +61,7 @@ const { m } = useI18n()
 
       <div class="truncate text-xs text-muted-foreground">{{ props.repository.url }}</div>
 
-      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground lg:grid-cols-4">
+      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground @3xl:grid-cols-4">
         <div>{{ m.extension.repository.priorityLine({ value: String(props.priorityLabel) }) }}</div>
         <div>
           {{ m.extension.repository.packageCountLine({ count: props.repository.packageCount }) }}

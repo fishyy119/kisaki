@@ -233,6 +233,10 @@
      * light + diffuser layers and the translucent panes above them. */
     background: var(--background);
     text-rendering: optimizeLegibility;
+    /* Long unbreakable tokens (paths, URLs, ids) break instead of pushing a
+     * definite-width box wider. Intrinsic sizing is untouched, so flex and
+     * grid cells still need min-w-0 to be allowed to shrink. */
+    overflow-wrap: break-word;
   }
 
   html,
@@ -316,13 +320,6 @@
   --tw-prose-th-borders: var(--border);
   --tw-prose-td-borders: var(--border);
 }
-
-/* @font-face {
-  font-family: 'LXGW WenKai Mono';
-  src: url('@assets/fonts/LXGWWenKaiMono-Medium.ttf') format('truetype');
-  font-weight: 350;
-  font-style: normal;
-} */
 
 @utility prose-xs {
   font-size: 0.75rem; /* 12px */

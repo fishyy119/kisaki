@@ -28,16 +28,16 @@ const fieldVariants = cva('group/field w-full gap-1.5 data-[invalid=true]:text-d
       ],
       responsive: [
         'flex flex-col [&>*]:w-full [&>.sr-only]:w-auto',
-        '@md/field-group:grid @md/field-group:grid-cols-[minmax(0,1fr)_auto] @md/field-group:items-center @md/field-group:gap-x-3 @md/field-group:gap-y-1 @md/field-group:[&>*]:w-auto',
-        '@md/field-group:[&>.sr-only]:col-span-2 @md/field-group:[&>.sr-only]:w-auto',
-        '@md/field-group:[&>[data-slot=field-header]]:col-start-1 @md/field-group:[&>[data-slot=field-header]]:row-start-1',
-        '@md/field-group:[&>[data-slot=field-label]]:col-start-1 @md/field-group:[&>[data-slot=field-label]]:row-start-1',
-        '@md/field-group:[&>[data-slot=field-description]]:col-start-1 @md/field-group:[&>[data-slot=field-description]]:row-start-2',
-        '@md/field-group:[&>[data-slot=field-content]]:col-start-2 @md/field-group:[&>[data-slot=field-content]]:row-start-1 @md/field-group:[&>[data-slot=field-content]]:justify-self-end',
-        '@md/field-group:has-[>[data-slot=field-header]]:[&>[data-slot=field-content]]:self-center',
-        '@md/field-group:has-[>[data-slot=field-description]]:[&>[data-slot=field-content]]:row-span-2 @md/field-group:has-[>[data-slot=field-description]]:[&>[data-slot=field-content]]:self-center',
-        '@md/field-group:[&>[role=checkbox],[role=radio],[role=switch]]:col-start-2 @md/field-group:[&>[role=checkbox],[role=radio],[role=switch]]:row-start-1 @md/field-group:[&>[role=checkbox],[role=radio],[role=switch]]:justify-self-end',
-        '@md/field-group:has-[>[data-slot=field-description]]:[&>[role=checkbox],[role=radio],[role=switch]]:row-span-2 @md/field-group:has-[>[data-slot=field-description]]:[&>[role=checkbox],[role=radio],[role=switch]]:self-center'
+        '@md:grid @md:grid-cols-[minmax(0,1fr)_auto] @md:items-center @md:gap-x-3 @md:gap-y-1 @md:[&>*]:w-auto',
+        '@md:[&>.sr-only]:col-span-2 @md:[&>.sr-only]:w-auto',
+        '@md:[&>[data-slot=field-header]]:col-start-1 @md:[&>[data-slot=field-header]]:row-start-1',
+        '@md:[&>[data-slot=field-label]]:col-start-1 @md:[&>[data-slot=field-label]]:row-start-1',
+        '@md:[&>[data-slot=field-description]]:col-start-1 @md:[&>[data-slot=field-description]]:row-start-2',
+        '@md:[&>[data-slot=field-content]]:col-start-2 @md:[&>[data-slot=field-content]]:row-start-1 @md:[&>[data-slot=field-content]]:justify-self-end',
+        '@md:has-[>[data-slot=field-header]]:[&>[data-slot=field-content]]:self-center',
+        '@md:has-[>[data-slot=field-description]]:[&>[data-slot=field-content]]:row-span-2 @md:has-[>[data-slot=field-description]]:[&>[data-slot=field-content]]:self-center',
+        '@md:[&>[role=checkbox],[role=radio],[role=switch]]:col-start-2 @md:[&>[role=checkbox],[role=radio],[role=switch]]:row-start-1 @md:[&>[role=checkbox],[role=radio],[role=switch]]:justify-self-end',
+        '@md:has-[>[data-slot=field-description]]:[&>[role=checkbox],[role=radio],[role=switch]]:row-span-2 @md:has-[>[data-slot=field-description]]:[&>[role=checkbox],[role=radio],[role=switch]]:self-center'
       ]
     }
   },

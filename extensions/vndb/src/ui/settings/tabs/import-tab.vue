@@ -35,8 +35,7 @@ const importRun = useTaskRun((message) => emit('error', message))
 
 const canImport = computed(
   () =>
-    !importRun.active.value &&
-    (updateExisting.value || (createMissing.value && !!profileId.value))
+    !importRun.active.value && (updateExisting.value || (createMissing.value && !!profileId.value))
 )
 
 onMounted(() => {

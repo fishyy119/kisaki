@@ -64,6 +64,6 @@ const chartData = computed(() => {
     v-model:distribution-type="distributionType"
     :data="chartData"
     :format-value="(v: number) => `${v.toFixed(1)}h`"
-    :height="200"
+    height="14rem"
   />
 </template>

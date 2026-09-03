@@ -94,11 +94,11 @@ function handleApply() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{ m.scraper.recipeUpdate.title }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh]">
+      <DialogBody>
         <p class="text-sm text-muted-foreground mb-3">
           {{ m.scraper.recipeUpdate.hint }}
         </p>

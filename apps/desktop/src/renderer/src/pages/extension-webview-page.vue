@@ -76,7 +76,7 @@ function closeCurrentSession(): void {
 </script>
 
 <template>
-  <div class="h-full">
+  <div class="flex h-full flex-col">
     <ExtensionWebviewFrame
       v-if="session"
       :key="session.webviewId"

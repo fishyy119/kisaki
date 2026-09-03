@@ -188,14 +188,14 @@ function getSlotStrategyLabel(slot: ScraperSlot): string {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{
           props.isNew ? m.scraper.profiles.itemTitleAdd : m.scraper.profiles.itemTitleEdit
         }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[70vh]">
+        <DialogBody>
           <FieldGroup>
             <!-- Profile Name -->
             <Field>

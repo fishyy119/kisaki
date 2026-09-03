@@ -34,7 +34,7 @@ watch([host, () => props.content], ([element, content]) => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-xl">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{ m.reader.footnote.title }}</DialogTitle>
       </DialogHeader>

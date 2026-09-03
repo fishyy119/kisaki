@@ -107,18 +107,18 @@ async function handleDelete(): Promise<void> {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl max-h-[85vh] flex flex-col">
+    <DialogContent size="lg">
       <template v-if="extra">
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2 min-w-0">
-            <span class="font-mono text-muted-foreground shrink-0">
+          <DialogTitle>
+            <span class="font-mono text-muted-foreground">
               {{ m.library.animeExtraType[extra.type] }}
             </span>
-            <span class="truncate">{{ extra.name }}</span>
+            {{ extra.name }}
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="flex-1 min-h-0 space-y-4">
+        <DialogBody class="space-y-4">
           <!-- Live playback progress -->
           <MediaPlaybackProgress
             v-if="isPlaying"

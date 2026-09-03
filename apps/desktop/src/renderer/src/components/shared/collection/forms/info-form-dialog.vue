@@ -339,7 +339,7 @@ const canSubmit = computed(() => formData.value.name.trim())
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="w-[50vw] max-w-none">
+    <DialogContent size="lg">
       <!-- Loading state for edit mode -->
       <template v-if="isEditMode && isLoading">
         <DialogBody>
@@ -391,8 +391,8 @@ const canSubmit = computed(() => formData.value.name.trim())
                   <MarkdownEditor
                     v-model="formData.description"
                     :placeholder="m.library.forms.collectionDescriptionPlaceholder"
-                    min-height="140px"
-                    max-height="200px"
+                    min-height="10rem"
+                    max-height="14rem"
                   />
                 </FieldContent>
               </Field>

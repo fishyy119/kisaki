@@ -1,3 +1,8 @@
+<!--
+  Tabs - Root of a tabbed surface. A query container, so the list of triggers
+  (which stretches to this root's width) can collapse its labels by the width
+  the tabs actually get.
+-->
 <script setup lang="ts">
 import type { TabsRootEmits, TabsRootProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
@@ -17,7 +22,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     v-slot="slotProps"
     data-slot="tabs"
     v-bind="forwarded"
-    :class="cn('flex flex-col gap-4', props.class)"
+    :class="cn('@container flex flex-col gap-4', props.class)"
   >
     <slot v-bind="slotProps" />
   </TabsRoot>

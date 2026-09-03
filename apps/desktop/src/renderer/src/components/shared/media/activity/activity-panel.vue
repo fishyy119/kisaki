@@ -45,10 +45,10 @@ const recentSessions = computed(() => props.sessions.slice(0, RECENT_SESSION_LIM
     class="py-12"
   />
 
-  <!-- Content -->
+  <!-- Content; the panel is the container its chart pair lays out against -->
   <div
     v-else
-    class="space-y-6"
+    class="@container space-y-6"
   >
     <!-- Stats Summary -->
     <Section :title="labels.statsOverview">
@@ -66,7 +66,7 @@ const recentSessions = computed(() => props.sessions.slice(0, RECENT_SESSION_LIM
     </Section>
 
     <!-- Trend & Distribution -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+    <div class="grid grid-cols-1 gap-6 items-stretch @3xl:grid-cols-2">
       <!-- Time Trend -->
       <Section
         :title="labels.trend"

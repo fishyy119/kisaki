@@ -158,7 +158,7 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <!-- Loading state -->
       <template v-if="isLoading || !row">
         <DialogBody>
@@ -174,7 +174,7 @@ function handleCancel() {
         <DialogHeader>
           <DialogTitle>{{ m.library.forms.editExternalSites }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <div class="space-y-1">
             <StateView
               v-if="sites.length === 0"

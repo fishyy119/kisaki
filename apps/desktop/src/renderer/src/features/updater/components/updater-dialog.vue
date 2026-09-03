@@ -207,12 +207,12 @@ async function handleRetryChangelog() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ m.updater.dialog.title }}</DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="space-y-4 max-h-[70vh]">
+      <DialogBody class="space-y-4">
         <div class="rounded-md border border-border bg-muted/20 text-muted-foreground px-3 py-2">
           <p class="text-sm font-medium leading-5">{{ statusText }}</p>
           <div

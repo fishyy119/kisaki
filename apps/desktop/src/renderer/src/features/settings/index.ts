@@ -1,1 +1,1 @@
-export { SettingsFormDialog } from './components'
+export { SettingsDialog } from './components'

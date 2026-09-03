@@ -55,44 +55,44 @@ const isQueryActive = computed(
       {{ m.values.itemCount({ count: props.filteredCount }) }}
     </span>
 
-    <div class="flex-1" />
-
-    <Select v-model="category">
-      <SelectTrigger
-        size="sm"
-        class="w-28"
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">{{ m.task.toolbar.allCategories }}</SelectItem>
-        <SelectItem
-          v-for="item in TASK_RUN_CATEGORY_OPTIONS"
-          :key="item"
-          :value="item"
+    <template #trailing>
+      <Select v-model="category">
+        <SelectTrigger
+          size="sm"
+          class="w-28"
         >
-          {{ formatTaskRunCategory(item) }}
-        </SelectItem>
-      </SelectContent>
-    </Select>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{{ m.task.toolbar.allCategories }}</SelectItem>
+          <SelectItem
+            v-for="item in TASK_RUN_CATEGORY_OPTIONS"
+            :key="item"
+            :value="item"
+          >
+            {{ formatTaskRunCategory(item) }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
 
-    <Select v-model="status">
-      <SelectTrigger
-        size="sm"
-        class="w-28"
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">{{ m.task.toolbar.allStatuses }}</SelectItem>
-        <SelectItem
-          v-for="item in TASK_RUN_COMPLETED_STATUS_OPTIONS"
-          :key="item"
-          :value="item"
+      <Select v-model="status">
+        <SelectTrigger
+          size="sm"
+          class="w-28"
         >
-          {{ formatTaskRunStatus(item) }}
-        </SelectItem>
-      </SelectContent>
-    </Select>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{{ m.task.toolbar.allStatuses }}</SelectItem>
+          <SelectItem
+            v-for="item in TASK_RUN_COMPLETED_STATUS_OPTIONS"
+            :key="item"
+            :value="item"
+          >
+            {{ formatTaskRunStatus(item) }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </template>
   </ToolbarRow>
 </template>

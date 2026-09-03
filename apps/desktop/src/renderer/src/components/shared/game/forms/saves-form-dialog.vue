@@ -74,7 +74,7 @@ function handleCancel() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{ m.game.saves.editBackupTitle }}</DialogTitle>
       </DialogHeader>

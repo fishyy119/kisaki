@@ -1,7 +1,13 @@
 import type { WebviewHandle } from '../../capabilities/webviews'
 import type { ContributionIcon, Disposable, LocalizedText } from '../../shared'
 
-export const WEBVIEW_DIALOG_SIZES = ['sm', 'md', 'lg', 'xl', '2xl', 'full'] as const
+/**
+ * Dialog width steps, the app's own dialog scale. A step names the content
+ * class (`sm` prompts, `md` forms, `lg` list editing, `xl` detail views and
+ * tables, `2xl` editors); the host clamps it at small windows. Webview dialogs
+ * always take a definite height, so a document can lay out against it.
+ */
+export const WEBVIEW_DIALOG_SIZES = ['sm', 'md', 'lg', 'xl', '2xl'] as const
 
 export type WebviewDialogSize = (typeof WEBVIEW_DIALOG_SIZES)[number]
 

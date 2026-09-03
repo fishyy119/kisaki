@@ -252,7 +252,7 @@ async function openLink(link: { href: string }): Promise<void> {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>
           {{ isEdit ? m.scanner.form.editTitle : m.scanner.form.createTitle }}
@@ -270,7 +270,7 @@ async function openLink(link: { href: string }): Promise<void> {
 
       <template v-else>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh]">
+          <DialogBody>
             <FieldGroup>
               <Field :label="m.scanner.form.name">
                 <FieldContent>

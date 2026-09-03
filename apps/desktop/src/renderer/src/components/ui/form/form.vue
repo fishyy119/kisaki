@@ -1,4 +1,11 @@
-<!-- Form wrapper component with validation feedback -->
+<!--
+  Form wrapper component with validation feedback.
+
+  Lays out as a flex column that grows and may shrink, so a form wrapping a
+  DialogBody and DialogFooter is transparent to the slab's geometry: the body
+  keeps scrolling and the footer stays put in both content-sized and `fill`
+  dialogs.
+-->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { ref, onMounted, onUnmounted } from 'vue'
@@ -107,7 +114,7 @@ onUnmounted(() => {
 <template>
   <form
     ref="formRef"
-    :class="cn('relative', props.class)"
+    :class="cn('relative flex min-h-0 grow flex-col', props.class)"
     data-slot="form"
     @submit="handleFormSubmit"
   >

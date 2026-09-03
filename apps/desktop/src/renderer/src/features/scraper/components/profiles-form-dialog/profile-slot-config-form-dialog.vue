@@ -241,14 +241,14 @@ function handleSubmit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{
           m.scraper.profiles.slotDialogTitle({ name: props.slotName })
         }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <FieldGroup>
             <Field>
               <FieldLabel>{{ m.scraper.profiles.strategyLabel }}</FieldLabel>

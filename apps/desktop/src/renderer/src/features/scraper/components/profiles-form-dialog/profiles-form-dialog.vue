@@ -384,7 +384,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-xl">
+    <DialogContent size="md">
       <DialogHeader>
         <DialogTitle>{{ m.scraper.profiles.manageTitle }}</DialogTitle>
       </DialogHeader>
@@ -399,7 +399,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
 
       <!-- Content -->
       <template v-else>
-        <DialogBody class="max-h-[60vh]">
+        <DialogBody>
           <StateView
             v-if="profiles.length === 0"
             state="empty"

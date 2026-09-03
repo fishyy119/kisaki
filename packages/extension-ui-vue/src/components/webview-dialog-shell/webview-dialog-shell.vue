@@ -44,7 +44,7 @@ function close(): void {
     data-slot="webview-dialog-shell"
     :class="cn('relative flex h-screen flex-col', props.class)"
   >
-    <DialogHeader :class="cn('shrink-0 rounded-none', props.showCloseButton && 'pr-9')">
+    <DialogHeader class="rounded-none">
       <slot name="header">
         <h1 class="truncate text-sm font-medium">{{ props.title }}</h1>
       </slot>
@@ -59,7 +59,7 @@ function close(): void {
 
     <DialogFooter
       v-if="$slots.footer"
-      class="shrink-0 rounded-none"
+      class="rounded-none"
     >
       <slot name="footer" />
     </DialogFooter>

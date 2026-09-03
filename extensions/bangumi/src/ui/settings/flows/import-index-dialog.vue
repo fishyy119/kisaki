@@ -149,11 +149,11 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ m.ui.importIndex.title }}</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[64vh] overflow-y-auto">
+      <DialogBody>
         <FieldGroup class="gap-4">
           <Field
             orientation="horizontal"

@@ -537,7 +537,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-3xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ titleText }}</DialogTitle>
       </DialogHeader>
@@ -580,9 +580,10 @@ onBeforeUnmount(() => {
           </span>
         </div>
 
-        <!-- Crop area -->
+        <!-- Crop area. The stage must hug the rendered image (the overlay is
+             laid out against it), so the image carries its own rem cap. -->
         <div
-          class="crop-container relative w-full max-h-[400px] flex items-center justify-center bg-muted/50 rounded-lg overflow-hidden"
+          class="crop-container relative flex w-full items-center justify-center bg-muted/50 rounded-lg overflow-hidden"
         >
           <div
             ref="stageRef"
@@ -593,7 +594,7 @@ onBeforeUnmount(() => {
               :src="props.src"
               :alt="m.ui.imageCropper.title"
               :class="
-                cn('block max-h-[400px] max-w-full w-auto select-none', !imageLoaded && 'invisible')
+                cn('block max-h-112 max-w-full w-auto select-none', !imageLoaded && 'invisible')
               "
               crossorigin="anonymous"
               draggable="false"
