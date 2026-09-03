@@ -227,15 +227,22 @@ async function fetchPersonData(
 // Context Wiring
 // =============================================================================
 
-const PERSON_LINK_TABLES: readonly TableName[] = [
+/** Link rows attribute to the person; the tables they join match by table. */
+const PERSON_READS: readonly TableName[] = [
   'person_tag_links',
+  'tags',
   'game_person_links',
+  'games',
   'anime_person_links',
+  'animes',
   'comic_person_links',
+  'comics',
   'novel_person_links',
+  'novels',
   'game_cast_links',
   'anime_cast_links',
-  'character_person_links'
+  'character_person_links',
+  'characters'
 ]
 
 const personDetail = createEntityDetailContext<PersonData, EntitySpoilerParams>({
@@ -252,8 +259,7 @@ const personDetail = createEntityDetailContext<PersonData, EntitySpoilerParams>(
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchPersonData(id, params.spoilersRevealed, view.showNsfw),
-  relevantTables: () => PERSON_LINK_TABLES,
-  entityTable: 'persons'
+  reads: PERSON_READS
 })
 
 export const personDetailData = personDetail.detailData

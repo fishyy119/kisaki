@@ -1,19 +1,19 @@
 /**
  * Composable: useFavorites
  *
- * Route-loaded favorites browse surface: member counts per content type and
- * the favorites of the browsed type under the page's list query (SWR).
+ * Route data of the favorites browse surface: member counts per content type
+ * and the favorites of the browsed type under the page's list query. The
+ * surface has one identity, so its query persists across navigations.
  */
 
-import { computed, shallowRef, watch } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ENTITY_TABLES, FAVORITES_SCOPE, countEntities, queryEntities } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
-import { getFilterRelevantTables } from '@shared/filter'
-import { batchTouchesAny, useDbChanges } from '@renderer/composables/use-db-changes'
+import { getQueryDependencyTables } from '@shared/filter'
 import {
   createEmptyContentEntityCounts,
   type ContentEntityCounts,
@@ -22,7 +22,8 @@ import {
 import {
   createEntityListQuery,
   resolveEntityListType,
-  type EntityListQuery
+  type EntityListQuery,
+  type OrganizerDetailParams
 } from '@renderer/composables/entity-list-query'
 
 interface FavoritesData {
@@ -52,54 +53,41 @@ async function fetchFavorites(query: EntityListQuery, showNsfw: boolean): Promis
   return { counts, entityType, entities }
 }
 
-// The page's list query lives beside the loader so the navigation-time fetch
-// reads a consistent value; it persists across navigations by design.
-const routeQuery = shallowRef<EntityListQuery>(createEntityListQuery(null))
-
-export const favoritesData = defineRouteData(() => {
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  return fetchFavorites(routeQuery.value, showNsfw.value)
+export const favoritesData = defineRouteData({
+  name: 'favorites',
+  key: () => 'favorites',
+  params: (): OrganizerDetailParams => ({ query: createEntityListQuery(null) }),
+  view: () => {
+    const { showNsfw } = storeToRefs(usePreferencesStore())
+    return { showNsfw: showNsfw.value }
+  },
+  fetch: ({ params, view }) => fetchFavorites(params.query, view.showNsfw),
+  invalidate: {
+    // Every entity table feeds a count; the shown type's query tables feed the list.
+    reads: ({ params, data }) => {
+      const tables = new Set<TableName>(
+        CONTENT_ENTITY_TYPES.map((type) => ENTITY_TABLES[type].tableName)
+      )
+      const shownType = data?.entityType ?? params.query.entityType
+      for (const type of shownType ? [shownType] : CONTENT_ENTITY_TYPES) {
+        for (const table of getQueryDependencyTables(type, params.query)) tables.add(table)
+      }
+      return [...tables]
+    }
+  }
 })
 
 export function useFavorites() {
-  const { data, error, isFetching, refetch } = favoritesData()
-
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  watch(showNsfw, () => void refetch())
-
-  // Query changes trigger a non-blocking SWR refetch; the previous list stays
-  // visible until the new data lands.
-  const query = computed({
-    get: () => routeQuery.value,
-    set: (next: EntityListQuery) => {
-      routeQuery.value = next
-      void refetch()
-    }
-  })
-
-  const entityType = computed(() => data.value?.entityType ?? 'game')
-
-  // Every entity table feeds a count and a favorite flag; the browsed type's
-  // filter tables feed the visible list.
-  const relevantTables = computed(() => {
-    const tables = new Set<TableName>(
-      CONTENT_ENTITY_TYPES.map((type) => ENTITY_TABLES[type].tableName)
-    )
-    for (const table of getFilterRelevantTables(entityType.value)) tables.add(table)
-    return tables
-  })
-
-  useDbChanges((batch) => {
-    if (batchTouchesAny(batch, relevantTables.value)) refetch()
-  })
+  const { data, error, isFetching, params, reload } = favoritesData()
 
   return {
     entities: computed(() => data.value?.entities ?? []),
     counts: computed(() => data.value?.counts ?? createEmptyContentEntityCounts()),
-    entityType,
-    query,
+    entityType: computed(() => data.value?.entityType ?? 'game'),
+    /** Query changes trigger a non-blocking SWR refetch; the previous list stays until the new data lands. */
+    query: params.query,
     error,
     isFetching,
-    refetch
+    refetch: reload
   }
 }

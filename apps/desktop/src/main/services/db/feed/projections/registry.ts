@@ -7,10 +7,7 @@ import { tagEntityProjection } from './tag'
 
 export { projectEntityChanges } from './project'
 export {
-  MEDIA_PROJECTIONS,
   getMediaCreatedName,
-  getMediaIdsFromChange,
-  getMediaProjectionForTable,
   getMediaProjectionForTopic,
   mediaExists,
   projectMediaChanges

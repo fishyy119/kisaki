@@ -3,8 +3,7 @@
   Dialog view for company details.
 -->
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
-import { BackToTop } from '@renderer/components/ui/back-to-top'
+import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { eq } from 'drizzle-orm'
 import { notify } from '@renderer/core/notify'
@@ -58,8 +57,6 @@ useDbChanges(({ changes }) => {
 
 const isScoreOpen = ref(false)
 const isPendingFavorite = ref(false)
-
-const bodyRef = useTemplateRef<InstanceType<typeof DialogBody>>('body')
 
 async function handleToggleFavorite() {
   if (state.value !== 'success' || isPendingFavorite.value) return
@@ -125,15 +122,9 @@ function handleRevealSpoilersConfirm() {
             {{ company.name }}
           </DialogTitle>
         </DialogHeader>
-        <div class="relative flex min-h-0 flex-1 flex-col">
-          <DialogBody
-            ref="body"
-            class="min-h-0 flex-1 overflow-auto p-4"
-          >
-            <CompanyDetailContent />
-          </DialogBody>
-          <BackToTop :target="bodyRef?.$el" />
-        </div>
+        <DialogBody class="p-4">
+          <CompanyDetailContent />
+        </DialogBody>
         <DialogFooter>
           <div class="flex items-center justify-end w-full">
             <!-- Right: Score, Favorite, More -->

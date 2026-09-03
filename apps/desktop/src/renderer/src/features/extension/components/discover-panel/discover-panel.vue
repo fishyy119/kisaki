@@ -3,11 +3,11 @@ Extension Browse Panel renders extension catalog results.
 Boundary: reads store filters and queries the repository-backed catalog.
 -->
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
-import { ipcManager } from '@renderer/core/ipc'
 import { useI18n } from '@renderer/composables/use-i18n'
 import ExtensionReleaseDialog from '../extension-release-dialog.vue'
 import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
@@ -32,44 +32,20 @@ const detailsPackage = ref<ExtensionCatalogPackageInfo | null>(null)
 const detailsOpen = ref(false)
 const releaseRequest = ref<ExtensionCreateRepositoryReleasePlanRequest | null>(null)
 const releaseDialogOpen = ref(false)
-const queryKey = computed(() =>
-  [
-    store.searchQuery,
-    store.selectedRepositoryId ?? 'all',
-    store.selectedCategory ?? 'all',
-    store.compatibleOnly ? 'compatible' : 'any',
-    store.sortField,
-    store.sortDirection
-  ].join(':')
-)
 
-// Initial search (page 1) and installed catalog settle during navigation via
-// the route loaders; filter changes trigger a non-blocking SWR refetch.
-const { data: searchData, isFetching, refetch: refetchSearch } = discoverSearchData()
-const { data: catalog, refetch: refetchCatalog } = installedExtensionsData()
+// The first page is the non-blocking search resource: filter changes and
+// catalog changes reload it through its declared view and events. The
+// installed catalog is the blocking resource shared with the installed page.
+const { data: searchData, isFetching } = discoverSearchData()
+const { data: catalog } = installedExtensionsData()
 
-let unsubscribeCatalogChanged: (() => void) | null = null
-let unsubscribeInstallationsChanged: (() => void) | null = null
-
-onMounted(() => {
-  unsubscribeCatalogChanged = ipcManager.on('extension:catalog-changed', () => {
-    refetchSearch()
-  })
-  unsubscribeInstallationsChanged = ipcManager.on('extension:installations-changed', () => {
-    refetchCatalog()
-  })
-})
-
-onUnmounted(() => {
-  unsubscribeCatalogChanged?.()
-  unsubscribeInstallationsChanged?.()
-})
-
-watch(queryKey, () => {
+// Pages beyond the first accumulate here and belong to the first page they
+// extend: whenever the resource replaces page 1 (a filter change, a catalog
+// change), they are gone with it.
+watch(searchData, () => {
   page.value = 1
   additionalResults.value = []
   additionalHasMore.value = false
-  void refetchSearch()
 })
 
 const allResults = computed(() => {
@@ -144,10 +120,6 @@ function openDetails(extension: ExtensionCatalogPackageInfo) {
   detailsOpen.value = true
 }
 
-async function handleReleaseApplied() {
-  await Promise.all([refetchCatalog(), refetchSearch()])
-}
-
 watch(detailsOpen, (open) => {
   if (!open) {
     detailsPackage.value = null
@@ -159,7 +131,9 @@ watch(detailsOpen, (open) => {
   <div class="flex flex-col h-full">
     <ExtensionDiscoverPanelFilterBar />
 
-    <div class="flex-1 overflow-auto">
+    <!-- No memory: remote results reload on every visit, so an offset into a
+         list that may have changed names nothing. -->
+    <ScrollRegion>
       <StateView
         v-if="loading && displayedResults.length === 0"
         state="loading"
@@ -229,7 +203,7 @@ watch(detailsOpen, (open) => {
           </Button>
         </div>
       </template>
-    </div>
+    </ScrollRegion>
 
     <ExtensionDiscoverPanelDetailsDialog
       v-if="detailsPackage"
@@ -243,7 +217,6 @@ watch(detailsOpen, (open) => {
       v-if="releaseDialogOpen"
       v-model:open="releaseDialogOpen"
       :request="releaseRequest"
-      @applied="handleReleaseApplied"
     />
   </div>
 </template>

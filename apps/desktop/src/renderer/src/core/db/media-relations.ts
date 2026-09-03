@@ -10,6 +10,7 @@
 import { and, asc, eq, inArray } from 'drizzle-orm'
 
 import type { MediaType } from '@shared/entity-types'
+import type { TableName } from '@shared/db/table-names'
 import {
   MEDIA_RELATION_TYPE_INVERSE,
   collapseSubsumedMediaRelations,
@@ -57,6 +58,19 @@ interface MediaRelationEdge {
   targetType: MediaType
   targetId: string
 }
+
+/**
+ * Tables `fetchMediaRelations` reads: the edges, and the endpoint rows of
+ * every media type an edge can point at. Detail specs include this in their
+ * read-set declaration.
+ */
+export const MEDIA_RELATION_READS: readonly TableName[] = [
+  'media_relations',
+  'games',
+  'animes',
+  'comics',
+  'novels'
+]
 
 export async function fetchMediaRelations(
   mediaType: MediaType,

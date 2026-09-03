@@ -30,6 +30,7 @@ const entries = computed(() => flattenWorks(props.blocks))
 <template>
   <SectionScroll
     :title="m.library.fields.relatedWorks"
+    memory-key="works"
     :items="entries"
     :get-key="(entry) => entry.key"
     :empty-text="m.library.detail.empty.relatedWorks"

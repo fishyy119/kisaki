@@ -22,7 +22,7 @@ import {
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { Collection } from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import { getFilterRelevantTables } from '@shared/filter'
+import { getFilterRelevantTables, getQueryDependencyTables } from '@shared/filter'
 import {
   createEmptyContentEntityCounts,
   type ContentEntityCounts,
@@ -31,7 +31,8 @@ import {
 import {
   createEntityDetailContext,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntityDetailReadsContext
 } from './entity-context'
 import {
   createEntityListQuery,
@@ -114,23 +115,40 @@ async function fetchCollectionData(
 }
 
 /**
- * Every link table feeds a static count and every entity table can hide a
- * member; a dynamic collection's counts depend on every table its filters can
- * reference; the browsed type's filter tables feed the visible list.
+ * What the fetch reads. Link rows attribute to the collection through their
+ * foreign key, so a static collection only refetches for its own membership
+ * changes; every entity table can hide a member and matches by table. A
+ * dynamic collection's counts read the tables its configured filters
+ * reference, and the visible list reads the shown type's query tables. Until
+ * the row is known the declaration answers with the upper bound.
  */
-function collectionRelevantTables(data: CollectionData | null): readonly TableName[] {
+function collectionReads({
+  params,
+  data
+}: EntityDetailReadsContext<CollectionData, OrganizerDetailParams>): readonly TableName[] {
   const tables = new Set<TableName>()
-  const isDynamic = data?.collection?.isDynamic ?? false
+  const collection = data?.collection ?? null
+
   for (const type of CONTENT_ENTITY_TYPES) {
-    tables.add(COLLECTION_LINKS[type].tableName)
     tables.add(ENTITY_TABLES[type].tableName)
-    if (isDynamic) {
+    if (!collection || !collection.isDynamic) tables.add(COLLECTION_LINKS[type].tableName)
+    if (!collection) {
       for (const table of getFilterRelevantTables(type)) tables.add(table)
+    } else if (collection.isDynamic) {
+      const config = collection.dynamicConfig?.[type]
+      if (config?.enabled) {
+        for (const table of getQueryDependencyTables(type, { filter: config.filter })) {
+          tables.add(table)
+        }
+      }
     }
   }
-  if (data) {
-    for (const table of getFilterRelevantTables(data.entityType)) tables.add(table)
+
+  const shownType = data?.entityType ?? params.query.entityType
+  for (const type of shownType ? [shownType] : CONTENT_ENTITY_TYPES) {
+    for (const table of getQueryDependencyTables(type, params.query)) tables.add(table)
   }
+
   return [...tables]
 }
 
@@ -149,8 +167,7 @@ const collectionDetail = createEntityDetailContext<CollectionData, OrganizerDeta
   },
   initialParams: () => ({ query: createEntityListQuery(null) }),
   fetch: (id, params, view) => fetchCollectionData(id, params.query, view.showNsfw),
-  relevantTables: collectionRelevantTables,
-  entityTable: 'collections'
+  reads: collectionReads
 })
 
 export const collectionDetailData = collectionDetail.detailData

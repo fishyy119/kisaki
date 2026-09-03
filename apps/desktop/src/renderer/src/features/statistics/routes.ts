@@ -2,9 +2,9 @@
  * Statistics route manifest.
  *
  * The layout provides the statistics context; each child route is one report
- * page whose type is declared as typed route meta. The one statistics loader
- * serves every report page, so it is declared once on the layout record and
- * runs on each report navigation.
+ * page whose type is declared as typed route meta. The one statistics
+ * resource serves every report page, so it is declared once on the layout
+ * record; its key is the report type, so each report navigation loads.
  */
 
 import type { RouteRecordRaw } from 'vue-router'
@@ -13,7 +13,7 @@ import type { ReportType } from './types'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** Report type of a statistics page; the statistics loader reads it. */
+    /** Report type of a statistics page; the statistics resource keys on it. */
     reportType?: ReportType
   }
 }
@@ -31,7 +31,7 @@ export const statisticsRoutes: RouteRecordRaw[] = [
     path: '/statistics',
     component: () => import('./pages/statistics-layout.vue'),
     redirect: '/statistics/overview',
-    meta: { dataLoaders: [statisticsData] },
+    meta: { routeData: [statisticsData] },
     children: [
       {
         path: 'overview',

@@ -25,7 +25,11 @@ import type {
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
+import {
+  MEDIA_RELATION_READS,
+  fetchMediaRelations,
+  type MediaRelationEntry
+} from '@renderer/core/db/media-relations'
 import {
   createEntityDetailContext,
   createEntitySpoilerParams,
@@ -203,16 +207,25 @@ async function attachChapterFiles(chapters: ComicChapter[]): Promise<ComicChapte
 // Context Wiring
 // =============================================================================
 
-const COMIC_OWNED_TABLES: readonly TableName[] = [
+/**
+ * Owned and link rows attribute to the comic; chapter file rows hang off
+ * chapters without a key of their own, so they and the satellite tables
+ * match by table.
+ */
+const COMIC_READS: readonly TableName[] = [
   'comic_chapters',
   'comic_chapter_files',
   'comic_notes',
   'comic_sessions',
   'comic_tag_links',
+  'tags',
   'comic_character_links',
+  'characters',
   'comic_person_links',
+  'persons',
   'comic_company_links',
-  'media_relations'
+  'companies',
+  ...MEDIA_RELATION_READS
 ]
 
 const comicDetail = createEntityDetailContext<ComicData, EntitySpoilerParams>({
@@ -230,8 +243,7 @@ const comicDetail = createEntityDetailContext<ComicData, EntitySpoilerParams>({
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchComicData(id, params.spoilersRevealed, view.showNsfw),
-  relevantTables: () => COMIC_OWNED_TABLES,
-  entityTable: 'comics'
+  reads: COMIC_READS
 })
 
 export const comicDetailData = comicDetail.detailData

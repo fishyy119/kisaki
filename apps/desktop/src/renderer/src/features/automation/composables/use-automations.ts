@@ -1,7 +1,9 @@
 /**
  * Composable: useAutomations
  *
- * Route-loaded automation list with running state and command catalog.
+ * Route data of the automation page: the automation list with running state
+ * and the command catalog, kept fresh by the automation events the main
+ * process pushes.
  */
 
 import { computed, ref, watch } from 'vue'
@@ -16,17 +18,29 @@ interface AutomationsData {
   commands: CommandListItem[]
 }
 
-export const automationsData = defineRouteData(async (): Promise<AutomationsData> => {
-  const [automations, runningIds, commands] = await Promise.all([
-    ipcManager.invoke('automation:list').then(unwrapIpcData),
-    ipcManager.invoke('automation:list-running').then(unwrapIpcData),
-    ipcManager.invoke('command:list').then(unwrapIpcData)
-  ])
-  return { automations, runningIds, commands }
+export const automationsData = defineRouteData({
+  name: 'automations',
+  key: () => 'automations',
+  fetch: async (): Promise<AutomationsData> => {
+    const [automations, runningIds, commands] = await Promise.all([
+      ipcManager.invoke('automation:list').then(unwrapIpcData),
+      ipcManager.invoke('automation:list-running').then(unwrapIpcData),
+      ipcManager.invoke('command:list').then(unwrapIpcData)
+    ])
+    return { automations, runningIds, commands }
+  },
+  invalidate: {
+    ipc: [
+      'automation:changed',
+      'automation:deleted',
+      'automation:run-started',
+      'automation:run-finished'
+    ]
+  }
 })
 
 export function useAutomations() {
-  const { data, error, isFetching, refetch } = automationsData()
+  const { data, error, isFetching, reload } = automationsData()
 
   // Event-driven mutations between refetches keep this local Set current;
   // each settled fetch replaces it with the authoritative snapshot.
@@ -45,6 +59,6 @@ export function useAutomations() {
     runningAutomationIds,
     error,
     isFetching,
-    refetch
+    refetch: reload
   }
 }

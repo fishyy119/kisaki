@@ -228,15 +228,22 @@ async function fetchCharacterData(
 // Context Wiring
 // =============================================================================
 
-const CHARACTER_LINK_TABLES: readonly TableName[] = [
+/** Link rows attribute to the character; the tables they join match by table. */
+const CHARACTER_READS: readonly TableName[] = [
   'character_tag_links',
+  'tags',
   'game_character_links',
+  'games',
   'anime_character_links',
+  'animes',
   'comic_character_links',
+  'comics',
   'novel_character_links',
+  'novels',
   'game_cast_links',
   'anime_cast_links',
-  'character_person_links'
+  'character_person_links',
+  'persons'
 ]
 
 const characterDetail = createEntityDetailContext<CharacterData, EntitySpoilerParams>({
@@ -253,8 +260,7 @@ const characterDetail = createEntityDetailContext<CharacterData, EntitySpoilerPa
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchCharacterData(id, params.spoilersRevealed, view.showNsfw),
-  relevantTables: () => CHARACTER_LINK_TABLES,
-  entityTable: 'characters'
+  reads: CHARACTER_READS
 })
 
 export const characterDetailData = characterDetail.detailData

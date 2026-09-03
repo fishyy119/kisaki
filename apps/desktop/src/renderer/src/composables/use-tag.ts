@@ -18,7 +18,7 @@ import {
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/entity-types'
 import type { Tag } from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import { getFilterRelevantTables } from '@shared/filter'
+import { getQueryDependencyTables } from '@shared/filter'
 import {
   createEmptyContentEntityCounts,
   type ContentEntityCounts,
@@ -27,7 +27,8 @@ import {
 import {
   createEntityDetailContext,
   type EntityDetailContext,
-  type EntityDetailProviderReturn
+  type EntityDetailProviderReturn,
+  type EntityDetailReadsContext
 } from './entity-context'
 import {
   createEntityListQuery,
@@ -88,18 +89,26 @@ async function fetchTagData(
 }
 
 /**
- * Every link table feeds a count and every entity table can hide a member;
- * the browsed type's filter tables feed the visible list.
+ * What the fetch reads. Link rows attribute to the tag through their foreign
+ * key, so only this tag's membership changes refetch; every entity table can
+ * hide a member and matches by table; the visible list reads the shown
+ * type's query tables (every type's until the shown type is known).
  */
-function tagRelevantTables(data: TagData | null): readonly TableName[] {
+function tagReads({
+  params,
+  data
+}: EntityDetailReadsContext<TagData, OrganizerDetailParams>): readonly TableName[] {
   const tables = new Set<TableName>()
   for (const type of CONTENT_ENTITY_TYPES) {
     tables.add(TAG_LINKS[type].tableName)
     tables.add(ENTITY_TABLES[type].tableName)
   }
-  if (data) {
-    for (const table of getFilterRelevantTables(data.entityType)) tables.add(table)
+
+  const shownType = data?.entityType ?? params.query.entityType
+  for (const type of shownType ? [shownType] : CONTENT_ENTITY_TYPES) {
+    for (const table of getQueryDependencyTables(type, params.query)) tables.add(table)
   }
+
   return [...tables]
 }
 
@@ -117,8 +126,7 @@ const tagDetail = createEntityDetailContext<TagData, OrganizerDetailParams>({
   },
   initialParams: () => ({ query: createEntityListQuery(null) }),
   fetch: (id, params, view) => fetchTagData(id, params.query, view.showNsfw),
-  relevantTables: tagRelevantTables,
-  entityTable: 'tags'
+  reads: tagReads
 })
 
 export const tagDetailData = tagDetail.detailData

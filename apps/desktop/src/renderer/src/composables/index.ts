@@ -50,6 +50,7 @@ export {
   type EntityDetailContext,
   type EntityDetailParams,
   type EntityDetailProviderReturn,
+  type EntityDetailReadsContext,
   type EntityDetailSpec,
   type EntityDetailView,
   type EntitySpoilerParams

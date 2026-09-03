@@ -5,11 +5,12 @@
   - Dynamic item width measurement from the first rendered item
   - Horizontal virtual scrolling
   - Scroll navigation controls (scrollLeft/scrollRight)
-  - Supports parent container scrolling ('auto' resolves the closest ancestor)
+  - Remembers its horizontal offset under the enclosing region's identity
+    when given a `memoryKey`
 
   @example
   ```vue
-  <VirtualHorizontalScroll :items="games" @scroll-state-change="handleScroll">
+  <VirtualHorizontalScroll :items="games" memory-key="recent" @scroll-state-change="handleScroll">
     <template #item="{ item }">
       <GameCard :game="item" size="md" />
     </template>
@@ -29,6 +30,12 @@ import {
 } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { cn } from '@renderer/utils/cn'
+import {
+  nestedScrollIdentity,
+  readScrollMemory,
+  useOptionalScrollRegion,
+  writeScrollMemory
+} from '@renderer/components/ui/scroll-region'
 import { useVirtualScrollParent, type VirtualScrollParent } from './use-virtual-scroll-parent'
 
 const props = withDefaults(
@@ -37,8 +44,14 @@ const props = withDefaults(
     items: T[]
     /** Custom key extractor, defaults to index */
     getKey?: (item: T, index: number) => string | number
-    /** External scroll parent: element, 'auto' for closest scrollable ancestor */
+    /** External scroll parent: 'region' for the enclosing ScrollRegion, or an element */
     scrollParent?: VirtualScrollParent
+    /**
+     * Local key of this row inside the enclosing region. With a key and a
+     * region that has an identity, the row remembers its horizontal offset
+     * under `<region identity>#<key>`; without either, it does not remember.
+     */
+    memoryKey?: string
     /** Container class - defaults to flex with gap */
     class?: HTMLAttributes['class']
     /** Overscan count for virtualizer */
@@ -47,10 +60,20 @@ const props = withDefaults(
   {
     getKey: undefined,
     scrollParent: null,
+    memoryKey: undefined,
     class: 'flex gap-3',
     overscan: 3
   }
 )
+
+// Memory identity: the enclosing region's identity plus this row's key.
+const region = useOptionalScrollRegion()
+const memoryIdentity = computed(() => {
+  const parent = region?.identity.value
+  return parent !== undefined && props.memoryKey !== undefined
+    ? nestedScrollIdentity(parent, props.memoryKey)
+    : undefined
+})
 
 const emit = defineEmits<{
   /** Scroll state change event */
@@ -76,7 +99,7 @@ const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 
 // Scroll parent integration (must be before virtualizer to provide getScrollElement and scrollMargin)
-const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange } =
+const { scrollMargin, resolvedParent, getScrollElement, initialOffset, notifyLayoutChange } =
   useVirtualScrollParent({
     containerRef,
     scrollParent: toRef(props, 'scrollParent'),
@@ -88,12 +111,21 @@ const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange } =
     }
   })
 
+// A self-scrolling row enters at its remembered offset; the virtualizer
+// renders for it on the first frame and scrolls its own element there when
+// it attaches.
+function rowInitialOffset(): number {
+  if (resolvedParent.value || !memoryIdentity.value) return initialOffset()
+  return readScrollMemory(memoryIdentity.value) ?? 0
+}
+
 // Horizontal virtualizer
 const virtualizer = useVirtualizer(
   computed(() => ({
     horizontal: true,
     count: props.items.length,
     getScrollElement,
+    initialOffset: rowInitialOffset,
     estimateSize: () => measuredItemWidth.value + measuredGap.value,
     overscan: props.overscan,
     scrollMargin: scrollMargin.value
@@ -140,6 +172,16 @@ function updateScrollState() {
   })
 }
 
+// Only the element's own scroll events write memory: a mount-time state read
+// happens before the virtualizer has scrolled the row to its remembered offset.
+function handleScroll() {
+  updateScrollState()
+  const element = getScrollElement()
+  if (element && memoryIdentity.value && !resolvedParent.value) {
+    writeScrollMemory(memoryIdentity.value, element.scrollLeft)
+  }
+}
+
 // Scroll navigation methods
 function scrollLeft() {
   const element = getScrollElement()
@@ -170,7 +212,6 @@ onMounted(() => {
 
   const element = getScrollElement()
   if (element) {
-    const handleScroll = () => updateScrollState()
     element.addEventListener('scroll', handleScroll, { passive: true })
     scrollCleanup = () => element.removeEventListener('scroll', handleScroll)
   }

@@ -126,6 +126,7 @@ const companyItems = computed<RoleLinkItem[]>(() =>
 
         <SectionScroll
           :title="m.library.detail.tabs.characters"
+          memory-key="characters"
           editable
           :items="sortedCharacters"
           :get-key="(item) => item.link.id"

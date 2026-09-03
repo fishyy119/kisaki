@@ -1,43 +1,43 @@
 /**
  * Composable: useCollectionsList
  *
- * Route-loaded list of all collections for the collections page.
+ * Route data of the collections page: every visible collection in the user's
+ * own order.
  */
 
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { asc, eq } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
-import { useDbChanges } from '@renderer/composables/use-db-changes'
 
-export const collectionsListData = defineRouteData(async () => {
-  const { showNsfw } = storeToRefs(usePreferencesStore())
+export const collectionsListData = defineRouteData({
+  name: 'collections',
+  key: () => 'collections',
+  view: () => {
+    const { showNsfw } = storeToRefs(usePreferencesStore())
+    return { showNsfw: showNsfw.value }
+  },
   // The user's own arrangement is the canonical collection order, matching
   // the explorer's group order.
-  return await db
-    .select()
-    .from(collections)
-    .where(showNsfw.value ? undefined : eq(collections.isNsfw, false))
-    .orderBy(asc(collections.order))
+  fetch: async ({ view }) =>
+    await db
+      .select()
+      .from(collections)
+      .where(view.showNsfw ? undefined : eq(collections.isNsfw, false))
+      .orderBy(asc(collections.order)),
+  invalidate: { reads: ['collections'] }
 })
 
 export function useCollectionsList() {
-  const { data, error, isFetching, refetch } = collectionsListData()
-
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  watch(showNsfw, () => void refetch())
-
-  useDbChanges(({ tables }) => {
-    if (tables.has('collections')) refetch()
-  })
+  const { data, error, isFetching, reload } = collectionsListData()
 
   return {
     collections: computed(() => data.value ?? []),
     error,
     isFetching,
-    refetch
+    refetch: reload
   }
 }

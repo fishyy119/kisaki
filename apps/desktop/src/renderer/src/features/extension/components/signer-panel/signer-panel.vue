@@ -4,7 +4,9 @@ its row operations. The manual refresh lives in the header actions component.
 Boundary: calls signer trust IPC only; trust remains scoped by extension id.
 -->
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
@@ -16,14 +18,16 @@ import SignerRemoveDialog from './signer-remove-dialog.vue'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
 
 const { m } = useI18n()
+const route = useRoute()
 const removing = ref(false)
 const detailsDialogOpen = ref(false)
 const removeDialogOpen = ref(false)
 const signerToView = ref<ExtensionTrustedSignerInfo | null>(null)
 const signerToRemove = ref<ExtensionTrustedSignerInfo | null>(null)
 
-// Data settled during navigation by the route loader
-const { data: signers, error, refetch } = extensionSignersData()
+// Committed by the route data kernel before the page mounts; the resource
+// reloads itself whenever the main process reports a trust change.
+const { data: signers, error } = extensionSignersData()
 const signerList = computed(() =>
   [...(signers.value ?? [])].sort(
     (left, right) =>
@@ -31,18 +35,6 @@ const signerList = computed(() =>
       left.fingerprint.localeCompare(right.fingerprint)
   )
 )
-
-let unsubscribeTrustedSignersChanged: (() => void) | null = null
-
-onMounted(() => {
-  unsubscribeTrustedSignersChanged = ipcManager.on('extension:trusted-signers-changed', () => {
-    refetch()
-  })
-})
-
-onUnmounted(() => {
-  unsubscribeTrustedSignersChanged?.()
-})
 
 watch(detailsDialogOpen, (open) => {
   if (!open) {
@@ -78,7 +70,6 @@ async function handleRemoveSigner(): Promise<void> {
     notify.success(m.value.extension.signer.revoked)
     removeDialogOpen.value = false
     signerToRemove.value = null
-    refetch()
   } catch (err) {
     notify.error(
       m.value.extension.signer.revokeFailed,
@@ -92,7 +83,7 @@ async function handleRemoveSigner(): Promise<void> {
 
 <template>
   <div class="flex h-full flex-col">
-    <div class="flex-1 overflow-auto">
+    <ScrollRegion :memory="route.path">
       <StateView
         v-if="error"
         state="error"
@@ -119,7 +110,7 @@ async function handleRemoveSigner(): Promise<void> {
           />
         </div>
       </template>
-    </div>
+    </ScrollRegion>
 
     <SignerDetailsDialog
       v-if="detailsDialogOpen && signerToView"

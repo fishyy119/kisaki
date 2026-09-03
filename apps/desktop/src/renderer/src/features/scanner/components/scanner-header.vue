@@ -2,23 +2,20 @@
 /**
  * Scanner Header
  *
- * Self-contained header component for the scanner page.
- * Fetches scanner count internally and handles all actions.
+ * Header of the scanner page: the scanner count comes from the page's route
+ * data, the actions drive the scanner store.
  */
 
 import { ref, computed } from 'vue'
-import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
-import { scanners } from '@shared/db'
-import { useAsyncData } from '@renderer/composables/use-async-data'
-import { useDbChanges } from '@renderer/composables/use-db-changes'
 import { useScannerStore } from '@renderer/stores'
 import { Button } from '@renderer/components/ui/button'
 import { ScannerFormDialog } from './scanner-form-dialog'
 import ScannerSettingsFormDialog from './scanner-settings-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
+import { useScanners } from '../composables'
 
 const log = createLogger('Scanner')
 
@@ -32,20 +29,11 @@ const isSettingsDialogOpen = ref(false)
 const isCreateDialogOpen = ref(false)
 
 // =============================================================================
-// Data Fetching
+// Data
 // =============================================================================
 
-async function fetchScannerCount(): Promise<number> {
-  const result = await db.select({ id: scanners.id }).from(scanners)
-  return result.length
-}
-
-const { data: totalScanners, refetch } = useAsyncData(fetchScannerCount)
-
-// Listen for scanner changes
-useDbChanges(({ tables }) => {
-  if (tables.has('scanners')) refetch()
-})
+const { entries } = useScanners()
+const totalScanners = computed(() => entries.value.length)
 
 // =============================================================================
 // Scanner State

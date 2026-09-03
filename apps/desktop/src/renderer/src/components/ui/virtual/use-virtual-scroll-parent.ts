@@ -1,17 +1,19 @@
-import { ref, unref, watch, onMounted, onUnmounted, type Ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, unref, watch, type Ref } from 'vue'
+import { useOptionalScrollRegion } from '@renderer/components/ui/scroll-region'
 import { onLayoutInvalidate, invalidateLayout } from './virtual-layout-invalidation'
 
 /**
- * External scroll parent of a virtual component: a concrete element, `'auto'`
- * to resolve the closest scrollable ancestor on mount, or null/undefined for
+ * External scroll parent of a virtual component: `'region'` for the enclosing
+ * ScrollRegion (resolved through the component tree, so it is known at setup,
+ * before anything is in the DOM), a concrete element, or null/undefined for
  * self-contained scrolling.
  */
-export type VirtualScrollParent = HTMLElement | 'auto' | null | undefined
+export type VirtualScrollParent = HTMLElement | 'region' | null | undefined
 
 export interface UseVirtualScrollParentOptions {
   /** Reference to the container element */
   containerRef: Ref<HTMLElement | undefined>
-  /** External scroll parent element, or 'auto' for ancestor detection */
+  /** External scroll parent, or 'region' for the enclosing ScrollRegion */
   scrollParent: Ref<VirtualScrollParent>
   /** Callback to trigger virtualizer measure (called lazily to avoid circular deps) */
   onMeasure?: () => void
@@ -21,41 +23,46 @@ export interface UseVirtualScrollParentOptions {
   onResize?: () => void
 }
 
-/** Closest ancestor that scrolls on the wanted axis, or null when none does. */
-function findScrollableAncestor(start: HTMLElement, horizontal: boolean): HTMLElement | null {
-  let node = start.parentElement
-  while (node) {
-    const style = getComputedStyle(node)
-    const overflow = horizontal ? style.overflowX : style.overflowY
-    if (overflow === 'auto' || overflow === 'scroll' || overflow === 'overlay') {
-      return node
-    }
-    node = node.parentElement
-  }
-  return null
-}
-
 /**
  * Composable for managing scroll parent integration in virtual components.
- * Handles scroll margin calculation, resize observation, and layout invalidation.
+ * Handles scroll parent resolution, scroll margin calculation, resize
+ * observation, layout invalidation, and the initial offset the virtualizer
+ * renders for before it attaches.
  */
 export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
   const { containerRef, scrollParent, onMeasure, horizontal = false, onResize } = options
 
-  const scrollMargin = ref(0)
+  const region = useOptionalScrollRegion()
+  if (unref(scrollParent) === 'region' && !region) {
+    throw new Error('scroll-parent="region" requires an enclosing ScrollRegion')
+  }
 
   /** The effective external scroll parent; null means self-contained scrolling. */
-  const resolvedParent = ref<HTMLElement | null>(null)
-
-  function resolveParent(): HTMLElement | null {
+  const resolvedParent = computed<HTMLElement | null>(() => {
     const wanted = unref(scrollParent)
     if (!wanted) return null
-    if (wanted !== 'auto') return wanted
-    return containerRef.value ? findScrollableAncestor(containerRef.value, horizontal) : null
-  }
+    if (wanted === 'region') return region?.element.value ?? null
+    return wanted
+  })
 
   // Get the effective scroll element
   const getScrollElement = () => resolvedParent.value ?? containerRef.value ?? null
+
+  /**
+   * Offset the parent is at, or is about to be at. A region answers with its
+   * remembered offset before its element exists, so the first render already
+   * shows the rows at that offset and the virtualizer's attach-time scroll to
+   * this value is a no-op: a virtual component never moves a scroll element
+   * it did not create.
+   */
+  function initialOffset(): number {
+    const wanted = unref(scrollParent)
+    if (!wanted) return 0
+    if (wanted === 'region') return horizontal ? 0 : (region?.offset() ?? 0)
+    return horizontal ? wanted.scrollLeft : wanted.scrollTop
+  }
+
+  const scrollMargin = ref(0)
 
   // Calculate scroll margin based on container position relative to scroll parent
   function computeScrollMargin(): number {
@@ -99,7 +106,6 @@ export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
   let unsubscribeLayout: (() => void) | null = null
 
   onMounted(() => {
-    resolvedParent.value = resolveParent()
     scheduleScrollMarginUpdate()
 
     // Setup resize observer
@@ -126,14 +132,6 @@ export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
     unsubscribeLayout?.()
   })
 
-  // Re-resolve when the declared scroll parent changes
-  watch(
-    () => unref(scrollParent),
-    () => {
-      resolvedParent.value = resolveParent()
-    }
-  )
-
   // Rewire observation and layout subscription to the resolved element
   watch(resolvedParent, (nextParent, prevParent) => {
     if (nextParent === prevParent) return
@@ -159,6 +157,7 @@ export function useVirtualScrollParent(options: UseVirtualScrollParentOptions) {
     scrollMargin,
     resolvedParent,
     getScrollElement,
+    initialOffset,
     scheduleScrollMarginUpdate,
     /**
      * Synchronous margin refresh for callers that need correct scroll math

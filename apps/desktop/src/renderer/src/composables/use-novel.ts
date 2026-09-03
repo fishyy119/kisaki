@@ -25,7 +25,11 @@ import type {
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
+import {
+  MEDIA_RELATION_READS,
+  fetchMediaRelations,
+  type MediaRelationEntry
+} from '@renderer/core/db/media-relations'
 import {
   createEntityDetailContext,
   createEntitySpoilerParams,
@@ -199,16 +203,25 @@ async function attachVolumeFiles(volumes: NovelVolume[]): Promise<NovelVolumeEnt
 // Context Wiring
 // =============================================================================
 
-const NOVEL_OWNED_TABLES: readonly TableName[] = [
+/**
+ * Owned and link rows attribute to the novel; volume file rows hang off
+ * volumes without a key of their own, so they and the satellite tables match
+ * by table.
+ */
+const NOVEL_READS: readonly TableName[] = [
   'novel_volumes',
   'novel_volume_files',
   'novel_notes',
   'novel_sessions',
   'novel_tag_links',
+  'tags',
   'novel_character_links',
+  'characters',
   'novel_person_links',
+  'persons',
   'novel_company_links',
-  'media_relations'
+  'companies',
+  ...MEDIA_RELATION_READS
 ]
 
 const novelDetail = createEntityDetailContext<NovelData, EntitySpoilerParams>({
@@ -226,8 +239,7 @@ const novelDetail = createEntityDetailContext<NovelData, EntitySpoilerParams>({
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchNovelData(id, params.spoilersRevealed, view.showNsfw),
-  relevantTables: () => NOVEL_OWNED_TABLES,
-  entityTable: 'novels'
+  reads: NOVEL_READS
 })
 
 export const novelDetailData = novelDetail.detailData

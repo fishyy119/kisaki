@@ -28,7 +28,11 @@ import type {
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
+import {
+  MEDIA_RELATION_READS,
+  fetchMediaRelations,
+  type MediaRelationEntry
+} from '@renderer/core/db/media-relations'
 import {
   createEntityDetailContext,
   createEntitySpoilerParams,
@@ -279,7 +283,12 @@ async function attachExtraFiles(extras: AnimeExtra[]): Promise<AnimeExtraEntry[]
 // Context Wiring
 // =============================================================================
 
-const ANIME_OWNED_TABLES: readonly TableName[] = [
+/**
+ * Owned and link rows attribute to the anime; file rows hang off episodes and
+ * extras without a key of their own, so they and the satellite tables match
+ * by table.
+ */
+const ANIME_READS: readonly TableName[] = [
   'anime_episodes',
   'anime_episode_files',
   'anime_extras',
@@ -287,11 +296,15 @@ const ANIME_OWNED_TABLES: readonly TableName[] = [
   'anime_notes',
   'anime_sessions',
   'anime_tag_links',
+  'tags',
   'anime_character_links',
+  'characters',
   'anime_person_links',
+  'persons',
   'anime_cast_links',
   'anime_company_links',
-  'media_relations'
+  'companies',
+  ...MEDIA_RELATION_READS
 ]
 
 const animeDetail = createEntityDetailContext<AnimeData, EntitySpoilerParams>({
@@ -311,8 +324,7 @@ const animeDetail = createEntityDetailContext<AnimeData, EntitySpoilerParams>({
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchAnimeData(id, params.spoilersRevealed, view.showNsfw),
-  relevantTables: () => ANIME_OWNED_TABLES,
-  entityTable: 'animes'
+  reads: ANIME_READS
 })
 
 export const animeDetailData = animeDetail.detailData

@@ -7,11 +7,11 @@
  */
 
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
-import { BackToTop } from '@renderer/components/ui/back-to-top'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { CollectionInfoFormDialog, CollectionCard } from '@renderer/components/shared/collection'
@@ -26,16 +26,11 @@ const { m } = useI18n()
 // Router
 // =============================================================================
 
+const route = useRoute()
 const router = useRouter()
 
 // =============================================================================
-// Refs
-// =============================================================================
-
-const scrollContainerRef = ref<HTMLElement>()
-
-// =============================================================================
-// Data (settled during navigation by the route loader)
+// Data (committed by the route data kernel before the page mounts)
 // =============================================================================
 
 const { collections: collectionList } = useCollectionsList()
@@ -81,41 +76,37 @@ function handleCollectionClick(collectionId: string) {
     </PageHeader>
 
     <!-- Collection grid -->
-    <div class="relative flex min-h-0 flex-1 flex-col">
-      <div
-        ref="scrollContainerRef"
-        class="min-h-0 flex-1 overflow-auto bg-background p-4"
+    <ScrollRegion
+      :memory="route.path"
+      class="bg-background p-4"
+    >
+      <!-- Empty state -->
+      <StateView
+        v-if="collectionList.length === 0"
+        state="empty"
+        icon="icon-[mdi--folder-plus-outline]"
+        :title="m.library.pages.collectionsEmptyTitle"
+        :description="m.library.pages.collectionsEmptyDescription"
+        class="h-full"
+      />
+
+      <!-- Grid -->
+      <VirtualGrid
+        v-else
+        :items="collectionList"
+        :get-key="(item) => item.id"
+        scroll-parent="region"
+        class="grid grid-cols-[repeat(auto-fill,8rem)] gap-3 justify-between"
       >
-        <!-- Empty state -->
-        <StateView
-          v-if="collectionList.length === 0"
-          state="empty"
-          icon="icon-[mdi--folder-plus-outline]"
-          :title="m.library.pages.collectionsEmptyTitle"
-          :description="m.library.pages.collectionsEmptyDescription"
-          class="h-full"
-        />
-
-        <!-- Grid -->
-        <VirtualGrid
-          v-else
-          :items="collectionList"
-          :get-key="(item) => item.id"
-          :scroll-parent="scrollContainerRef"
-          class="grid grid-cols-[repeat(auto-fill,8rem)] gap-3 justify-between"
-        >
-          <template #item="{ item }">
-            <CollectionCard
-              :collection="item"
-              size="md"
-              @click="handleCollectionClick(item.id)"
-            />
-          </template>
-        </VirtualGrid>
-      </div>
-
-      <BackToTop :target="scrollContainerRef" />
-    </div>
+        <template #item="{ item }">
+          <CollectionCard
+            :collection="item"
+            size="md"
+            @click="handleCollectionClick(item.id)"
+          />
+        </template>
+      </VirtualGrid>
+    </ScrollRegion>
 
     <!-- Create dialog -->
     <CollectionInfoFormDialog

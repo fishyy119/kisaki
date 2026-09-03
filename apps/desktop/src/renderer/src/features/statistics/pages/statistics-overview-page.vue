@@ -8,6 +8,8 @@
 -->
 
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useStatistics } from '../composables'
 import { StateView } from '@renderer/components/ui/state-view'
@@ -21,57 +23,63 @@ import {
 } from '../components'
 
 const { m } = useI18n()
+const route = useRoute()
 
 const { allTimeSessions, error } = useStatistics()
 </script>
 
 <template>
-  <StateView
-    v-if="error"
-    state="error"
-    :error="error"
-    class="h-full"
-  />
-
-  <div
-    v-else
-    class="divide-y"
+  <ScrollRegion
+    :memory="route.path"
+    class="bg-background"
   >
-    <div class="p-4">
-      <StatisticsHero />
-    </div>
+    <StateView
+      v-if="error"
+      state="error"
+      :error="error"
+      class="h-full"
+    />
 
-    <div class="p-4">
-      <StatisticsActivityHeatmap :title="m.statistics.charts.heatmapTitle" />
-    </div>
+    <div
+      v-else
+      class="divide-y"
+    >
+      <div class="p-4">
+        <StatisticsHero />
+      </div>
 
-    <!-- Charts band -->
-    <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
-      <div class="min-w-0 p-4">
-        <StatisticsTimeTrend
-          :title="m.statistics.charts.trendTitle"
-          default-granularity="monthly"
-        />
+      <div class="p-4">
+        <StatisticsActivityHeatmap :title="m.statistics.charts.heatmapTitle" />
       </div>
-      <div class="min-w-0 p-4 xl:border-l">
-        <StatisticsTimeDistribution :title="m.statistics.charts.distributionTitle" />
-      </div>
-    </div>
 
-    <!-- Rankings band: last row, so uneven column ends fall off the page -->
-    <div class="grid grid-cols-1 divide-y xl:grid-cols-2 xl:divide-y-0">
-      <div class="min-w-0 p-4">
-        <StatisticsMediaRanking
-          :title="m.statistics.ranking.mediaTitle"
-          :sessions="allTimeSessions"
-        />
+      <!-- Charts band -->
+      <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
+        <div class="min-w-0 p-4">
+          <StatisticsTimeTrend
+            :title="m.statistics.charts.trendTitle"
+            default-granularity="monthly"
+          />
+        </div>
+        <div class="min-w-0 p-4 xl:border-l">
+          <StatisticsTimeDistribution :title="m.statistics.charts.distributionTitle" />
+        </div>
       </div>
-      <div class="min-w-0 p-4 xl:border-l">
-        <StatisticsCollectionRanking
-          :title="m.statistics.ranking.collectionTitle"
-          :sessions="allTimeSessions"
-        />
+
+      <!-- Rankings band: last row, so uneven column ends fall off the page -->
+      <div class="grid grid-cols-1 divide-y xl:grid-cols-2 xl:divide-y-0">
+        <div class="min-w-0 p-4">
+          <StatisticsMediaRanking
+            :title="m.statistics.ranking.mediaTitle"
+            :sessions="allTimeSessions"
+          />
+        </div>
+        <div class="min-w-0 p-4 xl:border-l">
+          <StatisticsCollectionRanking
+            :title="m.statistics.ranking.collectionTitle"
+            :sessions="allTimeSessions"
+          />
+        </div>
       </div>
     </div>
-  </div>
+  </ScrollRegion>
 </template>

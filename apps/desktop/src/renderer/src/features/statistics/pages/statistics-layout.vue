@@ -6,8 +6,11 @@
 -->
 
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
 import { useStatisticsProvider } from '../composables'
 import { StatisticsHeader } from '../components'
+
+const route = useRoute()
 
 // Provide statistics context for all child components
 useStatisticsProvider()
@@ -18,10 +21,10 @@ useStatisticsProvider()
     <!-- Header (includes report type navigation and period selector) -->
     <StatisticsHeader />
 
-    <!-- Main content - child routes render here. No padding: report pages
-         run their grid lines full-bleed and pad inside each cell. -->
-    <div class="flex-1 min-h-0 overflow-auto bg-background">
-      <RouterView />
+    <!-- Main content - each report page owns its scroll region. Keyed by
+         path so a page instance belongs to one location. -->
+    <div class="flex-1 min-h-0 flex flex-col">
+      <RouterView :key="route.path" />
     </div>
   </div>
 </template>

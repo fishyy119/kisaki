@@ -5,11 +5,11 @@
   - Native CSS Grid layout (auto-fill, auto-fit, etc.)
   - Dynamic measurement taken from the first rendered row (no hidden copies)
   - Auto-detects column count from the resolved grid template
-  - Supports parent container scrolling ('auto' resolves the closest ancestor)
+  - Scrolls inside the enclosing ScrollRegion ('region') or on its own
 
   @example
   ```vue
-  <VirtualGrid :items="games" scroll-parent="auto">
+  <VirtualGrid :items="games" scroll-parent="region">
     <template #item="{ item }">
       <GameCard :game="item" />
     </template>
@@ -28,7 +28,7 @@ const props = withDefaults(
     items: T[]
     /** Custom key extractor, defaults to index */
     getKey?: (item: T, index: number) => string | number
-    /** External scroll parent: element, 'auto' for closest scrollable ancestor */
+    /** External scroll parent: 'region' for the enclosing ScrollRegion, or an element */
     scrollParent?: VirtualScrollParent
     /** Container/grid class - defaults to responsive auto-fill grid */
     class?: HTMLAttributes['class']
@@ -63,7 +63,7 @@ const measuredRowGap = ref(12)
 const rowCount = computed(() => Math.ceil(props.items.length / columnCount.value))
 
 // Scroll parent integration (must be before virtualizer to provide getScrollElement and scrollMargin)
-const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange } =
+const { scrollMargin, resolvedParent, getScrollElement, initialOffset, notifyLayoutChange } =
   useVirtualScrollParent({
     containerRef,
     scrollParent: toRef(props, 'scrollParent'),
@@ -71,11 +71,13 @@ const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange } =
     onResize: measureLayout
   })
 
-// Virtualizer for rows
+// Virtualizer for rows. The initial offset is where the scroll parent is or
+// is about to be, so the first render already shows the right rows.
 const virtualizer = useVirtualizer(
   computed(() => ({
     count: rowCount.value,
     getScrollElement,
+    initialOffset,
     estimateSize: () => measuredRowHeight.value + measuredRowGap.value,
     overscan: props.overscan,
     scrollMargin: scrollMargin.value

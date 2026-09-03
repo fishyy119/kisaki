@@ -39,6 +39,7 @@ function openDetail(target: MediaRelationTarget): void {
 <template>
   <SectionScroll
     :title="m.library.fields.relatedEntries"
+    memory-key="relations"
     :editable="editable"
     :items="relations"
     :get-key="(entry) => `${entry.id}:${entry.direction}`"

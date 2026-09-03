@@ -4,7 +4,8 @@ Boundary: rows are virtualized, so a preview is only requested while its row is
 on screen.
 -->
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { PageSource } from '@renderer/core/reader/image/source'
@@ -21,8 +22,6 @@ const emit = defineEmits<{
 
 const { m } = useI18n()
 
-const scrollHost = ref<HTMLElement | null>(null)
-
 const pages = computed<number[]>(() => {
   const total = props.source?.pageCount ?? 0
   return Array.from({ length: total }, (_, index) => index)
@@ -30,10 +29,7 @@ const pages = computed<number[]>(() => {
 </script>
 
 <template>
-  <div
-    ref="scrollHost"
-    class="h-full overflow-y-auto p-2"
-  >
+  <ScrollRegion class="p-2">
     <p
       v-if="pages.length === 0"
       class="px-2 py-1 text-xs text-muted-foreground"
@@ -43,7 +39,7 @@ const pages = computed<number[]>(() => {
     <VirtualGrid
       v-else-if="props.source"
       :items="pages"
-      :scroll-parent="scrollHost"
+      scroll-parent="region"
       class="grid grid-cols-3 gap-2"
     >
       <template #item="{ item }">
@@ -55,5 +51,5 @@ const pages = computed<number[]>(() => {
         />
       </template>
     </VirtualGrid>
-  </div>
+  </ScrollRegion>
 </template>

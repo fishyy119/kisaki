@@ -7,15 +7,13 @@
  */
 
 import { ref, computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { eq, and } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
-import { scanners as scannersTable, collections, scraperProfiles, type Scanner } from '@shared/db'
+import { scanners as scannersTable, type Scanner } from '@shared/db'
 import { isActiveScannerRunStatus } from '@shared/scanner'
 import { ipcManager } from '@renderer/core/ipc'
-import { usePreferencesStore, useScannerStore } from '@renderer/stores'
-import { useAsyncData } from '@renderer/composables/use-async-data'
+import { useScannerStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
@@ -47,6 +45,10 @@ const { m } = useI18n()
 
 interface Props {
   scanner: Scanner
+  /** Resolved by the scanner route data; null when unset or hidden. */
+  targetCollectionName: string | null
+  /** Resolved by the scanner route data; null when unset. */
+  scraperProfileName: string | null
 }
 
 const props = defineProps<Props>()
@@ -64,39 +66,6 @@ const isIssuesDialogOpen = ref(false)
 // =============================================================================
 
 const scannerStore = useScannerStore()
-const preferencesStore = usePreferencesStore()
-const { showNsfw } = storeToRefs(preferencesStore)
-
-// =============================================================================
-// Data Fetching
-// =============================================================================
-
-// Fetch collection name if exists
-const { data: collection } = useAsyncData(
-  async () => {
-    if (!props.scanner.targetCollectionId) return null
-    const data = await db.query.collections.findFirst({
-      where: and(
-        eq(collections.id, props.scanner.targetCollectionId),
-        showNsfw.value ? undefined : eq(collections.isNsfw, false)
-      )
-    })
-    return data ?? null
-  },
-  { watch: [() => props.scanner.targetCollectionId, showNsfw] }
-)
-
-// Fetch profile name
-const { data: profileName } = useAsyncData(
-  async () => {
-    if (!props.scanner.scraperProfileId) return undefined
-    const profile = await db.query.scraperProfiles.findFirst({
-      where: eq(scraperProfiles.id, props.scanner.scraperProfileId)
-    })
-    return profile?.name
-  },
-  { watch: [() => props.scanner.scraperProfileId] }
-)
 
 // =============================================================================
 // Computed
@@ -319,14 +288,14 @@ async function handleOpenPath() {
     <!-- Profile column -->
     <TableCell class="relative text-center">
       <span class="block truncate text-sm text-muted-foreground">
-        {{ profileName || '-' }}
+        {{ props.scraperProfileName || '-' }}
       </span>
     </TableCell>
 
     <!-- Collection column -->
     <TableCell class="relative text-center">
       <span class="block truncate text-sm text-muted-foreground">
-        {{ collection?.name || '-' }}
+        {{ props.targetCollectionName || '-' }}
       </span>
     </TableCell>
 

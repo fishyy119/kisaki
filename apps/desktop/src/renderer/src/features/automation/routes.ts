@@ -10,6 +10,6 @@ export const automationRoutes: RouteRecordRaw[] = [
     path: '/automation',
     name: 'automation',
     component: () => import('./pages/automation-page.vue'),
-    meta: { dataLoaders: [automationsData] }
+    meta: { routeData: [automationsData] }
   }
 ]

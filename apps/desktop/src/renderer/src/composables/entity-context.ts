@@ -2,11 +2,12 @@
  * Entity detail context factory.
  *
  * One implementation of the provider/consumer shell every entity detail
- * surface shares: a route loader that settles during navigation (with the
- * in-page params reset across entries), a dialog provider that fetches after
- * mount, computed projections over the fetched data, db-change invalidation,
- * and the injected consumer. What an entity fetches — its data shape, its
- * in-page params, and its queries — stays in its own `use-<entity>.ts` as
+ * surface shares: a route data resource keyed by the entity id (params reset
+ * across entries, invalidation attributed to the entity), a dialog provider
+ * that fetches after mount and evaluates the same invalidation declaration,
+ * computed projections over the fetched data, and the injected consumer.
+ * What an entity fetches — its data shape, its in-page params, its queries,
+ * and the tables those queries read — stays in its own `use-<entity>.ts` as
  * the spec.
  */
 
@@ -18,26 +19,38 @@ import {
   shallowRef,
   toRef,
   toValue,
-  watch,
   type ComputedRef,
   type InjectionKey,
   type MaybeRefOrGetter,
-  type Ref,
-  type WritableComputedRef
+  type Ref
 } from 'vue'
-import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { defineRouteData, type RouteDataLoader } from '@renderer/core/route-data'
+import { ENTITY_TABLES } from '@renderer/core/db'
+import {
+  buildDbPredicate,
+  defineRouteData,
+  projectParams,
+  type RouteData,
+  type RouteDataInvalidate,
+  type RouteDataParams
+} from '@renderer/core/route-data'
 import { usePreferencesStore } from '@renderer/stores'
 import { entityRouteParam } from '@renderer/utils/entity-routes'
 import type { AllEntityType } from '@shared/entity-types'
 import type { TableName } from '@shared/db/table-names'
 import { useAsyncData } from './use-async-data'
-import { batchTouchesAny, useDbChanges } from './use-db-changes'
+import { useDbChanges } from './use-db-changes'
 
 /** Global visibility preference every detail fetch filters by. */
 export interface EntityDetailView {
   showNsfw: boolean
+}
+
+/** What a spec's read-set declaration may depend on. */
+export interface EntityDetailReadsContext<TData extends object, TParams extends object> {
+  params: TParams
+  /** The loaded data when known; a declaration that needs it returns its upper bound otherwise. */
+  data: TData | null | undefined
 }
 
 export interface EntityDetailSpec<TData extends object, TParams extends object> {
@@ -52,12 +65,14 @@ export interface EntityDetailSpec<TData extends object, TParams extends object> 
   initialParams(): TParams
   fetch(id: string, params: TParams, view: EntityDetailView): Promise<TData | null>
   /**
-   * Tables whose any change refetches the context. Decided by the loaded
-   * data, since a resolved type or an active filter can widen the set.
+   * Every table `fetch` reads besides the entity's own table: owned rows,
+   * link rows, and the satellite tables the links join. Rows that reference
+   * the entity are attributed to it by the schema; satellite tables match by
+   * table.
    */
-  relevantTables(data: TData | null): readonly TableName[]
-  /** Entity table whose own-row updates and deletes refetch by id. */
-  entityTable: TableName
+  reads:
+    | readonly TableName[]
+    | ((context: EntityDetailReadsContext<TData, TParams>) => readonly TableName[])
 }
 
 export interface EntityDetailContextBase {
@@ -76,9 +91,7 @@ export type EntityDetailContext<TData extends object> = {
 } & EntityDetailContextBase
 
 /** One writable ref per in-page param; a set replaces the params and refetches (SWR). */
-export type EntityDetailParams<TParams extends object> = {
-  readonly [K in keyof TParams]: WritableComputedRef<TParams[K]>
-}
+export type EntityDetailParams<TParams extends object> = RouteDataParams<TParams>
 
 export type EntityDetailProviderReturn<
   TData extends object,
@@ -99,14 +112,14 @@ export function createEntitySpoilerParams(): EntitySpoilerParams {
 
 export interface EntityDetailContextApi<TData extends object, TParams extends object> {
   key: InjectionKey<EntityDetailContext<TData>>
-  /** Route loader; declare on the detail route's `meta.dataLoaders`. */
-  detailData: RouteDataLoader<TData | null>
+  /** Route data resource; declare on the detail route's `meta.routeData`. */
+  detailData: RouteData<TParams, TData>
   /**
    * Provide entity data on the route surface.
    *
-   * Data is loaded by `detailData` during navigation, so it is already
-   * settled when the page mounts. In-page changes (params, NSFW preference)
-   * trigger a non-blocking SWR refetch.
+   * Data is committed by the route data kernel when the navigation confirms,
+   * so it is already settled when the page mounts. In-page changes (params,
+   * NSFW preference, db changes) trigger a non-blocking SWR refetch.
    */
   useRouteProvider(): EntityDetailProviderReturn<TData, TParams>
   /**
@@ -132,46 +145,32 @@ export function createEntityDetailContext<TData extends object, TParams extends 
 ): EntityDetailContextApi<TData, TParams> {
   const key: InjectionKey<EntityDetailContext<TData>> = Symbol(spec.entityType)
   const routeParam = entityRouteParam(spec.entityType)
+  const entityTable = ENTITY_TABLES[spec.entityType].tableName
 
-  // The param keys are fixed by the spec; enumerated once for the projection.
-  const paramKeys = Object.keys(spec.initialParams()) as Array<keyof TParams & string>
-
-  // Route-surface params live beside the loader so the navigation-time fetch
-  // reads a consistent value; they reset whenever a different entry loads.
-  // Only the loader and the route setter write them; a watcher would turn the
-  // cross-navigation reset into a duplicate fetch.
-  let lastRouteId: string | null = null
-  const routeParams = shallowRef<TParams>(spec.initialParams())
-
-  const detailData = defineRouteData((route) => {
-    const id = route.params[routeParam] as string
-    if (id !== lastRouteId) {
-      lastRouteId = id
-      routeParams.value = spec.initialParams()
-    }
-    const { showNsfw } = storeToRefs(usePreferencesStore())
-    return spec.fetch(id, routeParams.value, { showNsfw: showNsfw.value })
-  })
-
-  /**
-   * Per-key writable refs over one params holder. Params are replaced
-   * wholesale through `commit`, never mutated, so a shallow holder sees
-   * every change.
-   */
-  function projectParams(
-    read: () => TParams,
-    commit: (next: TParams) => void
-  ): EntityDetailParams<TParams> {
-    return Object.fromEntries(
-      paramKeys.map((param) => [
-        param,
-        computed({
-          get: () => read()[param],
-          set: (value: TParams[typeof param]) => commit({ ...read(), [param]: value })
-        })
-      ])
-    ) as EntityDetailParams<TParams>
+  // One declaration serves both surfaces: the entity's own table plus what
+  // the spec reads, attributed to the entity itself.
+  const invalidate: RouteDataInvalidate<string, TParams, TData> = {
+    reads: ({ params, data }) => [
+      entityTable,
+      ...(typeof spec.reads === 'function' ? spec.reads({ params, data }) : spec.reads)
+    ],
+    scope: ({ key: id }) => [{ entity: spec.entityType, id }]
   }
+
+  const detailData = defineRouteData<string, TParams, EntityDetailView, TData>({
+    name: `${spec.entityType}-detail`,
+    key: (route) => {
+      const id = route.params[routeParam]
+      return typeof id === 'string' && id !== '' ? id : null
+    },
+    params: () => spec.initialParams(),
+    view: () => {
+      const { showNsfw } = storeToRefs(usePreferencesStore())
+      return { showNsfw: showNsfw.value }
+    },
+    fetch: ({ key: id, params, view }) => spec.fetch(id, params, view),
+    invalidate
+  })
 
   function provideContext(source: EntityDetailSource<TData>): EntityDetailContext<TData> {
     // The projection is mechanical over the spec's empty shape; the factory
@@ -195,53 +194,16 @@ export function createEntityDetailContext<TData extends object, TParams extends 
     return context
   }
 
-  function useDbSync(
-    entityId: MaybeRefOrGetter<string>,
-    data: Readonly<Ref<TData | null | undefined>>,
-    refetch: () => Promise<void>
-  ): void {
-    const relevantTables = computed(() => new Set(spec.relevantTables(data.value ?? null)))
-
-    useDbChanges((batch) => {
-      if (batchTouchesAny(batch, relevantTables.value)) {
-        refetch()
-        return
-      }
-      if (!batch.tables.has(spec.entityTable)) return
-
-      const id = toValue(entityId)
-      const ownRowChanged = batch.changes.some(
-        (change) =>
-          change.table === spec.entityTable && change.id === id && change.operation !== 'inserted'
-      )
-      if (ownRowChanged) refetch()
-    })
-  }
-
   function useRouteProvider(): EntityDetailProviderReturn<TData, TParams> {
-    const route = useRoute()
-    const entityId = computed(() => route.params[routeParam] as string)
-    const { data, error, isFetching, refetch } = detailData()
-
-    const { showNsfw } = storeToRefs(usePreferencesStore())
-    watch(showNsfw, () => void refetch())
-
-    const params = projectParams(
-      () => routeParams.value,
-      (next) => {
-        routeParams.value = next
-        void refetch()
-      }
-    )
+    const { data, error, isFetching, params, reload } = detailData()
 
     const context = provideContext({
       data,
       isLoading: ref(false),
       isFetching,
       error,
-      refetch
+      refetch: reload
     })
-    useDbSync(entityId, data, refetch)
 
     return { ...context, params }
   }
@@ -266,7 +228,18 @@ export function createEntityDetailContext<TData extends object, TParams extends 
     )
 
     const context = provideContext({ data, isLoading, isFetching, error, refetch })
-    useDbSync(entityId, data, refetch)
+
+    // The dialog evaluates the same declaration the route resource declares.
+    const predicate = computed(() =>
+      buildDbPredicate(invalidate, {
+        key: toValue(entityId),
+        params: instanceParams.value,
+        data: data.value
+      })
+    )
+    useDbChanges((batch) => {
+      if (predicate.value?.(batch)) void refetch()
+    })
 
     return { ...context, params }
   }

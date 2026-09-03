@@ -24,7 +24,11 @@ import type {
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import { fetchMediaRelations, type MediaRelationEntry } from '@renderer/core/db/media-relations'
+import {
+  MEDIA_RELATION_READS,
+  fetchMediaRelations,
+  type MediaRelationEntry
+} from '@renderer/core/db/media-relations'
 import {
   createEntityDetailContext,
   createEntitySpoilerParams,
@@ -190,15 +194,20 @@ async function fetchGameData(
 // Context Wiring
 // =============================================================================
 
-const GAME_OWNED_TABLES: readonly TableName[] = [
+/** Owned and link rows attribute to the game; the satellite tables they join match by table. */
+const GAME_READS: readonly TableName[] = [
   'game_notes',
   'game_sessions',
   'game_tag_links',
+  'tags',
   'game_character_links',
+  'characters',
   'game_person_links',
+  'persons',
   'game_cast_links',
   'game_company_links',
-  'media_relations'
+  'companies',
+  ...MEDIA_RELATION_READS
 ]
 
 const gameDetail = createEntityDetailContext<GameData, EntitySpoilerParams>({
@@ -216,8 +225,7 @@ const gameDetail = createEntityDetailContext<GameData, EntitySpoilerParams>({
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchGameData(id, params.spoilersRevealed, view.showNsfw),
-  relevantTables: () => GAME_OWNED_TABLES,
-  entityTable: 'games'
+  reads: GAME_READS
 })
 
 export const gameDetailData = gameDetail.detailData

@@ -3,12 +3,12 @@
 
   Features:
   - Vertical virtual scrolling for fixed-height items
-  - Supports parent container scrolling ('auto' resolves the closest ancestor)
+  - Scrolls inside the enclosing ScrollRegion ('region') or on its own
   - Dynamic item height measurement from the first rendered item
 
   @example
   ```vue
-  <VirtualList :items="entities" scroll-parent="auto">
+  <VirtualList :items="entities" scroll-parent="region">
     <template #item="{ item, index }">
       <ListItem :entity="item" />
     </template>
@@ -27,7 +27,7 @@ const props = withDefaults(
     items: T[]
     /** Custom key extractor, defaults to index */
     getKey?: (item: T, index: number) => string | number
-    /** External scroll parent: element, 'auto' for closest scrollable ancestor */
+    /** External scroll parent: 'region' for the enclosing ScrollRegion, or an element */
     scrollParent?: VirtualScrollParent
     /** Container class - defaults to flex column with small gap */
     class?: HTMLAttributes['class']
@@ -58,19 +58,27 @@ const measuredItemHeight = ref(24)
 const measuredGap = ref(2)
 
 // Scroll parent integration (must be before virtualizer to provide getScrollElement and scrollMargin)
-const { scrollMargin, resolvedParent, getScrollElement, notifyLayoutChange, updateScrollMargin } =
-  useVirtualScrollParent({
-    containerRef,
-    scrollParent: toRef(props, 'scrollParent'),
-    onMeasure: () => virtualizer.value.measure(),
-    onResize: measureLayout
-  })
+const {
+  scrollMargin,
+  resolvedParent,
+  getScrollElement,
+  initialOffset,
+  notifyLayoutChange,
+  updateScrollMargin
+} = useVirtualScrollParent({
+  containerRef,
+  scrollParent: toRef(props, 'scrollParent'),
+  onMeasure: () => virtualizer.value.measure(),
+  onResize: measureLayout
+})
 
-// Virtualizer
+// Virtualizer. The initial offset is where the scroll parent is or is about
+// to be, so the first render already shows the right rows.
 const virtualizer = useVirtualizer(
   computed(() => ({
     count: props.items.length,
     getScrollElement,
+    initialOffset,
     estimateSize: () => measuredItemHeight.value + measuredGap.value,
     overscan: props.overscan,
     scrollMargin: scrollMargin.value

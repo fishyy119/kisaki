@@ -256,7 +256,7 @@ function handleRevealSpoilersConfirm() {
             v-else
             :items="displayItems"
             :get-key="(entry) => entry.item.id"
-            scroll-parent="auto"
+            scroll-parent="region"
             class="flex flex-col gap-1"
           >
             <template #item="{ item: { item, spoiler }, index }">

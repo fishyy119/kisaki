@@ -94,7 +94,7 @@ const inlineColumns = computed(() => {
           <VirtualList
             :items="props.items"
             :get-key="(item) => item.id"
-            scroll-parent="auto"
+            scroll-parent="region"
             class="flex flex-col"
           >
             <template #item="{ item, index }">

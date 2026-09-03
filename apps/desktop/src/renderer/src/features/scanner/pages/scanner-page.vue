@@ -5,17 +5,19 @@
  * Main scanner management page listing all configured scanners.
  */
 
+import { useRoute } from 'vue-router'
 import { useScanners } from '../composables'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { ScannerHeader, ScannerEmptyState, ScannerItem } from '../components'
 import { useI18n } from '@renderer/composables/use-i18n'
 
-// Data settled during navigation by the route loader
-const { scanners } = useScanners()
+// Data committed by the route data kernel before the page mounts
+const { entries } = useScanners()
 
 const SCANNER_TABLE_COLUMNS = ['', '5rem', '13%', '13%', '10rem', '7rem', '10rem']
 
 const { m } = useI18n()
+const route = useRoute()
 </script>
 
 <template>
@@ -26,13 +28,14 @@ const { m } = useI18n()
     <!-- Main content - Table-like list -->
     <div class="flex-1 min-h-0 bg-background">
       <!-- Empty -->
-      <ScannerEmptyState v-if="scanners.length === 0" />
+      <ScannerEmptyState v-if="entries.length === 0" />
 
       <!-- Scanner list -->
       <Table
         v-else
         fixed-header
         :columns="SCANNER_TABLE_COLUMNS"
+        :memory="route.path"
       >
         <template #header>
           <TableHeader>
@@ -50,9 +53,11 @@ const { m } = useI18n()
 
         <TableBody>
           <ScannerItem
-            v-for="scanner in scanners"
-            :key="scanner.id"
-            :scanner="scanner"
+            v-for="entry in entries"
+            :key="entry.scanner.id"
+            :scanner="entry.scanner"
+            :target-collection-name="entry.targetCollectionName"
+            :scraper-profile-name="entry.scraperProfileName"
           />
         </TableBody>
       </Table>

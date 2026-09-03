@@ -6,8 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { ref, computed, useTemplateRef } from 'vue'
-import { BackToTop } from '@renderer/components/ui/back-to-top'
+import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
 import { notify } from '@renderer/core/notify'
@@ -75,8 +74,6 @@ useDbChanges(({ changes }) => {
 
 const isScoreOpen = ref(false)
 const isPendingFavorite = ref(false)
-
-const bodyRef = useTemplateRef<InstanceType<typeof DialogBody>>('body')
 
 // =============================================================================
 // Handlers
@@ -160,15 +157,9 @@ const canOpenGameDir = computed(() => {
             {{ game.name }}
           </DialogTitle>
         </DialogHeader>
-        <div class="relative flex min-h-0 flex-1 flex-col">
-          <DialogBody
-            ref="body"
-            class="min-h-0 flex-1 overflow-auto p-4"
-          >
-            <GameDetailContent />
-          </DialogBody>
-          <BackToTop :target="bodyRef?.$el" />
-        </div>
+        <DialogBody class="p-4">
+          <GameDetailContent />
+        </DialogBody>
         <DialogFooter>
           <div class="flex items-center justify-between w-full">
             <!-- Left: Play button and stats -->

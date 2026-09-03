@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { and, eq, inArray } from 'drizzle-orm'
@@ -210,21 +210,11 @@ const ISSUE_TABLE_COLUMNS = ['', '8rem', '22%', '24%', '16%', '7rem']
 /** Must match the issue row's fixed height: h-14 (56px) + 1px border. */
 const ISSUE_ROW_HEIGHT_PX = 57
 
-const issueTableWrap = ref<HTMLElement | null>(null)
-const issueScrollRegion = ref<HTMLElement | null>(null)
-
-watch(
-  issueTableWrap,
-  (wrap) => {
-    issueScrollRegion.value =
-      wrap?.querySelector<HTMLElement>('[data-slot="table-scroll-region"]') ?? null
-  },
-  { flush: 'post' }
-)
+const issueTable = useTemplateRef<InstanceType<typeof Table>>('issueTable')
 
 const issueVirtualizer = useVirtualizer(
   computed(() => {
-    const scrollElement = issueScrollRegion.value
+    const scrollElement = issueTable.value?.scrollElement ?? null
     return {
       count: filteredIssueRows.value.length,
       getScrollElement: () => scrollElement,
@@ -356,10 +346,10 @@ useDbChanges(({ changes }) => {
 
         <div
           v-else
-          ref="issueTableWrap"
           class="min-h-0 flex-1"
         >
           <Table
+            ref="issueTable"
             fixed-header
             :columns="ISSUE_TABLE_COLUMNS"
           >

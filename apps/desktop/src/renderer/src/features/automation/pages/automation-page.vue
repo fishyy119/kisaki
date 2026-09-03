@@ -3,6 +3,7 @@ Automation Page owns automation data, filters, and actions.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import {
@@ -38,6 +39,7 @@ const log = createLogger('Automation')
 const AUTOMATION_TABLE_COLUMNS = ['', '20%', '17%', '17%', '12%', '8.25rem']
 
 const { m } = useI18n()
+const route = useRoute()
 
 const searchQuery = ref('')
 const statusFilter = ref<AutomationStatusFilter>('all')
@@ -126,23 +128,18 @@ const selectedDetailsCommand = computed(() =>
     : undefined
 )
 
-useIpc('automation:changed', () => {
-  void refetch()
-})
-
+// The list itself reloads through the resource's declared automation events;
+// these keep the running set current between those reloads.
 useIpc('automation:deleted', (_e, { automationId }) => {
   removeFromSet(runningAutomationIds, automationId)
-  void refetch()
 })
 
 useIpc('automation:run-started', (_e, { automationId }) => {
   addToSet(runningAutomationIds, automationId)
-  void refetch()
 })
 
 useIpc('automation:run-finished', (_e, record) => {
   removeFromSet(runningAutomationIds, record.automationId)
-  void refetch()
 })
 
 function compareAutomations(left: Automation, right: Automation): number {
@@ -201,10 +198,6 @@ function requestDeleteAutomation(automation: Automation) {
   deleteDialogOpen.value = true
 }
 
-async function handleSaved() {
-  await refetch()
-}
-
 async function handleRun(automation: Automation) {
   addToSet(runningAutomationIds, automation.id)
   try {
@@ -224,7 +217,6 @@ async function handleRun(automation: Automation) {
     )
   } finally {
     removeFromSet(runningAutomationIds, automation.id)
-    await refetch()
   }
 }
 
@@ -256,7 +248,6 @@ async function handleSetEnabled(automation: Automation, enabled: boolean) {
     notify.success(
       enabled ? m.value.automation.feedback.enabled : m.value.automation.feedback.disabled
     )
-    await refetch()
   } catch (error) {
     log.error('Failed to toggle Automation:', error)
     notify.error(
@@ -281,7 +272,6 @@ async function handleDeleteConfirmed() {
     notify.success(m.value.automation.feedback.deleted)
     deleteDialogOpen.value = false
     pendingDeleteAutomation.value = null
-    await refetch()
   } catch (error) {
     log.error('Failed to delete Automation:', error)
     notify.error(
@@ -361,6 +351,7 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
           v-else
           fixed-header
           :columns="AUTOMATION_TABLE_COLUMNS"
+          :memory="route.path"
         >
           <template #header>
             <TableHeader>
@@ -399,7 +390,6 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
       v-if="formDialogOpen"
       v-model:open="formDialogOpen"
       :automation="editingAutomation"
-      @saved="handleSaved"
     />
 
     <AutomationDetailsDialog

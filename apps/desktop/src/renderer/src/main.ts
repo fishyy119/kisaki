@@ -64,13 +64,10 @@ function createAppRouter(): Router {
         name: 'not-found',
         component: () => import('./pages/not-found-page.vue')
       }
-    ],
-    scrollBehavior(_to, _from, savedPosition) {
-      if (savedPosition) {
-        return savedPosition
-      }
-      return { top: 0 }
-    }
+    ]
+    // No scrollBehavior: the window never scrolls (the root layout is
+    // overflow-hidden). Scroll memory belongs to each ScrollRegion, keyed by
+    // the identity it displays.
   })
 
   installRouteData(router)

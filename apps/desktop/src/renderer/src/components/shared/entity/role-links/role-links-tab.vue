@@ -98,7 +98,7 @@ const grouped = computed(() => groupRoleLinks(props.items))
           <VirtualGrid
             :items="grouped[role]!"
             :get-key="(item) => item.id"
-            scroll-parent="auto"
+            scroll-parent="region"
             class="grid grid-cols-[repeat(auto-fill,6rem)] gap-3 justify-between"
           >
             <template #item="{ item }">

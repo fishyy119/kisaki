@@ -23,7 +23,13 @@ import {
 import { batchTouchesAny, useAsyncData, useDbChanges } from '@renderer/composables'
 import { useLibraryExplorerStore } from '../stores'
 import { usePreferencesStore } from '@renderer/stores'
-import { createMembershipSort, getFilterRelevantTables, isMembershipSort } from '@shared/filter'
+import {
+  createMembershipSort,
+  getQueryDependencyTables,
+  isMembershipSort,
+  type FilterState
+} from '@shared/filter'
+import type { TableName } from '@shared/db/table-names'
 import type { ContentEntityType } from '@shared/entity-types'
 
 // =============================================================================
@@ -44,6 +50,8 @@ export interface ExplorerListData {
   collections: CollectionGroup[]
   uncategorized: EntityData[]
   totalCount: number
+  /** Filters of the dynamic collections configured for the type; they decide the read set. */
+  dynamicFilters: FilterState[]
 }
 
 export interface ExplorerListContext {
@@ -110,6 +118,7 @@ function createExplorerList(): ExplorerListContext {
     // Group entities by collection
     const linkedEntityIds = new Set<string>()
     const collectionGroups: CollectionGroup[] = []
+    const dynamicFilters: FilterState[] = []
 
     for (const collection of allCollections) {
       if (collection.isDynamic) {
@@ -120,6 +129,7 @@ function createExplorerList(): ExplorerListContext {
 
         const entityConfig = dynamicConfig[entityType]
         if (!entityConfig.enabled) continue
+        dynamicFilters.push(entityConfig.filter)
 
         const dynamicIds = await queryEntityIds(entityType, {
           scope: buildDynamicCollectionScope(entityType, entityConfig),
@@ -181,7 +191,8 @@ function createExplorerList(): ExplorerListContext {
     return {
       collections: collectionGroups,
       uncategorized,
-      totalCount: entities.length
+      totalCount: entities.length,
+      dynamicFilters
     }
   }
 
@@ -190,22 +201,28 @@ function createExplorerList(): ExplorerListContext {
     watch: [query, showNsfw]
   })
 
-  // Listen for DB events: entity table, relation link tables (filters and
-  // dynamic configs), collections, and the collection membership link table
-  const relevantTables = computed(() => {
-    const tables = new Set(getFilterRelevantTables(activeEntityType.value))
+  // What the fetch reads: the entity list under the store query, the
+  // collections and the membership link table, and whatever the dynamic
+  // collections' filters reference. The read set follows the query instance
+  // and the loaded configs, not the type's whole spec.
+  const readTables = computed(() => {
+    const entityType = activeEntityType.value
+    const tables = new Set<TableName>(getQueryDependencyTables(entityType, query.value))
     tables.add('collections')
-    tables.add(COLLECTION_LINKS[activeEntityType.value].tableName)
+    tables.add(COLLECTION_LINKS[entityType].tableName)
+    for (const filter of data.value?.dynamicFilters ?? []) {
+      for (const table of getQueryDependencyTables(entityType, { filter })) tables.add(table)
+    }
     return tables
   })
 
   useDbChanges((batch) => {
-    if (batchTouchesAny(batch, relevantTables.value)) refetch()
+    if (batchTouchesAny(batch, readTables.value)) refetch()
   })
 
   // Computed data with default for UI rendering
   const explorerData = computed<ExplorerListData>(
-    () => data.value ?? { collections: [], uncategorized: [], totalCount: 0 }
+    () => data.value ?? { collections: [], uncategorized: [], totalCount: 0, dynamicFilters: [] }
   )
 
   // Deduplicated flat list: the same entity appears once per containing

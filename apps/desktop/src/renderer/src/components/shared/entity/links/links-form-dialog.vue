@@ -330,7 +330,7 @@ function handleRevealSpoilersConfirm() {
                   <VirtualList
                     :items="withSpoiler(groupedItems[role]!)"
                     :get-key="(entry) => entry.link.id"
-                    scroll-parent="auto"
+                    scroll-parent="region"
                     class="flex flex-col gap-1"
                   >
                     <template #item="{ item: { link, spoiler, imageUrl }, index }">

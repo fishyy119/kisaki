@@ -127,6 +127,7 @@ function handleOpen(entityType: ContentEntityType, entityId: string) {
     <CollectionDetailContent
       v-model:query="query"
       class="min-h-0 flex-1 bg-background"
+      :memory="route.path"
       @open="handleOpen"
     />
   </div>

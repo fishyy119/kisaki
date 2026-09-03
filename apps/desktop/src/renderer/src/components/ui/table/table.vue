@@ -6,13 +6,17 @@
   colgroup (`columns`, required for cross-table alignment), and every region
   reserves the scrollbar gutter so columns stay aligned with the scrolling
   body. Band chrome (fill + border) lives on the region wrappers - not on
-  thead/tfoot - so it also covers the reserved gutter strip. The body fills
-  the available height by default; pass a height via `bodyClass` (e.g.
-  h-[20vh]) for a fixed-size scroll region. The `state` slot renders
-  empty/loading views inside the scroll region.
+  thead/tfoot - so it also covers the reserved gutter strip. The body is a
+  ScrollRegion: it fills the available height by default (pass a height via
+  `bodyClass`, e.g. h-[20vh], for a fixed-size viewport), hosts the
+  back-to-top device, remembers its offset under `memory` when the table is a
+  route page's body, and exposes its scroll element for callers that
+  virtualize rows against it. The `state` slot renders empty/loading views
+  inside the scroll region.
 -->
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
+import { computed, useTemplateRef, type HTMLAttributes } from 'vue'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { cn } from '@renderer/utils/cn'
 
 const props = defineProps<{
@@ -23,7 +27,16 @@ const props = defineProps<{
   columns?: readonly string[]
   /** Extra classes for the scrolling body region (e.g. a fixed height). */
   bodyClass?: HTMLAttributes['class']
+  /** Scroll memory identity of the body when the table is a route page's body. */
+  memory?: string
 }>()
+
+const region = useTemplateRef<InstanceType<typeof ScrollRegion>>('region')
+
+defineExpose({
+  /** The fixed-header body's scroll element; undefined in plain mode or before mount. */
+  scrollElement: computed<HTMLElement | undefined>(() => region.value?.element)
+})
 </script>
 
 <template>
@@ -51,9 +64,10 @@ const props = defineProps<{
       </table>
     </div>
 
-    <div
-      data-slot="table-scroll-region"
-      :class="cn('min-h-0 grow overflow-y-auto [scrollbar-gutter:stable]', props.bodyClass)"
+    <ScrollRegion
+      ref="region"
+      :memory="props.memory"
+      :class="cn('[scrollbar-gutter:stable]', props.bodyClass)"
     >
       <slot name="state" />
       <table
@@ -69,7 +83,7 @@ const props = defineProps<{
         </colgroup>
         <slot />
       </table>
-    </div>
+    </ScrollRegion>
 
     <div
       v-if="$slots.footer"

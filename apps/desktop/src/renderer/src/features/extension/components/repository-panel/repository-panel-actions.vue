@@ -28,7 +28,9 @@ const submitting = ref(false)
 const addingOfficialRepository = ref(false)
 const startingRefreshAll = ref(false)
 
-const { data: repositories, refetch } = extensionRepositoriesData()
+// Adding a repository reaches the list through the resource's declared
+// repository-change event; nothing here refetches by hand.
+const { data: repositories } = extensionRepositoriesData()
 
 const taskRunStore = useTaskRunStore()
 const activeRefreshAll = computed(() =>
@@ -67,7 +69,6 @@ async function handleAddOfficialRepository() {
       .then(unwrapIpcData)
 
     notify.success(m.value.extension.repository.officialAdded)
-    refetch()
   } catch (err) {
     notify.error(
       m.value.extension.repository.officialAddFailed,
@@ -90,7 +91,6 @@ async function handleAddRepository(request: RepositoryAddRequest) {
 
     notify.success(m.value.extension.repository.added)
     addDialogOpen.value = false
-    refetch()
   } catch (err) {
     notify.error(
       m.value.extension.repository.addFailed,

@@ -6,6 +6,7 @@ PDF outline can match.
 -->
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { VirtualList } from '@renderer/components/ui/virtual'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { ReaderOutlineEntry } from '@renderer/core/reader/outline'
@@ -32,7 +33,7 @@ const ROW_CLASS =
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-y-auto p-2">
+  <ScrollRegion class="p-2">
     <p class="px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
       {{ props.unitLabel }}
     </p>
@@ -40,7 +41,7 @@ const ROW_CLASS =
     <VirtualList
       :items="props.units"
       :get-key="(unit) => unit.id"
-      scroll-parent="auto"
+      scroll-parent="region"
       class="flex flex-col"
     >
       <template #item="{ item: unit }">
@@ -77,7 +78,7 @@ const ROW_CLASS =
       <VirtualList
         :items="props.outline"
         :get-key="(entry) => `${entry.depth}:${entry.target}:${entry.label}`"
-        scroll-parent="auto"
+        scroll-parent="region"
         class="flex flex-col"
       >
         <template #item="{ item: entry }">
@@ -92,5 +93,5 @@ const ROW_CLASS =
         </template>
       </VirtualList>
     </template>
-  </div>
+  </ScrollRegion>
 </template>

@@ -12,16 +12,13 @@
 import type Database from 'better-sqlite3'
 import { createLogger } from '@main/log'
 import type { DbChangeSummary, RawDbChange } from '@shared/db/changes'
-import { toDbChangeSummary } from '@shared/db/changes'
+import { summarizeDbChange } from '@shared/db/references'
 import type { LibraryEntityChangeSummary } from '@shared/library'
 import type { DbHooks } from '../hooks'
 import {
   ENTITY_PROJECTIONS,
-  MEDIA_PROJECTIONS,
   getEntityProjectionForTopic,
   getMediaCreatedName,
-  getMediaIdsFromChange,
-  getMediaProjectionForTable,
   getMediaProjectionForTopic,
   mediaExists,
   projectEntityChanges,
@@ -36,7 +33,6 @@ import {
 } from './types'
 import { SETTINGS_PROJECTIONS, type SettingsColumnProjection } from './projections/settings'
 import { stringValue } from './normalization'
-import { dedupeTargets } from './targets'
 
 const log = createLogger('Db')
 
@@ -64,10 +60,12 @@ export class DbChangeFeed {
     }
 
     this.dispatchSettingsChanged(change)
-    this.pendingSummaries.push(toDbChangeSummary(change))
+    // The summary's targets are the schema-derived attribution of the row;
+    // the entity-grouped hook groups by exactly the same targets.
+    const summary = summarizeDbChange(change)
+    this.pendingSummaries.push(summary)
 
-    const targets = this.getTargets(change)
-    for (const target of targets) {
+    for (const target of summary.targets) {
       const key = `${target.entity}:${target.id}`
       const group = this.groups.get(key)
       if (group) {
@@ -123,28 +121,6 @@ export class DbChangeFeed {
     if (changes.length > 0) {
       this.options.hooks.libraryChanged.dispatch({ changes })
     }
-  }
-
-  private getTargets(change: RawDbChange): Array<{ entity: EntityGroup['entity']; id: string }> {
-    const targets: Array<{ entity: EntityGroup['entity']; id: string }> = []
-
-    const changedMedia = getMediaProjectionForTable(change.table)
-    if (changedMedia) {
-      targets.push({ entity: changedMedia.entity, id: change.id })
-    }
-
-    for (const projection of MEDIA_PROJECTIONS) {
-      for (const mediaId of getMediaIdsFromChange(projection, change)) {
-        targets.push({ entity: projection.entity, id: mediaId })
-      }
-    }
-
-    const entityProjection = ENTITY_PROJECTIONS[change.table]
-    if (entityProjection) {
-      targets.push({ entity: entityProjection.entity, id: change.id })
-    }
-
-    return dedupeTargets(targets)
   }
 
   private dispatchSettingsChanged(change: RawDbChange): void {

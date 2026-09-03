@@ -8,7 +8,7 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { eq } from 'drizzle-orm'
-import { BackToTop } from '@renderer/components/ui/back-to-top'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -86,7 +86,6 @@ useAmbientLight(() =>
 // State
 // =============================================================================
 
-const scrollRef = ref<HTMLElement>()
 const scoreDialogOpen = ref(false)
 const catchUpOpen = ref(false)
 const isPendingFavorite = ref(false)
@@ -330,16 +329,12 @@ async function handleOpenNovelDir() {
       </template>
     </PageHeader>
 
-    <div class="relative flex min-h-0 flex-1 flex-col">
-      <div
-        ref="scrollRef"
-        class="min-h-0 flex-1 overflow-auto bg-background p-4"
-      >
-        <NovelDetailContent />
-      </div>
-
-      <BackToTop :target="scrollRef" />
-    </div>
+    <ScrollRegion
+      :memory="route.path"
+      class="bg-background p-4"
+    >
+      <NovelDetailContent />
+    </ScrollRegion>
 
     <!-- Score dialog -->
     <EntityScoreFormDialog

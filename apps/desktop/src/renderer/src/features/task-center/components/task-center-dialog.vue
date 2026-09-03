@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import type { TaskRun } from '@shared/task-run'
@@ -83,21 +83,11 @@ const filteredCompletedRuns = computed(() =>
 /** Must match CompletedTaskRunRow's fixed height: h-16 (64px) + 1px border. */
 const COMPLETED_ROW_HEIGHT_PX = 65
 
-const completedTableWrap = ref<HTMLElement | null>(null)
-const completedScrollRegion = ref<HTMLElement | null>(null)
-
-watch(
-  completedTableWrap,
-  (wrap) => {
-    completedScrollRegion.value =
-      wrap?.querySelector<HTMLElement>('[data-slot="table-scroll-region"]') ?? null
-  },
-  { flush: 'post' }
-)
+const completedTable = useTemplateRef<InstanceType<typeof Table>>('completedTable')
 
 const completedVirtualizer = useVirtualizer(
   computed(() => {
-    const scrollElement = completedScrollRegion.value
+    const scrollElement = completedTable.value?.scrollElement ?? null
     return {
       count: filteredCompletedRuns.value.length,
       getScrollElement: () => scrollElement,
@@ -366,10 +356,10 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 />
                 <div
                   v-else
-                  ref="completedTableWrap"
                   class="h-full"
                 >
                   <Table
+                    ref="completedTable"
                     fixed-header
                     :columns="COMPLETED_RUN_TABLE_COLUMNS"
                     body-class="overflow-x-hidden"

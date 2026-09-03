@@ -20,10 +20,9 @@ import {
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
-import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
-import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../../stores'
+import { extensionRepositoriesData } from '../../composables'
 import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type { SortDirection } from '@shared/filter'
@@ -48,16 +47,12 @@ const SORT_OPTIONS = computed<SortOption<DiscoverExtensionSortField>[]>(() => [
 
 const store = useDiscoverExtensionStore()
 
-const { data: repositories } = useAsyncData(
-  async () => {
-    return unwrapIpcData(await ipcManager.invoke('extension:list-repositories'))
-  },
-  { immediate: true }
-)
+// The repositories resource is declared on the discover route, so the list
+// is complete on the first frame and follows repository changes.
+const { data: repositories } = extensionRepositoriesData()
 
-const repositoriesList = computed(() => repositories.value ?? [])
 const enabledRepositories = computed(() =>
-  repositoriesList.value.filter((repository) => repository.state === 'enabled')
+  (repositories.value ?? []).filter((repository) => repository.state === 'enabled')
 )
 
 // The search input debounces; every model change is already a committed query

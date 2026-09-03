@@ -20,13 +20,14 @@ export {
 } from './use-explorer-locator'
 export {
   useShowcaseSections,
-  showcaseSectionsData,
+  showcaseData,
   createSection,
   updateSection,
   deleteSection,
-  reorderSections
+  reorderSections,
+  type SectionEntityData,
+  type ShowcaseSectionData
 } from './use-showcase-sections'
-export { useSectionData, type SectionEntityData } from './use-section-data'
 export {
   useLibrarySearch,
   type LibrarySearchHit,

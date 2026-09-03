@@ -11,14 +11,14 @@ import { extensionSignersData } from '../../composables'
 
 const { m } = useI18n()
 
-const { refetch } = extensionSignersData()
+const { reload } = extensionSignersData()
 </script>
 
 <template>
   <Button
     variant="outline"
     size="sm"
-    @click="refetch"
+    @click="reload"
   >
     <Icon
       icon="icon-[mdi--refresh]"

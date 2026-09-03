@@ -7,30 +7,28 @@
  * Section management is done via SectionsFormDialog.
  */
 
-import { ref, computed, provide } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
-import { BackToTop } from '@renderer/components/ui/back-to-top'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
 import { useShowcaseSections } from '../composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { LibraryShowcaseSection, LibraryShowcaseSectionsFormDialog } from '../components/showcase'
 
 const { m } = useI18n()
+const route = useRoute()
 
-// Data (settled during navigation by the route loader)
+// Data (committed by the route data kernel before the page mounts)
 const { sections } = useShowcaseSections()
-
-// Scroll container for virtualized grids
-const scrollContainerRef = ref<HTMLElement>()
-provide('showcaseScrollContainer', scrollContainerRef)
 
 // Dialog state
 const isManagerOpen = ref(false)
 
 // Computed
-const visibleSections = computed(() => sections.value.filter((s) => s.isVisible))
+const visibleSections = computed(() => sections.value.filter((s) => s.section.isVisible))
 </script>
 
 <template>
@@ -58,43 +56,40 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
     </PageHeader>
 
     <!-- Content -->
-    <div class="relative flex min-h-0 flex-1 flex-col">
-      <div
-        ref="scrollContainerRef"
-        class="min-h-0 flex-1 overflow-auto bg-background"
+    <ScrollRegion
+      :memory="route.path"
+      class="bg-background"
+    >
+      <StateView
+        v-if="visibleSections.length === 0"
+        state="empty"
+        icon="icon-[mdi--view-dashboard-outline]"
+        :title="m.library.showcase.emptyTitle"
+        :description="m.library.showcase.emptyDescription"
+        class="h-full p-8"
       >
-        <StateView
-          v-if="visibleSections.length === 0"
-          state="empty"
-          icon="icon-[mdi--view-dashboard-outline]"
-          :title="m.library.showcase.emptyTitle"
-          :description="m.library.showcase.emptyDescription"
-          class="h-full p-8"
-        >
-          <template #actions>
-            <Button @click="isManagerOpen = true">
-              <Icon
-                icon="icon-[mdi--plus]"
-                class="size-4"
-              />
-              {{ m.library.showcase.addFirstSection }}
-            </Button>
-          </template>
-        </StateView>
-        <div
-          v-else
-          class="p-4 space-y-4"
-        >
-          <LibraryShowcaseSection
-            v-for="section in visibleSections"
-            :key="section.id"
-            :section="section"
-          />
-        </div>
+        <template #actions>
+          <Button @click="isManagerOpen = true">
+            <Icon
+              icon="icon-[mdi--plus]"
+              class="size-4"
+            />
+            {{ m.library.showcase.addFirstSection }}
+          </Button>
+        </template>
+      </StateView>
+      <div
+        v-else
+        class="p-4 space-y-4"
+      >
+        <LibraryShowcaseSection
+          v-for="{ section, entities } in visibleSections"
+          :key="section.id"
+          :section="section"
+          :entities="entities"
+        />
       </div>
-
-      <BackToTop :target="scrollContainerRef" />
-    </div>
+    </ScrollRegion>
 
     <!-- Sections manager dialog -->
     <LibraryShowcaseSectionsFormDialog

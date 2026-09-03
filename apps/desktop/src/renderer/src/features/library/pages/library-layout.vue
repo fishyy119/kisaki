@@ -10,7 +10,7 @@
  */
 
 import { onMounted, onUnmounted, ref } from 'vue'
-import { RouterView } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -23,6 +23,7 @@ import { parseExplorerSelectionKey } from '../utils/explorer-selection'
 import { LibraryExplorer, LibrarySearchDialog } from '../components'
 
 const { m } = useI18n()
+const route = useRoute()
 
 const store = useLibraryExplorerStore()
 const { explorerWidth } = storeToRefs(store)
@@ -96,8 +97,10 @@ onUnmounted(() => {
         </ResizablePanel>
         <ResizableHandle />
         <ResizablePanel position="right">
+          <!-- Keyed by path: a page instance belongs to one location, so a
+               param change (game A to game B) mounts fresh instead of reusing. -->
           <div class="h-full overflow-hidden">
-            <RouterView />
+            <RouterView :key="route.path" />
           </div>
         </ResizablePanel>
       </ResizableLayout>

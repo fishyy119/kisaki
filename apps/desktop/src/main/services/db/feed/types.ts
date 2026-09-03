@@ -30,11 +30,15 @@ export interface MediaLinkTables {
   cast?: string
 }
 
-/** Table and column layout of one media type, for change projection. */
+/**
+ * Table and column layout of one media type, for facet projection. Which
+ * media a changed row belongs to is not decided here: the change feed
+ * attributes rows through the schema's foreign keys (`shared/db/references`).
+ */
 export interface MediaFeedProjection {
   entity: MediaEntityTopic
   table: string
-  /** Column every related table uses to point back at the media row. */
+  /** Column the facet snapshot queries filter the media-owned tables by. */
   ownerColumn: string
   /** Ordering column shared by the media-owned link tables. */
   orderColumn: string
@@ -42,8 +46,6 @@ export interface MediaFeedProjection {
   tagLinksTable: string
   collectionLinksTable: string
   linkTables: MediaLinkTables
-  /** Owned rows that only redirect the feed at their media row. */
-  ownedTables: readonly string[]
   coreFields: Record<string, string>
   assetFields: Record<string, string>
   /** Present when the media type tracks per-episode watch state. */

@@ -8,20 +8,10 @@
   state - it appears and disappears the way the explorer's locate affordance
   does, and reads as a static fixture while it exists.
 
-  Host contract: a positioned flex column that exactly frames the scroll
-  viewport, the scroll container inside it as its flex item, this component
-  as the sibling. Nested flex rather than a percentage height, because a
-  column flex item under an auto-height container (a max-h dialog) is not a
-  definite size for percentages. The box is layout only; the scroll container
-  still paints its plane.
-
-    <div class="relative flex min-h-0 flex-1 flex-col">
-      <div ref="scrollRef" class="min-h-0 flex-1 overflow-auto ...">…</div>
-      <BackToTop :target="scrollRef" />
-    </div>
-
+  Its host is `ScrollRegion`, which frames the viewport and renders this
+  device as the sibling of its scroll element; no other surface mounts it.
   Surfaces that already own a footer strip render the device there through
-  `useBackToTop` instead of mounting this overlay.
+  `useBackToTop` instead of this overlay.
 -->
 <script setup lang="ts">
 import { toRef } from 'vue'

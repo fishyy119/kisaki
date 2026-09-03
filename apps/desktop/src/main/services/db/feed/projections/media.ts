@@ -17,9 +17,7 @@ import {
   animeCompanyLinks,
   animeEpisodes,
   animeExternalIds,
-  animeExtras,
   animePersonLinks,
-  animeSessions,
   animeTagLinks,
   animes,
   collectionAnimeLinks,
@@ -31,7 +29,6 @@ import {
   comicCompanyLinks,
   comicExternalIds,
   comicPersonLinks,
-  comicSessions,
   comicTagLinks,
   comics,
   gameCastLinks,
@@ -39,14 +36,12 @@ import {
   gameCompanyLinks,
   gameExternalIds,
   gamePersonLinks,
-  gameSessions,
   gameTagLinks,
   games,
   novelCharacterLinks,
   novelCompanyLinks,
   novelExternalIds,
   novelPersonLinks,
-  novelSessions,
   novelTagLinks,
   novelVolumes,
   novels
@@ -72,8 +67,7 @@ import {
   normalizeCoreValue,
   normalizeNullableString,
   nullableNumber,
-  stringValue,
-  uniqueStrings
+  stringValue
 } from '../normalization'
 import { createPartialSnapshot, sameJson } from '../snapshot'
 
@@ -91,7 +85,6 @@ const GAME_PROJECTION: MediaFeedProjection = {
     character: getTableName(gameCharacterLinks),
     cast: getTableName(gameCastLinks)
   },
-  ownedTables: [getTableName(gameSessions)],
   coreFields: fieldMap({
     name: games.name,
     originalName: games.originalName,
@@ -121,16 +114,6 @@ const ANIME_PROJECTION: MediaFeedProjection = {
     character: getTableName(animeCharacterLinks),
     cast: getTableName(animeCastLinks)
   },
-  // `anime_episode_files` and `anime_extra_files` have no anime_id column, so
-  // the owner-column mechanism cannot cover them; file-row changes reach
-  // subscribers via the episode/extra rows they hang off. If extension
-  // subscribers ever need file-level changes, route them through a two-step
-  // lookup (file -> episode/extra -> anime) instead of widening this list.
-  ownedTables: [
-    getTableName(animeEpisodes),
-    getTableName(animeExtras),
-    getTableName(animeSessions)
-  ],
   coreFields: fieldMap({
     name: animes.name,
     originalName: animes.originalName,
@@ -161,9 +144,6 @@ const COMIC_PROJECTION: MediaFeedProjection = {
     company: getTableName(comicCompanyLinks),
     character: getTableName(comicCharacterLinks)
   },
-  // Chapter file rows have no comic_id column; file-row changes reach
-  // subscribers via the chapter rows they hang off, like anime episode files.
-  ownedTables: [getTableName(comicChapters), getTableName(comicSessions)],
   coreFields: fieldMap({
     name: comics.name,
     originalName: comics.originalName,
@@ -196,7 +176,6 @@ const NOVEL_PROJECTION: MediaFeedProjection = {
     company: getTableName(novelCompanyLinks),
     character: getTableName(novelCharacterLinks)
   },
-  ownedTables: [getTableName(novelVolumes), getTableName(novelSessions)],
   coreFields: fieldMap({
     name: novels.name,
     originalName: novels.originalName,
@@ -235,13 +214,6 @@ const MEDIA_PROJECTION_BY_TOPIC = {
   novel: NOVEL_PROJECTION
 } as const satisfies Record<MediaEntityTopic, MediaFeedProjection>
 
-export const MEDIA_PROJECTIONS: readonly MediaFeedProjection[] =
-  Object.values(MEDIA_PROJECTION_BY_TOPIC)
-
-export function getMediaProjectionForTable(table: string): MediaFeedProjection | undefined {
-  return MEDIA_PROJECTIONS.find((projection) => projection.table === table)
-}
-
 export function getMediaProjectionForTopic(
   entity: LibraryEntityTopic
 ): MediaFeedProjection | undefined {
@@ -253,42 +225,6 @@ function isMediaEntityTopic(entity: LibraryEntityTopic): entity is MediaEntityTo
 }
 
 const MEDIA_RELATIONS_TABLE = 'media_relations'
-
-/** Media rows reached indirectly, through a link, relation, or owned row that changed. */
-export function getMediaIdsFromChange(
-  projection: MediaFeedProjection,
-  change: RawDbChange
-): string[] {
-  // Relation rows are polymorphic on both ends, so each end routes to its own
-  // media type instead of a fixed owner column.
-  if (change.table === MEDIA_RELATIONS_TABLE) {
-    return uniqueStrings([
-      ...mediaRelationEndIds(projection.entity, change.old),
-      ...mediaRelationEndIds(projection.entity, change.next)
-    ])
-  }
-
-  if (!relatedTables(projection).has(change.table)) {
-    return []
-  }
-
-  return uniqueStrings([
-    stringValue(change.old?.[projection.ownerColumn]),
-    stringValue(change.next?.[projection.ownerColumn])
-  ])
-}
-
-function mediaRelationEndIds(
-  mediaType: MediaFeedProjection['entity'],
-  row: Record<string, unknown> | undefined
-): Array<string | undefined> {
-  if (!row) return []
-
-  return [
-    row.from_type === mediaType ? stringValue(row.from_id) : undefined,
-    row.to_type === mediaType ? stringValue(row.to_id) : undefined
-  ]
-}
 
 export function getMediaCreatedName(
   sqlite: Database.Database,
@@ -586,16 +522,6 @@ function projectIdSet(
   const after = readIds(sqlite, options.sql, options.mediaId)
   const before = rebuildIdSetBefore(after, linkChanges, options.field)
   return sameJson(before, after) ? null : { before, after }
-}
-
-function relatedTables(projection: MediaFeedProjection): Set<string> {
-  return new Set([
-    projection.externalIdsTable,
-    projection.tagLinksTable,
-    projection.collectionLinksTable,
-    ...Object.values(projection.linkTables),
-    ...projection.ownedTables
-  ])
 }
 
 function readMediaRow(

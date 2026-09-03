@@ -30,25 +30,28 @@ export const extensionRoutes: RouteRecordRaw[] = [
         path: 'discover',
         name: EXTENSION_ROUTE_NAMES.discover,
         component: () => import('./pages/extension-discover-page.vue'),
-        meta: { dataLoaders: [discoverSearchData, installedExtensionsData] }
+        // The filter bar's repository list is the repositories resource.
+        meta: {
+          routeData: [discoverSearchData, installedExtensionsData, extensionRepositoriesData]
+        }
       },
       {
         path: 'installed',
         name: EXTENSION_ROUTE_NAMES.installed,
         component: () => import('./pages/extension-installed-page.vue'),
-        meta: { dataLoaders: [installedExtensionsData] }
+        meta: { routeData: [installedExtensionsData] }
       },
       {
         path: 'repositories',
         name: EXTENSION_ROUTE_NAMES.repositories,
         component: () => import('./pages/extension-repositories-page.vue'),
-        meta: { dataLoaders: [extensionRepositoriesData] }
+        meta: { routeData: [extensionRepositoriesData] }
       },
       {
         path: 'signers',
         name: EXTENSION_ROUTE_NAMES.signers,
         component: () => import('./pages/extension-signers-page.vue'),
-        meta: { dataLoaders: [extensionSignersData] }
+        meta: { routeData: [extensionSignersData] }
       }
     ]
   }

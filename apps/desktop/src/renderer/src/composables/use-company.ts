@@ -187,12 +187,18 @@ async function fetchCompanyData(
 // Context Wiring
 // =============================================================================
 
-const COMPANY_LINK_TABLES: readonly TableName[] = [
+/** Link and relation rows attribute to the company; the tables they join match by table. */
+const COMPANY_READS: readonly TableName[] = [
   'company_tag_links',
+  'tags',
   'game_company_links',
+  'games',
   'anime_company_links',
+  'animes',
   'comic_company_links',
+  'comics',
   'novel_company_links',
+  'novels',
   'company_relations'
 ]
 
@@ -209,8 +215,7 @@ const companyDetail = createEntityDetailContext<CompanyData, EntitySpoilerParams
   },
   initialParams: createEntitySpoilerParams,
   fetch: (id, params, view) => fetchCompanyData(id, params.spoilersRevealed, view.showNsfw),
-  relevantTables: () => COMPANY_LINK_TABLES,
-  entityTable: 'companies'
+  reads: COMPANY_READS
 })
 
 export const companyDetailData = companyDetail.detailData

@@ -198,7 +198,7 @@ async function handleSave() {
             v-else
             :items="items"
             :get-key="(item) => item.id"
-            scroll-parent="auto"
+            scroll-parent="region"
             class="flex flex-col gap-1"
           >
             <template #item="{ item }">

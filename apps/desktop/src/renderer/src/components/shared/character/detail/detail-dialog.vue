@@ -4,9 +4,8 @@
   Dialog view for character details.
 -->
 <script setup lang="ts">
-import { ref, computed, useTemplateRef } from 'vue'
+import { ref, computed } from 'vue'
 import { eq } from 'drizzle-orm'
-import { BackToTop } from '@renderer/components/ui/back-to-top'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
@@ -70,8 +69,6 @@ useDbChanges(({ changes }) => {
 
 const isScoreOpen = ref(false)
 const isPendingFavorite = ref(false)
-
-const bodyRef = useTemplateRef<InstanceType<typeof DialogBody>>('body')
 
 // =============================================================================
 // Computed
@@ -152,15 +149,9 @@ function handleRevealSpoilersConfirm() {
           </DialogTitle>
         </DialogHeader>
 
-        <div class="relative flex min-h-0 flex-1 flex-col">
-          <DialogBody
-            ref="body"
-            class="min-h-0 flex-1 overflow-auto p-4"
-          >
-            <CharacterDetailContent />
-          </DialogBody>
-          <BackToTop :target="bodyRef?.$el" />
-        </div>
+        <DialogBody class="p-4">
+          <CharacterDetailContent />
+        </DialogBody>
 
         <DialogFooter>
           <div class="flex items-center justify-end w-full">

@@ -3,10 +3,10 @@
  *
  * Owns every library surface: the layout, the showcase home, one generated
  * detail route per entity type, and the organizer list pages. Pages are
- * lazy-loaded from their .vue files; loaders are declared on
- * `meta.dataLoaders` and awaited by the route-data kernel during navigation.
- * Detail paths, param names, pages, and loaders all derive from one registry,
- * so adding a media type is one entry here plus its page component.
+ * lazy-loaded from their .vue files; route data resources are declared on
+ * `meta.routeData` and loaded by the route-data kernel during navigation.
+ * Detail paths, param names, pages, and resources all derive from one
+ * registry, so adding a media type is one entry here plus its page component.
  */
 
 import type {
@@ -32,7 +32,7 @@ import { personDetailData } from '@renderer/composables/use-person'
 import { companyDetailData } from '@renderer/composables/use-company'
 import { collectionDetailData } from '@renderer/composables/use-collection'
 import { tagDetailData } from '@renderer/composables/use-tag'
-import { showcaseSectionsData } from './composables/use-showcase-sections'
+import { showcaseData } from './composables/use-showcase-sections'
 import { favoritesData } from './composables/use-favorites'
 import { uncategorizedListData } from './composables/use-uncategorized-list'
 import { collectionsListData } from './composables/use-collections-list'
@@ -42,29 +42,29 @@ import { collectionsListData } from './composables/use-collections-list'
 // =============================================================================
 
 const ENTITY_DETAIL_ROUTES = {
-  game: { page: () => import('./pages/game-detail-page.vue'), loader: gameDetailData },
-  anime: { page: () => import('./pages/anime-detail-page.vue'), loader: animeDetailData },
-  comic: { page: () => import('./pages/comic-detail-page.vue'), loader: comicDetailData },
-  novel: { page: () => import('./pages/novel-detail-page.vue'), loader: novelDetailData },
+  game: { page: () => import('./pages/game-detail-page.vue'), data: gameDetailData },
+  anime: { page: () => import('./pages/anime-detail-page.vue'), data: animeDetailData },
+  comic: { page: () => import('./pages/comic-detail-page.vue'), data: comicDetailData },
+  novel: { page: () => import('./pages/novel-detail-page.vue'), data: novelDetailData },
   character: {
     page: () => import('./pages/character-detail-page.vue'),
-    loader: characterDetailData
+    data: characterDetailData
   },
-  person: { page: () => import('./pages/person-detail-page.vue'), loader: personDetailData },
-  company: { page: () => import('./pages/company-detail-page.vue'), loader: companyDetailData },
+  person: { page: () => import('./pages/person-detail-page.vue'), data: personDetailData },
+  company: { page: () => import('./pages/company-detail-page.vue'), data: companyDetailData },
   collection: {
     page: () => import('./pages/collection-detail-page.vue'),
-    loader: collectionDetailData
+    data: collectionDetailData
   },
-  tag: { page: () => import('./pages/tag-detail-page.vue'), loader: tagDetailData }
-} satisfies Record<AllEntityType, { page: () => Promise<unknown>; loader: RouteDataHandle }>
+  tag: { page: () => import('./pages/tag-detail-page.vue'), data: tagDetailData }
+} satisfies Record<AllEntityType, { page: () => Promise<unknown>; data: RouteDataHandle }>
 
 const entityDetailRoutes: RouteRecordRaw[] = ALL_ENTITY_TYPES.map((entityType) => ({
   path: getEntityDetailRoutePattern(entityType),
   name: entityDetailRouteName(entityType),
   component: ENTITY_DETAIL_ROUTES[entityType].page,
   props: true,
-  meta: { dataLoaders: [ENTITY_DETAIL_ROUTES[entityType].loader] }
+  meta: { routeData: [ENTITY_DETAIL_ROUTES[entityType].data] }
 }))
 
 // =============================================================================
@@ -104,27 +104,27 @@ export const libraryRoutes: RouteRecordRaw[] = [
         path: '',
         name: 'showcase',
         component: () => import('./pages/showcase-page.vue'),
-        meta: { dataLoaders: [showcaseSectionsData] }
+        meta: { routeData: [showcaseData] }
       },
       ...entityDetailRoutes,
       {
         path: 'collections',
         name: 'collections',
         component: () => import('./pages/collections-page.vue'),
-        meta: { dataLoaders: [collectionsListData] }
+        meta: { routeData: [collectionsListData] }
       },
       {
         path: 'uncategorized/:entityType',
         name: 'uncategorized',
         component: () => import('./pages/uncategorized-page.vue'),
         props: true,
-        meta: { dataLoaders: [uncategorizedListData] }
+        meta: { routeData: [uncategorizedListData] }
       },
       {
         path: 'favorites',
         name: 'favorites',
         component: () => import('./pages/favorites-page.vue'),
-        meta: { dataLoaders: [favoritesData] }
+        meta: { routeData: [favoritesData] }
       }
     ]
   }

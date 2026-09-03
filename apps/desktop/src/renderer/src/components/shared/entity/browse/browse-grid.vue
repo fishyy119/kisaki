@@ -1,6 +1,7 @@
 <!--
   EntityBrowseGrid
-  Virtualized card grid of one content entity type.
+  Virtualized card grid of one content entity type, scrolling inside the
+  enclosing ScrollRegion.
 -->
 <script setup lang="ts">
 import { VirtualGrid } from '@renderer/components/ui/virtual'
@@ -11,12 +12,9 @@ import EntityCard from '../card'
 interface Props {
   entityType: ContentEntityType
   entities: ContentEntityData[]
-  scrollParent?: HTMLElement | null
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  scrollParent: null
-})
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   open: [entityType: ContentEntityType, id: string]
@@ -27,7 +25,7 @@ const emit = defineEmits<{
   <VirtualGrid
     :items="props.entities"
     :get-key="(item) => item.id"
-    :scroll-parent="props.scrollParent"
+    scroll-parent="region"
     class="grid grid-cols-[repeat(auto-fill,8rem)] justify-between gap-3"
   >
     <template #item="{ item }">

@@ -4,11 +4,13 @@ Boundary: owns the installed extension list and its filtering; update checks
 and their state live in the installed extension store.
 -->
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
-import { ipcManager } from '@renderer/core/ipc'
 import { resolveExtensionText } from '@renderer/core/extensions'
+import { useIpc } from '@renderer/composables/use-ipc'
 import { useI18n } from '@renderer/composables/use-i18n'
 import ExtensionInstalledPanelCard from './installed-panel-card.vue'
 import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
@@ -18,40 +20,26 @@ import { installedExtensionsData } from '../../composables'
 const store = useInstalledExtensionStore()
 const { updates } = storeToRefs(store)
 const { m } = useI18n()
+const route = useRoute()
 
-// Data settled during navigation by the route loader
-const { data: extensions, error, refetch } = installedExtensionsData()
+// Committed by the route data kernel before the page mounts; the resource
+// reloads itself on installation and runtime state changes.
+const { data: extensions, error, reload } = installedExtensionsData()
 
 const extensionsList = computed(() => extensions.value ?? [])
 
-let unsubscribeInstallationsChanged: (() => void) | null = null
-let unsubscribeRuntimeStateChanged: (() => void) | null = null
-
-onMounted(() => {
-  unsubscribeInstallationsChanged = ipcManager.on('extension:installations-changed', () => {
-    void refreshInstalledCatalog()
-  })
-  unsubscribeRuntimeStateChanged = ipcManager.on('extension:runtime-state-changed', () => {
-    void refetch()
-  })
-})
-
-onUnmounted(() => {
-  unsubscribeInstallationsChanged?.()
-  unsubscribeRuntimeStateChanged?.()
+// A changed installation set invalidates the last update check.
+useIpc('extension:installations-changed', () => {
+  store.resetUpdateCheck()
 })
 
 function getUpdateInfo(extensionId: string) {
   return updates.value.find((u) => u.extensionId === extensionId)
 }
 
-async function refreshInstalledCatalog() {
-  store.resetUpdateCheck()
-  await refetch()
-}
-
 async function handleRefresh() {
-  await refreshInstalledCatalog()
+  store.resetUpdateCheck()
+  await reload()
 }
 
 // Filter and sort extensions
@@ -116,7 +104,7 @@ const filteredExtensions = computed(() => {
     <ExtensionInstalledPanelFilterBar />
 
     <!-- Extension Grid -->
-    <div class="flex-1 overflow-auto">
+    <ScrollRegion :memory="route.path">
       <StateView
         v-if="error"
         state="error"
@@ -153,6 +141,6 @@ const filteredExtensions = computed(() => {
           />
         </div>
       </template>
-    </div>
+    </ScrollRegion>
   </div>
 </template>

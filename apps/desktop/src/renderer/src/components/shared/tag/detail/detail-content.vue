@@ -11,6 +11,8 @@ import { getEntityIcon } from '@renderer/utils/format'
 import type { ContentEntityType } from '@shared/entity-types'
 
 interface Props {
+  /** Scroll memory identity of the host; the page passes its route path, the dialog nothing. */
+  memory?: string
   class?: HTMLAttributes['class']
 }
 
@@ -34,6 +36,7 @@ const entityLabel = computed(() => m.value.library.entities[entityType.value])
     v-if="tag"
     v-model:query="query"
     :class="props.class"
+    :memory="props.memory"
     :entity-type="entityType"
     :entities="entities"
     :counts="counts"

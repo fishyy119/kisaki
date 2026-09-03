@@ -311,7 +311,7 @@ const entityTypeModel = computed({
             v-else
             :items="currentTypeLinks"
             :get-key="(link) => link.id"
-            scroll-parent="auto"
+            scroll-parent="region"
             class="flex flex-col gap-1"
           >
             <template #item="{ item: link, index }">

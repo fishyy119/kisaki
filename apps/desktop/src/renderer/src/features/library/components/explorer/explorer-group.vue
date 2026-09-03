@@ -6,7 +6,7 @@
  * Shows lightning icon for dynamic collections.
  */
 
-import { computed, inject, useTemplateRef, watch, type Ref } from 'vue'
+import { computed, useTemplateRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
@@ -37,9 +37,6 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   isUncategorized: false
 })
-
-// Inject scroll container from parent explorer
-const scrollContainer = inject<Ref<HTMLElement | undefined>>('explorerScrollContainer')
 
 const store = useLibraryExplorerStore()
 const { collapsedIds } = storeToRefs(store)
@@ -162,7 +159,7 @@ function handleGroupRowClick(e: MouseEvent) {
       v-if="!isCollapsed && props.group.entities.length > 0"
       ref="listView"
       :items="props.group.entities"
-      :scroll-parent="scrollContainer"
+      scroll-parent="region"
       class="flex flex-col gap-0.5"
     >
       <template #item="{ item }">

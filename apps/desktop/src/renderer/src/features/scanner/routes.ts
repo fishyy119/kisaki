@@ -10,6 +10,6 @@ export const scannerRoutes: RouteRecordRaw[] = [
     path: '/scanner',
     name: 'scanner',
     component: () => import('./pages/scanner-page.vue'),
-    meta: { dataLoaders: [scannersData] }
+    meta: { routeData: [scannersData] }
   }
 ]

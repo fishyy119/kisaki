@@ -5,7 +5,9 @@ all, add) live in the header actions component.
 Boundary: calls repository IPC only; renderer never fetches manifests directly.
 -->
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { ScrollRegion } from '@renderer/components/ui/scroll-region'
 import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
@@ -18,14 +20,16 @@ import RepositoryRemoveDialog from './repository-remove-dialog.vue'
 import type { ExtensionRepositoryInfo } from '@shared/extension'
 
 const { m } = useI18n()
+const route = useRoute()
 const busyRepositoryIds = ref(new Set<string>())
 const detailsDialogOpen = ref(false)
 const removeDialogOpen = ref(false)
 const selectedRepositoryId = ref<string | null>(null)
 const repositoryToRemove = ref<ExtensionRepositoryInfo | null>(null)
 
-// Data settled during navigation by the route loader
-const { data: repositories, error, refetch } = extensionRepositoriesData()
+// Committed by the route data kernel before the page mounts; the resource
+// reloads itself whenever the main process reports a repository change.
+const { data: repositories, error } = extensionRepositoriesData()
 const repositoryList = computed(() =>
   [...(repositories.value ?? [])].sort((left, right) => left.priority - right.priority)
 )
@@ -53,18 +57,6 @@ const selectedRepository = computed(
 const selectedRepositoryPriority = computed(() =>
   selectedRepository.value ? getRepositoryIndex(selectedRepository.value) + 1 : 0
 )
-
-let unsubscribeRepositoriesChanged: (() => void) | null = null
-
-onMounted(() => {
-  unsubscribeRepositoriesChanged = ipcManager.on('extension:repositories-changed', () => {
-    refetch()
-  })
-})
-
-onUnmounted(() => {
-  unsubscribeRepositoriesChanged?.()
-})
 
 watch(detailsDialogOpen, (open) => {
   if (!open) {
@@ -98,7 +90,6 @@ async function handleToggleRepository(repository: ExtensionRepositoryInfo, enabl
         ? m.value.extension.repository.enabledFeedback
         : m.value.extension.repository.disabledFeedback
     )
-    refetch()
   })
 }
 
@@ -116,7 +107,6 @@ async function handleMovePriority(repository: ExtensionRepositoryInfo, delta: nu
         priority: nextIndex
       })
       .then(unwrapIpcData)
-    refetch()
   })
 }
 
@@ -137,7 +127,6 @@ async function handleConfirmRemoveRepository() {
     notify.success(m.value.extension.repository.deleted)
     removeDialogOpen.value = false
     repositoryToRemove.value = null
-    refetch()
   } catch (err) {
     notify.error(
       m.value.extension.repository.operationFailed,
@@ -198,7 +187,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
 
 <template>
   <div class="flex flex-col h-full">
-    <div class="flex-1 overflow-auto">
+    <ScrollRegion :memory="route.path">
       <StateView
         v-if="error"
         state="error"
@@ -232,7 +221,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
           />
         </div>
       </template>
-    </div>
+    </ScrollRegion>
 
     <RepositoryDetailsDialog
       v-if="detailsDialogOpen && selectedRepository"

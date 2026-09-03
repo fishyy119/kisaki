@@ -7,7 +7,7 @@
  */
 
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { EntityBrowsePanel } from '@renderer/components/shared/entity'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -17,10 +17,11 @@ import { useFavorites } from '../composables'
 
 const { m } = useI18n()
 
+const route = useRoute()
 const router = useRouter()
 
 // =============================================================================
-// Data (settled during navigation by the route loader)
+// Data (committed by the route data kernel before the page mounts)
 // =============================================================================
 
 const { entities, counts, entityType, query } = useFavorites()
@@ -50,6 +51,7 @@ function handleOpen(type: ContentEntityType, entityId: string) {
     <EntityBrowsePanel
       v-model:query="query"
       class="min-h-0 flex-1 bg-background"
+      :memory="route.path"
       :entity-type="entityType"
       :entities="entities"
       :counts="counts"

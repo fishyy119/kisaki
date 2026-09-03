@@ -7,7 +7,7 @@
  */
 
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { StateView } from '@renderer/components/ui/state-view'
@@ -20,10 +20,11 @@ import { useUncategorizedList } from '../composables'
 
 const { m } = useI18n()
 
+const route = useRoute()
 const router = useRouter()
 
 // =============================================================================
-// Data (settled during navigation by the route loader)
+// Data (committed by the route data kernel before the page mounts)
 // =============================================================================
 
 const { entities, counts, entityType, query, error } = useUncategorizedList()
@@ -88,6 +89,7 @@ function exit() {
     <EntityBrowsePanel
       v-model:query="query"
       class="min-h-0 flex-1 bg-background"
+      :memory="route.path"
       :entity-type="entityType"
       :entities="entities"
       :counts="counts"

@@ -9,13 +9,18 @@
  * hosts it there rather than as an overlay).
  */
 
-import { computed, inject, ref, type Ref } from 'vue'
+import { computed, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { BACK_TO_TOP_ICON, useBackToTop } from '@renderer/components/ui/back-to-top'
 import { useLibraryExplorerStore } from '../../stores'
 import { useExplorerList, useExplorerLocator } from '../../composables'
 import { useI18n } from '@renderer/composables/use-i18n'
+
+const props = defineProps<{
+  /** The explorer list's scroll element; the device this footer hosts serves it. */
+  scrollElement?: HTMLElement
+}>()
 
 const { m } = useI18n()
 
@@ -24,12 +29,7 @@ const { activeEntityType } = storeToRefs(store)
 const { data } = useExplorerList()
 const locator = useExplorerLocator()
 
-// Inject scroll container from parent explorer
-const scrollContainer = inject<Ref<HTMLElement | undefined>>(
-  'explorerScrollContainer',
-  ref<HTMLElement>()
-)
-const backToTop = useBackToTop(scrollContainer)
+const backToTop = useBackToTop(toRef(props, 'scrollElement'))
 
 const countText = computed(() =>
   m.value.library.counts[activeEntityType.value]({ count: data.value.totalCount })

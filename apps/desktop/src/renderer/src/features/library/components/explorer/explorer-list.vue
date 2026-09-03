@@ -6,7 +6,7 @@
  * Uses virtualization for filter mode flat list.
  */
 
-import { computed, inject, provide, useTemplateRef, watch, type Ref } from 'vue'
+import { computed, provide, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualList } from '@renderer/components/ui/virtual'
@@ -42,9 +42,6 @@ const { activeEntityType, query, collapsedIds } = storeToRefs(store)
 const { data, rawData, allEntities, isLoading } = useExplorerList()
 const locator = useExplorerLocator()
 const state = useRenderState(isLoading, null, rawData)
-
-// Inject scroll container from parent
-const scrollContainer = inject<Ref<HTMLElement | undefined>>('explorerScrollContainer')
 
 const isFiltering = computed(() => hasActiveEntityListQuery(query.value))
 
@@ -154,7 +151,7 @@ const currentConfig = computed(() => ({
         v-if="allEntities.length > 0"
         ref="filteredListView"
         :items="allEntities"
-        :scroll-parent="scrollContainer"
+        scroll-parent="region"
         class="flex flex-col gap-0.5"
       >
         <template #item="{ item }">

@@ -15,22 +15,12 @@
  * always holds all media, so switching scope never refetches.
  */
 
-import {
-  provide,
-  inject,
-  ref,
-  computed,
-  watch,
-  type InjectionKey,
-  type ComputedRef,
-  type Ref
-} from 'vue'
-import { gte, lte, and, count, inArray, eq, type SQL } from 'drizzle-orm'
+import { provide, inject, ref, computed, type InjectionKey, type ComputedRef, type Ref } from 'vue'
+import { gte, lte, and, count, inArray, eq, getTableName, type SQL } from 'drizzle-orm'
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
-import { batchTouchesAny, useDbChanges } from '@renderer/composables/use-db-changes'
 import type { TableName } from '@shared/db/table-names'
 import {
   MEDIA_TYPES,
@@ -493,40 +483,54 @@ interface StatisticsData {
   allTime: FetchedData | null
 }
 
-// In-page period selection lives beside the loader so the navigation-time
-// fetch reads a consistent value; it resets whenever the report type changes.
-let lastReportType: ReportType | null = null
-const selectedPeriod = ref<Period>(getCurrentPeriod('overview'))
+/** In-page inputs of a report; the period resets whenever the report type changes. */
+interface StatisticsParams {
+  period: Period
+}
 
 // Media scope persists across report types and navigations; it filters the
 // loaded snapshot in memory, so changing it never refetches.
 const selectedMediaFilter = ref<StatisticsMediaFilter>('all')
 
-export const statisticsData = defineRouteData(async (route): Promise<StatisticsData> => {
+/** Everything a report reads: session spans, unit completions, the media rows that name them, and their collections. */
+const STATISTICS_READS: readonly TableName[] = [
+  ...SESSION_TABLES,
+  ...UNIT_TABLES,
+  ...MEDIA_TABLES,
+  'collections',
+  ...MEDIA_TYPES.map(
+    (mediaType) => getTableName(MEDIA_STATISTICS_SOURCES[mediaType].collectionLinks) as TableName
+  )
+]
+
+export const statisticsData = defineRouteData({
+  name: 'statistics',
   // Declared by the statistics route manifest on each report page's meta.
-  const reportType = route.meta.reportType ?? 'overview'
-  if (reportType !== lastReportType) {
-    lastReportType = reportType
-    selectedPeriod.value = getCurrentPeriod(reportType)
-  }
+  key: (route): ReportType => route.meta.reportType ?? 'overview',
+  params: (reportType): StatisticsParams => ({ period: getCurrentPeriod(reportType) }),
+  view: () => {
+    const { showNsfw } = storeToRefs(usePreferencesStore())
+    return { showNsfw: showNsfw.value }
+  },
+  fetch: async ({ key: reportType, params, view }): Promise<StatisticsData> => {
+    const { period } = params
+    const dateRange = calculatePeriodDateRange(reportType, period)
+    // Overview has no natural predecessor; period reports compare to the
+    // previous period and overview additionally loads all-time data.
+    const previousRange =
+      reportType === 'overview'
+        ? null
+        : calculatePeriodDateRange(reportType, shiftPeriod(reportType, period, -1))
 
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  const period = selectedPeriod.value
-  const dateRange = calculatePeriodDateRange(reportType, period)
-  // Overview has no natural predecessor; period reports compare to the
-  // previous period and overview additionally loads all-time data.
-  const previousRange =
-    reportType === 'overview'
-      ? null
-      : calculatePeriodDateRange(reportType, shiftPeriod(reportType, period, -1))
+    const [current, previousSessions, allTime] = await Promise.all([
+      fetchStatisticsData(dateRange, view.showNsfw),
+      previousRange ? fetchSessionsInRange(previousRange, view.showNsfw) : Promise.resolve(null),
+      reportType === 'overview' ? fetchStatisticsData(null, view.showNsfw) : Promise.resolve(null)
+    ])
 
-  const [current, previousSessions, allTime] = await Promise.all([
-    fetchStatisticsData(dateRange, showNsfw.value),
-    previousRange ? fetchSessionsInRange(previousRange, showNsfw.value) : Promise.resolve(null),
-    reportType === 'overview' ? fetchStatisticsData(null, showNsfw.value) : Promise.resolve(null)
-  ])
-
-  return { reportType, period, current, previousSessions, allTime }
+    return { reportType, period, current, previousSessions, allTime }
+  },
+  invalidate: { reads: STATISTICS_READS }
 })
 
 // =============================================================================
@@ -536,25 +540,22 @@ export const statisticsData = defineRouteData(async (route): Promise<StatisticsD
 /**
  * Provide statistics data context.
  *
- * Data is loaded by `statisticsData` during navigation. Period switching and
- * NSFW preference changes trigger a non-blocking SWR refetch; derived state
+ * Data is committed by the route data kernel when the navigation confirms.
+ * Period switching (a param), the NSFW preference (the view), and db changes
+ * in the read tables trigger a non-blocking SWR refetch; derived state
  * (period, date range, display) follows the loaded snapshot so charts and
  * labels always match the sessions on screen.
  */
 export function useStatisticsProvider(): StatisticsContext {
-  const { data, error, isFetching, refetch } = statisticsData()
-
-  const { showNsfw } = storeToRefs(usePreferencesStore())
-  watch(showNsfw, () => void refetch())
+  const { data, error, isFetching, params, reload } = statisticsData()
 
   const reportType = computed<ReportType>(() => data.value?.reportType ?? 'overview')
-  const currentPeriod = computed<Period>(() => data.value?.period ?? selectedPeriod.value)
+  const currentPeriod = computed<Period>(() => data.value?.period ?? params.period.value)
   const dateRange = computed(() => calculatePeriodDateRange(reportType.value, currentPeriod.value))
   const periodDisplay = computed(() => formatPeriodDisplay(reportType.value, currentPeriod.value))
 
   const setCurrentPeriod = (period: Period): void => {
-    selectedPeriod.value = period
-    void refetch()
+    params.period.value = period
   }
 
   // Computed data maps, scoped by the media filter
@@ -615,18 +616,6 @@ export function useStatisticsProvider(): StatisticsContext {
   const unitCounts = computed(() => data.value?.current.unitCounts ?? emptyUnitCounts())
   const allTimeUnitCounts = computed(() => data.value?.allTime?.unitCounts ?? emptyUnitCounts())
 
-  // Event listeners for auto-refresh
-  useDbChanges((batch) => {
-    if (batchTouchesAny(batch, SESSION_TABLES) || batchTouchesAny(batch, UNIT_TABLES)) {
-      void refetch()
-      return
-    }
-    const mediaUpdated = batch.changes.some(
-      (change) => change.operation === 'updated' && MEDIA_TABLES.has(change.table)
-    )
-    if (mediaUpdated) void refetch()
-  })
-
   const context: StatisticsContext = {
     reportType,
     currentPeriod,
@@ -646,7 +635,7 @@ export function useStatisticsProvider(): StatisticsContext {
     entityCollectionLinks,
     isFetching,
     error,
-    refetch
+    refetch: reload
   }
 
   provide(StatisticsKey, context)
