@@ -2,8 +2,8 @@
  * Window geometry contract shared by the main process (window limits) and the
  * renderer (root font size).
  *
- * The interface scale is the single lever of the rem scale: the renderer sets
- * `--text-base-size = BASE_TEXT_SIZE_PX × scale`. Window minimums are fixed
+ * The renderer writes the interface-scale multiplier; CSS owns the base
+ * typography and computes the root font size. Window minimums are fixed
  * CSS pixels and do not follow the scale: a larger scale on a small display
  * simply shows less - the layout degrades through its fluid rules (the
  * "usable" tier) instead of the window refusing to fit the screen.
@@ -28,9 +28,6 @@ export const MAIN_WINDOW_DEFAULT_CONTENT_SIZE: WindowContentSize = { width: 1400
 /** Reader windows show one document and tolerate a much smaller box. */
 export const READER_WINDOW_MIN_CONTENT_SIZE: WindowContentSize = { width: 480, height: 360 }
 
-/** Root font size in CSS pixels at 100% interface scale. */
-export const BASE_TEXT_SIZE_PX = 14
-
 /**
  * Interface scale steps, in percent: even 10% steps, communicable and
  * keyboard-steppable. The range is a density preference around the design
@@ -52,9 +49,4 @@ export function parseUiScale(value: unknown): UiScale {
 export function stepUiScale(scale: UiScale, direction: 1 | -1): UiScale {
   const index = UI_SCALE_VALUES.indexOf(scale)
   return UI_SCALE_VALUES[Math.min(UI_SCALE_VALUES.length - 1, Math.max(0, index + direction))]!
-}
-
-/** Root font size for a scale, as a CSS length. */
-export function uiScaleTextSize(scale: UiScale): string {
-  return `${(BASE_TEXT_SIZE_PX * scale) / 100}px`
 }

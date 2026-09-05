@@ -197,11 +197,9 @@
  * the top of this file; CJK glyphs in mono contexts fall back to the sans
  * family. (Extension webviews get the same fonts over kisaki-webview-font://.)
  *
- * Base typography is expressed as variables (not hardcoded) so a future
- * appearance setting can drive font/weight/size/spacing from one place; the
- * webview theme bridge mirrors these resolved values to extension documents.
- * The font stacks must stay in sync with EXTENSION_WEBVIEW_FONT_*_STACK in
- * @shared/extension/webview-fonts (the bridge falls back to those constants).
+ * CSS owns the base typography; the interface-scale controller writes only
+ * the multiplier. The webview bridge mirrors the resulting root font size
+ * and the typography tokens into extension documents.
  */
 :root {
   --font-sans: 'Noto Sans SC Variable', ui-sans-serif, system-ui, sans-serif;
@@ -209,6 +207,7 @@
     'Noto Sans Mono Variable', 'Noto Sans SC Variable', ui-monospace, SFMono-Regular, Menlo,
     Consolas, monospace;
   --text-base-size: 14px;
+  --interface-scale: 1;
   --text-base-weight: 450;
   --text-base-line-height: 1.5;
   --text-base-letter-spacing: normal;
@@ -247,7 +246,7 @@
 
   html {
     font-weight: var(--text-base-weight);
-    font-size: var(--text-base-size);
+    font-size: calc(var(--text-base-size) * var(--interface-scale));
     line-height: var(--text-base-line-height);
     letter-spacing: var(--text-base-letter-spacing);
   }

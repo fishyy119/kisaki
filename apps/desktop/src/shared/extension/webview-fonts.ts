@@ -43,16 +43,6 @@ export const EXTENSION_WEBVIEW_FONT_PACKAGES: readonly ExtensionWebviewFontPacka
   }
 ]
 
-export const EXTENSION_WEBVIEW_FONT_SANS_STACK =
-  "'Noto Sans SC Variable', ui-sans-serif, system-ui, sans-serif"
-
-/**
- * CJK glyphs in mono contexts intentionally fall back to the sans family;
- * the mono face covers latin/greek/cyrillic.
- */
-export const EXTENSION_WEBVIEW_FONT_MONO_STACK =
-  "'Noto Sans Mono Variable', 'Noto Sans SC Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
-
 /**
  * Absolute stylesheet URLs served to webview documents.
  */

@@ -57,9 +57,12 @@ app inherits, so no step above 130% exists to stand in for it.
 The interface scale is the single lever of the rem scale: the main `WindowService`
 is its only writer (the settings surface calls `window:set-interface-scale`;
 `Ctrl+=` / `Ctrl+-` step through the presets and `Ctrl+0` resets, in every window),
-it pushes `window:interface-scale-changed`, and each renderer sets
-`--text-base-size = 14px × scale` on its root (`core/interface-scale`). The webview
-bridge mirrors the resolved size into extension documents. Layout code that must
+it pushes `window:interface-scale-changed`, and each participating renderer sets
+`--interface-scale = scale / 100` on its root (`core/interface-scale`). CSS alone
+defines `--text-base-size` and applies `font-size: calc(var(--text-base-size) *
+var(--interface-scale))`. The controller observes the resolved root size, and the
+webview bridge mirrors it into extension documents without defining its own
+typography or theme defaults. Layout code that must
 speak pixels (virtualizer row estimates, canvases, tick budgets) uses `remToPx()`
 from `core/interface-scale` inside a computed, never a literal pixel constant.
 
@@ -360,8 +363,8 @@ frames; full-page reports never frame.
 
 ### The rem Scale
 
-The root font size is `14px` (`--text-base-size` on `:root`, applied to `html`), so
-the whole Tailwind rem scale renders at 87.5%. Effective pixels:
+At 100% interface scale, the root font size is `14px` (`--text-base-size` in CSS),
+so the whole Tailwind rem scale renders at 87.5%. Effective pixels:
 
 | Utility     | Nominal | Effective |
 | ----------- | ------- | --------- |
@@ -373,8 +376,8 @@ the whole Tailwind rem scale renders at 87.5%. Effective pixels:
 
 Never reason in nominal values, and never write an arbitrary size
 (`text-[11px]`): pixels bypass the scale and, because the scale is compressed,
-they land between steps and read as noise. `--text-base-size` is the single
-lever a future interface-scale setting turns, so everything must stay in rem.
+they land between steps and read as noise. `--text-base-size` owns the design
+baseline; `--interface-scale` multiplies it, so everything must stay in rem.
 Base line height is `1.5` and base weight `450`.
 
 ### Type Roles
@@ -1181,7 +1184,7 @@ Zero JS runtime, CSS mask-based.
 - Form: `FieldGroup`, `FieldLabel`, `FieldContent`
 - Scroll aids: `BackToTop`, `useBackToTop`, `BACK_TO_TOP_ICON`, `showLocateButton`
 - Viewport contract: `MAIN_WINDOW_MIN_CONTENT_SIZE`, `UI_SCALE_VALUES`, `stepUiScale`, `uiScale`,
-  `remToPx`, `--text-base-size`, `window:set-interface-scale`, `window:interface-scale-changed`,
+  `remToPx`, `--text-base-size`, `--interface-scale`, `window:set-interface-scale`, `window:interface-scale-changed`,
   `watchInterfaceScaleShortcuts`
 - Modal region: `MODAL_LAYER_ID`, `MODAL_LAYER_SELECTOR`, `dialog-positioner`
 - Dialog geometry: `size="`, `fill`, `DialogSize`, `min(100%,48rem)`

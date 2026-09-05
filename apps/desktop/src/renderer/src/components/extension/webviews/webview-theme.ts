@@ -9,11 +9,7 @@ import {
   type WebviewThemeTokenName,
   type WebviewTypography
 } from '@kisaki3/extension-api'
-import {
-  EXTENSION_WEBVIEW_FONT_MONO_STACK,
-  EXTENSION_WEBVIEW_FONT_SANS_STACK,
-  extensionWebviewFontStylesheetUrls
-} from '@shared/extension'
+import { extensionWebviewFontStylesheetUrls } from '@shared/extension'
 
 const TOKEN_CSS_VARS: Record<WebviewThemeTokenName, string> = {
   background: '--background',
@@ -52,15 +48,6 @@ const SHADOW_CSS_VARS: Record<WebviewShadowTierName, string> = {
   modal: '--shadow-modal'
 }
 
-const DEFAULT_RADIUS = '6px'
-
-const TYPOGRAPHY_DEFAULTS = {
-  baseSize: '14px',
-  baseWeight: '450',
-  baseLineHeight: '1.5',
-  baseLetterSpacing: 'normal'
-} as const
-
 /**
  * Reads the full resolved appearance (theme + typography) from the document
  * so webview documents render with the same palette, radius, fonts, and base
@@ -90,26 +77,20 @@ function readWebviewTheme(styles: CSSStyleDeclaration, mode: 'light' | 'dark'): 
     mode,
     tokens,
     shadows,
-    radius: styles.getPropertyValue('--radius').trim() || DEFAULT_RADIUS,
-    // The lightbox glass alpha; the opaque fallback keeps documents readable
-    // if a theme ever drops the token.
-    paneAlpha: styles.getPropertyValue('--pane-alpha').trim() || '100%'
+    radius: styles.getPropertyValue('--radius').trim(),
+    paneAlpha: styles.getPropertyValue('--pane-alpha').trim()
   }
 }
 
 function readWebviewTypography(styles: CSSStyleDeclaration): WebviewTypography {
   return {
     stylesheets: extensionWebviewFontStylesheetUrls(),
-    sans: styles.getPropertyValue('--font-sans').trim() || EXTENSION_WEBVIEW_FONT_SANS_STACK,
-    mono: styles.getPropertyValue('--font-mono').trim() || EXTENSION_WEBVIEW_FONT_MONO_STACK,
-    baseSize: styles.getPropertyValue('--text-base-size').trim() || TYPOGRAPHY_DEFAULTS.baseSize,
-    baseWeight:
-      styles.getPropertyValue('--text-base-weight').trim() || TYPOGRAPHY_DEFAULTS.baseWeight,
-    baseLineHeight:
-      styles.getPropertyValue('--text-base-line-height').trim() ||
-      TYPOGRAPHY_DEFAULTS.baseLineHeight,
-    baseLetterSpacing:
-      styles.getPropertyValue('--text-base-letter-spacing').trim() ||
-      TYPOGRAPHY_DEFAULTS.baseLetterSpacing
+    sans: styles.getPropertyValue('--font-sans').trim(),
+    mono: styles.getPropertyValue('--font-mono').trim(),
+    baseSize: styles.fontSize,
+    baseWeight: styles.fontWeight,
+    // Keep the unitless ratio so descendant text keeps proportional line heights.
+    baseLineHeight: styles.getPropertyValue('--text-base-line-height').trim(),
+    baseLetterSpacing: styles.letterSpacing
   }
 }
