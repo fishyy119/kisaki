@@ -9,6 +9,8 @@ export const task = {
   noCompletedRecords: '完了した記録はありません',
 
   table: {
+    phase: '段階',
+    duration: '所要時間',
     task: 'タスク',
     progress: '進行状況',
     result: '結果',
@@ -48,7 +50,6 @@ export const task = {
     viewDetails: '詳細を表示',
     deleteRecord: '記録を削除',
     duration: '所要時間',
-    counters: 'カウント',
     warningCount: ({ count }: { count: number }) => `${count} 件の警告`,
     moreWarnings: ({ count }: { count: number }) => `ほか ${count} 件の警告`
   },

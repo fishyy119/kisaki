@@ -17,7 +17,6 @@ import { useScannerStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +36,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 
 const log = createLogger('Scanner')
 
-const { m } = useI18n()
+const { m, f } = useI18n()
 
 // =============================================================================
 // Props
@@ -223,9 +222,7 @@ async function handleOpenPath() {
 </script>
 
 <template>
-  <TableRow
-    :class="cn('relative h-11 border-border/50 hover:bg-accent/30', isBusy && 'bg-primary/5')"
-  >
+  <TableRow :class="cn('relative border-border/50 hover:bg-accent/30', isBusy && 'bg-primary/5')">
     <!-- Name column -->
     <TableCell>
       <!-- Progress bar overlay while a run is active; positioned by the row -->
@@ -235,98 +232,67 @@ async function handleOpenPath() {
         :style="{ width: `${progress}%` }"
       />
 
-      <div class="relative min-w-0 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          class="bg-primary/10 text-primary hover:bg-primary/20"
-          @click="handleOpenPath"
-        >
-          <Icon
-            icon="icon-[mdi--folder-open-outline]"
-            class="size-4"
-          />
-        </Button>
-        <div class="min-w-0">
-          <div class="flex items-center gap-1.5">
-            <p class="text-sm font-medium truncate">{{ props.scanner.name }}</p>
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Icon
-                  :icon="
-                    props.scanner.watchEnabled
-                      ? 'icon-[mdi--radar]'
-                      : 'icon-[mdi--hand-back-right-outline]'
-                  "
-                  :class="
-                    cn(
-                      'size-3.5 shrink-0',
-                      props.scanner.watchEnabled ? 'text-primary' : 'text-muted-foreground'
-                    )
-                  "
-                />
-              </TooltipTrigger>
-              <TooltipContent>
-                {{
-                  props.scanner.watchEnabled
-                    ? m.scanner.item.watching
-                    : m.scanner.item.watchDisabled
-                }}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <p class="text-xs text-muted-foreground truncate">{{ props.scanner.path }}</p>
-        </div>
-      </div>
+      <span
+        class="relative block truncate font-medium"
+        :title="props.scanner.name"
+      >
+        {{ props.scanner.name }}
+      </span>
     </TableCell>
 
-    <!-- Type column -->
     <TableCell class="relative">
-      <span class="text-sm">{{ getTypeText(props.scanner.type) }}</span>
+      <Button
+        variant="link"
+        size="sm"
+        class="max-w-full min-w-0 justify-start px-0 font-normal text-foreground"
+        :tooltip="props.scanner.path"
+        @click="handleOpenPath"
+      >
+        <span class="truncate">{{ props.scanner.path }}</span>
+      </Button>
+    </TableCell>
+
+    <TableCell class="relative truncate">
+      {{ getTypeText(props.scanner.type) }}
+    </TableCell>
+
+    <TableCell class="relative">
+      <span
+        :title="props.scanner.watchEnabled ? m.scanner.item.watching : m.scanner.item.watchDisabled"
+      >
+        {{ props.scanner.watchEnabled ? m.states.enabled : m.states.disabled }}
+      </span>
     </TableCell>
 
     <!-- Profile column -->
     <TableCell class="relative">
-      <span class="block truncate text-sm">
+      <span
+        class="block truncate"
+        :title="props.scraperProfileName ?? undefined"
+      >
         {{ props.scraperProfileName || '-' }}
       </span>
     </TableCell>
 
     <!-- Collection column -->
     <TableCell class="relative">
-      <span class="block truncate text-sm">
+      <span
+        class="block truncate"
+        :title="props.targetCollectionName ?? undefined"
+      >
         {{ props.targetCollectionName || '-' }}
       </span>
     </TableCell>
 
-    <!-- Stats columns -->
-    <TableCell class="relative">
-      <div class="flex items-center justify-center gap-1">
-        <template v-if="scannerState">
-          <div class="flex items-center gap-2 text-xs">
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <span class="text-success">
-                  {{ m.scanner.item.newCount({ count: scannerState.newCount }) }}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{{ m.scanner.item.newCountTooltip }}</TooltipContent>
-            </Tooltip>
-            <span class="text-muted-foreground/50">|</span>
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <span class="text-muted-foreground">
-                  {{ m.scanner.item.existingCount({ count: scannerState.existingCount }) }}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{{ m.scanner.item.existingCountTooltip }}</TooltipContent>
-            </Tooltip>
-          </div>
-        </template>
-        <template v-else>
-          <span class="text-sm text-muted-foreground">-</span>
-        </template>
-      </div>
+    <TableCell class="relative tabular-nums">
+      <span :class="scannerState ? 'text-success' : 'text-muted-foreground'">
+        {{ scannerState ? f.number(scannerState.newCount) : m.values.emptyValue }}
+      </span>
+    </TableCell>
+    <TableCell class="relative tabular-nums">
+      <span :class="!scannerState && 'text-muted-foreground'">
+        {{ scannerState ? f.number(scannerState.existingCount) : m.values.emptyValue }}
+      </span>
     </TableCell>
 
     <!-- Status column -->

@@ -90,6 +90,9 @@ Library-science words carry their library-science meaning here; keep them apart:
   systems unless the local design system already supports them.
 - Renderer-initiated actions own their user notifications. Main process code returns safe error
   summaries and logs at the owning boundary.
+- Tables use one field per column and never place secondary information beneath a value, including
+  in the first column. Put additional fields in their own columns or in details. Preserve columns
+  at narrow widths with horizontal scrolling; see the UI design system reference.
 
 ## Shared Contracts
 

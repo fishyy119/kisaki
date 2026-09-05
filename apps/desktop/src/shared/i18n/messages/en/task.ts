@@ -7,6 +7,8 @@ export const task = {
   noCompletedRecords: 'No completed records',
 
   table: {
+    phase: 'Phase',
+    duration: 'Duration',
     task: 'Task',
     progress: 'Progress',
     result: 'Result',
@@ -46,7 +48,6 @@ export const task = {
     viewDetails: 'View details',
     deleteRecord: 'Delete record',
     duration: 'Duration',
-    counters: 'Counters',
     warningCount: ({ count }: { count: number }) =>
       count === 1 ? '1 warning' : `${count} warnings`,
     moreWarnings: ({ count }: { count: number }) =>

@@ -13,7 +13,6 @@ import { useI18n } from '@renderer/composables/use-i18n'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
 import {
-  formatFailurePolicy,
   formatAutomationTriggers,
   formatAutomationTimestamp,
   getRunStatusLabel,
@@ -47,12 +46,6 @@ const { m } = useI18n()
 
 const latestRun = computed(() => props.automation.history[0] ?? null)
 const commandTitle = computed(() => props.command?.title ?? props.automation.commandId)
-const commandDescription = computed(() => props.command?.description ?? props.automation.commandId)
-const sourceLabel = computed(() =>
-  props.automation.owner.type === 'extension'
-    ? (props.automation.owner.extension.nameSnapshot ?? props.automation.owner.extension.id)
-    : m.value.automation.row.app
-)
 const nextRunLabel = computed(() =>
   props.automation.enabled
     ? formatAutomationTimestamp(props.automation.nextRunAt, m.value.automation.row.nextNone)
@@ -66,86 +59,75 @@ const enabledModel = computed({
 
 <template>
   <TableRow
-    :class="
-      cn('h-16 border-border/50 hover:bg-accent/30', !props.automation.enabled && 'opacity-70')
-    "
+    :class="cn('border-border/50 hover:bg-accent/30', !props.automation.enabled && 'opacity-70')"
   >
-    <TableCell class="py-2">
-      <div class="flex min-w-0 items-center gap-3">
-        <Switch
-          v-model="enabledModel"
-          :disabled="props.busy"
+    <TableCell>
+      <Switch
+        v-model="enabledModel"
+        :disabled="props.busy"
+        :aria-label="props.automation.name"
+      />
+    </TableCell>
+    <TableCell
+      class="truncate font-medium"
+      :title="props.automation.name"
+    >
+      {{ props.automation.name }}
+    </TableCell>
+    <TableCell
+      class="truncate"
+      :title="commandTitle"
+    >
+      {{ commandTitle }}
+    </TableCell>
+    <TableCell
+      class="truncate"
+      :title="formatAutomationTriggers(props.automation.triggers)"
+    >
+      {{ formatAutomationTriggers(props.automation.triggers) }}
+    </TableCell>
+    <TableCell
+      class="truncate"
+      :title="formatAutomationTimestamp(props.automation.lastRunAt)"
+    >
+      {{ formatAutomationTimestamp(props.automation.lastRunAt) }}
+    </TableCell>
+    <TableCell
+      class="truncate"
+      :title="nextRunLabel"
+    >
+      {{ nextRunLabel }}
+    </TableCell>
+
+    <TableCell>
+      <Badge
+        v-if="props.running"
+        variant="default"
+        class="h-5"
+      >
+        <Icon
+          icon="icon-[mdi--progress-clock]"
+          class="size-3"
         />
-        <div class="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
-          <Icon
-            icon="icon-[mdi--timer-outline]"
-            class="size-4 text-muted-foreground"
-          />
-        </div>
-        <div class="min-w-0">
-          <div class="flex min-w-0 items-center gap-2">
-            <div class="truncate text-sm font-medium">{{ props.automation.name }}</div>
-          </div>
-          <div class="truncate text-xs text-muted-foreground">
-            {{ props.automation.commandId }}
-          </div>
-        </div>
-      </div>
+        {{ m.automation.row.running }}
+      </Badge>
+      <Badge
+        v-else-if="latestRun"
+        :variant="getRunStatusVariant(latestRun.invocationStatus)"
+        class="h-5"
+      >
+        {{ getRunStatusLabel(latestRun.invocationStatus) }}
+      </Badge>
+      <Badge
+        v-else
+        variant="secondary"
+        class="h-5"
+      >
+        {{ m.automation.row.notInvoked }}
+      </Badge>
     </TableCell>
 
-    <TableCell class="py-2">
-      <div class="truncate text-sm">{{ commandTitle }}</div>
-      <div class="truncate text-xs text-muted-foreground">{{ commandDescription }}</div>
-    </TableCell>
-
-    <TableCell class="py-2">
-      <div class="truncate text-sm">{{ formatAutomationTriggers(props.automation.triggers) }}</div>
-      <div class="truncate text-xs text-muted-foreground">
-        {{ formatFailurePolicy(props.automation.failurePolicy) }}
-      </div>
-    </TableCell>
-
-    <TableCell class="py-2">
-      <div class="truncate text-sm">
-        {{ formatAutomationTimestamp(props.automation.lastRunAt) }}
-      </div>
-      <div class="truncate text-xs text-muted-foreground">
-        {{ m.automation.row.nextRun({ label: nextRunLabel }) }}
-      </div>
-    </TableCell>
-
-    <TableCell class="py-2">
-      <div class="flex min-w-0 flex-col items-start gap-1">
-        <Badge
-          v-if="props.running"
-          variant="default"
-          class="h-5"
-        >
-          <Icon
-            icon="icon-[mdi--progress-clock]"
-            class="size-3"
-          />
-          {{ m.automation.row.running }}
-        </Badge>
-        <Badge
-          v-else-if="latestRun"
-          :variant="getRunStatusVariant(latestRun.invocationStatus)"
-          class="h-5"
-        >
-          {{ getRunStatusLabel(latestRun.invocationStatus) }}
-        </Badge>
-        <Badge
-          v-else
-          variant="secondary"
-          class="h-5"
-        >
-          {{ m.automation.row.notInvoked }}
-        </Badge>
-        <span class="truncate text-xs text-muted-foreground">{{ sourceLabel }}</span>
-      </div>
-    </TableCell>
-
-    <TableCell class="py-2">
+    <TableCell>
       <div class="flex items-center justify-end gap-1">
         <Button
           size="icon-sm"

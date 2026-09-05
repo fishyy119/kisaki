@@ -9,6 +9,8 @@ export const task = {
   noCompletedRecords: '暫無完成紀錄',
 
   table: {
+    phase: '階段',
+    duration: '耗時',
     task: '任務',
     progress: '進度',
     result: '結果',
@@ -48,7 +50,6 @@ export const task = {
     viewDetails: '檢視詳細資訊',
     deleteRecord: '刪除紀錄',
     duration: '耗時',
-    counters: '計數',
     warningCount: ({ count }: { count: number }) => `${count} 則警告`,
     moreWarnings: ({ count }: { count: number }) => `還有 ${count} 則警告`
   },

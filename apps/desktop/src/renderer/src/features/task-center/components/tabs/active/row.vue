@@ -1,3 +1,4 @@
+<!-- Active task records, with one field per table column. -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TaskRun, TaskRunWarning } from '@shared/task-run'
@@ -9,11 +10,15 @@ import { TableCell, TableRow } from '@renderer/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
   formatTaskRunCategory,
+  formatTaskRunPhase,
+  formatProgressPercent,
+  getProgressPercentValue,
   formatTaskRunStatus,
   getTaskRunCategoryIcon,
   getTaskRunStatusVariant
 } from '../../../utils/display'
-import TaskRunProgress from './progress.vue'
+import { Progress } from '@renderer/components/ui/progress'
+import { Spinner } from '@renderer/components/ui/spinner'
 
 interface Props {
   run: TaskRun
@@ -33,6 +38,13 @@ const emit = defineEmits<{
 
 const { m } = useI18n()
 
+const percentValue = computed(() =>
+  props.run.progress?.work?.indeterminate ? null : getProgressPercentValue(props.run)
+)
+const percentText = computed(() =>
+  percentValue.value === null ? m.value.task.progress.inProgress : formatProgressPercent(props.run)
+)
+const phaseText = computed(() => formatTaskRunPhase(props.run))
 const categoryText = computed(() => formatTaskRunCategory(props.run.category))
 const warnings = computed<readonly TaskRunWarning[]>(() => props.run.progress?.warnings ?? [])
 const warningPreview = computed(() => warnings.value.slice(0, 3))
@@ -48,66 +60,48 @@ const canCancel = computed(
 </script>
 
 <template>
-  <TableRow class="group h-16 border-border/50 hover:bg-accent/30">
-    <TableCell class="py-2">
-      <div class="flex min-w-0 items-center gap-3">
-        <div class="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
-          <Icon
-            :icon="getTaskRunCategoryIcon(props.run.category)"
-            class="size-4 text-muted-foreground"
-          />
-        </div>
-        <div class="min-w-0">
-          <div class="flex min-w-0 items-center gap-1.5">
-            <div class="truncate text-sm font-medium">{{ props.run.title }}</div>
-            <Tooltip v-if="warnings.length">
-              <TooltipTrigger as-child>
-                <button
-                  type="button"
-                  class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-xs leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
-                  :aria-label="m.task.row.warningCount({ count: warnings.length })"
-                >
-                  <Icon
-                    icon="icon-[mdi--alert-outline]"
-                    class="size-3.5"
-                  />
-                  <span>{{ warnings.length }}</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent
-                side="bottom"
-                class="max-w-72"
-              >
-                <div class="space-y-1">
-                  <div
-                    v-for="(warning, index) in warningPreview"
-                    :key="`${warning.code ?? 'warning'}-${index}`"
-                    class="text-xs"
-                  >
-                    {{ warning.message }}
-                  </div>
-                  <div
-                    v-if="warnings.length > warningPreview.length"
-                    class="text-xs text-muted-foreground"
-                  >
-                    {{
-                      m.task.row.moreWarnings({ count: warnings.length - warningPreview.length })
-                    }}
-                  </div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <div class="truncate text-xs text-muted-foreground">{{ categoryText }}</div>
-        </div>
+  <TableRow class="group border-border/50 hover:bg-accent/30">
+    <TableCell>
+      <div class="flex min-w-0 items-center gap-2">
+        <Icon
+          :icon="getTaskRunCategoryIcon(props.run.category)"
+          class="size-4 shrink-0 text-muted-foreground"
+          :title="categoryText"
+        />
+        <span
+          class="truncate font-medium"
+          :title="props.run.title"
+          >{{ props.run.title }}</span
+        >
       </div>
     </TableCell>
 
-    <TableCell class="py-2">
-      <TaskRunProgress :run="props.run" />
+    <TableCell
+      class="truncate"
+      :title="phaseText"
+      >{{ phaseText }}</TableCell
+    >
+    <TableCell>
+      <div class="flex min-w-0 items-center gap-2">
+        <Progress
+          v-if="percentValue !== null"
+          :model-value="percentValue"
+          :aria-label="m.task.table.progress"
+          class="h-1.5 min-w-0 flex-1"
+        />
+        <Spinner
+          v-else
+          class="size-3.5 shrink-0"
+        />
+        <span
+          class="truncate tabular-nums"
+          :title="percentText ?? undefined"
+          >{{ percentText }}</span
+        >
+      </div>
     </TableCell>
 
-    <TableCell class="py-2">
+    <TableCell>
       <Badge
         :variant="getTaskRunStatusVariant(props.run.status)"
         class="h-5"
@@ -116,8 +110,44 @@ const canCancel = computed(
       </Badge>
     </TableCell>
 
-    <TableCell class="py-2">
+    <TableCell>
       <div class="flex items-center justify-end gap-1">
+        <Tooltip v-if="warnings.length">
+          <TooltipTrigger as-child>
+            <button
+              type="button"
+              class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-xs leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
+              :aria-label="m.task.row.warningCount({ count: warnings.length })"
+              @click="emit('details', props.run)"
+            >
+              <Icon
+                icon="icon-[mdi--alert-outline]"
+                class="size-3.5"
+              />
+              <span>{{ warnings.length }}</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="bottom"
+            class="max-w-72"
+          >
+            <div class="space-y-1">
+              <div
+                v-for="(warning, index) in warningPreview"
+                :key="`${warning.code ?? 'warning'}-${index}`"
+                class="text-xs"
+              >
+                {{ warning.message }}
+              </div>
+              <div
+                v-if="warnings.length > warningPreview.length"
+                class="text-xs text-muted-foreground"
+              >
+                {{ m.task.row.moreWarnings({ count: warnings.length - warningPreview.length }) }}
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
         <Button
           v-if="props.run.controls.pausable && props.run.status !== 'paused'"
           variant="ghost"

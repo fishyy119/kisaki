@@ -14,9 +14,9 @@
   owns the app-wide form texture
 - `apps/desktop/src/renderer/src/components/ui/dialog/` - Dialog components
 - `apps/desktop/src/renderer/src/components/ui/table/` - Column-driven table: header, widths,
-  alignment, reflow and horizontal-scroll fallbacks from one `columns` definition
+  alignment and horizontal scrolling from one `columns` definition
 - `apps/desktop/src/renderer/src/components/ui/container/` - `ContainerStep` vocabulary shared by
-  every `collapseBelow` / `reflowBelow` prop
+  every `collapseBelow` prop
 - `extensions/bangumi/src/ui/settings/app.vue` - Integration control panel (rail shell)
   reference implementation
 - `apps/desktop/src/renderer/src/components/ui/icon.vue` - Icon component
@@ -44,7 +44,7 @@ Three design tiers, in rem of main-area width (window minus the 3.25rem sidebar)
 | --------------- | --------- | ------------------------- | ----------------------------------------------------------------------------------------- |
 | **Comfortable** | ≥ 88rem   | 1280px @100%              | Every surface at its intended layout; multi-column bands side by side                     |
 | **Correct**     | ≥ 65rem   | 960px @100%, 1092px @110% | No overflow, clipping, or stray scrollbar; single-column bands, full tables, docked rails |
-| **Usable**      | ≥ 49rem   | 960px @130%               | Everything reachable and readable: tables reflow, header navigation folds                 |
+| **Usable**      | ≥ 49rem   | 960px @130%               | Everything reachable and readable: tables scroll horizontally, header navigation folds    |
 
 The floor and the scale are decoupled on purpose: a large scale in a small window
 shows less and degrades through the fluid rules below, instead of the window
@@ -592,7 +592,7 @@ keep the invariant:
 
 | Case                                                                               | Who declares `@container`                                                       | Why                                                                                                                                                                                                                      |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| The component's **internal layout** depends on its own width                       | The component, on a wrapper one level above the grid                            | A query cannot style its own container. Detail overview, hero info column, `StatsGrid` frame, `ActivityPanel`, `Table` scroller                                                                                          |
+| The component's **internal layout** depends on its own width                       | The component, on a wrapper one level above the grid                            | A query cannot style its own container. Detail overview, hero info column, `StatsGrid` frame, `ActivityPanel`                                                                                                            |
 | The component's **mode** depends on the parent's width; its own width is intrinsic | The parent width-giver: `ToolbarRow`, `PageHeader`, `Tabs` root, the reader row | `container-type: inline-size` is size containment - the element's inline size can no longer come from its content, so a shrink-to-fit control that declared its own container would collapse to zero width in a flex row |
 | `Field orientation="responsive"`                                                   | `FieldGroup`                                                                    | The group is the field's width-giver                                                                                                                                                                                     |
 | Page and dialog bodies written in place (report bands, card grids)                 | `ScrollRegion` viewport                                                         | The baseline width-giver of in-place content                                                                                                                                                                             |
@@ -607,7 +607,7 @@ below includes the padding term for this reason.
 Steps are Tailwind's container scale at the 14px root: `@lg` 32rem, `@2xl` 42rem,
 `@3xl` 48rem, `@4xl` 56rem, `@5xl` 64rem, `@6xl` 72rem, `@7xl` 80rem; media-query
 `rem` resolves at 16px, so the two scales never mix. Components that take a step
-as a prop (`collapseBelow`, `reflowBelow`) type it as `ContainerStep` and keep a
+as a prop (`collapseBelow`) type it as `ContainerStep` and keep a
 static class map so Tailwind sees every class.
 
 **Thresholds are derived, not chosen by eye.** A layout switches to n columns only
@@ -632,13 +632,13 @@ divided by one label's rem budget (`TrendChart`), never a fixed number.
 **Usable-tier devices.** Below the correct tier a surface degrades through a fixed
 vocabulary, never through hiding content:
 
-| Device                | Owner                                         | Rule                                                                                                                 |
-| --------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Label collapse        | `TabsList` / `SegmentedControl collapseBelow` | Labels hide, icons and counts stay, label moves into the title                                                       |
-| Navigation fold       | `PageHeaderNav collapseBelow`                 | Route pills become one dropdown showing the active route; both renderings are in the markup, the container picks one |
-| Panel float           | Reader `NavPanel`                             | Below `@2xl` of the reader row the panel is absolute over the page; the shell renders the click-catcher              |
-| Table reflow / scroll | `Table reflowBelow` / `minWidth`              | See Table                                                                                                            |
-| Band wrap             | `ToolbarRow`                                  | The trailing group drops to a second line before the search yields below its floor (see Band)                        |
+| Device          | Owner                                         | Rule                                                                                                                 |
+| --------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Label collapse  | `TabsList` / `SegmentedControl collapseBelow` | Labels hide, icons and counts stay, label moves into the title                                                       |
+| Navigation fold | `PageHeaderNav collapseBelow`                 | Route pills become one dropdown showing the active route; both renderings are in the markup, the container picks one |
+| Panel float     | Reader `NavPanel`                             | Below `@2xl` of the reader row the panel is absolute over the page; the shell renders the click-catcher              |
+| Table scroll    | `Table minWidth`                              | See Table                                                                                                            |
+| Band wrap       | `ToolbarRow`                                  | The trailing group drops to a second line before the search yields below its floor (see Band)                        |
 
 A device exists only where the contract reaches the width that triggers it. The
 library rail has none: its pane minimums (16rem rail, 30rem content, the handle)
@@ -667,51 +667,47 @@ period navigator, and route navigation).
 
 ### Table
 
-`Table` is driven by `columns: TableColumn[]` - label, width, alignment, tone, and
-reflow role in one place. The component renders the header row from it (`inset`
-pads the first and last column to the surface edge for page-wide tables), the
-colgroup widths come from it, and each `TableCell` claims its column from its row
-in template order, taking the column's alignment and tone and carrying its label.
-Call sites write body rows only and never color a cell for its column: a
-secondary column is `tone: 'muted'` on the definition, so the emphasis is one
-decision, applies to every cell, and is dropped by the card, where the label
-carries the hierarchy and every value reads in the foreground (an empty-value
-placeholder stays muted - that is value semantics, not column tone). A row's cells
-are static (toggle content inside a cell, never the cell), and conditional columns
-are built with the same condition as the cells.
+A table is a set of records compared across explicitly named fields. **No column
+may place secondary information beneath its value, including the first column.**
+A value can wrap naturally; another field must become a separate column or move
+into details. Do not replace secondary lines with concatenated peer fields, invent
+privileged column roles, or hide second lines with CSS.
 
-Type in the card is the card's, not the table's: the label takes the header's
-role (`text-xs` muted), every value steps down to the meta role (`text-xs`,
-foreground - a `text-sm` a cell uses in table mode is neutralized by the reflow
-CSS), and only the headline keeps the content size, so the record's identity is
-the one thing read at `text-sm`. Table mode keeps the sizes the rows author.
+Choose fields before allocating widths. Scanner names and paths are separate
+columns, as are new and existing counts. Automation enabled state, name, command,
+trigger, previous run, next run, and status each have their own column. Source,
+command description, and failure policy belong in automation details. Task phase,
+progress, result, and duration stay separate; throughput, remaining time, counters,
+and other execution diagnostics belong in task details. The global scan-issues
+table includes an explicit scanner column. Icons may identify a value, and controls
+may act on it; neither establishes another tier of information inside the cell.
 
-Columns are never hidden at narrow widths - a hidden column is missing
-information the user cannot recover. Two fallbacks exist, and a table declares
-one:
+`Table` is driven by `columns: TableColumn[]`: label, width, alignment, and tone.
+It renders headers and colgroups; cells claim their column in template order and
+inherit alignment/tone. Column tone applies uniformly. Values use the table's
+`text-xs`; names may use font weight for emphasis, without a larger text tier.
+`TableCell` sets the common `h-10` minimum. Virtualized lists must keep content on
+one line and estimate 2.5rem per row, including its border. Header/footer cells can
+use their own compact heights. Conditional column definitions and cells must use
+the same condition; remount the table when changing its column shape because cell
+indices are claimed at creation.
 
-- `reflowBelow="<step>"` for tables whose row still reads as a list item: below
-  the step of the table's own container the same rows reflow into record cards.
-  The card has three tracks - label, value, actions: the `primary` cell is the
-  headline across label and value; the `actions` cell sits beside it on the
-  first row; each `meta` cell is a definition entry (`td::before` prints the
-  column label in the header's type role) that subgrids into the label and value
-  tracks, so labels align down the whole card. The reflow never rearranges what
-  is inside a cell: a value with its qualifier line stays two lines, a badge
-  stays a badge. Scanner and automation lists reflow below `4xl`.
+Narrow widths **always preserve the table**, its headers, and the order of its
+columns. There is no card reflow, column-role system, or hidden-column fallback.
+Declare `minWidth` from the sum of fixed fields and readable text widths; distribute
+surplus width across text columns. Long values truncate with a title or a details
+affordance. A narrow surface scrolls horizontally rather than compressing controls
+or restructuring records. Scanner and automation lists use 72rem; task-center
+lists 48rem; automation history 48rem; scan issues 64rem (72rem with the scanner
+column). Search/test tables also declare their content budgets.
 
-A cell is one datum: a value, optionally with one qualifier line beneath it in
-the muted xs role (a subtitle, an id, a source, the next occurrence). Two peer
-facts never share a cell - that is a missing column, and it reads wrong in both
-the table and the card. Cell content is always wrapped in an element (never bare
-text in the `td`), so the card can place it.
-
-- `minWidth="<rem>"` for tables whose rows must stay uniform (virtualized lists,
-  dense record grids): the table keeps its width and the surface scrolls it
-  sideways. Scanner issues (`48rem`) and automation run history (`40rem`).
-
-The threshold follows the derivation rule above: the sum of the fixed columns plus
-the comfortable width of the flexible one, rounded up to a step.
+With `fixedHeader`, the header and footer remain outside `ScrollRegion` and share
+its colgroup and stable vertical scrollbar gutter. The body owns both scroll axes;
+the header/footer follow its horizontal scroll position. This keeps the vertical
+scrollbar at the visible viewport edge even when columns extend beyond it. The
+exposed `scrollElement` is the body viewport used by virtualizers. Plain tables
+scroll horizontally in their wrapper. Neither mode changes or remounts controls
+when the container is resized.
 
 ### Overflow and text
 
@@ -758,8 +754,12 @@ threshold rule at every width.
 - Keys: ↑↓ move by row (the column count is read from the grid; crossing into the
   neighbouring section keeps the column; ↑ from the first row returns to the
   query), ←→ move by cell once a hit is focused (in the query they move the
-  caret), Tab reaches the scope switch (arrows then step it), Enter opens, Esc
-  closes. The footer lists them.
+  caret), Tab cycles types and Shift+Tab cycles backwards, wrapping at either
+  end and returning focus to the query. Handle these keys before the dialog's
+  focus trap. Enter opens, Esc closes; composition and modified editing keys
+  retain their native behavior. Query edits, result replacements, and scope
+  changes clear the result cursor. The footer shows ↑↓ and ←→ in equal-width keycaps
+  with same-size MDI arrow icons.
 - The trigger in the page header is a plain `secondary` `sm` action - magnifier,
   label, shortcut kbd - the same at every width: a content-sized button has
   nothing to yield, and hiding its shortcut by header width only made it
@@ -1185,7 +1185,7 @@ Zero JS runtime, CSS mask-based.
   `watchInterfaceScaleShortcuts`
 - Modal region: `MODAL_LAYER_ID`, `MODAL_LAYER_SELECTOR`, `dialog-positioner`
 - Dialog geometry: `size="`, `fill`, `DialogSize`, `min(100%,48rem)`
-- Container queries: `@container`, `ContainerStep`, `collapse-below="`, `reflow-below="`,
+- Container queries: `@container`, `ContainerStep`, `collapse-below="`,
   `:min-width="`, `data-role`, `data-label`
 - Preferences: `Section` + `FieldGroup`, `applyRow`, `setInterfaceScale`
 
@@ -1205,7 +1205,7 @@ Zero JS runtime, CSS mask-based.
   `kisaki/layout-discipline` enforces the Units section
 - Layout thresholds are derived from comfortable cell widths and land at least 2rem
   from every host's floor; a fixed count where the width varies (chart ticks) is a bug
-- Columns are never hidden: a table reflows (`reflowBelow`) or scrolls (`minWidth`)
+- Columns are never hidden: a table preserves its columns and scrolls horizontally (`minWidth`)
 - Dialog call sites never write width or height classes; geometry is `size` + `fill`
 - A surface with a Save button applies nothing early; a preferences surface has no Save
 - `components/ui/*` contains no business logic

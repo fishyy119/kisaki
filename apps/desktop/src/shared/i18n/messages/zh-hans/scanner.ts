@@ -11,11 +11,14 @@ export const scanner = {
   emptyDescription: '添加扫描器来自动发现并导入你的媒体文件',
 
   table: {
+    path: '路径',
+    watch: '监听',
     name: '名称',
     type: '类型',
     scraperProfile: '刮削配置',
     targetCollection: '目标合集',
-    newExisting: '新增 / 已存',
+    newCount: '新增',
+    existingCount: '已存',
     status: '状态',
     actions: '操作'
   },
@@ -37,10 +40,6 @@ export const scanner = {
     cancelling: '取消中',
     watching: '正在监控变更',
     watchDisabled: '仅手动扫描',
-    newCount: ({ count }: { count: number }) => `${count} 新增`,
-    existingCount: ({ count }: { count: number }) => `${count} 已存`,
-    newCountTooltip: '已添加到数据库的游戏数',
-    existingCountTooltip: '路径已存在的游戏数',
     issuesTooltip: ({ count }: { count: number }) => `问题 ${count}`,
     deleteTitle: '确认删除',
     deleteDescription: ({ name }: { name: string }) =>
@@ -67,6 +66,7 @@ export const scanner = {
     allTypes: '全部类型',
     noMatch: '没有匹配的问题',
     table: {
+      scanner: '扫描器',
       name: '名称',
       type: '类型',
       path: '路径',

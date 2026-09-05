@@ -11,11 +11,14 @@ export const scanner = {
   emptyDescription: '新增掃描器來自動探索並匯入你的媒體檔案',
 
   table: {
+    path: '路徑',
+    watch: '監控',
     name: '名稱',
     type: '類型',
     scraperProfile: '刮削設定檔',
     targetCollection: '目標合集',
-    newExisting: '新增 / 已存',
+    newCount: '新增',
+    existingCount: '已存',
     status: '狀態',
     actions: '操作'
   },
@@ -37,10 +40,6 @@ export const scanner = {
     cancelling: '取消中',
     watching: '正在監控變更',
     watchDisabled: '僅手動掃描',
-    newCount: ({ count }: { count: number }) => `${count} 新增`,
-    existingCount: ({ count }: { count: number }) => `${count} 已存`,
-    newCountTooltip: '已加入資料庫的遊戲數',
-    existingCountTooltip: '路徑已存在的遊戲數',
     issuesTooltip: ({ count }: { count: number }) => `問題 ${count}`,
     deleteTitle: '確認刪除',
     deleteDescription: ({ name }: { name: string }) =>
@@ -67,6 +66,7 @@ export const scanner = {
     allTypes: '全部類型',
     noMatch: '沒有符合的問題',
     table: {
+      scanner: '掃描器',
       name: '名稱',
       type: '類型',
       path: '路徑',

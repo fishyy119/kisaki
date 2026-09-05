@@ -46,10 +46,12 @@ export const automation = {
     emptyDescription: 'No automations yet',
     noMatchDescription: 'No matching automations',
     table: {
+      enabled: 'Enabled',
       name: 'Name',
       command: 'Command',
       trigger: 'Trigger',
-      run: 'Runs',
+      lastRun: 'Last run',
+      nextRun: 'Next run',
       status: 'Status',
       actions: 'Actions'
     },
@@ -59,8 +61,6 @@ export const automation = {
   },
 
   row: {
-    app: 'App',
-    nextRun: ({ label }: { label: string }) => `Next: ${label}`,
     nextNone: 'None',
     disabled: 'Disabled',
     running: 'Running',
@@ -120,6 +120,7 @@ export const automation = {
   },
 
   details: {
+    commandDescription: 'Command description',
     app: 'App',
     running: 'Running',
     command: 'Command',
@@ -136,7 +137,8 @@ export const automation = {
     history: 'Run history',
     historyCount: ({ count }: { count: number }) => (count === 1 ? '1 record' : `${count} records`),
     noHistory: 'No run history',
-    historyRun: 'Run',
+    historySequence: 'No.',
+    historyStatus: 'Status',
     historyTrigger: 'Trigger',
     historyStartedAt: 'Started',
     historyDuration: 'Duration',

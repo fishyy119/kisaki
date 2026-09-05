@@ -25,9 +25,9 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { StateView } from '@renderer/components/ui/state-view'
-import { useRenderState } from '@renderer/composables'
+import { useRenderState } from '@renderer/composables/use-render-state'
 import { useI18n } from '@renderer/composables/use-i18n'
-import { useLibrarySearch, type LibrarySearchHit } from '../composables'
+import { useLibrarySearch, type LibrarySearchHit } from '../composables/use-library-search'
 import { cn } from '@renderer/utils/cn'
 import { getEntityAttachmentUrl } from '@renderer/utils/entity-image'
 import { getEntityDetailPath } from '@renderer/utils/entity-routes'
@@ -203,11 +203,28 @@ function verticalNeighbour(index: number, direction: 1 | -1): number {
   return neighbourStart + itemIndex
 }
 
+/** Tab belongs to the finder, before the dialog trap and scope switch handle it. */
+function handleScopeKeyDown(e: KeyboardEvent) {
+  if (e.key !== 'Tab' || e.isComposing || e.altKey || e.ctrlKey || e.metaKey) return
+
+  e.preventDefault()
+  e.stopPropagation()
+  const direction = e.shiftKey ? -1 : 1
+  const index = (SCOPES.indexOf(scope.value) + direction + SCOPES.length) % SCOPES.length
+  scope.value = SCOPES[index]!
+  inputRef.value?.focus()
+}
+
 function handleKeyDown(e: KeyboardEvent) {
+  // Native controls, text selection, and IME composition retain their own keys.
+  if (e.defaultPrevented || e.isComposing || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey)
+    return
+
   switch (e.key) {
     case 'ArrowDown': {
       if (visibleHits.value.length === 0) return
       e.preventDefault()
+      inputRef.value?.focus()
       focusedIndex.value = focusedIndex.value === -1 ? 0 : verticalNeighbour(focusedIndex.value, 1)
       break
     }
@@ -257,10 +274,15 @@ watch(
   }
 )
 
-// A new list (new query or scope) starts without a cursor
-watch([debouncedQuery, scope], () => {
-  focusedIndex.value = -1
-})
+// Editing the query or replacing its results invalidates the previous cursor.
+watch(
+  [query, scope, results],
+  () => {
+    focusedIndex.value = -1
+    contentRef.value?.element?.scrollTo({ top: 0 })
+  },
+  { flush: 'post' }
+)
 
 // Auto-scroll focused item into view
 watch(focusedIndex, (index) => {
@@ -278,6 +300,7 @@ watch(focusedIndex, (index) => {
       size="2xl"
       fill
       :show-close-button="false"
+      @keydown.tab.capture="handleScopeKeyDown"
       @keydown="handleKeyDown"
     >
       <DialogHeader class="sr-only">
@@ -297,6 +320,7 @@ watch(focusedIndex, (index) => {
           :placeholder="m.library.search.placeholder"
           class="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
           autofocus
+          @pointerdown="focusedIndex = -1"
         />
         <Spinner
           v-if="state === 'loading'"
@@ -433,7 +457,28 @@ watch(focusedIndex, (index) => {
       >
         <div class="flex min-w-0 items-center gap-4">
           <span class="flex items-center gap-1">
-            <kbd class="rounded bg-muted px-1 py-0.5">↑↓←→</kbd>
+            <kbd class="inline-flex h-5 w-8 items-center justify-center rounded bg-muted">
+              <Icon
+                icon="icon-[mdi--arrow-up]"
+                class="size-3.5"
+              />
+              <Icon
+                icon="icon-[mdi--arrow-down]"
+                class="size-3.5"
+              />
+              <span class="sr-only">↑↓</span>
+            </kbd>
+            <kbd class="inline-flex h-5 w-8 items-center justify-center rounded bg-muted">
+              <Icon
+                icon="icon-[mdi--arrow-left]"
+                class="size-3.5"
+              />
+              <Icon
+                icon="icon-[mdi--arrow-right]"
+                class="size-3.5"
+              />
+              <span class="sr-only">←→</span>
+            </kbd>
             {{ m.library.search.navigate }}
           </span>
           <span class="flex items-center gap-1">

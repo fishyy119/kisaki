@@ -243,6 +243,7 @@ const entityIdModel = computed({
       <Table
         fixed-header
         :columns="columns"
+        :min-width="spec.minWidth"
         body-class="h-40"
       >
         <template #state>
@@ -284,6 +285,7 @@ const entityIdModel = computed({
             <TableCell
               v-for="(column, index) in spec.columns"
               :key="index"
+              :title="column.cell(result, m, f)"
               class="truncate"
             >
               {{ column.cell(result, m, f) }}

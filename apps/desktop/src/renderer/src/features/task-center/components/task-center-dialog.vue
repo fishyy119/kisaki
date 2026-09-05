@@ -1,3 +1,4 @@
+<!-- Task lists, controls, and a virtualized history with uniform table rows. -->
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -37,19 +38,20 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-// Four columns fit the narrowest dialog body (about 38rem): no reflow needed,
-// and the completed list is virtualized, which needs uniform rows anyway.
+// Both lists keep readable fields at 48rem and scroll within narrower dialogs.
 const activeColumns = computed<TableColumn[]>(() => [
-  { label: m.value.task.table.task, width: '32%' },
-  { label: m.value.task.table.progress },
-  { label: m.value.task.table.status, width: '6rem' },
-  { label: m.value.task.table.actions, width: '8.25rem', align: 'end', role: 'actions' }
+  { label: m.value.task.table.task },
+  { label: m.value.task.table.phase, width: '10rem', tone: 'muted' },
+  { label: m.value.task.table.progress, width: '10rem' },
+  { label: m.value.task.table.status, width: '7rem' },
+  { label: m.value.task.table.actions, width: '9.5rem', align: 'end' }
 ])
 const completedColumns = computed<TableColumn[]>(() => [
-  { label: m.value.task.table.task, width: '32%' },
+  { label: m.value.task.table.task },
   { label: m.value.task.table.result },
-  { label: m.value.task.table.status, width: '6rem' },
-  { label: m.value.task.table.actions, width: '4rem', align: 'end', role: 'actions' }
+  { label: m.value.task.table.duration, width: '6rem' },
+  { label: m.value.task.table.status, width: '7rem' },
+  { label: m.value.task.table.actions, width: '7rem', align: 'end' }
 ])
 
 const store = useTaskRunStore()
@@ -90,18 +92,18 @@ const filteredCompletedRuns = computed(() =>
 //
 // History holds up to 500 final runs; rows virtualize with spacer rows so the
 // native table layout (shared colgroup) stays intact. Row height is fixed by
-// the row component (h-16 plus its bottom border).
+// TableCell (h-10, including its border).
 // =============================================================================
 
-/** Must match CompletedTaskRunRow's fixed height: h-16 plus its 1px bottom border. */
-const COMPLETED_ROW_HEIGHT_REM = 4
+/** Must match TableCell: h-10, with the border included in the row height. */
+const COMPLETED_ROW_HEIGHT_REM = 2.5
 
 const completedTable = useTemplateRef<InstanceType<typeof Table>>('completedTable')
 
 const completedVirtualizer = useVirtualizer(
   computed(() => {
     const scrollElement = completedTable.value?.scrollElement ?? null
-    const rowHeight = remToPx(COMPLETED_ROW_HEIGHT_REM) + 1
+    const rowHeight = remToPx(COMPLETED_ROW_HEIGHT_REM)
     return {
       count: filteredCompletedRuns.value.length,
       getScrollElement: () => scrollElement,
@@ -329,7 +331,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                   fixed-header
                   inset
                   :columns="activeColumns"
-                  body-class="overflow-x-hidden"
+                  min-width="48rem"
                 >
                   <TableBody>
                     <ActiveTaskRunRow
@@ -370,7 +372,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                     fixed-header
                     inset
                     :columns="completedColumns"
-                    body-class="overflow-x-hidden"
+                    min-width="48rem"
                   >
                     <TableBody>
                       <tr

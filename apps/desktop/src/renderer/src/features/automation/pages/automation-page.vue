@@ -36,15 +36,16 @@ const log = createLogger('Automation')
 
 const { m } = useI18n()
 
-// Percent columns keep the table readable down to about 48rem; below the 4xl
-// step the rows reflow into cards.
+// Fixed fields use 50rem; name and command each retain 11rem at the table's floor.
 const columns = computed<TableColumn[]>(() => [
+  { label: m.value.automation.page.table.enabled, width: '4rem', align: 'center' },
   { label: m.value.automation.page.table.name },
-  { label: m.value.automation.page.table.command, width: '20%' },
-  { label: m.value.automation.page.table.trigger, width: '17%' },
-  { label: m.value.automation.page.table.run, width: '17%' },
-  { label: m.value.automation.page.table.status, width: '12%' },
-  { label: m.value.automation.page.table.actions, width: '8.25rem', align: 'end', role: 'actions' }
+  { label: m.value.automation.page.table.command },
+  { label: m.value.automation.page.table.trigger, width: '9rem' },
+  { label: m.value.automation.page.table.lastRun, width: '11rem' },
+  { label: m.value.automation.page.table.nextRun, width: '11rem' },
+  { label: m.value.automation.page.table.status, width: '7rem' },
+  { label: m.value.automation.page.table.actions, width: '8rem', align: 'end' }
 ])
 
 const searchQuery = ref('')
@@ -327,7 +328,7 @@ function setBusy(automationId: string, busy: boolean) {
           v-else
           fixed-header
           inset
-          reflow-below="4xl"
+          min-width="72rem"
           :columns="columns"
         >
           <TableBody>

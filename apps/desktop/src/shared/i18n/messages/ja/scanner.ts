@@ -11,11 +11,14 @@ export const scanner = {
   emptyDescription: 'スキャナーを追加すると、メディアファイルを自動で検出して取り込めます',
 
   table: {
+    path: 'パス',
+    watch: '監視',
     name: '名前',
     type: '種類',
     scraperProfile: 'スクレイパープロファイル',
     targetCollection: '対象コレクション',
-    newExisting: '新規 / 既存',
+    newCount: '新規',
+    existingCount: '既存',
     status: 'ステータス',
     actions: '操作'
   },
@@ -37,10 +40,6 @@ export const scanner = {
     cancelling: 'キャンセル中',
     watching: '変更を監視中',
     watchDisabled: '手動スキャンのみ',
-    newCount: ({ count }: { count: number }) => `新規 ${count}`,
-    existingCount: ({ count }: { count: number }) => `既存 ${count}`,
-    newCountTooltip: 'データベースに追加されたゲーム数',
-    existingCountTooltip: 'パスが既に存在するゲーム数',
     issuesTooltip: ({ count }: { count: number }) => `問題 ${count}`,
     deleteTitle: '削除の確認',
     deleteDescription: ({ name }: { name: string }) =>
@@ -67,6 +66,7 @@ export const scanner = {
     allTypes: 'すべての種類',
     noMatch: '一致する問題がありません',
     table: {
+      scanner: 'スキャナー',
       name: '名前',
       type: '種類',
       path: 'パス',

@@ -1,7 +1,9 @@
+<!-- Active task details retain phase, timing, and throughput outside the table. -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TaskRun, TaskRunWarning } from '@shared/task-run'
 import { useI18n } from '@renderer/composables/use-i18n'
+import TaskRunProgress from './progress.vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import {
@@ -67,6 +69,10 @@ const metadata = computed(() => [
       </DialogHeader>
 
       <DialogBody class="space-y-4 overflow-x-hidden">
+        <section class="space-y-2">
+          <div class="text-xs font-medium text-muted-foreground">{{ m.task.table.progress }}</div>
+          <TaskRunProgress :run="props.run" />
+        </section>
         <section
           v-if="warnings.length"
           class="space-y-2"

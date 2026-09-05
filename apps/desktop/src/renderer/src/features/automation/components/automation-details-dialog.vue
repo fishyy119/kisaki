@@ -52,14 +52,13 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-// Run history: a dense record grid, so a narrow dialog scrolls it sideways
-// (29rem of fixed columns plus a readable result preview) rather than
-// reflowing it.
-const HISTORY_TABLE_MIN_WIDTH = '40rem'
+// Sequence and status are separate fields; the result retains 14.5rem at the floor.
+const HISTORY_TABLE_MIN_WIDTH = '48rem'
 const historyColumns = computed<TableColumn[]>(() => [
-  { label: m.value.automation.details.historyRun, width: '8rem' },
+  { label: m.value.automation.details.historySequence, width: '3.5rem', tone: 'muted' },
+  { label: m.value.automation.details.historyStatus, width: '7rem' },
   { label: m.value.automation.details.historyTrigger, width: '6rem', tone: 'muted' },
-  { label: m.value.automation.details.historyStartedAt, width: '9rem', tone: 'muted' },
+  { label: m.value.automation.details.historyStartedAt, width: '11rem', tone: 'muted' },
   { label: m.value.automation.details.historyDuration, width: '6rem', tone: 'muted' },
   { label: m.value.automation.details.historyResult }
 ])
@@ -209,6 +208,15 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             <div class="text-xs text-muted-foreground">{{ m.automation.details.updatedAt }}</div>
             <div class="truncate">{{ formatFullTimestamp(props.automation.updatedAt) }}</div>
           </div>
+          <div
+            v-if="props.command?.description"
+            class="col-span-2 min-w-0"
+          >
+            <div class="text-xs text-muted-foreground">
+              {{ m.automation.details.commandDescription }}
+            </div>
+            <p class="wrap-break-word">{{ props.command.description }}</p>
+          </div>
         </section>
 
         <section class="space-y-2">
@@ -254,23 +262,24 @@ function openRunResult(record: AutomationRunHistoryRecord) {
                   :key="row.record.id"
                   class="h-10 border-border/60"
                 >
+                  <TableCell class="tabular-nums">
+                    {{ row.sequence }}
+                  </TableCell>
                   <TableCell>
-                    <div class="flex min-w-0 items-center gap-2">
-                      <span class="w-8 shrink-0 tabular-nums text-muted-foreground"
-                        >#{{ row.sequence }}</span
-                      >
-                      <Badge
-                        :variant="getRunStatusVariant(row.record.invocationStatus)"
-                        class="h-5"
-                      >
-                        {{ getRunStatusLabel(row.record.invocationStatus) }}
-                      </Badge>
-                    </div>
+                    <Badge
+                      :variant="getRunStatusVariant(row.record.invocationStatus)"
+                      class="h-5"
+                    >
+                      {{ getRunStatusLabel(row.record.invocationStatus) }}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {{ getTriggerLabel(row.record.trigger) }}
                   </TableCell>
-                  <TableCell>
+                  <TableCell
+                    class="truncate"
+                    :title="formatAutomationTimestamp(row.record.startedAt)"
+                  >
                     {{ formatAutomationTimestamp(row.record.startedAt) }}
                   </TableCell>
                   <TableCell>

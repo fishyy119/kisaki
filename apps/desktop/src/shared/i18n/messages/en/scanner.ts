@@ -9,11 +9,14 @@ export const scanner = {
   emptyDescription: 'Add a scanner to automatically discover and import your media files',
 
   table: {
+    path: 'Path',
+    watch: 'Watch',
     name: 'Name',
     type: 'Type',
     scraperProfile: 'Scraper profile',
     targetCollection: 'Target collection',
-    newExisting: 'New / Existing',
+    newCount: 'New',
+    existingCount: 'Existing',
     status: 'Status',
     actions: 'Actions'
   },
@@ -35,10 +38,6 @@ export const scanner = {
     cancelling: 'Cancelling',
     watching: 'Watching for changes',
     watchDisabled: 'Manual scans only',
-    newCount: ({ count }: { count: number }) => `${count} new`,
-    existingCount: ({ count }: { count: number }) => `${count} existing`,
-    newCountTooltip: 'Games added to the database',
-    existingCountTooltip: 'Games whose paths already exist',
     issuesTooltip: ({ count }: { count: number }) => `Issues: ${count}`,
     deleteTitle: 'Delete scanner?',
     deleteDescription: ({ name }: { name: string }) =>
@@ -66,6 +65,7 @@ export const scanner = {
     allTypes: 'All types',
     noMatch: 'No matching issues',
     table: {
+      scanner: 'Scanner',
       name: 'Name',
       type: 'Type',
       path: 'Path',

@@ -44,10 +44,12 @@ export const automation = {
     emptyDescription: '暂无自动化',
     noMatchDescription: '没有匹配的自动化',
     table: {
+      enabled: '启用',
       name: '名称',
       command: '命令',
       trigger: '触发',
-      run: '运行',
+      lastRun: '上次运行',
+      nextRun: '下次运行',
       status: '状态',
       actions: '操作'
     },
@@ -57,8 +59,6 @@ export const automation = {
   },
 
   row: {
-    app: '应用',
-    nextRun: ({ label }: { label: string }) => `下次 ${label}`,
     nextNone: '无',
     disabled: '已禁用',
     running: '运行中',
@@ -117,6 +117,7 @@ export const automation = {
   },
 
   details: {
+    commandDescription: '命令说明',
     app: '应用',
     running: '运行中',
     command: '命令',
@@ -133,7 +134,8 @@ export const automation = {
     history: '调用历史',
     historyCount: ({ count }: { count: number }) => `${count} 条`,
     noHistory: '暂无调用历史',
-    historyRun: '运行',
+    historySequence: '序号',
+    historyStatus: '状态',
     historyTrigger: '触发',
     historyStartedAt: '开始时间',
     historyDuration: '耗时',

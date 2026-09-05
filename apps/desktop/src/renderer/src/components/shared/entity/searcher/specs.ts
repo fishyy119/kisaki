@@ -59,7 +59,9 @@ export interface SearcherColumn<TResult> {
 
 export interface EntitySearcherSpec<TResult, TLookup extends ScraperLookup> {
   search: (profileId: string, query: string) => Promise<IpcResult<TResult[]>>
-  /** Result columns in display order; the first one carries the name. */
+  /** Minimum width that keeps the result fields readable. */
+  minWidth: string
+  /** Result columns in display order. */
   columns: readonly SearcherColumn<TResult>[]
   /**
    * Completes the lookup with the facts the picked row states, so a provider
@@ -109,6 +111,7 @@ function grainColumn<TResult extends { grain?: MediaEntryGrain }>(): SearcherCol
 
 export const SEARCHER_SPECS: EntitySearcherSpecs = {
   game: {
+    minWidth: '36rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-game', profileId, query),
     columns: [
       nameColumn(),
@@ -125,6 +128,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     buildLookup: (base, result) => ({ ...base, releaseDate: result?.releaseDate })
   },
   anime: {
+    minWidth: '40rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-anime', profileId, query),
     columns: [
       nameColumn(),
@@ -151,6 +155,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     })
   },
   comic: {
+    minWidth: '44rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-comic', profileId, query),
     columns: [
       nameColumn(),
@@ -178,6 +183,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     })
   },
   novel: {
+    minWidth: '44rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-novel', profileId, query),
     columns: [
       nameColumn(),
@@ -203,6 +209,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     })
   },
   character: {
+    minWidth: '36rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-character', profileId, query),
     columns: [
       nameColumn(),
@@ -216,6 +223,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     buildLookup: (base) => base
   },
   person: {
+    minWidth: '40rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-person', profileId, query),
     columns: [
       nameColumn(),
@@ -234,6 +242,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     buildLookup: (base) => base
   },
   company: {
+    minWidth: '36rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-company', profileId, query),
     columns: [
       nameColumn(),

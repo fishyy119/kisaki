@@ -44,10 +44,12 @@ export const automation = {
     emptyDescription: '暫無自動化',
     noMatchDescription: '沒有符合的自動化',
     table: {
+      enabled: '啟用',
       name: '名稱',
       command: '命令',
       trigger: '觸發',
-      run: '執行',
+      lastRun: '上次執行',
+      nextRun: '下次執行',
       status: '狀態',
       actions: '操作'
     },
@@ -57,8 +59,6 @@ export const automation = {
   },
 
   row: {
-    app: '應用程式',
-    nextRun: ({ label }: { label: string }) => `下次 ${label}`,
     nextNone: '無',
     disabled: '已停用',
     running: '執行中',
@@ -117,6 +117,7 @@ export const automation = {
   },
 
   details: {
+    commandDescription: '命令說明',
     app: '應用程式',
     running: '執行中',
     command: '命令',
@@ -133,7 +134,8 @@ export const automation = {
     history: '呼叫歷史',
     historyCount: ({ count }: { count: number }) => `${count} 筆`,
     noHistory: '暫無呼叫歷史',
-    historyRun: '執行',
+    historySequence: '序號',
+    historyStatus: '狀態',
     historyTrigger: '觸發',
     historyStartedAt: '開始時間',
     historyDuration: '耗時',

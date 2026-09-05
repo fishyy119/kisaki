@@ -17,16 +17,24 @@ const { entries, error } = useScanners()
 
 const { m } = useI18n()
 
-// Reads as a table down to about 48rem (name 12 + fixed 32 + padding); below
-// the 4xl step the rows reflow into cards.
+// Fixed fields use 35rem; native table layout shares the rest across four text columns.
 const columns = computed<TableColumn[]>(() => [
   { label: m.value.scanner.table.name },
-  { label: m.value.scanner.table.type, width: '5rem', align: 'center' },
-  { label: m.value.scanner.table.scraperProfile, width: '13%', align: 'center', tone: 'muted' },
-  { label: m.value.scanner.table.targetCollection, width: '13%', align: 'center', tone: 'muted' },
-  { label: m.value.scanner.table.newExisting, width: '10rem', align: 'center' },
-  { label: m.value.scanner.table.status, width: '7rem', align: 'center' },
-  { label: m.value.scanner.table.actions, width: '10rem', align: 'end', role: 'actions' }
+  { label: m.value.scanner.table.path },
+  { label: m.value.scanner.table.type, width: '4.5rem', align: 'center' },
+  { label: m.value.scanner.table.watch, width: '5rem', align: 'center' },
+  {
+    label: m.value.scanner.table.scraperProfile,
+    tone: 'muted'
+  },
+  {
+    label: m.value.scanner.table.targetCollection,
+    tone: 'muted'
+  },
+  { label: m.value.scanner.table.newCount, width: '4rem', align: 'end' },
+  { label: m.value.scanner.table.existingCount, width: '4rem', align: 'end' },
+  { label: m.value.scanner.table.status, width: '8rem', align: 'center' },
+  { label: m.value.scanner.table.actions, width: '9.5rem', align: 'end' }
 ])
 </script>
 
@@ -55,7 +63,7 @@ const columns = computed<TableColumn[]>(() => [
         v-else
         fixed-header
         inset
-        reflow-below="4xl"
+        min-width="72rem"
         :columns="columns"
       >
         <TableBody>

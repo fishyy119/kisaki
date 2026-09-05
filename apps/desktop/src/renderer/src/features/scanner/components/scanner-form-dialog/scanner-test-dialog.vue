@@ -119,9 +119,7 @@ const columns = computed<TableColumn[]>(() => [
         { label: m.value.scanner.test.rule, width: '4rem', align: 'center' }
       ] satisfies TableColumn[])
     : []),
-  ...(props.onAddToIgnoreList
-    ? ([{ width: '3rem', align: 'center', role: 'actions' }] satisfies TableColumn[])
-    : [])
+  ...(props.onAddToIgnoreList ? ([{ width: '3rem', align: 'center' }] satisfies TableColumn[]) : [])
 ])
 
 const ruleInfoById = computed(() => {
@@ -204,7 +202,12 @@ function handleExclude(name: string) {
         <!-- Results Table -->
         <template v-else>
           <div class="border rounded-lg overflow-hidden">
-            <Table :columns="columns">
+            <Table
+              :key="hasRules ? 'rules' : 'names'"
+              :columns="columns"
+              :min-width="hasRules ? '32rem' : '20rem'"
+              class="table-fixed"
+            >
               <TableBody>
                 <TableRow
                   v-for="(result, index) in visibleResults"

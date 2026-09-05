@@ -1,3 +1,4 @@
+<!-- Filterable scan issues with separate scanner context and virtualized table rows. -->
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -38,7 +39,6 @@ import type { ScannerRunIssueType } from '@shared/scanner'
 import { addScannerIgnoredName } from '../ignored-names'
 import ScannerResultFixDialog from './scanner-result-fix-dialog.vue'
 import {
-  getIssueIcon,
   getIssueTypeText,
   toIssueFixTarget,
   type ScannerFixTarget,
@@ -198,35 +198,25 @@ const isQueryActive = computed(
   () => searchQuery.value.trim().length > 0 || issueTypeFilter.value !== 'all'
 )
 
-// Virtualized rows must stay uniform, so a narrow dialog scrolls the table
-// sideways (min 48rem: name 12 + fixed 15 + percent columns) instead of
-// reflowing it.
-const ISSUE_TABLE_MIN_WIDTH = '48rem'
+// Keep every issue field independent; the global view also identifies its scanner.
+const issueTableMinWidth = computed(() => (props.scannerId ? '64rem' : '72rem'))
 const issueColumns = computed<TableColumn[]>(() => [
   { label: m.value.scanner.issues.table.name },
-  { label: m.value.scanner.issues.table.type, width: '8rem' },
-  { label: m.value.scanner.issues.table.path, width: '22%', tone: 'muted' },
-  { label: m.value.scanner.issues.table.reason, width: '24%', tone: 'muted' },
-  { label: m.value.scanner.issues.table.relatedEntity, width: '16%', tone: 'muted' },
-  { label: m.value.scanner.issues.table.actions, width: '7rem', align: 'end', role: 'actions' }
+  ...(!props.scannerId ? [{ label: m.value.scanner.issues.table.scanner, width: '8rem' }] : []),
+  { label: m.value.scanner.issues.table.type, width: '11rem' },
+  { label: m.value.scanner.issues.table.path, tone: 'muted' },
+  { label: m.value.scanner.issues.table.reason, tone: 'muted' },
+  { label: m.value.scanner.issues.table.relatedEntity, tone: 'muted' },
+  { label: m.value.scanner.issues.table.actions, width: '7rem', align: 'end' }
 ])
 
-// =============================================================================
-// Issue rows virtualization
-//
-// A failed bulk scan can report hundreds of issues; rows virtualize with
-// spacer rows so the native table layout (shared colgroup) stays intact.
-// =============================================================================
-
-/** Must match the issue row's fixed height: h-14 plus its 1px bottom border. */
-const ISSUE_ROW_HEIGHT_REM = 3.5
-
+/** Must match TableCell: h-10, with the border included in the row height. */
+const ISSUE_ROW_HEIGHT_REM = 2.5
 const issueTable = useTemplateRef<InstanceType<typeof Table>>('issueTable')
-
 const issueVirtualizer = useVirtualizer(
   computed(() => {
     const scrollElement = issueTable.value?.scrollElement ?? null
-    const rowHeight = remToPx(ISSUE_ROW_HEIGHT_REM) + 1
+    const rowHeight = remToPx(ISSUE_ROW_HEIGHT_REM)
     return {
       count: filteredIssueRows.value.length,
       getScrollElement: () => scrollElement,
@@ -350,10 +340,11 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
         >
           <Table
             ref="issueTable"
+            :key="props.scannerId ?? 'all'"
             fixed-header
             inset
             :columns="issueColumns"
-            :min-width="ISSUE_TABLE_MIN_WIDTH"
+            :min-width="issueTableMinWidth"
           >
             <TableBody>
               <tr
@@ -364,27 +355,29 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
               <TableRow
                 v-for="row in issueVisibleRows"
                 :key="`${row.scannerId}:${row.issue.id}`"
-                class="h-14 border-border"
+                class="border-border"
               >
-                <TableCell>
-                  <div class="flex min-w-0 items-center gap-2">
-                    <Icon
-                      :icon="getIssueIcon(row.issue.type)"
-                      class="size-4 shrink-0 text-warning"
-                    />
-                    <div class="min-w-0">
-                      <div class="truncate font-medium">{{ row.issue.extractedName }}</div>
-                      <div
-                        v-if="!props.scannerId"
-                        class="truncate"
-                      >
-                        {{ row.scannerName }}
-                      </div>
-                    </div>
-                  </div>
+                <TableCell
+                  class="truncate font-medium"
+                  :title="row.issue.extractedName"
+                >
+                  {{ row.issue.extractedName }}
+                </TableCell>
+                <TableCell
+                  v-if="!props.scannerId"
+                  class="truncate"
+                  :title="row.scannerName"
+                >
+                  {{ row.scannerName }}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="warning">{{ getIssueTypeText(row.issue.type) }}</Badge>
+                  <Badge
+                    variant="warning"
+                    class="max-w-full"
+                    :title="getIssueTypeText(row.issue.type)"
+                  >
+                    <span class="truncate">{{ getIssueTypeText(row.issue.type) }}</span>
+                  </Badge>
                 </TableCell>
                 <TableCell
                   class="truncate"

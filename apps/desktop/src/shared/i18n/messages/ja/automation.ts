@@ -45,10 +45,12 @@ export const automation = {
     emptyDescription: '自動化はまだありません',
     noMatchDescription: '一致する自動化がありません',
     table: {
+      enabled: '有効',
       name: '名前',
       command: 'コマンド',
       trigger: 'トリガー',
-      run: '実行',
+      lastRun: '前回の実行',
+      nextRun: '次回の実行',
       status: 'ステータス',
       actions: '操作'
     },
@@ -59,8 +61,6 @@ export const automation = {
   },
 
   row: {
-    app: 'アプリ',
-    nextRun: ({ label }: { label: string }) => `次回 ${label}`,
     nextNone: 'なし',
     disabled: '無効',
     running: '実行中',
@@ -120,6 +120,7 @@ export const automation = {
   },
 
   details: {
+    commandDescription: 'コマンドの説明',
     app: 'アプリ',
     running: '実行中',
     command: 'コマンド',
@@ -136,7 +137,8 @@ export const automation = {
     history: '実行履歴',
     historyCount: ({ count }: { count: number }) => `${count} 件`,
     noHistory: '実行履歴はまだありません',
-    historyRun: '実行',
+    historySequence: '番号',
+    historyStatus: 'ステータス',
     historyTrigger: 'トリガー',
     historyStartedAt: '開始日時',
     historyDuration: '所要時間',

@@ -1,33 +1,21 @@
 export type TableColumnAlign = 'start' | 'center' | 'end'
 
 /**
- * Emphasis of a column's cells in table mode: `muted` de-emphasizes a secondary
- * column against its neighbours. The reflowed card ignores tone - there the
- * label carries the hierarchy and every value reads in the foreground.
+ * Emphasis of a column's values. A muted column still represents its own field.
  */
 export type TableColumnTone = 'default' | 'muted'
 
 /**
- * How a cell lays out once the table reflows into stacked rows: the primary
- * cell is the row's headline, meta cells become labelled lines under it, and
- * the actions cell sits to the right of the stack.
- */
-export type TableColumnRole = 'primary' | 'meta' | 'actions'
-
-/**
- * One column of a Table. The single source for the header cell, the colgroup
- * width, the alignment of head and body cells, and the label a reflowed cell
- * is prefixed with.
+ * One field of a Table. Every column follows the same rule: one value with no
+ * secondary information line. Supporting fields belong in other columns or details.
  */
 export interface TableColumn {
-  /** Header text; also the label of the reflowed cell. Omit for icon-only columns. */
+  /** Header text. Omit for icon-only controls. */
   label?: string
-  /** CSS width; omit (or '') for a flexible column. */
+  /** CSS width. Omit for a flexible column. */
   width?: string
   /** Horizontal alignment of the head and its cells. */
   align?: TableColumnAlign
-  /** Cell emphasis in table mode. */
+  /** Cell emphasis. */
   tone?: TableColumnTone
-  /** Reflow role; the first column defaults to `primary`, the rest to `meta`. */
-  role?: TableColumnRole
 }
