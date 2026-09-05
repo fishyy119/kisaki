@@ -28,13 +28,16 @@ export interface ExtensionWebviewFontPackage {
    * Entry stylesheet inside the package (slice files sit next to it).
    */
   stylesheet: string
+  /** Desktop-relative CSS appended after the package's font declarations. */
+  overrides?: string
 }
 
 export const EXTENSION_WEBVIEW_FONT_PACKAGES: readonly ExtensionWebviewFontPackage[] = [
   {
     dir: 'noto-sans-sc',
     npmPackage: '@fontsource-variable/noto-sans-sc',
-    stylesheet: 'index.css'
+    stylesheet: 'index.css',
+    overrides: 'src/renderer/src/styles/font-overrides.css'
   },
   {
     dir: 'noto-sans-mono',

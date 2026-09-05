@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, readdir, rm, stat } from 'node:fs/promises'
+import { appendFile, cp, mkdir, readFile, readdir, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import {
   EXTENSION_WEBVIEW_FONT_PACKAGES,
@@ -32,6 +32,14 @@ async function buildFontPackage(
     path.join(sourceRoot, pkg.stylesheet),
     path.join(targetRoot, pkg.stylesheet)
   )
+  if (pkg.overrides) {
+    const overrides = await readFile(path.join(context.desktopRoot, pkg.overrides), 'utf8')
+    // Renderer CSS resolves npm URLs; served webview CSS uses package-relative URLs.
+    await appendFile(
+      path.join(targetRoot, pkg.stylesheet),
+      `\n${overrides.replaceAll(`${pkg.npmPackage}/`, './')}`
+    )
+  }
   await copyRequiredFile(path.join(sourceRoot, 'LICENSE'), path.join(targetRoot, 'LICENSE'))
   await cp(path.join(sourceRoot, 'files'), path.join(targetRoot, 'files'), { recursive: true })
   await validateFontPackage(targetRoot, pkg.stylesheet)

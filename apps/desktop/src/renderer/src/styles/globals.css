@@ -3,6 +3,7 @@
 @import 'vue-sonner/style.css';
 @import '@fontsource-variable/noto-sans-sc';
 @import '@fontsource-variable/noto-sans-mono';
+@import './font-overrides.css';
 @plugin "@tailwindcss/typography";
 @plugin "@iconify/tailwind4";
 
