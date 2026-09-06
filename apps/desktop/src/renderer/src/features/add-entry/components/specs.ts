@@ -7,6 +7,7 @@
 
 import { ipcManager } from '@renderer/core/ipc'
 import type { ContentEntityType } from '@shared/entity-types'
+import type { DialogSize } from '@renderer/components/ui/dialog'
 import type { ScraperLookup } from '@shared/scraper'
 import {
   type IngestAddAnimeFromScraperResult,
@@ -25,6 +26,8 @@ interface SubmitOutcome {
 }
 
 export interface AddEntrySpec {
+  /** Width for the candidate fields shown by this entity's searcher. */
+  dialogSize: DialogSize
   /**
    * Submits the lookup the searcher composed. Entity-specific lookup facts ride
    * along inside it, so the dialog never has to know about them.
@@ -40,36 +43,43 @@ export interface AddEntrySpec {
 
 export const ADD_ENTRY_SPECS: Record<ContentEntityType, AddEntrySpec> = {
   game: {
+    dialogSize: 'md',
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-game-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddGameFromScraperResult | undefined)?.gameId
   },
   anime: {
+    dialogSize: 'lg',
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-anime-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddAnimeFromScraperResult | undefined)?.animeId
   },
   comic: {
+    dialogSize: 'lg',
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-comic-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddComicFromScraperResult | undefined)?.comicId
   },
   novel: {
+    dialogSize: 'lg',
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-novel-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddNovelFromScraperResult | undefined)?.novelId
   },
   character: {
+    dialogSize: 'md',
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-character-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddCharacterFromScraperResult | undefined)?.characterId
   },
   person: {
+    dialogSize: 'lg',
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-person-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddPersonFromScraperResult | undefined)?.personId
   },
   company: {
+    dialogSize: 'md',
     submit: (profileId, lookup, options) =>
       ipcManager.invoke('ingest:add-company-from-scraper', profileId, lookup, options),
     extractId: (output) => (output as IngestAddCompanyFromScraperResult | undefined)?.companyId

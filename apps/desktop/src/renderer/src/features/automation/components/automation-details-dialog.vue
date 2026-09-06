@@ -52,7 +52,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-// Sequence and status are separate fields; the result retains 14.5rem at the floor.
+// Keep the result readable after reserving widths for the short history fields.
 const HISTORY_TABLE_MIN_WIDTH = '48rem'
 const historyColumns = computed<TableColumn[]>(() => [
   { label: m.value.automation.details.historySequence, width: '3.5rem', tone: 'muted' },
@@ -208,15 +208,6 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             <div class="text-xs text-muted-foreground">{{ m.automation.details.updatedAt }}</div>
             <div class="truncate">{{ formatFullTimestamp(props.automation.updatedAt) }}</div>
           </div>
-          <div
-            v-if="props.command?.description"
-            class="col-span-2 min-w-0"
-          >
-            <div class="text-xs text-muted-foreground">
-              {{ m.automation.details.commandDescription }}
-            </div>
-            <p class="wrap-break-word">{{ props.command.description }}</p>
-          </div>
         </section>
 
         <section class="space-y-2">
@@ -260,7 +251,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
                 <TableRow
                   v-for="row in historyRows"
                   :key="row.record.id"
-                  class="h-10 border-border/60"
+                  class="border-border/60"
                 >
                   <TableCell class="tabular-nums">
                     {{ row.sequence }}

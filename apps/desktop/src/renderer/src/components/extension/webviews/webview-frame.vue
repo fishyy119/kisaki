@@ -29,7 +29,7 @@ import {
 } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
 import { uiLocale } from '@renderer/core/i18n'
-import { rootFontSizePx } from '@renderer/core/interface-scale'
+import { uiScale } from '@renderer/core/interface-scale'
 import { useThemeStore } from '@renderer/stores'
 import { cn } from '@renderer/utils/cn'
 import { readCurrentWebviewAppearance } from './webview-theme'
@@ -82,10 +82,10 @@ onBeforeUnmount(() => {
   unregisterFrame = null
 })
 
-// Follow the resolved root size so CSS typography and interface scale changes
-// both reach the document.
+// The interface scale is part of the appearance: the bridge mirrors the
+// resolved root font size, so the document rescales with the app.
 watch(
-  [resolvedTheme, activeThemeId, rootFontSizePx],
+  [resolvedTheme, activeThemeId, uiScale],
   () => {
     if (ready.value) {
       postCurrentAppearance()

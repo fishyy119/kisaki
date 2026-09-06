@@ -57,12 +57,9 @@ app inherits, so no step above 130% exists to stand in for it.
 The interface scale is the single lever of the rem scale: the main `WindowService`
 is its only writer (the settings surface calls `window:set-interface-scale`;
 `Ctrl+=` / `Ctrl+-` step through the presets and `Ctrl+0` resets, in every window),
-it pushes `window:interface-scale-changed`, and each participating renderer sets
-`--interface-scale = scale / 100` on its root (`core/interface-scale`). CSS alone
-defines `--text-base-size` and applies `font-size: calc(var(--text-base-size) *
-var(--interface-scale))`. The controller observes the resolved root size, and the
-webview bridge mirrors it into extension documents without defining its own
-typography or theme defaults. Layout code that must
+it pushes `window:interface-scale-changed`, and each renderer sets
+`--interface-scale = scale / 100` on its root. CSS multiplies `--text-base-size`
+by this value. The controller observes the resolved root size, and layout code that must
 speak pixels (virtualizer row estimates, canvases, tick budgets) uses `remToPx()`
 from `core/interface-scale` inside a computed, never a literal pixel constant.
 
@@ -363,8 +360,8 @@ frames; full-page reports never frame.
 
 ### The rem Scale
 
-At 100% interface scale, the root font size is `14px` (`--text-base-size` in CSS),
-so the whole Tailwind rem scale renders at 87.5%. Effective pixels:
+The root font size is `14px` (`--text-base-size` on `:root`, applied to `html`), so
+the whole Tailwind rem scale renders at 87.5%. Effective pixels:
 
 | Utility     | Nominal | Effective |
 | ----------- | ------- | --------- |
@@ -376,8 +373,8 @@ so the whole Tailwind rem scale renders at 87.5%. Effective pixels:
 
 Never reason in nominal values, and never write an arbitrary size
 (`text-[11px]`): pixels bypass the scale and, because the scale is compressed,
-they land between steps and read as noise. `--text-base-size` owns the design
-baseline; `--interface-scale` multiplies it, so everything must stay in rem.
+they land between steps and read as noise. `--text-base-size` sets the design baseline; `--interface-scale` multiplies it,
+so everything must stay in rem.
 Base line height is `1.5` and base weight `450`.
 
 ### Type Roles
@@ -385,12 +382,12 @@ Base line height is `1.5` and base weight `450`.
 Size follows the role of the text, not the component that happens to own it.
 Three roles carry all body copy:
 
-| Role       | Utility     | What it covers                                                                          |
-| ---------- | ----------- | --------------------------------------------------------------------------------------- |
-| Hero title | `text-lg`   | The entity name in a detail hero (`font-semibold`) - one per detail surface             |
-| Page title | `text-base` | `PageHeaderTitle` only - one per screen                                                 |
-| Content    | `text-sm`   | Control values, options, buttons, menu items, dialog titles, list titles, body copy     |
-| Meta       | `text-xs`   | Field/dialog descriptions, subtitles, badges, shortcuts, group labels, tabs, table text |
+| Role       | Utility     | What it covers                                                                                                   |
+| ---------- | ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| Hero title | `text-lg`   | The entity name in a detail hero (`font-semibold`) - one per detail surface                                      |
+| Page title | `text-base` | `PageHeaderTitle` only - one per screen                                                                          |
+| Content    | `text-sm`   | Control values, options, buttons, menu items, dialog titles, list titles, body copy, standard table values       |
+| Meta       | `text-xs`   | Field/dialog descriptions, subtitles, badges, shortcuts, group labels, tabs, table headers, compact table values |
 
 Above the roles sit display sizes for figures that are read as data, not as
 prose: `text-lg` for stat values, `text-2xl` for the report hero figure (the
@@ -411,8 +408,8 @@ A control's height and font size are one decision, made by the component:
 
 Call sites pick a size and never set a control's font: a control that needs to
 look smaller than its neighbours is on the wrong step, not missing a class.
-Tables are the one surface that sizes its contents: `Table` declares `text-xs`
-once on the `<table>` and rows, heads, cells, and captions inherit it.
+Tables declare their body type through `density` (see Table). Headers, captions,
+and status footers keep the auxiliary `text-xs` role in both densities.
 
 Other fixed heights: titlebar `h-9`, sidebar buttons `size-10`.
 
@@ -670,47 +667,51 @@ period navigator, and route navigation).
 
 ### Table
 
-A table is a set of records compared across explicitly named fields. **No column
-may place secondary information beneath its value, including the first column.**
-A value can wrap naturally; another field must become a separate column or move
-into details. Do not replace secondary lines with concatenated peer fields, invent
-privileged column roles, or hide second lines with CSS.
+A table compares records across named fields. Every column contains one field;
+secondary lines and concatenated peer fields belong in separate columns or details.
+`Table` owns headers, fixed table layout, colgroups, alignment, and column tone.
+Call sites write body rows. Conditional columns and cells share the same condition;
+remount the table when its column shape changes because cells claim indices at creation.
 
-Choose fields before allocating widths. Scanner names and paths are separate
-columns, as are new and existing counts. Automation enabled state, name, command,
-trigger, previous run, next run, and status each have their own column. Source,
-command description, and failure policy belong in automation details. Task phase,
-progress, result, and duration stay separate; throughput, remaining time, counters,
-and other execution diagnostics belong in task details. The global scan-issues
-table includes an explicit scanner column. Icons may identify a value, and controls
-may act on it; neither establishes another tier of information inside the cell.
+Density is explicit and independent of window size or interface scale:
 
-`Table` is driven by `columns: TableColumn[]`: label, width, alignment, and tone.
-It renders headers and colgroups; cells claim their column in template order and
-inherit alignment/tone. Column tone applies uniformly. Values use the table's
-`text-xs`; names may use font weight for emphasis, without a larger text tier.
-`TableCell` sets the common `h-10` minimum. Virtualized lists must keep content on
-one line and estimate 2.5rem per row, including its border. Header/footer cells can
-use their own compact heights. Conditional column definitions and cells must use
-the same condition; remount the table when changing its column shape because cell
-indices are claimed at creation.
+| Density              | Body type | Row height                               | Uses                                             |
+| -------------------- | --------- | ---------------------------------------- | ------------------------------------------------ |
+| `standard` (default) | `text-sm` | 2.5rem minimum, including the border     | Management, task lists, scan issues, run history |
+| `compact`            | `text-xs` | Content plus the common `py-1.5` padding | Search candidates and extraction previews        |
 
-Narrow widths **always preserve the table**, its headers, and the order of its
-columns. There is no card reflow, column-role system, or hidden-column fallback.
-Declare `minWidth` from the sum of fixed fields and readable text widths; distribute
-surplus width across text columns. Long values truncate with a title or a details
-affordance. A narrow surface scrolls horizontally rather than compressing controls
-or restructuring records. Scanner and automation lists use 72rem; task-center
-lists 48rem; automation history 48rem; scan issues 64rem (72rem with the scanner
-column). Search/test tables also declare their content budgets.
+Headers, captions, and the footer use `text-xs`. Controls and badges retain their
+own size recipes. `TABLE_DENSITIES` owns body typography and row height; virtual
+lists estimate `remToPx(TABLE_DENSITIES.standard.rowHeightRem)` and keep every cell
+on one line. Call sites do not redefine the table's font or virtual row height.
 
-With `fixedHeader`, the header and footer remain outside `ScrollRegion` and share
-its colgroup and stable vertical scrollbar gutter. The body owns both scroll axes;
-the header/footer follow its horizontal scroll position. This keeps the vertical
-scrollbar at the visible viewport edge even when columns extend beyond it. The
-exposed `scrollElement` is the body viewport used by virtualizers. Plain tables
-scroll horizontally in their wrapper. Neither mode changes or remounts controls
-when the container is resized.
+Both densities preserve all columns as available width changes. Flexible text
+columns shrink and truncate with a title or details affordance; below a justified
+`minWidth`, the table scrolls horizontally. Never shrink typography, hide columns,
+or reflow rows into cards to compensate for a narrow host.
+
+A dialog size is a rem width ceiling clamped by the modal region. Its padding,
+borders, and scroll gutters reduce the width available to a table. Calibrate the
+column widths and table floor together with the host, at 70–130% interface scale
+and the supported window floors. An ordinary dialog should fit its table at its
+intended size; horizontal scrolling starts only when the fields cannot reasonably
+shrink further. A small dialog may never reach that threshold in the supported
+range; this does not make it exempt from the common layout rules.
+
+Search candidates use a compact floor of 28rem for game/character/company, 34rem
+for anime, 36rem for person, and 38rem for comic/novel. Add-entry dialogs use `md`
+for three columns and `lg` for four or five; scanner correction already uses `lg`.
+Extraction previews use 20rem without rules and 32rem with rules inside `lg`.
+Scanner and automation management pages use 72rem; task lists and run history use
+48rem. The shipped per-scanner issues dialog uses 64rem. Its optional aggregate
+branch is not currently exposed by a caller.
+
+With `fixedHeader`, the body owns both scroll axes and the detached header follows
+its horizontal position. Header and body reserve the same scrollbar gutter; the
+vertical scrollbar stays at the visible viewport edge. Plain tables scroll in
+their own horizontal wrapper. The `footer` slot is ordinary status content, outside
+the table and its horizontal scroll area in both modes: result counts and selection
+state stay visible. It does not take `TableRow` or `TableCell` wrappers.
 
 ### Overflow and text
 
@@ -757,12 +758,8 @@ threshold rule at every width.
 - Keys: ↑↓ move by row (the column count is read from the grid; crossing into the
   neighbouring section keeps the column; ↑ from the first row returns to the
   query), ←→ move by cell once a hit is focused (in the query they move the
-  caret), Tab cycles types and Shift+Tab cycles backwards, wrapping at either
-  end and returning focus to the query. Handle these keys before the dialog's
-  focus trap. Enter opens, Esc closes; composition and modified editing keys
-  retain their native behavior. Query edits, result replacements, and scope
-  changes clear the result cursor. The footer shows ↑↓ and ←→ in equal-width keycaps
-  with same-size MDI arrow icons.
+  caret), Tab reaches the scope switch (arrows then step it), Enter opens, Esc
+  closes. The footer lists them.
 - The trigger in the page header is a plain `secondary` `sm` action - magnifier,
   label, shortcut kbd - the same at every width: a content-sized button has
   nothing to yield, and hiding its shortcut by header width only made it
@@ -1184,12 +1181,12 @@ Zero JS runtime, CSS mask-based.
 - Form: `FieldGroup`, `FieldLabel`, `FieldContent`
 - Scroll aids: `BackToTop`, `useBackToTop`, `BACK_TO_TOP_ICON`, `showLocateButton`
 - Viewport contract: `MAIN_WINDOW_MIN_CONTENT_SIZE`, `UI_SCALE_VALUES`, `stepUiScale`, `uiScale`,
-  `remToPx`, `--text-base-size`, `--interface-scale`, `window:set-interface-scale`, `window:interface-scale-changed`,
+  `remToPx`, `--text-base-size`, `window:set-interface-scale`, `window:interface-scale-changed`,
   `watchInterfaceScaleShortcuts`
 - Modal region: `MODAL_LAYER_ID`, `MODAL_LAYER_SELECTOR`, `dialog-positioner`
 - Dialog geometry: `size="`, `fill`, `DialogSize`, `min(100%,48rem)`
 - Container queries: `@container`, `ContainerStep`, `collapse-below="`,
-  `:min-width="`, `data-role`, `data-label`
+  `:min-width="`, `density="`, `TABLE_DENSITIES`
 - Preferences: `Section` + `FieldGroup`, `applyRow`, `setInterfaceScale`
 
 ## Constraints
@@ -1208,7 +1205,7 @@ Zero JS runtime, CSS mask-based.
   `kisaki/layout-discipline` enforces the Units section
 - Layout thresholds are derived from comfortable cell widths and land at least 2rem
   from every host's floor; a fixed count where the width varies (chart ticks) is a bug
-- Columns are never hidden: a table preserves its columns and scrolls horizontally (`minWidth`)
+- Columns are never hidden: a table preserves its fields and scrolls below its `minWidth`
 - Dialog call sites never write width or height classes; geometry is `size` + `fill`
 - A surface with a Save button applies nothing early; a preferences surface has no Save
 - `components/ui/*` contains no business logic

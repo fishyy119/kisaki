@@ -1,3 +1,4 @@
+<!-- Scanner extraction preview with compact, comparable result columns. -->
 <script setup lang="ts">
 /**
  * Scanner Test Dialog
@@ -204,9 +205,9 @@ function handleExclude(name: string) {
           <div class="border rounded-lg overflow-hidden">
             <Table
               :key="hasRules ? 'rules' : 'names'"
+              density="compact"
               :columns="columns"
               :min-width="hasRules ? '32rem' : '20rem'"
-              class="table-fixed"
             >
               <TableBody>
                 <TableRow
@@ -216,14 +217,14 @@ function handleExclude(name: string) {
                 >
                   <TableCell
                     :title="result.originalName"
-                    class="font-mono text-xs truncate max-w-64"
+                    class="font-mono truncate"
                   >
                     {{ result.originalName }}
                   </TableCell>
                   <TableCell
                     v-if="hasRules"
                     :title="result.extractedName"
-                    class="font-mono text-xs truncate max-w-64"
+                    class="font-mono truncate"
                     :class="
                       result.originalName !== result.extractedName && 'text-primary font-medium'
                     "
@@ -256,8 +257,8 @@ function handleExclude(name: string) {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-sm"
-                      class="size-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      size="icon-xs"
+                      class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                       :tooltip="m.scanner.test.addToExclusion"
                       @click="handleExclude(result.extractedName)"
                     >

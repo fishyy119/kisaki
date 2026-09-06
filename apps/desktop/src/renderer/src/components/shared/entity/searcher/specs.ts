@@ -59,7 +59,7 @@ export interface SearcherColumn<TResult> {
 
 export interface EntitySearcherSpec<TResult, TLookup extends ScraperLookup> {
   search: (profileId: string, query: string) => Promise<IpcResult<TResult[]>>
-  /** Minimum width that keeps the result fields readable. */
+  /** Compact-text floor; leave room for dialog padding and both scroll gutters. */
   minWidth: string
   /** Result columns in display order. */
   columns: readonly SearcherColumn<TResult>[]
@@ -111,13 +111,13 @@ function grainColumn<TResult extends { grain?: MediaEntryGrain }>(): SearcherCol
 
 export const SEARCHER_SPECS: EntitySearcherSpecs = {
   game: {
-    minWidth: '36rem',
+    minWidth: '28rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-game', profileId, query),
     columns: [
       nameColumn(),
       originalNameColumn('30%'),
       {
-        width: '7.5rem',
+        width: '8rem',
         header: (m) => m.library.searcher.columnReleaseDate,
         cell: (result, m, f) =>
           result.releaseDate ? f.date(result.releaseDate) : m.values.emptyValue
@@ -128,7 +128,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     buildLookup: (base, result) => ({ ...base, releaseDate: result?.releaseDate })
   },
   anime: {
-    minWidth: '40rem',
+    minWidth: '34rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-anime', profileId, query),
     columns: [
       nameColumn(),
@@ -136,13 +136,13 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
       {
         // A name search spans every entry of a work, so the kind of entry is
         // what tells a season from the film that shares its name.
-        width: '5rem',
+        width: '6rem',
         header: (m) => m.library.fields.format,
         cell: (result, m) =>
           result.format ? m.library.animeFormat[result.format] : m.values.emptyValue
       },
       {
-        width: '7.5rem',
+        width: '8rem',
         header: (m) => m.library.searcher.columnReleaseDate,
         cell: (result, m, f) =>
           result.releaseDate ? f.date(result.releaseDate) : m.values.emptyValue
@@ -155,7 +155,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     })
   },
   comic: {
-    minWidth: '44rem',
+    minWidth: '38rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-comic', profileId, query),
     columns: [
       nameColumn(),
@@ -163,14 +163,14 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
       {
         // A name search spans every entry of a work, so the kind of entry is
         // what tells the serialization from the spin-off that shares its name.
-        width: '5rem',
+        width: '7rem',
         header: (m) => m.library.fields.format,
         cell: (result, m) =>
           result.format ? m.library.comicFormat[result.format] : m.values.emptyValue
       },
       grainColumn(),
       {
-        width: '7.5rem',
+        width: '8rem',
         header: (m) => m.library.searcher.columnReleaseDate,
         cell: (result, m, f) =>
           result.releaseDate ? f.date(result.releaseDate) : m.values.emptyValue
@@ -183,20 +183,20 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     })
   },
   novel: {
-    minWidth: '44rem',
+    minWidth: '38rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-novel', profileId, query),
     columns: [
       nameColumn(),
       originalNameColumn('25%'),
       {
-        width: '5rem',
+        width: '7rem',
         header: (m) => m.library.fields.format,
         cell: (result, m) =>
           result.format ? m.library.novelFormat[result.format] : m.values.emptyValue
       },
       grainColumn(),
       {
-        width: '7.5rem',
+        width: '8rem',
         header: (m) => m.library.searcher.columnReleaseDate,
         cell: (result, m, f) =>
           result.releaseDate ? f.date(result.releaseDate) : m.values.emptyValue
@@ -209,7 +209,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     })
   },
   character: {
-    minWidth: '36rem',
+    minWidth: '28rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-character', profileId, query),
     columns: [
       nameColumn(),
@@ -223,18 +223,18 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     buildLookup: (base) => base
   },
   person: {
-    minWidth: '40rem',
+    minWidth: '36rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-person', profileId, query),
     columns: [
       nameColumn(),
       originalNameColumn('28%'),
       {
-        width: '7rem',
+        width: '8rem',
         header: (m) => m.library.searcher.columnBirth,
         cell: (result, m, f) => (result.birthDate ? f.date(result.birthDate) : m.values.emptyValue)
       },
       {
-        width: '7rem',
+        width: '8rem',
         header: (m) => m.library.searcher.columnDeath,
         cell: (result, m, f) => (result.deathDate ? f.date(result.deathDate) : m.values.emptyValue)
       }
@@ -242,7 +242,7 @@ export const SEARCHER_SPECS: EntitySearcherSpecs = {
     buildLookup: (base) => base
   },
   company: {
-    minWidth: '36rem',
+    minWidth: '28rem',
     search: (profileId, query) => ipcManager.invoke('scraper:search-company', profileId, query),
     columns: [
       nameColumn(),

@@ -1,3 +1,4 @@
+<!-- Scanner management with one independently readable field per column. -->
 <script setup lang="ts">
 /**
  * Scanner Page
@@ -17,20 +18,14 @@ const { entries, error } = useScanners()
 
 const { m } = useI18n()
 
-// Fixed fields use 35rem; native table layout shares the rest across four text columns.
+// Fixed controls and short fields leave the remaining width to four text columns.
 const columns = computed<TableColumn[]>(() => [
   { label: m.value.scanner.table.name },
   { label: m.value.scanner.table.path },
-  { label: m.value.scanner.table.type, width: '4.5rem', align: 'center' },
+  { label: m.value.scanner.table.type, width: '5rem', align: 'center' },
   { label: m.value.scanner.table.watch, width: '5rem', align: 'center' },
-  {
-    label: m.value.scanner.table.scraperProfile,
-    tone: 'muted'
-  },
-  {
-    label: m.value.scanner.table.targetCollection,
-    tone: 'muted'
-  },
+  { label: m.value.scanner.table.scraperProfile, tone: 'muted' },
+  { label: m.value.scanner.table.targetCollection, tone: 'muted' },
   { label: m.value.scanner.table.newCount, width: '4rem', align: 'end' },
   { label: m.value.scanner.table.existingCount, width: '4rem', align: 'end' },
   { label: m.value.scanner.table.status, width: '8rem', align: 'center' },

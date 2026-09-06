@@ -36,7 +36,7 @@ const log = createLogger('Automation')
 
 const { m } = useI18n()
 
-// Fixed fields use 50rem; name and command each retain 11rem at the table's floor.
+// Fixed fields leave 11rem each for the name and command at the table's floor.
 const columns = computed<TableColumn[]>(() => [
   { label: m.value.automation.page.table.enabled, width: '4rem', align: 'center' },
   { label: m.value.automation.page.table.name },

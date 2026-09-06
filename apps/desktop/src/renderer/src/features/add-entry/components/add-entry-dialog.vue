@@ -109,7 +109,7 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent size="md">
+    <DialogContent :size="spec.dialogSize">
       <DialogHeader>
         <DialogTitle :icon="getEntityIcon(props.entityType)">
           {{ m.library.forms.addEntityTitle({ label: entityLabel }) }}

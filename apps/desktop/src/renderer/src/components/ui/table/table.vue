@@ -6,17 +6,17 @@
   body rows only.
 
   Plain mode renders one table that scrolls with the page. Fixed-header mode
-  owns the "header outside the scroll area" rule: the header, the rows, and
-  the footer slot render as separate tables sharing one colgroup, and every
-  region reserves the scrollbar gutter so columns stay aligned. The body is a
+  renders the header and rows as separate tables sharing one colgroup and
+  scrollbar gutter so columns stay aligned. The body is a
   ScrollRegion: it fills the available height by default (pass a rem height via
   `bodyClass`, e.g. h-40, for a fixed-size viewport), hosts the back-to-top
   device, and exposes its scroll element for callers that virtualize rows
   against it. The `state` slot renders empty/loading views inside the region.
 
   Narrow widths preserve the table and its columns. The body scrolls horizontally
-  below `minWidth`; detached header/footer bands follow its horizontal position.
-  The vertical scrollbar stays at the visible viewport edge.
+  below `minWidth`; the detached header follows its horizontal position.
+  The footer is a status strip fixed to the visible width in both modes.
+  Density owns body typography and row height; compact rows size to content.
 -->
 <script setup lang="ts">
 import { computed, provide, ref, useTemplateRef, type HTMLAttributes } from 'vue'
@@ -26,13 +26,16 @@ import { TableColumnsKey } from './context'
 import TableHead from './table-head.vue'
 import TableHeader from './table-header.vue'
 import TableRow from './table-row.vue'
-import type { TableColumn, TableColumnAlign } from './types'
+import type { TableColumn, TableColumnAlign, TableDensity } from './types'
+import { TABLE_DENSITIES } from './variants'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']
   /** Column definitions: header, widths, alignment, tone. */
   columns: readonly TableColumn[]
-  /** Detach header/footer from the scrolling rows. */
+  /** Body typography and row spacing. Defaults to standard. */
+  density?: TableDensity
+  /** Detach the header from the scrolling rows. */
   fixedHeader?: boolean
   /** Extra classes for the scrolling body region (e.g. a fixed height). */
   bodyClass?: HTMLAttributes['class']
@@ -54,16 +57,21 @@ const ALIGN_CLASSES: Record<TableColumnAlign, string> = {
 }
 
 const hasHeader = computed(() => props.columns.some((column) => column.label))
+const density = computed(() => TABLE_DENSITIES[props.density ?? 'standard'])
 
 const tableClass = computed(() =>
-  cn('w-full caption-bottom text-xs', props.fixedHeader && 'table-fixed', props.class)
+  cn('w-full caption-bottom table-fixed', density.value.textClass, props.class)
 )
 
 const insetClass = 'data-inset:[&_tr>*:first-child]:pl-4 data-inset:[&_tr>*:last-child]:pr-4'
 
-const tableStyle = computed(() => ({ minWidth: props.minWidth }))
+const tableStyle = computed(() => ({
+  minWidth: props.minWidth,
+  '--table-row-height':
+    density.value.rowHeightRem === null ? 'auto' : `${density.value.rowHeightRem}rem`
+}))
 const scrollLeft = ref(0)
-// Use the body's offset directly so both bands share its full horizontal range.
+// Translate the header by the body's offset, including the end of its range.
 const bandTableStyle = computed(() => ({
   ...tableStyle.value,
   transform: `translateX(-${scrollLeft.value}px)`
@@ -84,14 +92,10 @@ defineExpose({
 <template>
   <div
     data-slot="table-scroller"
-    :class="cn('h-full min-h-0 min-w-0 w-full', !props.fixedHeader && 'overflow-x-auto')"
+    :data-inset="props.inset || undefined"
+    :class="cn('flex h-full min-h-0 min-w-0 w-full flex-col', insetClass)"
   >
-    <div
-      v-if="fixedHeader"
-      data-slot="table-container"
-      :data-inset="props.inset || undefined"
-      :class="cn('flex h-full min-h-0 w-full flex-col', insetClass)"
-    >
+    <template v-if="fixedHeader">
       <div
         v-if="hasHeader"
         data-slot="table-head-band"
@@ -110,7 +114,7 @@ defineExpose({
             />
           </colgroup>
           <TableHeader>
-            <TableRow class="h-8">
+            <TableRow :class="density.headerClass">
               <TableHead
                 v-for="(column, index) in columns"
                 :key="index"
@@ -145,34 +149,12 @@ defineExpose({
           <slot />
         </table>
       </ScrollRegion>
-
-      <div
-        v-if="$slots.footer"
-        data-slot="table-foot-band"
-        class="shrink-0 overflow-hidden border-t border-border bg-muted/30 [scrollbar-gutter:stable] [&_tr]:border-0"
-      >
-        <table
-          data-slot="table"
-          :class="tableClass"
-          :style="bandTableStyle"
-        >
-          <colgroup>
-            <col
-              v-for="(column, index) in columns"
-              :key="index"
-              :style="column.width ? { width: column.width } : undefined"
-            />
-          </colgroup>
-          <slot name="footer" />
-        </table>
-      </div>
-    </div>
+    </template>
 
     <div
       v-else
       data-slot="table-container"
-      :data-inset="props.inset || undefined"
-      :class="cn('relative w-full', insetClass)"
+      class="relative min-h-0 w-full overflow-x-auto"
     >
       <table
         data-slot="table"
@@ -190,7 +172,7 @@ defineExpose({
           v-if="hasHeader"
           class="bg-muted/30"
         >
-          <TableRow class="h-8">
+          <TableRow :class="density.headerClass">
             <TableHead
               v-for="(column, index) in columns"
               :key="index"
@@ -202,8 +184,19 @@ defineExpose({
           </TableRow>
         </TableHeader>
         <slot />
-        <slot name="footer" />
       </table>
+    </div>
+    <div
+      v-if="$slots.footer"
+      data-slot="table-footer"
+      :class="
+        cn(
+          'shrink-0 border-t border-border bg-muted/30 px-2 py-1 text-xs text-muted-foreground',
+          props.inset && 'px-4'
+        )
+      "
+    >
+      <slot name="footer" />
     </div>
   </div>
 </template>

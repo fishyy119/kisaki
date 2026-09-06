@@ -3,7 +3,6 @@
 @import 'vue-sonner/style.css';
 @import '@fontsource-variable/noto-sans-sc';
 @import '@fontsource-variable/noto-sans-mono';
-@import './font-overrides.css';
 @plugin "@tailwindcss/typography";
 @plugin "@iconify/tailwind4";
 
@@ -198,9 +197,11 @@
  * the top of this file; CJK glyphs in mono contexts fall back to the sans
  * family. (Extension webviews get the same fonts over kisaki-webview-font://.)
  *
- * CSS owns the base typography; the interface-scale controller writes only
- * the multiplier. The webview bridge mirrors the resulting root font size
- * and the typography tokens into extension documents.
+ * Base typography is expressed as variables (not hardcoded) so a future
+ * appearance setting can drive font/weight/size/spacing from one place; the
+ * webview theme bridge mirrors these resolved values to extension documents.
+ * The font stacks must stay in sync with EXTENSION_WEBVIEW_FONT_*_STACK in
+ * @shared/extension/webview-fonts (the bridge falls back to those constants).
  */
 :root {
   --font-sans: 'Noto Sans SC Variable', ui-sans-serif, system-ui, sans-serif;

@@ -1,4 +1,4 @@
-<!-- Filterable scan issues with separate scanner context and virtualized table rows. -->
+<!-- Scan issues with independent fields and virtual rows at the standard table density. -->
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -32,6 +32,7 @@ import {
   TableBody,
   TableCell,
   TableRow,
+  TABLE_DENSITIES,
   type TableColumn
 } from '@renderer/components/ui/table'
 import { MEDIA_TYPES, type MediaType } from '@shared/entity-types'
@@ -198,7 +199,7 @@ const isQueryActive = computed(
   () => searchQuery.value.trim().length > 0 || issueTypeFilter.value !== 'all'
 )
 
-// Keep every issue field independent; the global view also identifies its scanner.
+// Extra scanner context has its own column when this component receives no scanner id.
 const issueTableMinWidth = computed(() => (props.scannerId ? '64rem' : '72rem'))
 const issueColumns = computed<TableColumn[]>(() => [
   { label: m.value.scanner.issues.table.name },
@@ -210,13 +211,19 @@ const issueColumns = computed<TableColumn[]>(() => [
   { label: m.value.scanner.issues.table.actions, width: '7rem', align: 'end' }
 ])
 
-/** Must match TableCell: h-10, with the border included in the row height. */
-const ISSUE_ROW_HEIGHT_REM = 2.5
+// =============================================================================
+// Issue rows virtualization
+//
+// A failed bulk scan can report hundreds of issues; rows virtualize with
+// spacer rows so the native table layout (shared colgroup) stays intact.
+// =============================================================================
+
 const issueTable = useTemplateRef<InstanceType<typeof Table>>('issueTable')
+
 const issueVirtualizer = useVirtualizer(
   computed(() => {
     const scrollElement = issueTable.value?.scrollElement ?? null
-    const rowHeight = remToPx(ISSUE_ROW_HEIGHT_REM)
+    const rowHeight = remToPx(TABLE_DENSITIES.standard.rowHeightRem)
     return {
       count: filteredIssueRows.value.length,
       getScrollElement: () => scrollElement,

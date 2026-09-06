@@ -1,5 +1,5 @@
 <!--
-  TableCell - A body or footer cell. Claims its column from the enclosing row
+  TableCell - A body cell. Claims its column from the enclosing row
   and takes the column's alignment and tone from the Table's
   column definitions, so call sites write content only.
 -->
@@ -29,7 +29,7 @@ const ALIGN_CLASSES: Record<TableColumnAlign, string> = {
     data-slot="table-cell"
     :class="
       cn(
-        'h-10 py-1.5 px-2 align-middle [&:has([role=checkbox])]:pr-0',
+        'h-(--table-row-height) py-1.5 px-2 align-middle [&:has([role=checkbox])]:pr-0',
         column?.align && ALIGN_CLASSES[column.align],
         column?.tone === 'muted' && 'text-muted-foreground',
         props.class

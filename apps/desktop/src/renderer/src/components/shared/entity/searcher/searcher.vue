@@ -23,7 +23,6 @@ import { StateView } from '@renderer/components/ui/state-view'
 import {
   Table,
   TableBody,
-  TableFooter,
   TableRow,
   TableCell,
   type TableColumn
@@ -241,7 +240,9 @@ const entityIdModel = computed({
 
     <div class="border border-border rounded-md overflow-hidden">
       <Table
+        :key="props.entityType"
         fixed-header
+        density="compact"
         :columns="columns"
         :min-width="spec.minWidth"
         body-class="h-40"
@@ -279,7 +280,7 @@ const entityIdModel = computed({
             v-for="result in searchResults"
             :key="result.id"
             :data-state="selectedResultId === result.id ? 'selected' : undefined"
-            class="cursor-pointer text-xs border-border"
+            class="cursor-pointer border-border"
             @click="handleResultSelect(result)"
           >
             <TableCell
@@ -294,17 +295,8 @@ const entityIdModel = computed({
         </TableBody>
 
         <template #footer>
-          <TableFooter>
-            <TableRow>
-              <TableCell
-                :colspan="spec.columns.length"
-                class="h-6 py-0 text-muted-foreground"
-              >
-                {{ m.library.searcher.resultCount({ count: searchResults.length }) }}
-                <template v-if="selectedResultId"> · {{ m.library.searcher.selectedOne }}</template>
-              </TableCell>
-            </TableRow>
-          </TableFooter>
+          {{ m.library.searcher.resultCount({ count: searchResults.length }) }}
+          <template v-if="selectedResultId"> · {{ m.library.searcher.selectedOne }}</template>
         </template>
       </Table>
     </div>

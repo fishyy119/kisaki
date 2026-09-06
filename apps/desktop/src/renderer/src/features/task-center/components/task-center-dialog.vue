@@ -1,4 +1,4 @@
-<!-- Task lists, controls, and a virtualized history with uniform table rows. -->
+<!-- Task controls and history with shared table sizing and virtualized completed rows. -->
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -14,7 +14,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
-import { Table, TableBody, type TableColumn } from '@renderer/components/ui/table'
+import { Table, TableBody, TABLE_DENSITIES, type TableColumn } from '@renderer/components/ui/table'
 import { Toolbar, ToolbarRow } from '@renderer/components/ui/toolbar'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
@@ -38,7 +38,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 const { m } = useI18n()
 
-// Both lists keep readable fields at 48rem and scroll within narrower dialogs.
+// Preserve task identity and controls when the dialog is constrained by the window.
 const activeColumns = computed<TableColumn[]>(() => [
   { label: m.value.task.table.task },
   { label: m.value.task.table.phase, width: '10rem', tone: 'muted' },
@@ -92,18 +92,15 @@ const filteredCompletedRuns = computed(() =>
 //
 // History holds up to 500 final runs; rows virtualize with spacer rows so the
 // native table layout (shared colgroup) stays intact. Row height is fixed by
-// TableCell (h-10, including its border).
+// the standard Table density, including its border.
 // =============================================================================
-
-/** Must match TableCell: h-10, with the border included in the row height. */
-const COMPLETED_ROW_HEIGHT_REM = 2.5
 
 const completedTable = useTemplateRef<InstanceType<typeof Table>>('completedTable')
 
 const completedVirtualizer = useVirtualizer(
   computed(() => {
     const scrollElement = completedTable.value?.scrollElement ?? null
-    const rowHeight = remToPx(COMPLETED_ROW_HEIGHT_REM)
+    const rowHeight = remToPx(TABLE_DENSITIES.standard.rowHeightRem)
     return {
       count: filteredCompletedRuns.value.length,
       getScrollElement: () => scrollElement,
